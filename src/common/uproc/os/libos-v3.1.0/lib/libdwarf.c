@@ -830,8 +830,9 @@ static void dwarfBuildARangeTable(LibosDebugResolver *pThis)
 
         NvU64 combAddress = 0;
         NvU64 combLength  = 0;
+        NvBool lastEntry = NV_FALSE;
 
-        while (NV_TRUE)
+        while (!lastEntry)
         {
             NvU64 address;
             NvU64 length;
@@ -841,6 +842,12 @@ static void dwarfBuildARangeTable(LibosDebugResolver *pThis)
                 address = 0;
                 length  = 0;
             }
+
+            lastEntry = unit.offset >= unit_size;
+
+            // Skip empty entries, but don't skip the last entry.
+            if (address == 0 && length == 0 && !lastEntry)
+                continue;
 
             if (address == combAddress + combLength)
             {
@@ -864,9 +871,6 @@ static void dwarfBuildARangeTable(LibosDebugResolver *pThis)
                 combAddress = address;
                 combLength  = length;
             }
-
-            if (address == 0 && length == 0)
-                break;
         }
     }
 

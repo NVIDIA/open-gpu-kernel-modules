@@ -87,10 +87,13 @@ __nvoc_ctor_OBJGPUGRP_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_OBJGPUGRP_1(OBJGPUGRP *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-}
+} // End __nvoc_init_funcTable_OBJGPUGRP_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_OBJGPUGRP(OBJGPUGRP *pThis) {
     __nvoc_init_funcTable_OBJGPUGRP_1(pThis);
 }

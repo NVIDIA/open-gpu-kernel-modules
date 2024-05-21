@@ -33,6 +33,7 @@
 #include "dp_auxdefs.h"
 #include "dp_tracing.h"
 #include "dp_vrr.h"
+#include "dp_printf.h"
 #include <nvmisc.h>
 
 #include <ctrl/ctrl0073/ctrl0073specific.h>
@@ -55,7 +56,7 @@ using namespace DisplayPort;
 // The first EvoMainLink constructor will populate that data base.
 // Later EvoMainLink will use values from that data base.
 //
-static struct DP_REGKEY_DATABASE dpRegkeyDatabase = {0};
+struct DP_REGKEY_DATABASE dpRegkeyDatabase = {0};
 
 enum DP_REG_VAL_TYPE
 {
@@ -72,7 +73,6 @@ const struct
     DP_REG_VAL_TYPE valueType;
 } DP_REGKEY_TABLE [] =
 {
-    {NV_DP_REGKEY_ENABLE_AUDIO_BEYOND_48K,          &dpRegkeyDatabase.bAudioBeyond48kEnabled,          DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_OVERRIDE_DPCD_REV,                &dpRegkeyDatabase.dpcdRevOveride,                  DP_REG_VAL_U32},
     {NV_DP_REGKEY_DISABLE_SSC,                      &dpRegkeyDatabase.bSscDisabled,                    DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_ENABLE_FAST_LINK_TRAINING,        &dpRegkeyDatabase.bFastLinkTrainingEnabled,        DP_REG_VAL_BOOL},
@@ -97,7 +97,7 @@ const struct
     {NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED,      &dpRegkeyDatabase.bMSTPCONCapsReadDisabled,        DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_FORCE_DSC_ON_SINK,                &dpRegkeyDatabase.bForceDscOnSink,                 DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_ENABLE_SKIP_DPCD_READS_WAR,       &dpRegkeyDatabase.bSkipFakeDeviceDpcdAccess,       DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_FLUSH_TIMESLOT_INFO_WHEN_DIRTY,   &dpRegkeyDatabase.bFlushTimeslotWhenDirty,         DP_REG_VAL_BOOL}
+    {NV_DP_REGKEY_DISABLE_TUNNEL_BW_ALLOCATION,     &dpRegkeyDatabase.bForceDisableTunnelBwAllocation, DP_REG_VAL_BOOL}
 };
 
 EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :
@@ -116,6 +116,7 @@ EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :
     this->applyRegkeyOverrides();
 
     _isDynamicMuxCapable       = false;
+    _isMDMEnabled              = false;
     _isLTPhyRepeaterSupported  = true;
     _rmPhyRepeaterCount        = 0;
     dpMemZero(&_DSC, sizeof(_DSC));
@@ -276,18 +277,15 @@ bool EvoMainLink::queryGPUCapability()
     // Check if MST feature needs to be disabled by regkey. This is requirement by few OEMs, they don't want to support
     // MST feature on particular sku, whenever requested through INF.
     //
-    _hasMultistream         = (dpParams.bIsMultistreamSupported == NV_TRUE) && !_isMstDisabledByRegkey;
+    _hasMultistream                 = (dpParams.bIsMultistreamSupported == NV_TRUE) && !_isMstDisabledByRegkey;
+    _isStreamCloningEnabled         = (dpParams.bIsSCEnabled == NV_TRUE) ? true : false;
+    _hasIncreasedWatermarkLimits    = (dpParams.bHasIncreasedWatermarkLimits == NV_TRUE) ? true : false;
+    _isFECSupported                 = (dpParams.bFECSupported == NV_TRUE) ? true : false;
+    _useDfpMaxLinkRateCaps          = (dpParams.bOverrideLinkBw == NV_TRUE) ? true : false;
+    _isLTPhyRepeaterSupported       = (dpParams.bIsTrainPhyRepeater == NV_TRUE) ? true : false;
+    _isDownspreadSupported          = (dpParams.bSupportDPDownSpread == NV_TRUE) ? true : false;
 
-    _gpuSupportedDpVersions = dpParams.dpVersionsSupported;
-
-    _isStreamCloningEnabled = (dpParams.bIsSCEnabled == NV_TRUE) ? true : false;
-    _hasIncreasedWatermarkLimits     = (dpParams.bHasIncreasedWatermarkLimits == NV_TRUE) ? true : false;
-
-    _isFECSupported         = (dpParams.bFECSupported == NV_TRUE) ? true : false;
-
-    _useDfpMaxLinkRateCaps  = (dpParams.bOverrideLinkBw == NV_TRUE) ? true : false;
-
-    _isLTPhyRepeaterSupported        = (dpParams.bIsTrainPhyRepeater == NV_TRUE) ? true : false;
+    _gpuSupportedDpVersions         = dpParams.dpVersionsSupported;
 
     if (FLD_TEST_DRF(0073, _CTRL_CMD_DP_GET_CAPS, _MAX_LINK_RATE, _1_62, dpParams.maxLinkRate))
         _maxLinkRateSupportedGpu = RBR; //in Hz
@@ -617,7 +615,7 @@ void EvoMainLink::clearFlushMode(unsigned headMask, bool testMode)
     NvU32 ret = provider->rmControl5070(NV5070_CTRL_CMD_SET_SOR_FLUSH_MODE, &params, sizeof params);
     if (ret != NVOS_STATUS_SUCCESS)
     {
-        DP_LOG(("DP_EVO> Disabling flush mode failed!"));
+        DP_PRINTF(DP_ERROR, "DP_EVO> Disabling flush mode failed!");
     }
 }
 
@@ -728,7 +726,7 @@ AuxBus::status EvoAuxBus::transaction(Action action, Type type, int address,
     //
     if ((sizeRequested == 0) && (type & (i2cMot | i2c)) && (action == write))
     {
-        DP_LOG(("DP> Client requested address-only transaction"));
+        DP_PRINTF(DP_NOTICE, "DP> Client requested address-only transaction");
         params.bAddrOnly = NV_TRUE;
     }
     else if ((sizeRequested == 0) && (type == native))
@@ -779,7 +777,7 @@ AuxBus::status EvoAuxBus::transaction(Action action, Type type, int address,
         // error, the request still went out on the DPAUX channel as part of
         // the last IC-over-AUX write transaction. So the error should be ignored.
         //
-        DP_LOG(("DP> %s: Ignore ERROR_NOT_SUPPORTED for writeStatusUpdateRequest. Returning Success", __FUNCTION__));
+        DP_PRINTF(DP_NOTICE, "DP> %s: Ignore ERROR_NOT_SUPPORTED for writeStatusUpdateRequest. Returning Success", __FUNCTION__);
         return AuxBus::success;
     }
 
@@ -788,7 +786,7 @@ AuxBus::status EvoAuxBus::transaction(Action action, Type type, int address,
     {
         if (devicePlugged)
         {
-            DP_LOG(("DP> AuxChCtl Failing, if a device is connected you shouldn't be seeing this"));
+            DP_PRINTF(DP_ERROR, "DP> AuxChCtl Failing, if a device is connected you shouldn't be seeing this");
         }
         return nack;
     }
@@ -857,8 +855,10 @@ void EvoMainLink::postLinkTraining(NvU32 head)
 void EvoMainLink::initializeRegkeyDatabase()
 {
     NvU32 i;
+
     if (dpRegkeyDatabase.bInitialized)
         return;
+
     for (i = 0; i < sizeof(DP_REGKEY_TABLE)/sizeof(DP_REGKEY_TABLE[0]); i++)
     {
         NvU32 tempValue = 0;
@@ -879,6 +879,7 @@ void EvoMainLink::initializeRegkeyDatabase()
                 break;
         }
     }
+
     dpRegkeyDatabase.bInitialized = true;
 }
 
@@ -976,25 +977,25 @@ bool EvoMainLink::train(const LinkConfiguration & link, bool force,
         DRF_DEF(0073_CTRL, _DP_CMD, _SET_LINK_BW,    _TRUE);
 
     if (link.multistream)
-        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _SET_FORMAT_MODE, _MULTI_STREAM );
+        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _SET_FORMAT_MODE, _MULTI_STREAM);
 
     if(link.bEnableFEC)
         dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _ENABLE_FEC, _TRUE);
 
     if (isPostLtAdjRequestGranted)
-        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _POST_LT_ADJ_REQ_GRANTED, _YES );
+        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _POST_LT_ADJ_REQ_GRANTED, _YES);
 
     if (link.enhancedFraming)
-        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _SET_ENHANCED_FRAMING, _TRUE );
+        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _SET_ENHANCED_FRAMING, _TRUE);
     if (bSkipLt)
-        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _SKIP_HW_PROGRAMMING, _YES );
+        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _SKIP_HW_PROGRAMMING, _YES);
     if (force)
-        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _FAKE_LINK_TRAINING, _DONOT_TOGGLE_TRANSMISSION );
+        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _FAKE_LINK_TRAINING, _DONOT_TOGGLE_TRANSMISSION);
 
     if (linkTrainingType == NO_LINK_TRAINING)
-        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _NO_LINK_TRAINING, _YES );
+        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _NO_LINK_TRAINING, _YES);
     else if (linkTrainingType == FAST_LINK_TRAINING)
-        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _FAST_LINK_TRAINING, _YES );
+        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _FAST_LINK_TRAINING, _YES);
 
     targetIndex = NV0073_CTRL_DP_DATA_TARGET_SINK;
     if (bTrainPhyRepeater && (_rmPhyRepeaterCount != phyRepeaterCount))
@@ -1005,12 +1006,18 @@ bool EvoMainLink::train(const LinkConfiguration & link, bool force,
 
     if (bTrainPhyRepeater)
     {
-
-        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _TRAIN_PHY_REPEATER, _YES );
+        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _TRAIN_PHY_REPEATER, _YES);
         //
         // Start from the one closest to GPU. Note this is 1-based index.
         //
         targetIndex = phyRepeaterCount;
+    }
+
+    if (!this->isDownspreadSupported())
+    {
+        // If GPU does not support downspread, disabling downspread.
+        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _USE_DOWNSPREAD_SETTING, _FORCE);
+        dpCtrlCmd |= DRF_DEF(0073_CTRL, _DP_CMD, _DISABLE_DOWNSPREAD, _TRUE);
     }
 
     NV_DPTRACE_INFO(LINK_TRAINING_START, link.multistream, link.peakRate, link.lanes,
@@ -1345,7 +1352,6 @@ void EvoMainLink::getLinkConfig(unsigned &laneCount, NvU64 & linkRate)
 
         if (params.linkBW != 0)
         {
-            // BUG: Beware, turbo mode need to be taken into account
             linkRate = ((NvU64)params.linkBW) * DP_LINK_BW_FREQ_MULTI_MBPS;
         }
         else
@@ -1426,6 +1432,7 @@ bool EvoMainLink::queryAndUpdateDfpParams()
 
 
     _isDynamicMuxCapable = FLD_TEST_DRF(0073, _CTRL_DFP_FLAGS, _DYNAMIC_MUX_CAPABLE, _TRUE, dfpFlags);
+    _isMDMEnabled = FLD_TEST_DRF(0073, _CTRL_DFP_FLAGS, _MDM, _ENABLED, dfpFlags);
 
     return true;
 }
@@ -1722,7 +1729,9 @@ void EvoMainLink::configureTriggerAll(NvU32 head, bool enable)
 
 MainLink * DisplayPort::MakeEvoMainLink(EvoInterface * provider, Timer * timer)
 {
-    return new EvoMainLink(provider, timer);
+    MainLink *main;
+    main = new EvoMainLink(provider, timer);
+    return main;
 }
 
 AuxBus   * DisplayPort::MakeEvoAuxBus(EvoInterface * provider, Timer * timer)
@@ -1754,7 +1763,7 @@ bool EvoMainLink::dscCrcTransaction(NvBool bEnable, gpuDscCrc *data, NvU16 *head
     code = provider->rmControl0073(NV0073_CTRL_CMD_DFP_DSC_CRC_CONTROL, &params, sizeof(params));
     if (code != NVOS_STATUS_SUCCESS)
     {
-        DP_LOG(("DP> Crc control failed."));
+        DP_PRINTF(DP_ERROR, "DP> Crc control failed.");
         return false;
     }
 
@@ -1823,8 +1832,8 @@ bool EvoMainLink::configureLinkRateTable
                     pLinkRates->import((NvU8)params.linkBwTbl[i]);
                     break;
                 default:
-                    DP_LOG(("DP_EVO> %s: Unsupported link rate received",
-                           __FUNCTION__));
+                    DP_PRINTF(DP_ERROR, "DP_EVO> %s: Unsupported link rate received",
+                             __FUNCTION__);
                     DP_ASSERT(0);
                     break;
             }

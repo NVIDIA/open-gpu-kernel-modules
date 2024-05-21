@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -99,7 +99,7 @@ vaspaceapiConstruct_IMPL
     }
 
     if (gpuIsSriovEnabled(pGpu))
-	    NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid));
+        NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid));
 
     pNvVASpaceAllocParams = pParams->pAllocParams;
     allocFlags            = pNvVASpaceAllocParams->flags;
@@ -365,7 +365,7 @@ vaspaceapiConstruct_IMPL
             NV_PRINTF(LEVEL_ERROR,
                       "Could not construct VA space. Status %x\n", status);
             pVAS = NULL;
-            NV_ASSERT_OR_GOTO(0, done);
+            goto done;
         }
     }
 

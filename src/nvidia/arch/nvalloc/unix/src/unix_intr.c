@@ -33,7 +33,6 @@
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/disp/kern_disp.h"
 #include <nv_sriov_defines.h>
-#include "objtmr.h"
 
 static NvBool osInterruptPending(
     OBJGPU            *pGpu,
@@ -108,44 +107,30 @@ static NvBool osInterruptPending(
     tlsIsrInit(pIsrAllocator);
 
     //
-    // For SWRL granular locking process the countdown timer interrupt.
-    // GSP-RM handles SWRL interrupts if GSP-RM is active
-    //
-    if ((!IS_GSP_CLIENT(pGpu)) && (pGpu->getProperty(pGpu, PDB_PROP_GPU_SWRL_GRANULAR_LOCKING)))
-    {
-        threadStateInitISRLockless(&threadState, pDeviceLockGpu, THREAD_STATE_FLAGS_IS_ISR_LOCKLESS);
-
-        gpuMask = gpumgrGetGpuMask(pDeviceLockGpu);
-
-        gpuInstance = 0;
-        while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
-        {
-            pIntr = GPU_GET_INTR(pGpu);
-
-            if (INTERRUPT_TYPE_HARDWARE == intrGetIntrEn(pIntr))
-            {
-                // If interrupt enable is garbage the GPU is probably in a bad state
-                if (intrGetIntrEnFromHw_HAL(pGpu, pIntr, &threadState) > INTERRUPT_TYPE_MAX)
-                {
-                   continue;
-                }
-
-                OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
-                *serviced = tmrServiceSwrlWrapper(pGpu, pTmr, &threadState);
-            }
-        }
-
-        threadStateFreeISRLockless(&threadState, pDeviceLockGpu, THREAD_STATE_FLAGS_IS_ISR_LOCKLESS);
-    }
-
-    //
     // Service nonstall interrupts before possibly acquiring GPUs lock
     // so that we don't unnecesarily hold the lock while servicing them.
     //
+    // Also check if we need to acquire the GPU lock at all and get critical interrupts
+    // This should not violate (1) from above since we are not servicing the GPUs in SLI,
+    // only checking their state.
+    // 
+    // To do so, two steps are required:
+    // Step 1: Check if we can service nonstall interrupts outside the GPUs lock. This is true
+    // if the two PDBs are true. Otherwise we have to acquire the GPUs lock to service the nonstall
+    // interrupts anyway, and we can't get around acquiring the GPUs lock.
+    //
+    // Step 2 is inline below
+    //
+    NvBool bIsAnyStallIntrPending = NV_TRUE;
+    NvBool bIsAnyBottomHalfStallPending = NV_FALSE;
+    NvU32  isDispPendingPerGpu    = 0;
+    NvU32  isTmrPendingPerGpu     = 0;
+
     if (pDeviceLockGpu->getProperty(pDeviceLockGpu, PDB_PROP_GPU_ALTERNATE_TREE_ENABLED) &&
         pDeviceLockGpu->getProperty(pDeviceLockGpu, PDB_PROP_GPU_ALTERNATE_TREE_HANDLE_LOCKLESS))
     {
         threadStateInitISRLockless(&threadState, pDeviceLockGpu, THREAD_STATE_FLAGS_IS_ISR_LOCKLESS);
+        bIsAnyStallIntrPending = NV_FALSE;
 
         gpuMask = gpumgrGetGpuMask(pDeviceLockGpu);
         gpuInstance = 0;
@@ -162,13 +147,53 @@ static NvBool osInterruptPending(
                     intrServiceNonStall_HAL(pGpu, pIntr, &intr1Pending, &threadState);
                     *serviced = NV_TRUE;
                 }
+
+                //
+                // Step 2: Service nonstall interrupts and check if there are any stall interrupts
+                // pending on any GPUs. If there are, then we will take the GPU lock.
+                //
+                // Bug 4223192: calling intrGetPendingStall_HAL is rather expensive,
+                // so save off the critical interrupts to be handled in the top half.
+                //
+                intrGetPendingStall_HAL(pGpu, pIntr, &intr0Pending, &threadState);
+                if (!bitVectorTestAllCleared(&intr0Pending))
+                {
+                    if (bitVectorTest(&intr0Pending, MC_ENGINE_IDX_DISP))
+                    {
+                        isDispPendingPerGpu |= NVBIT32(gpuGetInstance(pGpu));
+
+                        // We will attempt to handle this separately from the other stall interrupts
+                        bitVectorClr(&intr0Pending, MC_ENGINE_IDX_DISP);
+                    }
+
+                    if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) &&
+                        !IS_VIRTUAL(pGpu) && bitVectorTest(&intr0Pending, MC_ENGINE_IDX_TMR))
+                    {
+                        isTmrPendingPerGpu |= NVBIT32(gpuGetInstance(pGpu));
+
+                        // We will clear this in the top half
+                        bitVectorClr(&intr0Pending, MC_ENGINE_IDX_TMR);
+                    }
+
+                    if (!bitVectorTestAllCleared(&intr0Pending))
+                    {
+                        //
+                        // If any other stall interrupts are pending,
+                        // they will be handled in the bottom half.
+                        //
+                        bIsAnyBottomHalfStallPending = NV_TRUE;
+                    }
+
+                    bIsAnyStallIntrPending = NV_TRUE;
+                }
             }
         }
         threadStateFreeISRLockless(&threadState, pDeviceLockGpu, THREAD_STATE_FLAGS_IS_ISR_LOCKLESS);
     }
 
     // LOCK: try to acquire GPUs lock
-    if (rmDeviceGpuLocksAcquire(pDeviceLockGpu, GPU_LOCK_FLAGS_COND_ACQUIRE, RM_LOCK_MODULES_ISR) == NV_OK)
+    if (bIsAnyStallIntrPending &&
+        (rmDeviceGpuLocksAcquire(pDeviceLockGpu, GPU_LOCK_FLAGS_COND_ACQUIRE, RM_LOCK_MODULES_ISR) == NV_OK))
     {
         threadStateInitISRAndDeferredIntHandler(&threadState,
             pDeviceLockGpu, THREAD_STATE_FLAGS_IS_ISR);
@@ -191,17 +216,52 @@ static NvBool osInterruptPending(
                 if (intrGetIntrEnFromHw_HAL(pGpu, pIntr, &threadState) > INTERRUPT_TYPE_MAX)
                    continue;
 
-                intrGetPendingStall_HAL(pGpu, pIntr, &intr0Pending, &threadState);
+                //
+                // If lockless interrupt handling was enabled, we have already cached which critical
+                // interrupts are pending. We only set the appropriate bits in the intr0Pending bitvector
+                // for the subsequent code to service them in the same manner as the lockless nonstall
+                // interrupt handling disabled case. But we also clear them from intr0Pending and
+                // for disp, check if they're still pending afterwards. We already checked whether any
+                // other bottom half stall interrupts are pending in bIsAnyBottomHalfStallPending above.
+                //
+                // After all this, the combination of bIsAnyBottomHalfStallPending and intr0Pending 
+                // contains whether any stall interrupts are still pending, so check both to determine if
+                // we need a bottom half.
+                //
+                if (pDeviceLockGpu->getProperty(pDeviceLockGpu, PDB_PROP_GPU_ALTERNATE_TREE_ENABLED) &&
+                    pDeviceLockGpu->getProperty(pDeviceLockGpu, PDB_PROP_GPU_ALTERNATE_TREE_HANDLE_LOCKLESS))
+                {
+                    bitVectorClrAll(&intr0Pending);
+                    if ((isDispPendingPerGpu & NVBIT32(gpuGetInstance(pGpu))) != 0)
+                    {
+                        bitVectorSet(&intr0Pending, MC_ENGINE_IDX_DISP);
+                    }
+
+                    if ((isTmrPendingPerGpu & NVBIT32(gpuGetInstance(pGpu))) != 0)
+                    {
+                        bitVectorSet(&intr0Pending, MC_ENGINE_IDX_TMR);
+                    }
+                }
+                else
+                {
+                    intrGetPendingStall_HAL(pGpu, pIntr, &intr0Pending, &threadState);
+                }
+
                 if (bitVectorTest(&intr0Pending, MC_ENGINE_IDX_DISP))
                 {
                     if (pKernelDisplay != NULL)
                     {
+                        MC_ENGINE_BITVECTOR intrDispPending;
+
                         kdispServiceVblank_HAL(pGpu, pKernelDisplay, 0,
                                                (VBLANK_STATE_PROCESS_LOW_LATENCY |
                                                 VBLANK_STATE_PROCESS_CALLED_FROM_ISR),
                                                &threadState);
                         *serviced = NV_TRUE;
-                        intrGetPendingStall_HAL(pGpu, pIntr, &intr0Pending, &threadState);
+                        bitVectorClr(&intr0Pending, MC_ENGINE_IDX_DISP);
+
+                        intrGetPendingDisplayIntr_HAL(pGpu, pIntr, &intrDispPending, &threadState);
+                        bitVectorOr(&intr0Pending, &intr0Pending, &intrDispPending);
                     }
                 }
 
@@ -211,7 +271,7 @@ static NvBool osInterruptPending(
                     // We have to clear the top level interrupt bit here since otherwise
                     // the bottom half will attempt to service the interrupt on the CPU
                     // side before GSP receives the notification and services it
-                    intrClearLeafVector_HAL(pGpu, pIntr, MC_ENGINE_IDX_TMR, &threadState);
+                    intrClearLeafVector_HAL(pGpu, pIntr, intrGetVectorFromEngineId(pGpu, pIntr, MC_ENGINE_IDX_TMR, NV_FALSE), &threadState);
                     bitVectorClr(&intr0Pending, MC_ENGINE_IDX_TMR);
 
                     NV_ASSERT_OK(intrTriggerPrivDoorbell_HAL(pGpu, pIntr, NV_DOORBELL_NOTIFY_LEAF_SERVICE_TMR_HANDLE));
@@ -228,8 +288,13 @@ static NvBool osInterruptPending(
                         intrCheckFecsEventbufferPending(pGpu, pIntr, &intr1Pending, &bCtxswLog);
                     }
                 }
+                else
+                {
+                    bitVectorClrAll(&intr1Pending);
+                }
 
-                if (!bitVectorTestAllCleared(&intr0Pending) ||
+                if (bIsAnyBottomHalfStallPending ||
+                    !bitVectorTestAllCleared(&intr0Pending) ||
                     !bitVectorTestAllCleared(&intr1Pending))
                 {
                     pending = NV_TRUE;

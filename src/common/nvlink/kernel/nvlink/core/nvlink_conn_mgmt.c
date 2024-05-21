@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -331,6 +331,7 @@ nvlink_core_check_intranode_conn_state
 
         case NVLINK_LINKSTATE_RESET:
         {
+
             if ((nvlink_core_check_link_state(conn->end0, NVLINK_LINKSTATE_RESET)) &&
                 (nvlink_core_check_link_state(conn->end1, NVLINK_LINKSTATE_RESET)))
             {
@@ -357,6 +358,7 @@ nvlink_core_check_intranode_conn_state
 
         case NVLINK_LINKSTATE_SAFE:
         {
+
             // Check if both ends and their sublinks are already in SAFE mode
             if ((nvlink_core_check_link_state(conn->end0, NVLINK_LINKSTATE_SAFE)) &&
                 (nvlink_core_check_link_state(conn->end1, NVLINK_LINKSTATE_SAFE)))

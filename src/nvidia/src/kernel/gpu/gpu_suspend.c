@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2000-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2000-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,7 +31,6 @@
 
 #include "platform/platform.h"
 #include "platform/chipset/chipset.h"
-#include "kernel/gpu/gr/kernel_graphics.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/fbsr.h"
 #include "gpu/gsp/gsp_init_args.h"
@@ -58,9 +57,6 @@ gpuPowerManagementEnter(OBJGPU *pGpu, NvU32 newLevel, NvU32 flags)
     NV_STATUS  status = NV_OK;
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
-    NV_ASSERT_OR_RETURN(!IS_VIRTUAL(pGpu) || !IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu),
-        NV_ERR_NOT_SUPPORTED);
-
     // This is a no-op in CPU-RM
     NV_ASSERT_OK_OR_GOTO(status, gpuPowerManagementEnterPreUnloadPhysical(pGpu), done);
 
@@ -76,12 +72,6 @@ gpuPowerManagementEnter(OBJGPU *pGpu, NvU32 newLevel, NvU32 flags)
 
     if (IS_GSP_CLIENT(pGpu))
     {
-        // FB remains alive for GC6 cycle
-        if (!IS_GPU_GC6_STATE_ENTERING(pGpu))
-        {
-            NV_ASSERT_OK_OR_GOTO(status, memmgrSavePowerMgmtState(pGpu, pMemoryManager), done);
-        }
-
         KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
         KernelGspPreparedFwsecCmd preparedCmd;
 
@@ -357,13 +347,6 @@ gpuResumeFromStandby_IMPL(OBJGPU *pGpu)
         NV_PRINTF(LEVEL_NOTICE, "Ending resume from %s\n",
                   IS_GPU_GC6_STATE_EXITING(pGpu) ? "GC6" : "APM Suspend");
     }
-    if (resumeStatus == NV_OK)
-    {
-        if (kgraphicsIsBug4208224WARNeeded_HAL(pGpu, GPU_GET_KERNEL_GRAPHICS(pGpu, 0)))
-        {
-            return kgraphicsInitializeBug4208224WAR_HAL(pGpu, GPU_GET_KERNEL_GRAPHICS(pGpu, 0));
-        }
-    }
 
     return resumeStatus;
 }
@@ -426,13 +409,6 @@ NV_STATUS gpuResumeFromHibernate_IMPL(OBJGPU *pGpu)
     else
     {
         NV_PRINTF(LEVEL_NOTICE, "End resuming from APM Suspend\n");
-    }
-    if (resumeStatus == NV_OK)
-    {
-        if (kgraphicsIsBug4208224WARNeeded_HAL(pGpu, GPU_GET_KERNEL_GRAPHICS(pGpu, 0)))
-        {
-            return kgraphicsInitializeBug4208224WAR_HAL(pGpu, GPU_GET_KERNEL_GRAPHICS(pGpu, 0));
-        }
     }
 
     return resumeStatus;

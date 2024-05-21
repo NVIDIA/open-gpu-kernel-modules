@@ -117,13 +117,12 @@ extern void rmapi_import_free(void *ptr);
 #endif
 
 
-
 //
 // The purpose of the bit pump is to ensure 64-bit aligned access to the
 // buffer while enabling arbitrary bits to be read/written.
 //
-typedef struct finn_bit_pump_for_read finn_bit_pump_for_read;
 
+typedef struct finn_bit_pump_for_read finn_bit_pump_for_read;
 struct finn_bit_pump_for_read
 {
     uint64_t accumulator;               // Bits not yet read from the data buffer
@@ -239,6 +238,7 @@ static uint64_t finn_read_buffer(finn_bit_pump_for_read *bp, uint8_t bit_size)
     // Done
     return value;
 }
+
 
 
 typedef struct finn_bit_pump_for_write finn_bit_pump_for_write;
@@ -385,8 +385,6 @@ static inline void finn_close_buffer_for_write(finn_bit_pump_for_write *bp)
 
 
 
-
-
 static NV_STATUS finnSerializeRoot_FINN_RM_API(NvU64 interface, NvU64 message, const char *api, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeRoot_FINN_RM_API(NvU64 interface, NvU64 message, finn_bit_pump_for_read *bp, char *api, NvLength dst_size, NvBool deser_up);
 #if (defined(NVRM))
@@ -475,6 +473,9 @@ static NV_STATUS finnSerializeMessage_NV0080_CTRL_HOST_GET_CAPS_PARAMS(const NV0
 static NV_STATUS finnDeserializeMessage_NV0080_CTRL_HOST_GET_CAPS_PARAMS(finn_bit_pump_for_read *bp, NV0080_CTRL_HOST_GET_CAPS_PARAMS *api, NvLength api_size, NvBool deser_up);
 static NV_STATUS finnSerializeMessage_NV0080_CTRL_MSENC_GET_CAPS_PARAMS(const NV0080_CTRL_MSENC_GET_CAPS_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeMessage_NV0080_CTRL_MSENC_GET_CAPS_PARAMS(finn_bit_pump_for_read *bp, NV0080_CTRL_MSENC_GET_CAPS_PARAMS *api, NvLength api_size, NvBool deser_up);
+#endif // (defined(NVRM))
+
+#if (defined(NVRM))
 static NV_STATUS finnSerializeMessage_NV2080_CTRL_BIOS_GET_NBSI_OBJ_PARAMS(const NV2080_CTRL_BIOS_GET_NBSI_OBJ_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeMessage_NV2080_CTRL_BIOS_GET_NBSI_OBJ_PARAMS(finn_bit_pump_for_read *bp, NV2080_CTRL_BIOS_GET_NBSI_OBJ_PARAMS *api, NvLength api_size, NvBool deser_up);
 static NV_STATUS finnSerializeMessage_NV2080_CTRL_CE_GET_CAPS_PARAMS(const NV2080_CTRL_CE_GET_CAPS_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up);
@@ -707,12 +708,11 @@ NV_STATUS finnDeserializeInternal_FINN_RM_API(const char *src, NvLength src_size
         return NV_ERR_BUFFER_TOO_SMALL;
     }
 
-    // Open the bit punp, skipping past the header.
+    // Open the bit pump, skipping past the header.
     finn_open_buffer_for_read(&bp, (const uint64_t *) (src + sizeof(FINN_RM_API)), (const uint64_t *) (src_max));
 
     // Dispatch to interface-specific routine
     status = finnDeserializeRoot_FINN_RM_API(header->interface, header->message, &bp, api, api_size, deser_up);
-
     // Nothing more to do if there was an error.
     if (status != NV_OK)
         return status;
@@ -907,7 +907,7 @@ static NV_STATUS finnSerializeInterface_FINN_GT200_DEBUGGER_DEBUG(NvU64 message,
 }
 
 
-// Deerialize this interface.
+// Deserialize this interface.
 static NV_STATUS finnDeserializeInterface_FINN_GT200_DEBUGGER_DEBUG(NvU64 message, finn_bit_pump_for_read *bp, FINN_GT200_DEBUGGER_DEBUG *api_intf, NvLength api_size, NvBool deser_up)
 {
     // Deerialize one of 2 messages in this interface.
@@ -977,7 +977,7 @@ static NV_STATUS finnSerializeInterface_FINN_MAXWELL_CHANNEL_GPFIFO_A_GPFIFO(NvU
 }
 
 
-// Deerialize this interface.
+// Deserialize this interface.
 static NV_STATUS finnDeserializeInterface_FINN_MAXWELL_CHANNEL_GPFIFO_A_GPFIFO(NvU64 message, finn_bit_pump_for_read *bp, FINN_MAXWELL_CHANNEL_GPFIFO_A_GPFIFO *api_intf, NvLength api_size, NvBool deser_up)
 {
     // Deerialize one of 3 messages in this interface.
@@ -1047,7 +1047,7 @@ static NV_STATUS finnSerializeInterface_FINN_NV01_DEVICE_0_DMA(NvU64 message, co
 }
 
 
-// Deerialize this interface.
+// Deserialize this interface.
 static NV_STATUS finnDeserializeInterface_FINN_NV01_DEVICE_0_DMA(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_DEVICE_0_DMA *api_intf, NvLength api_size, NvBool deser_up)
 {
     // Deerialize one of 1 messages in this interface.
@@ -1109,7 +1109,7 @@ static NV_STATUS finnSerializeInterface_FINN_NV01_DEVICE_0_FB(NvU64 message, con
 }
 
 
-// Deerialize this interface.
+// Deserialize this interface.
 static NV_STATUS finnDeserializeInterface_FINN_NV01_DEVICE_0_FB(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_DEVICE_0_FB *api_intf, NvLength api_size, NvBool deser_up)
 {
     // Deerialize one of 1 messages in this interface.
@@ -1178,7 +1178,7 @@ static NV_STATUS finnSerializeInterface_FINN_NV01_DEVICE_0_FIFO(NvU64 message, c
 }
 
 
-// Deerialize this interface.
+// Deserialize this interface.
 static NV_STATUS finnDeserializeInterface_FINN_NV01_DEVICE_0_FIFO(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_DEVICE_0_FIFO *api_intf, NvLength api_size, NvBool deser_up)
 {
     // Deerialize one of 3 messages in this interface.
@@ -1254,7 +1254,7 @@ static NV_STATUS finnSerializeInterface_FINN_NV01_DEVICE_0_GPU(NvU64 message, co
 }
 
 
-// Deerialize this interface.
+// Deserialize this interface.
 static NV_STATUS finnDeserializeInterface_FINN_NV01_DEVICE_0_GPU(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_DEVICE_0_GPU *api_intf, NvLength api_size, NvBool deser_up)
 {
     // Deerialize one of 1 messages in this interface.
@@ -1316,7 +1316,7 @@ static NV_STATUS finnSerializeInterface_FINN_NV01_DEVICE_0_GR(NvU64 message, con
 }
 
 
-// Deerialize this interface.
+// Deserialize this interface.
 static NV_STATUS finnDeserializeInterface_FINN_NV01_DEVICE_0_GR(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_DEVICE_0_GR *api_intf, NvLength api_size, NvBool deser_up)
 {
     // Deerialize one of 1 messages in this interface.
@@ -1378,7 +1378,7 @@ static NV_STATUS finnSerializeInterface_FINN_NV01_DEVICE_0_HOST(NvU64 message, c
 }
 
 
-// Deerialize this interface.
+// Deserialize this interface.
 static NV_STATUS finnDeserializeInterface_FINN_NV01_DEVICE_0_HOST(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_DEVICE_0_HOST *api_intf, NvLength api_size, NvBool deser_up)
 {
     // Deerialize one of 1 messages in this interface.
@@ -1440,7 +1440,7 @@ static NV_STATUS finnSerializeInterface_FINN_NV01_DEVICE_0_MSENC(NvU64 message, 
 }
 
 
-// Deerialize this interface.
+// Deserialize this interface.
 static NV_STATUS finnDeserializeInterface_FINN_NV01_DEVICE_0_MSENC(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_DEVICE_0_MSENC *api_intf, NvLength api_size, NvBool deser_up)
 {
     // Deerialize one of 1 messages in this interface.
@@ -1502,7 +1502,7 @@ static NV_STATUS finnSerializeInterface_FINN_NV01_ROOT_NVD(NvU64 message, const 
 }
 
 
-// Deerialize this interface.
+// Deserialize this interface.
 static NV_STATUS finnDeserializeInterface_FINN_NV01_ROOT_NVD(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_ROOT_NVD *api_intf, NvLength api_size, NvBool deser_up)
 {
     // Deerialize one of 1 messages in this interface.
@@ -1545,9 +1545,10 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV01_ROOT_NVD(NvU64 message)
 // Serialize this interface.
 static NV_STATUS finnSerializeInterface_FINN_NV20_SUBDEVICE_0_BIOS(NvU64 message, const char *api_intf, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Serialize one of 1 messages in this interface.
+    // Serialize one of 2 messages in this interface.
     switch (message)
     {
+
 #if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_BIOS_GET_NBSI_OBJ_PARAMS):
             return finnSerializeMessage_NV2080_CTRL_BIOS_GET_NBSI_OBJ_PARAMS((const NV2080_CTRL_BIOS_GET_NBSI_OBJ_PARAMS *) api_intf, bp, seri_up);
@@ -1564,12 +1565,13 @@ static NV_STATUS finnSerializeInterface_FINN_NV20_SUBDEVICE_0_BIOS(NvU64 message
 }
 
 
-// Deerialize this interface.
+// Deserialize this interface.
 static NV_STATUS finnDeserializeInterface_FINN_NV20_SUBDEVICE_0_BIOS(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_0_BIOS *api_intf, NvLength api_size, NvBool deser_up)
 {
-    // Deerialize one of 1 messages in this interface.
+    // Deerialize one of 2 messages in this interface.
     switch (message)
     {
+
 #if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_BIOS_GET_NBSI_OBJ_PARAMS):
             return finnDeserializeMessage_NV2080_CTRL_BIOS_GET_NBSI_OBJ_PARAMS(bp, (NV2080_CTRL_BIOS_GET_NBSI_OBJ_PARAMS *) api_intf, api_size, deser_up);
@@ -1592,6 +1594,7 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV20_SUBDEVICE_0_BIOS(NvU64 mess
     // Forward to message-specific routine.
     switch (message)
     {
+
 #if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_BIOS_GET_NBSI_OBJ_PARAMS):
             return sizeof(NV2080_CTRL_BIOS_GET_NBSI_OBJ_PARAMS);
@@ -1626,7 +1629,7 @@ static NV_STATUS finnSerializeInterface_FINN_NV20_SUBDEVICE_0_CE(NvU64 message, 
 }
 
 
-// Deerialize this interface.
+// Deserialize this interface.
 static NV_STATUS finnDeserializeInterface_FINN_NV20_SUBDEVICE_0_CE(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_0_CE *api_intf, NvLength api_size, NvBool deser_up)
 {
     // Deerialize one of 1 messages in this interface.
@@ -1690,7 +1693,7 @@ static NV_STATUS finnSerializeInterface_FINN_NV20_SUBDEVICE_0_GPU(NvU64 message,
 }
 
 
-// Deerialize this interface.
+// Deserialize this interface.
 static NV_STATUS finnDeserializeInterface_FINN_NV20_SUBDEVICE_0_GPU(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_0_GPU *api_intf, NvLength api_size, NvBool deser_up)
 {
     // Deerialize one of 2 messages in this interface.
@@ -1756,7 +1759,7 @@ static NV_STATUS finnSerializeInterface_FINN_NV20_SUBDEVICE_0_I2C(NvU64 message,
 }
 
 
-// Deerialize this interface.
+// Deserialize this interface.
 static NV_STATUS finnDeserializeInterface_FINN_NV20_SUBDEVICE_0_I2C(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_0_I2C *api_intf, NvLength api_size, NvBool deser_up)
 {
     // Deerialize one of 1 messages in this interface.
@@ -1818,7 +1821,7 @@ static NV_STATUS finnSerializeInterface_FINN_NV20_SUBDEVICE_0_NVD(NvU64 message,
 }
 
 
-// Deerialize this interface.
+// Deserialize this interface.
 static NV_STATUS finnDeserializeInterface_FINN_NV20_SUBDEVICE_0_NVD(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_0_NVD *api_intf, NvLength api_size, NvBool deser_up)
 {
     // Deerialize one of 1 messages in this interface.
@@ -1880,7 +1883,7 @@ static NV_STATUS finnSerializeInterface_FINN_NV20_SUBDEVICE_0_PERF(NvU64 message
 }
 
 
-// Deerialize this interface.
+// Deserialize this interface.
 static NV_STATUS finnDeserializeInterface_FINN_NV20_SUBDEVICE_0_PERF(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_0_PERF *api_intf, NvLength api_size, NvBool deser_up)
 {
     // Deerialize one of 1 messages in this interface.
@@ -1942,7 +1945,7 @@ static NV_STATUS finnSerializeInterface_FINN_NV20_SUBDEVICE_0_RC(NvU64 message, 
 }
 
 
-// Deerialize this interface.
+// Deserialize this interface.
 static NV_STATUS finnDeserializeInterface_FINN_NV20_SUBDEVICE_0_RC(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_0_RC *api_intf, NvLength api_size, NvBool deser_up)
 {
     // Deerialize one of 1 messages in this interface.
@@ -2000,7 +2003,7 @@ static NV_STATUS finnSerializeInterface_FINN_NV20_SUBDEVICE_DIAG_GPU(NvU64 messa
 }
 
 
-// Deerialize this interface.
+// Deserialize this interface.
 static NV_STATUS finnDeserializeInterface_FINN_NV20_SUBDEVICE_DIAG_GPU(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_DIAG_GPU *api_intf, NvLength api_size, NvBool deser_up)
 {
     // Deerialize one of 2 messages in this interface.
@@ -2056,7 +2059,7 @@ static NV_STATUS finnSerializeInterface_FINN_NV40_I2C_I2C(NvU64 message, const c
 }
 
 
-// Deerialize this interface.
+// Deserialize this interface.
 static NV_STATUS finnDeserializeInterface_FINN_NV40_I2C_I2C(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV40_I2C_I2C *api_intf, NvLength api_size, NvBool deser_up)
 {
     // Deerialize one of 2 messages in this interface.
@@ -3898,6 +3901,9 @@ static NV_STATUS finnDeserializeMessage_NV0080_CTRL_MSENC_GET_CAPS_PARAMS(finn_b
     return NV_OK;
 }
 
+#endif // (defined(NVRM))
+
+#if (defined(NVRM))
 
 // Serialize each of the 8 field(s).
 // 3 out of 7 independent field(s) are reordered to be before 1 dependent field(s).

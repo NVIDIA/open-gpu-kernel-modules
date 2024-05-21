@@ -29,17 +29,17 @@
 typedef int vm_fault_t;
 #endif
 
-/* pin_user_pages
+/*
+ * pin_user_pages()
+ *
  * Presence of pin_user_pages() also implies the presence of unpin-user_page().
- * Both were added in the v5.6-rc1
+ * Both were added in the v5.6.
  *
- * pin_user_pages() was added by commit eddb1c228f7951d399240
- * ("mm/gup: introduce pin_user_pages*() and FOLL_PIN") in v5.6-rc1 (2020-01-30)
+ * pin_user_pages() was added by commit eddb1c228f79
+ * ("mm/gup: introduce pin_user_pages*() and FOLL_PIN") in v5.6.
  *
- * Removed vmas parameter from pin_user_pages() by commit 40896a02751
- * ("mm/gup: remove vmas parameter from pin_user_pages()")
- * in linux-next, expected in v6.5-rc1 (2023-05-17)
- *
+ * Removed vmas parameter from pin_user_pages() by commit 4c630f307455
+ * ("mm/gup: remove vmas parameter from pin_user_pages()") in v6.5.
  */
 
 #include <linux/mm.h>
@@ -63,25 +63,28 @@ typedef int vm_fault_t;
     #define NV_UNPIN_USER_PAGE put_page
 #endif // NV_PIN_USER_PAGES_PRESENT
 
-/* get_user_pages
+/*
+ * get_user_pages()
  *
- * The 8-argument version of get_user_pages was deprecated by commit
- * (2016 Feb 12: cde70140fed8429acf7a14e2e2cbd3e329036653)for the non-remote case
+ * The 8-argument version of get_user_pages() was deprecated by commit
+ * cde70140fed8 ("mm/gup: Overload get_user_pages() functions") in v4.6-rc1.
  * (calling get_user_pages with current and current->mm).
  *
- * Completely moved to the 6 argument version of get_user_pages -
- * 2016 Apr 4: c12d2da56d0e07d230968ee2305aaa86b93a6832
+ * Completely moved to the 6 argument version of get_user_pages() by
+ * commit c12d2da56d0e ("mm/gup: Remove the macro overload API migration
+ * helpers from the get_user*() APIs") in v4.6-rc4.
  *
- * write and force parameters were replaced with gup_flags by -
- * 2016 Oct 12: 768ae309a96103ed02eb1e111e838c87854d8b51
+ * write and force parameters were replaced with gup_flags by
+ * commit 768ae309a961 ("mm: replace get_user_pages() write/force parameters
+ * with gup_flags") in v4.9.
  *
  * A 7-argument version of get_user_pages was introduced into linux-4.4.y by
- * commit 8e50b8b07f462ab4b91bc1491b1c91bd75e4ad40 which cherry-picked the
- * replacement of the write and force parameters with gup_flags
+ * commit 8e50b8b07f462 ("mm: replace get_user_pages() write/force parameters
+ * with gup_flags") which cherry-picked the replacement of the write and
+ * force parameters with gup_flags.
  *
- * Removed vmas parameter from get_user_pages() by commit 7bbf9c8c99
- * ("mm/gup: remove unused vmas parameter from get_user_pages()")
- * in linux-next, expected in v6.5-rc1 (2023-05-17)
+ * Removed vmas parameter from get_user_pages() by commit 54d020692b34
+ * ("mm/gup: remove unused vmas parameter from get_user_pages()") in v6.5.
  *
  */
 
@@ -112,18 +115,19 @@ typedef int vm_fault_t;
     }
 #endif // NV_GET_USER_PAGES_HAS_ARGS_FLAGS
 
-/* pin_user_pages_remote
+/*
+ * pin_user_pages_remote()
  *
- * pin_user_pages_remote() was added by commit eddb1c228f7951d399240
- * ("mm/gup: introduce pin_user_pages*() and FOLL_PIN") in v5.6 (2020-01-30)
+ * pin_user_pages_remote() was added by commit eddb1c228f79
+ * ("mm/gup: introduce pin_user_pages*() and FOLL_PIN") in v5.6.
  *
  * pin_user_pages_remote() removed 'tsk' parameter by commit
- * 64019a2e467a ("mm/gup: remove task_struct pointer for  all gup code")
- * in v5.9-rc1 (2020-08-11). *
+ * 64019a2e467a ("mm/gup: remove task_struct pointer for all gup code")
+ * in v5.9.
  *
  * Removed unused vmas parameter from pin_user_pages_remote() by commit
- * 83bcc2e132("mm/gup: remove unused vmas parameter from pin_user_pages_remote()")
- * in linux-next, expected in v6.5-rc1 (2023-05-14)
+ * 0b295316b3a9 ("mm/gup: remove unused vmas parameter from
+ * pin_user_pages_remote()") in v6.5.
  *
  */
 
@@ -143,7 +147,7 @@ typedef int vm_fault_t;
 
 /*
  * get_user_pages_remote() was added by commit 1e9877902dc7
- * ("mm/gup: Introduce get_user_pages_remote()") in v4.6 (2016-02-12).
+ * ("mm/gup: Introduce get_user_pages_remote()") in v4.6.
  *
  * Note that get_user_pages_remote() requires the caller to hold a reference on
  * the task_struct (if non-NULL and if this API has tsk argument) and the mm_struct.
@@ -153,19 +157,17 @@ typedef int vm_fault_t;
  *
  * get_user_pages_remote() write/force parameters were replaced
  * with gup_flags by commit 9beae1ea8930 ("mm: replace get_user_pages_remote()
- * write/force parameters with gup_flags") in v4.9 (2016-10-13).
+ * write/force parameters with gup_flags") in v4.9.
  *
  * get_user_pages_remote() added 'locked' parameter by commit 5b56d49fc31d
- * ("mm: add locked parameter to get_user_pages_remote()") in
- * v4.10 (2016-12-14).
+ * ("mm: add locked parameter to get_user_pages_remote()") in v4.10.
  *
  * get_user_pages_remote() removed 'tsk' parameter by
  * commit 64019a2e467a ("mm/gup: remove task_struct pointer for
- * all gup code") in v5.9-rc1 (2020-08-11).
+ * all gup code") in v5.9.
  *
- * Removed vmas parameter from get_user_pages_remote() by commit a4bde14d549 
- * ("mm/gup: remove vmas parameter from get_user_pages_remote()")
- * in linux-next, expected in v6.5-rc1 (2023-05-14)
+ * Removed vmas parameter from get_user_pages_remote() by commit ca5e863233e8
+ * ("mm/gup: remove vmas parameter from get_user_pages_remote()") in v6.5.
  *
  */
 

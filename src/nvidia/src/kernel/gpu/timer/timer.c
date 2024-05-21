@@ -421,50 +421,12 @@ void tmrEventDestroy_IMPL
 }
 
 /*!
- * Returns time until next callback for a given event
- *
- * @param[in]   pEvent   The event whose remaining time needs to be determined.
- */
-NV_STATUS
-tmrEventTimeUntilNextCallback_IMPL
-(
-    OBJTMR     *pTmr,
-    TMR_EVENT  *pEventPublic,
-    NvU64      *pTimeUntilCallbackNs
-)
-{
-    NvU64 currentTime;
-    NvU64 nextAlarmTime;
-
-    NV_ASSERT_OK_OR_RETURN(tmrGetCurrentTime(pTmr, &currentTime));
-    TMR_EVENT_PVT *pEvent = (TMR_EVENT_PVT*)pEventPublic;
-
-    if (tmrIsOSTimer(pTmr, pEventPublic))
-    {
-        // timens corresponds to  relative time for OS timer 
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, portSafeAddU64(pEvent->timens, pEvent->startTimeNs, &nextAlarmTime),
-                           NV_ERR_INVALID_ARGUMENT);
-    }
-    else
-    {
-        // timens corresponds to abs time in case of ptimer
-        nextAlarmTime = pEvent->timens;
-    }
-    if (currentTime >= nextAlarmTime)
-        return NV_ERR_INVALID_STATE;
-
-    *pTimeUntilCallbackNs = nextAlarmTime - currentTime;
-    return NV_OK;
-}
-
-
-/*!
- * TODO: document
+ * Callback invoked by NV0004_CTRL_CMD_TMR_SET_ALARM_NOTIFY
  */
 static NV_STATUS
-_nv0004CtrlCmdTmrSetAlarmNotifyCallback(OBJGPU *pGpu, OBJTMR *pTmr, void *pData)
+_nv0004CtrlCmdTmrSetAlarmNotifyCallback(OBJGPU *pGpu, OBJTMR *pTmr, TMR_EVENT *pTmrEvent)
 {
-    PEVENTNOTIFICATION pNotifyEvent = pData;
+    PEVENTNOTIFICATION pNotifyEvent = pTmrEvent->pUserData;
     NV_STATUS status = NV_OK;
 
     // perform a direct callback to the client
@@ -472,15 +434,16 @@ _nv0004CtrlCmdTmrSetAlarmNotifyCallback(OBJGPU *pGpu, OBJTMR *pTmr, void *pData)
     {
         //one shot signal
         status = osNotifyEvent(pGpu, pNotifyEvent, NV004_NOTIFIERS_SET_ALARM_NOTIFY, 0, NV_OK);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "failed to notify event in callback, status: 0x%08x\n", status);
+            return status;
+        }
     }
 
     return status;
 }
 
-/*!
- * TODO: document
- * TODO: Migrate this to match current API (probably)
- */
 NV_STATUS
 tmrapiCtrlCmdTmrSetAlarmNotify_IMPL
 (
@@ -488,8 +451,10 @@ tmrapiCtrlCmdTmrSetAlarmNotify_IMPL
     NV0004_CTRL_TMR_SET_ALARM_NOTIFY_PARAMS *pParams
 )
 {
+    NV_STATUS status;
     OBJGPU *pGpu = GPU_RES_GET_GPU(pTimerApi);
     OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
+    TMR_EVENT *pTmrEvent = NULL;
     PEVENTNOTIFICATION pNotifyEvent = inotifyGetNotificationList(staticCast(pTimerApi, INotifier));
 
     // Validate the timer event
@@ -504,11 +469,29 @@ tmrapiCtrlCmdTmrSetAlarmNotify_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    // schedule the timer
-    tmrScheduleCallbackRel(pTmr,
-                           _nv0004CtrlCmdTmrSetAlarmNotifyCallback,
-                           pNotifyEvent,
-                           pParams->alarmTimeNsecs, 0, 0);
+    // Create an OS timer if not already created
+    if (pNotifyEvent->pTmrEvent == NULL)
+    {
+        status = tmrEventCreate(pTmr,
+                                &pTmrEvent,
+                                _nv0004CtrlCmdTmrSetAlarmNotifyCallback,
+                                (void*)pNotifyEvent,
+                                0);
+        if (status != NV_OK)
+            return status;
+
+        pNotifyEvent->pGpu = pGpu;
+        pNotifyEvent->pTmrEvent = pTmrEvent;
+    }
+    else
+    {
+        pTmrEvent = pNotifyEvent->pTmrEvent;
+    }
+
+    // Schedule the timer
+    status = tmrEventScheduleRel(pTmr, pTmrEvent, pParams->alarmTimeNsecs);
+    if (status != NV_OK)
+        return status;
 
     return NV_OK;
 }
@@ -756,7 +739,7 @@ _tmrGetNextFreeCallback
  * Creates and inserts a node into the callback list.
  *
  *  @param[in]  pEvent     Callback memory structure, provided by user.
- *  @param[in]  Time       Absolute(for ptimer) or relative (for OS timer) nanoseconds at which to call Proc.
+ *  @param[in]  Time       Absolute nanoseconds at which to call Proc.
  *
  *  @returns               Status
  */
@@ -904,13 +887,19 @@ NV_STATUS tmrEventScheduleAbs_IMPL
 
     if ((pEvent != NULL) && tmrIsOSTimer(pTmr, pEventPublic))
     {
+        NvU64 timeRelNs, currentTime;
+
+        rmStatus = tmrGetCurrentTime(pTmr, &currentTime);
+        if (rmStatus != NV_OK)
+            return rmStatus;
+
         //
-        // OS-Timer is supported only in Relative mode. This assert is to trap
-        // if someone trying to call tmrEventScheduleAbs for OSTimer
+        // If absolute time is less than current time, then timer has already
+        // expired. For this case, schedule timer with zero delay to trigger
+        // immediate callback.
         //
-        NV_ASSERT_FAILED("Attempting to schedule OS-Timer callback with Abs time.");
-        rmStatus = NV_ERR_INVALID_ARGUMENT;
-        return rmStatus;
+        timeRelNs = (timeAbsNs > currentTime) ? (timeAbsNs - currentTime) : 0;
+        return tmrEventScheduleRel(pTmr, pEventPublic, timeRelNs);
     }
 
     if ((pEvent == NULL) || (pEventPublic->pTimeProc == NULL &&
@@ -1555,11 +1544,8 @@ tmrDiffExceedsTime_IMPL
     return bRetVal;
 }
 
-/*!
- * TODO: document
- */
 NV_STATUS
-tmrStateInitLocked_IMPL
+tmrStatePreInitLocked_IMPL
 (
     OBJGPU *pGpu,
     OBJTMR *pTmr
@@ -1698,7 +1684,17 @@ tmrapiDeregisterEvents_IMPL(TimerApi *pTimerApi)
     // Validate the timer event
     while (pNotifyEvent != NULL)
     {
-        tmrCancelCallback(pTmr, pNotifyEvent);
+        //
+        // TimerApi events are only set through NV0004_CTRL_CMD_TMR_SET_ALARM_NOTIFY
+        // which only schedules TMR_EVENT type callbacks. So only call the new API.
+        //
+        TMR_EVENT *pTmrEvent = pNotifyEvent->pTmrEvent;
+        if (pTmrEvent != NULL)
+        {
+            tmrEventDestroy(pTmr, pTmrEvent);
+            pNotifyEvent->pGpu = NULL;
+            pNotifyEvent->pTmrEvent = NULL;
+        }
 
         pNotifyEvent = pNotifyEvent->Next;
     }
@@ -1798,7 +1794,6 @@ tmrCtrlCmdEventCreate
 /*!
  * Schedules an existing event. Takes in time arguments and a flag to
  * determine if it should be interpreted as absolute or relative time.
- * While using OSTimer, use this api only with relative time.
  *
  * @returns NV_STATUS
  */
@@ -1815,15 +1810,6 @@ tmrCtrlCmdEventSchedule
 
     if (pParams->bUseTimeAbs)
     {
-        //
-        // FIXME: This function is called only from dynamic_power.c file,
-        // using OSTimer. And OSTimer is always scheduled in relative mode
-        //
-        if ((pEvent != NULL) && tmrIsOSTimer(pTmr, pEvent))
-        {
-            NV_ASSERT_FAILED("Attempting to schedule OSTimer with Abs time.");
-            return NV_ERR_INVALID_ARGUMENT;
-        }
         rc = tmrEventScheduleAbs(pTmr, pEvent, pParams->timeNs);
     }
     else

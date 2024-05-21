@@ -66,61 +66,81 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelBif =
     /*pExportInfo=*/        &__nvoc_export_info_KernelBif
 };
 
-static NV_STATUS __nvoc_thunk_KernelBif_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelBif, ENGDESCRIPTOR arg0) {
-    return kbifConstructEngine(pGpu, (struct KernelBif *)(((unsigned char *)pKernelBif) - __nvoc_rtti_KernelBif_OBJENGSTATE.offset), arg0);
+// 5 down-thunk(s) defined to bridge methods in KernelBif from superclasses
+
+// kbifConstructEngine: virtual override (engstate) base (engstate)
+static NV_STATUS __nvoc_down_thunk_KernelBif_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelBif, ENGDESCRIPTOR arg3) {
+    return kbifConstructEngine(pGpu, (struct KernelBif *)(((unsigned char *) pKernelBif) - __nvoc_rtti_KernelBif_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_KernelBif_engstateStateInitLocked(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelBif) {
-    return kbifStateInitLocked(pGpu, (struct KernelBif *)(((unsigned char *)pKernelBif) - __nvoc_rtti_KernelBif_OBJENGSTATE.offset));
+// kbifStateInitLocked: virtual override (engstate) base (engstate)
+static NV_STATUS __nvoc_down_thunk_KernelBif_engstateStateInitLocked(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelBif) {
+    return kbifStateInitLocked(pGpu, (struct KernelBif *)(((unsigned char *) pKernelBif) - __nvoc_rtti_KernelBif_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_KernelBif_engstateStateLoad(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelBif, NvU32 arg0) {
-    return kbifStateLoad(pGpu, (struct KernelBif *)(((unsigned char *)pKernelBif) - __nvoc_rtti_KernelBif_OBJENGSTATE.offset), arg0);
+// kbifStateLoad: virtual halified (singleton optimized) override (engstate) base (engstate) body
+static NV_STATUS __nvoc_down_thunk_KernelBif_engstateStateLoad(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelBif, NvU32 arg3) {
+    return kbifStateLoad(pGpu, (struct KernelBif *)(((unsigned char *) pKernelBif) - __nvoc_rtti_KernelBif_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_KernelBif_engstateStatePostLoad(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelBif, NvU32 arg0) {
-    return kbifStatePostLoad(pGpu, (struct KernelBif *)(((unsigned char *)pKernelBif) - __nvoc_rtti_KernelBif_OBJENGSTATE.offset), arg0);
+// kbifStatePostLoad: virtual halified (2 hals) override (engstate) base (engstate) body
+static NV_STATUS __nvoc_down_thunk_KernelBif_engstateStatePostLoad(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelBif, NvU32 arg3) {
+    return kbifStatePostLoad(pGpu, (struct KernelBif *)(((unsigned char *) pKernelBif) - __nvoc_rtti_KernelBif_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_KernelBif_engstateStateUnload(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelBif, NvU32 arg0) {
-    return kbifStateUnload(pGpu, (struct KernelBif *)(((unsigned char *)pKernelBif) - __nvoc_rtti_KernelBif_OBJENGSTATE.offset), arg0);
+// kbifStateUnload: virtual halified (singleton optimized) override (engstate) base (engstate) body
+static NV_STATUS __nvoc_down_thunk_KernelBif_engstateStateUnload(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelBif, NvU32 arg3) {
+    return kbifStateUnload(pGpu, (struct KernelBif *)(((unsigned char *) pKernelBif) - __nvoc_rtti_KernelBif_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kbifStatePreLoad(POBJGPU pGpu, struct KernelBif *pEngstate, NvU32 arg0) {
-    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelBif_OBJENGSTATE.offset), arg0);
+
+// 9 up-thunk(s) defined to bridge methods in KernelBif to superclasses
+
+// kbifInitMissing: virtual inherited (engstate) base (engstate)
+static void __nvoc_up_thunk_OBJENGSTATE_kbifInitMissing(POBJGPU pGpu, struct KernelBif *pEngstate) {
+    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelBif_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kbifStatePostUnload(POBJGPU pGpu, struct KernelBif *pEngstate, NvU32 arg0) {
-    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelBif_OBJENGSTATE.offset), arg0);
+// kbifStatePreInitLocked: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kbifStatePreInitLocked(POBJGPU pGpu, struct KernelBif *pEngstate) {
+    return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelBif_OBJENGSTATE.offset));
 }
 
-static void __nvoc_thunk_OBJENGSTATE_kbifStateDestroy(POBJGPU pGpu, struct KernelBif *pEngstate) {
-    engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelBif_OBJENGSTATE.offset));
+// kbifStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kbifStatePreInitUnlocked(POBJGPU pGpu, struct KernelBif *pEngstate) {
+    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelBif_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kbifStatePreUnload(POBJGPU pGpu, struct KernelBif *pEngstate, NvU32 arg0) {
-    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelBif_OBJENGSTATE.offset), arg0);
+// kbifStateInitUnlocked: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kbifStateInitUnlocked(POBJGPU pGpu, struct KernelBif *pEngstate) {
+    return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelBif_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kbifStateInitUnlocked(POBJGPU pGpu, struct KernelBif *pEngstate) {
-    return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelBif_OBJENGSTATE.offset));
+// kbifStatePreLoad: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kbifStatePreLoad(POBJGPU pGpu, struct KernelBif *pEngstate, NvU32 arg3) {
+    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelBif_OBJENGSTATE.offset), arg3);
 }
 
-static void __nvoc_thunk_OBJENGSTATE_kbifInitMissing(POBJGPU pGpu, struct KernelBif *pEngstate) {
-    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelBif_OBJENGSTATE.offset));
+// kbifStatePreUnload: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kbifStatePreUnload(POBJGPU pGpu, struct KernelBif *pEngstate, NvU32 arg3) {
+    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelBif_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kbifStatePreInitLocked(POBJGPU pGpu, struct KernelBif *pEngstate) {
-    return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelBif_OBJENGSTATE.offset));
+// kbifStatePostUnload: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kbifStatePostUnload(POBJGPU pGpu, struct KernelBif *pEngstate, NvU32 arg3) {
+    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelBif_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kbifStatePreInitUnlocked(POBJGPU pGpu, struct KernelBif *pEngstate) {
-    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelBif_OBJENGSTATE.offset));
+// kbifStateDestroy: virtual inherited (engstate) base (engstate)
+static void __nvoc_up_thunk_OBJENGSTATE_kbifStateDestroy(POBJGPU pGpu, struct KernelBif *pEngstate) {
+    engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelBif_OBJENGSTATE.offset));
 }
 
-static NvBool __nvoc_thunk_OBJENGSTATE_kbifIsPresent(POBJGPU pGpu, struct KernelBif *pEngstate) {
-    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelBif_OBJENGSTATE.offset));
+// kbifIsPresent: virtual inherited (engstate) base (engstate)
+static NvBool __nvoc_up_thunk_OBJENGSTATE_kbifIsPresent(POBJGPU pGpu, struct KernelBif *pEngstate) {
+    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelBif_OBJENGSTATE.offset));
 }
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelBif = 
 {
@@ -221,6 +241,17 @@ void __nvoc_init_dataField_KernelBif(KernelBif *pThis, RmHalspecOwner *pRmhalspe
     {
         pThis->setProperty(pThis, PDB_PROP_KBIF_FLR_PRE_CONDITIONING_REQUIRED, ((NvBool)(0 != 0)));
     }
+
+    // NVOC Property Hal field -- PDB_PROP_KBIF_FLR_HANDLED_BY_OS
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->setProperty(pThis, PDB_PROP_KBIF_FLR_HANDLED_BY_OS, ((NvBool)(0 == 0)));
+    }
+    // default
+    else
+    {
+        pThis->setProperty(pThis, PDB_PROP_KBIF_FLR_HANDLED_BY_OS, ((NvBool)(0 != 0)));
+    }
 }
 
 NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE* );
@@ -237,6 +268,7 @@ __nvoc_ctor_KernelBif_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *pRmhalspecowner) {
     ChipHal *chipHal = &pRmhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
@@ -249,14 +281,19 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
+    // kbifConstructEngine -- virtual override (engstate) base (engstate)
     pThis->__kbifConstructEngine__ = &kbifConstructEngine_IMPL;
+    pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_down_thunk_KernelBif_engstateConstructEngine;
 
+    // kbifStateInitLocked -- virtual override (engstate) base (engstate)
     pThis->__kbifStateInitLocked__ = &kbifStateInitLocked_IMPL;
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__ = &__nvoc_down_thunk_KernelBif_engstateStateInitLocked;
 
-    // Hal function -- kbifStateLoad
+    // kbifStateLoad -- virtual halified (singleton optimized) override (engstate) base (engstate) body
     pThis->__kbifStateLoad__ = &kbifStateLoad_IMPL;
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStateLoad__ = &__nvoc_down_thunk_KernelBif_engstateStateLoad;
 
-    // Hal function -- kbifStatePostLoad
+    // kbifStatePostLoad -- virtual halified (2 hals) override (engstate) base (engstate) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kbifStatePostLoad__ = &kbifStatePostLoad_56cd7a;
@@ -265,11 +302,13 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
     {
         pThis->__kbifStatePostLoad__ = &kbifStatePostLoad_IMPL;
     }
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStatePostLoad__ = &__nvoc_down_thunk_KernelBif_engstateStatePostLoad;
 
-    // Hal function -- kbifStateUnload
+    // kbifStateUnload -- virtual halified (singleton optimized) override (engstate) base (engstate) body
     pThis->__kbifStateUnload__ = &kbifStateUnload_IMPL;
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStateUnload__ = &__nvoc_down_thunk_KernelBif_engstateStateUnload;
 
-    // Hal function -- kbifGetBusIntfType
+    // kbifGetBusIntfType -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kbifGetBusIntfType__ = &kbifGetBusIntfType_28ceda;
@@ -279,17 +318,17 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifGetBusIntfType__ = &kbifGetBusIntfType_2f2c74;
     }
 
-    // Hal function -- kbifInitDmaCaps
+    // kbifInitDmaCaps -- halified (2 hals)
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kbifInitDmaCaps__ = &kbifInitDmaCaps_VGPUSTUB;
+        pThis->__kbifInitDmaCaps__ = &kbifInitDmaCaps_VF;
     }
     else
     {
         pThis->__kbifInitDmaCaps__ = &kbifInitDmaCaps_IMPL;
     }
 
-    // Hal function -- kbifSavePcieConfigRegisters
+    // kbifSavePcieConfigRegisters -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifSavePcieConfigRegisters__ = &kbifSavePcieConfigRegisters_GH100;
@@ -299,7 +338,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifSavePcieConfigRegisters__ = &kbifSavePcieConfigRegisters_GM107;
     }
 
-    // Hal function -- kbifRestorePcieConfigRegisters
+    // kbifRestorePcieConfigRegisters -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifRestorePcieConfigRegisters__ = &kbifRestorePcieConfigRegisters_GH100;
@@ -309,7 +348,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifRestorePcieConfigRegisters__ = &kbifRestorePcieConfigRegisters_GM107;
     }
 
-    // Hal function -- kbifGetXveStatusBits
+    // kbifGetXveStatusBits -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifGetXveStatusBits__ = &kbifGetXveStatusBits_GH100;
@@ -319,7 +358,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifGetXveStatusBits__ = &kbifGetXveStatusBits_GM107;
     }
 
-    // Hal function -- kbifClearXveStatus
+    // kbifClearXveStatus -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifClearXveStatus__ = &kbifClearXveStatus_GH100;
@@ -329,7 +368,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifClearXveStatus__ = &kbifClearXveStatus_GM107;
     }
 
-    // Hal function -- kbifGetXveAerBits
+    // kbifGetXveAerBits -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifGetXveAerBits__ = &kbifGetXveAerBits_GH100;
@@ -339,7 +378,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifGetXveAerBits__ = &kbifGetXveAerBits_GM107;
     }
 
-    // Hal function -- kbifClearXveAer
+    // kbifClearXveAer -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifClearXveAer__ = &kbifClearXveAer_GH100;
@@ -349,7 +388,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifClearXveAer__ = &kbifClearXveAer_GM107;
     }
 
-    // Hal function -- kbifGetPcieConfigAccessTestRegisters
+    // kbifGetPcieConfigAccessTestRegisters -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifGetPcieConfigAccessTestRegisters__ = &kbifGetPcieConfigAccessTestRegisters_b3696a;
@@ -359,7 +398,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifGetPcieConfigAccessTestRegisters__ = &kbifGetPcieConfigAccessTestRegisters_GM107;
     }
 
-    // Hal function -- kbifVerifyPcieConfigAccessTestRegisters
+    // kbifVerifyPcieConfigAccessTestRegisters -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifVerifyPcieConfigAccessTestRegisters__ = &kbifVerifyPcieConfigAccessTestRegisters_56cd7a;
@@ -369,7 +408,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifVerifyPcieConfigAccessTestRegisters__ = &kbifVerifyPcieConfigAccessTestRegisters_GM107;
     }
 
-    // Hal function -- kbifRearmMSI
+    // kbifRearmMSI -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifRearmMSI__ = &kbifRearmMSI_f2d351;
@@ -379,7 +418,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifRearmMSI__ = &kbifRearmMSI_GM107;
     }
 
-    // Hal function -- kbifIsMSIEnabledInHW
+    // kbifIsMSIEnabledInHW -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifIsMSIEnabledInHW__ = &kbifIsMSIEnabledInHW_GH100;
@@ -389,7 +428,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifIsMSIEnabledInHW__ = &kbifIsMSIEnabledInHW_GM107;
     }
 
-    // Hal function -- kbifIsMSIXEnabledInHW
+    // kbifIsMSIXEnabledInHW -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifIsMSIXEnabledInHW__ = &kbifIsMSIXEnabledInHW_GH100;
@@ -399,7 +438,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifIsMSIXEnabledInHW__ = &kbifIsMSIXEnabledInHW_TU102;
     }
 
-    // Hal function -- kbifIsPciIoAccessEnabled
+    // kbifIsPciIoAccessEnabled -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000400UL) )) /* ChipHal: GA100 | GH100 */ 
     {
         pThis->__kbifIsPciIoAccessEnabled__ = &kbifIsPciIoAccessEnabled_491d52;
@@ -409,7 +448,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifIsPciIoAccessEnabled__ = &kbifIsPciIoAccessEnabled_GM107;
     }
 
-    // Hal function -- kbifIs3dController
+    // kbifIs3dController -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifIs3dController__ = &kbifIs3dController_GH100;
@@ -419,7 +458,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifIs3dController__ = &kbifIs3dController_GM107;
     }
 
-    // Hal function -- kbifExecC73War
+    // kbifExecC73War -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifExecC73War__ = &kbifExecC73War_b3696a;
@@ -429,7 +468,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifExecC73War__ = &kbifExecC73War_GM107;
     }
 
-    // Hal function -- kbifEnableExtendedTagSupport
+    // kbifEnableExtendedTagSupport -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifEnableExtendedTagSupport__ = &kbifEnableExtendedTagSupport_GH100;
@@ -440,7 +479,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifEnableExtendedTagSupport__ = &kbifEnableExtendedTagSupport_b3696a;
     }
 
-    // Hal function -- kbifPcieConfigEnableRelaxedOrdering
+    // kbifPcieConfigEnableRelaxedOrdering -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifPcieConfigEnableRelaxedOrdering__ = &kbifPcieConfigEnableRelaxedOrdering_GH100;
@@ -450,7 +489,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifPcieConfigEnableRelaxedOrdering__ = &kbifPcieConfigEnableRelaxedOrdering_GM107;
     }
 
-    // Hal function -- kbifPcieConfigDisableRelaxedOrdering
+    // kbifPcieConfigDisableRelaxedOrdering -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifPcieConfigDisableRelaxedOrdering__ = &kbifPcieConfigDisableRelaxedOrdering_GH100;
@@ -460,7 +499,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifPcieConfigDisableRelaxedOrdering__ = &kbifPcieConfigDisableRelaxedOrdering_GM107;
     }
 
-    // Hal function -- kbifInitRelaxedOrderingFromEmulatedConfigSpace
+    // kbifInitRelaxedOrderingFromEmulatedConfigSpace -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kbifInitRelaxedOrderingFromEmulatedConfigSpace__ = &kbifInitRelaxedOrderingFromEmulatedConfigSpace_b3696a;
@@ -478,7 +517,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kbifEnableNoSnoop
+    // kbifEnableNoSnoop -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifEnableNoSnoop__ = &kbifEnableNoSnoop_GH100;
@@ -488,7 +527,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifEnableNoSnoop__ = &kbifEnableNoSnoop_GM107;
     }
 
-    // Hal function -- kbifApplyWARBug3208922
+    // kbifApplyWARBug3208922 -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x100003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GH100 */ 
     {
         pThis->__kbifApplyWARBug3208922__ = &kbifApplyWARBug3208922_b3696a;
@@ -498,7 +537,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifApplyWARBug3208922__ = &kbifApplyWARBug3208922_GA100;
     }
 
-    // Hal function -- kbifProbePcieReqAtomicCaps
+    // kbifProbePcieReqAtomicCaps -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kbifProbePcieReqAtomicCaps__ = &kbifProbePcieReqAtomicCaps_b3696a;
@@ -516,7 +555,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kbifEnablePcieAtomics
+    // kbifEnablePcieAtomics -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifEnablePcieAtomics__ = &kbifEnablePcieAtomics_GH100;
@@ -527,7 +566,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifEnablePcieAtomics__ = &kbifEnablePcieAtomics_b3696a;
     }
 
-    // Hal function -- kbifDoFunctionLevelReset
+    // kbifDoFunctionLevelReset -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifDoFunctionLevelReset__ = &kbifDoFunctionLevelReset_GH100;
@@ -537,7 +576,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifDoFunctionLevelReset__ = &kbifDoFunctionLevelReset_TU102;
     }
 
-    // Hal function -- kbifInitXveRegMap
+    // kbifInitXveRegMap -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
     {
         pThis->__kbifInitXveRegMap__ = &kbifInitXveRegMap_TU102;
@@ -547,7 +586,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifInitXveRegMap__ = &kbifInitXveRegMap_GA102;
     }
 
-    // Hal function -- kbifGetMSIXTableVectorControlSize
+    // kbifGetMSIXTableVectorControlSize -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifGetMSIXTableVectorControlSize__ = &kbifGetMSIXTableVectorControlSize_GH100;
@@ -557,7 +596,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifGetMSIXTableVectorControlSize__ = &kbifGetMSIXTableVectorControlSize_TU102;
     }
 
-    // Hal function -- kbifSaveMsixTable
+    // kbifSaveMsixTable -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifSaveMsixTable__ = &kbifSaveMsixTable_GH100;
@@ -568,7 +607,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifSaveMsixTable__ = &kbifSaveMsixTable_46f6a7;
     }
 
-    // Hal function -- kbifRestoreMsixTable
+    // kbifRestoreMsixTable -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifRestoreMsixTable__ = &kbifRestoreMsixTable_GH100;
@@ -579,7 +618,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifRestoreMsixTable__ = &kbifRestoreMsixTable_46f6a7;
     }
 
-    // Hal function -- kbifConfigAccessWait
+    // kbifConfigAccessWait -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifConfigAccessWait__ = &kbifConfigAccessWait_GH100;
@@ -590,7 +629,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifConfigAccessWait__ = &kbifConfigAccessWait_46f6a7;
     }
 
-    // Hal function -- kbifGetPciConfigSpacePriMirror
+    // kbifGetPciConfigSpacePriMirror -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifGetPciConfigSpacePriMirror__ = &kbifGetPciConfigSpacePriMirror_GH100;
@@ -600,7 +639,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifGetPciConfigSpacePriMirror__ = &kbifGetPciConfigSpacePriMirror_GM107;
     }
 
-    // Hal function -- kbifGetBusOptionsAddr
+    // kbifGetBusOptionsAddr -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifGetBusOptionsAddr__ = &kbifGetBusOptionsAddr_GH100;
@@ -610,7 +649,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifGetBusOptionsAddr__ = &kbifGetBusOptionsAddr_GM107;
     }
 
-    // Hal function -- kbifPreOsGlobalErotGrantRequest
+    // kbifPreOsGlobalErotGrantRequest -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f00000UL) )) /* ChipHal: AD102 | AD103 | AD104 | AD106 | AD107 */ 
     {
         pThis->__kbifPreOsGlobalErotGrantRequest__ = &kbifPreOsGlobalErotGrantRequest_AD102;
@@ -621,7 +660,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifPreOsGlobalErotGrantRequest__ = &kbifPreOsGlobalErotGrantRequest_56cd7a;
     }
 
-    // Hal function -- kbifStopSysMemRequests
+    // kbifStopSysMemRequests -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kbifStopSysMemRequests__ = &kbifStopSysMemRequests_56cd7a;
@@ -638,7 +677,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kbifWaitForTransactionsComplete
+    // kbifWaitForTransactionsComplete -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifWaitForTransactionsComplete__ = &kbifWaitForTransactionsComplete_GH100;
@@ -648,7 +687,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifWaitForTransactionsComplete__ = &kbifWaitForTransactionsComplete_TU102;
     }
 
-    // Hal function -- kbifTriggerFlr
+    // kbifTriggerFlr -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifTriggerFlr__ = &kbifTriggerFlr_GH100;
@@ -658,7 +697,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifTriggerFlr__ = &kbifTriggerFlr_TU102;
     }
 
-    // Hal function -- kbifCacheFlrSupport
+    // kbifCacheFlrSupport -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifCacheFlrSupport__ = &kbifCacheFlrSupport_GH100;
@@ -668,7 +707,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifCacheFlrSupport__ = &kbifCacheFlrSupport_TU102;
     }
 
-    // Hal function -- kbifCache64bBar0Support
+    // kbifCache64bBar0Support -- halified (3 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifCache64bBar0Support__ = &kbifCache64bBar0Support_GH100;
@@ -683,7 +722,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifCache64bBar0Support__ = &kbifCache64bBar0Support_b3696a;
     }
 
-    // Hal function -- kbifCacheVFInfo
+    // kbifCacheVFInfo -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifCacheVFInfo__ = &kbifCacheVFInfo_GH100;
@@ -693,7 +732,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifCacheVFInfo__ = &kbifCacheVFInfo_TU102;
     }
 
-    // Hal function -- kbifRestoreBar0
+    // kbifRestoreBar0 -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
     {
         pThis->__kbifRestoreBar0__ = &kbifRestoreBar0_GM107;
@@ -703,7 +742,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifRestoreBar0__ = &kbifRestoreBar0_GA100;
     }
 
-    // Hal function -- kbifAnyBarsAreValid
+    // kbifAnyBarsAreValid -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
     {
         pThis->__kbifAnyBarsAreValid__ = &kbifAnyBarsAreValid_GM107;
@@ -713,7 +752,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifAnyBarsAreValid__ = &kbifAnyBarsAreValid_GA100;
     }
 
-    // Hal function -- kbifRestoreBarsAndCommand
+    // kbifRestoreBarsAndCommand -- halified (3 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifRestoreBarsAndCommand__ = &kbifRestoreBarsAndCommand_GH100;
@@ -727,7 +766,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifRestoreBarsAndCommand__ = &kbifRestoreBarsAndCommand_GA100;
     }
 
-    // Hal function -- kbifStoreBarRegOffsets
+    // kbifStoreBarRegOffsets -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
     {
         pThis->__kbifStoreBarRegOffsets__ = &kbifStoreBarRegOffsets_GA100;
@@ -738,7 +777,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifStoreBarRegOffsets__ = &kbifStoreBarRegOffsets_b3696a;
     }
 
-    // Hal function -- kbifInit
+    // kbifInit -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifInit__ = &kbifInit_GH100;
@@ -748,7 +787,46 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifInit__ = &kbifInit_GM107;
     }
 
-    // Hal function -- kbifGetValidEnginesToReset
+    // kbifPrepareForFullChipReset -- halified (3 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__kbifPrepareForFullChipReset__ = &kbifPrepareForFullChipReset_GH100;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    {
+        pThis->__kbifPrepareForFullChipReset__ = &kbifPrepareForFullChipReset_GM107;
+    }
+    else
+    {
+        pThis->__kbifPrepareForFullChipReset__ = &kbifPrepareForFullChipReset_GA100;
+    }
+
+    // kbifDoFullChipReset -- halified (3 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__kbifDoFullChipReset__ = &kbifDoFullChipReset_GH100;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    {
+        pThis->__kbifDoFullChipReset__ = &kbifDoFullChipReset_GP10X;
+    }
+    else
+    {
+        pThis->__kbifDoFullChipReset__ = &kbifDoFullChipReset_GA100;
+    }
+
+    // kbifResetHostEngines -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    {
+        pThis->__kbifResetHostEngines__ = &kbifResetHostEngines_GA100;
+    }
+    // default
+    else
+    {
+        pThis->__kbifResetHostEngines__ = &kbifResetHostEngines_b3696a;
+    }
+
+    // kbifGetValidEnginesToReset -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
     {
         pThis->__kbifGetValidEnginesToReset__ = &kbifGetValidEnginesToReset_TU102;
@@ -758,7 +836,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifGetValidEnginesToReset__ = &kbifGetValidEnginesToReset_GA100;
     }
 
-    // Hal function -- kbifGetValidDeviceEnginesToReset
+    // kbifGetValidDeviceEnginesToReset -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x100003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GH100 */ 
     {
         pThis->__kbifGetValidDeviceEnginesToReset__ = &kbifGetValidDeviceEnginesToReset_15a734;
@@ -768,17 +846,7 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifGetValidDeviceEnginesToReset__ = &kbifGetValidDeviceEnginesToReset_GA100;
     }
 
-    // Hal function -- kbifGetMigrationBandwidth
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GA100 */ 
-    {
-        pThis->__kbifGetMigrationBandwidth__ = &kbifGetMigrationBandwidth_GA100;
-    }
-    else
-    {
-        pThis->__kbifGetMigrationBandwidth__ = &kbifGetMigrationBandwidth_GM107;
-    }
-
-    // Hal function -- kbifGetEccCounts
+    // kbifGetEccCounts -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kbifGetEccCounts__ = &kbifGetEccCounts_GH100;
@@ -789,36 +857,70 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifGetEccCounts__ = &kbifGetEccCounts_4a4dee;
     }
 
-    pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_thunk_KernelBif_engstateConstructEngine;
+    // kbifAllowGpuOutboundPcieAtomics -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__kbifAllowGpuOutboundPcieAtomics__ = &kbifAllowGpuOutboundPcieAtomics_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__kbifAllowGpuOutboundPcieAtomics__ = &kbifAllowGpuOutboundPcieAtomics_491d52;
+    }
 
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__ = &__nvoc_thunk_KernelBif_engstateStateInitLocked;
+    // kbifClearDownstreamReadCounter -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x100003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GH100 */ 
+    {
+        pThis->__kbifClearDownstreamReadCounter__ = &kbifClearDownstreamReadCounter_b3696a;
+    }
+    else
+    {
+        pThis->__kbifClearDownstreamReadCounter__ = &kbifClearDownstreamReadCounter_GA100;
+    }
 
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStateLoad__ = &__nvoc_thunk_KernelBif_engstateStateLoad;
+    // kbifDoSecondaryBusHotReset -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__kbifDoSecondaryBusHotReset__ = &kbifDoSecondaryBusHotReset_GH100;
+    }
+    else
+    {
+        pThis->__kbifDoSecondaryBusHotReset__ = &kbifDoSecondaryBusHotReset_GM107;
+    }
 
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStatePostLoad__ = &__nvoc_thunk_KernelBif_engstateStatePostLoad;
+    // kbifInitMissing -- virtual inherited (engstate) base (engstate)
+    pThis->__kbifInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_kbifInitMissing;
 
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStateUnload__ = &__nvoc_thunk_KernelBif_engstateStateUnload;
+    // kbifStatePreInitLocked -- virtual inherited (engstate) base (engstate)
+    pThis->__kbifStatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_kbifStatePreInitLocked;
 
-    pThis->__kbifStatePreLoad__ = &__nvoc_thunk_OBJENGSTATE_kbifStatePreLoad;
+    // kbifStatePreInitUnlocked -- virtual inherited (engstate) base (engstate)
+    pThis->__kbifStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kbifStatePreInitUnlocked;
 
-    pThis->__kbifStatePostUnload__ = &__nvoc_thunk_OBJENGSTATE_kbifStatePostUnload;
+    // kbifStateInitUnlocked -- virtual inherited (engstate) base (engstate)
+    pThis->__kbifStateInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kbifStateInitUnlocked;
 
-    pThis->__kbifStateDestroy__ = &__nvoc_thunk_OBJENGSTATE_kbifStateDestroy;
+    // kbifStatePreLoad -- virtual inherited (engstate) base (engstate)
+    pThis->__kbifStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kbifStatePreLoad;
 
-    pThis->__kbifStatePreUnload__ = &__nvoc_thunk_OBJENGSTATE_kbifStatePreUnload;
+    // kbifStatePreUnload -- virtual inherited (engstate) base (engstate)
+    pThis->__kbifStatePreUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kbifStatePreUnload;
 
-    pThis->__kbifStateInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_kbifStateInitUnlocked;
+    // kbifStatePostUnload -- virtual inherited (engstate) base (engstate)
+    pThis->__kbifStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kbifStatePostUnload;
 
-    pThis->__kbifInitMissing__ = &__nvoc_thunk_OBJENGSTATE_kbifInitMissing;
+    // kbifStateDestroy -- virtual inherited (engstate) base (engstate)
+    pThis->__kbifStateDestroy__ = &__nvoc_up_thunk_OBJENGSTATE_kbifStateDestroy;
 
-    pThis->__kbifStatePreInitLocked__ = &__nvoc_thunk_OBJENGSTATE_kbifStatePreInitLocked;
+    // kbifIsPresent -- virtual inherited (engstate) base (engstate)
+    pThis->__kbifIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_kbifIsPresent;
+} // End __nvoc_init_funcTable_KernelBif_1 with approximately 133 basic block(s).
 
-    pThis->__kbifStatePreInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_kbifStatePreInitUnlocked;
 
-    pThis->__kbifIsPresent__ = &__nvoc_thunk_OBJENGSTATE_kbifIsPresent;
-}
-
+// Initialize vtable(s) for 67 virtual method(s).
 void __nvoc_init_funcTable_KernelBif(KernelBif *pThis, RmHalspecOwner *pRmhalspecowner) {
+
+    // Initialize vtable(s) with 67 per-object function pointer(s).
     __nvoc_init_funcTable_KernelBif_1(pThis, pRmhalspecowner);
 }
 

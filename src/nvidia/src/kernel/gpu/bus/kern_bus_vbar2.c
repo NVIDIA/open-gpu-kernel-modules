@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -666,7 +666,6 @@ kbusMapBar2ApertureCached_VBAR2
             NV_PRINTF(LEVEL_ERROR,
                       "Not enough contiguous BAR2 VA space left allocSize %llx!\n",
                       allocSize);
-            DBG_BREAKPOINT();
             return NULL;
         }
     }
@@ -850,6 +849,17 @@ kbusValidateBar2ApertureMapping_VBAR2_SRIOV
     return kbusValidateBar2ApertureMapping_VBAR2(pGpu, pKernelBus, pMemDesc, pCpu);
 }
 
+NvBool
+kbusBar2IsReady_SCRATCH
+(
+    OBJGPU *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    // The scratch implementation is just an allocation, so it's always ready
+    return NV_TRUE;
+}
+
 /*!
  * @brief Fake BAR2 map API to a scratch buffer.
  *
@@ -870,6 +880,20 @@ kbusMapBar2Aperture_SCRATCH
     }
 
     return portMemAllocNonPaged(pMemDesc->Size);
+}
+
+NvBool
+kbusBar2IsReady_VBAR2
+(
+    OBJGPU *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    //
+    // The CPU mapping is the last part of BAR2 to be initialized, so we can
+    // check it here to see if BAR2 is ready
+    //
+    return (pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping != NULL);
 }
 
 /*!
@@ -952,6 +976,19 @@ kbusMapBar2Aperture_VBAR2
 
     // Call the lower-level routine
     return kbusMapBar2ApertureCached_VBAR2(pGpu, pKernelBus, pMemDesc, flags);
+}
+
+NvBool
+kbusBar2IsReady_VBAR2_SRIOV
+(
+    OBJGPU *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu) || gpuIsWarBug200577889SriovHeavyEnabled(pGpu))
+        return kbusBar2IsReady_SCRATCH(pGpu, pKernelBus);
+
+    return kbusBar2IsReady_VBAR2(pGpu, pKernelBus);
 }
 
 /*!

@@ -952,26 +952,4 @@ typedef struct NVA081_CTRL_VGPU_GET_BAR_INFO_PARAMS {
     NvBool isBar064bit;
 } NVA081_CTRL_VGPU_GET_BAR_INFO_PARAMS;
 
-/*
- * NVA081_CTRL_CMD_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH
- *
- * This command is to get the migration bandwidth of the physical GPU.
- *
- * migrationBandwidth [OUT]
- *  This param specifies the migration bandwidth of GPU
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_INVALID_REQUEST
- *   NV_ERR_INVALID_STATE
- *   NV_ERR_INVALID_ARGUMENT
- */
-#define NVA081_CTRL_CMD_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH (0xa0810122) /* finn: Evaluated from "(FINN_NVA081_VGPU_CONFIG_VGPU_CONFIG_INTERFACE_ID << 8) | NVA081_CTRL_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH_PARAMS_MESSAGE_ID" */
-
-#define NVA081_CTRL_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH_PARAMS_MESSAGE_ID (0x22U)
-
-typedef struct NVA081_CTRL_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH_PARAMS {
-    NvU32 migrationBandwidth;
-} NVA081_CTRL_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH_PARAMS;
-
 /* _ctrlA081vgpuconfig_h_ */

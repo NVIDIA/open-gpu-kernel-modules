@@ -1,6 +1,13 @@
+
 #ifndef _G_SPDM_NVOC_H_
 #define _G_SPDM_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,6 +36,7 @@ extern "C" {
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_spdm_nvoc.h"
 
 #ifndef NV_SPDM_H
@@ -50,10 +58,10 @@ extern "C" {
     {                                           \
         default: _IMPL;                         \
     }
-#define HAL_MAPPING_ONLY_IF_SPDM_SUPPORTED_HAL  \
-    {                                           \
-        GH100   : _GH100;                       \
-        default : return NV_ERR_NOT_SUPPORTED;  \
+#define HAL_MAPPING_ONLY_IF_SPDM_SUPPORTED_HAL(x, y) \
+    {                                                \
+        x | y   : _##x;                              \
+        default : return NV_ERR_NOT_SUPPORTED;       \
     }
 #define HAL_MAPPING_ONLY_IF_SPDM_SUPPORTED_VOID \
     {                                           \
@@ -70,24 +78,35 @@ extern "C" {
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 
+
 struct Spdm {
+
+    // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+
+    // Parent (i.e. superclass or base class) object pointers
     struct Object __nvoc_base_Object;
-    struct Object *__nvoc_pbase_Object;
-    struct Spdm *__nvoc_pbase_Spdm;
-    NV_STATUS (*__spdmGetCertChains__)(OBJGPU *, struct Spdm *, void *, NvU32 *, void *, NvU32 *);
-    NV_STATUS (*__spdmGetAttestationReport__)(OBJGPU *, struct Spdm *, NvU8 *, void *, NvU32 *, NvBool *, void *, NvU32 *);
-    NV_STATUS (*__spdmCheckAndExecuteKeyUpdate__)(OBJGPU *, struct Spdm *, NvU32);
-    NV_STATUS (*__spdmSendInitRmDataCommand__)(OBJGPU *, struct Spdm *);
-    NV_STATUS (*__spdmRegisterForHeartbeats__)(OBJGPU *, struct Spdm *, NvU32);
-    NV_STATUS (*__spdmUnregisterFromHeartbeats__)(OBJGPU *, struct Spdm *);
-    NV_STATUS (*__spdmDeviceInit__)(OBJGPU *, struct Spdm *);
-    NV_STATUS (*__spdmDeviceDeinit__)(OBJGPU *, struct Spdm *, NvBool);
-    NV_STATUS (*__spdmDeviceSecuredSessionSupported__)(OBJGPU *, struct Spdm *);
-    NV_STATUS (*__spdmCheckConnection__)(OBJGPU *, struct Spdm *);
-    NV_STATUS (*__spdmMessageProcess__)(OBJGPU *, struct Spdm *, NvU8 *, NvU32, NvU8 *, NvU32 *);
-    NV_STATUS (*__spdmGetCertificates__)(OBJGPU *, struct Spdm *);
-    NV_STATUS (*__spdmGetReqEncapCertificates__)(OBJGPU *, struct Spdm *, NvU8 **, NvU32 *);
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super
+    struct Spdm *__nvoc_pbase_Spdm;    // spdm
+
+    // Vtable with 13 per-object function pointers
+    NV_STATUS (*__spdmGetCertChains__)(OBJGPU *, struct Spdm * /*this*/, void *, NvU32 *, void *, NvU32 *);  // halified (2 hals) body
+    NV_STATUS (*__spdmGetAttestationReport__)(OBJGPU *, struct Spdm * /*this*/, NvU8 *, void *, NvU32 *, NvBool *, void *, NvU32 *);  // halified (2 hals) body
+    NV_STATUS (*__spdmCheckAndExecuteKeyUpdate__)(OBJGPU *, struct Spdm * /*this*/, NvU32);  // halified (2 hals) body
+    NV_STATUS (*__spdmSendInitRmDataCommand__)(OBJGPU *, struct Spdm * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__spdmRegisterForHeartbeats__)(OBJGPU *, struct Spdm * /*this*/, NvU32);  // halified (2 hals) body
+    NV_STATUS (*__spdmUnregisterFromHeartbeats__)(OBJGPU *, struct Spdm * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__spdmDeviceInit__)(OBJGPU *, struct Spdm * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__spdmDeviceDeinit__)(OBJGPU *, struct Spdm * /*this*/, NvBool);  // halified (2 hals) body
+    NV_STATUS (*__spdmDeviceSecuredSessionSupported__)(OBJGPU *, struct Spdm * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__spdmCheckConnection__)(OBJGPU *, struct Spdm * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__spdmMessageProcess__)(OBJGPU *, struct Spdm * /*this*/, NvU8 *, NvU32, NvU8 *, NvU32 *);  // halified (2 hals) body
+    NV_STATUS (*__spdmGetCertificates__)(OBJGPU *, struct Spdm * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__spdmGetReqEncapCertificates__)(OBJGPU *, struct Spdm * /*this*/, NvU8 **, NvU32 *);  // halified (2 hals) body
+
+    // Data members
     void *pLibspdmContext;
     NvU32 libspdmContextSize;
     void *pLibspdmScratch;
@@ -122,6 +141,7 @@ typedef struct Spdm Spdm;
 #define __nvoc_class_id_Spdm 0x261ee8
 #endif /* __nvoc_class_id_Spdm */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Spdm;
 
 #define __staticCast_Spdm(pThis) \
@@ -134,39 +154,107 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Spdm;
     ((Spdm*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(Spdm)))
 #endif //__nvoc_spdm_h_disabled
 
-
 NV_STATUS __nvoc_objCreateDynamic_Spdm(Spdm**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_Spdm(Spdm**, Dynamic*, NvU32);
 #define __objCreate_Spdm(ppNewObj, pParent, createFlags) \
     __nvoc_objCreate_Spdm((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
+
+// Wrapper macros
+#define spdmGetCertChains_FNPTR(pSpdm) pSpdm->__spdmGetCertChains__
 #define spdmGetCertChains(pGpu, pSpdm, pKeyExCertChain, pKeyExCertChainSize, pAttestationCertChain, pAttestationCertChainSize) spdmGetCertChains_DISPATCH(pGpu, pSpdm, pKeyExCertChain, pKeyExCertChainSize, pAttestationCertChain, pAttestationCertChainSize)
 #define spdmGetCertChains_HAL(pGpu, pSpdm, pKeyExCertChain, pKeyExCertChainSize, pAttestationCertChain, pAttestationCertChainSize) spdmGetCertChains_DISPATCH(pGpu, pSpdm, pKeyExCertChain, pKeyExCertChainSize, pAttestationCertChain, pAttestationCertChainSize)
+#define spdmGetAttestationReport_FNPTR(pSpdm) pSpdm->__spdmGetAttestationReport__
 #define spdmGetAttestationReport(pGpu, pSpdm, pNonce, pAttestationReport, pAttestationReportSize, pbIsCecAttestationReportPresent, pCecAttestationReport, pCecAttestationReportSize) spdmGetAttestationReport_DISPATCH(pGpu, pSpdm, pNonce, pAttestationReport, pAttestationReportSize, pbIsCecAttestationReportPresent, pCecAttestationReport, pCecAttestationReportSize)
 #define spdmGetAttestationReport_HAL(pGpu, pSpdm, pNonce, pAttestationReport, pAttestationReportSize, pbIsCecAttestationReportPresent, pCecAttestationReport, pCecAttestationReportSize) spdmGetAttestationReport_DISPATCH(pGpu, pSpdm, pNonce, pAttestationReport, pAttestationReportSize, pbIsCecAttestationReportPresent, pCecAttestationReport, pCecAttestationReportSize)
+#define spdmCheckAndExecuteKeyUpdate_FNPTR(pSpdm) pSpdm->__spdmCheckAndExecuteKeyUpdate__
 #define spdmCheckAndExecuteKeyUpdate(pGpu, pSpdm, keyUpdateTriggerId) spdmCheckAndExecuteKeyUpdate_DISPATCH(pGpu, pSpdm, keyUpdateTriggerId)
 #define spdmCheckAndExecuteKeyUpdate_HAL(pGpu, pSpdm, keyUpdateTriggerId) spdmCheckAndExecuteKeyUpdate_DISPATCH(pGpu, pSpdm, keyUpdateTriggerId)
+#define spdmSendInitRmDataCommand_FNPTR(pSpdm) pSpdm->__spdmSendInitRmDataCommand__
 #define spdmSendInitRmDataCommand(pGpu, pSpdm) spdmSendInitRmDataCommand_DISPATCH(pGpu, pSpdm)
 #define spdmSendInitRmDataCommand_HAL(pGpu, pSpdm) spdmSendInitRmDataCommand_DISPATCH(pGpu, pSpdm)
+#define spdmRegisterForHeartbeats_FNPTR(pSpdm) pSpdm->__spdmRegisterForHeartbeats__
 #define spdmRegisterForHeartbeats(pGpu, pSpdm, heartbeatPeriodSec) spdmRegisterForHeartbeats_DISPATCH(pGpu, pSpdm, heartbeatPeriodSec)
 #define spdmRegisterForHeartbeats_HAL(pGpu, pSpdm, heartbeatPeriodSec) spdmRegisterForHeartbeats_DISPATCH(pGpu, pSpdm, heartbeatPeriodSec)
+#define spdmUnregisterFromHeartbeats_FNPTR(pSpdm) pSpdm->__spdmUnregisterFromHeartbeats__
 #define spdmUnregisterFromHeartbeats(pGpu, pSpdm) spdmUnregisterFromHeartbeats_DISPATCH(pGpu, pSpdm)
 #define spdmUnregisterFromHeartbeats_HAL(pGpu, pSpdm) spdmUnregisterFromHeartbeats_DISPATCH(pGpu, pSpdm)
+#define spdmDeviceInit_FNPTR(pSpdm) pSpdm->__spdmDeviceInit__
 #define spdmDeviceInit(pGpu, pSpdm) spdmDeviceInit_DISPATCH(pGpu, pSpdm)
 #define spdmDeviceInit_HAL(pGpu, pSpdm) spdmDeviceInit_DISPATCH(pGpu, pSpdm)
+#define spdmDeviceDeinit_FNPTR(pSpdm) pSpdm->__spdmDeviceDeinit__
 #define spdmDeviceDeinit(pGpu, pSpdm, bForceClear) spdmDeviceDeinit_DISPATCH(pGpu, pSpdm, bForceClear)
 #define spdmDeviceDeinit_HAL(pGpu, pSpdm, bForceClear) spdmDeviceDeinit_DISPATCH(pGpu, pSpdm, bForceClear)
+#define spdmDeviceSecuredSessionSupported_FNPTR(pSpdm) pSpdm->__spdmDeviceSecuredSessionSupported__
 #define spdmDeviceSecuredSessionSupported(pGpu, pSpdm) spdmDeviceSecuredSessionSupported_DISPATCH(pGpu, pSpdm)
 #define spdmDeviceSecuredSessionSupported_HAL(pGpu, pSpdm) spdmDeviceSecuredSessionSupported_DISPATCH(pGpu, pSpdm)
+#define spdmCheckConnection_FNPTR(pSpdm) pSpdm->__spdmCheckConnection__
 #define spdmCheckConnection(pGpu, pSpdm) spdmCheckConnection_DISPATCH(pGpu, pSpdm)
 #define spdmCheckConnection_HAL(pGpu, pSpdm) spdmCheckConnection_DISPATCH(pGpu, pSpdm)
+#define spdmMessageProcess_FNPTR(pSpdm) pSpdm->__spdmMessageProcess__
 #define spdmMessageProcess(pGpu, pSpdm, pRequest, requestSize, pResponse, pResponseSize) spdmMessageProcess_DISPATCH(pGpu, pSpdm, pRequest, requestSize, pResponse, pResponseSize)
 #define spdmMessageProcess_HAL(pGpu, pSpdm, pRequest, requestSize, pResponse, pResponseSize) spdmMessageProcess_DISPATCH(pGpu, pSpdm, pRequest, requestSize, pResponse, pResponseSize)
+#define spdmGetCertificates_FNPTR(pSpdm) pSpdm->__spdmGetCertificates__
 #define spdmGetCertificates(pGpu, pSpdm) spdmGetCertificates_DISPATCH(pGpu, pSpdm)
 #define spdmGetCertificates_HAL(pGpu, pSpdm) spdmGetCertificates_DISPATCH(pGpu, pSpdm)
+#define spdmGetReqEncapCertificates_FNPTR(pSpdm) pSpdm->__spdmGetReqEncapCertificates__
 #define spdmGetReqEncapCertificates(pGpu, pSpdm, pEncapCertChain, pEncapCertChainSize) spdmGetReqEncapCertificates_DISPATCH(pGpu, pSpdm, pEncapCertChain, pEncapCertChainSize)
 #define spdmGetReqEncapCertificates_HAL(pGpu, pSpdm, pEncapCertChain, pEncapCertChainSize) spdmGetReqEncapCertificates_DISPATCH(pGpu, pSpdm, pEncapCertChain, pEncapCertChainSize)
+
+// Dispatch functions
+static inline NV_STATUS spdmGetCertChains_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm, void *pKeyExCertChain, NvU32 *pKeyExCertChainSize, void *pAttestationCertChain, NvU32 *pAttestationCertChainSize) {
+    return pSpdm->__spdmGetCertChains__(pGpu, pSpdm, pKeyExCertChain, pKeyExCertChainSize, pAttestationCertChain, pAttestationCertChainSize);
+}
+
+static inline NV_STATUS spdmGetAttestationReport_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 *pNonce, void *pAttestationReport, NvU32 *pAttestationReportSize, NvBool *pbIsCecAttestationReportPresent, void *pCecAttestationReport, NvU32 *pCecAttestationReportSize) {
+    return pSpdm->__spdmGetAttestationReport__(pGpu, pSpdm, pNonce, pAttestationReport, pAttestationReportSize, pbIsCecAttestationReportPresent, pCecAttestationReport, pCecAttestationReportSize);
+}
+
+static inline NV_STATUS spdmCheckAndExecuteKeyUpdate_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 keyUpdateTriggerId) {
+    return pSpdm->__spdmCheckAndExecuteKeyUpdate__(pGpu, pSpdm, keyUpdateTriggerId);
+}
+
+static inline NV_STATUS spdmSendInitRmDataCommand_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm) {
+    return pSpdm->__spdmSendInitRmDataCommand__(pGpu, pSpdm);
+}
+
+static inline NV_STATUS spdmRegisterForHeartbeats_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 heartbeatPeriodSec) {
+    return pSpdm->__spdmRegisterForHeartbeats__(pGpu, pSpdm, heartbeatPeriodSec);
+}
+
+static inline NV_STATUS spdmUnregisterFromHeartbeats_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm) {
+    return pSpdm->__spdmUnregisterFromHeartbeats__(pGpu, pSpdm);
+}
+
+static inline NV_STATUS spdmDeviceInit_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm) {
+    return pSpdm->__spdmDeviceInit__(pGpu, pSpdm);
+}
+
+static inline NV_STATUS spdmDeviceDeinit_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm, NvBool bForceClear) {
+    return pSpdm->__spdmDeviceDeinit__(pGpu, pSpdm, bForceClear);
+}
+
+static inline NV_STATUS spdmDeviceSecuredSessionSupported_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm) {
+    return pSpdm->__spdmDeviceSecuredSessionSupported__(pGpu, pSpdm);
+}
+
+static inline NV_STATUS spdmCheckConnection_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm) {
+    return pSpdm->__spdmCheckConnection__(pGpu, pSpdm);
+}
+
+static inline NV_STATUS spdmMessageProcess_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 *pRequest, NvU32 requestSize, NvU8 *pResponse, NvU32 *pResponseSize) {
+    return pSpdm->__spdmMessageProcess__(pGpu, pSpdm, pRequest, requestSize, pResponse, pResponseSize);
+}
+
+static inline NV_STATUS spdmGetCertificates_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm) {
+    return pSpdm->__spdmGetCertificates__(pGpu, pSpdm);
+}
+
+static inline NV_STATUS spdmGetReqEncapCertificates_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 **pEncapCertChain, NvU32 *pEncapCertChainSize) {
+    return pSpdm->__spdmGetReqEncapCertificates__(pGpu, pSpdm, pEncapCertChain, pEncapCertChainSize);
+}
+
 NV_STATUS spdmConstruct_IMPL(struct Spdm *arg_pSpdm);
 
 
@@ -251,18 +339,10 @@ static inline NV_STATUS spdmGetCertChains_46f6a7(OBJGPU *pGpu, struct Spdm *pSpd
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static inline NV_STATUS spdmGetCertChains_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm, void *pKeyExCertChain, NvU32 *pKeyExCertChainSize, void *pAttestationCertChain, NvU32 *pAttestationCertChainSize) {
-    return pSpdm->__spdmGetCertChains__(pGpu, pSpdm, pKeyExCertChain, pKeyExCertChainSize, pAttestationCertChain, pAttestationCertChainSize);
-}
-
 NV_STATUS spdmGetAttestationReport_GH100(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 *pNonce, void *pAttestationReport, NvU32 *pAttestationReportSize, NvBool *pbIsCecAttestationReportPresent, void *pCecAttestationReport, NvU32 *pCecAttestationReportSize);
 
 static inline NV_STATUS spdmGetAttestationReport_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 *pNonce, void *pAttestationReport, NvU32 *pAttestationReportSize, NvBool *pbIsCecAttestationReportPresent, void *pCecAttestationReport, NvU32 *pCecAttestationReportSize) {
     return NV_ERR_NOT_SUPPORTED;
-}
-
-static inline NV_STATUS spdmGetAttestationReport_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 *pNonce, void *pAttestationReport, NvU32 *pAttestationReportSize, NvBool *pbIsCecAttestationReportPresent, void *pCecAttestationReport, NvU32 *pCecAttestationReportSize) {
-    return pSpdm->__spdmGetAttestationReport__(pGpu, pSpdm, pNonce, pAttestationReport, pAttestationReportSize, pbIsCecAttestationReportPresent, pCecAttestationReport, pCecAttestationReportSize);
 }
 
 NV_STATUS spdmCheckAndExecuteKeyUpdate_GH100(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 keyUpdateTriggerId);
@@ -271,18 +351,10 @@ static inline NV_STATUS spdmCheckAndExecuteKeyUpdate_46f6a7(OBJGPU *pGpu, struct
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static inline NV_STATUS spdmCheckAndExecuteKeyUpdate_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 keyUpdateTriggerId) {
-    return pSpdm->__spdmCheckAndExecuteKeyUpdate__(pGpu, pSpdm, keyUpdateTriggerId);
-}
-
 NV_STATUS spdmSendInitRmDataCommand_GH100(OBJGPU *pGpu, struct Spdm *pSpdm);
 
 static inline NV_STATUS spdmSendInitRmDataCommand_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm) {
     return NV_ERR_NOT_SUPPORTED;
-}
-
-static inline NV_STATUS spdmSendInitRmDataCommand_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm) {
-    return pSpdm->__spdmSendInitRmDataCommand__(pGpu, pSpdm);
 }
 
 NV_STATUS spdmRegisterForHeartbeats_GH100(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 heartbeatPeriodSec);
@@ -291,18 +363,10 @@ static inline NV_STATUS spdmRegisterForHeartbeats_46f6a7(OBJGPU *pGpu, struct Sp
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static inline NV_STATUS spdmRegisterForHeartbeats_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 heartbeatPeriodSec) {
-    return pSpdm->__spdmRegisterForHeartbeats__(pGpu, pSpdm, heartbeatPeriodSec);
-}
-
 NV_STATUS spdmUnregisterFromHeartbeats_GH100(OBJGPU *pGpu, struct Spdm *pSpdm);
 
 static inline NV_STATUS spdmUnregisterFromHeartbeats_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm) {
     return NV_ERR_NOT_SUPPORTED;
-}
-
-static inline NV_STATUS spdmUnregisterFromHeartbeats_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm) {
-    return pSpdm->__spdmUnregisterFromHeartbeats__(pGpu, pSpdm);
 }
 
 NV_STATUS spdmDeviceInit_GH100(OBJGPU *pGpu, struct Spdm *pSpdm);
@@ -311,18 +375,10 @@ static inline NV_STATUS spdmDeviceInit_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm) 
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static inline NV_STATUS spdmDeviceInit_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm) {
-    return pSpdm->__spdmDeviceInit__(pGpu, pSpdm);
-}
-
 NV_STATUS spdmDeviceDeinit_GH100(OBJGPU *pGpu, struct Spdm *pSpdm, NvBool bForceClear);
 
 static inline NV_STATUS spdmDeviceDeinit_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm, NvBool bForceClear) {
     return NV_ERR_NOT_SUPPORTED;
-}
-
-static inline NV_STATUS spdmDeviceDeinit_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm, NvBool bForceClear) {
-    return pSpdm->__spdmDeviceDeinit__(pGpu, pSpdm, bForceClear);
 }
 
 NV_STATUS spdmDeviceSecuredSessionSupported_GH100(OBJGPU *pGpu, struct Spdm *pSpdm);
@@ -331,18 +387,10 @@ static inline NV_STATUS spdmDeviceSecuredSessionSupported_46f6a7(OBJGPU *pGpu, s
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static inline NV_STATUS spdmDeviceSecuredSessionSupported_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm) {
-    return pSpdm->__spdmDeviceSecuredSessionSupported__(pGpu, pSpdm);
-}
-
 NV_STATUS spdmCheckConnection_GH100(OBJGPU *pGpu, struct Spdm *pSpdm);
 
 static inline NV_STATUS spdmCheckConnection_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm) {
     return NV_ERR_NOT_SUPPORTED;
-}
-
-static inline NV_STATUS spdmCheckConnection_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm) {
-    return pSpdm->__spdmCheckConnection__(pGpu, pSpdm);
 }
 
 NV_STATUS spdmMessageProcess_GH100(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 *pRequest, NvU32 requestSize, NvU8 *pResponse, NvU32 *pResponseSize);
@@ -351,28 +399,16 @@ static inline NV_STATUS spdmMessageProcess_46f6a7(OBJGPU *pGpu, struct Spdm *pSp
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static inline NV_STATUS spdmMessageProcess_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 *pRequest, NvU32 requestSize, NvU8 *pResponse, NvU32 *pResponseSize) {
-    return pSpdm->__spdmMessageProcess__(pGpu, pSpdm, pRequest, requestSize, pResponse, pResponseSize);
-}
-
 NV_STATUS spdmGetCertificates_GH100(OBJGPU *pGpu, struct Spdm *pSpdm);
 
 static inline NV_STATUS spdmGetCertificates_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm) {
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static inline NV_STATUS spdmGetCertificates_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm) {
-    return pSpdm->__spdmGetCertificates__(pGpu, pSpdm);
-}
-
 NV_STATUS spdmGetReqEncapCertificates_GH100(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 **pEncapCertChain, NvU32 *pEncapCertChainSize);
 
 static inline NV_STATUS spdmGetReqEncapCertificates_46f6a7(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 **pEncapCertChain, NvU32 *pEncapCertChainSize) {
     return NV_ERR_NOT_SUPPORTED;
-}
-
-static inline NV_STATUS spdmGetReqEncapCertificates_DISPATCH(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 **pEncapCertChain, NvU32 *pEncapCertChainSize) {
-    return pSpdm->__spdmGetReqEncapCertificates__(pGpu, pSpdm, pEncapCertChain, pEncapCertChainSize);
 }
 
 #undef PRIVATE_FIELD

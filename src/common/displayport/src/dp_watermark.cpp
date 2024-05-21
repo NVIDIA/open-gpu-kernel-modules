@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,7 @@
 #include "dp_internal.h"
 #include "dp_watermark.h"
 #include "dp_linkconfig.h"
+#include "dp_printf.h"
 #include "displayport.h"
 
 #define FEC_TOTAL_SYMBOLS_PER_BLK(lanes)  ((NvU32)((lanes == 1) ? 512U : 256U))
@@ -85,16 +86,14 @@ bool DisplayPort::isModePossibleMST
 
     if (minHBlank > modesetInfo.rasterWidth - modesetInfo.surfaceWidth)
     {
-        DP_LOG(("NVRM: %s:", __FUNCTION__));
-        DP_LOG(("\t\tERROR: Blanking Width is smaller than minimum permissible value."));
+        DP_PRINTF(DP_ERROR, "ERROR: Blanking Width is smaller than minimum permissible value.");
         return false;
     }
 
     // Bug 702290 - Active Width should be greater than 60
     if (modesetInfo.surfaceWidth <= 60)
     {
-        DP_LOG(("NVRM: %s:", __FUNCTION__));
-        DP_LOG(("\t\tERROR: Minimum Horizontal Active Width <= 60 not supported."));
+        DP_PRINTF(DP_ERROR, "ERROR: Minimum Horizontal Active Width <= 60 not supported.");
         return false;
     }
 
@@ -207,11 +206,10 @@ bool DisplayPort::isModePossibleSST
         // Print debug message and Assert. All calculations assume a max of 8 lanes
         // & any increase in lanes should cause these calculation to be updated
         //
-        DP_LOG(("NVRM: %s: ERROR: LaneCount - %d is not supported for waterMark calculations.",
-                __FUNCTION__, linkConfig.lanes));
-        DP_LOG(("Current support is only up to 4-Lanes & any change/increase in supported lanes "
-                "should be reflected in waterMark calculations algorithm. "
-                "Ex: See calc for minHBlank variable below"));
+        DP_PRINTF(DP_ERROR, "ERROR: LaneCount - %d is not supported for waterMark calculations.", linkConfig.lanes);
+        DP_PRINTF(DP_ERROR, "Current support is only up to 4-Lanes & any change/increase in supported lanes "
+                  "should be reflected in waterMark calculations algorithm. "
+                  "Ex: See calc for minHBlank variable below");
 
         DP_ASSERT(0);
         return false;
@@ -256,8 +254,7 @@ bool DisplayPort::isModePossibleSST
 
     if (dpInfo->waterMark > 39 || dpInfo->waterMark > numSymbolsPerLine)
     {
-        DP_LOG(("NVRM: %s:", __FUNCTION__));
-        DP_LOG(("\t\tERROR: watermark should not be greater than 39."));
+        DP_PRINTF(DP_ERROR, "ERROR: watermark should not be greater than 39.");
         return false;
     }
 
@@ -286,16 +283,14 @@ bool DisplayPort::isModePossibleSST
 
     if (MinHBlank > modesetInfo.rasterWidth - modesetInfo.surfaceWidth)
     {
-        DP_LOG(("NVRM: %s:", __FUNCTION__));
-        DP_LOG(("\t\tERROR: Blanking Width is smaller than minimum permissible value."));
+        DP_PRINTF(DP_ERROR, "ERROR: Blanking Width is smaller than minimum permissible value.");
         return false;
     }
 
     // Bug 702290 - Active Width should be greater than 60
     if (modesetInfo.surfaceWidth <= 60)
     {
-        DP_LOG(("NVRM: %s:", __FUNCTION__));
-        DP_LOG(("\t\tERROR: Minimum Horizontal Active Width <= 60 not supported."));
+        DP_PRINTF(DP_ERROR, "ERROR: Minimum Horizontal Active Width <= 60 not supported.");
         return false;
     }
 
@@ -453,11 +448,10 @@ bool DisplayPort::isModePossibleSSTWithFEC
         // Print debug message and Assert. All calculations assume a max of 8 lanes
         // & any increase in lanes should cause these calculation to be updated
         //
-        DP_LOG(("NVRM: %s: ERROR: LaneCount - %d is not supported for waterMark calculations.",
-                __FUNCTION__, linkConfig.lanes));
-        DP_LOG(("Current support is only up to 4-Lanes & any change/increase in supported lanes "
-                "should be reflected in waterMark calculations algorithm. "
-                "Ex: See calc for minHBlank variable below"));
+        DP_PRINTF(DP_ERROR, "ERROR: LaneCount - %d is not supported for waterMark calculations.", linkConfig.lanes);
+        DP_PRINTF(DP_ERROR, "Current support is only up to 4-Lanes & any change/increase in supported lanes "
+                  "should be reflected in waterMark calculations algorithm. "
+                  "Ex: See calc for minHBlank variable below");
 
         DP_ASSERT(0);
         return false;
@@ -517,8 +511,7 @@ bool DisplayPort::isModePossibleSSTWithFEC
 
     if (dpInfo->waterMark > numSymbolsPerLine)
     {
-        DP_LOG(("NVRM: %s:", __FUNCTION__));
-        DP_LOG(("\t\tERROR: watermark = %d should not be greater than numSymbolsPerLine = %d.", dpInfo->waterMark, numSymbolsPerLine));
+        DP_PRINTF(DP_ERROR, "ERROR: watermark = %d should not be greater than numSymbolsPerLine = %d.", dpInfo->waterMark, numSymbolsPerLine);
         return false;
     }
 
@@ -592,16 +585,14 @@ bool DisplayPort::isModePossibleSSTWithFEC
 
     if (MinHBlank > HBlank)
     {
-        DP_LOG(("NVRM: %s:", __FUNCTION__));
-        DP_LOG(("\t\tERROR: Blanking Width is smaller than minimum permissible value."));
+        DP_PRINTF(DP_ERROR, "ERROR: Blanking Width is smaller than minimum permissible value.");
         return false;
     }
 
     // Bug 702290 - Active Width should be greater than 60
     if (modesetInfo.surfaceWidth <= 60)
     {
-        DP_LOG(("NVRM: %s:", __FUNCTION__));
-        DP_LOG(("\t\tERROR: Minimum Horizontal Active Width <= 60 not supported."));
+        DP_PRINTF(DP_ERROR, "ERROR: Minimum Horizontal Active Width <= 60 not supported.");
         return false;
     }
 
@@ -830,16 +821,14 @@ bool DisplayPort::isModePossibleMSTWithFEC
 
     if (MinHBlank > HBlank)
     {
-        DP_LOG(("NVRM: %s:", __FUNCTION__));
-        DP_LOG(("\t\tERROR: Blanking Width is smaller than minimum permissible value."));
+        DP_PRINTF(DP_ERROR, "ERROR: Blanking Width is smaller than minimum permissible value.");
         return false;
     }
 
     // Bug 702290 - Active Width should be greater than 60
     if (modesetInfo.surfaceWidth <= 60)
     {
-        DP_LOG(("NVRM: %s:", __FUNCTION__));
-        DP_LOG(("\t\tERROR: Minimum Horizontal Active Width <= 60 not supported."));
+        DP_PRINTF(DP_ERROR, "ERROR: Minimum Horizontal Active Width <= 60 not supported.");
         return false;
     }
 

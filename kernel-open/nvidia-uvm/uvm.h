@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2013-2023 NVIDIA Corporation
+    Copyright (c) 2013-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -1448,9 +1448,7 @@ NV_STATUS UvmAllocSemaphorePool(void                          *base,
 //
 //     preferredCpuMemoryNode: (INPUT)
 //         Preferred CPU NUMA memory node used if the destination processor is
-//         the CPU. -1 indicates no preference, in which case the pages used
-//         can be on any of the available CPU NUMA nodes. If NUMA is disabled
-//         only 0 and -1 are allowed.
+//         the CPU.
 //
 // Error codes:
 //     NV_ERR_INVALID_ADDRESS:
@@ -1463,11 +1461,6 @@ NV_STATUS UvmAllocSemaphorePool(void                          *base,
 //     NV_ERR_OUT_OF_RANGE:
 //         The VA range exceeds the largest virtual address supported by the
 //         destination processor.
-//
-//     NV_ERR_INVALID_ARGUMENT:
-//         preferredCpuMemoryNode is not a valid CPU NUMA node or it corresponds
-//         to a NUMA node ID for a registered GPU. If NUMA is disabled, it
-//         indicates that preferredCpuMemoryNode was not either 0 or -1.
 //
 //     NV_ERR_INVALID_DEVICE:
 //         destinationUuid does not represent a valid processor such as a CPU or
@@ -1535,9 +1528,8 @@ NV_STATUS UvmMigrate(void                  *base,
 //
 //     preferredCpuMemoryNode: (INPUT)
 //         Preferred CPU NUMA memory node used if the destination processor is
-//         the CPU. -1 indicates no preference, in which case the pages used
-//         can be on any of the available CPU NUMA nodes. If NUMA is disabled
-//         only 0 and -1 are allowed.
+//         the CPU. This argument is ignored if the given virtual address range
+//         corresponds to managed memory.
 //
 //     semaphoreAddress: (INPUT)
 //         Base address of the semaphore.
@@ -1594,8 +1586,8 @@ NV_STATUS UvmMigrateAsync(void                  *base,
 //
 // Migrates the backing of all virtual address ranges associated with the given
 // range group to the specified destination processor. The behavior of this API
-// is equivalent to calling UvmMigrate with preferredCpuMemoryNode = -1 on each
-// VA range associated with this range group.
+// is equivalent to calling UvmMigrate on each VA range associated with this
+// range group.
 //
 // Any errors encountered during migration are returned immediately. No attempt
 // is made to migrate the remaining unmigrated ranges and the ranges that are
@@ -2177,8 +2169,7 @@ NV_STATUS UvmMapDynamicParallelismRegion(void                  *base,
 //
 // If any page in the VA range has a preferred location, then the migration and
 // mapping policies associated with this API take precedence over those related
-// to the preferred location. If the preferred location is a specific CPU NUMA
-// node, that NUMA node will be used for a CPU-resident copy of the page.
+// to the preferred location.
 //
 // If any pages in this VA range have any processors present in their
 // accessed-by list, the migration and mapping policies associated with this
@@ -2309,7 +2300,7 @@ NV_STATUS UvmDisableReadDuplication(void     *base,
 // UvmPreventMigrationRangeGroups has not been called on the range group that
 // those pages are associated with, then the migration and mapping policies
 // associated with UvmEnableReadDuplication override the policies outlined
-// above. Note that enabling read duplication on any pages in this VA range
+// above. Note that enabling read duplication on on any pages in this VA range
 // does not clear the state set by this API for those pages. It merely overrides
 // the policies associated with this state until read duplication is disabled
 // for those pages.
@@ -2342,8 +2333,7 @@ NV_STATUS UvmDisableReadDuplication(void     *base,
 //     preferredCpuMemoryNode: (INPUT)
 //         Preferred CPU NUMA memory node used if preferredLocationUuid is the
 //         UUID of the CPU. -1 is a special value which indicates all CPU nodes
-//         allowed by the global and thread memory policies. If NUMA is disabled
-//         only 0 and -1 are allowed.
+//         allowed by the global and thread memory policies.
 //
 // Errors:
 //     NV_ERR_INVALID_ADDRESS:
@@ -3473,8 +3463,7 @@ NV_STATUS UvmToolsDestroySession(UvmToolsSessionHandle session);
 //
 
 #if UVM_API_REV_IS_AT_MOST(10)
-// This is deprecated and replaced by sizeof(UvmToolsEventControlData_V1) or
-// sizeof(UvmToolsEventControlData_V2).
+// This is deprecated and replaced by sizeof(UvmToolsEventControlData).
 NvLength UvmToolsGetEventControlSize(void);
 
 // This is deprecated and replaced by sizeof(UvmEventEntry_V1) or
@@ -3498,8 +3487,6 @@ NvLength UvmToolsGetNumberOfCounters(void);
 //     version: (INPUT)
 //         Requested version for events or counters.
 //         See UvmEventEntry_V1 and UvmEventEntry_V2.
-//         UvmToolsEventControlData_V2::version records the entry version that
-//         will be generated.
 //
 //     event_buffer: (INPUT)
 //         User allocated buffer. Must be page-aligned. Must be large enough to
@@ -3512,8 +3499,7 @@ NvLength UvmToolsGetNumberOfCounters(void);
 //
 //     event_control (INPUT)
 //         User allocated buffer. Must be page-aligned. Must be large enough to
-//         hold UvmToolsEventControlData_V1 if version is UvmEventEntry_V1 or
-//         UvmToolsEventControlData_V2 (although single page-size allocation
+//         hold UvmToolsEventControlData (although single page-size allocation
 //         should be more than enough). Gets pinned until queue is destroyed.
 //
 //     queue: (OUTPUT)

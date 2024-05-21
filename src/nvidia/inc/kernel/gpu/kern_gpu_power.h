@@ -42,34 +42,14 @@ typedef enum
 typedef struct
 {
     NvU32               refCount;
+    NvU16               GC6PerstDelay;          // waiting time for Upstream Port of GPU,
+                                                // before asserting perst# signal,
+                                                // during RTD3/GC6 Entry.
+    NvU16               GC6TotalBoardPower;     // Power required by GPU to sustain RTD3/GC6.
     GPU_GC6_STATE       currentState;
     NvU32               executedStepMask;       // step mask executed during entry sequence
     NvU32               stepMask[NV2080_CTRL_GC6_FLAVOR_ID_MAX];  // step mask cache
 } _GPU_GC6_STATE;
-
-// GPU event mask operation
-#define GC6_REFCOUNT_MASK_SET(pGpu, refCountBit)                      \
-    do                                                                \
-    {                                                                 \
-        if (pGpu != NULL)                                             \
-        {                                                             \
-            ((pGpu->gc6State.refCountMask) |= (NVBIT(refCountBit)));  \
-        }                                                             \
-    } while(0)
-
-#define GC6_REFCOUNT_MASK_CLEAR(pGpu, refCountBit)                    \
-    do                                                                \
-    {                                                                 \
-        if (pGpu != NULL)                                             \
-        {                                                             \
-            ((pGpu->gc6State.refCountMask) &= ~(NVBIT(refCountBit))); \
-        }                                                             \
-    } while(0)
-
-#define GC6_REFCOUNT_MASK_GET_FROM_EVENT(event) ((event / 2))
-
-// GC6 related defines
-#define GC6_FB_CLAMP_TIMEOUT_MS         10
 
 // Macros for GPU_GC6_STATE
 #define IS_GPU_GC6_STATE_POWERED_ON(obj) (obj->gc6State.currentState == GPU_GC6_STATE_POWERED_ON)

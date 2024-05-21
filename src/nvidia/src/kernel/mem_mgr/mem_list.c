@@ -384,6 +384,24 @@ continue_alloc_object:
         {
             memdescDestroy(pMemDesc);
         }
+        // Memory has to be mapped on GSP since it came from CPU-RM
+        else if (RMCFG_FEATURE_PLATFORM_GSP)
+        {
+            //
+            // TODO - Once Bug 4429199 is resolved, this call should probably be
+            // changed to memdescMapInternal().
+            //
+            status = memdescMap(pMemory->pMemDesc, 0, pMemory->Length, NV_TRUE,
+                NV_PROTECT_READ_WRITE, &pMemory->KernelVAddr, &pMemory->KernelMapPriv);
+
+            if (status != NV_OK)
+            {
+                pMemory->KernelVAddr = NvP64_NULL;
+                pMemory->KernelMapPriv = NvP64_NULL;
+                NV_PRINTF(LEVEL_ERROR, "memDescMap failed with: %d\n", status);
+            }
+        }
+
     }
     else if (addressSpace == ADDR_FBMEM)
     {

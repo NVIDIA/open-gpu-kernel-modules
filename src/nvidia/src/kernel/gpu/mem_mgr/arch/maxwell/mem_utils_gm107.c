@@ -227,6 +227,7 @@ _memUtilsChannelAllocatePB_GM107
                      DRF_DEF(OS32, _ATTR, _COHERENCY, _UNCACHED);
 
             flags = NVOS32_ALLOC_FLAGS_PERSISTENT_VIDMEM;
+
             if (!IS_MIG_IN_USE(pGpu))
             {
                 attr |= DRF_DEF(OS32, _ATTR, _ALLOCATE_FROM_RESERVED_HEAP, _YES);
@@ -327,22 +328,6 @@ _memUtilsChannelAllocatePB_GM107
                                 sizeof(memAllocParams)));
 
     // allocate the physmem for the notifier
-
-    if (gpuIsCCFeatureEnabled(pGpu))
-    {
-        //
-        // Force error notifier to ncoh sysmem when CC is enabled
-        // since key rotation notifier is part of error notifier and
-        // it needs to be in sysmem so we can create persistent mapping for it.
-        // we cannot create mappins on the fly since this notifier is
-        // written as part of 1 sec callback where creating mappings is
-        // not allowed.
-        //
-        hClass = NV01_MEMORY_SYSTEM;
-        attrNotifier   = DRF_DEF(OS32, _ATTR, _LOCATION,  _PCI)        |
-                         DRF_DEF(OS32, _ATTR, _COHERENCY, _UNCACHED);
-    }
-
     portMemSet(&memAllocParams, 0, sizeof(memAllocParams));
     memAllocParams.owner     = HEAP_OWNER_RM_CLIENT_GENERIC;
     memAllocParams.type      = NVOS32_TYPE_IMAGE;
@@ -399,6 +384,114 @@ _memUtilsChannelAllocatePB_GM107
     return rmStatus;
 }
 
+static NV_STATUS
+memmgrMemUtilsMapFbAlias
+(
+    MemoryManager *pMemoryManager,
+    OBJCHANNEL    *pChannel
+)
+{
+    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+
+    NV2080_CTRL_GPU_GET_MAX_SUPPORTED_PAGE_SIZE_PARAMS maxPageSizeParams = {0};
+    NV_ASSERT_OK_OR_RETURN(
+        pRmApi->Control(pRmApi, pChannel->hClient, pChannel->subdeviceId,
+                        NV2080_CTRL_CMD_GPU_GET_MAX_SUPPORTED_PAGE_SIZE,
+                        &maxPageSizeParams, sizeof(maxPageSizeParams)));
+    NV_ASSERT_OR_RETURN(maxPageSizeParams.maxSupportedPageSize != 0, NV_ERR_INVALID_STATE);
+
+    NV0080_CTRL_DMA_ADV_SCHED_GET_VA_CAPS_PARAMS vasCapsParams = {0};
+    vasCapsParams.hVASpace = pChannel->hVASpaceId;
+    NV_ASSERT_OK_OR_RETURN(
+        pRmApi->Control(pRmApi, pChannel->hClient, pChannel->deviceId,
+                        NV0080_CTRL_CMD_DMA_ADV_SCHED_GET_VA_CAPS,
+                        &vasCapsParams, sizeof(vasCapsParams)));
+    NV_ASSERT_OR_RETURN(vasCapsParams.supportedPageSizeMask != 0, NV_ERR_INVALID_STATE);
+
+    NvU64 currentFbOffset = 0;
+    NvU64 remainingMapSize = pChannel->fbSize;
+    NvU64 currentVaddr = pChannel->vaStartOffset;
+
+    NvU64 pageSizeMask = vasCapsParams.supportedPageSizeMask;
+
+    // Vidmem allocation page size is limited by VMMU segment size
+    pageSizeMask &= (maxPageSizeParams.maxSupportedPageSize << 1) - 1;
+
+    // Pick only page sizes to which currentVaddr is aligned
+    NV_ASSERT_OR_RETURN(NV_IS_ALIGNED64(pChannel->startFbOffset, RM_PAGE_SIZE_512M), NV_ERR_INVALID_STATE);
+    pageSizeMask &= (LOWESTBIT(pChannel->startFbOffset) << 1) - 1;
+
+    NV_ASSERT_OR_RETURN(NV_IS_ALIGNED64(pChannel->vaStartOffset, RM_PAGE_SIZE_512M), NV_ERR_INVALID_STATE);
+    pageSizeMask &= (LOWESTBIT(pChannel->vaStartOffset) << 1) - 1;
+
+    NV_PRINTF(LEVEL_INFO, "fb start 0x%llx size 0x%llx supported page sizes 0x%llx (0x%llx) va start 0x%llx\n",
+        pChannel->startFbOffset, pChannel->fbSize, pageSizeMask,
+        vasCapsParams.supportedPageSizeMask, pChannel->vaStartOffset);
+
+    while ((currentFbOffset < pChannel->fbSize) && (pageSizeMask != 0))
+    {
+        NvU32 pageSizeMap;
+
+        // Biggest page size from the mask
+        NvU64 pageSize = nvPrevPow2_U64(pageSizeMask);
+        pageSizeMask &= ~pageSize;
+
+        NV_ASSERT_OR_RETURN(NV_IS_ALIGNED64(currentFbOffset, pageSize), NV_ERR_INVALID_STATE);
+        NV_ASSERT_OR_RETURN(NV_IS_ALIGNED64(currentVaddr, pageSize), NV_ERR_INVALID_STATE);
+
+        if (pageSize > remainingMapSize)
+        {
+            continue;
+        }
+
+        switch (pageSize)
+        {
+            case RM_PAGE_SIZE:
+                pageSizeMap = NVOS46_FLAGS_PAGE_SIZE_4KB;
+                break;
+            case RM_PAGE_SIZE_64K:
+            case RM_PAGE_SIZE_128K:
+                NV_ASSERT_OR_RETURN(pageSize == vasCapsParams.bigPageSize, NV_ERR_INVALID_STATE);
+                pageSizeMap = NVOS46_FLAGS_PAGE_SIZE_BIG;
+                break;
+            case RM_PAGE_SIZE_HUGE:
+                pageSizeMap = NVOS46_FLAGS_PAGE_SIZE_HUGE;
+                break;
+            case RM_PAGE_SIZE_512M:
+                pageSizeMap = NVOS46_FLAGS_PAGE_SIZE_512M;
+                break;
+            default:
+                NV_PRINTF(LEVEL_INFO, "page size not supported: 0x%llx\n", pageSize);
+                continue;
+        }
+
+        NvU64 mapSize = NV_ALIGN_DOWN(remainingMapSize, pageSize);
+
+        NV_ASSERT_OK_OR_RETURN(
+            pRmApi->Map(pRmApi,
+                        pChannel->hClient,
+                        pChannel->deviceId,
+                        pChannel->hFbAliasVA,
+                        pChannel->hFbAlias,
+                        currentFbOffset,
+                        mapSize,
+                        DRF_NUM(OS46, _FLAGS, _PAGE_SIZE, pageSizeMap) |
+                        DRF_DEF(OS46, _FLAGS, _DMA_OFFSET_FIXED, _TRUE),
+                        &currentVaddr));
+
+        NV_PRINTF(LEVEL_INFO,
+            "CeUtils VAS : FB (addr: %llx, size: %llx) identity mapped to VAS at addr: %llx, page size: 0x%llx\n",
+             currentFbOffset, mapSize, currentVaddr, pageSize);
+
+        remainingMapSize -= mapSize;
+        currentFbOffset += mapSize;
+        currentVaddr += mapSize;
+    }
+    NV_ASSERT_OR_RETURN(currentFbOffset == pChannel->fbSize, NV_ERR_INVALID_STATE);
+    pChannel->fbAliasVA = pChannel->vaStartOffset;
+    return NV_OK;
+}
+
 NV_STATUS
 memmgrMemUtilsChannelInitialize_GM107
 (
@@ -428,6 +521,10 @@ memmgrMemUtilsChannelInitialize_GM107
     OBJCL            *pCl                 = SYS_GET_CL(pSys);
     NvU32             cacheSnoopFlag      = 0 ;
     NvBool            bUseRmApiForBar1    = NV_FALSE;
+    NvU32             transferFlags       = pChannel->bUseBar1 ? TRANSFER_FLAGS_USE_BAR1 : TRANSFER_FLAGS_NONE;
+
+    // Legacy SLI support is not implemented
+    NV_ASSERT_OR_RETURN(!IsSLIEnabled(pGpu) , NV_ERR_NOT_SUPPORTED);
 
     //
     // Heap alloc one chunk of memory to hold all of our alloc parameters to
@@ -582,7 +679,8 @@ memmgrMemUtilsChannelInitialize_GM107
         if (gpuIsSplitVasManagementServerClientRmEnabled(pGpu))
         {
             OBJGVASPACE *pGVAS = dynamicCast(pChannel->pVAS, OBJGVASPACE);
-            vaStartOffset += pGVAS->vaLimitServerRMOwned + 1;
+            // Align to 512M in order to use it as page size for identity mapping
+            vaStartOffset += NV_ALIGN_UP64(pGVAS->vaLimitServerRMOwned + 1, RM_PAGE_SIZE_512M);
             pChannel->vaStartOffset = vaStartOffset;
         }
 
@@ -637,24 +735,8 @@ memmgrMemUtilsChannelInitialize_GM107
         // set up mapping of VA -> PA
         if (pChannel->bUseVasForCeCopy)
         {
-            NV_CHECK_OK_OR_GOTO(
-                rmStatus,
-                LEVEL_ERROR,
-                pRmApi->Map(pRmApi,
-                            hClient,
-                            pChannel->deviceId,
-                            pChannel->hFbAliasVA,
-                            pChannel->hFbAlias,
-                            0,
-                            pChannel->fbSize,
-                            DRF_DEF(OS46, _FLAGS, _ACCESS,           _READ_WRITE) |
-                            DRF_DEF(OS46, _FLAGS, _PAGE_SIZE,        _BIG)        |
-                            DRF_DEF(OS46, _FLAGS, _CACHE_SNOOP,      _ENABLE),
-                            &pChannel->fbAliasVA),
-                exit_free_client);
-
-            NV_PRINTF(LEVEL_INFO, "Scrubber VAS :%x identity mapped with start addr: %llx, size: %llx\n",
-                      pChannel->hFbAliasVA, pChannel->fbAliasVA, pChannel->fbSize);
+            NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_ERROR,
+                memmgrMemUtilsMapFbAlias(pMemoryManager, pChannel), exit_free_client);
         }
     }
 
@@ -797,12 +879,12 @@ memmgrMemUtilsChannelInitialize_GM107
             // Most use cases can migrate to the internal memdescMap path for BAR1
             // And it is preferred because external path will not work with CC
             //
-            pChannel->pbCpuVA = memmgrMemDescBeginTransfer(pMemoryManager, 
-                                    pChannel->pChannelBufferMemdesc, TRANSFER_FLAGS_USE_BAR1);
+            pChannel->pbCpuVA = memmgrMemDescBeginTransfer(pMemoryManager,
+                                    pChannel->pChannelBufferMemdesc, transferFlags);
             NV_ASSERT_OR_GOTO(pChannel->pbCpuVA != NULL, exit_free_client);
 
             pErrNotifierCpuVA = memmgrMemDescBeginTransfer(pMemoryManager,
-                                    pChannel->pErrNotifierMemdesc, TRANSFER_FLAGS_USE_BAR1);
+                                    pChannel->pErrNotifierMemdesc, transferFlags);
             NV_ASSERT_OR_GOTO(pErrNotifierCpuVA != NULL, exit_free_client);
         }
 
@@ -994,7 +1076,7 @@ _memUtilsMapUserd_GM107
         {
             pChannel->pControlGPFifo =
                 (void *)memmgrMemDescBeginTransfer(pMemoryManager, pChannel->pUserdMemdesc,
-                                                   TRANSFER_FLAGS_USE_BAR1);
+                                                   pChannel->bUseBar1 ? TRANSFER_FLAGS_USE_BAR1 : TRANSFER_FLAGS_NONE);
             NV_ASSERT_OR_RETURN(pChannel->pControlGPFifo != NULL, NV_ERR_GENERIC);
         }
     }
@@ -1100,15 +1182,18 @@ _memUtilsAllocateChannel
     NvU32                   hClass;
     RM_API                 *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     NvBool                  bMIGInUse = IS_MIG_IN_USE(pGpu);
+    RM_ENGINE_TYPE          engineType;
     NvU32                   flags = DRF_DEF(OS04, _FLAGS, _CHANNEL_SKIP_SCRUBBER, _TRUE);
-    RM_ENGINE_TYPE          engineType = (pChannel->type == SWL_SCRUBBER_CHANNEL) ?
-                                RM_ENGINE_TYPE_SEC2 : RM_ENGINE_TYPE_COPY(pChannel->ceId);
 
-    if (pChannel->bSecure)
+    if (pChannel->type == SWL_SCRUBBER_CHANNEL)
     {
+        engineType = RM_ENGINE_TYPE_SEC2;
         flags |= DRF_DEF(OS04, _FLAGS, _CC_SECURE, _TRUE);
     }
-
+    else
+    {
+        engineType = RM_ENGINE_TYPE_COPY(pChannel->ceId);
+    }
     portMemSet(&channelGPFIFOAllocParams, 0, sizeof(NV_CHANNEL_ALLOC_PARAMS));
     channelGPFIFOAllocParams.hObjectError  = hObjectError;
     channelGPFIFOAllocParams.hObjectBuffer = hObjectBuffer;
@@ -1171,10 +1256,14 @@ _memUtilsAllocateChannel
                                    pChannel),
             cleanup);
 
-        SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
-        channelGPFIFOAllocParams.hUserdMemory[gpumgrGetSubDeviceInstanceFromGpu(pGpu)] = pChannel->hUserD;
-        channelGPFIFOAllocParams.userdOffset[gpumgrGetSubDeviceInstanceFromGpu(pGpu)] = 0;
-        SLI_LOOP_END
+        channelGPFIFOAllocParams.hUserdMemory[0] = pChannel->hUserD;
+        channelGPFIFOAllocParams.userdOffset[0] = 0;
+    }
+
+    if (RMCFG_FEATURE_PLATFORM_GSP)
+    {
+        channelGPFIFOAllocParams.internalFlags = DRF_DEF(_KERNELCHANNEL, _ALLOC_INTERNALFLAGS, _PRIVILEGE, _KERNEL) |
+                                                 DRF_DEF(_KERNELCHANNEL, _ALLOC_INTERNALFLAGS, _GSP_OWNED, _YES);
     }
 
     NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(

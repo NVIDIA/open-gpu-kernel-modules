@@ -35,10 +35,16 @@
 
 #endif
 
+#if defined(SRT_BUILD)
+#define RMCFG_MODULE_x 1
+#define RMCFG_FEATURE_x 1
+#else
+#include "rmconfig.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 // Default page size 64KB
 #define PMA_GRANULARITY 0x10000
@@ -71,6 +77,7 @@ typedef NvU32 PMA_PAGESTATUS;
 #define ATTRIB_PERSISTENT  NVBIT(MAP_IDX_PERSISTENT)
 #define ATTRIB_NUMA_REUSE  NVBIT(MAP_IDX_NUMA_REUSE)
 #define ATTRIB_BLACKLIST   NVBIT(MAP_IDX_BLACKLIST)
+
 #define ATTRIB_MASK        (ATTRIB_EVICTING | ATTRIB_SCRUBBING      \
                             | ATTRIB_PERSISTENT | ATTRIB_NUMA_REUSE \
                             | ATTRIB_BLACKLIST)
@@ -79,6 +86,7 @@ typedef NvU32 PMA_PAGESTATUS;
 
 #define PMA_STATE_BITS_PER_PAGE     2   // Alloc & pinned state
 #define PMA_ATTRIB_BITS_PER_PAGE    5   // Persistence, Scrubbing, Evicting, Reuse & Blacklisting attributes
+
 #define PMA_BITS_PER_PAGE           (PMA_STATE_BITS_PER_PAGE + PMA_ATTRIB_BITS_PER_PAGE)
 
 //

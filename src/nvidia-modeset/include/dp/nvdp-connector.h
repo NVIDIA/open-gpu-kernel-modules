@@ -59,8 +59,7 @@ NvBool nvDPLibIsModePossible(const NVDPLibConnectorRec *pDpLibConnector,
 
 NvBool nvDPValidateModeForDpyEvo(
     const NVDpyEvoRec *pDpyEvo,
-    const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
-    const enum NvKmsDpyAttributeColorBpcValue colorBpc,
+    const NVDpyAttributeColor *pDpyColor,
     const struct NvKmsModeValidationParams *pModeValidationParams,
     const NVHwModeTimingsEvo *pTimings,
     const NvBool b2Heads1Or,
@@ -89,6 +88,8 @@ enum NVDpLinkMode {
 };
 
 enum NVDpLinkMode nvDPGetActiveLinkMode(NVDPLibConnectorPtr pDpLibConnector);
+
+void nvDPSetLinkHandoff(NVDPLibConnectorPtr pDpLibConnector, NvBool enable);
 
 #ifdef __cplusplus
 };

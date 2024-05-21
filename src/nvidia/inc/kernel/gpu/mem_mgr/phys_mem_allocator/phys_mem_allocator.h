@@ -46,6 +46,7 @@
 
 #if defined(SRT_BUILD)
 #define RMCFG_MODULE_x 1
+#define RMCFG_FEATURE_x 1
 #else
 #include "rmconfig.h"
 #endif

@@ -1,6 +1,13 @@
+
 #ifndef _G_MEM_DESC_NVOC_H_
 #define _G_MEM_DESC_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,6 +36,7 @@ extern "C" {
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_mem_desc_nvoc.h"
 
 #ifndef _MEMDESC_H_
@@ -36,6 +44,7 @@ extern "C" {
 
 #include "core/prelude.h"
 #include "poolalloc.h"
+
 
 
 struct OBJVASPACE;
@@ -50,6 +59,7 @@ typedef struct OBJVASPACE OBJVASPACE;
 #endif /* __nvoc_class_id_OBJVASPACE */
 
 
+
 struct OBJGPU;
 
 #ifndef __NVOC_CLASS_OBJGPU_TYPEDEF__
@@ -62,6 +72,7 @@ typedef struct OBJGPU OBJGPU;
 #endif /* __nvoc_class_id_OBJGPU */
 
 
+
 struct Heap;
 
 #ifndef __NVOC_CLASS_Heap_TYPEDEF__
@@ -72,6 +83,19 @@ typedef struct Heap Heap;
 #ifndef __nvoc_class_id_Heap
 #define __nvoc_class_id_Heap 0x556e9a
 #endif /* __nvoc_class_id_Heap */
+
+
+
+struct RsClient;
+
+#ifndef __NVOC_CLASS_RsClient_TYPEDEF__
+#define __NVOC_CLASS_RsClient_TYPEDEF__
+typedef struct RsClient RsClient;
+#endif /* __NVOC_CLASS_RsClient_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_RsClient
+#define __nvoc_class_id_RsClient 0x8f87e5
+#endif /* __nvoc_class_id_RsClient */
 
 
 struct MEMORY_DESCRIPTOR;
@@ -342,7 +366,7 @@ typedef enum
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_126       = 159U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_127       = 160U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_128       = 161U,
-    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_129       = 162U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_FBSR_CE_TEST_BUFFER   = 162U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_130       = 163U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_131       = 164U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_132       = 165U,
@@ -358,12 +382,12 @@ typedef enum
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_142       = 175U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_143       = 176U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_GSP_NOTIFY_OP_SURFACE = 177U,
-    NV_FB_ALLOC_RM_INTERNAL_OWNER_GR_SCRUB_CHANNEL      = 179U,
-
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_FAKE_WPR_RSVD         = 178U,
+    //
     // Unused tags from here, for any new use-case it's required 
     // to replace the below tags with known verbose strings
     //
-    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_145       = 178U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_146       = 179U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_147       = 180U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_148       = 181U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_149       = 182U,
@@ -891,8 +915,8 @@ NvBool memdescAcquireRmExclusiveUse(MEMORY_DESCRIPTOR *pMemDesc);
 NV_STATUS memdescFillMemdescForPhysAttr(MEMORY_DESCRIPTOR *pMemDesc, ADDRESS_TRANSLATION addressTranslation,
                                         NvU64 *pOffset,NvU32 *pMemAperture, NvU32 *pMemKind, NvU32 *pZCullId,
                                         NvU32 *pGpuCacheAttr, NvU32 *pGpuP2PCacheAttr, NvU64 *contigSegmentSize);
-
 NvBool memdescIsEgm(MEMORY_DESCRIPTOR *pMemDesc);
+
 /*!
  *  @brief Get PTE kind
  *
@@ -1156,35 +1180,10 @@ void memdescOverrideInstLocList(NvU32 loc, const char *name, const NV_ADDRESS_SP
 void memdescOverridePhysicalAddressWidthWindowsWAR(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc, NvU32 addressWidth);
 
 /*!
-* @brief Register memory descriptor referenced by hMemory in CPU-RM to GSP
-*
-* @param[in]  pGpu          OBJGPU pointer
-* @param[in]  hClient       client handled
-* @param[in]  hSubDevice    subdevice handle
-* @param[in]  hMemory       memory handle
-*
-* @returns NV_STATUS
-*/
-NV_STATUS memdescRegisterToGSP(OBJGPU *pGpu, NvHandle hClient, NvHandle hParent, NvHandle hMemory);
-
-/*!
-* @brief Deregister memory descriptor referenced by hMemory in CPU-RM from GSP
-*
-* @param[in]  pGpu          OBJGPU pointer
-* @param[in]  hClient       client handled
-* @param[in]  hSubDevice    subdevice handle
-* @param[in]  hMemory       memory handle
-*
-* @returns NV_STATUS
-*/
-
-NV_STATUS memdescDeregisterFromGSP(OBJGPU *pGpu, NvHandle hClient, NvHandle hParent, NvHandle hMemory);
-
-/*!
 * @brief Send memory descriptor from CPU-RM to GSP
 *
 * This function will create a MemoryList object with the MEMORY_DESCRIPTOR information on CPU-RM
-* It will then use memdescRegisterToGSP API to create a corresponding MemoryList object on GSP-RM
+* It will then use memRegisterWithGsp API to create a corresponding MemoryList object on GSP-RM
 * with the same Handle as that on CPU-RM
 *
 * This MemoryList object has the same MEMORY_DESCRIPTOR info as the input pMemDesc
@@ -1341,6 +1340,8 @@ void memdescSetName(OBJGPU*, MEMORY_DESCRIPTOR *pMemDesc, const char *name, cons
 // created using NV01_MEMORY_LIST_SYSTEM, NV01_MEMORY_LIST_FBMEM or NV01_MEMORY_LIST_OBJECT.
 #define MEMDESC_FLAGS_LIST_MEMORY                  NVBIT64(34)
 
+// unused                                          NVBIT64(35)
+
 // This flag is used to denote that this memdesc is allocated from
 // a context buffer pool. When this flag is set, we expect a pointer
 // to this context buffer pool to be cached in memdesc.
@@ -1353,7 +1354,7 @@ void memdescSetName(OBJGPU*, MEMORY_DESCRIPTOR *pMemDesc, const char *name, cons
 #define MEMDESC_FLAGS_SKIP_REGMEM_PRIV_CHECK       NVBIT64(37)
 
 // This flag denotes the memory descriptor of type Display non iso
-#define MEMDESC_FLAGS_MEMORY_TYPE_DISPLAY_NISO             NVBIT64(38)
+#define MEMDESC_FLAGS_MEMORY_TYPE_DISPLAY_NISO     NVBIT64(38)
 
 // This flag is used to force mapping of coherent sysmem through
 // the GMMU over BAR1. This is useful when we need some form
@@ -1369,10 +1370,7 @@ void memdescSetName(OBJGPU*, MEMORY_DESCRIPTOR *pMemDesc, const char *name, cons
 // 32-bit addressable.
 #define MEMDESC_FLAGS_ALLOC_32BIT_ADDRESSABLE      NVBIT64(41)
 
-//
-// If this flag is set, the memory is registered in GSP
-//
-#define MEMDESC_FLAGS_REGISTERED_TO_GSP      NVBIT64(42)
+// unused                                          NVBIT64(42)
 
 //
 // If this flag is set then it indicates that the memory associated with
@@ -1384,12 +1382,12 @@ void memdescSetName(OBJGPU*, MEMORY_DESCRIPTOR *pMemDesc, const char *name, cons
 // Indicates that this memdesc is tracking client sysmem allocation as
 // against RM internal sysmem allocation
 //
-#define MEMDESC_FLAGS_SYSMEM_OWNED_BY_CLIENT        NVBIT64(44)
+#define MEMDESC_FLAGS_SYSMEM_OWNED_BY_CLIENT       NVBIT64(44)
 //
 // Clients (including RM) should set this flag to request allocations in
 // unprotected memory. This is required for Confidential Compute cases
 //
-#define MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY   NVBIT64(45)
+#define MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY  NVBIT64(45)
 
 //
 // The following is a special use case for sharing memory between
@@ -1397,26 +1395,26 @@ void memdescSetName(OBJGPU*, MEMORY_DESCRIPTOR *pMemDesc, const char *name, cons
 // currently for this, so a WAR is required for r515. The intent
 // is to remove this by r525.
 //
-#define MEMDESC_FLAGS_WSL_SHARED_MEMORY             NVBIT64(46)
+#define MEMDESC_FLAGS_WSL_SHARED_MEMORY            NVBIT64(46)
 
 //
 // Skip IOMMU mapping creation during alloc for sysmem.
 // A mapping might be requested later with custom parameters.
 //
-#define MEMDESC_FLAGS_SKIP_IOMMU_MAPPING            NVBIT64(47)
+#define MEMDESC_FLAGS_SKIP_IOMMU_MAPPING           NVBIT64(47)
 
 //
 // Specical case to allocate the runlists for Guests from its GPA
 // In MODS, VM's GPA allocated from subheap so using this define to
 // Forcing memdesc to allocated from subheap
 //
-#define MEMDESC_FLAGS_FORCE_ALLOC_FROM_SUBHEAP      NVBIT64(48)
+#define MEMDESC_FLAGS_FORCE_ALLOC_FROM_SUBHEAP     NVBIT64(48)
 
 //
 // Indicate if memdesc needs to restore pte kind in the static bar1 mode
 // when it is freed.
 //
-#define MEMDESC_FLAGS_RESTORE_PTE_KIND_ON_FREE      NVBIT64(49)
+#define MEMDESC_FLAGS_RESTORE_PTE_KIND_ON_FREE     NVBIT64(49)
 
 
 #endif // _MEMDESC_H_

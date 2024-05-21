@@ -291,7 +291,7 @@ _nvswitch_corelib_get_uphy_load
 )
 {
     nvswitch_device *device = link->dev->pDevInfo;
-    return device->hal.nvswitch_corelib_get_uphy_load(link, bUnlocked);
+    device->hal.nvswitch_corelib_get_uphy_load(link, bUnlocked);
 }
 
 
@@ -805,6 +805,17 @@ nvswitch_soe_init_l2_state
     device->hal.nvswitch_soe_init_l2_state(device);
 }
 
+NvlStatus
+nvswitch_soe_issue_ingress_stop
+(
+    nvswitch_device *device,
+    NvU32 nport,
+    NvBool bStop
+)
+{
+    return device->hal.nvswitch_soe_issue_ingress_stop(device, nport, bStop);
+}
+
 void
 nvswitch_fsp_update_cmdq_head_tail
 (
@@ -813,7 +824,7 @@ nvswitch_fsp_update_cmdq_head_tail
     NvU32 queueTail
 )
 {
-    return device->hal.nvswitch_fsp_update_cmdq_head_tail(device, queueHead, queueTail);
+    device->hal.nvswitch_fsp_update_cmdq_head_tail(device, queueHead, queueTail);
 }
 
 void
@@ -824,7 +835,7 @@ nvswitch_fsp_get_cmdq_head_tail
     NvU32 *pQueueTail
 )
 {
-    return device->hal.nvswitch_fsp_get_cmdq_head_tail(device, pQueueHead, pQueueTail);
+    device->hal.nvswitch_fsp_get_cmdq_head_tail(device, pQueueHead, pQueueTail);
 }
 
 void
@@ -835,7 +846,7 @@ nvswitch_fsp_update_msgq_head_tail
     NvU32 msgqTail
 )
 {
-    return device->hal.nvswitch_fsp_update_msgq_head_tail(device, msgqHead, msgqTail);
+    device->hal.nvswitch_fsp_update_msgq_head_tail(device, msgqHead, msgqTail);
 }
 
 void
@@ -846,7 +857,7 @@ nvswitch_fsp_get_msgq_head_tail
     NvU32 *pMsgqTail
 )
 {
-   return device->hal.nvswitch_fsp_get_msgq_head_tail(device, pMsgqHead, pMsgqTail);
+   device->hal.nvswitch_fsp_get_msgq_head_tail(device, pMsgqHead, pMsgqTail);
 }
 
 NvU32
@@ -3417,7 +3428,7 @@ nvswitch_init_npg_multicast
     nvswitch_device *device
 )
 {
-    return device->hal.nvswitch_init_npg_multicast(device);
+    device->hal.nvswitch_init_npg_multicast(device);
 }
 
 void
@@ -3426,7 +3437,7 @@ nvswitch_init_warm_reset
     nvswitch_device *device
 )
 {
-    return device->hal.nvswitch_init_warm_reset(device);
+    device->hal.nvswitch_init_warm_reset(device);
 }
 
 static NvlStatus
@@ -4500,15 +4511,15 @@ nvswitch_filter_messages
 
     if (nvswitch_is_message_persistent(device, msghdr))
     {
-         if (nvListCount(&device->link[linkId].inbandData.persistent_list) <
-             device->hal.nvswitch_get_max_persistent_message_count(device))
-         {
-         nvListAdd(&msg->entry, &device->link[linkId].inbandData.persistent_list);
-    }
-    else
-    {
-             bSendNackOrDrop = NV_TRUE;
-         }
+        if (nvListCount(&device->link[linkId].inbandData.persistent_list) <
+            device->hal.nvswitch_get_max_persistent_message_count(device))
+        {
+            nvListAdd(&msg->entry, &device->link[linkId].inbandData.persistent_list);
+        }
+        else
+        {
+            bSendNackOrDrop = NV_TRUE;
+        }
     }
     else
     {
@@ -4530,13 +4541,13 @@ nvswitch_filter_messages
     }
     else
     {
-    status = nvswitch_lib_notify_client_events(device,
-                                               NVSWITCH_DEVICE_EVENT_INBAND_DATA);
-    if (status != NVL_SUCCESS)
-    {
-          NVSWITCH_PRINT(device, ERROR, "%s: Failed to notify INBAND_DATA event\n",
-                         __FUNCTION__);
-    }
+        status = nvswitch_lib_notify_client_events(device,
+                                                   NVSWITCH_DEVICE_EVENT_INBAND_DATA);
+        if (status != NVL_SUCCESS)
+        {
+              NVSWITCH_PRINT(device, ERROR, "%s: Failed to notify INBAND_DATA event\n",
+                             __FUNCTION__);
+        }
     }
 
     device->link[linkId].inbandData.message = NULL;
@@ -5101,7 +5112,7 @@ nvswitch_init_clock_gating
     nvswitch_device *device
 )
 {
-    return device->hal.nvswitch_init_clock_gating(device);
+    device->hal.nvswitch_init_clock_gating(device);
 }
 
 void
@@ -5494,7 +5505,7 @@ nvswitch_setup_link_loopback_mode
     NvU32            linkNumber
 )
 {
-    return device->hal.nvswitch_setup_link_loopback_mode(device, linkNumber);
+    device->hal.nvswitch_setup_link_loopback_mode(device, linkNumber);
 }
 
 void
@@ -5504,7 +5515,7 @@ nvswitch_reset_persistent_link_hw_state
     NvU32            linkNumber
 )
 {
-    return device->hal.nvswitch_reset_persistent_link_hw_state(device, linkNumber);
+    device->hal.nvswitch_reset_persistent_link_hw_state(device, linkNumber);
 }
 
 void
@@ -5514,7 +5525,7 @@ nvswitch_store_topology_information
     nvlink_link *link
 )
 {
-    return device->hal.nvswitch_store_topology_information(device, link);
+    device->hal.nvswitch_store_topology_information(device, link);
 }
 
 void
@@ -5603,7 +5614,7 @@ nvswitch_init_buffer_ready
     NvBool bNportBufferReady
 )
 {
-    return device->hal.nvswitch_init_buffer_ready(device, link, bNportBufferReady);
+    device->hal.nvswitch_init_buffer_ready(device, link, bNportBufferReady);
 }
 
 void
@@ -5613,7 +5624,7 @@ nvswitch_apply_recal_settings
     nvlink_link *link
 )
 {
-    return device->hal.nvswitch_apply_recal_settings(device, link);
+    device->hal.nvswitch_apply_recal_settings(device, link);
 }
 
 NvlStatus

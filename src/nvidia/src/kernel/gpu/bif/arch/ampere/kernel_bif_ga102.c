@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,6 +25,8 @@
 /* ------------------------ Includes ---------------------------------------- */
 #include "gpu/bif/kernel_bif.h"
 #include "published/ampere/ga102/dev_nv_pcfg_xve_regmap.h"
+
+#include "nvmisc.h"
 
 // XVE register map for PCIe config space
 static const NvU32 xveRegMapValid[] = NV_PCFG_XVE_REGISTER_VALID_MAP;
@@ -58,8 +60,8 @@ kbifInitXveRegMap_GA102
         pKernelBif->xveRegmapRef[0].nFunc              = 0;
         pKernelBif->xveRegmapRef[0].xveRegMapValid     = xveRegMapValid;
         pKernelBif->xveRegmapRef[0].xveRegMapWrite     = xveRegMapWrite;
-        pKernelBif->xveRegmapRef[0].numXveRegMapValid  = sizeof(xveRegMapValid)/sizeof(xveRegMapValid[0]);
-        pKernelBif->xveRegmapRef[0].numXveRegMapWrite  = sizeof(xveRegMapWrite)/sizeof(xveRegMapWrite[0]);
+        pKernelBif->xveRegmapRef[0].numXveRegMapValid  = NV_ARRAY_ELEMENTS(xveRegMapValid);
+        pKernelBif->xveRegmapRef[0].numXveRegMapWrite  = NV_ARRAY_ELEMENTS(xveRegMapWrite);
         pKernelBif->xveRegmapRef[0].bufBootConfigSpace = pKernelBif->cacheData.gpuBootConfigSpace;
         // Each MSIX table entry is 4 NvU32s
         controlSize = kbifGetMSIXTableVectorControlSize_HAL(pGpu, pKernelBif);

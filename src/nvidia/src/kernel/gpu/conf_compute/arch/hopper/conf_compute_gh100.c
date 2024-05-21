@@ -71,8 +71,8 @@ confComputeIsGpuCcCapable_GH100
 
     if (confComputeIsDebugModeEnabled_HAL(pGpu, pConfCompute))
     {
-        NV_PRINTF(LEVEL_ERROR, "Cannot boot Confidential Compute as debug board is not supported!\n");
-        return NV_FALSE;
+        NV_PRINTF(LEVEL_ERROR, "Not checking if GPU is capable of accepting conf compute workloads\n");
+        return NV_TRUE;
     }
 
     reg = GPU_REG_RD32(pGpu, NV_FUSE_SPARE_BIT_0);
@@ -85,71 +85,6 @@ confComputeIsGpuCcCapable_GH100
         }
     }
     return NV_FALSE;
-}
-
-/*!
- * @brief Derives secrets for given CE key space.
- *
- * @param[in]  ceRmEngineTypeIdx    the RM engine type for LCE
- * @param[in]  ccKeyspaceLCEIndex   the key space index
- *
- * @return NV_ERR_INVALID_ARGUMENT if engine is not correct.
- *         NV_OK otherwise.
- */
-NV_STATUS
-confComputeDeriveSecretsForCEKeySpace_GH100
-(
-    ConfidentialCompute *pConfCompute,
-    RM_ENGINE_TYPE       ceRmEngineTypeIdx,
-    NvU32                ccKeyspaceLCEIndex
-)
-{
-    OBJGPU *pGpu = ENG_GET_GPU(pConfCompute);
-    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-    NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS_PARAMS params = {0};
-
-    //
-    // ceRmEngineTypeIdx is not exactly used as a CE index.
-    // For example, ceRmEngineTypeIdx is 0 for the first secure CE which is
-    // actually the LCE 2. 
-    // It is used as a key space index. 
-    //
-    // TODO: refactor the code to use exact the engine type number, bug 4594450.
-    //
-    params.engineId = gpuGetNv2080EngineType(ceRmEngineTypeIdx);
-    NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
-                                           pGpu->hInternalClient,
-                                           pGpu->hInternalSubdevice,
-                                           NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS,
-                                           &params,
-                                           sizeof(params)));
-
-    NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
-        CC_GKEYID_GEN(ccKeyspaceLCEIndex, CC_LKEYID_LCE_H2D_USER)));
-    NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
-        CC_GKEYID_GEN(ccKeyspaceLCEIndex, CC_LKEYID_LCE_D2H_USER)));
-    NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
-        CC_GKEYID_GEN(ccKeyspaceLCEIndex, CC_LKEYID_LCE_H2D_KERN)));
-    NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
-        CC_GKEYID_GEN(ccKeyspaceLCEIndex, CC_LKEYID_LCE_D2H_KERN)));
-
-    confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
-        CC_GKEYID_GEN(ccKeyspaceLCEIndex, CC_LKEYID_LCE_H2D_USER),
-        (void*)&params.ivMaskSet[0].ivMask);
-
-    confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
-        CC_GKEYID_GEN(ccKeyspaceLCEIndex, CC_LKEYID_LCE_D2H_USER),
-        (void*)&params.ivMaskSet[1].ivMask);
-
-    confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
-        CC_GKEYID_GEN(ccKeyspaceLCEIndex, CC_LKEYID_LCE_H2D_KERN),
-        (void*)&params.ivMaskSet[2].ivMask);
-
-    confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
-        CC_GKEYID_GEN(ccKeyspaceLCEIndex, CC_LKEYID_LCE_D2H_KERN),
-        (void*)&params.ivMaskSet[3].ivMask);
-
-    return NV_OK;
 }
 
 NV_STATUS
@@ -201,10 +136,6 @@ confComputeDeriveSecrets_GH100(ConfidentialCompute *pConfCompute,
                                                  CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_DATA_KERN),
                                                  (void*)&params.ivMaskSet[NV2080_CTRL_INTERNAL_CONF_COMPUTE_IVMASK_SWL_KERNEL].ivMask[0]);
 
-            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
-                                                 CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_DATA_SCRUBBER),
-                                                 (void*)&params.ivMaskSet[NV2080_CTRL_INTERNAL_CONF_COMPUTE_IVMASK_SWL_SCRUBBER].ivMask[0]);
-
             NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
                 CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_DATA_USER)));
             NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
@@ -213,54 +144,312 @@ confComputeDeriveSecrets_GH100(ConfidentialCompute *pConfCompute,
                 CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_DATA_KERN)));
             NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
                 CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_KERN)));
-            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
-                CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_DATA_SCRUBBER)));
-            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
-                CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER)));
         }
         break;
-
         case MC_ENGINE_IDX_CE2:
-            confComputeDeriveSecretsForCEKeySpace_HAL(pConfCompute,
-                RM_ENGINE_TYPE_COPY0, CC_KEYSPACE_LCE0);
-            break;
+        {
+            NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS_PARAMS params = {0};
 
+            params.engineId = NV2080_ENGINE_TYPE_COPY0;
+            NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                                                   pGpu->hInternalClient,
+                                                   pGpu->hInternalSubdevice,
+                                                   NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS,
+                                                   &params,
+                                                   sizeof(params)));
+
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE0, CC_LKEYID_LCE_H2D_USER)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE0, CC_LKEYID_LCE_D2H_USER)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE0, CC_LKEYID_LCE_H2D_KERN)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE0, CC_LKEYID_LCE_D2H_KERN)));
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE0, CC_LKEYID_LCE_H2D_USER),
+                                                 (void*)&params.ivMaskSet[0].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE0, CC_LKEYID_LCE_D2H_USER),
+                                                 (void*)&params.ivMaskSet[1].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE0, CC_LKEYID_LCE_H2D_KERN),
+                                                 (void*)&params.ivMaskSet[2].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE0, CC_LKEYID_LCE_D2H_KERN),
+                                                 (void*)&params.ivMaskSet[3].ivMask);
+            break;
+        }
         case MC_ENGINE_IDX_CE3:
-            confComputeDeriveSecretsForCEKeySpace_HAL(pConfCompute,
-                RM_ENGINE_TYPE_COPY1, CC_KEYSPACE_LCE1);
-            break;
+        {
+            NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS_PARAMS params = {0};
 
+            params.engineId = NV2080_ENGINE_TYPE_COPY1;
+            NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                                                   pGpu->hInternalClient,
+                                                   pGpu->hInternalSubdevice,
+                                                   NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS,
+                                                   &params,
+                                                   sizeof(params)));
+
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE1, CC_LKEYID_LCE_H2D_USER)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE1, CC_LKEYID_LCE_D2H_USER)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE1, CC_LKEYID_LCE_H2D_KERN)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE1, CC_LKEYID_LCE_D2H_KERN)));
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE1, CC_LKEYID_LCE_H2D_USER),
+                                                 (void*)&params.ivMaskSet[0].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE1, CC_LKEYID_LCE_D2H_USER),
+                                                 (void*)&params.ivMaskSet[1].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE1, CC_LKEYID_LCE_H2D_KERN),
+                                                 (void*)&params.ivMaskSet[2].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE1, CC_LKEYID_LCE_D2H_KERN),
+                                                 (void*)&params.ivMaskSet[3].ivMask);
+            break;
+        }
         case MC_ENGINE_IDX_CE4:
-            confComputeDeriveSecretsForCEKeySpace_HAL(pConfCompute,
-                RM_ENGINE_TYPE_COPY2, CC_KEYSPACE_LCE2);
-            break;
+        {
+            NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS_PARAMS params = {0};
 
+            params.engineId = NV2080_ENGINE_TYPE_COPY2;
+            NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                                                   pGpu->hInternalClient,
+                                                   pGpu->hInternalSubdevice,
+                                                   NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS,
+                                                   &params,
+                                                   sizeof(params)));
+
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE2, CC_LKEYID_LCE_H2D_USER)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE2, CC_LKEYID_LCE_D2H_USER)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE2, CC_LKEYID_LCE_H2D_KERN)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE2, CC_LKEYID_LCE_D2H_KERN)));
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE2, CC_LKEYID_LCE_H2D_USER),
+                                                 (void*)&params.ivMaskSet[0].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE2, CC_LKEYID_LCE_D2H_USER),
+                                                 (void*)&params.ivMaskSet[1].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE2, CC_LKEYID_LCE_H2D_KERN),
+                                                 (void*)&params.ivMaskSet[2].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE2, CC_LKEYID_LCE_D2H_KERN),
+                                                 (void*)&params.ivMaskSet[3].ivMask);
+            break;
+        }
         case MC_ENGINE_IDX_CE5:
-            confComputeDeriveSecretsForCEKeySpace_HAL(pConfCompute,
-                RM_ENGINE_TYPE_COPY3, CC_KEYSPACE_LCE3);
-            break;
+        {
+            NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS_PARAMS params = {0};
 
+            params.engineId = NV2080_ENGINE_TYPE_COPY3;
+            NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                                                   pGpu->hInternalClient,
+                                                   pGpu->hInternalSubdevice,
+                                                   NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS,
+                                                   &params,
+                                                   sizeof(params)));
+
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE3, CC_LKEYID_LCE_H2D_USER)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE3, CC_LKEYID_LCE_D2H_USER)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE3, CC_LKEYID_LCE_H2D_KERN)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE3, CC_LKEYID_LCE_D2H_KERN)));
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE3, CC_LKEYID_LCE_H2D_USER),
+                                                 (void*)&params.ivMaskSet[0].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE3, CC_LKEYID_LCE_D2H_USER),
+                                                 (void*)&params.ivMaskSet[1].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE3, CC_LKEYID_LCE_H2D_KERN),
+                                                 (void*)&params.ivMaskSet[2].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE3, CC_LKEYID_LCE_D2H_KERN),
+                                                 (void*)&params.ivMaskSet[3].ivMask);
+            break;
+        }
         case MC_ENGINE_IDX_CE6:
-            confComputeDeriveSecretsForCEKeySpace_HAL(pConfCompute,
-                RM_ENGINE_TYPE_COPY4, CC_KEYSPACE_LCE4);
-            break;
+        {
+            NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS_PARAMS params = {0};
 
+            params.engineId = NV2080_ENGINE_TYPE_COPY4;
+            NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                                                   pGpu->hInternalClient,
+                                                   pGpu->hInternalSubdevice,
+                                                   NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS,
+                                                   &params,
+                                                   sizeof(params)));
+
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE4, CC_LKEYID_LCE_H2D_USER)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE4, CC_LKEYID_LCE_D2H_USER)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE4, CC_LKEYID_LCE_H2D_KERN)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE4, CC_LKEYID_LCE_D2H_KERN)));
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE4, CC_LKEYID_LCE_H2D_USER),
+                                                 (void*)&params.ivMaskSet[0].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE4, CC_LKEYID_LCE_D2H_USER),
+                                                 (void*)&params.ivMaskSet[1].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE4, CC_LKEYID_LCE_H2D_KERN),
+                                                 (void*)&params.ivMaskSet[2].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE4, CC_LKEYID_LCE_D2H_KERN),
+                                                 (void*)&params.ivMaskSet[3].ivMask);
+            break;
+        }
         case MC_ENGINE_IDX_CE7:
-            confComputeDeriveSecretsForCEKeySpace_HAL(pConfCompute,
-                RM_ENGINE_TYPE_COPY5, CC_KEYSPACE_LCE5);
-            break;
+        {
+            NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS_PARAMS params = {0};
 
+            params.engineId = NV2080_ENGINE_TYPE_COPY5;
+            NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                                                   pGpu->hInternalClient,
+                                                   pGpu->hInternalSubdevice,
+                                                   NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS,
+                                                   &params,
+                                                   sizeof(params)));
+
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE5, CC_LKEYID_LCE_H2D_USER)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE5, CC_LKEYID_LCE_D2H_USER)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE5, CC_LKEYID_LCE_H2D_KERN)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE5, CC_LKEYID_LCE_D2H_KERN)));
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE5, CC_LKEYID_LCE_H2D_USER),
+                                                 (void*)&params.ivMaskSet[0].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE5, CC_LKEYID_LCE_D2H_USER),
+                                                 (void*)&params.ivMaskSet[1].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE5, CC_LKEYID_LCE_H2D_KERN),
+                                                 (void*)&params.ivMaskSet[2].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE5, CC_LKEYID_LCE_D2H_KERN),
+                                                 (void*)&params.ivMaskSet[3].ivMask);
+            break;
+        }
         case MC_ENGINE_IDX_CE8:
-            confComputeDeriveSecretsForCEKeySpace_HAL(pConfCompute,
-                RM_ENGINE_TYPE_COPY6, CC_KEYSPACE_LCE6);
-            break;
+        {
+            NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS_PARAMS params = {0};
 
+            params.engineId = NV2080_ENGINE_TYPE_COPY6;
+            NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                                                   pGpu->hInternalClient,
+                                                   pGpu->hInternalSubdevice,
+                                                   NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS,
+                                                   &params,
+                                                   sizeof(params)));
+
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE6, CC_LKEYID_LCE_H2D_USER)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE6, CC_LKEYID_LCE_D2H_USER)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE6, CC_LKEYID_LCE_H2D_KERN)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE6, CC_LKEYID_LCE_D2H_KERN)));
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE6, CC_LKEYID_LCE_H2D_USER),
+                                                 (void*)&params.ivMaskSet[0].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE6, CC_LKEYID_LCE_D2H_USER),
+                                                 (void*)&params.ivMaskSet[1].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE6, CC_LKEYID_LCE_H2D_KERN),
+                                                 (void*)&params.ivMaskSet[2].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE6, CC_LKEYID_LCE_D2H_KERN),
+                                                 (void*)&params.ivMaskSet[3].ivMask);
+            break;
+        }
         case MC_ENGINE_IDX_CE9:
-            confComputeDeriveSecretsForCEKeySpace_HAL(pConfCompute,
-                RM_ENGINE_TYPE_COPY7, CC_KEYSPACE_LCE7);
+        {
+            NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS_PARAMS params = {0};
+
+            params.engineId = NV2080_ENGINE_TYPE_COPY7;
+            NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                                                   pGpu->hInternalClient,
+                                                   pGpu->hInternalSubdevice,
+                                                   NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS,
+                                                   &params,
+                                                   sizeof(params)));
+
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE7, CC_LKEYID_LCE_H2D_USER)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE7, CC_LKEYID_LCE_D2H_USER)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE7, CC_LKEYID_LCE_H2D_KERN)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_LCE7, CC_LKEYID_LCE_D2H_KERN)));
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE7, CC_LKEYID_LCE_H2D_USER),
+                                                 (void*)&params.ivMaskSet[0].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE7, CC_LKEYID_LCE_D2H_USER),
+                                                 (void*)&params.ivMaskSet[1].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE7, CC_LKEYID_LCE_H2D_KERN),
+                                                 (void*)&params.ivMaskSet[2].ivMask);
+
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_LCE7, CC_LKEYID_LCE_D2H_KERN),
+                                                 (void*)&params.ivMaskSet[3].ivMask);
             break;
-
-
+        }
         default:
             return NV_ERR_INVALID_ARGUMENT;
     }
@@ -291,34 +480,38 @@ confComputeGetEngineIdFromKeySpace_GH100
         return RM_ENGINE_TYPE_SEC2;
     }
 
+    NvU32 lceId = 2; // TODO: Use NV_SSE_SCE_CC_CAPABLE_LCE_ID_START;
     switch (keySpace)
     {
         case CC_KEYSPACE_LCE0:
-            return RM_ENGINE_TYPE_COPY2;
-
+            lceId += 0;
+            break;
         case CC_KEYSPACE_LCE1:
-            return RM_ENGINE_TYPE_COPY3;
-
+            lceId += 1;
+            break;
         case CC_KEYSPACE_LCE2:
-            return RM_ENGINE_TYPE_COPY4;
-
+            lceId += 2;
+            break;
         case CC_KEYSPACE_LCE3:
-            return RM_ENGINE_TYPE_COPY5;
-
+            lceId += 3;
+            break;
         case CC_KEYSPACE_LCE4:
-            return RM_ENGINE_TYPE_COPY6;
-
+            lceId += 4;
+            break;
         case CC_KEYSPACE_LCE5:
-            return RM_ENGINE_TYPE_COPY7;
-
+            lceId += 5;
+            break;
         case CC_KEYSPACE_LCE6:
-            return RM_ENGINE_TYPE_COPY8;
-
+            lceId += 6;
+            break;
         case CC_KEYSPACE_LCE7:
-            return RM_ENGINE_TYPE_COPY9;
+            lceId += 7;
+            break;
+        default:
+            return  RM_ENGINE_TYPE_NULL;
     }
 
-    return RM_ENGINE_TYPE_NULL;
+    return RM_ENGINE_TYPE_COPY(lceId);
  }
 
 /*!
@@ -346,8 +539,6 @@ confComputeGlobalKeyIsKernelPriv_GH100
         {
             case CC_LKEYID_CPU_SEC2_DATA_KERN:
             case CC_LKEYID_CPU_SEC2_HMAC_KERN:
-            case CC_LKEYID_CPU_SEC2_DATA_SCRUBBER:
-            case CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER:
                 return NV_TRUE;
         }
     }
@@ -364,43 +555,11 @@ confComputeGlobalKeyIsKernelPriv_GH100
     return NV_FALSE;
 }
 
-/*!
- * Checks if key is UVM key
- *
- * @param[in]     pConfCompute             : ConfidentialCompute pointer
- * @param[in]     keyId                    : global keyId
- */
-NvBool
-confComputeGlobalKeyIsUvmKey_GH100
-(
-    ConfidentialCompute *pConfCompute,
-    NvU32 globalKeyId
-)
-{
-    NvU32 keySpace = CC_GKEYID_GET_KEYSPACE(globalKeyId);
-    NvU32 localKeyId = CC_GKEYID_GET_LKEYID(globalKeyId);
-    if (keySpace == CC_KEYSPACE_GSP)
-    {
-        return NV_FALSE;
-    }
-    else if (keySpace == CC_KEYSPACE_SEC2)
-    {
-        switch (localKeyId)
-        {
-            case CC_LKEYID_CPU_SEC2_DATA_SCRUBBER:
-            case CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER:
-                return NV_FALSE;
-        }
-    }
-    return confComputeGlobalKeyIsKernelPriv_HAL(pConfCompute, globalKeyId);
-}
-
 NV_STATUS confComputeUpdateSecrets_GH100(ConfidentialCompute *pConfCompute,
                                          NvU32                globalKeyId)
 {
     OBJGPU *pGpu   = ENG_GET_GPU(pConfCompute);
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-
     NvU32   h2dKey, d2hKey;
     NV2080_CTRL_INTERNAL_CONF_COMPUTE_ROTATE_KEYS_PARAMS params = {0};
 
@@ -426,7 +585,7 @@ NV_STATUS confComputeUpdateSecrets_GH100(ConfidentialCompute *pConfCompute,
 
     // Only LCEs have a decrypt IV mask.
     if ((CC_GKEYID_GET_KEYSPACE(d2hKey) >= CC_KEYSPACE_LCE0) &&
-        (CC_GKEYID_GET_KEYSPACE(d2hKey) <= confComputeGetMaxCeKeySpaceIdx(pConfCompute)))
+        (CC_GKEYID_GET_KEYSPACE(d2hKey) <= CC_KEYSPACE_LCE7))
     {
         confComputeKeyStoreDepositIvMask_HAL(pConfCompute, d2hKey, &params.updatedDecryptIVMask);
     }
@@ -445,7 +604,7 @@ NV_STATUS confComputeUpdateSecrets_GH100(ConfidentialCompute *pConfCompute,
         pKernelChannel->clientKmb.encryptBundle.iv[0] = 0x00000000;
 
         if ((CC_GKEYID_GET_KEYSPACE(d2hKey) >= CC_KEYSPACE_LCE0) &&
-            (CC_GKEYID_GET_KEYSPACE(d2hKey) <= confComputeGetMaxCeKeySpaceIdx(pConfCompute)))
+            (CC_GKEYID_GET_KEYSPACE(d2hKey) <= CC_KEYSPACE_LCE7))
         {
             pKernelChannel->clientKmb.decryptBundle.iv[0] = 0x00000000;
         }

@@ -41,7 +41,6 @@ typedef struct {
     NVDscInfoEvoRec dscInfo;
     NVDispHeadInfoFrameStateEvoRec infoFrame;
     enum NvKmsOutputTf tf;
-    enum NvKmsOutputColorimetry colorimetry;
     NvBool hdrInfoFrameOverride;
     NvU32 hdrStaticMetadataLayerMask;
     NvBool colorSpaceSpecified : 1;
@@ -55,7 +54,6 @@ typedef struct {
     NVHwModeTimingsEvo timings;
     NVConnectorEvoRec *pConnectorEvo;
     HDMI_FRL_CONFIG hdmiFrlConfig;
-    NvU8 hdmiFrlBpc;
     NVDPLibModesetStatePtr pDpLibModesetState;
     NVDispHeadAudioStateEvoRec audio;
 } NVProposedModeSetHwStateOneHead;

@@ -293,14 +293,12 @@ __nv_drm_prime_fence_context_new(
      * to check a return value.
      */
 
-    *nv_prime_fence_context = (struct nv_drm_prime_fence_context) {
-        .base.ops = &nv_drm_prime_fence_context_ops,
-        .base.nv_dev = nv_dev,
-        .base.context = nv_dma_fence_context_alloc(1),
-        .base.fenceSemIndex = p->index,
-        .pSemSurface = pSemSurface,
-        .pLinearAddress = pLinearAddress,
-    };
+    nv_prime_fence_context->base.ops = &nv_drm_prime_fence_context_ops;
+    nv_prime_fence_context->base.nv_dev = nv_dev;
+    nv_prime_fence_context->base.context = nv_dma_fence_context_alloc(1);
+    nv_prime_fence_context->base.fenceSemIndex = p->index;
+    nv_prime_fence_context->pSemSurface = pSemSurface;
+    nv_prime_fence_context->pLinearAddress = pLinearAddress;
 
     INIT_LIST_HEAD(&nv_prime_fence_context->pending);
 
@@ -1261,18 +1259,16 @@ __nv_drm_semsurf_fence_ctx_new(
      * to check a return value.
      */
 
-    *ctx = (struct nv_drm_semsurf_fence_ctx) {
-        .base.ops = &nv_drm_semsurf_fence_ctx_ops,
-        .base.nv_dev = nv_dev,
-        .base.context = nv_dma_fence_context_alloc(1),
-        .base.fenceSemIndex = p->index,
-        .pSemSurface = pSemSurface,
-        .pSemMapping.pVoid = semMapping,
-        .pMaxSubmittedMapping = (volatile NvU64 *)maxSubmittedMapping,
-        .callback.local = NULL,
-        .callback.nvKms = NULL,
-        .current_wait_value = 0,
-    };
+    ctx->base.ops = &nv_drm_semsurf_fence_ctx_ops;
+    ctx->base.nv_dev = nv_dev;
+    ctx->base.context = nv_dma_fence_context_alloc(1);
+    ctx->base.fenceSemIndex = p->index;
+    ctx->pSemSurface = pSemSurface;
+    ctx->pSemMapping.pVoid = semMapping;
+    ctx->pMaxSubmittedMapping = (volatile NvU64 *)maxSubmittedMapping;
+    ctx->callback.local = NULL;
+    ctx->callback.nvKms = NULL;
+    ctx->current_wait_value = 0;
 
     spin_lock_init(&ctx->lock);
     INIT_LIST_HEAD(&ctx->pending_fences);

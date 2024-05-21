@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,11 +23,15 @@
 
 
 /* ------------------------ Includes ---------------------------------------- */
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/bif/kernel_bif.h"
 #include "gpu/fifo/kernel_fifo.h"
-#include "published/ampere/ga100/dev_nv_xve_addendum.h"
-#include "published/ampere/ga100/dev_nv_xve.h"
+#include "gpu/nvlink/kernel_nvlink.h"
 #include "published/ampere/ga100/dev_boot.h"
+#include "kernel/gpu/mc/kernel_mc.h"
+#include "platform/chipset/chipset.h"
+#include "published/ampere/ga100/dev_nv_xve.h"
+#include "published/ampere/ga100/dev_nv_xve_addendum.h"
 
 /* ------------------------ Public Functions -------------------------------- */
 
@@ -334,6 +338,151 @@ kbifStoreBarRegOffsets_GA100
 
 
 /*!
+ * @brief  Do any work necessary to be able to do a full chip reset.
+ *
+ * This code needs to accomplish these objectives:
+ *
+ *  - Perform any operations needed to make sure that the HW will not glitch or
+ *  otherwise fail after the reset.  This includes all potential WARs.
+ *  - Perform any operations needed to make sure the devinit scripts can be
+ *  executed properly after the reset.
+ *  - Modify any SW state that could potentially cause errors during/after the reset.
+ *
+ * @param[in]  pGpu       GPU object pointer
+ * @param[in]  pKernelBif KernelBif object pointer
+ *
+ * @return  None
+ */
+void
+kbifPrepareForFullChipReset_GA100
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    KernelBus    *pKernelBus    = GPU_GET_KERNEL_BUS(pGpu);
+    KernelMc     *pKernelMc     = GPU_GET_KERNEL_MC(pGpu);
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+    OBJSYS       *pSys          = SYS_GET_INSTANCE();
+    OBJCL        *pCl           = SYS_GET_CL(pSys);
+
+    NvBool bIsFLRSupportedAndEnabled;
+    NvU32  oldPmc, oldPmcDevice;
+
+    bIsFLRSupportedAndEnabled = (pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_FLR_SUPPORTED)) &&
+                                !(pKernelBif->bForceDisableFLR);
+
+    // If FLR is supported, we must always shut down any NVLinks connected to this GPU
+    if (bIsFLRSupportedAndEnabled && pKernelNvlink &&
+        pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENABLED))
+    {
+        if (knvlinkPrepareForXVEReset(pGpu, pKernelNvlink, NV_FALSE) != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "NVLINK prepare for fullchip reset failed.\n");
+
+            DBG_BREAKPOINT();
+        }
+    }
+
+    //
+    // FLR/SW_RESET pre-conditioning is required for Turing and earlier chips.
+    // For Ampere+ chips, it is only required if p2p mailbox support is enabled
+    // Note that for SW_RESET, we use pre-conditioning in all cases
+    //
+    if ((gpumgrGetGpuLinkCount(pGpu->gpuInstance) > 0) && (kbusIsP2pInitialized(pKernelBus)))
+    {
+        pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_FLR_PRE_CONDITIONING_REQUIRED, NV_TRUE);
+    }
+
+    //
+    // For GA100+ chips we don't need any pre-conditioning WARs for PF-FLR besides NVLink if
+    // p2p mailbox support is not enabled. We still use this pre-conditioning for
+    // SW RESET
+    //
+    if (bIsFLRSupportedAndEnabled &&
+        (!(pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_FLR_PRE_CONDITIONING_REQUIRED))))
+    {
+        goto _bifPrepareForFullChipReset_GA100_exit;
+    }
+
+    pGpu->setProperty(pGpu, PDB_PROP_GPU_PREPARING_FULLCHIP_RESET, NV_TRUE);
+
+    // Disable P2P on all GPUs before RESET,
+    if (kbusPrepareForXVEReset_HAL(pGpu, pKernelBus) != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "BUS prepare for devinit failed.\n");
+
+        DBG_BREAKPOINT();
+    }
+
+    if (kbifPrepareForXveReset_HAL(pGpu, pKernelBif) != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "BIF prepare for devinit failed.\n");
+
+        DBG_BREAKPOINT();
+    }
+
+    //
+    // This code was added to solve a problem that we are seeing with the Microsoft new Win8 Tdr Tests
+    // The GPU is not hung but given more work then it can consume in 2 seconds.  As a result we have some
+    // outstanding IO operations that will cause us issues in the future
+    //
+    oldPmc       = kmcReadPmcEnableReg_HAL(pGpu, pKernelMc, NV_FALSE);
+    oldPmcDevice = kmcReadPmcEnableReg_HAL(pGpu, pKernelMc, NV_TRUE);
+    kbifResetHostEngines_HAL(pGpu, pKernelBif, pKernelMc);
+
+    if (!pCl->getProperty(pCl, PDB_PROP_CL_PCIE_CONFIG_ACCESSIBLE)
+    )
+    {
+        //
+        // We can not issue SW_RESET or Function Level Reset(FLR) as we are not able to access PCI
+        // config space. Now we have disabled engines, please re-enable them before
+        // tearing down RM. To be safe, do it right here.
+        //
+        GPU_REG_WR32(pGpu, NV_PMC_ENABLE, oldPmc);
+        GPU_REG_WR32(pGpu, NV_PMC_DEVICE_ENABLE(0), oldPmcDevice);
+    }
+
+_bifPrepareForFullChipReset_GA100_exit:
+    pGpu->setProperty(pGpu, PDB_PROP_GPU_PREPARING_FULLCHIP_RESET, NV_FALSE);
+}
+
+/*!
+ * @brief  Reset host engines in PMC_ENABLE and PMC_DEVICE_ENABLE.
+ *
+ * @param[in]  pGpu       The GPU object
+ * @param[in]  pKernelBif KernelBif object pointer
+ */
+void
+kbifResetHostEngines_GA100
+(
+    OBJGPU *pGpu,
+    KernelBif *pKernelBif,
+    KernelMc  *pKernelMc
+)
+{
+    NvU32 engineMask;
+
+    // First Reset engines in NV_PMC_ENABLE
+    engineMask = kbifGetValidEnginesToReset_HAL(pGpu, pKernelBif);
+    NV_ASSERT(kmcWritePmcEnableReg_HAL(pGpu, pKernelMc, engineMask, NV_FALSE, NV_FALSE) == NV_OK);
+
+    //
+    // Reset engines in NV_PMC_DEVICE_ENABLE. For Ampere and later chips,
+    // host engines have moved from NV_PMC_ENABLE to NV_PMC_DEVICE_ENABLE,
+    // hence we need to ensure that engines in the NV_PMC_DEVICE_ENABLE are
+    // reset too.
+    //
+    engineMask = kbifGetValidDeviceEnginesToReset_HAL(pGpu, pKernelBif);
+    if (engineMask)
+    {
+        NV_ASSERT_OK(kmcWritePmcEnableReg_HAL(pGpu, pKernelMc, engineMask, NV_FALSE,
+            gpuIsUsePmcDeviceEnableForHostEngineEnabled(pGpu)));
+    }
+}
+
+/*!
  * @brief  Get the NV_PMC_ENABLE bit of the valid Engines to reset.
  *
  * @param[in]  pGpu       The GPU object
@@ -379,11 +528,9 @@ kbifGetValidDeviceEnginesToReset_GA100
     //
     // If hardware increases the size of this register in future chips, we would
     // need to catch this and fork another HAL.
+    // Already obsoleted by GH100, but keeping the check
     //
-    if ((sizeof(NvU32) * NV_PMC_DEVICE_ENABLE__SIZE_1) > sizeof(NvU32))
-    {
-        NV_ASSERT_FAILED("Assert for Mcheck to catch increase in register size. Fork this HAL");
-    }
+    ct_assert(NV_PMC_DEVICE_ENABLE__SIZE_1 <= 1);
 
     for (engineID = 0; engineID < numEngines; engineID++)
     {
@@ -404,24 +551,102 @@ kbifGetValidDeviceEnginesToReset_GA100
     return regVal;
 }
 
+
 /*!
- *  @brief Get the migration bandwidth
+ * @brief  Reset the chip.
  *
- *  @param[out]     pBandwidth  Migration bandwidth
+ * Use Function Level Reset(FLR) to reset as much of the chip as possible.
+ * If FLR is not supported use the XVE sw reset logic .
  *
- *  @returns        NV_STATUS
+ * @param[in]  pGpu       GPU object pointer
+ * @param[in]  pKernelBif KernelBif  object pointer
+ *
+ * @return  NV_STATUS
  */
 NV_STATUS
-kbifGetMigrationBandwidth_GA100
+kbifDoFullChipReset_GA100
 (
-    OBJGPU        *pGpu,
-    KernelBif     *pKernelBif,
-    NvU32         *pBandwidth
+    OBJGPU *pGpu,
+    KernelBif *pKernelBif
 )
 {
-    // Migration bandwidth in MegaBytes/second
-    *pBandwidth = 500;
+    NV_STATUS  status     = NV_OK;
+    NvBool     bIsFLRSupportedAndEnabled;
 
-    return NV_OK;
+    //
+    // We support FLR for SKUs which are FLR capable.
+    // Also check if we want to enforce legacy reset behavior by disabling FLR
+    //
+    bIsFLRSupportedAndEnabled = (pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_FLR_SUPPORTED)) &&
+                                !(pKernelBif->bForceDisableFLR);
+
+    //
+    // If FLR is supported, issue FLR otherwise issue SW_RESET
+    // There is no point in issuing SW_RESET if FLR fails because both of them reset Fn0
+    // except that FLR resets XVE unit as well
+    //
+    if (bIsFLRSupportedAndEnabled)
+    {
+        NV_ASSERT_OK(status = kbifDoFunctionLevelReset_HAL(pGpu, pKernelBif));
+    }
+    else
+    {
+         NV_PRINTF(LEVEL_ERROR, "FLR is either not supported or is disabled.\n");
+    }
+    pGpu->setProperty(pGpu, PDB_PROP_GPU_IN_FULLCHIP_RESET, NV_TRUE);
+
+    // execute rest of the sequence for SW_RESET only if we have not issued FLR above
+
+    return status;
+}
+
+
+/*!
+ * @brief For function 0, clear 'outstanding downstream host reads' counter
+ *        using config cycles
+ *
+ * @param[in] pGpu          GPU object pointer
+ * @param[in] pKernelBif    KernelBif object pointer
+ */
+void
+kbifClearDownstreamReadCounter_GA100
+(
+    OBJGPU *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    void   *handle;
+    NvU32  tempRegVal;
+    NvU16  vendorId;
+    NvU16  deviceId;
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJCL *pCl    = SYS_GET_CL(pSys);
+    NvU32  domain = gpuGetDomain(pGpu);
+    NvU8   bus    = gpuGetBus(pGpu);
+    NvU8   device = gpuGetDevice(pGpu);
+
+    //
+    // Use config cycles(and not BAR0 transactions) to reset the counter.
+    // Currently, this function is called after FLR and before rmInit sequence.
+    // After FLR or in fact after most resets we don't use the standard macro
+    // to read/write a register(until rmInit sequence is complete).The macro
+    // will not allow access when PDB_PROP_GPU_IS_LOST is true. This PDB is
+    // required to keep other accesses from touching the GPU.
+    //
+    handle = osPciInitHandle(domain, bus, device, 0, &vendorId, &deviceId);
+
+    tempRegVal = osPciReadDword(handle, NV_XVE_DBG0);
+    tempRegVal = FLD_SET_DRF(_XVE, _DBG0,
+                             _OUTSTANDING_DOWNSTREAM_READ_CNTR_RESET, _TRIGGER,
+                             tempRegVal);
+
+    //
+    // After triggering the RESET bit, this does not wait for RESET to be
+    // complete. It is upto the caller to decide if it really wants to wait
+    // for the completion. For example, for FLR case, we do not want to waste
+    // cycles on this - it's okay to assume that this write will go through.
+    //
+    clPcieWriteDword(pCl, gpuGetDomain(pGpu), gpuGetBus(pGpu),
+                     gpuGetDevice(pGpu), 0, NV_XVE_DBG0, tempRegVal);
 }
 

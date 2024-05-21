@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2017-2023 NVIDIA Corporation
+    Copyright (c) 2017-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -43,7 +43,7 @@ NV_STATUS uvm_pmm_sysmem_init(void)
     // Ensure that only supported CPU chunk sizes are enabled.
     uvm_cpu_chunk_allocation_sizes &= UVM_CPU_CHUNK_SIZES;
     if (!uvm_cpu_chunk_allocation_sizes || !(uvm_cpu_chunk_allocation_sizes & PAGE_SIZE)) {
-        pr_info("Invalid value for uvm_cpu_chunk_allocation_sizes = 0x%x, using 0x%lx instead\n",
+        pr_info("Invalid value for uvm_cpu_chunk_allocation_sizes = 0x%x, using 0x%llx instead\n",
                 uvm_cpu_chunk_allocation_sizes,
                 UVM_CPU_CHUNK_SIZES);
         uvm_cpu_chunk_allocation_sizes = UVM_CPU_CHUNK_SIZES;
@@ -126,7 +126,7 @@ NV_STATUS uvm_pmm_sysmem_mappings_add_gpu_mapping(uvm_pmm_sysmem_mappings_t *sys
             NvU64 remove_key;
 
             for (remove_key = base_key; remove_key < key; ++remove_key)
-                (void)radix_tree_delete(&sysmem_mappings->reverse_map_tree, remove_key);
+                (void *)radix_tree_delete(&sysmem_mappings->reverse_map_tree, remove_key);
 
             kmem_cache_free(g_reverse_page_map_cache, new_reverse_map);
             status = errno_to_nv_status(ret);
@@ -461,69 +461,12 @@ static NvU32 compute_gpu_mappings_entry_index(uvm_parent_processor_mask_t *dma_a
     return uvm_parent_processor_mask_get_gpu_count(&subset_mask);
 }
 
-static void cpu_chunk_release(nv_kref_t *kref)
-{
-    uvm_cpu_chunk_t *chunk = container_of(kref, uvm_cpu_chunk_t, refcount);
-    uvm_parent_processor_mask_t *mapping_mask;
-    uvm_parent_processor_id_t id;
-    uvm_cpu_physical_chunk_t *phys_chunk = NULL;
-    uvm_cpu_logical_chunk_t *logical_chunk = NULL;
-
-    if (uvm_cpu_chunk_is_physical(chunk)) {
-        phys_chunk = uvm_cpu_chunk_to_physical(chunk);
-        uvm_assert_mutex_unlocked(&phys_chunk->lock);
-        mapping_mask = &phys_chunk->gpu_mappings.dma_addrs_mask;
-    }
-    else {
-        logical_chunk = uvm_cpu_chunk_to_logical(chunk);
-        mapping_mask = &logical_chunk->mapped_gpus;
-    }
-
-    for_each_parent_id_in_mask(id, mapping_mask) {
-        uvm_parent_gpu_t *parent_gpu = uvm_parent_gpu_get(id);
-        uvm_cpu_chunk_unmap_parent_gpu_phys(chunk, parent_gpu);
-    }
-
-    if (uvm_cpu_chunk_is_physical(chunk)) {
-        if (phys_chunk->gpu_mappings.max_entries > 1)
-            uvm_kvfree(phys_chunk->gpu_mappings.dynamic_entries);
-
-        if (uvm_cpu_chunk_get_size(chunk) > PAGE_SIZE &&
-            !bitmap_empty(phys_chunk->dirty_bitmap, uvm_cpu_chunk_num_pages(chunk)))
-            SetPageDirty(phys_chunk->common.page);
-
-        uvm_kvfree(phys_chunk->dirty_bitmap);
-
-        if (chunk->type != UVM_CPU_CHUNK_TYPE_HMM)
-            put_page(phys_chunk->common.page);
-    }
-    else {
-        uvm_cpu_chunk_free(logical_chunk->parent);
-    }
-
-    uvm_kvfree(chunk);
-}
-
-static void uvm_cpu_chunk_get(uvm_cpu_chunk_t *chunk)
-{
-    UVM_ASSERT(chunk);
-    nv_kref_get(&chunk->refcount);
-}
-
-void uvm_cpu_chunk_free(uvm_cpu_chunk_t *chunk)
-{
-    if (!chunk)
-        return;
-
-    nv_kref_put(&chunk->refcount, cpu_chunk_release);
-}
-
 static uvm_cpu_physical_chunk_t *get_physical_parent(uvm_cpu_chunk_t *chunk)
 {
     UVM_ASSERT(chunk);
     UVM_ASSERT(chunk->page);
 
-    while (!uvm_cpu_chunk_is_physical(chunk))
+    while (uvm_cpu_chunk_is_logical(chunk))
         chunk = uvm_cpu_chunk_to_logical(chunk)->parent;
 
     return uvm_cpu_chunk_to_physical(chunk);
@@ -581,6 +524,7 @@ static uvm_cpu_phys_mapping_t *chunk_phys_mapping_alloc(uvm_cpu_physical_chunk_t
 static uvm_cpu_phys_mapping_t *chunk_phys_mapping_get(uvm_cpu_physical_chunk_t *chunk, uvm_parent_gpu_id_t id)
 {
     uvm_assert_mutex_locked(&chunk->lock);
+
     if (uvm_parent_processor_mask_test(&chunk->gpu_mappings.dma_addrs_mask, id)) {
         if (chunk->gpu_mappings.max_entries == 1) {
             return &chunk->gpu_mappings.static_entry;
@@ -598,7 +542,6 @@ static void chunk_inc_gpu_mapping(uvm_cpu_physical_chunk_t *chunk, uvm_parent_gp
 {
     uvm_cpu_phys_mapping_t *mapping;
 
-    uvm_assert_mutex_locked(&chunk->lock);
     mapping = chunk_phys_mapping_get(chunk, id);
     UVM_ASSERT(mapping);
     mapping->map_count++;
@@ -608,13 +551,14 @@ static void chunk_dec_gpu_mapping(uvm_cpu_physical_chunk_t *chunk, uvm_parent_gp
 {
     uvm_cpu_phys_mapping_t *mapping;
 
-    uvm_assert_mutex_locked(&chunk->lock);
     mapping = chunk_phys_mapping_get(chunk, id);
     UVM_ASSERT(mapping);
     UVM_ASSERT(mapping->dma_addr && mapping->map_count);
     mapping->map_count--;
     if (mapping->map_count == 0) {
         uvm_parent_gpu_t *parent_gpu = uvm_parent_gpu_get(id);
+
+        UVM_ASSERT(uvm_sub_processor_mask_empty(&mapping->sub_processors));
 
         uvm_parent_gpu_unmap_cpu_pages(parent_gpu, mapping->dma_addr, uvm_cpu_chunk_get_size(&chunk->common));
         mapping->dma_addr = 0;
@@ -631,7 +575,7 @@ static void chunk_dec_gpu_mapping(uvm_cpu_physical_chunk_t *chunk, uvm_parent_gp
     }
 }
 
-NvU64 uvm_cpu_chunk_get_parent_gpu_phys_addr(uvm_cpu_chunk_t *chunk, uvm_parent_gpu_t *parent_gpu)
+NvU64 uvm_cpu_chunk_get_gpu_phys_addr(uvm_cpu_chunk_t *chunk, uvm_gpu_t *gpu)
 {
     uvm_cpu_physical_chunk_t *phys_chunk = get_physical_parent(chunk);
     uvm_cpu_phys_mapping_t *mapping;
@@ -641,36 +585,41 @@ NvU64 uvm_cpu_chunk_get_parent_gpu_phys_addr(uvm_cpu_chunk_t *chunk, uvm_parent_
     if (uvm_cpu_chunk_is_logical(chunk)) {
         uvm_cpu_logical_chunk_t *logical_chunk = uvm_cpu_chunk_to_logical(chunk);
 
-        if (!uvm_parent_processor_mask_test(&logical_chunk->mapped_gpus, parent_gpu->id))
+        if (!uvm_processor_mask_test(&logical_chunk->mapped_gpus, gpu->id))
             return 0;
 
         parent_offset = cpu_chunk_get_phys_index(logical_chunk);
     }
 
     uvm_mutex_lock(&phys_chunk->lock);
-    mapping = chunk_phys_mapping_get(phys_chunk, parent_gpu->id);
-    if (mapping)
+    mapping = chunk_phys_mapping_get(phys_chunk, gpu->parent->id);
+    if (mapping &&
+        (uvm_cpu_chunk_is_logical(chunk) ||
+         uvm_sub_processor_mask_test(&mapping->sub_processors, uvm_id_sub_processor_index(gpu->id))))
         dma_addr = mapping->dma_addr + (parent_offset * PAGE_SIZE);
-
     uvm_mutex_unlock(&phys_chunk->lock);
+
     return dma_addr;
 }
 
-// Create a DMA mapping for the chunk on the given parent GPU. This will map the
-// entire parent physical chunk on the GPU.
+// Create a DMA mapping for the chunk on the given GPU. This will map the
+// entire physical chunk on the parent GPU and record that a given MIG
+// partition is using the mapping.
 //
 // Returns NV_OK on success. On error, any of the errors returned by
 // uvm_parent_gpu_map_cpu_pages() can be returned. In the case that the DMA
 // mapping structure could not be allocated, NV_ERR_NO_MEMORY is returned.
-static NV_STATUS cpu_chunk_map_parent_gpu_phys(uvm_cpu_chunk_t *chunk, uvm_parent_gpu_t *parent_gpu)
+static NV_STATUS cpu_chunk_map_gpu_phys(uvm_cpu_chunk_t *chunk, uvm_gpu_t *gpu)
 {
+    uvm_parent_gpu_t *parent_gpu = gpu->parent;
     uvm_cpu_physical_chunk_t *phys_chunk;
     uvm_cpu_logical_chunk_t *logical_chunk = NULL;
+    uvm_cpu_phys_mapping_t *mapping;
     NV_STATUS status = NV_OK;
 
     if (uvm_cpu_chunk_is_logical(chunk)) {
         logical_chunk = uvm_cpu_chunk_to_logical(chunk);
-        if (uvm_parent_processor_mask_test(&logical_chunk->mapped_gpus, parent_gpu->id))
+        if (uvm_processor_mask_test(&logical_chunk->mapped_gpus, gpu->id))
             return status;
     }
 
@@ -679,7 +628,6 @@ static NV_STATUS cpu_chunk_map_parent_gpu_phys(uvm_cpu_chunk_t *chunk, uvm_paren
 
     if (!uvm_parent_processor_mask_test(&phys_chunk->gpu_mappings.dma_addrs_mask, parent_gpu->id)) {
         uvm_chunk_size_t chunk_size = uvm_cpu_chunk_get_size(&phys_chunk->common);
-        uvm_cpu_phys_mapping_t *mapping;
         NvU64 dma_addr;
 
         status = uvm_parent_gpu_map_cpu_pages(parent_gpu, phys_chunk->common.page, chunk_size, &dma_addr);
@@ -695,39 +643,59 @@ static NV_STATUS cpu_chunk_map_parent_gpu_phys(uvm_cpu_chunk_t *chunk, uvm_paren
 
         mapping->dma_addr = dma_addr;
         mapping->map_count = 1;
+        uvm_sub_processor_mask_zero(&mapping->sub_processors);
+        if (!logical_chunk)
+            uvm_sub_processor_mask_set(&mapping->sub_processors, uvm_id_sub_processor_index(gpu->id));
+
         uvm_parent_processor_mask_set(&phys_chunk->gpu_mappings.dma_addrs_mask, parent_gpu->id);
     }
     else {
-        // The mapping count on the physical chunk is only increased when
-        // mapping logical chunks.
-        if (uvm_cpu_chunk_is_logical(chunk))
-            chunk_inc_gpu_mapping(phys_chunk, parent_gpu->id);
+        mapping = chunk_phys_mapping_get(phys_chunk, parent_gpu->id);
+        UVM_ASSERT(mapping);
+
+        // Increment the map_count for logical chunks or the first time a
+        // MIG partition is sharing a physical chunk.
+        if (logical_chunk ||
+            !uvm_sub_processor_mask_test_and_set(&mapping->sub_processors, uvm_id_sub_processor_index(gpu->id)))
+            mapping->map_count++;
+    }
+
+    if (logical_chunk) {
+        uvm_processor_mask_set(&logical_chunk->mapped_gpus, gpu->id);
+        UVM_ASSERT(uvm_sub_processor_mask_empty(&mapping->sub_processors));
+    }
+    else {
+        UVM_ASSERT(!uvm_sub_processor_mask_empty(&mapping->sub_processors));
+        UVM_ASSERT(uvm_sub_processor_mask_get_count(&mapping->sub_processors) == mapping->map_count);
     }
 
 done:
     uvm_mutex_unlock(&phys_chunk->lock);
 
-    if (status == NV_OK && uvm_cpu_chunk_is_logical(chunk))
-        uvm_parent_processor_mask_set(&logical_chunk->mapped_gpus, parent_gpu->id);
-
     return status;
 }
 
-void uvm_cpu_chunk_unmap_parent_gpu_phys(uvm_cpu_chunk_t *chunk, uvm_parent_gpu_t *parent_gpu)
+static void cpu_chunk_unmap_gpu_phys(uvm_cpu_chunk_t *chunk, uvm_gpu_id_t gpu_id)
 {
-    uvm_cpu_physical_chunk_t *phys_chunk;
-    uvm_cpu_logical_chunk_t *logical_chunk;
+    uvm_cpu_physical_chunk_t *phys_chunk = get_physical_parent(chunk);
+    uvm_parent_gpu_id_t id = uvm_parent_gpu_id_from_gpu_id(gpu_id);
+
+    uvm_mutex_lock(&phys_chunk->lock);
 
     if (uvm_cpu_chunk_is_logical(chunk)) {
-        logical_chunk = uvm_cpu_chunk_to_logical(chunk);
-        if (!uvm_parent_processor_mask_test_and_clear(&logical_chunk->mapped_gpus, parent_gpu->id))
-            return;
-    }
+        uvm_processor_mask_t *mapping_mask = &uvm_cpu_chunk_to_logical(chunk)->mapped_gpus;
 
-    phys_chunk = get_physical_parent(chunk);
-    uvm_mutex_lock(&phys_chunk->lock);
-    if (uvm_parent_processor_mask_test(&phys_chunk->gpu_mappings.dma_addrs_mask, parent_gpu->id))
-        chunk_dec_gpu_mapping(phys_chunk, parent_gpu->id);
+        if (uvm_processor_mask_test_and_clear(mapping_mask, gpu_id))
+            chunk_dec_gpu_mapping(phys_chunk, id);
+    }
+    else {
+        if (uvm_parent_processor_mask_test(&phys_chunk->gpu_mappings.dma_addrs_mask, id)) {
+            uvm_cpu_phys_mapping_t *mapping = chunk_phys_mapping_get(phys_chunk, id);
+
+            if (uvm_sub_processor_mask_test_and_clear(&mapping->sub_processors, uvm_id_sub_processor_index(gpu_id)))
+                chunk_dec_gpu_mapping(phys_chunk, id);
+        }
+    }
 
     uvm_mutex_unlock(&phys_chunk->lock);
 }
@@ -737,15 +705,110 @@ NV_STATUS uvm_cpu_chunk_map_gpu(uvm_cpu_chunk_t *chunk, uvm_gpu_t *gpu)
     NV_STATUS status;
     uvm_chunk_size_t chunk_size = uvm_cpu_chunk_get_size(chunk);
 
-    status = cpu_chunk_map_parent_gpu_phys(chunk, gpu->parent);
+    status = cpu_chunk_map_gpu_phys(chunk, gpu);
     if (status != NV_OK)
         return status;
 
-    status = uvm_mmu_sysmem_map(gpu, uvm_cpu_chunk_get_parent_gpu_phys_addr(chunk, gpu->parent), chunk_size);
+    status = uvm_mmu_sysmem_map(gpu, uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu), chunk_size);
     if (status != NV_OK)
-        uvm_cpu_chunk_unmap_parent_gpu_phys(chunk, gpu->parent);
+        cpu_chunk_unmap_gpu_phys(chunk, gpu->id);
 
     return status;
+}
+
+void uvm_cpu_chunk_unmap_gpu(uvm_cpu_chunk_t *chunk, uvm_gpu_t *gpu)
+{
+    cpu_chunk_unmap_gpu_phys(chunk, gpu->id);
+
+    // Note: there is no corresponding uvm_mmu_sysmem_unmap() for
+    // uvm_mmu_sysmem_map().
+}
+
+static void cpu_logical_chunk_release(uvm_cpu_logical_chunk_t *logical_chunk)
+{
+    uvm_cpu_physical_chunk_t *phys_chunk = get_physical_parent(logical_chunk->parent);
+    uvm_processor_id_t gpu_id;
+
+    uvm_mutex_lock(&phys_chunk->lock);
+
+    for_each_id_in_mask(gpu_id, &logical_chunk->mapped_gpus)
+        chunk_dec_gpu_mapping(phys_chunk, uvm_parent_gpu_id_from_gpu_id(gpu_id));
+
+    uvm_mutex_unlock(&phys_chunk->lock);
+
+    uvm_cpu_chunk_free(logical_chunk->parent);
+}
+
+static void cpu_physical_chunk_release(uvm_cpu_chunk_t *chunk)
+{
+    uvm_cpu_physical_chunk_t *phys_chunk = uvm_cpu_chunk_to_physical(chunk);
+    uvm_parent_processor_id_t id;
+
+    uvm_assert_mutex_unlocked(&phys_chunk->lock);
+
+    // There should be no other threads using this chunk but we lock it because
+    // of assertions in chunk_phys_mapping_get() and chunk_dec_gpu_mapping().
+    uvm_mutex_lock(&phys_chunk->lock);
+
+    for_each_parent_id_in_mask(id, &phys_chunk->gpu_mappings.dma_addrs_mask) {
+        uvm_cpu_phys_mapping_t *mapping = chunk_phys_mapping_get(phys_chunk, id);
+        NvU32 count;
+
+        UVM_ASSERT(mapping);
+        UVM_ASSERT(!uvm_sub_processor_mask_empty(&mapping->sub_processors));
+
+        // Get a count of set bits in the sub_processors mask then clear it so
+        // that chunk_dec_gpu_mapping() sees an empty mask when map_count == 0.
+        // Using for_each_sub_processor_in_mask could try to dereference
+        // mapping after map_count == 0 in the loop below.
+        count = uvm_sub_processor_mask_get_count(&mapping->sub_processors);
+        uvm_sub_processor_mask_zero(&mapping->sub_processors);
+
+        for (; count; count--)
+            chunk_dec_gpu_mapping(phys_chunk, id);
+    }
+
+    uvm_mutex_unlock(&phys_chunk->lock);
+
+    UVM_ASSERT(uvm_parent_processor_mask_empty(&phys_chunk->gpu_mappings.dma_addrs_mask));
+
+    if (phys_chunk->gpu_mappings.max_entries > 1)
+        uvm_kvfree(phys_chunk->gpu_mappings.dynamic_entries);
+
+    if (uvm_cpu_chunk_get_size(chunk) > PAGE_SIZE &&
+        !bitmap_empty(phys_chunk->dirty_bitmap, uvm_cpu_chunk_num_pages(chunk)))
+        SetPageDirty(chunk->page);
+
+    uvm_kvfree(phys_chunk->dirty_bitmap);
+
+    if (chunk->type != UVM_CPU_CHUNK_TYPE_HMM)
+        put_page(chunk->page);
+}
+
+static void cpu_chunk_release(nv_kref_t *kref)
+{
+    uvm_cpu_chunk_t *chunk = container_of(kref, uvm_cpu_chunk_t, refcount);
+
+    if (uvm_cpu_chunk_is_logical(chunk))
+        cpu_logical_chunk_release(uvm_cpu_chunk_to_logical(chunk));
+    else
+        cpu_physical_chunk_release(chunk);
+
+    uvm_kvfree(chunk);
+}
+
+static void uvm_cpu_chunk_get(uvm_cpu_chunk_t *chunk)
+{
+    UVM_ASSERT(chunk);
+    nv_kref_get(&chunk->refcount);
+}
+
+void uvm_cpu_chunk_free(uvm_cpu_chunk_t *chunk)
+{
+    if (!chunk)
+        return;
+
+    nv_kref_put(&chunk->refcount, cpu_chunk_release);
 }
 
 static struct page *uvm_cpu_chunk_alloc_page(uvm_chunk_size_t alloc_size,
@@ -876,14 +939,37 @@ int uvm_cpu_chunk_get_numa_node(uvm_cpu_chunk_t *chunk)
     return page_to_nid(chunk->page);
 }
 
+// Convert the mask of DMA mapped parent GPUs and the sub-processor mask into
+// one uvm_processor_mask_t in 'dma_map_mask'.
+static void get_dma_map_mask(uvm_cpu_physical_chunk_t *chunk, uvm_processor_mask_t *dma_map_mask)
+{
+    uvm_parent_processor_id_t id;
+    NvU32 sub_index;
+
+    uvm_assert_mutex_locked(&chunk->lock);
+
+    for_each_parent_id_in_mask(id, &chunk->gpu_mappings.dma_addrs_mask) {
+        uvm_cpu_phys_mapping_t *mapping = chunk_phys_mapping_get(chunk, id);
+
+        for_each_sub_processor_index_in_mask(sub_index, &mapping->sub_processors) {
+            uvm_processor_id_t gpu_id = uvm_gpu_id_from_sub_processor(id, sub_index);
+
+            uvm_sub_processor_mask_clear(&mapping->sub_processors, sub_index);
+            uvm_processor_mask_set(dma_map_mask, gpu_id);
+        }
+
+        UVM_ASSERT(uvm_sub_processor_mask_empty(&mapping->sub_processors));
+    }
+}
+
 NV_STATUS uvm_cpu_chunk_split(uvm_cpu_chunk_t *chunk, uvm_cpu_chunk_t **new_chunks)
 {
     NV_STATUS status = NV_OK;
     uvm_cpu_logical_chunk_t *new_chunk;
     uvm_cpu_physical_chunk_t *phys_chunk = get_physical_parent(chunk);
     uvm_cpu_logical_chunk_t *logical_chunk = NULL;
-    uvm_parent_processor_id_t id;
-    uvm_parent_processor_mask_t *dma_map_mask;
+    uvm_processor_id_t gpu_id;
+    uvm_processor_mask_t *dma_map_mask = NULL;
     uvm_chunk_size_t new_size;
     size_t num_new_chunks;
     size_t num_subchunk_pages;
@@ -902,21 +988,20 @@ NV_STATUS uvm_cpu_chunk_split(uvm_cpu_chunk_t *chunk, uvm_cpu_chunk_t **new_chun
 
     // Get the largest size below the size of the input chunk.
     new_size = uvm_chunk_find_prev_size(uvm_cpu_chunk_get_allocation_sizes(), uvm_cpu_chunk_get_size(chunk));
+    UVM_ASSERT(new_size);
     UVM_ASSERT(new_size != UVM_CHUNK_SIZE_INVALID);
     num_new_chunks = uvm_cpu_chunk_get_size(chunk) / new_size;
     num_subchunk_pages = new_size / PAGE_SIZE;
 
-    if (uvm_cpu_chunk_is_physical(chunk)) {
-        dma_map_mask = &phys_chunk->gpu_mappings.dma_addrs_mask;
-    }
-    else {
+    if (uvm_cpu_chunk_is_logical(chunk)) {
         logical_chunk = uvm_cpu_chunk_to_logical(chunk);
         dma_map_mask = &logical_chunk->mapped_gpus;
     }
 
     uvm_mutex_lock(&phys_chunk->lock);
+
     for (i = 0; i < num_new_chunks; i++) {
-        new_chunk = uvm_kvmalloc_zero(sizeof(*logical_chunk));
+        new_chunk = uvm_kvmalloc_zero(sizeof(*new_chunk));
         if (!new_chunk) {
             uvm_mutex_unlock(&phys_chunk->lock);
             status = NV_ERR_NO_MEMORY;
@@ -929,19 +1014,25 @@ NV_STATUS uvm_cpu_chunk_split(uvm_cpu_chunk_t *chunk, uvm_cpu_chunk_t **new_chun
         nv_kref_init(&new_chunk->common.refcount);
         new_chunk->parent = chunk;
         uvm_cpu_chunk_get(new_chunk->parent);
-        for_each_parent_id_in_mask(id, dma_map_mask)
-            chunk_inc_gpu_mapping(phys_chunk, id);
-        uvm_parent_processor_mask_copy(&new_chunk->mapped_gpus, dma_map_mask);
+        if (i == 0 && !logical_chunk) {
+            dma_map_mask = &new_chunk->mapped_gpus;
+            get_dma_map_mask(phys_chunk, dma_map_mask);
+        }
+        else {
+            uvm_processor_mask_copy(&new_chunk->mapped_gpus, dma_map_mask);
+        }
+        for_each_id_in_mask(gpu_id, dma_map_mask)
+            chunk_inc_gpu_mapping(phys_chunk, uvm_parent_gpu_id_from_gpu_id(gpu_id));
         new_chunks[i] = &new_chunk->common;
     }
 
     // Release the references that are held by the chunk being split.
-    for_each_parent_id_in_mask(id, dma_map_mask)
-        chunk_dec_gpu_mapping(phys_chunk, id);
+    for_each_id_in_mask(gpu_id, dma_map_mask)
+        chunk_dec_gpu_mapping(phys_chunk, uvm_parent_gpu_id_from_gpu_id(gpu_id));
 
     // If the chunk being split is a logical chunk clear it's mapped_gpus mask.
-    if (uvm_cpu_chunk_is_logical(chunk))
-        uvm_parent_processor_mask_zero(&logical_chunk->mapped_gpus);
+    if (logical_chunk)
+        uvm_processor_mask_zero(&logical_chunk->mapped_gpus);
 
     uvm_mutex_unlock(&phys_chunk->lock);
 
@@ -963,7 +1054,7 @@ static bool verify_merging_chunks(uvm_cpu_chunk_t **chunks, size_t num_chunks)
 {
     uvm_cpu_logical_chunk_t *logical_chunk;
     uvm_cpu_chunk_t *first_chunk_parent;
-    uvm_parent_processor_mask_t *first_chunk_mapped_gpus;
+    uvm_processor_mask_t *first_chunk_mapped_gpus;
     uvm_chunk_size_t first_chunk_size;
     size_t i;
 
@@ -994,7 +1085,7 @@ static bool verify_merging_chunks(uvm_cpu_chunk_t **chunks, size_t num_chunks)
         //       2.1 All mappings to GPUs in each of child chunks' masks that are
         //           not also present in the parent chunk's mask are destroyed.
         //       2.2 mapped_gpus mask of the parent chunk remains unmodified.
-        UVM_ASSERT(uvm_parent_processor_mask_equal(&logical_chunk->mapped_gpus, first_chunk_mapped_gpus));
+        UVM_ASSERT(uvm_processor_mask_equal(&logical_chunk->mapped_gpus, first_chunk_mapped_gpus));
     }
 
     return true;
@@ -1005,14 +1096,14 @@ uvm_cpu_chunk_t *uvm_cpu_chunk_merge(uvm_cpu_chunk_t **chunks)
     uvm_cpu_chunk_t *parent;
     uvm_cpu_logical_chunk_t *logical_chunk;
     uvm_cpu_physical_chunk_t *phys_chunk;
-    uvm_parent_processor_id_t id;
+    uvm_processor_id_t gpu_id;
     uvm_chunk_size_t chunk_size;
     uvm_chunk_size_t parent_chunk_size;
     size_t num_merge_chunks;
     size_t i;
 
     UVM_ASSERT(chunks);
-    UVM_ASSERT(!uvm_cpu_chunk_is_physical(chunks[0]));
+    UVM_ASSERT(uvm_cpu_chunk_is_logical(chunks[0]));
 
     logical_chunk = uvm_cpu_chunk_to_logical(chunks[0]);
     parent = logical_chunk->parent;
@@ -1033,11 +1124,22 @@ uvm_cpu_chunk_t *uvm_cpu_chunk_merge(uvm_cpu_chunk_t **chunks)
     phys_chunk = get_physical_parent(chunks[0]);
 
     uvm_mutex_lock(&phys_chunk->lock);
-    for_each_parent_id_in_mask(id, &logical_chunk->mapped_gpus)
-        chunk_inc_gpu_mapping(phys_chunk, id);
 
-    if (!uvm_cpu_chunk_is_physical(parent))
-        uvm_parent_processor_mask_copy(&uvm_cpu_chunk_to_logical(parent)->mapped_gpus, &logical_chunk->mapped_gpus);
+    for_each_id_in_mask(gpu_id, &logical_chunk->mapped_gpus)
+        chunk_inc_gpu_mapping(phys_chunk, uvm_parent_gpu_id_from_gpu_id(gpu_id));
+
+    if (uvm_cpu_chunk_is_logical(parent)) {
+        uvm_processor_mask_copy(&uvm_cpu_chunk_to_logical(parent)->mapped_gpus, &logical_chunk->mapped_gpus);
+    }
+    else {
+        // Restore the mapping->sub_processors mask for each mapped GPU.
+        for_each_id_in_mask(gpu_id, &logical_chunk->mapped_gpus) {
+            uvm_cpu_phys_mapping_t *mapping = chunk_phys_mapping_get(phys_chunk, uvm_parent_gpu_id_from_gpu_id(gpu_id));
+
+            UVM_ASSERT(mapping);
+            uvm_sub_processor_mask_set(&mapping->sub_processors, uvm_id_sub_processor_index(gpu_id));
+        }
+    }
 
     uvm_mutex_unlock(&phys_chunk->lock);
 

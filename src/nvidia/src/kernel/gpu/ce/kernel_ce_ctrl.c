@@ -48,10 +48,9 @@ subdeviceCtrlCmdCeGetCaps_IMPL
     NV2080_CTRL_CE_GET_CAPS_PARAMS *pCeCapsParams
 )
 {
-    OBJGPU     *pGpu = GPU_RES_GET_GPU(pSubdevice);
-    KernelCE    *pKCe;
-    NvU32       ceNumber;
-    NV_STATUS   status = NV_OK;
+    OBJGPU        *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelCE      *pKCe;
+    NvU32          ceNumber;
     RM_ENGINE_TYPE rmEngineType;
 
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
@@ -71,38 +70,6 @@ subdeviceCtrlCmdCeGetCaps_IMPL
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    //
-    // vGPU:
-    //
-    // Since vGPU does all real hardware management in the
-    // host, if we are in guest OS (where IS_VIRTUAL(pGpu) is true),
-    // do an RPC to the host to get blacklist information from host RM
-    //
-    if (IS_VIRTUAL(pGpu))
-    {
-        CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
-        RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
-        NV2080_CTRL_CE_GET_CAPS_V2_PARAMS ceCapsv2Params = { 0 };
-
-        ceCapsv2Params.ceEngineType = pCeCapsParams->ceEngineType;
-
-        NV_RM_RPC_CONTROL(pGpu, pRmCtrlParams->hClient,
-                          pRmCtrlParams->hObject,
-                          NV2080_CTRL_CMD_CE_GET_CAPS_V2,
-                          &ceCapsv2Params,
-                          sizeof(ceCapsv2Params),
-                          status);
-
-        if (status == NV_OK)
-        {
-            portMemCopy(NvP64_VALUE(pCeCapsParams->capsTbl),
-                        (sizeof(NvU8) * NV2080_CTRL_CE_CAPS_TBL_SIZE),
-                        ceCapsv2Params.capsTbl,
-                        (sizeof(NvU8) * NV2080_CTRL_CE_CAPS_TBL_SIZE));
-        }
-        return status;
-    }
-
     NV_ASSERT_OK_OR_RETURN(ceIndexFromType(pGpu, GPU_RES_GET_DEVICE(pSubdevice),
                                            rmEngineType, &ceNumber));
 
@@ -117,4 +84,93 @@ subdeviceCtrlCmdCeGetCaps_IMPL
 
     // now fill in caps for this CE
     return kceGetDeviceCaps(pGpu, pKCe, rmEngineType, NvP64_VALUE(pCeCapsParams->capsTbl));
+}
+NV_STATUS
+subdeviceCtrlCmdCeGetCaps_VF
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_CE_GET_CAPS_PARAMS *pCeCapsParams
+)
+{
+    NV2080_CTRL_CE_GET_CAPS_V2_PARAMS ceCapsv2Params = { 0 };
+    NV_STATUS status;
+
+    ceCapsv2Params.ceEngineType = pCeCapsParams->ceEngineType;
+
+    status = subdeviceCtrlCmdCeGetCapsV2_VF(pSubdevice, &ceCapsv2Params);
+
+    if (status == NV_OK)
+    {
+        portMemCopy(NvP64_VALUE(pCeCapsParams->capsTbl),
+                    (sizeof(NvU8) * NV2080_CTRL_CE_CAPS_TBL_SIZE),
+                    ceCapsv2Params.capsTbl,
+                    (sizeof(NvU8) * NV2080_CTRL_CE_CAPS_TBL_SIZE));
+    }
+
+    return status;
+}
+
+NV_STATUS
+subdeviceCtrlCmdCeGetCapsV2_VF
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_CE_GET_CAPS_V2_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+    NvU32 i;
+    NvU32 ceNumber;
+
+    NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
+
+    // If engine disabled, return error and not empty caps.
+    if ((pVSI->engineList & NVBIT64(pParams->ceEngineType)) == 0)
+    {
+        portMemSet(&pParams->capsTbl, 0, NV2080_CTRL_CE_CAPS_TBL_SIZE);
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    ceNumber = NV2080_ENGINE_TYPE_COPY_IDX(pParams->ceEngineType);
+
+    if (ceNumber >= NV2080_ENGINE_TYPE_COPY_SIZE)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    for (i = 0; i < NV2080_ENGINE_TYPE_COPY_SIZE; i++)
+    {
+        if (pParams->ceEngineType == pVSI->ceCaps[i].ceEngineType)
+        {
+            portMemCopy(&pParams->capsTbl, NV2080_CTRL_CE_CAPS_TBL_SIZE,
+                        &pVSI->ceCaps[i].capsTbl, NV2080_CTRL_CE_CAPS_TBL_SIZE);
+
+            return NV_OK;
+        }
+    }
+
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS
+subdeviceCtrlCmdCeGetAllCaps_VF
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+
+    NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
+
+    pParams->present = pVSI->ceGetAllCaps.present;
+
+    for (NvU32 i = 0; i < NV2080_CTRL_MAX_PCES; i++)
+    {
+        portMemCopy(pParams->capsTbl[i], (sizeof(NvU8) * NV2080_CTRL_CE_CAPS_TBL_SIZE_v21_0A),
+                    pVSI->ceGetAllCaps.capsTbl[i], (sizeof(NvU8) * NV2080_CTRL_CE_CAPS_TBL_SIZE_v21_0A));
+    }
+
+    return NV_OK;
 }

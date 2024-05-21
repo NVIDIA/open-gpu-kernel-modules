@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,6 +32,7 @@
 #include "dp_bitstream.h"
 #include "dp_crc.h"
 #include "dp_messageheader.h"
+#include "dp_printf.h"
 
 
 bool DisplayPort::decodeHeader(BitStreamReader * reader, MessageHeader * header, const Address & address)
@@ -75,7 +76,7 @@ bool DisplayPort::decodeHeader(BitStreamReader * reader, MessageHeader * header,
         // Corrupt packet received
         char buffer[48*3+1];
         dpHexDump(&buffer[0], sizeof(buffer), (NvU8*)reader->buffer() + startOffset, reader->offset() - startOffset);
-        DP_LOG(("DP-MM> Corrupt message transaction.  Expected CRC %d. Message = {%s}",  dpCalculateHeaderCRC(&crcReader), buffer));
+        DP_PRINTF(DP_ERROR, "DP-MM> Corrupt message transaction.  Expected CRC %d. Message = {%s}",  dpCalculateHeaderCRC(&crcReader), buffer);
 
         return false;
     }

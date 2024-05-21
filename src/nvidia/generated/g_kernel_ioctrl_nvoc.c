@@ -66,61 +66,81 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelIoctrl =
     /*pExportInfo=*/        &__nvoc_export_info_KernelIoctrl
 };
 
-static NV_STATUS __nvoc_thunk_KernelIoctrl_engstateConstructEngine(struct OBJGPU *arg0, struct OBJENGSTATE *arg1, NvU32 arg2) {
-    return kioctrlConstructEngine(arg0, (struct KernelIoctrl *)(((unsigned char *)arg1) - __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset), arg2);
+// 1 down-thunk(s) defined to bridge methods in KernelIoctrl from superclasses
+
+// kioctrlConstructEngine: virtual override (engstate) base (engstate)
+static NV_STATUS __nvoc_down_thunk_KernelIoctrl_engstateConstructEngine(struct OBJGPU *arg1, struct OBJENGSTATE *arg_this, NvU32 arg3) {
+    return kioctrlConstructEngine(arg1, (struct KernelIoctrl *)(((unsigned char *) arg_this) - __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kioctrlStateLoad(POBJGPU pGpu, struct KernelIoctrl *pEngstate, NvU32 arg0) {
-    return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset), arg0);
+
+// 13 up-thunk(s) defined to bridge methods in KernelIoctrl to superclasses
+
+// kioctrlInitMissing: virtual inherited (engstate) base (engstate)
+static void __nvoc_up_thunk_OBJENGSTATE_kioctrlInitMissing(POBJGPU pGpu, struct KernelIoctrl *pEngstate) {
+    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kioctrlStateUnload(POBJGPU pGpu, struct KernelIoctrl *pEngstate, NvU32 arg0) {
-    return engstateStateUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset), arg0);
+// kioctrlStatePreInitLocked: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kioctrlStatePreInitLocked(POBJGPU pGpu, struct KernelIoctrl *pEngstate) {
+    return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kioctrlStateInitLocked(POBJGPU pGpu, struct KernelIoctrl *pEngstate) {
-    return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset));
+// kioctrlStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kioctrlStatePreInitUnlocked(POBJGPU pGpu, struct KernelIoctrl *pEngstate) {
+    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kioctrlStatePreLoad(POBJGPU pGpu, struct KernelIoctrl *pEngstate, NvU32 arg0) {
-    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset), arg0);
+// kioctrlStateInitLocked: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kioctrlStateInitLocked(POBJGPU pGpu, struct KernelIoctrl *pEngstate) {
+    return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kioctrlStatePostUnload(POBJGPU pGpu, struct KernelIoctrl *pEngstate, NvU32 arg0) {
-    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset), arg0);
+// kioctrlStateInitUnlocked: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kioctrlStateInitUnlocked(POBJGPU pGpu, struct KernelIoctrl *pEngstate) {
+    return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset));
 }
 
-static void __nvoc_thunk_OBJENGSTATE_kioctrlStateDestroy(POBJGPU pGpu, struct KernelIoctrl *pEngstate) {
-    engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset));
+// kioctrlStatePreLoad: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kioctrlStatePreLoad(POBJGPU pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
+    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kioctrlStatePreUnload(POBJGPU pGpu, struct KernelIoctrl *pEngstate, NvU32 arg0) {
-    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset), arg0);
+// kioctrlStateLoad: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kioctrlStateLoad(POBJGPU pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
+    return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kioctrlStateInitUnlocked(POBJGPU pGpu, struct KernelIoctrl *pEngstate) {
-    return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset));
+// kioctrlStatePostLoad: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kioctrlStatePostLoad(POBJGPU pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
+    return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset), arg3);
 }
 
-static void __nvoc_thunk_OBJENGSTATE_kioctrlInitMissing(POBJGPU pGpu, struct KernelIoctrl *pEngstate) {
-    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset));
+// kioctrlStatePreUnload: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kioctrlStatePreUnload(POBJGPU pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
+    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kioctrlStatePreInitLocked(POBJGPU pGpu, struct KernelIoctrl *pEngstate) {
-    return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset));
+// kioctrlStateUnload: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kioctrlStateUnload(POBJGPU pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
+    return engstateStateUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kioctrlStatePreInitUnlocked(POBJGPU pGpu, struct KernelIoctrl *pEngstate) {
-    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset));
+// kioctrlStatePostUnload: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kioctrlStatePostUnload(POBJGPU pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
+    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kioctrlStatePostLoad(POBJGPU pGpu, struct KernelIoctrl *pEngstate, NvU32 arg0) {
-    return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset), arg0);
+// kioctrlStateDestroy: virtual inherited (engstate) base (engstate)
+static void __nvoc_up_thunk_OBJENGSTATE_kioctrlStateDestroy(POBJGPU pGpu, struct KernelIoctrl *pEngstate) {
+    engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset));
 }
 
-static NvBool __nvoc_thunk_OBJENGSTATE_kioctrlIsPresent(POBJGPU pGpu, struct KernelIoctrl *pEngstate) {
-    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset));
+// kioctrlIsPresent: virtual inherited (engstate) base (engstate)
+static NvBool __nvoc_up_thunk_OBJENGSTATE_kioctrlIsPresent(POBJGPU pGpu, struct KernelIoctrl *pEngstate) {
+    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelIoctrl_OBJENGSTATE.offset));
 }
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelIoctrl = 
 {
@@ -178,6 +198,7 @@ __nvoc_ctor_KernelIoctrl_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_KernelIoctrl_1(KernelIoctrl *pThis, RmHalspecOwner *pRmhalspecowner) {
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
@@ -190,9 +211,11 @@ static void __nvoc_init_funcTable_KernelIoctrl_1(KernelIoctrl *pThis, RmHalspecO
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 
+    // kioctrlConstructEngine -- virtual override (engstate) base (engstate)
     pThis->__kioctrlConstructEngine__ = &kioctrlConstructEngine_IMPL;
+    pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_down_thunk_KernelIoctrl_engstateConstructEngine;
 
-    // Hal function -- kioctrlGetMinionEnableDefault
+    // kioctrlGetMinionEnableDefault -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000380UL) )) /* ChipHal: TU106 | TU116 | TU117 */ 
     {
         pThis->__kioctrlGetMinionEnableDefault__ = &kioctrlGetMinionEnableDefault_bf6dfa;
@@ -202,7 +225,7 @@ static void __nvoc_init_funcTable_KernelIoctrl_1(KernelIoctrl *pThis, RmHalspecO
         pThis->__kioctrlGetMinionEnableDefault__ = &kioctrlGetMinionEnableDefault_GV100;
     }
 
-    // Hal function -- kioctrlMinionConstruct
+    // kioctrlMinionConstruct -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000380UL) )) /* ChipHal: TU106 | TU116 | TU117 */ 
     {
         pThis->__kioctrlMinionConstruct__ = &kioctrlMinionConstruct_ac1694;
@@ -212,36 +235,51 @@ static void __nvoc_init_funcTable_KernelIoctrl_1(KernelIoctrl *pThis, RmHalspecO
         pThis->__kioctrlMinionConstruct__ = &kioctrlMinionConstruct_GV100;
     }
 
-    pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_thunk_KernelIoctrl_engstateConstructEngine;
+    // kioctrlInitMissing -- virtual inherited (engstate) base (engstate)
+    pThis->__kioctrlInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_kioctrlInitMissing;
 
-    pThis->__kioctrlStateLoad__ = &__nvoc_thunk_OBJENGSTATE_kioctrlStateLoad;
+    // kioctrlStatePreInitLocked -- virtual inherited (engstate) base (engstate)
+    pThis->__kioctrlStatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_kioctrlStatePreInitLocked;
 
-    pThis->__kioctrlStateUnload__ = &__nvoc_thunk_OBJENGSTATE_kioctrlStateUnload;
+    // kioctrlStatePreInitUnlocked -- virtual inherited (engstate) base (engstate)
+    pThis->__kioctrlStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kioctrlStatePreInitUnlocked;
 
-    pThis->__kioctrlStateInitLocked__ = &__nvoc_thunk_OBJENGSTATE_kioctrlStateInitLocked;
+    // kioctrlStateInitLocked -- virtual inherited (engstate) base (engstate)
+    pThis->__kioctrlStateInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_kioctrlStateInitLocked;
 
-    pThis->__kioctrlStatePreLoad__ = &__nvoc_thunk_OBJENGSTATE_kioctrlStatePreLoad;
+    // kioctrlStateInitUnlocked -- virtual inherited (engstate) base (engstate)
+    pThis->__kioctrlStateInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kioctrlStateInitUnlocked;
 
-    pThis->__kioctrlStatePostUnload__ = &__nvoc_thunk_OBJENGSTATE_kioctrlStatePostUnload;
+    // kioctrlStatePreLoad -- virtual inherited (engstate) base (engstate)
+    pThis->__kioctrlStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kioctrlStatePreLoad;
 
-    pThis->__kioctrlStateDestroy__ = &__nvoc_thunk_OBJENGSTATE_kioctrlStateDestroy;
+    // kioctrlStateLoad -- virtual inherited (engstate) base (engstate)
+    pThis->__kioctrlStateLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kioctrlStateLoad;
 
-    pThis->__kioctrlStatePreUnload__ = &__nvoc_thunk_OBJENGSTATE_kioctrlStatePreUnload;
+    // kioctrlStatePostLoad -- virtual inherited (engstate) base (engstate)
+    pThis->__kioctrlStatePostLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kioctrlStatePostLoad;
 
-    pThis->__kioctrlStateInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_kioctrlStateInitUnlocked;
+    // kioctrlStatePreUnload -- virtual inherited (engstate) base (engstate)
+    pThis->__kioctrlStatePreUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kioctrlStatePreUnload;
 
-    pThis->__kioctrlInitMissing__ = &__nvoc_thunk_OBJENGSTATE_kioctrlInitMissing;
+    // kioctrlStateUnload -- virtual inherited (engstate) base (engstate)
+    pThis->__kioctrlStateUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kioctrlStateUnload;
 
-    pThis->__kioctrlStatePreInitLocked__ = &__nvoc_thunk_OBJENGSTATE_kioctrlStatePreInitLocked;
+    // kioctrlStatePostUnload -- virtual inherited (engstate) base (engstate)
+    pThis->__kioctrlStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kioctrlStatePostUnload;
 
-    pThis->__kioctrlStatePreInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_kioctrlStatePreInitUnlocked;
+    // kioctrlStateDestroy -- virtual inherited (engstate) base (engstate)
+    pThis->__kioctrlStateDestroy__ = &__nvoc_up_thunk_OBJENGSTATE_kioctrlStateDestroy;
 
-    pThis->__kioctrlStatePostLoad__ = &__nvoc_thunk_OBJENGSTATE_kioctrlStatePostLoad;
+    // kioctrlIsPresent -- virtual inherited (engstate) base (engstate)
+    pThis->__kioctrlIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_kioctrlIsPresent;
+} // End __nvoc_init_funcTable_KernelIoctrl_1 with approximately 19 basic block(s).
 
-    pThis->__kioctrlIsPresent__ = &__nvoc_thunk_OBJENGSTATE_kioctrlIsPresent;
-}
 
+// Initialize vtable(s) for 16 virtual method(s).
 void __nvoc_init_funcTable_KernelIoctrl(KernelIoctrl *pThis, RmHalspecOwner *pRmhalspecowner) {
+
+    // Initialize vtable(s) with 16 per-object function pointer(s).
     __nvoc_init_funcTable_KernelIoctrl_1(pThis, pRmhalspecowner);
 }
 

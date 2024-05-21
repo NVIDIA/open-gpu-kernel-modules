@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,12 +39,12 @@
 // are multiple BIG page sizes in RM. These defines are used as flags to "0"
 // should be OK when user is not sure which pagesize allocation it wants
 //
-#define UVM_PAGE_SIZE_DEFAULT    0x0
-#define UVM_PAGE_SIZE_4K         0x1000
-#define UVM_PAGE_SIZE_64K        0x10000
-#define UVM_PAGE_SIZE_128K       0x20000
-#define UVM_PAGE_SIZE_2M         0x200000
-#define UVM_PAGE_SIZE_512M       0x20000000
+#define UVM_PAGE_SIZE_DEFAULT    0x0ULL
+#define UVM_PAGE_SIZE_4K         0x1000ULL
+#define UVM_PAGE_SIZE_64K        0x10000ULL
+#define UVM_PAGE_SIZE_128K       0x20000ULL
+#define UVM_PAGE_SIZE_2M         0x200000ULL
+#define UVM_PAGE_SIZE_512M       0x20000000ULL
 
 //
 // When modifying flags, make sure they are compatible with the mirrored
@@ -605,8 +605,6 @@ typedef struct UvmGpuConfComputeCaps_tag
 {
     // Out: GPU's confidential compute mode
     UvmGpuConfComputeMode mode;
-    // Is key rotation enabled for UVM keys
-    NvBool bKeyRotationEnabled;
 } UvmGpuConfComputeCaps;
 
 #define UVM_GPU_NAME_LENGTH 0x40

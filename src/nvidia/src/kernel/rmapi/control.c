@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -841,6 +841,15 @@ NV_STATUS serverControl_ValidateCookie
         return NV_ERR_INVALID_PARAMETER;
     }
 
+    if (pRmCtrlExecuteCookie->ctrlFlags & RMCTRL_FLAGS_RM_TEST_ONLY_CODE)
+    {
+        OBJSYS *pSys = SYS_GET_INSTANCE();
+        if (!pSys->getProperty(pSys, PDB_PROP_SYS_ENABLE_RM_TEST_ONLY_CODE))
+        {
+            return NV_ERR_TEST_ONLY_CODE_NOT_ENABLED;
+        }
+    }
+
     return NV_OK;
 }
 
@@ -893,6 +902,22 @@ serverControlLookupLockFlags
 
     if (lock == RS_LOCK_TOP)
     {
+        if (controlFlags & RMCTRL_FLAGS_NO_API_LOCK)
+        {
+            // NO_API_LOCK requires no access to GPU lock protected data
+            NV_ASSERT_OR_RETURN(((controlFlags & RMCTRL_FLAGS_NO_GPUS_LOCK) != 0),
+                NV_ERR_INVALID_LOCK_STATE);
+
+            // NO_API_LOCK used in combination with API_LOCK_READONLY does not make sense
+            NV_ASSERT_OR_RETURN(((controlFlags & RMCTRL_FLAGS_API_LOCK_READONLY) == 0),
+                NV_ERR_INVALID_LOCK_STATE);
+
+            RS_LOCK_INFO *pLockInfo = pRmCtrlParams->pLockInfo;
+
+            pLockInfo->flags |= RM_LOCK_FLAGS_NO_API_LOCK;
+            return NV_OK;
+        }
+
         if (!serverSupportsReadOnlyLock(&g_resServ, RS_LOCK_TOP, RS_API_CTRL))
         {
             *pAccess = LOCK_ACCESS_WRITE;
@@ -946,15 +971,34 @@ serverControlLookupLockFlags
                 pLockInfo->flags &= ~RM_LOCK_FLAGS_NO_GPUS_LOCK;
                 pLockInfo->flags &= ~RM_LOCK_FLAGS_GPU_GROUP_LOCK;
             }
-
-            if (controlFlags & RMCTRL_FLAGS_GPU_LOCK_READONLY)
-                *pAccess = LOCK_ACCESS_READ;
         }
 
         return NV_OK;
     }
 
     return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS
+serverControlLookupClientLockFlags
+(
+    RmCtrlExecuteCookie *pRmCtrlExecuteCookie,
+    enum CLIENT_LOCK_TYPE *pClientLockType
+)
+{
+    NvU32 controlFlags = pRmCtrlExecuteCookie->ctrlFlags;
+
+    if ((controlFlags & RMCTRL_FLAGS_ALL_CLIENT_LOCK) != 0)
+    {
+        *pClientLockType = CLIENT_LOCK_ALL;
+
+        // Locking all clients requires the RW API lock
+        NV_ASSERT_OR_RETURN(rmapiLockIsWriteOwner(), NV_ERR_INVALID_LOCK_STATE);
+    }
+    else
+        *pClientLockType = CLIENT_LOCK_SPECIFIC;
+
+    return NV_OK;
 }
 
 NV_STATUS

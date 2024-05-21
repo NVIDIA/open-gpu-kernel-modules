@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -204,7 +204,8 @@ gpuHandleSecFault_GH100
     OBJGPU *pGpu
 )
 {
-    NvU32   secDebug = 0;
+    NvU32 secDebug = 0;
+    NvU32 iffPos;
 
     //
     // Read SEC_FAULT config space to determine what went wrong.
@@ -243,9 +244,19 @@ gpuHandleSecFault_GH100
     LOG_SEC_FAULT(_FAULT_PRI);
     LOG_SEC_FAULT(_FAULT_WDG);
     LOG_SEC_FAULT(_FAULT_BOOTFSM);
-    LOG_SEC_FAULT(_IFF_POS);
 
 #undef LOG_SEC_FAULT
+
+    // IFF_POS has a multi-bit value
+    (void)REF_NUM(NV_EP_PCFG_GPU_VSEC_DEBUG_SEC_IFF_POS, 0);
+    iffPos = DRF_VAL(_EP_PCFG_GPU, _VSEC_DEBUG_SEC, _IFF_POS, secDebug);
+    if (iffPos != 0)
+    {
+        MODS_ARCH_ERROR_PRINTF("NV_EP_PCFG_GPU_VSEC_DEBUG_SEC_IFF_POS value: 0x%x\n", iffPos);
+        NV_PRINTF(LEVEL_FATAL, "SEC_FAULT type: _IFF_POS value: 0x%x\n", iffPos);
+        nvErrorLog_va((void *)(pGpu), SEC_FAULT_ERROR,
+                      "SEC_FAULT: _IFF_POS value: 0x%x", iffPos);
+    }
 
     //
     // After SEC_FAULT occurs, the GPU will only return SCPM dummy values until properly reset.
@@ -480,22 +491,6 @@ gpuIsDevModeEnabledInHw_GH100
 {
     NvU32 val = GPU_REG_RD32(pGpu, NV_PGC6_AON_SECURE_SCRATCH_GROUP_20_CC);
     return FLD_TEST_DRF(_PGC6, _AON_SECURE_SCRATCH_GROUP_20_CC, _DEV_ENABLED, _TRUE, val);
-}
-
-/*!
- * Check if protected pcie has been set in the scratch register
- *
- * @param[in]  pGpu  GPU object pointer
- */
-NvBool
-gpuIsProtectedPcieEnabledInHw_GH100
-(
-    OBJGPU *pGpu
-)
-{
-    NvU32 val = GPU_REG_RD32(pGpu, NV_PGC6_AON_SECURE_SCRATCH_GROUP_20_CC);
-    return FLD_TEST_DRF(_PGC6, _AON_SECURE_SCRATCH_GROUP_20_CC, _MULTI_GPU_MODE,
-                        _PROTECTED_PCIE, val);
 }
 
 /*!

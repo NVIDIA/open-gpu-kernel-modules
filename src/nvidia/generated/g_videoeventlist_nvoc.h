@@ -1,6 +1,13 @@
+
 #ifndef _G_VIDEOEVENTLIST_NVOC_H_
 #define _G_VIDEOEVENTLIST_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,6 +36,7 @@ extern "C" {
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_videoeventlist_nvoc.h"
 
 #ifndef VIDEO_EVENT_LIST_H
@@ -47,6 +55,7 @@ extern "C" {
 #include "class/cl90cdvideo.h"
 #include "ctrl/ctrl2080/ctrl2080event.h"
 
+
 struct EventBuffer;
 
 #ifndef __NVOC_CLASS_EventBuffer_TYPEDEF__
@@ -57,6 +66,7 @@ typedef struct EventBuffer EventBuffer;
 #ifndef __nvoc_class_id_EventBuffer
 #define __nvoc_class_id_EventBuffer 0x63502b
 #endif /* __nvoc_class_id_EventBuffer */
+
 
 
 struct KernelChannel;

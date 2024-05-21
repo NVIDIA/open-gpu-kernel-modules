@@ -41,7 +41,7 @@ typedef struct
     NvU64 size;
 
     // Min and max page size ored together
-    NvU32 page_sizes;
+    NvU64 page_sizes;
 } uvm_tlb_batch_range_t;
 
 struct uvm_tlb_batch_struct
@@ -63,7 +63,7 @@ struct uvm_tlb_batch_struct
     NvU32 count;
 
     // Biggest page size across all queued up invalidates
-    NvU32 biggest_page_size;
+    NvU64 biggest_page_size;
 
     // Max membar across all queued up invalidates
     uvm_membar_t membar;
@@ -81,7 +81,7 @@ void uvm_tlb_batch_begin(uvm_page_tree_t *tree, uvm_tlb_batch_t *batch);
 // If the membar parameter is not UVM_MEMBAR_NONE, the specified membar will
 // be performed logically after the TLB invalidate such that all physical memory
 // accesses using the old translations are ordered to the scope of the membar.
-void uvm_tlb_batch_invalidate(uvm_tlb_batch_t *batch, NvU64 start, NvU64 size, NvU32 page_sizes, uvm_membar_t tlb_membar);
+void uvm_tlb_batch_invalidate(uvm_tlb_batch_t *batch, NvU64 start, NvU64 size, NvU64 page_sizes, uvm_membar_t tlb_membar);
 
 // End a TLB invalidate batch
 //
@@ -97,8 +97,12 @@ void uvm_tlb_batch_end(uvm_tlb_batch_t *batch, uvm_push_t *push, uvm_membar_t tl
 // Helper for invalidating a single range immediately.
 //
 // Internally begins and ends a TLB batch.
-static void uvm_tlb_batch_single_invalidate(uvm_page_tree_t *tree, uvm_push_t *push,
-        NvU64 start, NvU64 size, NvU32 page_sizes, uvm_membar_t tlb_membar)
+static void uvm_tlb_batch_single_invalidate(uvm_page_tree_t *tree,
+                                            uvm_push_t *push,
+                                            NvU64 start,
+                                            NvU64 size,
+                                            NvU64 page_sizes,
+                                            uvm_membar_t tlb_membar)
 {
     uvm_tlb_batch_t batch;
 

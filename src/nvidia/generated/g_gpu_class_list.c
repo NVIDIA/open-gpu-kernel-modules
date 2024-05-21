@@ -866,7 +866,7 @@ gpuGetClassDescriptorList_AD102(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
 
     #define HALAD102_NUM_CLASS_DESCS (sizeof(halAD102ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
 
-    #define HALAD102_NUM_CLASSES 60
+    #define HALAD102_NUM_CLASSES 61
 
     ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALAD102_NUM_CLASSES);
 
@@ -946,7 +946,7 @@ gpuGetClassDescriptorList_AD103(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
 
     #define HALAD103_NUM_CLASS_DESCS (sizeof(halAD103ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
 
-    #define HALAD103_NUM_CLASSES 60
+    #define HALAD103_NUM_CLASSES 61
 
     ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALAD103_NUM_CLASSES);
 
@@ -1026,7 +1026,7 @@ gpuGetClassDescriptorList_AD104(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
 
     #define HALAD104_NUM_CLASS_DESCS (sizeof(halAD104ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
 
-    #define HALAD104_NUM_CLASSES 60
+    #define HALAD104_NUM_CLASSES 61
 
     ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALAD104_NUM_CLASSES);
 
@@ -1106,7 +1106,7 @@ gpuGetClassDescriptorList_AD106(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
 
     #define HALAD106_NUM_CLASS_DESCS (sizeof(halAD106ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
 
-    #define HALAD106_NUM_CLASSES 60
+    #define HALAD106_NUM_CLASSES 61
 
     ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALAD106_NUM_CLASSES);
 
@@ -1186,7 +1186,7 @@ gpuGetClassDescriptorList_AD107(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
 
     #define HALAD107_NUM_CLASS_DESCS (sizeof(halAD107ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
 
-    #define HALAD107_NUM_CLASSES 60
+    #define HALAD107_NUM_CLASSES 61
 
     ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALAD107_NUM_CLASSES);
 

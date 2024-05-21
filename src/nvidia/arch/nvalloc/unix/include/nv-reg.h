@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -869,6 +869,8 @@
  * NVreg_ModifyDeviceFiles, NVreg_DeviceFileGID, NVreg_DeviceFileUID
  * and NVreg_DeviceFileMode will be honored by nvidia-modprobe.
  *
+ * Also, refer to the NVreg_CreateImexChannel0 option.
+ *
  * Possible values:
  *  0 - Disable IMEX using CUDA driver's fabric handles.
  *  N - N IMEX channels will be enabled in the driver to facilitate N
@@ -877,6 +879,29 @@
  */
 #define __NV_IMEX_CHANNEL_COUNT ImexChannelCount
 #define NV_REG_IMEX_CHANNEL_COUNT NV_REG_STRING(__NV_IMEX_CHANNEL_COUNT)
+
+/*
+ * Option: NVreg_CreateImexChannel0
+ *
+ * Description:
+ *
+ * This option allows users to specify whether the NVIDIA driver must create
+ * the IMEX channel 0 by default. The channel will be created automatically
+ * when an application (e.g. nvidia-smi, nvidia-persistenced) is run.
+ *
+ * Note that users are advised to enable this option only in trusted
+ * environments where it is acceptable for applications to share the same
+ * IMEX channel.
+ *
+ * For more details on IMEX channels, refer to the NVreg_ImexChannelCount
+ * option.
+ *
+ * Possible values:
+ *  0 - Do not create IMEX channel 0 (default).
+ *  1 - Create IMEX channel 0.
+ */
+#define __NV_CREATE_IMEX_CHANNEL_0 CreateImexChannel0
+#define NV_CREATE_IMEX_CHANNEL_0 NV_REG_STRING(__CREATE_IMEX_CHANNEL_0)
 
 #if defined(NV_DEFINE_REGISTRY_KEY_TABLE)
 
@@ -927,6 +952,7 @@ NV_DEFINE_REG_STRING_ENTRY(__NV_EXCLUDED_GPUS, NULL);
 NV_DEFINE_REG_ENTRY(__NV_DMA_REMAP_PEER_MMIO, NV_DMA_REMAP_PEER_MMIO_ENABLE);
 NV_DEFINE_REG_STRING_ENTRY(__NV_RM_NVLINK_BW, NULL);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_IMEX_CHANNEL_COUNT, 2048);
+NV_DEFINE_REG_ENTRY_GLOBAL(__NV_CREATE_IMEX_CHANNEL_0, 0);
 
 /*
  *----------------registry database definition----------------------
@@ -974,6 +1000,7 @@ nv_parm_t nv_parms[] = {
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_OPENRM_ENABLE_UNSUPPORTED_GPUS),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_DMA_REMAP_PEER_MMIO),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_IMEX_CHANNEL_COUNT),
+    NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_CREATE_IMEX_CHANNEL_0),
     {NULL, NULL}
 };
 

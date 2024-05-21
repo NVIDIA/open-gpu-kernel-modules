@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -153,6 +153,7 @@
 #define NV_PMC_BOOT_42_ARCHITECTURE_GA100                0x00000017 /*       */
 #define NV_PMC_BOOT_42_ARCHITECTURE_GH100                0x00000018 /*       */
 #define NV_PMC_BOOT_42_ARCHITECTURE_AD100                0x00000019 /*       */
+#define NV_PMC_BOOT_42_ARCHITECTURE_AMODEL               0x0000001F /*       */
 
 #define NV_PMC_BOOT_42_CHIP_ID_GA100                     0x00000170 /*       */
 

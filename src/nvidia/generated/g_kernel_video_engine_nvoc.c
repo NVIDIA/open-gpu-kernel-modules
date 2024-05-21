@@ -97,6 +97,7 @@ __nvoc_ctor_KernelVideoEngine_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_KernelVideoEngine_1(KernelVideoEngine *pThis, RmHalspecOwner *pRmhalspecowner) {
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
@@ -104,28 +105,10 @@ static void __nvoc_init_funcTable_KernelVideoEngine_1(KernelVideoEngine *pThis, 
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
+} // End __nvoc_init_funcTable_KernelVideoEngine_1
 
-    // Hal function -- kvidengInitLogging
-    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
-    {
-        pThis->__kvidengInitLogging__ = &kvidengInitLogging_46f6a7;
-    }
-    else
-    {
-        pThis->__kvidengInitLogging__ = &kvidengInitLogging_KERNEL;
-    }
 
-    // Hal function -- kvidengFreeLogging
-    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
-    {
-        pThis->__kvidengFreeLogging__ = &kvidengFreeLogging_b3696a;
-    }
-    else
-    {
-        pThis->__kvidengFreeLogging__ = &kvidengFreeLogging_KERNEL;
-    }
-}
-
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_KernelVideoEngine(KernelVideoEngine *pThis, RmHalspecOwner *pRmhalspecowner) {
     __nvoc_init_funcTable_KernelVideoEngine_1(pThis, pRmhalspecowner);
 }

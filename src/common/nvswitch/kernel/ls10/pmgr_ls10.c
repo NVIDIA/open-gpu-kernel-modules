@@ -23,6 +23,7 @@
 
 
 #include "common_nvswitch.h"
+#include "boards_nvswitch.h"
 #include "regkey_nvswitch.h"
 #include "ls10/ls10.h"
 #include "ls10/pmgr_ls10.h"
@@ -32,7 +33,6 @@
 #include "export_nvswitch.h"
 #include "soe/soe_nvswitch.h"
 #include "soe/soeifcore.h"
-#include "boards_nvswitch.h"
 
 #include "nvswitch/ls10/dev_pmgr.h"
 
@@ -374,4 +374,35 @@ nvswitch_i2c_is_device_access_allowed_ls10
 {
     // Check will be performed in SOE
     return NV_TRUE;
+}
+
+/*! 
+ *  @brief Return I2c port info used in PMGR implementation.
+ */
+NvU32
+nvswitch_i2c_get_port_info_ls10
+(
+    nvswitch_device *device,
+    NvU32 port
+)
+{
+    NvU16 boardId;
+    NvlStatus status;
+  
+    status = nvswitch_get_board_id(device, &boardId);
+    if (status != NVL_SUCCESS)
+    {
+        return 0;
+    }
+
+    //
+    // Board has no devices we care about on I2C port C
+    // Bug 4312082
+    //
+    if ((boardId == NVSWITCH_BOARD_LS10_4262_0000_895) &&
+        (port == NVSWITCH_I2C_PORT_I2CC))
+    {
+        return 0;
+    }
+    return nvswitch_i2c_get_port_info_lr10(device, port);
 }

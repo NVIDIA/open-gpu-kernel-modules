@@ -270,11 +270,11 @@ kbusCreateP2PMappingForNvlink_GP100
         NV_PRINTF(LEVEL_INFO, "- P2P: Using Default RM mapping for P2P.\n");
     }
 
+    if (bEgmPeer)
+    {
+        NV_PRINTF(LEVEL_INFO, "EGM peer\n");
+    }
 
-        if (bEgmPeer)
-        {
-            NV_PRINTF(LEVEL_INFO, "EGM peer\n");
-        }
     //
     // Does the mapping already exist between the given pair of GPUs using the peerIDs
     // *peer0 and *peer1 respectively ?
@@ -482,6 +482,7 @@ _kbusRemoveNvlinkPeerMapping
     //    P2P between all the peers is destroyed.
     //    busNvlinkMappingRefcountPerGpu == 0 check is done in this case to remove
     //    the peer id from busNvlinkPeerNumberMask[peerGpuInst]
+    //
     //    Two peer ids are used to reach the same GPU, one for HBM and one for
     //    EGM. In that case busNvlinkMappingRefcountPerGpu isn't going to
     //    reach 0 until both the peer ids are removed. In this case,

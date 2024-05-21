@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -61,9 +61,9 @@ chandesConstruct_IMPL
     NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_OBJECT_PARENT);
 
     // Bad class creation can happen when GPU is in low power because class DB is invalid
-    NV_ASSERT(IS_VIRTUAL(pGpu) || gpuIsGpuFullPower(pGpu));
+    NV_ASSERT(IS_VIRTUAL(pGpu) || gpuIsGpuFullPowerForPmResume(pGpu));
 
-    NV_ASSERT(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT(rmapiLockIsOwner() || rmapiInRtd3PmPath());
 
     //
     // If debug mode is enabled on this GPU, check if the GPU is occupied by a
@@ -271,7 +271,7 @@ chandesDestruct_IMPL
     NV_STATUS          status;
 
     // scrub event references for this object
-    CliDelObjectEvents(RES_GET_CLIENT_HANDLE(pChannelDescendant), RES_GET_HANDLE(pChannelDescendant));
+    CliDelObjectEvents(RES_GET_REF(pChannelDescendant));
 
     status = kchannelDeregisterChild(pChannelDescendant->pKernelChannel, pChannelDescendant);
     NV_ASSERT(status == NV_OK);

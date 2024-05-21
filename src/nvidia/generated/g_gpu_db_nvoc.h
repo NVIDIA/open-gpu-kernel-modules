@@ -1,6 +1,13 @@
+
 #ifndef _G_GPU_DB_NVOC_H_
 #define _G_GPU_DB_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,6 +35,7 @@ extern "C" {
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+#pragma once
 #include "g_gpu_db_nvoc.h"
 
 #ifndef GPU_DB_H
@@ -101,11 +109,20 @@ MAKE_LIST(GpuInfoList, GPU_INFO_LIST_NODE);
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 
+
 struct GpuDb {
+
+    // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+
+    // Parent (i.e. superclass or base class) object pointers
     struct Object __nvoc_base_Object;
-    struct Object *__nvoc_pbase_Object;
-    struct GpuDb *__nvoc_pbase_GpuDb;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super
+    struct GpuDb *__nvoc_pbase_GpuDb;    // gpudb
+
+    // Data members
     GpuInfoList gpuList;
     PORT_MUTEX *pLock;
 };
@@ -119,6 +136,7 @@ typedef struct GpuDb GpuDb;
 #define __nvoc_class_id_GpuDb 0xcdd250
 #endif /* __nvoc_class_id_GpuDb */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuDb;
 
 #define __staticCast_GpuDb(pThis) \
@@ -131,13 +149,16 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuDb;
     ((GpuDb*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(GpuDb)))
 #endif //__nvoc_gpu_db_h_disabled
 
-
 NV_STATUS __nvoc_objCreateDynamic_GpuDb(GpuDb**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_GpuDb(GpuDb**, Dynamic*, NvU32);
 #define __objCreate_GpuDb(ppNewObj, pParent, createFlags) \
     __nvoc_objCreate_GpuDb((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
+
+// Wrapper macros
+
+// Dispatch functions
 NV_STATUS gpudbConstruct_IMPL(struct GpuDb *arg_pGpuDb);
 
 #define __nvoc_gpudbConstruct(arg_pGpuDb) gpudbConstruct_IMPL(arg_pGpuDb)

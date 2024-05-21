@@ -153,20 +153,17 @@ static NV_STATUS phys_mem_allocate_sysmem(uvm_page_tree_t *tree, NvLength size, 
 // - UVM_APERTURE_VID       biggest page size on vidmem mappings
 // - UVM_APERTURE_SYS       biggest page size on sysmem mappings
 // - UVM_APERTURE_PEER_0-7  biggest page size on peer mappings
-static NvU32 mmu_biggest_page_size(uvm_page_tree_t *tree, uvm_aperture_t aperture)
+static NvU64 mmu_biggest_page_size(uvm_page_tree_t *tree, uvm_aperture_t aperture)
 {
     UVM_ASSERT(aperture < UVM_APERTURE_DEFAULT);
 
     // There may be scenarios where the GMMU must use a subset of the supported
     // page sizes, e.g., to comply with the vMMU supported page sizes due to
     // segmentation sizes.
-    if (aperture == UVM_APERTURE_VID) {
-        UVM_ASSERT(tree->gpu->mem_info.max_vidmem_page_size <= NV_U32_MAX);
-        return (NvU32) tree->gpu->mem_info.max_vidmem_page_size;
-    }
-    else {
-        return 1 << __fls(tree->hal->page_sizes());
-    }
+    if (aperture == UVM_APERTURE_VID)
+        return uvm_mmu_biggest_page_size_up_to(tree, tree->gpu->mem_info.max_vidmem_page_size);
+
+    return 1ULL << __fls(tree->hal->page_sizes());
 }
 
 static NV_STATUS phys_mem_allocate_vidmem(uvm_page_tree_t *tree,
@@ -254,7 +251,7 @@ static void phys_mem_deallocate(uvm_page_tree_t *tree, uvm_mmu_page_table_alloc_
 }
 
 static void page_table_range_init(uvm_page_table_range_t *range,
-                                 NvU32 page_size,
+                                 NvU64 page_size,
                                  uvm_page_directory_t *dir,
                                  NvU32 start_index,
                                  NvU32 end_index)
@@ -444,9 +441,9 @@ static void pde_fill(uvm_page_tree_t *tree,
         pde_fill_cpu(tree, directory, start_index, pde_count, phys_addr);
 }
 
-static void phys_mem_init(uvm_page_tree_t *tree, NvU32 page_size, uvm_page_directory_t *dir, uvm_push_t *push)
+static void phys_mem_init(uvm_page_tree_t *tree, NvU64 page_size, uvm_page_directory_t *dir, uvm_push_t *push)
 {
-    NvU32 entries_count = uvm_mmu_page_tree_entries(tree, dir->depth, page_size);
+    NvU64 entries_count = uvm_mmu_page_tree_entries(tree, dir->depth, page_size);
     NvU8 max_pde_depth = tree->hal->page_table_depth(UVM_PAGE_SIZE_AGNOSTIC) - 1;
 
     // Passing in NULL for the phys_allocs will mark the child entries as
@@ -497,7 +494,7 @@ static void phys_mem_init(uvm_page_tree_t *tree, NvU32 page_size, uvm_page_direc
 }
 
 static uvm_page_directory_t *allocate_directory(uvm_page_tree_t *tree,
-                                                NvU32 page_size,
+                                                NvU64 page_size,
                                                 NvU32 depth,
                                                 uvm_pmm_alloc_flags_t pmm_flags)
 {
@@ -546,7 +543,7 @@ static inline NvU32 entry_index_from_vaddr(NvU64 vaddr, NvU32 addr_bit_shift, Nv
     return (NvU32)((vaddr >> addr_bit_shift) & mask);
 }
 
-static inline NvU32 index_to_entry(uvm_mmu_mode_hal_t *hal, NvU32 entry_index, NvU32 depth, NvU32 page_size)
+static inline NvU32 index_to_entry(uvm_mmu_mode_hal_t *hal, NvU32 entry_index, NvU32 depth, NvU64 page_size)
 {
     return hal->entries_per_index(depth) * entry_index + hal->entry_offset(depth, page_size);
 }
@@ -583,7 +580,7 @@ static void pde_write(uvm_page_tree_t *tree,
     pde_fill(tree, dir, entry_index, 1, phys_allocs, push);
 }
 
-static void host_pde_clear(uvm_page_tree_t *tree, uvm_page_directory_t *dir, NvU32 entry_index, NvU32 page_size)
+static void host_pde_clear(uvm_page_tree_t *tree, uvm_page_directory_t *dir, NvU32 entry_index, NvU64 page_size)
 {
     UVM_ASSERT(dir->ref_count > 0);
 
@@ -594,35 +591,38 @@ static void host_pde_clear(uvm_page_tree_t *tree, uvm_page_directory_t *dir, NvU
 static void pde_clear(uvm_page_tree_t *tree,
                       uvm_page_directory_t *dir,
                       NvU32 entry_index,
-                      NvU32 page_size,
+                      NvU64 page_size,
                       uvm_push_t *push)
 {
     host_pde_clear(tree, dir, entry_index, page_size);
     pde_write(tree, dir, entry_index, false, push);
 }
 
-static uvm_chunk_sizes_mask_t allocation_sizes_for_big_page_size(uvm_parent_gpu_t *parent_gpu, NvU32 big_page_size)
+static uvm_chunk_sizes_mask_t allocation_sizes_for_big_page_size(uvm_parent_gpu_t *parent_gpu, NvU64 big_page_size)
 {
-    uvm_chunk_sizes_mask_t alloc_sizes = 0;
     uvm_mmu_mode_hal_t *hal = parent_gpu->arch_hal->mmu_mode_hal(big_page_size);
+    unsigned long page_sizes, page_size_log2;
+    uvm_chunk_sizes_mask_t alloc_sizes;
 
-    if (hal != NULL) {
-        unsigned long page_size_log2;
-        unsigned long page_sizes = hal->page_sizes();
-        BUILD_BUG_ON(sizeof(hal->page_sizes()) > sizeof(page_sizes));
+    if (hal == NULL)
+        return 0;
 
-        for_each_set_bit(page_size_log2, &page_sizes, BITS_PER_LONG) {
-            NvU32 i;
-            NvU32 page_size = (NvU32)(1ULL << page_size_log2);
-            for (i = 0; i <= hal->page_table_depth(page_size); i++)
-                alloc_sizes |= hal->allocation_size(i, page_size);
-        }
+    page_sizes = hal->page_sizes();
+    alloc_sizes = 0;
+
+    BUILD_BUG_ON(sizeof(hal->page_sizes()) > sizeof(page_sizes));
+
+    for_each_set_bit(page_size_log2, &page_sizes, BITS_PER_LONG) {
+        NvU32 i;
+        NvU64 page_size = 1ULL << page_size_log2;
+        for (i = 0; i <= hal->page_table_depth(page_size); i++)
+            alloc_sizes |= hal->allocation_size(i, page_size);
     }
 
     return alloc_sizes;
 }
 
-static NvU32 page_sizes_for_big_page_size(uvm_parent_gpu_t *parent_gpu, NvU32 big_page_size)
+static NvU64 page_sizes_for_big_page_size(uvm_parent_gpu_t *parent_gpu, NvU64 big_page_size)
 {
     uvm_mmu_mode_hal_t *hal = parent_gpu->arch_hal->mmu_mode_hal(big_page_size);
 
@@ -662,7 +662,7 @@ static NV_STATUS page_tree_end_and_wait(uvm_page_tree_t *tree, uvm_push_t *push)
 }
 
 static NV_STATUS write_gpu_state_cpu(uvm_page_tree_t *tree,
-                                     NvU32 page_size,
+                                     NvU64 page_size,
                                      NvS32 invalidate_depth,
                                      NvU32 used_count,
                                      uvm_page_directory_t **dirs_used)
@@ -713,7 +713,7 @@ static NV_STATUS write_gpu_state_cpu(uvm_page_tree_t *tree,
 }
 
 static NV_STATUS write_gpu_state_gpu(uvm_page_tree_t *tree,
-                                     NvU32 page_size,
+                                     NvU64 page_size,
                                      NvS32 invalidate_depth,
                                      NvU32 used_count,
                                      uvm_page_directory_t **dirs_used)
@@ -805,7 +805,7 @@ static NV_STATUS write_gpu_state_gpu(uvm_page_tree_t *tree,
 
 // initialize new page tables and insert them into the tree
 static NV_STATUS write_gpu_state(uvm_page_tree_t *tree,
-                                 NvU32 page_size,
+                                 NvU64 page_size,
                                  NvS32 invalidate_depth,
                                  NvU32 used_count,
                                  uvm_page_directory_t **dirs_used)
@@ -842,7 +842,7 @@ static void free_unused_directories(uvm_page_tree_t *tree,
     }
 }
 
-static NV_STATUS allocate_page_table(uvm_page_tree_t *tree, NvU32 page_size, uvm_mmu_page_table_alloc_t *out)
+static NV_STATUS allocate_page_table(uvm_page_tree_t *tree, NvU64 page_size, uvm_mmu_page_table_alloc_t *out)
 {
     NvU32 depth = tree->hal->page_table_depth(page_size);
     NvLength alloc_size = tree->hal->allocation_size(depth, page_size);
@@ -871,7 +871,7 @@ static NV_STATUS page_tree_ats_init(uvm_page_tree_t *tree)
 {
     NV_STATUS status;
     NvU64 min_va_upper, max_va_lower;
-    NvU32 page_size;
+    NvU64 page_size;
 
     if (!page_tree_ats_init_required(tree))
         return NV_OK;
@@ -1090,7 +1090,7 @@ static void page_tree_set_location(uvm_page_tree_t *tree, uvm_aperture_t locatio
 NV_STATUS uvm_page_tree_init(uvm_gpu_t *gpu,
                              uvm_gpu_va_space_t *gpu_va_space,
                              uvm_page_tree_type_t type,
-                             NvU32 big_page_size,
+                             NvU64 big_page_size,
                              uvm_aperture_t location,
                              uvm_page_tree_t *tree)
 {
@@ -1110,7 +1110,7 @@ NV_STATUS uvm_page_tree_init(uvm_gpu_t *gpu,
     tree->gpu_va_space = gpu_va_space;
     tree->big_page_size = big_page_size;
 
-    UVM_ASSERT(gpu->mem_info.max_vidmem_page_size & tree->hal->page_sizes());
+    UVM_ASSERT(uvm_mmu_page_size_supported(tree, big_page_size));
 
     page_tree_set_location(tree, location);
 
@@ -1347,7 +1347,7 @@ NV_STATUS uvm_page_tree_wait(uvm_page_tree_t *tree)
 }
 
 static NV_STATUS try_get_ptes(uvm_page_tree_t *tree,
-                              NvU32 page_size,
+                              NvU64 page_size,
                               NvU64 start,
                               NvLength size,
                               uvm_page_table_range_t *range,
@@ -1379,7 +1379,7 @@ static NV_STATUS try_get_ptes(uvm_page_tree_t *tree,
     // This algorithm will work with unaligned ranges, but the caller's intent
     // is unclear
     UVM_ASSERT_MSG(start % page_size == 0 && size % page_size == 0,
-                   "start 0x%llx size 0x%zx page_size 0x%x\n",
+                   "start 0x%llx size 0x%zx page_size 0x%llx\n",
                    start,
                    (size_t)size,
                    page_size);
@@ -1448,7 +1448,7 @@ static NV_STATUS map_remap(uvm_page_tree_t *tree, NvU64 start, NvLength size, uv
 {
     NV_STATUS status;
     uvm_push_t push;
-    NvU32 page_sizes;
+    NvU64 page_sizes;
     uvm_mmu_page_table_alloc_t *phys_alloc[1];
 
     // TODO: Bug 2734399
@@ -1460,7 +1460,7 @@ static NV_STATUS map_remap(uvm_page_tree_t *tree, NvU64 start, NvLength size, uv
     status = page_tree_begin_acquire(tree,
                                      &tree->tracker,
                                      &push,
-                                     "map remap: [0x%llx, 0x%llx), page_size: %d",
+                                     "map remap: [0x%llx, 0x%llx), page_size: %lld",
                                      start,
                                      start + size,
                                      range->page_size);
@@ -1500,7 +1500,7 @@ static NV_STATUS map_remap(uvm_page_tree_t *tree, NvU64 start, NvLength size, uv
 }
 
 NV_STATUS uvm_page_tree_get_ptes_async(uvm_page_tree_t *tree,
-                                       NvU32 page_size,
+                                       NvU64 page_size,
                                        NvU64 start,
                                        NvLength size,
                                        uvm_pmm_alloc_flags_t pmm_flags,
@@ -1545,7 +1545,7 @@ NV_STATUS uvm_page_tree_get_ptes_async(uvm_page_tree_t *tree,
 }
 
 NV_STATUS uvm_page_tree_get_ptes(uvm_page_tree_t *tree,
-                                 NvU32 page_size,
+                                 NvU64 page_size,
                                  NvU64 start,
                                  NvLength size,
                                  uvm_pmm_alloc_flags_t pmm_flags,
@@ -1596,7 +1596,7 @@ void uvm_page_table_range_shrink(uvm_page_tree_t *tree, uvm_page_table_range_t *
 }
 
 NV_STATUS uvm_page_tree_get_entry(uvm_page_tree_t *tree,
-                                  NvU32 page_size,
+                                  NvU64 page_size,
                                   NvU64 start,
                                   uvm_pmm_alloc_flags_t pmm_flags,
                                   uvm_page_table_range_t *single)
@@ -1621,7 +1621,7 @@ void uvm_page_tree_clear_pde(uvm_page_tree_t *tree, uvm_page_table_range_t *sing
 static NV_STATUS poison_ptes(uvm_page_tree_t *tree,
                              uvm_page_directory_t *pte_dir,
                              uvm_page_directory_t *parent,
-                             NvU32 page_size)
+                             NvU64 page_size)
 {
     NV_STATUS status;
     uvm_push_t push;
@@ -1633,7 +1633,7 @@ static NV_STATUS poison_ptes(uvm_page_tree_t *tree,
     // The flat mappings should always be set up when executing this path
     UVM_ASSERT(!uvm_mmu_use_cpu(tree));
 
-    status = page_tree_begin_acquire(tree, &tree->tracker, &push, "Poisoning child table of page size %u", page_size);
+    status = page_tree_begin_acquire(tree, &tree->tracker, &push, "Poisoning child table of page size %llu", page_size);
     if (status != NV_OK)
         return status;
 
@@ -1660,7 +1660,7 @@ static NV_STATUS poison_ptes(uvm_page_tree_t *tree,
 }
 
 NV_STATUS uvm_page_tree_alloc_table(uvm_page_tree_t *tree,
-                                    NvU32 page_size,
+                                    NvU64 page_size,
                                     uvm_pmm_alloc_flags_t pmm_flags,
                                     uvm_page_table_range_t *single,
                                     uvm_page_table_range_t *children)
@@ -1768,7 +1768,7 @@ static size_t range_vec_calc_range_index(uvm_page_table_range_vec_t *range_vec, 
 NV_STATUS uvm_page_table_range_vec_init(uvm_page_tree_t *tree,
                                         NvU64 start,
                                         NvU64 size,
-                                        NvU32 page_size,
+                                        NvU64 page_size,
                                         uvm_pmm_alloc_flags_t pmm_flags,
                                         uvm_page_table_range_vec_t *range_vec)
 {
@@ -1776,8 +1776,8 @@ NV_STATUS uvm_page_table_range_vec_init(uvm_page_tree_t *tree,
     size_t i;
 
     UVM_ASSERT(size != 0);
-    UVM_ASSERT_MSG(IS_ALIGNED(start, page_size), "start 0x%llx page_size 0x%x\n", start, page_size);
-    UVM_ASSERT_MSG(IS_ALIGNED(size, page_size), "size 0x%llx page_size 0x%x\n", size, page_size);
+    UVM_ASSERT_MSG(IS_ALIGNED(start, page_size), "start 0x%llx page_size 0x%llx\n", start, page_size);
+    UVM_ASSERT_MSG(IS_ALIGNED(size, page_size), "size 0x%llx page_size 0x%llx\n", size, page_size);
 
     range_vec->tree = tree;
     range_vec->page_size = page_size;
@@ -1826,7 +1826,7 @@ out:
 NV_STATUS uvm_page_table_range_vec_create(uvm_page_tree_t *tree,
                                           NvU64 start,
                                           NvU64 size,
-                                          NvU32 page_size,
+                                          NvU64 page_size,
                                           uvm_pmm_alloc_flags_t pmm_flags,
                                           uvm_page_table_range_vec_t **range_vec_out)
 {
@@ -1952,7 +1952,7 @@ static NV_STATUS uvm_page_table_range_vec_clear_ptes_gpu(uvm_page_table_range_ve
     size_t i;
     uvm_page_tree_t *tree = range_vec->tree;
     uvm_gpu_t *gpu = tree->gpu;
-    NvU32 page_size = range_vec->page_size;
+    NvU64 page_size = range_vec->page_size;
     NvU32 entry_size = uvm_mmu_pte_size(tree, page_size);
     NvU64 invalid_pte = 0;
     uvm_push_t push;
@@ -2237,7 +2237,7 @@ static NV_STATUS create_identity_mapping(uvm_gpu_t *gpu,
                                          NvU64 size,
                                          uvm_aperture_t aperture,
                                          NvU64 phys_offset,
-                                         NvU32 page_size,
+                                         NvU64 page_size,
                                          uvm_pmm_alloc_flags_t pmm_flags)
 {
     NV_STATUS status;
@@ -2312,7 +2312,7 @@ bool uvm_mmu_parent_gpu_needs_dynamic_sysmem_mapping(uvm_parent_gpu_t *parent_gp
 
 NV_STATUS create_static_vidmem_mapping(uvm_gpu_t *gpu)
 {
-    NvU32 page_size;
+    NvU64 page_size;
     NvU64 size;
     uvm_aperture_t aperture = UVM_APERTURE_VID;
     NvU64 phys_offset = 0;
@@ -2351,7 +2351,7 @@ static void destroy_static_vidmem_mapping(uvm_gpu_t *gpu)
 
 NV_STATUS uvm_mmu_create_peer_identity_mappings(uvm_gpu_t *gpu, uvm_gpu_t *peer)
 {
-    NvU32 page_size;
+    NvU64 page_size;
     NvU64 size;
     uvm_aperture_t aperture;
     NvU64 phys_offset;
@@ -2535,7 +2535,7 @@ static void root_chunk_mapping_destroy(uvm_gpu_t *gpu, uvm_gpu_root_chunk_mappin
     uvm_push_t push;
     NvU32 entry_size;
     uvm_pte_batch_t pte_batch;
-    NvU32 page_size;
+    NvU64 page_size;
     NvU64 size;
     NvU64 invalid_pte;
     uvm_page_table_range_t *range = root_chunk_mapping->range;
@@ -2585,7 +2585,7 @@ static NV_STATUS root_chunk_mapping_create(uvm_gpu_t *gpu, uvm_gpu_root_chunk_ma
     uvm_push_t push;
     NvU64 pte_bits;
     NvU32 entry_size;
-    NvU32 page_size = UVM_CHUNK_SIZE_MAX;
+    NvU64 page_size = UVM_CHUNK_SIZE_MAX;
     NvU64 size = UVM_CHUNK_SIZE_MAX;
 
     range = uvm_kvmalloc_zero(sizeof(*range));
@@ -2852,7 +2852,7 @@ NV_STATUS uvm_mmu_sysmem_map(uvm_gpu_t *gpu, NvU64 pa, NvU64 size)
         if (sysmem_mapping->range_vec == NULL) {
             uvm_gpu_address_t virtual_address = uvm_parent_gpu_address_virtual_from_sysmem_phys(gpu->parent, curr_pa);
             NvU64 phys_offset = curr_pa;
-            NvU32 page_size = mmu_biggest_page_size(&gpu->address_space_tree, UVM_APERTURE_SYS);
+            NvU64 page_size = mmu_biggest_page_size(&gpu->address_space_tree, UVM_APERTURE_SYS);
             uvm_pmm_alloc_flags_t pmm_flags;
 
             // No eviction is requested when allocating the page tree storage,

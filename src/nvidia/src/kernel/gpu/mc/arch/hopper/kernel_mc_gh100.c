@@ -55,8 +55,8 @@ kmcWritePmcEnableReg_GH100
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    // No need for bIsPmcDeviceEngine, so just call GK104
-    return kmcWritePmcEnableReg_GK104(pGpu, pKernelMc, pmcEnableMask, bEnable, NV_FALSE);
+    // No need for bIsPmcDeviceEngine, so just call GM107
+    return kmcWritePmcEnableReg_GM107(pGpu, pKernelMc, pmcEnableMask, bEnable, NV_FALSE);
 }
 
 /*!
@@ -84,6 +84,6 @@ kmcReadPmcEnableReg_GH100
         return 0;
     }
 
-    // No need for bIsPmcDeviceEngine, so just call GK104
-    return kmcReadPmcEnableReg_GK104(pGpu, pKernelMc, NV_FALSE);
+    // No need for bIsPmcDeviceEngine, so just call GM107
+    return kmcReadPmcEnableReg_GM107(pGpu, pKernelMc, NV_FALSE);
 }

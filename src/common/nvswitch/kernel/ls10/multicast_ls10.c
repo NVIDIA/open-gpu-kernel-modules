@@ -1510,6 +1510,13 @@ nvswitch_mc_invalidate_mc_rid_entry_ls10
         return -NVL_BAD_ARGS;
     }
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
     if (use_extended_table)
         reg = FLD_SET_DRF(_ROUTE, _RIDTABADDR, _RAM_SEL, _SELECTSEXTMCRIDROUTERAM, 0);
     else
@@ -1606,6 +1613,13 @@ nvswitch_mc_program_mc_rid_entry_ls10
     {
         NVSWITCH_PRINT(device, ERROR, "%s: extended_ptr out of range\n", __FUNCTION__);
         return -NVL_BAD_ARGS;
+    }
+
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
     }
 
     if (table_entry->use_extended_table)
@@ -1747,6 +1761,13 @@ nvswitch_mc_read_mc_rid_entry_ls10
         NVSWITCH_PRINT(device, ERROR, "%s: index %d out of range for main table\n",
                        __FUNCTION__, table_entry->index);
         return -NVL_BAD_ARGS;
+    }
+
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
     }
 
     // set the address

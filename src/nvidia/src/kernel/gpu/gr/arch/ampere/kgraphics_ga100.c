@@ -23,6 +23,9 @@
 
 #define NVOC_KERNEL_GRAPHICS_H_PRIVATE_ACCESS_ALLOWED
 
+#include "core/prelude.h"
+#include "kernel/gpu/gpu.h"
+
 #include "kernel/gpu/gr/kernel_graphics.h"
 #include "nv_sriov_defines.h"
 

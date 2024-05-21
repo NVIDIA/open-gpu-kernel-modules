@@ -64,6 +64,11 @@ NVSurfaceEvoPtr nvEvoGetSurfaceFromHandleNoDispHWAccessOk(
     const NVEvoApiHandlesRec *pOpenDevSurfaceHandles,
     NvKmsSurfaceHandle surfaceHandle);
 
+NVSurfaceEvoPtr nvEvoGetSurfaceFromHandleNoHWAccess(
+    const NVDevEvoRec *pDevEvo,
+    const NVEvoApiHandlesRec *pOpenDevSurfaceHandles,
+    NvKmsSurfaceHandle surfaceHandle);
+
 NVDeferredRequestFifoRec *nvEvoRegisterDeferredRequestFifo(
     NVDevEvoPtr pDevEvo,
     NVSurfaceEvoPtr pSurfaceEvo);
@@ -75,7 +80,7 @@ void nvEvoUnregisterDeferredRequestFifo(
 NVVblankSemControl *nvEvoEnableVblankSemControl(
     NVDevEvoRec *pDevEvo,
     NVDispEvoRec *pDispEvo,
-    NvU32 hwHead,
+    NvU32 apiHeadMask,
     NVSurfaceEvoRec *pSurfaceEvo,
     NvU64 surfaceOffset);
 

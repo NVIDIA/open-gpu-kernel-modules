@@ -41,7 +41,6 @@
 #include "library/memlib.h"
 #include "library/cryptlib.h"
 #include <rmconfig.h>
-#include "core/prelude.h"
 // Stub out all crypto functions that we do not support.
 
 bool libspdm_ec_get_private_key_from_pem(const uint8_t *pem_data, size_t pem_size,
@@ -60,19 +59,10 @@ bool libspdm_ec_get_public_key_from_der(const uint8_t *der_data,
     return false;
 }
 
-
 bool libspdm_rsa_get_public_key_from_der(const uint8_t *der_data,
                                          size_t der_size,
                                          void **rsa_context)
 {
     return true;
 }
-
-#if defined(NV_USE_MBEDTLS) && NV_USE_MBEDTLS
-bool libspdm_check_crypto_backend(void)
-{
-    NV_PRINTF(LEVEL_INFO, "libspdm_check_crypto_backend: MbedTLS found\n");
-    return true;
-}
-#endif
 

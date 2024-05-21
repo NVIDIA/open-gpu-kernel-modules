@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_rs_server_nvoc.h"
 
 #ifndef _RS_SERVER_H_
@@ -34,6 +35,12 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+enum CLIENT_LOCK_TYPE
+{
+    CLIENT_LOCK_SPECIFIC, // For locking specific RM clients encoded in the API
+    CLIENT_LOCK_ALL       // For locking all RM clients currently in use
+};
 
 /**
  * @defgroup RsServer
@@ -49,11 +56,17 @@ struct CLIENT_ENTRY
     RsClient       *pClient;
     NvHandle        hClient;
     NvU64           lockOwnerTid; ///< Thread id of the lock owner
+    NvU32           refCount;
+    NvBool          bPendingFree;
+    ListNode        node;
 
 #if LOCK_VAL_ENABLED
     LOCK_VAL_LOCK   lockVal;
 #endif
 };
+
+MAKE_INTRUSIVE_LIST(RsClientList, CLIENT_ENTRY, node);
+MAKE_LIST(RsLockedClientList, CLIENT_ENTRY*);
 
 /**
  * Base-class for objects that are shared among multiple
@@ -135,7 +148,7 @@ struct RsServer
     NvBool                    bConstructed; ///< Determines whether the server is ready to be used
     PORT_MEM_ALLOCATOR       *pAllocator; ///< Allocator to use for all objects allocated by the server
 
-    PORT_RWLOCK              *pClientListLock; ///< Lock that needs to be taken when accessing the client list
+    PORT_SPINLOCK            *pClientListLock; ///< Lock that needs to be taken when accessing the client list
 
     PORT_SPINLOCK            *pShareMapLock; ///< Lock that needs to be taken when accessing the shared resource map
     RsSharedMap               shareMap; ///< Map of shared resources
@@ -168,6 +181,11 @@ struct RsServer
     NvBool                    bRsAccessEnabled;
 
     /**
+     * Set to thread ID of the thread that locked all clients.
+     */
+    NvU64                     allClientLockOwnerTid;
+
+    /**
      * Mask of interfaces (RS_API_*) that will use a read-only top lock by default
      */
     NvU32                     roTopLockApiMask;
@@ -187,6 +205,16 @@ struct RsServer
     RsDisabledClientList      disabledClientList;
     RsClient                 *pNextDisabledClient;
     PORT_SPINLOCK            *pDisabledClientListLock;
+
+    /**
+     * List of client entries locked by serverLockAllClients
+     * This list is required for locking all clients in order to avoid races with
+     * other paths creating/destroying paths in parallel WITHOUT holding the API lock.
+     * Ideally, there shouldn't be any other such paths but the RTD3/PM path does do
+     * this. CORERM-6052 tracks investigating that and potentially fixing the locking
+     * there.
+     */
+    RsLockedClientList        lockedClientList;
 };
 
 /**
@@ -599,6 +627,23 @@ extern NV_STATUS serverResLock_Prologue(RsServer *pServer, LOCK_ACCESS_TYPE acce
 extern void serverResLock_Epilogue(RsServer *pServer, LOCK_ACCESS_TYPE access, RS_LOCK_INFO *pLockInfo, NvU32 *pReleaseFlags);
 
 /**
+ * Acquire the client list lock. The caller is responsible for
+ * ensuring that lock ordering is not violated (otherwise there can be
+ * deadlock): the client list lock must always be released without acquiring any
+ * subsequent locks.
+ *
+ * @param[in]   pServer This server instance
+ */
+void serverAcquireClientListLock(RsServer *pServer);
+
+/**
+ * Release the client list lock.
+ *
+ * @param[in]   pServer This server instance
+ */
+void serverReleaseClientListLock(RsServer *pServer);
+
+/**
  * WAR for additional tasks that must be performed after resource-level locks are released. User-implemented.
  * @param[inout]    status       Allocation status
  * @param[in]       bClientAlloc Caller is attempting to allocate a client
@@ -801,6 +846,15 @@ extern NV_STATUS serverControlLookupLockFlags(RsServer *pServer,
                                               RS_RES_CONTROL_PARAMS_INTERNAL *pParams,
                                               RS_CONTROL_COOKIE *pCookie,
                                               LOCK_ACCESS_TYPE *pAccess);
+
+/**
+ * Lookup client locking flags for a control call
+ *
+ * @param[in]       pCookie         Control call cookie
+ * @param[out]      pClientLockType Client lock type
+ */
+extern NV_STATUS serverControlLookupClientLockFlags(RS_CONTROL_COOKIE *pCookie,
+                                                    enum CLIENT_LOCK_TYPE *pClientLockType);
 
 /**
  *
@@ -1021,18 +1075,61 @@ void serverInterUnmap_Epilogue(RsServer *pServer, RS_INTER_UNMAP_PARAMS *pUnmapP
  * @param[in]   pServer This server instance
  * @param[in]   hClient The client to acquire
  * @param[in]   lockAccess LOCK_ACCESS_READ or LOCK_ACCESS_WRITE
- * @param[out]  ppClient Pointer to the RsClient
+ * @param[out]  ppClientEntry Pointer to the CLIENT_ENTRY
  */
-NV_STATUS serverAcquireClient(RsServer *pServer, NvHandle hClient, LOCK_ACCESS_TYPE lockAccess, RsClient **ppClient);
+NV_STATUS serverAcquireClient(RsServer *pServer, NvHandle hClient, LOCK_ACCESS_TYPE lockAccess, CLIENT_ENTRY **ppClientEntry);
 
 /**
  * Release a client pointer
  *
  * @param[in]  pServer This server instance
  * @param[in]  lockAccess LOCK_ACCESS_READ or LOCK_ACCESS_WRITE
- * @param[in]  pClient Pointer to the RsClient
+ * @param[in]  pClientEntry Pointer to the CLIENT_ENTRY
  */
-NV_STATUS serverReleaseClient(RsServer *pServer, LOCK_ACCESS_TYPE lockAccess, RsClient *pClient);
+void serverReleaseClient(RsServer *pServer, LOCK_ACCESS_TYPE lockAccess, CLIENT_ENTRY *pClientEntry);
+
+/**
+ * Test is a client handle is currently locked for LOCK_ACCESS_WRITE or not.
+ *
+ * @param[in]   pServer This server instance
+ * @param[in]   hClient The client to acquire
+ */
+NvBool serverIsClientLocked(RsServer *pServer, NvHandle hClient);
+
+/**
+ * Test if a client handle is internal or not
+ *
+ * @param[in]  hClient The client handle to test
+ */
+NvBool serverIsClientInternal(RsServer *pServer, NvHandle hClient);
+
+/**
+ * Lock all clients currently in use. While this function will lock the client handles
+ * in the correct order, the caller is responsible for ensuring that lock ordering
+ * is not violated (otherwise there can be a deadlock) with respect to other types
+ * of locks. NOTE that this CANNOT be called when already holding one or more client
+ * locks!
+ *
+ * @param[in]  pServer This server instance
+ */
+NV_STATUS serverLockAllClients(RsServer *pServer);
+
+/**
+ * Release locks on all clients.
+ *
+ * @param[in] pServer This server instance
+ */
+NV_STATUS serverUnlockAllClients(RsServer *pServer);
+
+/**
+ * Check if we locked all clients
+ *
+ * @param[in] pServer This server instance
+ */
+static NV_INLINE NvBool serverAllClientsLockIsOwner(RsServer *pServer)
+{
+    return (pServer->allClientLockOwnerTid == portThreadGetCurrentThreadId());
+}
 
 /**
  * Get a client pointer from a client handle without taking any locks.

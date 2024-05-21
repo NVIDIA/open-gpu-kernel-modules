@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -127,17 +127,18 @@ RmClient *serverutilGetClientUnderLock(NvHandle hClient);
  *
  * @param[in]   hClient The client to acquire
  * @param[in]   access LOCK_ACCESS_*
+ * @param[out]  ppClientEntry Pointer to the CLIENT_ENTRY
  * @param[out]  ppClient Pointer to the RmClient
  */
-NV_STATUS serverutilAcquireClient(NvHandle hClient, LOCK_ACCESS_TYPE access, RmClient **ppClient);
+NV_STATUS serverutilAcquireClient(NvHandle hClient, LOCK_ACCESS_TYPE access, CLIENT_ENTRY **ppClientEntry, RmClient **ppClient);
 
 /**
  * Unlock a client
  *
  * @param[in]   access LOCK_ACCESS_*
- * @param[in]   pClient Pointer to the RmClient
+ * @param[in]   pClientEntry Pointer to the CLIENT_ENTRY
  */
-void serverutilReleaseClient(LOCK_ACCESS_TYPE access, RmClient *pClient);
+void serverutilReleaseClient(LOCK_ACCESS_TYPE access, CLIENT_ENTRY *pClientEntry);
 
 /**
  * Get the first valid client pointer in resource server without taking any locks.

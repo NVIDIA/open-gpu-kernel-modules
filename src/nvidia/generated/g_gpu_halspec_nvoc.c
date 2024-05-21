@@ -77,10 +77,13 @@ __nvoc_ctor_RmHalspecOwner_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_RmHalspecOwner_1(RmHalspecOwner *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-}
+} // End __nvoc_init_funcTable_RmHalspecOwner_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_RmHalspecOwner(RmHalspecOwner *pThis) {
     __nvoc_init_funcTable_RmHalspecOwner_1(pThis);
 }

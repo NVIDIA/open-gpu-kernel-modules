@@ -288,6 +288,7 @@
     _op(NvlStatus, nvswitch_fsp_error_code_to_nvlstatus_map, (nvswitch_device *device, NvU32 errorCode), _arch) \
     _op(NvlStatus, nvswitch_fsp_get_packet_info, (nvswitch_device *device, NvU8 *pBuffer, NvU32 size, NvU8 *pPacketState, NvU8 *pTag), _arch) \
     _op(NvlStatus, nvswitch_fsprpc_get_caps, (nvswitch_device *device, NVSWITCH_FSPRPC_GET_CAPS_PARAMS *params), _arch) \
+    _op(NvlStatus, nvswitch_soe_issue_ingress_stop, (nvswitch_device *device, NvU32 nport, NvBool bStop), _arch) \
     _op(NvlStatus, nvswitch_detect_tnvl_mode, (nvswitch_device *device), _arch) \
     _op(NvBool,    nvswitch_is_tnvl_mode_enabled, (nvswitch_device *device), _arch) \
     _op(NvBool,    nvswitch_is_tnvl_mode_locked, (nvswitch_device *device), _arch) \

@@ -1,5 +1,5 @@
  /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -481,14 +481,11 @@ rmMemPoolSetup
     // The topmost pool is fed pages directly by PMA.
     //
     // Calling into PMA with GPU lock acquired may cause deadlocks in case RM
-    // is operating along side UVM. Currently, we don't support UVM on Windows.
-    // So, allow the topmost pool to call into PMA on Windows. This is not
+    // is operating along side UVM. Currently, we don't support UVM on Windows/MODS.
+    // So, allow the topmost pool to call into PMA on Windows/MODS. This is not
     // permissible on platforms that support UVM like Linux.
-    // TODO: Remove this special handling for Windows once we have taken care
-    // of reserving memory for page tables required for mapping GR context buffers
-    // in the channel vaspace. See bug 200590870 and 200614517.
     //
-    if (RMCFG_FEATURE_PLATFORM_WINDOWS)
+    if (RMCFG_FEATURE_PLATFORM_WINDOWS || RMCFG_FEATURE_PLATFORM_MODS)
     {
         flags = FLD_SET_DRF(_RMPOOL, _FLAGS, _AUTO_POPULATE, _ENABLE, flags);
     }

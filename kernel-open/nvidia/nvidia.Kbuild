@@ -161,7 +161,7 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += pci_enable_atomic_ops_to_root
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += vga_tryget
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += cc_platform_has
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += seq_read_iter
-NV_CONFTEST_FUNCTION_COMPILE_TESTS += follow_pfn
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += unsafe_follow_pfn
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_gem_object_get
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_gem_object_put_unlocked
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += add_memory_driver_managed
@@ -195,6 +195,7 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += devm_clk_bulk_get_all
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += get_task_ioprio
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += mdev_set_iommu_device
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += offline_and_remove_memory
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += stack_trace
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += crypto_tfm_ctx_aligned
 
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_of_node_to_nid
@@ -227,8 +228,9 @@ NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_tsec_comms_clear_in
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_tsec_comms_alloc_mem_from_gscco
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_tsec_comms_free_gscco_mem
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_memory_block_size_bytes
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_tegra_platform_is_fpga
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_tegra_platform_is_sim
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += crypto
-NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_follow_pte
 
 NV_CONFTEST_TYPE_COMPILE_TESTS += dma_ops
 NV_CONFTEST_TYPE_COMPILE_TESTS += swiotlb_dma_ops

@@ -208,7 +208,7 @@ struct uvm_mmu_mode_hal_struct
     // This is an optimization which reduces TLB pressure, reduces the number of
     // TLB invalidates we must issue, and means we don't have to initialize the
     // 4k PTEs which are covered by big PTEs since the MMU will never read them.
-    NvU64 (*unmapped_pte)(NvU32 page_size);
+    NvU64 (*unmapped_pte)(NvU64 page_size);
 
     // Bit pattern used for debug purposes to clobber PTEs which ought to be
     // unused. In practice this will generate a PRIV violation or a physical
@@ -234,23 +234,23 @@ struct uvm_mmu_mode_hal_struct
     // For dual PDEs, this is ether 1 or 0, depending on the page size.
     // This is used to index the host copy only. GPU PDEs are always entirely
     // re-written using make_pde.
-    NvLength (*entry_offset)(NvU32 depth, NvU32 page_size);
+    NvLength (*entry_offset)(NvU32 depth, NvU64 page_size);
 
     // number of virtual address bits used to index the directory/table at a
     // given depth
-    NvU32 (*index_bits)(NvU32 depth, NvU32 page_size);
+    NvU32 (*index_bits)(NvU32 depth, NvU64 page_size);
 
     // total number of bits that represent the virtual address space
     NvU32 (*num_va_bits)(void);
 
     // the size, in bytes, of a directory/table at a given depth.
-    NvLength (*allocation_size)(NvU32 depth, NvU32 page_size);
+    NvLength (*allocation_size)(NvU32 depth, NvU64 page_size);
 
     // the depth which corresponds to the page tables
-    NvU32 (*page_table_depth)(NvU32 page_size);
+    NvU32 (*page_table_depth)(NvU64 page_size);
 
     // bitwise-or of supported page sizes
-    NvU32 (*page_sizes)(void);
+    NvU64 (*page_sizes)(void);
 };
 
 struct uvm_page_table_range_struct
@@ -258,7 +258,7 @@ struct uvm_page_table_range_struct
     uvm_page_directory_t *table;
     NvU32 start_index;
     NvU32 entry_count;
-    NvU32 page_size;
+    NvU64 page_size;
 };
 
 typedef enum
@@ -275,7 +275,7 @@ struct uvm_page_tree_struct
     uvm_page_directory_t *root;
     uvm_mmu_mode_hal_t *hal;
     uvm_page_tree_type_t type;
-    NvU32 big_page_size;
+    NvU64 big_page_size;
 
     // Pointer to the GPU VA space containing the page tree.
     // This pointer is set only for page trees of type
@@ -325,7 +325,7 @@ struct uvm_page_table_range_vec_struct
     NvU64 size;
 
     // Page size used for all the page table ranges
-    NvU32 page_size;
+    NvU64 page_size;
 
     // Page table ranges covering the VA
     uvm_page_table_range_t *ranges;
@@ -352,7 +352,7 @@ void uvm_mmu_init_gpu_peer_addresses(uvm_gpu_t *gpu);
 NV_STATUS uvm_page_tree_init(uvm_gpu_t *gpu,
                              uvm_gpu_va_space_t *gpu_va_space,
                              uvm_page_tree_type_t type,
-                             NvU32 big_page_size,
+                             NvU64 big_page_size,
                              uvm_aperture_t location,
                              uvm_page_tree_t *tree_out);
 
@@ -374,7 +374,7 @@ void uvm_page_tree_deinit(uvm_page_tree_t *tree);
 // an existing range or change the size of an existing range, use
 // uvm_page_table_range_get_upper() and/or uvm_page_table_range_shrink().
 NV_STATUS uvm_page_tree_get_ptes(uvm_page_tree_t *tree,
-                                 NvU32 page_size,
+                                 NvU64 page_size,
                                  NvU64 start,
                                  NvLength size,
                                  uvm_pmm_alloc_flags_t pmm_flags,
@@ -384,7 +384,7 @@ NV_STATUS uvm_page_tree_get_ptes(uvm_page_tree_t *tree,
 //
 // All pending operations can be waited on with uvm_page_tree_wait().
 NV_STATUS uvm_page_tree_get_ptes_async(uvm_page_tree_t *tree,
-                                       NvU32 page_size,
+                                       NvU64 page_size,
                                        NvU64 start,
                                        NvLength size,
                                        uvm_pmm_alloc_flags_t pmm_flags,
@@ -395,7 +395,7 @@ NV_STATUS uvm_page_tree_get_ptes_async(uvm_page_tree_t *tree,
 // This is equivalent to calling uvm_page_tree_get_ptes() with size equal to
 // page_size.
 NV_STATUS uvm_page_tree_get_entry(uvm_page_tree_t *tree,
-                                  NvU32 page_size,
+                                  NvU64 page_size,
                                   NvU64 start,
                                   uvm_pmm_alloc_flags_t pmm_flags,
                                   uvm_page_table_range_t *single);
@@ -426,7 +426,7 @@ void uvm_page_tree_clear_pde(uvm_page_tree_t *tree, uvm_page_table_range_t *sing
 // It is the caller's responsibility to initialize the returned table before
 // calling uvm_page_tree_write_pde.
 NV_STATUS uvm_page_tree_alloc_table(uvm_page_tree_t *tree,
-                                    NvU32 page_size,
+                                    NvU64 page_size,
                                     uvm_pmm_alloc_flags_t pmm_flags,
                                     uvm_page_table_range_t *single,
                                     uvm_page_table_range_t *children);
@@ -480,7 +480,7 @@ static uvm_mmu_page_table_alloc_t *uvm_page_tree_pdb(uvm_page_tree_t *tree)
 NV_STATUS uvm_page_table_range_vec_init(uvm_page_tree_t *tree,
                                         NvU64 start,
                                         NvU64 size,
-                                        NvU32 page_size,
+                                        NvU64 page_size,
                                         uvm_pmm_alloc_flags_t pmm_flags,
                                         uvm_page_table_range_vec_t *range_vec);
 
@@ -489,7 +489,7 @@ NV_STATUS uvm_page_table_range_vec_init(uvm_page_tree_t *tree,
 NV_STATUS uvm_page_table_range_vec_create(uvm_page_tree_t *tree,
                                           NvU64 start,
                                           NvU64 size,
-                                          NvU32 page_size,
+                                          NvU64 page_size,
                                           uvm_pmm_alloc_flags_t pmm_flags,
                                           uvm_page_table_range_vec_t **range_vec_out);
 
@@ -601,12 +601,12 @@ void uvm_mmu_chunk_unmap(uvm_gpu_chunk_t *chunk, uvm_tracker_t *tracker);
 // uvm_parent_gpu_map_cpu_pages for the given GPU.
 NV_STATUS uvm_mmu_sysmem_map(uvm_gpu_t *gpu, NvU64 pa, NvU64 size);
 
-static NvU64 uvm_mmu_page_tree_entries(uvm_page_tree_t *tree, NvU32 depth, NvU32 page_size)
+static NvU64 uvm_mmu_page_tree_entries(uvm_page_tree_t *tree, NvU32 depth, NvU64 page_size)
 {
     return 1ull << tree->hal->index_bits(depth, page_size);
 }
 
-static NvU64 uvm_mmu_pde_coverage(uvm_page_tree_t *tree, NvU32 page_size)
+static NvU64 uvm_mmu_pde_coverage(uvm_page_tree_t *tree, NvU64 page_size)
 {
     NvU32 depth = tree->hal->page_table_depth(page_size);
     return uvm_mmu_page_tree_entries(tree, depth, page_size) * page_size;
@@ -615,21 +615,21 @@ static NvU64 uvm_mmu_pde_coverage(uvm_page_tree_t *tree, NvU32 page_size)
 // Page sizes supported by the GPU. Use uvm_mmu_biggest_page_size() to retrieve
 // the largest page size supported in a given system, which considers the GMMU
 // and vMMU page sizes and segment sizes.
-static bool uvm_mmu_page_size_supported(uvm_page_tree_t *tree, NvU32 page_size)
+static bool uvm_mmu_page_size_supported(uvm_page_tree_t *tree, NvU64 page_size)
 {
-    UVM_ASSERT_MSG(is_power_of_2(page_size), "0x%x\n", page_size);
+    UVM_ASSERT_MSG(is_power_of_2(page_size), "0x%llx\n", page_size);
 
     return (tree->hal->page_sizes() & page_size) != 0;
 }
 
-static NvU32 uvm_mmu_biggest_page_size_up_to(uvm_page_tree_t *tree, NvU32 max_page_size)
+static NvU64 uvm_mmu_biggest_page_size_up_to(uvm_page_tree_t *tree, NvU64 max_page_size)
 {
-    NvU32 gpu_page_sizes = tree->hal->page_sizes();
-    NvU32 smallest_gpu_page_size = gpu_page_sizes & ~(gpu_page_sizes - 1);
-    NvU32 page_sizes;
-    NvU32 page_size;
+    NvU64 gpu_page_sizes = tree->hal->page_sizes();
+    NvU64 smallest_gpu_page_size = gpu_page_sizes & ~(gpu_page_sizes - 1);
+    NvU64 page_sizes;
+    NvU64 page_size;
 
-    UVM_ASSERT_MSG(is_power_of_2(max_page_size), "0x%x\n", max_page_size);
+    UVM_ASSERT_MSG(is_power_of_2(max_page_size), "0x%llx\n", max_page_size);
 
     if (max_page_size < smallest_gpu_page_size)
         return 0;
@@ -638,14 +638,14 @@ static NvU32 uvm_mmu_biggest_page_size_up_to(uvm_page_tree_t *tree, NvU32 max_pa
     page_sizes = gpu_page_sizes & (max_page_size | (max_page_size - 1));
 
     // And pick the biggest one of them
-    page_size = 1 << __fls(page_sizes);
+    page_size = 1ULL << __fls(page_sizes);
 
-    UVM_ASSERT_MSG(uvm_mmu_page_size_supported(tree, page_size), "page_size 0x%x", page_size);
+    UVM_ASSERT_MSG(uvm_mmu_page_size_supported(tree, page_size), "page_size 0x%llx", page_size);
 
     return page_size;
 }
 
-static NvU32 uvm_mmu_pte_size(uvm_page_tree_t *tree, NvU32 page_size)
+static NvU32 uvm_mmu_pte_size(uvm_page_tree_t *tree, NvU64 page_size)
 {
     return tree->hal->entry_size(tree->hal->page_table_depth(page_size));
 }

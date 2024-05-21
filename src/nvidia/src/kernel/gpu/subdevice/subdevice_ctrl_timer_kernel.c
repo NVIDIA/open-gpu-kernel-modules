@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -66,16 +66,17 @@ subdeviceCtrlCmdTimerCancel_IMPL
 
     if (pSubdevice->notifyActions[NV2080_NOTIFIERS_TIMER] != NV2080_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE)
     {
-        tmrCancelCallback(pTmr, pSubdevice);
+        tmrEventCancel(pTmr, pSubdevice->pTimerEvent);
+
         pSubdevice->notifyActions[NV2080_NOTIFIERS_TIMER] = NV2080_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE;
     }
     return NV_OK;
 }
 
 static NV_STATUS
-gpuControlTimerCallback(OBJGPU *pGpu, OBJTMR *pTmr, void * pData)
+gpuControlTimerCallback(OBJGPU *pGpu, OBJTMR *pTmr, TMR_EVENT *pTmrEvent)
 {
-    Subdevice *pSubDevice = (Subdevice *) pData;
+    Subdevice *pSubDevice = reinterpretCast(pTmrEvent->pUserData, Subdevice *);
     PEVENTNOTIFICATION pNotifyEvent = inotifyGetNotificationList(staticCast(pSubDevice, INotifier));
 
     if (pSubDevice->notifyActions[NV2080_NOTIFIERS_TIMER] == NV2080_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE)
@@ -167,14 +168,29 @@ timerSchedule
     // since callback may be called right away.
     pSubdevice->notifyActions[NV2080_NOTIFIERS_TIMER] = NV2080_CTRL_EVENT_SET_NOTIFICATION_ACTION_SINGLE;
 
-    // schedule the timer
-    if (DRF_VAL(2080, _CTRL_TIMER_SCHEDULE_FLAGS, _TIME, pTimerScheduleParams->flags) == NV2080_CTRL_TIMER_SCHEDULE_FLAGS_TIME_ABS)
+    if (pSubdevice->pTimerEvent != NULL)
     {
-        tmrScheduleCallbackAbs(pTmr, gpuControlTimerCallback, pSubdevice, pTimerScheduleParams->time_nsec, 0, 0);
+        if (tmrEventOnList(pTmr, pSubdevice->pTimerEvent))
+        {
+            tmrEventCancel(pTmr, pSubdevice->pTimerEvent);
+        }
     }
     else
     {
-        tmrScheduleCallbackRel(pTmr, gpuControlTimerCallback, pSubdevice, pTimerScheduleParams->time_nsec, 0, 0);
+        NV_ASSERT_OK_OR_RETURN(tmrEventCreate(pTmr,
+                                &pSubdevice->pTimerEvent,
+                                gpuControlTimerCallback,
+                                pSubdevice,
+                                TMR_FLAGS_NONE));
+    }
+
+    if (DRF_VAL(2080, _CTRL_TIMER_SCHEDULE_FLAGS, _TIME, pTimerScheduleParams->flags) == NV2080_CTRL_TIMER_SCHEDULE_FLAGS_TIME_ABS)
+    {
+        tmrEventScheduleAbs(pTmr, pSubdevice->pTimerEvent, pTimerScheduleParams->time_nsec);
+    }
+    else
+    {
+        tmrEventScheduleRel(pTmr, pSubdevice->pTimerEvent, pTimerScheduleParams->time_nsec);
     }
 
     return NV_OK;

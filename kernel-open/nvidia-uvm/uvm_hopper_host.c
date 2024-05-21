@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2020-2022 NVIDIA Corporation
+    Copyright (c) 2020-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -157,6 +157,7 @@ void uvm_hal_hopper_host_tlb_invalidate_all(uvm_push_t *push,
     NvU32 pdb_lo;
     NvU32 pdb_hi;
     NvU32 ack_value = 0;
+    NvU32 sysmembar_value = 0;
 
     UVM_ASSERT_MSG(pdb.aperture == UVM_APERTURE_VID || pdb.aperture == UVM_APERTURE_SYS, "aperture: %u", pdb.aperture);
 
@@ -183,7 +184,12 @@ void uvm_hal_hopper_host_tlb_invalidate_all(uvm_push_t *push,
         ack_value = HWCONST(C86F, MEM_OP_C, TLB_INVALIDATE_ACK_TYPE, GLOBALLY);
     }
 
-    NV_PUSH_4U(C86F, MEM_OP_A, HWCONST(C86F, MEM_OP_A, TLB_INVALIDATE_SYSMEMBAR, DIS) |
+    if (membar == UVM_MEMBAR_SYS)
+        sysmembar_value = HWCONST(C86F, MEM_OP_A, TLB_INVALIDATE_SYSMEMBAR, EN);
+    else
+        sysmembar_value = HWCONST(C86F, MEM_OP_A, TLB_INVALIDATE_SYSMEMBAR, DIS);
+
+    NV_PUSH_4U(C86F, MEM_OP_A, sysmembar_value |
                                HWCONST(C86F, MEM_OP_A, TLB_INVALIDATE_INVAL_SCOPE, NON_LINK_TLBS),
                      MEM_OP_B, 0,
                      MEM_OP_C, HWCONST(C86F, MEM_OP_C, TLB_INVALIDATE_PDB, ONE) |
@@ -196,7 +202,9 @@ void uvm_hal_hopper_host_tlb_invalidate_all(uvm_push_t *push,
                      MEM_OP_D, HWCONST(C86F, MEM_OP_D, OPERATION, MMU_TLB_INVALIDATE) |
                                HWVALUE(C86F, MEM_OP_D, TLB_INVALIDATE_PDB_ADDR_HI, pdb_hi));
 
-    uvm_hal_tlb_invalidate_membar(push, membar);
+    // GPU membar still requires an explicit membar method.
+    if (membar == UVM_MEMBAR_GPU)
+        uvm_push_get_gpu(push)->parent->host_hal->membar_gpu(push);
 }
 
 void uvm_hal_hopper_host_tlb_invalidate_va(uvm_push_t *push,
@@ -204,7 +212,7 @@ void uvm_hal_hopper_host_tlb_invalidate_va(uvm_push_t *push,
                                            NvU32 depth,
                                            NvU64 base,
                                            NvU64 size,
-                                           NvU32 page_size,
+                                           NvU64 page_size,
                                            uvm_membar_t membar)
 {
     NvU32 aperture_value;
@@ -212,6 +220,7 @@ void uvm_hal_hopper_host_tlb_invalidate_va(uvm_push_t *push,
     NvU32 pdb_lo;
     NvU32 pdb_hi;
     NvU32 ack_value = 0;
+    NvU32 sysmembar_value = 0;
     NvU32 va_lo;
     NvU32 va_hi;
     NvU64 end;
@@ -221,9 +230,9 @@ void uvm_hal_hopper_host_tlb_invalidate_va(uvm_push_t *push,
     NvU32 log2_invalidation_size;
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
 
-    UVM_ASSERT_MSG(IS_ALIGNED(page_size, 1 << 12), "page_size 0x%x\n", page_size);
-    UVM_ASSERT_MSG(IS_ALIGNED(base, page_size), "base 0x%llx page_size 0x%x\n", base, page_size);
-    UVM_ASSERT_MSG(IS_ALIGNED(size, page_size), "size 0x%llx page_size 0x%x\n", size, page_size);
+    UVM_ASSERT_MSG(IS_ALIGNED(page_size, 1 << 12), "page_size 0x%llx\n", page_size);
+    UVM_ASSERT_MSG(IS_ALIGNED(base, page_size), "base 0x%llx page_size 0x%llx\n", base, page_size);
+    UVM_ASSERT_MSG(IS_ALIGNED(size, page_size), "size 0x%llx page_size 0x%llx\n", size, page_size);
     UVM_ASSERT_MSG(size > 0, "size 0x%llx\n", size);
 
     // The invalidation size must be a power-of-two number of pages containing
@@ -277,8 +286,13 @@ void uvm_hal_hopper_host_tlb_invalidate_va(uvm_push_t *push,
         ack_value = HWCONST(C86F, MEM_OP_C, TLB_INVALIDATE_ACK_TYPE, GLOBALLY);
     }
 
+    if (membar == UVM_MEMBAR_SYS)
+        sysmembar_value = HWCONST(C86F, MEM_OP_A, TLB_INVALIDATE_SYSMEMBAR, EN);
+    else
+        sysmembar_value = HWCONST(C86F, MEM_OP_A, TLB_INVALIDATE_SYSMEMBAR, DIS);
+
     NV_PUSH_4U(C86F, MEM_OP_A, HWVALUE(C86F, MEM_OP_A, TLB_INVALIDATE_INVALIDATION_SIZE, log2_invalidation_size) |
-                               HWCONST(C86F, MEM_OP_A, TLB_INVALIDATE_SYSMEMBAR, DIS) |
+                               sysmembar_value |
                                HWCONST(C86F, MEM_OP_A, TLB_INVALIDATE_INVAL_SCOPE, NON_LINK_TLBS) |
                                HWVALUE(C86F, MEM_OP_A, TLB_INVALIDATE_TARGET_ADDR_LO, va_lo),
                      MEM_OP_B, HWVALUE(C86F, MEM_OP_B, TLB_INVALIDATE_TARGET_ADDR_HI, va_hi),
@@ -292,7 +306,9 @@ void uvm_hal_hopper_host_tlb_invalidate_va(uvm_push_t *push,
                      MEM_OP_D, HWCONST(C86F, MEM_OP_D, OPERATION, MMU_TLB_INVALIDATE_TARGETED) |
                                HWVALUE(C86F, MEM_OP_D, TLB_INVALIDATE_PDB_ADDR_HI, pdb_hi));
 
-    uvm_hal_tlb_invalidate_membar(push, membar);
+    // GPU membar still requires an explicit membar method.
+    if (membar == UVM_MEMBAR_GPU)
+        gpu->parent->host_hal->membar_gpu(push);
 }
 
 void uvm_hal_hopper_host_tlb_invalidate_test(uvm_push_t *push,
@@ -300,12 +316,12 @@ void uvm_hal_hopper_host_tlb_invalidate_test(uvm_push_t *push,
                                              UVM_TEST_INVALIDATE_TLB_PARAMS *params)
 {
     NvU32 ack_value = 0;
+    NvU32 sysmembar_value = 0;
     NvU32 invalidate_gpc_value = 0;
     NvU32 aperture_value = 0;
     NvU32 pdb_lo = 0;
     NvU32 pdb_hi = 0;
     NvU32 page_table_level = 0;
-    uvm_membar_t membar;
 
     UVM_ASSERT_MSG(pdb.aperture == UVM_APERTURE_VID || pdb.aperture == UVM_APERTURE_SYS, "aperture: %u", pdb.aperture);
     if (pdb.aperture == UVM_APERTURE_VID)
@@ -332,6 +348,11 @@ void uvm_hal_hopper_host_tlb_invalidate_test(uvm_push_t *push,
         ack_value = HWCONST(C86F, MEM_OP_C, TLB_INVALIDATE_ACK_TYPE, GLOBALLY);
     }
 
+    if (params->membar == UvmInvalidateTlbMemBarSys)
+        sysmembar_value = HWCONST(C86F, MEM_OP_A, TLB_INVALIDATE_SYSMEMBAR, EN);
+    else
+        sysmembar_value = HWCONST(C86F, MEM_OP_A, TLB_INVALIDATE_SYSMEMBAR, DIS);
+
     if (params->disable_gpc_invalidate)
         invalidate_gpc_value = HWCONST(C86F, MEM_OP_C, TLB_INVALIDATE_GPC, DISABLE);
     else
@@ -343,7 +364,7 @@ void uvm_hal_hopper_host_tlb_invalidate_test(uvm_push_t *push,
         NvU32 va_lo = va & HWMASK(C86F, MEM_OP_A, TLB_INVALIDATE_TARGET_ADDR_LO);
         NvU32 va_hi = va >> HWSIZE(C86F, MEM_OP_A, TLB_INVALIDATE_TARGET_ADDR_LO);
 
-        NV_PUSH_4U(C86F, MEM_OP_A, HWCONST(C86F, MEM_OP_A, TLB_INVALIDATE_SYSMEMBAR, DIS) |
+        NV_PUSH_4U(C86F, MEM_OP_A, sysmembar_value |
                                    HWCONST(C86F, MEM_OP_A, TLB_INVALIDATE_INVAL_SCOPE, NON_LINK_TLBS) |
                                    HWVALUE(C86F, MEM_OP_A, TLB_INVALIDATE_TARGET_ADDR_LO, va_lo),
                          MEM_OP_B, HWVALUE(C86F, MEM_OP_B, TLB_INVALIDATE_TARGET_ADDR_HI, va_hi),
@@ -358,7 +379,7 @@ void uvm_hal_hopper_host_tlb_invalidate_test(uvm_push_t *push,
                                    HWVALUE(C86F, MEM_OP_D, TLB_INVALIDATE_PDB_ADDR_HI, pdb_hi));
     }
     else {
-        NV_PUSH_4U(C86F, MEM_OP_A, HWCONST(C86F, MEM_OP_A, TLB_INVALIDATE_SYSMEMBAR, DIS) |
+        NV_PUSH_4U(C86F, MEM_OP_A, sysmembar_value |
                                    HWCONST(C86F, MEM_OP_A, TLB_INVALIDATE_INVAL_SCOPE, NON_LINK_TLBS),
                          MEM_OP_B, 0,
                          MEM_OP_C, HWCONST(C86F, MEM_OP_C, TLB_INVALIDATE_REPLAY, NONE) |
@@ -372,14 +393,9 @@ void uvm_hal_hopper_host_tlb_invalidate_test(uvm_push_t *push,
                                    HWVALUE(C86F, MEM_OP_D, TLB_INVALIDATE_PDB_ADDR_HI, pdb_hi));
     }
 
-    if (params->membar == UvmInvalidateTlbMemBarSys)
-        membar = UVM_MEMBAR_SYS;
-    else if (params->membar == UvmInvalidateTlbMemBarLocal)
-        membar = UVM_MEMBAR_GPU;
-    else
-        membar = UVM_MEMBAR_NONE;
-
-    uvm_hal_tlb_invalidate_membar(push, membar);
+    // GPU membar still requires an explicit membar method.
+    if (params->membar == UvmInvalidateTlbMemBarLocal)
+        uvm_push_get_gpu(push)->parent->host_hal->membar_gpu(push);
 }
 
 void uvm_hal_hopper_host_set_gpfifo_pushbuffer_segment_base(NvU64 *fifo_entry, NvU64 pushbuffer_va)

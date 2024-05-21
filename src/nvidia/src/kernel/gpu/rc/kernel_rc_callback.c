@@ -239,6 +239,7 @@ krcErrorInvokeCallback_IMPL
     NvU32               rcDiagRecOwner = RCDB_RCDIAG_DEFAULT_OWNER;
     NV_STATUS           status;
     NvBool              bReturn = NV_TRUE;
+    NvBool              bCheckCallback;
 
     NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), bReturn);
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pKernelChannel != NULL, bReturn);
@@ -280,7 +281,10 @@ krcErrorInvokeCallback_IMPL
             return bReturn;
     }
 
-    if (osCheckCallback(pGpu))
+    bCheckCallback =
+        IS_GSP_CLIENT(pGpu) ? osCheckCallback_v2(pGpu) : osCheckCallback(pGpu);
+
+    if (bCheckCallback)
     {
         RC_ERROR_CONTEXT *pRcErrorContext = NULL;
         Device           *pDevice = GPU_RES_GET_DEVICE(pKernelChannel);
@@ -319,17 +323,37 @@ krcErrorInvokeCallback_IMPL
                     GPU_GET_KERNEL_GMMU(pGpu),
                     pMmuExceptionData->faultType);
             }
+            else
+            {
+                // TODO: Set some default values
+            }
         }
 
-        clientAction = osRCCallback(pGpu,
-                                    RES_GET_CLIENT_HANDLE(pKernelChannel),
-                                    hDevice,
-                                    hFifo,
-                                    RES_GET_HANDLE(pKernelChannel),
-                                    exceptLevel,
-                                    exceptType,
-                                    (NvU32 *)pRcErrorContext,
-                                    &krcResetCallback);
+        if (IS_GSP_CLIENT(pGpu))
+        {
+            clientAction = osRCCallback_v2(pGpu,
+                                           RES_GET_CLIENT_HANDLE(pKernelChannel),
+                                           hDevice,
+                                           hFifo,
+                                           RES_GET_HANDLE(pKernelChannel),
+                                           exceptLevel,
+                                           exceptType,
+                                           NV_FALSE,
+                                           (NvU32 *)pRcErrorContext,
+                                           &krcResetCallback);
+        }
+        else
+        {
+            clientAction = osRCCallback(pGpu,
+                                        RES_GET_CLIENT_HANDLE(pKernelChannel),
+                                        hDevice,
+                                        hFifo,
+                                        RES_GET_HANDLE(pKernelChannel),
+                                        exceptLevel,
+                                        exceptType,
+                                        (NvU32 *)pRcErrorContext,
+                                        &krcResetCallback);
+        }
 
         if (clientAction == RC_CALLBACK_IGNORE ||
             clientAction == RC_CALLBACK_ISOLATE_NO_RESET)
@@ -346,6 +370,20 @@ krcErrorInvokeCallback_IMPL
             //
             portMemFree(pRcErrorContext);
         }
+        else if (IS_GSP_CLIENT(pGpu) && clientAction == RC_CALLBACK_ISOLATE)
+        {
+            NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS params = {0};
+            RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pRcErrorContext->pGpu);
+
+            // Client lock is already obtained above.
+            status = pRmApi->Control(pRmApi,
+                                     RES_GET_CLIENT_HANDLE(pKernelChannel),
+                                     RES_GET_HANDLE(pKernelChannel),
+                                     NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL,
+                                     &params,
+                                     sizeof params);
+        }
+
         bReturn = (clientAction != RC_CALLBACK_IGNORE);
     }
     else

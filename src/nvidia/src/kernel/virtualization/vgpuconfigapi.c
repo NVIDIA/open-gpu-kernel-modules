@@ -28,7 +28,6 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
 #include "gpu/mem_mgr/heap.h"
-#include "gpu/bif/kernel_bif.h"
 #include "kernel/gpu/fifo/kernel_sched_mgr.h"
 #include "virtualization/kernel_vgpu_mgr.h"
 #include "virtualization/hypervisor/hypervisor.h"
@@ -1264,27 +1263,3 @@ vgpuconfigapiCtrlCmdVgpuSetVmName_IMPL
     return NV_OK;
 }
 
-NV_STATUS
-vgpuconfigapiCtrlCmdVgpuConfigGetMigrationBandwidth_IMPL
-(
-    VgpuConfigApi *pVgpuConfigApi,
-    NVA081_CTRL_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH_PARAMS *pParams
-)
-{
-    OBJGPU *pGpu = GPU_RES_GET_GPU(pVgpuConfigApi);
-    KernelBif *pKernelBif  = GPU_GET_KERNEL_BIF(pGpu);
-    NV_STATUS rmStatus = NV_OK;
-
-    if (IS_VIRTUAL(pGpu))
-    {
-        return NV_ERR_NOT_SUPPORTED;
-    }
-
-    rmStatus = kbifGetMigrationBandwidth_HAL(pGpu, pKernelBif, &pParams->migrationBandwidth);
-    if (rmStatus != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Failed to get Migration Bandwidth rmStatus 0x%x\n",rmStatus);
-    }
-
-    return rmStatus;
-}

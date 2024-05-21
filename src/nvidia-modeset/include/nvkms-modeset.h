@@ -33,8 +33,10 @@ extern "C" {
 
 NvBool
 nvGetHwModeTimings(const NVDispEvoRec *pDispEvo,
+                   const NvU32 apiHead,
                    const struct NvKmsSetModeOneHeadRequest *pRequestHead,
                    NVHwModeTimingsEvo *pTimings,
+                   NVDpyAttributeColor *pDpyColor,
                    NVT_VIDEO_INFOFRAME_CTRL *pInfoFrameCtrl);
 
 NvBool nvGetAllowHeadSurfaceInNvKms(const NVDevEvoRec *pDevEvo,

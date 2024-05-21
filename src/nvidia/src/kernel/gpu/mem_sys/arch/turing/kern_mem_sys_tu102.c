@@ -129,6 +129,19 @@ _kmemsysReadRegAndMaskPriError
     return regVal;
 }
 
+NvU32
+kmemsysGetL2EccDedCountRegAddr_TU102
+(
+    OBJGPU             *pGpu,
+    KernelMemorySystem *pKernelMemorySystem,
+    NvU32               fbpa,
+    NvU32               subp
+)
+{
+    return (NV_PLTCG_LTC0_LTS0_L2_CACHE_ECC_UNCORRECTED_ERR_COUNT +
+            (fbpa * NV_LTC_PRI_STRIDE) + (subp * NV_LTS_PRI_STRIDE));
+}
+
 void
 kmemsysGetEccCounts_TU102
 (
@@ -141,6 +154,7 @@ kmemsysGetEccCounts_TU102
     NvU32 maxFbpas = kmemsysGetMaxFbpas_HAL(pGpu, pKernelMemorySystem);
     NvU32 dedCountSize = kmemsysGetEccDedCountSize_HAL(pGpu, pKernelMemorySystem);
     NvU32 fbpaDedCountRegAddr = 0;
+    NvU32 ltcDedCountRegAddr = 0;
     NvU32 regVal;
 
     if (dramCount == NULL || ltcCount == NULL)
@@ -160,8 +174,9 @@ kmemsysGetEccCounts_TU102
             *dramCount += _kmemsysReadRegAndMaskPriError(pGpu, fbpaDedCountRegAddr);
 
             // LTC count read
-            regVal = _kmemsysReadRegAndMaskPriError(pGpu, NV_PLTCG_LTC0_LTS0_L2_CACHE_ECC_UNCORRECTED_ERR_COUNT +
-                    (i * NV_LTC_PRI_STRIDE) + (j * NV_LTS_PRI_STRIDE));
+
+            ltcDedCountRegAddr = kmemsysGetL2EccDedCountRegAddr_HAL(pGpu, pKernelMemorySystem, i, j);
+            regVal = _kmemsysReadRegAndMaskPriError(pGpu, ltcDedCountRegAddr);
             *ltcCount += DRF_VAL(_PLTCG_LTC0_LTS0, _L2_CACHE_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
         }
     }

@@ -185,104 +185,110 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
         }
         else if (status == NVL_SUCCESS)
         {
-            // STEP 2: Change link state from ACTIVE to SWCFG on all endpoints
-            conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
-                                                            NVLINK_LINKSTATE_SAFE,
-                                                            flags);
-            // Only send if not in loopback
-            if (conns[i]->end0 != conns[i]->end1)
+            if (version <= NVLINK_DEVICE_VERSION_40)
             {
-                conns[i]->end1->link_handlers->set_dl_link_mode(conns[i]->end1,
-                                                            NVLINK_LINKSTATE_SAFE,
-                                                            flags);
+                // STEP 2: Change link state from ACTIVE to SWCFG on all endpoints
+                conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
+                                                                NVLINK_LINKSTATE_SAFE,
+                                                                flags);
+                // Only send if not in loopback
+                if (conns[i]->end0 != conns[i]->end1)
+                {
+                    conns[i]->end1->link_handlers->set_dl_link_mode(conns[i]->end1,
+                                                                NVLINK_LINKSTATE_SAFE,
+                                                                flags);
+                }
             }
         }
     }
 
-    //
-    // All the endpoints should now either be in SWCFG or transitioning to SWCFG. Poll for all
-    // endpoints to reach SWCFG. If any endpoint does not transition to SWCFG, return error
-    //
-    for (i = 0; i < connCount; i++)
+    if (version <= NVLINK_DEVICE_VERSION_40)
     {
-        if (conns[i] == NULL)
-            continue;
-
-        // Wait for the end0 to go to SWCFG
-        status = nvlink_core_poll_link_state(conns[i]->end0,
-                                             NVLINK_LINKSTATE_SAFE,
-                                             NVLINK_TRANSITION_SAFE_TIMEOUT);
-        if (status != NVL_SUCCESS)
+        //
+        // All the endpoints should now either be in SWCFG or transitioning to SWCFG. Poll for all
+        // endpoints to reach SWCFG. If any endpoint does not transition to SWCFG, return error
+        //
+        for (i = 0; i < connCount; i++)
         {
-            NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
-                "%s: Unable to set endpoint %s:%s in SWCFG\n",
-                __FUNCTION__, conns[i]->end0->dev->deviceName, conns[i]->end0->linkName));
-        }
+            if (conns[i] == NULL)
+                continue;
 
-        // Wait for the end1 to go to SWCFG
-        status = nvlink_core_poll_link_state(conns[i]->end1,
-                                             NVLINK_LINKSTATE_SAFE,
-                                             NVLINK_TRANSITION_SAFE_TIMEOUT);
-        if (status != NVL_SUCCESS)
-        {
-            NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
-                "%s: Unable to set endpoint %s:%s in SWCFG\n",
-                __FUNCTION__, conns[i]->end1->dev->deviceName, conns[i]->end1->linkName));
-        }
-    }
-
-    // STEP 3: Change sub-link state to SAFE on all endpoints
-    for (i = 0; i < connCount; i++)
-    {
-        if (conns[i] == NULL)
-            continue;
-
-        conns[i]->end0->link_handlers->set_tx_mode(conns[i]->end0,
-                                                   NVLINK_SUBLINK_STATE_TX_SAFE,
-                                                   flags);
-
-        // Only send if not in loopback
-        if (conns[i]->end0 != conns[i]->end1)
-        {
-            conns[i]->end1->link_handlers->set_tx_mode(conns[i]->end1,
-                                                   NVLINK_SUBLINK_STATE_TX_SAFE,
-                                                   flags);
-        }
-    }
-
-    // Poll for all endpoints sub-link state to reach SAFE
-    for (i = 0; i < connCount; i++)
-    {
-        if (conns[i] == NULL)
-            continue;
-
-        // Wait for sublinks to go to SAFE
-        status = nvlink_core_poll_sublink_state(conns[i]->end0,
-                                                NVLINK_SUBLINK_STATE_TX_SAFE,
-                                                NVLINK_SUBLINK_SUBSTATE_TX_STABLE,
-                                                conns[i]->end1,
-                                                NVLINK_SUBLINK_STATE_RX_SAFE,
-                                                NVLINK_SUBLINK_SUBSTATE_RX_STABLE,
+            // Wait for the end0 to go to SWCFG
+            status = nvlink_core_poll_link_state(conns[i]->end0,
+                                                NVLINK_LINKSTATE_SAFE,
                                                 NVLINK_TRANSITION_SAFE_TIMEOUT);
-        if (status != NVL_SUCCESS)
-        {
-            NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
-                "%s: Unable to set sublinks to SAFE\n",
-                __FUNCTION__));
+            if (status != NVL_SUCCESS)
+            {
+                NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+                    "%s: Unable to set endpoint %s:%s in SWCFG\n",
+                    __FUNCTION__, conns[i]->end0->dev->deviceName, conns[i]->end0->linkName));
+            }
+
+            // Wait for the end1 to go to SWCFG
+            status = nvlink_core_poll_link_state(conns[i]->end1,
+                                                NVLINK_LINKSTATE_SAFE,
+                                                NVLINK_TRANSITION_SAFE_TIMEOUT);
+            if (status != NVL_SUCCESS)
+            {
+                NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+                    "%s: Unable to set endpoint %s:%s in SWCFG\n",
+                    __FUNCTION__, conns[i]->end1->dev->deviceName, conns[i]->end1->linkName));
+            }
         }
 
-        status = nvlink_core_poll_sublink_state(conns[i]->end1,
-                                                NVLINK_SUBLINK_STATE_TX_SAFE,
-                                                NVLINK_SUBLINK_SUBSTATE_TX_STABLE,
-                                                conns[i]->end0,
-                                                NVLINK_SUBLINK_STATE_RX_SAFE,
-                                                NVLINK_SUBLINK_SUBSTATE_RX_STABLE,
-                                                NVLINK_TRANSITION_SAFE_TIMEOUT);
-        if (status != NVL_SUCCESS)
+        // STEP 3: Change sub-link state to SAFE on all endpoints
+        for (i = 0; i < connCount; i++)
         {
-            NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
-                "%s: Unable to set sublinks to SAFE\n",
-                __FUNCTION__));
+            if (conns[i] == NULL)
+                continue;
+
+            conns[i]->end0->link_handlers->set_tx_mode(conns[i]->end0,
+                                                    NVLINK_SUBLINK_STATE_TX_SAFE,
+                                                    flags);
+
+            // Only send if not in loopback
+            if (conns[i]->end0 != conns[i]->end1)
+            {
+                conns[i]->end1->link_handlers->set_tx_mode(conns[i]->end1,
+                                                    NVLINK_SUBLINK_STATE_TX_SAFE,
+                                                    flags);
+            }
+        }
+
+        // Poll for all endpoints sub-link state to reach SAFE
+        for (i = 0; i < connCount; i++)
+        {
+            if (conns[i] == NULL)
+                continue;
+
+            // Wait for sublinks to go to SAFE
+            status = nvlink_core_poll_sublink_state(conns[i]->end0,
+                                                    NVLINK_SUBLINK_STATE_TX_SAFE,
+                                                    NVLINK_SUBLINK_SUBSTATE_TX_STABLE,
+                                                    conns[i]->end1,
+                                                    NVLINK_SUBLINK_STATE_RX_SAFE,
+                                                    NVLINK_SUBLINK_SUBSTATE_RX_STABLE,
+                                                    NVLINK_TRANSITION_SAFE_TIMEOUT);
+            if (status != NVL_SUCCESS)
+            {
+                NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+                    "%s: Unable to set sublinks to SAFE\n",
+                    __FUNCTION__));
+            }
+
+            status = nvlink_core_poll_sublink_state(conns[i]->end1,
+                                                    NVLINK_SUBLINK_STATE_TX_SAFE,
+                                                    NVLINK_SUBLINK_SUBSTATE_TX_STABLE,
+                                                    conns[i]->end0,
+                                                    NVLINK_SUBLINK_STATE_RX_SAFE,
+                                                    NVLINK_SUBLINK_SUBSTATE_RX_STABLE,
+                                                    NVLINK_TRANSITION_SAFE_TIMEOUT);
+            if (status != NVL_SUCCESS)
+            {
+                NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+                    "%s: Unable to set sublinks to SAFE\n",
+                    __FUNCTION__));
+            }
         }
     }
 

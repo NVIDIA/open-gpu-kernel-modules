@@ -128,6 +128,7 @@ NVT_STATUS NvTiming_CalcOVT(NvU32 width, NvU32 height, NvU32 refreshRate, NVT_TI
 
     // ** Preparation **
     // 1. Determine maximum Vrate of frame rate group (see Table 13) and V-Total granularity:
+    //    Currently client doesn't have customize refresh rate value as it only from VFDB
     switch (refreshRate)
     {
         case 24: case 25: case 30:
@@ -161,7 +162,7 @@ NVT_STATUS NvTiming_CalcOVT(NvU32 width, NvU32 height, NvU32 refreshRate, NVT_TI
         default:
             vTotalGranularity = 1;
             maxVRate          = refreshRate;
-            nvt_assert (0 && "invalid input refresh rate!");
+        break;
     }
 
     // 2. Minimum Vtotal is found from highest frame rate of Vrate group, Vactive and the minimum Vblank time of 460 μSec:

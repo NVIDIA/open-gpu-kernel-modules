@@ -197,28 +197,25 @@ nv_procfs_read_power(
 {
     nv_state_t *nv = s->private;
     nvidia_stack_t *sp = NULL;
-    const char *vidmem_power_status;
-    const char *dynamic_power_status;
-    const char *gc6_support;
-    const char *gcoff_support;
+    nv_power_info_t power_info;
 
     if (nv_kmem_cache_alloc_stack(&sp) != 0)
     {
         return 0;
     }
 
-    dynamic_power_status = rm_get_dynamic_power_management_status(sp, nv);
-    seq_printf(s, "Runtime D3 status:          %s\n", dynamic_power_status);
-
-    vidmem_power_status = rm_get_vidmem_power_status(sp, nv);
-    seq_printf(s, "Video Memory:               %s\n\n", vidmem_power_status);
+    rm_get_power_info(sp, nv, &power_info);
+    seq_printf(s, "Runtime D3 status:          %s\n", power_info.dynamic_power_status);
+    seq_printf(s, "Video Memory:               %s\n\n", power_info.vidmem_power_status);
 
     seq_printf(s, "GPU Hardware Support:\n");
-    gc6_support = rm_get_gpu_gcx_support(sp, nv, NV_TRUE);
-    seq_printf(s, " Video Memory Self Refresh: %s\n", gc6_support);
+    seq_printf(s, " Video Memory Self Refresh: %s\n", power_info.gc6_support);
+    seq_printf(s, " Video Memory Off:          %s\n\n", power_info.gcoff_support);
 
-    gcoff_support = rm_get_gpu_gcx_support(sp, nv, NV_FALSE);
-    seq_printf(s, " Video Memory Off:          %s\n", gcoff_support);
+    seq_printf(s, "S0ix Power Management:\n");
+    seq_printf(s, " Platform Support:          %s\n",
+               nv_platform_supports_s0ix() ? "Supported" : "Not Supported");
+    seq_printf(s, " Status:                    %s\n", power_info.s0ix_status);
 
     nv_kmem_cache_free_stack(sp);
     return 0;

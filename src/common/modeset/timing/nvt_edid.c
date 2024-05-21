@@ -1056,7 +1056,10 @@ NVT_STATUS NV_STDCALL NvTiming_ParseEDIDInfo(NvU8 *pEdid, NvU32 length, NVT_EDID
                 parseCta861VsvdbBlocks(p861Info, pInfo, FROM_CTA861_EXTENSION);
 
                 // parse HDR related information from the HDR static metadata data block
-                parseCea861HdrStaticMetadataDataBlock(p861Info, pInfo, FROM_CTA861_EXTENSION);
+                if (p861Info->valid.hdr_static_metadata != 0)
+                {
+                    parseCta861HdrStaticMetadataDataBlock(p861Info, pInfo, FROM_CTA861_EXTENSION);
+                }
 
                 // Timings are listed (or shall) be listed in priority order
                 // So read SVD, yuv420 SVDs first before reading detailed timings

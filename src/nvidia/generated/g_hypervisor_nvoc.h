@@ -1,6 +1,13 @@
+
 #ifndef _G_HYPERVISOR_NVOC_H_
 #define _G_HYPERVISOR_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,6 +35,7 @@ extern "C" {
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+#pragma once
 #include "g_hypervisor_nvoc.h"
 
 #ifndef HYPERVISOR_H
@@ -45,6 +53,7 @@ extern "C" {
 #include "mem_mgr/mem.h"
 
 /* ------------------------ Forward Declarations ---------------------------- */
+
 struct OBJOS;
 
 #ifndef __NVOC_CLASS_OBJOS_TYPEDEF__
@@ -82,12 +91,23 @@ typedef struct HOST_VGPU_DEVICE HOST_VGPU_DEVICE;
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 
+
 struct OBJHYPERVISOR {
+
+    // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+
+    // Parent (i.e. superclass or base class) object pointers
     struct Object __nvoc_base_Object;
-    struct Object *__nvoc_pbase_Object;
-    struct OBJHYPERVISOR *__nvoc_pbase_OBJHYPERVISOR;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super
+    struct OBJHYPERVISOR *__nvoc_pbase_OBJHYPERVISOR;    // hypervisor
+
+    // 1 PDB property
     NvBool PDB_PROP_HYPERVISOR_DRIVERVM_ENABLED;
+
+    // Data members
     NvBool bDetected;
     NvBool bIsHVMGuest;
     HYPERVISOR_TYPE type;
@@ -104,6 +124,7 @@ typedef struct OBJHYPERVISOR OBJHYPERVISOR;
 #define __nvoc_class_id_OBJHYPERVISOR 0x33c1ba
 #endif /* __nvoc_class_id_OBJHYPERVISOR */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJHYPERVISOR;
 
 #define __staticCast_OBJHYPERVISOR(pThis) \
@@ -116,6 +137,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJHYPERVISOR;
     ((OBJHYPERVISOR*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJHYPERVISOR)))
 #endif //__nvoc_hypervisor_h_disabled
 
+// Property macros
 #define PDB_PROP_HYPERVISOR_DRIVERVM_ENABLED_BASE_CAST
 #define PDB_PROP_HYPERVISOR_DRIVERVM_ENABLED_BASE_NAME PDB_PROP_HYPERVISOR_DRIVERVM_ENABLED
 
@@ -125,38 +147,42 @@ NV_STATUS __nvoc_objCreate_OBJHYPERVISOR(OBJHYPERVISOR**, Dynamic*, NvU32);
 #define __objCreate_OBJHYPERVISOR(ppNewObj, pParent, createFlags) \
     __nvoc_objCreate_OBJHYPERVISOR((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
+
+// Wrapper macros
+
+// Dispatch functions
 NvBool hypervisorIsVgxHyper_IMPL(void);
 
 
 #define hypervisorIsVgxHyper() hypervisorIsVgxHyper_IMPL()
 #define hypervisorIsVgxHyper_HAL() hypervisorIsVgxHyper()
 
-NV_STATUS hypervisorInjectInterrupt_IMPL(struct OBJHYPERVISOR *arg0, VGPU_NS_INTR *arg1);
+NV_STATUS hypervisorInjectInterrupt_IMPL(struct OBJHYPERVISOR *arg1, VGPU_NS_INTR *arg2);
 
 
 #ifdef __nvoc_hypervisor_h_disabled
-static inline NV_STATUS hypervisorInjectInterrupt(struct OBJHYPERVISOR *arg0, VGPU_NS_INTR *arg1) {
+static inline NV_STATUS hypervisorInjectInterrupt(struct OBJHYPERVISOR *arg1, VGPU_NS_INTR *arg2) {
     NV_ASSERT_FAILED_PRECOMP("OBJHYPERVISOR was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_hypervisor_h_disabled
-#define hypervisorInjectInterrupt(arg0, arg1) hypervisorInjectInterrupt_IMPL(arg0, arg1)
+#define hypervisorInjectInterrupt(arg1, arg2) hypervisorInjectInterrupt_IMPL(arg1, arg2)
 #endif //__nvoc_hypervisor_h_disabled
 
-#define hypervisorInjectInterrupt_HAL(arg0, arg1) hypervisorInjectInterrupt(arg0, arg1)
+#define hypervisorInjectInterrupt_HAL(arg1, arg2) hypervisorInjectInterrupt(arg1, arg2)
 
-void hypervisorSetHypervVgpuSupported_IMPL(struct OBJHYPERVISOR *arg0);
+void hypervisorSetHypervVgpuSupported_IMPL(struct OBJHYPERVISOR *arg1);
 
 
 #ifdef __nvoc_hypervisor_h_disabled
-static inline void hypervisorSetHypervVgpuSupported(struct OBJHYPERVISOR *arg0) {
+static inline void hypervisorSetHypervVgpuSupported(struct OBJHYPERVISOR *arg1) {
     NV_ASSERT_FAILED_PRECOMP("OBJHYPERVISOR was disabled!");
 }
 #else //__nvoc_hypervisor_h_disabled
-#define hypervisorSetHypervVgpuSupported(arg0) hypervisorSetHypervVgpuSupported_IMPL(arg0)
+#define hypervisorSetHypervVgpuSupported(arg1) hypervisorSetHypervVgpuSupported_IMPL(arg1)
 #endif //__nvoc_hypervisor_h_disabled
 
-#define hypervisorSetHypervVgpuSupported_HAL(arg0) hypervisorSetHypervVgpuSupported(arg0)
+#define hypervisorSetHypervVgpuSupported_HAL(arg1) hypervisorSetHypervVgpuSupported(arg1)
 
 NvBool hypervisorCheckForObjectAccess_IMPL(NvHandle hClient);
 
@@ -167,42 +193,42 @@ NvBool hypervisorIsType_IMPL(HYPERVISOR_TYPE hyperType);
 NV_STATUS hypervisorConstruct_IMPL(struct OBJHYPERVISOR *arg_);
 
 #define __nvoc_hypervisorConstruct(arg_) hypervisorConstruct_IMPL(arg_)
-void hypervisorDestruct_IMPL(struct OBJHYPERVISOR *arg0);
+void hypervisorDestruct_IMPL(struct OBJHYPERVISOR *arg1);
 
-#define __nvoc_hypervisorDestruct(arg0) hypervisorDestruct_IMPL(arg0)
-NV_STATUS hypervisorDetection_IMPL(struct OBJHYPERVISOR *arg0, struct OBJOS *arg1);
+#define __nvoc_hypervisorDestruct(arg1) hypervisorDestruct_IMPL(arg1)
+NV_STATUS hypervisorDetection_IMPL(struct OBJHYPERVISOR *arg1, struct OBJOS *arg2);
 
 #ifdef __nvoc_hypervisor_h_disabled
-static inline NV_STATUS hypervisorDetection(struct OBJHYPERVISOR *arg0, struct OBJOS *arg1) {
+static inline NV_STATUS hypervisorDetection(struct OBJHYPERVISOR *arg1, struct OBJOS *arg2) {
     NV_ASSERT_FAILED_PRECOMP("OBJHYPERVISOR was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_hypervisor_h_disabled
-#define hypervisorDetection(arg0, arg1) hypervisorDetection_IMPL(arg0, arg1)
+#define hypervisorDetection(arg1, arg2) hypervisorDetection_IMPL(arg1, arg2)
 #endif //__nvoc_hypervisor_h_disabled
 
-NvBool hypervisorPcieP2pDetection_IMPL(struct OBJHYPERVISOR *arg0, NvU32 arg1);
+NvBool hypervisorPcieP2pDetection_IMPL(struct OBJHYPERVISOR *arg1, NvU32 arg2);
 
 #ifdef __nvoc_hypervisor_h_disabled
-static inline NvBool hypervisorPcieP2pDetection(struct OBJHYPERVISOR *arg0, NvU32 arg1) {
+static inline NvBool hypervisorPcieP2pDetection(struct OBJHYPERVISOR *arg1, NvU32 arg2) {
     NV_ASSERT_FAILED_PRECOMP("OBJHYPERVISOR was disabled!");
     return NV_FALSE;
 }
 #else //__nvoc_hypervisor_h_disabled
-#define hypervisorPcieP2pDetection(arg0, arg1) hypervisorPcieP2pDetection_IMPL(arg0, arg1)
+#define hypervisorPcieP2pDetection(arg1, arg2) hypervisorPcieP2pDetection_IMPL(arg1, arg2)
 #endif //__nvoc_hypervisor_h_disabled
 
-HYPERVISOR_TYPE hypervisorGetHypervisorType_IMPL(struct OBJHYPERVISOR *arg0);
+HYPERVISOR_TYPE hypervisorGetHypervisorType_IMPL(struct OBJHYPERVISOR *arg1);
 
 #ifdef __nvoc_hypervisor_h_disabled
-static inline HYPERVISOR_TYPE hypervisorGetHypervisorType(struct OBJHYPERVISOR *arg0) {
+static inline HYPERVISOR_TYPE hypervisorGetHypervisorType(struct OBJHYPERVISOR *arg1) {
     NV_ASSERT_FAILED_PRECOMP("OBJHYPERVISOR was disabled!");
     HYPERVISOR_TYPE ret;
     portMemSet(&ret, 0, sizeof(HYPERVISOR_TYPE));
     return ret;
 }
 #else //__nvoc_hypervisor_h_disabled
-#define hypervisorGetHypervisorType(arg0) hypervisorGetHypervisorType_IMPL(arg0)
+#define hypervisorGetHypervisorType(arg1) hypervisorGetHypervisorType_IMPL(arg1)
 #endif //__nvoc_hypervisor_h_disabled
 
 void hypervisorSetHypervisorType_IMPL(struct OBJHYPERVISOR *pHypervisor, HYPERVISOR_TYPE type);

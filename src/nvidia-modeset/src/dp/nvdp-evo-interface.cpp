@@ -29,6 +29,8 @@
 
 #include "nvkms-rmapi.h"
 
+#include "nvdp-connector-event-sink.hpp"
+
 namespace nvkmsDisplayPort {
 
 EvoInterface::EvoInterface(NVConnectorEvoPtr pConnectorEvo)
@@ -110,7 +112,15 @@ NvU32 EvoInterface::getDisplayId()
 
 NvU32 EvoInterface::getSorIndex()
 {
-    return pConnectorEvo->or.primary;
+    if (pConnectorEvo->pDpLibConnector) {
+        if (pConnectorEvo->pDpLibConnector->linkHandoffEnabled) {
+            return DP_INVALID_SOR_INDEX;
+        } else {
+            return pConnectorEvo->or.primary;
+        }
+    } else {
+        return pConnectorEvo->or.primary;
+    }
 }
 
 NvU32 EvoInterface::getLinkIndex()

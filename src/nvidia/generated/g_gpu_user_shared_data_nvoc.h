@@ -1,13 +1,20 @@
+
 #ifndef _G_GPU_USER_SHARED_DATA_NVOC_H_
 #define _G_GPU_USER_SHARED_DATA_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +36,7 @@ extern "C" {
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_gpu_user_shared_data_nvoc.h"
 
 #ifndef GPU_USER_SHARED_DATA_H
@@ -57,42 +65,53 @@ extern "C" {
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 
+
 struct GpuUserSharedData {
+
+    // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+
+    // Parent (i.e. superclass or base class) object pointers
     struct Memory __nvoc_base_Memory;
-    struct Object *__nvoc_pbase_Object;
-    struct RsResource *__nvoc_pbase_RsResource;
-    struct RmResourceCommon *__nvoc_pbase_RmResourceCommon;
-    struct RmResource *__nvoc_pbase_RmResource;
-    struct Memory *__nvoc_pbase_Memory;
-    struct GpuUserSharedData *__nvoc_pbase_GpuUserSharedData;
-    NvBool (*__gpushareddataCanCopy__)(struct GpuUserSharedData *);
-    NV_STATUS (*__gpushareddataCtrlCmdRequestDataPoll__)(struct GpuUserSharedData *, NV00DE_CTRL_REQUEST_DATA_POLL_PARAMS *);
-    NV_STATUS (*__gpushareddataCheckMemInterUnmap__)(struct GpuUserSharedData *, NvBool);
-    NvBool (*__gpushareddataShareCallback__)(struct GpuUserSharedData *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
-    NV_STATUS (*__gpushareddataMapTo__)(struct GpuUserSharedData *, RS_RES_MAP_TO_PARAMS *);
-    NV_STATUS (*__gpushareddataGetMapAddrSpace__)(struct GpuUserSharedData *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
-    NvBool (*__gpushareddataIsExportAllowed__)(struct GpuUserSharedData *);
-    NvU32 (*__gpushareddataGetRefCount__)(struct GpuUserSharedData *);
-    void (*__gpushareddataAddAdditionalDependants__)(struct RsClient *, struct GpuUserSharedData *, RsResourceRef *);
-    NV_STATUS (*__gpushareddataControl_Prologue__)(struct GpuUserSharedData *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NvBool (*__gpushareddataIsGpuMapAllowed__)(struct GpuUserSharedData *, struct OBJGPU *);
-    NV_STATUS (*__gpushareddataUnmapFrom__)(struct GpuUserSharedData *, RS_RES_UNMAP_FROM_PARAMS *);
-    void (*__gpushareddataControl_Epilogue__)(struct GpuUserSharedData *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__gpushareddataControl__)(struct GpuUserSharedData *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__gpushareddataUnmap__)(struct GpuUserSharedData *, CALL_CONTEXT *, RsCpuMapping *);
-    NV_STATUS (*__gpushareddataGetMemInterMapParams__)(struct GpuUserSharedData *, RMRES_MEM_INTER_MAP_PARAMS *);
-    NV_STATUS (*__gpushareddataGetMemoryMappingDescriptor__)(struct GpuUserSharedData *, MEMORY_DESCRIPTOR **);
-    NV_STATUS (*__gpushareddataControlFilter__)(struct GpuUserSharedData *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__gpushareddataControlSerialization_Prologue__)(struct GpuUserSharedData *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NvBool (*__gpushareddataIsPartialUnmapSupported__)(struct GpuUserSharedData *);
-    NV_STATUS (*__gpushareddataIsReady__)(struct GpuUserSharedData *, NvBool);
-    NV_STATUS (*__gpushareddataCheckCopyPermissions__)(struct GpuUserSharedData *, struct OBJGPU *, struct Device *);
-    void (*__gpushareddataPreDestruct__)(struct GpuUserSharedData *);
-    NV_STATUS (*__gpushareddataIsDuplicate__)(struct GpuUserSharedData *, NvHandle, NvBool *);
-    void (*__gpushareddataControlSerialization_Epilogue__)(struct GpuUserSharedData *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__gpushareddataMap__)(struct GpuUserSharedData *, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);
-    NvBool (*__gpushareddataAccessCallback__)(struct GpuUserSharedData *, struct RsClient *, void *, RsAccessRight);
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^4
+    struct RsResource *__nvoc_pbase_RsResource;    // res super^3
+    struct RmResourceCommon *__nvoc_pbase_RmResourceCommon;    // rmrescmn super^3
+    struct RmResource *__nvoc_pbase_RmResource;    // rmres super^2
+    struct Memory *__nvoc_pbase_Memory;    // mem super
+    struct GpuUserSharedData *__nvoc_pbase_GpuUserSharedData;    // gpushareddata
+
+    // Vtable with 27 per-object function pointers
+    NvBool (*__gpushareddataCanCopy__)(struct GpuUserSharedData * /*this*/);  // virtual override (res) base (mem)
+    NV_STATUS (*__gpushareddataCtrlCmdRequestDataPoll__)(struct GpuUserSharedData * /*this*/, NV00DE_CTRL_REQUEST_DATA_POLL_PARAMS *);  // exported (id=0xde0001)
+    NV_STATUS (*__gpushareddataIsDuplicate__)(struct GpuUserSharedData * /*this*/, NvHandle, NvBool *);  // virtual inherited (mem) base (mem)
+    NV_STATUS (*__gpushareddataGetMapAddrSpace__)(struct GpuUserSharedData * /*this*/, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual inherited (mem) base (mem)
+    NV_STATUS (*__gpushareddataControl__)(struct GpuUserSharedData * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (mem) base (mem)
+    NV_STATUS (*__gpushareddataMap__)(struct GpuUserSharedData * /*this*/, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);  // virtual inherited (mem) base (mem)
+    NV_STATUS (*__gpushareddataUnmap__)(struct GpuUserSharedData * /*this*/, CALL_CONTEXT *, RsCpuMapping *);  // virtual inherited (mem) base (mem)
+    NV_STATUS (*__gpushareddataGetMemInterMapParams__)(struct GpuUserSharedData * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (mem) base (mem)
+    NV_STATUS (*__gpushareddataCheckMemInterUnmap__)(struct GpuUserSharedData * /*this*/, NvBool);  // inline virtual inherited (mem) base (mem) body
+    NV_STATUS (*__gpushareddataGetMemoryMappingDescriptor__)(struct GpuUserSharedData * /*this*/, MEMORY_DESCRIPTOR **);  // virtual inherited (mem) base (mem)
+    NV_STATUS (*__gpushareddataCheckCopyPermissions__)(struct GpuUserSharedData * /*this*/, struct OBJGPU *, struct Device *);  // inline virtual inherited (mem) base (mem) body
+    NV_STATUS (*__gpushareddataIsReady__)(struct GpuUserSharedData * /*this*/, NvBool);  // virtual inherited (mem) base (mem)
+    NvBool (*__gpushareddataIsGpuMapAllowed__)(struct GpuUserSharedData * /*this*/, struct OBJGPU *);  // inline virtual inherited (mem) base (mem) body
+    NvBool (*__gpushareddataIsExportAllowed__)(struct GpuUserSharedData * /*this*/);  // inline virtual inherited (mem) base (mem) body
+    NvBool (*__gpushareddataAccessCallback__)(struct GpuUserSharedData * /*this*/, RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (mem)
+    NvBool (*__gpushareddataShareCallback__)(struct GpuUserSharedData * /*this*/, RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (mem)
+    NV_STATUS (*__gpushareddataControlSerialization_Prologue__)(struct GpuUserSharedData * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__gpushareddataControlSerialization_Epilogue__)(struct GpuUserSharedData * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    NV_STATUS (*__gpushareddataControl_Prologue__)(struct GpuUserSharedData * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__gpushareddataControl_Epilogue__)(struct GpuUserSharedData * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (mem)
+    void (*__gpushareddataPreDestruct__)(struct GpuUserSharedData * /*this*/);  // virtual inherited (res) base (mem)
+    NV_STATUS (*__gpushareddataControlFilter__)(struct GpuUserSharedData * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (mem)
+    NvBool (*__gpushareddataIsPartialUnmapSupported__)(struct GpuUserSharedData * /*this*/);  // inline virtual inherited (res) base (mem) body
+    NV_STATUS (*__gpushareddataMapTo__)(struct GpuUserSharedData * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (mem)
+    NV_STATUS (*__gpushareddataUnmapFrom__)(struct GpuUserSharedData * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (mem)
+    NvU32 (*__gpushareddataGetRefCount__)(struct GpuUserSharedData * /*this*/);  // virtual inherited (res) base (mem)
+    void (*__gpushareddataAddAdditionalDependants__)(struct RsClient *, struct GpuUserSharedData * /*this*/, RsResourceRef *);  // virtual inherited (res) base (mem)
+
+    // Data members
     NvU64 polledDataMask;
 };
 
@@ -105,6 +124,7 @@ typedef struct GpuUserSharedData GpuUserSharedData;
 #define __nvoc_class_id_GpuUserSharedData 0x5e7d1f
 #endif /* __nvoc_class_id_GpuUserSharedData */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuUserSharedData;
 
 #define __staticCast_GpuUserSharedData(pThis) \
@@ -117,98 +137,92 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuUserSharedData;
     ((GpuUserSharedData*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(GpuUserSharedData)))
 #endif //__nvoc_gpu_user_shared_data_h_disabled
 
-
 NV_STATUS __nvoc_objCreateDynamic_GpuUserSharedData(GpuUserSharedData**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_GpuUserSharedData(GpuUserSharedData**, Dynamic*, NvU32, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
 #define __objCreate_GpuUserSharedData(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_GpuUserSharedData((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
-#define gpushareddataCanCopy(pData) gpushareddataCanCopy_DISPATCH(pData)
-#define gpushareddataCtrlCmdRequestDataPoll(pData, pParams) gpushareddataCtrlCmdRequestDataPoll_DISPATCH(pData, pParams)
-#define gpushareddataCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) gpushareddataCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
-#define gpushareddataShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) gpushareddataShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
-#define gpushareddataMapTo(pResource, pParams) gpushareddataMapTo_DISPATCH(pResource, pParams)
-#define gpushareddataGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) gpushareddataGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
-#define gpushareddataIsExportAllowed(pMemory) gpushareddataIsExportAllowed_DISPATCH(pMemory)
-#define gpushareddataGetRefCount(pResource) gpushareddataGetRefCount_DISPATCH(pResource)
-#define gpushareddataAddAdditionalDependants(pClient, pResource, pReference) gpushareddataAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define gpushareddataControl_Prologue(pResource, pCallContext, pParams) gpushareddataControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define gpushareddataIsGpuMapAllowed(pMemory, pGpu) gpushareddataIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
-#define gpushareddataUnmapFrom(pResource, pParams) gpushareddataUnmapFrom_DISPATCH(pResource, pParams)
-#define gpushareddataControl_Epilogue(pResource, pCallContext, pParams) gpushareddataControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define gpushareddataControl(pMemory, pCallContext, pParams) gpushareddataControl_DISPATCH(pMemory, pCallContext, pParams)
-#define gpushareddataUnmap(pMemory, pCallContext, pCpuMapping) gpushareddataUnmap_DISPATCH(pMemory, pCallContext, pCpuMapping)
-#define gpushareddataGetMemInterMapParams(pMemory, pParams) gpushareddataGetMemInterMapParams_DISPATCH(pMemory, pParams)
-#define gpushareddataGetMemoryMappingDescriptor(pMemory, ppMemDesc) gpushareddataGetMemoryMappingDescriptor_DISPATCH(pMemory, ppMemDesc)
-#define gpushareddataControlFilter(pResource, pCallContext, pParams) gpushareddataControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define gpushareddataControlSerialization_Prologue(pResource, pCallContext, pParams) gpushareddataControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define gpushareddataIsPartialUnmapSupported(pResource) gpushareddataIsPartialUnmapSupported_DISPATCH(pResource)
-#define gpushareddataIsReady(pMemory, bCopyConstructorContext) gpushareddataIsReady_DISPATCH(pMemory, bCopyConstructorContext)
-#define gpushareddataCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) gpushareddataCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
-#define gpushareddataPreDestruct(pResource) gpushareddataPreDestruct_DISPATCH(pResource)
-#define gpushareddataIsDuplicate(pMemory, hMemory, pDuplicate) gpushareddataIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
-#define gpushareddataControlSerialization_Epilogue(pResource, pCallContext, pParams) gpushareddataControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define gpushareddataMap(pMemory, pCallContext, pParams, pCpuMapping) gpushareddataMap_DISPATCH(pMemory, pCallContext, pParams, pCpuMapping)
-#define gpushareddataAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) gpushareddataAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-NvBool gpushareddataCanCopy_IMPL(struct GpuUserSharedData *pData);
 
+// Wrapper macros
+#define gpushareddataCanCopy_FNPTR(pData) pData->__gpushareddataCanCopy__
+#define gpushareddataCanCopy(pData) gpushareddataCanCopy_DISPATCH(pData)
+#define gpushareddataCtrlCmdRequestDataPoll_FNPTR(pData) pData->__gpushareddataCtrlCmdRequestDataPoll__
+#define gpushareddataCtrlCmdRequestDataPoll(pData, pParams) gpushareddataCtrlCmdRequestDataPoll_DISPATCH(pData, pParams)
+#define gpushareddataIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memIsDuplicate__
+#define gpushareddataIsDuplicate(pMemory, hMemory, pDuplicate) gpushareddataIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
+#define gpushareddataGetMapAddrSpace_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memGetMapAddrSpace__
+#define gpushareddataGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) gpushareddataGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
+#define gpushareddataControl_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memControl__
+#define gpushareddataControl(pMemory, pCallContext, pParams) gpushareddataControl_DISPATCH(pMemory, pCallContext, pParams)
+#define gpushareddataMap_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memMap__
+#define gpushareddataMap(pMemory, pCallContext, pParams, pCpuMapping) gpushareddataMap_DISPATCH(pMemory, pCallContext, pParams, pCpuMapping)
+#define gpushareddataUnmap_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memUnmap__
+#define gpushareddataUnmap(pMemory, pCallContext, pCpuMapping) gpushareddataUnmap_DISPATCH(pMemory, pCallContext, pCpuMapping)
+#define gpushareddataGetMemInterMapParams_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memGetMemInterMapParams__
+#define gpushareddataGetMemInterMapParams(pMemory, pParams) gpushareddataGetMemInterMapParams_DISPATCH(pMemory, pParams)
+#define gpushareddataCheckMemInterUnmap_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memCheckMemInterUnmap__
+#define gpushareddataCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) gpushareddataCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
+#define gpushareddataGetMemoryMappingDescriptor_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memGetMemoryMappingDescriptor__
+#define gpushareddataGetMemoryMappingDescriptor(pMemory, ppMemDesc) gpushareddataGetMemoryMappingDescriptor_DISPATCH(pMemory, ppMemDesc)
+#define gpushareddataCheckCopyPermissions_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memCheckCopyPermissions__
+#define gpushareddataCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) gpushareddataCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
+#define gpushareddataIsReady_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memIsReady__
+#define gpushareddataIsReady(pMemory, bCopyConstructorContext) gpushareddataIsReady_DISPATCH(pMemory, bCopyConstructorContext)
+#define gpushareddataIsGpuMapAllowed_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memIsGpuMapAllowed__
+#define gpushareddataIsGpuMapAllowed(pMemory, pGpu) gpushareddataIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
+#define gpushareddataIsExportAllowed_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memIsExportAllowed__
+#define gpushareddataIsExportAllowed(pMemory) gpushareddataIsExportAllowed_DISPATCH(pMemory)
+#define gpushareddataAccessCallback_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__rmresAccessCallback__
+#define gpushareddataAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) gpushareddataAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
+#define gpushareddataShareCallback_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__rmresShareCallback__
+#define gpushareddataShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) gpushareddataShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
+#define gpushareddataControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__rmresControlSerialization_Prologue__
+#define gpushareddataControlSerialization_Prologue(pResource, pCallContext, pParams) gpushareddataControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define gpushareddataControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__rmresControlSerialization_Epilogue__
+#define gpushareddataControlSerialization_Epilogue(pResource, pCallContext, pParams) gpushareddataControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
+#define gpushareddataControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__rmresControl_Prologue__
+#define gpushareddataControl_Prologue(pResource, pCallContext, pParams) gpushareddataControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define gpushareddataControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__rmresControl_Epilogue__
+#define gpushareddataControl_Epilogue(pResource, pCallContext, pParams) gpushareddataControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
+#define gpushareddataPreDestruct_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resPreDestruct__
+#define gpushareddataPreDestruct(pResource) gpushareddataPreDestruct_DISPATCH(pResource)
+#define gpushareddataControlFilter_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resControlFilter__
+#define gpushareddataControlFilter(pResource, pCallContext, pParams) gpushareddataControlFilter_DISPATCH(pResource, pCallContext, pParams)
+#define gpushareddataIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsPartialUnmapSupported__
+#define gpushareddataIsPartialUnmapSupported(pResource) gpushareddataIsPartialUnmapSupported_DISPATCH(pResource)
+#define gpushareddataMapTo_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resMapTo__
+#define gpushareddataMapTo(pResource, pParams) gpushareddataMapTo_DISPATCH(pResource, pParams)
+#define gpushareddataUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resUnmapFrom__
+#define gpushareddataUnmapFrom(pResource, pParams) gpushareddataUnmapFrom_DISPATCH(pResource, pParams)
+#define gpushareddataGetRefCount_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resGetRefCount__
+#define gpushareddataGetRefCount(pResource) gpushareddataGetRefCount_DISPATCH(pResource)
+#define gpushareddataAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resAddAdditionalDependants__
+#define gpushareddataAddAdditionalDependants(pClient, pResource, pReference) gpushareddataAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
+
+// Dispatch functions
 static inline NvBool gpushareddataCanCopy_DISPATCH(struct GpuUserSharedData *pData) {
     return pData->__gpushareddataCanCopy__(pData);
 }
-
-NV_STATUS gpushareddataCtrlCmdRequestDataPoll_IMPL(struct GpuUserSharedData *pData, NV00DE_CTRL_REQUEST_DATA_POLL_PARAMS *pParams);
 
 static inline NV_STATUS gpushareddataCtrlCmdRequestDataPoll_DISPATCH(struct GpuUserSharedData *pData, NV00DE_CTRL_REQUEST_DATA_POLL_PARAMS *pParams) {
     return pData->__gpushareddataCtrlCmdRequestDataPoll__(pData, pParams);
 }
 
-static inline NV_STATUS gpushareddataCheckMemInterUnmap_DISPATCH(struct GpuUserSharedData *pMemory, NvBool bSubdeviceHandleProvided) {
-    return pMemory->__gpushareddataCheckMemInterUnmap__(pMemory, bSubdeviceHandleProvided);
-}
-
-static inline NvBool gpushareddataShareCallback_DISPATCH(struct GpuUserSharedData *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__gpushareddataShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
-}
-
-static inline NV_STATUS gpushareddataMapTo_DISPATCH(struct GpuUserSharedData *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__gpushareddataMapTo__(pResource, pParams);
+static inline NV_STATUS gpushareddataIsDuplicate_DISPATCH(struct GpuUserSharedData *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return pMemory->__gpushareddataIsDuplicate__(pMemory, hMemory, pDuplicate);
 }
 
 static inline NV_STATUS gpushareddataGetMapAddrSpace_DISPATCH(struct GpuUserSharedData *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pMemory->__gpushareddataGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
 }
 
-static inline NvBool gpushareddataIsExportAllowed_DISPATCH(struct GpuUserSharedData *pMemory) {
-    return pMemory->__gpushareddataIsExportAllowed__(pMemory);
-}
-
-static inline NvU32 gpushareddataGetRefCount_DISPATCH(struct GpuUserSharedData *pResource) {
-    return pResource->__gpushareddataGetRefCount__(pResource);
-}
-
-static inline void gpushareddataAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct GpuUserSharedData *pResource, RsResourceRef *pReference) {
-    pResource->__gpushareddataAddAdditionalDependants__(pClient, pResource, pReference);
-}
-
-static inline NV_STATUS gpushareddataControl_Prologue_DISPATCH(struct GpuUserSharedData *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__gpushareddataControl_Prologue__(pResource, pCallContext, pParams);
-}
-
-static inline NvBool gpushareddataIsGpuMapAllowed_DISPATCH(struct GpuUserSharedData *pMemory, struct OBJGPU *pGpu) {
-    return pMemory->__gpushareddataIsGpuMapAllowed__(pMemory, pGpu);
-}
-
-static inline NV_STATUS gpushareddataUnmapFrom_DISPATCH(struct GpuUserSharedData *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__gpushareddataUnmapFrom__(pResource, pParams);
-}
-
-static inline void gpushareddataControl_Epilogue_DISPATCH(struct GpuUserSharedData *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__gpushareddataControl_Epilogue__(pResource, pCallContext, pParams);
-}
-
 static inline NV_STATUS gpushareddataControl_DISPATCH(struct GpuUserSharedData *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pMemory->__gpushareddataControl__(pMemory, pCallContext, pParams);
+}
+
+static inline NV_STATUS gpushareddataMap_DISPATCH(struct GpuUserSharedData *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+    return pMemory->__gpushareddataMap__(pMemory, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS gpushareddataUnmap_DISPATCH(struct GpuUserSharedData *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
@@ -219,49 +233,85 @@ static inline NV_STATUS gpushareddataGetMemInterMapParams_DISPATCH(struct GpuUse
     return pMemory->__gpushareddataGetMemInterMapParams__(pMemory, pParams);
 }
 
+static inline NV_STATUS gpushareddataCheckMemInterUnmap_DISPATCH(struct GpuUserSharedData *pMemory, NvBool bSubdeviceHandleProvided) {
+    return pMemory->__gpushareddataCheckMemInterUnmap__(pMemory, bSubdeviceHandleProvided);
+}
+
 static inline NV_STATUS gpushareddataGetMemoryMappingDescriptor_DISPATCH(struct GpuUserSharedData *pMemory, MEMORY_DESCRIPTOR **ppMemDesc) {
     return pMemory->__gpushareddataGetMemoryMappingDescriptor__(pMemory, ppMemDesc);
-}
-
-static inline NV_STATUS gpushareddataControlFilter_DISPATCH(struct GpuUserSharedData *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__gpushareddataControlFilter__(pResource, pCallContext, pParams);
-}
-
-static inline NV_STATUS gpushareddataControlSerialization_Prologue_DISPATCH(struct GpuUserSharedData *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__gpushareddataControlSerialization_Prologue__(pResource, pCallContext, pParams);
-}
-
-static inline NvBool gpushareddataIsPartialUnmapSupported_DISPATCH(struct GpuUserSharedData *pResource) {
-    return pResource->__gpushareddataIsPartialUnmapSupported__(pResource);
-}
-
-static inline NV_STATUS gpushareddataIsReady_DISPATCH(struct GpuUserSharedData *pMemory, NvBool bCopyConstructorContext) {
-    return pMemory->__gpushareddataIsReady__(pMemory, bCopyConstructorContext);
 }
 
 static inline NV_STATUS gpushareddataCheckCopyPermissions_DISPATCH(struct GpuUserSharedData *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
     return pMemory->__gpushareddataCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
 }
 
-static inline void gpushareddataPreDestruct_DISPATCH(struct GpuUserSharedData *pResource) {
-    pResource->__gpushareddataPreDestruct__(pResource);
+static inline NV_STATUS gpushareddataIsReady_DISPATCH(struct GpuUserSharedData *pMemory, NvBool bCopyConstructorContext) {
+    return pMemory->__gpushareddataIsReady__(pMemory, bCopyConstructorContext);
 }
 
-static inline NV_STATUS gpushareddataIsDuplicate_DISPATCH(struct GpuUserSharedData *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
-    return pMemory->__gpushareddataIsDuplicate__(pMemory, hMemory, pDuplicate);
+static inline NvBool gpushareddataIsGpuMapAllowed_DISPATCH(struct GpuUserSharedData *pMemory, struct OBJGPU *pGpu) {
+    return pMemory->__gpushareddataIsGpuMapAllowed__(pMemory, pGpu);
+}
+
+static inline NvBool gpushareddataIsExportAllowed_DISPATCH(struct GpuUserSharedData *pMemory) {
+    return pMemory->__gpushareddataIsExportAllowed__(pMemory);
+}
+
+static inline NvBool gpushareddataAccessCallback_DISPATCH(struct GpuUserSharedData *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return pResource->__gpushareddataAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+}
+
+static inline NvBool gpushareddataShareCallback_DISPATCH(struct GpuUserSharedData *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return pResource->__gpushareddataShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+}
+
+static inline NV_STATUS gpushareddataControlSerialization_Prologue_DISPATCH(struct GpuUserSharedData *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__gpushareddataControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void gpushareddataControlSerialization_Epilogue_DISPATCH(struct GpuUserSharedData *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__gpushareddataControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS gpushareddataMap_DISPATCH(struct GpuUserSharedData *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pMemory->__gpushareddataMap__(pMemory, pCallContext, pParams, pCpuMapping);
+static inline NV_STATUS gpushareddataControl_Prologue_DISPATCH(struct GpuUserSharedData *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__gpushareddataControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline NvBool gpushareddataAccessCallback_DISPATCH(struct GpuUserSharedData *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__gpushareddataAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+static inline void gpushareddataControl_Epilogue_DISPATCH(struct GpuUserSharedData *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__gpushareddataControl_Epilogue__(pResource, pCallContext, pParams);
 }
+
+static inline void gpushareddataPreDestruct_DISPATCH(struct GpuUserSharedData *pResource) {
+    pResource->__gpushareddataPreDestruct__(pResource);
+}
+
+static inline NV_STATUS gpushareddataControlFilter_DISPATCH(struct GpuUserSharedData *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__gpushareddataControlFilter__(pResource, pCallContext, pParams);
+}
+
+static inline NvBool gpushareddataIsPartialUnmapSupported_DISPATCH(struct GpuUserSharedData *pResource) {
+    return pResource->__gpushareddataIsPartialUnmapSupported__(pResource);
+}
+
+static inline NV_STATUS gpushareddataMapTo_DISPATCH(struct GpuUserSharedData *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__gpushareddataMapTo__(pResource, pParams);
+}
+
+static inline NV_STATUS gpushareddataUnmapFrom_DISPATCH(struct GpuUserSharedData *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pResource->__gpushareddataUnmapFrom__(pResource, pParams);
+}
+
+static inline NvU32 gpushareddataGetRefCount_DISPATCH(struct GpuUserSharedData *pResource) {
+    return pResource->__gpushareddataGetRefCount__(pResource);
+}
+
+static inline void gpushareddataAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct GpuUserSharedData *pResource, RsResourceRef *pReference) {
+    pResource->__gpushareddataAddAdditionalDependants__(pClient, pResource, pReference);
+}
+
+NvBool gpushareddataCanCopy_IMPL(struct GpuUserSharedData *pData);
+
+NV_STATUS gpushareddataCtrlCmdRequestDataPoll_IMPL(struct GpuUserSharedData *pData, NV00DE_CTRL_REQUEST_DATA_POLL_PARAMS *pParams);
 
 NV_STATUS gpushareddataConstruct_IMPL(struct GpuUserSharedData *arg_pData, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 

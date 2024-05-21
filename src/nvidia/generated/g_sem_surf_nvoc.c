@@ -93,106 +93,6 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_SemaphoreSurface =
     /*pExportInfo=*/        &__nvoc_export_info_SemaphoreSurface
 };
 
-static NvBool __nvoc_thunk_SemaphoreSurface_resCanCopy(struct RsResource *pSemSurf) {
-    return semsurfCanCopy((struct SemaphoreSurface *)(((unsigned char *)pSemSurf) - __nvoc_rtti_SemaphoreSurface_RsResource.offset));
-}
-
-static NvBool __nvoc_thunk_GpuResource_semsurfShareCallback(struct SemaphoreSurface *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_SemaphoreSurface_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_semsurfCheckMemInterUnmap(struct SemaphoreSurface *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_SemaphoreSurface_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_semsurfMapTo(struct SemaphoreSurface *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SemaphoreSurface_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_semsurfGetMapAddrSpace(struct SemaphoreSurface *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_SemaphoreSurface_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static NvU32 __nvoc_thunk_RsResource_semsurfGetRefCount(struct SemaphoreSurface *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SemaphoreSurface_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_semsurfAddAdditionalDependants(struct RsClient *pClient, struct SemaphoreSurface *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SemaphoreSurface_RsResource.offset), pReference);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_semsurfControl_Prologue(struct SemaphoreSurface *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_SemaphoreSurface_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_semsurfGetRegBaseOffsetAndSize(struct SemaphoreSurface *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_SemaphoreSurface_GpuResource.offset), pGpu, pOffset, pSize);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_semsurfInternalControlForward(struct SemaphoreSurface *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_SemaphoreSurface_GpuResource.offset), command, pParams, size);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_semsurfUnmapFrom(struct SemaphoreSurface *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SemaphoreSurface_RsResource.offset), pParams);
-}
-
-static void __nvoc_thunk_RmResource_semsurfControl_Epilogue(struct SemaphoreSurface *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_SemaphoreSurface_RmResource.offset), pCallContext, pParams);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_semsurfGetInternalObjectHandle(struct SemaphoreSurface *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_SemaphoreSurface_GpuResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_semsurfControl(struct SemaphoreSurface *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_SemaphoreSurface_GpuResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_semsurfUnmap(struct SemaphoreSurface *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_SemaphoreSurface_GpuResource.offset), pCallContext, pCpuMapping);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_semsurfGetMemInterMapParams(struct SemaphoreSurface *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_SemaphoreSurface_RmResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_semsurfGetMemoryMappingDescriptor(struct SemaphoreSurface *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_SemaphoreSurface_RmResource.offset), ppMemDesc);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_semsurfControlFilter(struct SemaphoreSurface *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SemaphoreSurface_RsResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_semsurfControlSerialization_Prologue(struct SemaphoreSurface *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_SemaphoreSurface_RmResource.offset), pCallContext, pParams);
-}
-
-static NvBool __nvoc_thunk_RsResource_semsurfIsPartialUnmapSupported(struct SemaphoreSurface *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SemaphoreSurface_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_semsurfPreDestruct(struct SemaphoreSurface *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SemaphoreSurface_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_semsurfIsDuplicate(struct SemaphoreSurface *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SemaphoreSurface_RsResource.offset), hMemory, pDuplicate);
-}
-
-static void __nvoc_thunk_RmResource_semsurfControlSerialization_Epilogue(struct SemaphoreSurface *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_SemaphoreSurface_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_semsurfMap(struct SemaphoreSurface *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return gpuresMap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_SemaphoreSurface_GpuResource.offset), pCallContext, pParams, pCpuMapping);
-}
-
-static NvBool __nvoc_thunk_RmResource_semsurfAccessCallback(struct SemaphoreSurface *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_SemaphoreSurface_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
-}
-
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
@@ -200,12 +100,12 @@ static NvBool __nvoc_thunk_RmResource_semsurfAccessCallback(struct SemaphoreSurf
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_SemaphoreSurface[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) semsurfCtrlCmdRefMemory_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xda0001u,
         /*paramSize=*/  sizeof(NV_SEMAPHORE_SURFACE_CTRL_REF_MEMORY_PARAMS),
@@ -215,12 +115,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Semaphor
 #endif
     },
     {               /*  [1] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x810u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x108u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) semsurfCtrlCmdBindChannel_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x810u)
-        /*flags=*/      0x810u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x108u)
+        /*flags=*/      0x108u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xda0002u,
         /*paramSize=*/  sizeof(NV_SEMAPHORE_SURFACE_CTRL_BIND_CHANNEL_PARAMS),
@@ -230,12 +130,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Semaphor
 #endif
     },
     {               /*  [2] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x811u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x400009u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) semsurfCtrlCmdRegisterWaiter_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x811u)
-        /*flags=*/      0x811u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x400009u)
+        /*flags=*/      0x400009u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xda0003u,
         /*paramSize=*/  sizeof(NV_SEMAPHORE_SURFACE_CTRL_REGISTER_WAITER_PARAMS),
@@ -245,12 +145,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Semaphor
 #endif
     },
     {               /*  [3] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x811u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) semsurfCtrlCmdSetValue_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x811u)
-        /*flags=*/      0x811u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+        /*flags=*/      0x109u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xda0004u,
         /*paramSize=*/  sizeof(NV_SEMAPHORE_SURFACE_CTRL_SET_VALUE_PARAMS),
@@ -260,12 +160,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Semaphor
 #endif
     },
     {               /*  [4] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x811u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) semsurfCtrlCmdUnregisterWaiter_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x811u)
-        /*flags=*/      0x811u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+        /*flags=*/      0x109u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xda0005u,
         /*paramSize=*/  sizeof(NV_SEMAPHORE_SURFACE_CTRL_UNREGISTER_WAITER_PARAMS),
@@ -276,6 +176,137 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Semaphor
     },
 
 };
+
+// 1 down-thunk(s) defined to bridge methods in SemaphoreSurface from superclasses
+
+// semsurfCanCopy: inline virtual override (res) base (gpures) body
+static NvBool __nvoc_down_thunk_SemaphoreSurface_resCanCopy(struct RsResource *pSemSurf) {
+    return semsurfCanCopy((struct SemaphoreSurface *)(((unsigned char *) pSemSurf) - __nvoc_rtti_SemaphoreSurface_RsResource.offset));
+}
+
+
+// 24 up-thunk(s) defined to bridge methods in SemaphoreSurface to superclasses
+
+// semsurfControl: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_semsurfControl(struct SemaphoreSurface *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_SemaphoreSurface_GpuResource.offset), pCallContext, pParams);
+}
+
+// semsurfMap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_semsurfMap(struct SemaphoreSurface *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_SemaphoreSurface_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+}
+
+// semsurfUnmap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_semsurfUnmap(struct SemaphoreSurface *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_SemaphoreSurface_GpuResource.offset), pCallContext, pCpuMapping);
+}
+
+// semsurfShareCallback: virtual inherited (gpures) base (gpures)
+static NvBool __nvoc_up_thunk_GpuResource_semsurfShareCallback(struct SemaphoreSurface *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_SemaphoreSurface_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+}
+
+// semsurfGetRegBaseOffsetAndSize: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_semsurfGetRegBaseOffsetAndSize(struct SemaphoreSurface *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_SemaphoreSurface_GpuResource.offset), pGpu, pOffset, pSize);
+}
+
+// semsurfGetMapAddrSpace: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_semsurfGetMapAddrSpace(struct SemaphoreSurface *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_SemaphoreSurface_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+// semsurfInternalControlForward: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_semsurfInternalControlForward(struct SemaphoreSurface *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_SemaphoreSurface_GpuResource.offset), command, pParams, size);
+}
+
+// semsurfGetInternalObjectHandle: virtual inherited (gpures) base (gpures)
+static NvHandle __nvoc_up_thunk_GpuResource_semsurfGetInternalObjectHandle(struct SemaphoreSurface *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_SemaphoreSurface_GpuResource.offset));
+}
+
+// semsurfAccessCallback: virtual inherited (rmres) base (gpures)
+static NvBool __nvoc_up_thunk_RmResource_semsurfAccessCallback(struct SemaphoreSurface *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_SemaphoreSurface_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+}
+
+// semsurfGetMemInterMapParams: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_semsurfGetMemInterMapParams(struct SemaphoreSurface *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_SemaphoreSurface_RmResource.offset), pParams);
+}
+
+// semsurfCheckMemInterUnmap: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_semsurfCheckMemInterUnmap(struct SemaphoreSurface *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_SemaphoreSurface_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+// semsurfGetMemoryMappingDescriptor: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_semsurfGetMemoryMappingDescriptor(struct SemaphoreSurface *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_SemaphoreSurface_RmResource.offset), ppMemDesc);
+}
+
+// semsurfControlSerialization_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_semsurfControlSerialization_Prologue(struct SemaphoreSurface *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_SemaphoreSurface_RmResource.offset), pCallContext, pParams);
+}
+
+// semsurfControlSerialization_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_semsurfControlSerialization_Epilogue(struct SemaphoreSurface *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_SemaphoreSurface_RmResource.offset), pCallContext, pParams);
+}
+
+// semsurfControl_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_semsurfControl_Prologue(struct SemaphoreSurface *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_SemaphoreSurface_RmResource.offset), pCallContext, pParams);
+}
+
+// semsurfControl_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_semsurfControl_Epilogue(struct SemaphoreSurface *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_SemaphoreSurface_RmResource.offset), pCallContext, pParams);
+}
+
+// semsurfIsDuplicate: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_semsurfIsDuplicate(struct SemaphoreSurface *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SemaphoreSurface_RsResource.offset), hMemory, pDuplicate);
+}
+
+// semsurfPreDestruct: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_semsurfPreDestruct(struct SemaphoreSurface *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SemaphoreSurface_RsResource.offset));
+}
+
+// semsurfControlFilter: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_semsurfControlFilter(struct SemaphoreSurface *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SemaphoreSurface_RsResource.offset), pCallContext, pParams);
+}
+
+// semsurfIsPartialUnmapSupported: inline virtual inherited (res) base (gpures) body
+static NvBool __nvoc_up_thunk_RsResource_semsurfIsPartialUnmapSupported(struct SemaphoreSurface *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SemaphoreSurface_RsResource.offset));
+}
+
+// semsurfMapTo: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_semsurfMapTo(struct SemaphoreSurface *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SemaphoreSurface_RsResource.offset), pParams);
+}
+
+// semsurfUnmapFrom: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_semsurfUnmapFrom(struct SemaphoreSurface *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SemaphoreSurface_RsResource.offset), pParams);
+}
+
+// semsurfGetRefCount: virtual inherited (res) base (gpures)
+static NvU32 __nvoc_up_thunk_RsResource_semsurfGetRefCount(struct SemaphoreSurface *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SemaphoreSurface_RsResource.offset));
+}
+
+// semsurfAddAdditionalDependants: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_semsurfAddAdditionalDependants(struct RsClient *pClient, struct SemaphoreSurface *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SemaphoreSurface_RsResource.offset), pReference);
+}
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_SemaphoreSurface = 
 {
@@ -313,83 +344,117 @@ __nvoc_ctor_SemaphoreSurface_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_SemaphoreSurface_1(SemaphoreSurface *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // semsurfCanCopy -- inline virtual override (res) base (gpures) body
     pThis->__semsurfCanCopy__ = &semsurfCanCopy_0c883b;
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__ = &__nvoc_down_thunk_SemaphoreSurface_resCanCopy;
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // semsurfCtrlCmdRefMemory -- exported (id=0xda0001)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__semsurfCtrlCmdRefMemory__ = &semsurfCtrlCmdRefMemory_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x810u)
+    // semsurfCtrlCmdBindChannel -- exported (id=0xda0002)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x108u)
     pThis->__semsurfCtrlCmdBindChannel__ = &semsurfCtrlCmdBindChannel_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x811u)
+    // semsurfCtrlCmdRegisterWaiter -- exported (id=0xda0003)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x400009u)
     pThis->__semsurfCtrlCmdRegisterWaiter__ = &semsurfCtrlCmdRegisterWaiter_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x811u)
+    // semsurfCtrlCmdSetValue -- exported (id=0xda0004)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
     pThis->__semsurfCtrlCmdSetValue__ = &semsurfCtrlCmdSetValue_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x811u)
+    // semsurfCtrlCmdUnregisterWaiter -- exported (id=0xda0005)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
     pThis->__semsurfCtrlCmdUnregisterWaiter__ = &semsurfCtrlCmdUnregisterWaiter_IMPL;
 #endif
 
-    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__ = &__nvoc_thunk_SemaphoreSurface_resCanCopy;
+    // semsurfControl -- virtual inherited (gpures) base (gpures)
+    pThis->__semsurfControl__ = &__nvoc_up_thunk_GpuResource_semsurfControl;
 
-    pThis->__semsurfShareCallback__ = &__nvoc_thunk_GpuResource_semsurfShareCallback;
+    // semsurfMap -- virtual inherited (gpures) base (gpures)
+    pThis->__semsurfMap__ = &__nvoc_up_thunk_GpuResource_semsurfMap;
 
-    pThis->__semsurfCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_semsurfCheckMemInterUnmap;
+    // semsurfUnmap -- virtual inherited (gpures) base (gpures)
+    pThis->__semsurfUnmap__ = &__nvoc_up_thunk_GpuResource_semsurfUnmap;
 
-    pThis->__semsurfMapTo__ = &__nvoc_thunk_RsResource_semsurfMapTo;
+    // semsurfShareCallback -- virtual inherited (gpures) base (gpures)
+    pThis->__semsurfShareCallback__ = &__nvoc_up_thunk_GpuResource_semsurfShareCallback;
 
-    pThis->__semsurfGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_semsurfGetMapAddrSpace;
+    // semsurfGetRegBaseOffsetAndSize -- virtual inherited (gpures) base (gpures)
+    pThis->__semsurfGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_semsurfGetRegBaseOffsetAndSize;
 
-    pThis->__semsurfGetRefCount__ = &__nvoc_thunk_RsResource_semsurfGetRefCount;
+    // semsurfGetMapAddrSpace -- virtual inherited (gpures) base (gpures)
+    pThis->__semsurfGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_semsurfGetMapAddrSpace;
 
-    pThis->__semsurfAddAdditionalDependants__ = &__nvoc_thunk_RsResource_semsurfAddAdditionalDependants;
+    // semsurfInternalControlForward -- virtual inherited (gpures) base (gpures)
+    pThis->__semsurfInternalControlForward__ = &__nvoc_up_thunk_GpuResource_semsurfInternalControlForward;
 
-    pThis->__semsurfControl_Prologue__ = &__nvoc_thunk_RmResource_semsurfControl_Prologue;
+    // semsurfGetInternalObjectHandle -- virtual inherited (gpures) base (gpures)
+    pThis->__semsurfGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_semsurfGetInternalObjectHandle;
 
-    pThis->__semsurfGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_semsurfGetRegBaseOffsetAndSize;
+    // semsurfAccessCallback -- virtual inherited (rmres) base (gpures)
+    pThis->__semsurfAccessCallback__ = &__nvoc_up_thunk_RmResource_semsurfAccessCallback;
 
-    pThis->__semsurfInternalControlForward__ = &__nvoc_thunk_GpuResource_semsurfInternalControlForward;
+    // semsurfGetMemInterMapParams -- virtual inherited (rmres) base (gpures)
+    pThis->__semsurfGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_semsurfGetMemInterMapParams;
 
-    pThis->__semsurfUnmapFrom__ = &__nvoc_thunk_RsResource_semsurfUnmapFrom;
+    // semsurfCheckMemInterUnmap -- virtual inherited (rmres) base (gpures)
+    pThis->__semsurfCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_semsurfCheckMemInterUnmap;
 
-    pThis->__semsurfControl_Epilogue__ = &__nvoc_thunk_RmResource_semsurfControl_Epilogue;
+    // semsurfGetMemoryMappingDescriptor -- virtual inherited (rmres) base (gpures)
+    pThis->__semsurfGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_semsurfGetMemoryMappingDescriptor;
 
-    pThis->__semsurfGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_semsurfGetInternalObjectHandle;
+    // semsurfControlSerialization_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__semsurfControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_semsurfControlSerialization_Prologue;
 
-    pThis->__semsurfControl__ = &__nvoc_thunk_GpuResource_semsurfControl;
+    // semsurfControlSerialization_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__semsurfControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_semsurfControlSerialization_Epilogue;
 
-    pThis->__semsurfUnmap__ = &__nvoc_thunk_GpuResource_semsurfUnmap;
+    // semsurfControl_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__semsurfControl_Prologue__ = &__nvoc_up_thunk_RmResource_semsurfControl_Prologue;
 
-    pThis->__semsurfGetMemInterMapParams__ = &__nvoc_thunk_RmResource_semsurfGetMemInterMapParams;
+    // semsurfControl_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__semsurfControl_Epilogue__ = &__nvoc_up_thunk_RmResource_semsurfControl_Epilogue;
 
-    pThis->__semsurfGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_semsurfGetMemoryMappingDescriptor;
+    // semsurfIsDuplicate -- virtual inherited (res) base (gpures)
+    pThis->__semsurfIsDuplicate__ = &__nvoc_up_thunk_RsResource_semsurfIsDuplicate;
 
-    pThis->__semsurfControlFilter__ = &__nvoc_thunk_RsResource_semsurfControlFilter;
+    // semsurfPreDestruct -- virtual inherited (res) base (gpures)
+    pThis->__semsurfPreDestruct__ = &__nvoc_up_thunk_RsResource_semsurfPreDestruct;
 
-    pThis->__semsurfControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_semsurfControlSerialization_Prologue;
+    // semsurfControlFilter -- virtual inherited (res) base (gpures)
+    pThis->__semsurfControlFilter__ = &__nvoc_up_thunk_RsResource_semsurfControlFilter;
 
-    pThis->__semsurfIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_semsurfIsPartialUnmapSupported;
+    // semsurfIsPartialUnmapSupported -- inline virtual inherited (res) base (gpures) body
+    pThis->__semsurfIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_semsurfIsPartialUnmapSupported;
 
-    pThis->__semsurfPreDestruct__ = &__nvoc_thunk_RsResource_semsurfPreDestruct;
+    // semsurfMapTo -- virtual inherited (res) base (gpures)
+    pThis->__semsurfMapTo__ = &__nvoc_up_thunk_RsResource_semsurfMapTo;
 
-    pThis->__semsurfIsDuplicate__ = &__nvoc_thunk_RsResource_semsurfIsDuplicate;
+    // semsurfUnmapFrom -- virtual inherited (res) base (gpures)
+    pThis->__semsurfUnmapFrom__ = &__nvoc_up_thunk_RsResource_semsurfUnmapFrom;
 
-    pThis->__semsurfControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_semsurfControlSerialization_Epilogue;
+    // semsurfGetRefCount -- virtual inherited (res) base (gpures)
+    pThis->__semsurfGetRefCount__ = &__nvoc_up_thunk_RsResource_semsurfGetRefCount;
 
-    pThis->__semsurfMap__ = &__nvoc_thunk_GpuResource_semsurfMap;
+    // semsurfAddAdditionalDependants -- virtual inherited (res) base (gpures)
+    pThis->__semsurfAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_semsurfAddAdditionalDependants;
+} // End __nvoc_init_funcTable_SemaphoreSurface_1 with approximately 31 basic block(s).
 
-    pThis->__semsurfAccessCallback__ = &__nvoc_thunk_RmResource_semsurfAccessCallback;
-}
 
+// Initialize vtable(s) for 30 virtual method(s).
 void __nvoc_init_funcTable_SemaphoreSurface(SemaphoreSurface *pThis) {
+
+    // Initialize vtable(s) with 30 per-object function pointer(s).
     __nvoc_init_funcTable_SemaphoreSurface_1(pThis);
 }
 

@@ -93,109 +93,141 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_MemoryList =
     /*pExportInfo=*/        &__nvoc_export_info_MemoryList
 };
 
-static NvBool __nvoc_thunk_MemoryList_resCanCopy(struct RsResource *pMemoryList) {
-    return memlistCanCopy((struct MemoryList *)(((unsigned char *)pMemoryList) - __nvoc_rtti_MemoryList_RsResource.offset));
+// 1 down-thunk(s) defined to bridge methods in MemoryList from superclasses
+
+// memlistCanCopy: virtual override (res) base (mem)
+static NvBool __nvoc_down_thunk_MemoryList_resCanCopy(struct RsResource *pMemoryList) {
+    return memlistCanCopy((struct MemoryList *)(((unsigned char *) pMemoryList) - __nvoc_rtti_MemoryList_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Memory_memlistCheckMemInterUnmap(struct MemoryList *pMemory, NvBool bSubdeviceHandleProvided) {
-    return memCheckMemInterUnmap((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryList_Memory.offset), bSubdeviceHandleProvided);
+
+// 25 up-thunk(s) defined to bridge methods in MemoryList to superclasses
+
+// memlistIsDuplicate: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_memlistIsDuplicate(struct MemoryList *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return memIsDuplicate((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_MemoryList_Memory.offset), hMemory, pDuplicate);
 }
 
-static NvBool __nvoc_thunk_RmResource_memlistShareCallback(struct MemoryList *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return rmresShareCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryList_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+// memlistGetMapAddrSpace: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_memlistGetMapAddrSpace(struct MemoryList *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return memGetMapAddrSpace((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_MemoryList_Memory.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_memlistMapTo(struct MemoryList *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryList_RsResource.offset), pParams);
+// memlistControl: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_memlistControl(struct MemoryList *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return memControl((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_MemoryList_Memory.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_memlistGetMapAddrSpace(struct MemoryList *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryList_Memory.offset), pCallContext, mapFlags, pAddrSpace);
+// memlistMap: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_memlistMap(struct MemoryList *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+    return memMap((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_MemoryList_Memory.offset), pCallContext, pParams, pCpuMapping);
 }
 
-static NvBool __nvoc_thunk_Memory_memlistIsExportAllowed(struct MemoryList *pMemory) {
-    return memIsExportAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryList_Memory.offset));
+// memlistUnmap: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_memlistUnmap(struct MemoryList *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return memUnmap((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_MemoryList_Memory.offset), pCallContext, pCpuMapping);
 }
 
-static NvU32 __nvoc_thunk_RsResource_memlistGetRefCount(struct MemoryList *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryList_RsResource.offset));
+// memlistGetMemInterMapParams: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_memlistGetMemInterMapParams(struct MemoryList *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return memGetMemInterMapParams((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_MemoryList_Memory.offset), pParams);
 }
 
-static void __nvoc_thunk_RsResource_memlistAddAdditionalDependants(struct RsClient *pClient, struct MemoryList *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryList_RsResource.offset), pReference);
+// memlistCheckMemInterUnmap: inline virtual inherited (mem) base (mem) body
+static NV_STATUS __nvoc_up_thunk_Memory_memlistCheckMemInterUnmap(struct MemoryList *pMemory, NvBool bSubdeviceHandleProvided) {
+    return memCheckMemInterUnmap((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_MemoryList_Memory.offset), bSubdeviceHandleProvided);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_memlistControl_Prologue(struct MemoryList *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryList_RmResource.offset), pCallContext, pParams);
+// memlistGetMemoryMappingDescriptor: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_memlistGetMemoryMappingDescriptor(struct MemoryList *pMemory, MEMORY_DESCRIPTOR **ppMemDesc) {
+    return memGetMemoryMappingDescriptor((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_MemoryList_Memory.offset), ppMemDesc);
 }
 
-static NvBool __nvoc_thunk_Memory_memlistIsGpuMapAllowed(struct MemoryList *pMemory, struct OBJGPU *pGpu) {
-    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryList_Memory.offset), pGpu);
+// memlistCheckCopyPermissions: inline virtual inherited (mem) base (mem) body
+static NV_STATUS __nvoc_up_thunk_Memory_memlistCheckCopyPermissions(struct MemoryList *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return memCheckCopyPermissions((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_MemoryList_Memory.offset), pDstGpu, pDstDevice);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_memlistUnmapFrom(struct MemoryList *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryList_RsResource.offset), pParams);
+// memlistIsReady: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_memlistIsReady(struct MemoryList *pMemory, NvBool bCopyConstructorContext) {
+    return memIsReady((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_MemoryList_Memory.offset), bCopyConstructorContext);
 }
 
-static void __nvoc_thunk_RmResource_memlistControl_Epilogue(struct MemoryList *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryList_RmResource.offset), pCallContext, pParams);
+// memlistIsGpuMapAllowed: inline virtual inherited (mem) base (mem) body
+static NvBool __nvoc_up_thunk_Memory_memlistIsGpuMapAllowed(struct MemoryList *pMemory, struct OBJGPU *pGpu) {
+    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_MemoryList_Memory.offset), pGpu);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_memlistControl(struct MemoryList *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return memControl((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryList_Memory.offset), pCallContext, pParams);
+// memlistIsExportAllowed: inline virtual inherited (mem) base (mem) body
+static NvBool __nvoc_up_thunk_Memory_memlistIsExportAllowed(struct MemoryList *pMemory) {
+    return memIsExportAllowed((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_MemoryList_Memory.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Memory_memlistUnmap(struct MemoryList *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return memUnmap((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryList_Memory.offset), pCallContext, pCpuMapping);
+// memlistAccessCallback: virtual inherited (rmres) base (mem)
+static NvBool __nvoc_up_thunk_RmResource_memlistAccessCallback(struct MemoryList *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryList_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_memlistGetMemInterMapParams(struct MemoryList *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return memGetMemInterMapParams((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryList_Memory.offset), pParams);
+// memlistShareCallback: virtual inherited (rmres) base (mem)
+static NvBool __nvoc_up_thunk_RmResource_memlistShareCallback(struct MemoryList *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryList_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_memlistGetMemoryMappingDescriptor(struct MemoryList *pMemory, MEMORY_DESCRIPTOR **ppMemDesc) {
-    return memGetMemoryMappingDescriptor((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryList_Memory.offset), ppMemDesc);
+// memlistControlSerialization_Prologue: virtual inherited (rmres) base (mem)
+static NV_STATUS __nvoc_up_thunk_RmResource_memlistControlSerialization_Prologue(struct MemoryList *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryList_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_memlistControlFilter(struct MemoryList *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryList_RsResource.offset), pCallContext, pParams);
+// memlistControlSerialization_Epilogue: virtual inherited (rmres) base (mem)
+static void __nvoc_up_thunk_RmResource_memlistControlSerialization_Epilogue(struct MemoryList *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryList_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_memlistControlSerialization_Prologue(struct MemoryList *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryList_RmResource.offset), pCallContext, pParams);
+// memlistControl_Prologue: virtual inherited (rmres) base (mem)
+static NV_STATUS __nvoc_up_thunk_RmResource_memlistControl_Prologue(struct MemoryList *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryList_RmResource.offset), pCallContext, pParams);
 }
 
-static NvBool __nvoc_thunk_RsResource_memlistIsPartialUnmapSupported(struct MemoryList *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryList_RsResource.offset));
+// memlistControl_Epilogue: virtual inherited (rmres) base (mem)
+static void __nvoc_up_thunk_RmResource_memlistControl_Epilogue(struct MemoryList *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryList_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_memlistIsReady(struct MemoryList *pMemory, NvBool bCopyConstructorContext) {
-    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryList_Memory.offset), bCopyConstructorContext);
+// memlistPreDestruct: virtual inherited (res) base (mem)
+static void __nvoc_up_thunk_RsResource_memlistPreDestruct(struct MemoryList *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryList_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Memory_memlistCheckCopyPermissions(struct MemoryList *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
-    return memCheckCopyPermissions((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryList_Memory.offset), pDstGpu, pDstDevice);
+// memlistControlFilter: virtual inherited (res) base (mem)
+static NV_STATUS __nvoc_up_thunk_RsResource_memlistControlFilter(struct MemoryList *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryList_RsResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_memlistPreDestruct(struct MemoryList *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryList_RsResource.offset));
+// memlistIsPartialUnmapSupported: inline virtual inherited (res) base (mem) body
+static NvBool __nvoc_up_thunk_RsResource_memlistIsPartialUnmapSupported(struct MemoryList *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryList_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Memory_memlistIsDuplicate(struct MemoryList *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
-    return memIsDuplicate((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryList_Memory.offset), hMemory, pDuplicate);
+// memlistMapTo: virtual inherited (res) base (mem)
+static NV_STATUS __nvoc_up_thunk_RsResource_memlistMapTo(struct MemoryList *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryList_RsResource.offset), pParams);
 }
 
-static void __nvoc_thunk_RmResource_memlistControlSerialization_Epilogue(struct MemoryList *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryList_RmResource.offset), pCallContext, pParams);
+// memlistUnmapFrom: virtual inherited (res) base (mem)
+static NV_STATUS __nvoc_up_thunk_RsResource_memlistUnmapFrom(struct MemoryList *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryList_RsResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_memlistMap(struct MemoryList *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return memMap((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryList_Memory.offset), pCallContext, pParams, pCpuMapping);
+// memlistGetRefCount: virtual inherited (res) base (mem)
+static NvU32 __nvoc_up_thunk_RsResource_memlistGetRefCount(struct MemoryList *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryList_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RmResource_memlistAccessCallback(struct MemoryList *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryList_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+// memlistAddAdditionalDependants: virtual inherited (res) base (mem)
+static void __nvoc_up_thunk_RsResource_memlistAddAdditionalDependants(struct RsClient *pClient, struct MemoryList *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryList_RsResource.offset), pReference);
 }
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_MemoryList = 
 {
@@ -232,65 +264,95 @@ __nvoc_ctor_MemoryList_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_MemoryList_1(MemoryList *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // memlistCanCopy -- virtual override (res) base (mem)
     pThis->__memlistCanCopy__ = &memlistCanCopy_IMPL;
+    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__ = &__nvoc_down_thunk_MemoryList_resCanCopy;
 
-    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__ = &__nvoc_thunk_MemoryList_resCanCopy;
+    // memlistIsDuplicate -- virtual inherited (mem) base (mem)
+    pThis->__memlistIsDuplicate__ = &__nvoc_up_thunk_Memory_memlistIsDuplicate;
 
-    pThis->__memlistCheckMemInterUnmap__ = &__nvoc_thunk_Memory_memlistCheckMemInterUnmap;
+    // memlistGetMapAddrSpace -- virtual inherited (mem) base (mem)
+    pThis->__memlistGetMapAddrSpace__ = &__nvoc_up_thunk_Memory_memlistGetMapAddrSpace;
 
-    pThis->__memlistShareCallback__ = &__nvoc_thunk_RmResource_memlistShareCallback;
+    // memlistControl -- virtual inherited (mem) base (mem)
+    pThis->__memlistControl__ = &__nvoc_up_thunk_Memory_memlistControl;
 
-    pThis->__memlistMapTo__ = &__nvoc_thunk_RsResource_memlistMapTo;
+    // memlistMap -- virtual inherited (mem) base (mem)
+    pThis->__memlistMap__ = &__nvoc_up_thunk_Memory_memlistMap;
 
-    pThis->__memlistGetMapAddrSpace__ = &__nvoc_thunk_Memory_memlistGetMapAddrSpace;
+    // memlistUnmap -- virtual inherited (mem) base (mem)
+    pThis->__memlistUnmap__ = &__nvoc_up_thunk_Memory_memlistUnmap;
 
-    pThis->__memlistIsExportAllowed__ = &__nvoc_thunk_Memory_memlistIsExportAllowed;
+    // memlistGetMemInterMapParams -- virtual inherited (mem) base (mem)
+    pThis->__memlistGetMemInterMapParams__ = &__nvoc_up_thunk_Memory_memlistGetMemInterMapParams;
 
-    pThis->__memlistGetRefCount__ = &__nvoc_thunk_RsResource_memlistGetRefCount;
+    // memlistCheckMemInterUnmap -- inline virtual inherited (mem) base (mem) body
+    pThis->__memlistCheckMemInterUnmap__ = &__nvoc_up_thunk_Memory_memlistCheckMemInterUnmap;
 
-    pThis->__memlistAddAdditionalDependants__ = &__nvoc_thunk_RsResource_memlistAddAdditionalDependants;
+    // memlistGetMemoryMappingDescriptor -- virtual inherited (mem) base (mem)
+    pThis->__memlistGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_Memory_memlistGetMemoryMappingDescriptor;
 
-    pThis->__memlistControl_Prologue__ = &__nvoc_thunk_RmResource_memlistControl_Prologue;
+    // memlistCheckCopyPermissions -- inline virtual inherited (mem) base (mem) body
+    pThis->__memlistCheckCopyPermissions__ = &__nvoc_up_thunk_Memory_memlistCheckCopyPermissions;
 
-    pThis->__memlistIsGpuMapAllowed__ = &__nvoc_thunk_Memory_memlistIsGpuMapAllowed;
+    // memlistIsReady -- virtual inherited (mem) base (mem)
+    pThis->__memlistIsReady__ = &__nvoc_up_thunk_Memory_memlistIsReady;
 
-    pThis->__memlistUnmapFrom__ = &__nvoc_thunk_RsResource_memlistUnmapFrom;
+    // memlistIsGpuMapAllowed -- inline virtual inherited (mem) base (mem) body
+    pThis->__memlistIsGpuMapAllowed__ = &__nvoc_up_thunk_Memory_memlistIsGpuMapAllowed;
 
-    pThis->__memlistControl_Epilogue__ = &__nvoc_thunk_RmResource_memlistControl_Epilogue;
+    // memlistIsExportAllowed -- inline virtual inherited (mem) base (mem) body
+    pThis->__memlistIsExportAllowed__ = &__nvoc_up_thunk_Memory_memlistIsExportAllowed;
 
-    pThis->__memlistControl__ = &__nvoc_thunk_Memory_memlistControl;
+    // memlistAccessCallback -- virtual inherited (rmres) base (mem)
+    pThis->__memlistAccessCallback__ = &__nvoc_up_thunk_RmResource_memlistAccessCallback;
 
-    pThis->__memlistUnmap__ = &__nvoc_thunk_Memory_memlistUnmap;
+    // memlistShareCallback -- virtual inherited (rmres) base (mem)
+    pThis->__memlistShareCallback__ = &__nvoc_up_thunk_RmResource_memlistShareCallback;
 
-    pThis->__memlistGetMemInterMapParams__ = &__nvoc_thunk_Memory_memlistGetMemInterMapParams;
+    // memlistControlSerialization_Prologue -- virtual inherited (rmres) base (mem)
+    pThis->__memlistControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_memlistControlSerialization_Prologue;
 
-    pThis->__memlistGetMemoryMappingDescriptor__ = &__nvoc_thunk_Memory_memlistGetMemoryMappingDescriptor;
+    // memlistControlSerialization_Epilogue -- virtual inherited (rmres) base (mem)
+    pThis->__memlistControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_memlistControlSerialization_Epilogue;
 
-    pThis->__memlistControlFilter__ = &__nvoc_thunk_RsResource_memlistControlFilter;
+    // memlistControl_Prologue -- virtual inherited (rmres) base (mem)
+    pThis->__memlistControl_Prologue__ = &__nvoc_up_thunk_RmResource_memlistControl_Prologue;
 
-    pThis->__memlistControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_memlistControlSerialization_Prologue;
+    // memlistControl_Epilogue -- virtual inherited (rmres) base (mem)
+    pThis->__memlistControl_Epilogue__ = &__nvoc_up_thunk_RmResource_memlistControl_Epilogue;
 
-    pThis->__memlistIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_memlistIsPartialUnmapSupported;
+    // memlistPreDestruct -- virtual inherited (res) base (mem)
+    pThis->__memlistPreDestruct__ = &__nvoc_up_thunk_RsResource_memlistPreDestruct;
 
-    pThis->__memlistIsReady__ = &__nvoc_thunk_Memory_memlistIsReady;
+    // memlistControlFilter -- virtual inherited (res) base (mem)
+    pThis->__memlistControlFilter__ = &__nvoc_up_thunk_RsResource_memlistControlFilter;
 
-    pThis->__memlistCheckCopyPermissions__ = &__nvoc_thunk_Memory_memlistCheckCopyPermissions;
+    // memlistIsPartialUnmapSupported -- inline virtual inherited (res) base (mem) body
+    pThis->__memlistIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_memlistIsPartialUnmapSupported;
 
-    pThis->__memlistPreDestruct__ = &__nvoc_thunk_RsResource_memlistPreDestruct;
+    // memlistMapTo -- virtual inherited (res) base (mem)
+    pThis->__memlistMapTo__ = &__nvoc_up_thunk_RsResource_memlistMapTo;
 
-    pThis->__memlistIsDuplicate__ = &__nvoc_thunk_Memory_memlistIsDuplicate;
+    // memlistUnmapFrom -- virtual inherited (res) base (mem)
+    pThis->__memlistUnmapFrom__ = &__nvoc_up_thunk_RsResource_memlistUnmapFrom;
 
-    pThis->__memlistControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_memlistControlSerialization_Epilogue;
+    // memlistGetRefCount -- virtual inherited (res) base (mem)
+    pThis->__memlistGetRefCount__ = &__nvoc_up_thunk_RsResource_memlistGetRefCount;
 
-    pThis->__memlistMap__ = &__nvoc_thunk_Memory_memlistMap;
+    // memlistAddAdditionalDependants -- virtual inherited (res) base (mem)
+    pThis->__memlistAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_memlistAddAdditionalDependants;
+} // End __nvoc_init_funcTable_MemoryList_1 with approximately 27 basic block(s).
 
-    pThis->__memlistAccessCallback__ = &__nvoc_thunk_RmResource_memlistAccessCallback;
-}
 
+// Initialize vtable(s) for 26 virtual method(s).
 void __nvoc_init_funcTable_MemoryList(MemoryList *pThis) {
+
+    // Initialize vtable(s) with 26 per-object function pointer(s).
     __nvoc_init_funcTable_MemoryList_1(pThis);
 }
 

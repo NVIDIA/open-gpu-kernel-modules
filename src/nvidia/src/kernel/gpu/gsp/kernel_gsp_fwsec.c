@@ -62,9 +62,14 @@ struct BIT_TOKEN_V1_00
     bios_U008 TokenId;
     bios_U008 DataVersion;
     bios_U016 DataSize;
-    bios_U016 DataPtr;
+    bios_U032 DataPtr;
 };
-#define BIT_TOKEN_V1_00_FMT "2b2w"
+
+#define BIT_TOKEN_V1_00_SIZE_6     6U
+#define BIT_TOKEN_V1_00_SIZE_8     8U
+
+#define BIT_TOKEN_V1_00_FMT_SIZE_6 "2b2w"
+#define BIT_TOKEN_V1_00_FMT_SIZE_8 "2b1w1d"
 typedef struct BIT_TOKEN_V1_00 BIT_TOKEN_V1_00;
 
 #define BIT_TOKEN_BIOSDATA          0x42
@@ -75,6 +80,9 @@ typedef struct
     bios_U032 Version;     // BIOS Binary Version Ex. 5.40.00.01.12 = 0x05400001
     bios_U008 OemVersion;  // OEM Version Number  Ex. 5.40.00.01.12 = 0x12
 } BIT_DATA_BIOSDATA_BINVER;
+
+#define BIT_DATA_BIOSDATA_VERSION_1         0x1
+#define BIT_DATA_BIOSDATA_VERSION_2         0x2
 
 #define BIT_DATA_BIOSDATA_BINVER_FMT "1d1b"
 #define BIT_DATA_BIOSDATA_BINVER_SIZE_5    5
@@ -469,6 +477,7 @@ s_vbiosParseFwsecUcodeDescFromBit
     NV_STATUS status;
     BIT_HEADER_V1_00 bitHeader;
     NvU32 tokIdx;
+    const char *bitTokenSzFmt;
 
     NV_ASSERT_OR_RETURN(pVbiosImg != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(pVbiosImg->pImage != NULL, NV_ERR_INVALID_ARGUMENT);
@@ -483,10 +492,26 @@ s_vbiosParseFwsecUcodeDescFromBit
         return status;
     }
 
+    if (bitHeader.TokenSize >= BIT_TOKEN_V1_00_SIZE_8)
+    {
+        bitTokenSzFmt = BIT_TOKEN_V1_00_FMT_SIZE_8;
+    }
+    else if (bitHeader.TokenSize >= BIT_TOKEN_V1_00_SIZE_6)
+    {
+        bitTokenSzFmt = BIT_TOKEN_V1_00_FMT_SIZE_6;
+    }
+    else
+    {
+        NV_PRINTF(LEVEL_ERROR,
+            "Invalid BIT token size: %u\n", bitHeader.TokenSize);
+        DBG_BREAKPOINT();
+        return NV_ERR_INVALID_STATE;
+    }
+
     // loop through all BIT tokens
     for (tokIdx = 0; tokIdx < bitHeader.TokenEntries; tokIdx++)
     {
-        BIT_TOKEN_V1_00 bitToken;
+        BIT_TOKEN_V1_00 bitToken = {0};
 
         BIT_DATA_FALCON_DATA_V2 falconData;
         FALCON_UCODE_TABLE_HDR_V1 ucodeHeader;
@@ -496,7 +521,7 @@ s_vbiosParseFwsecUcodeDescFromBit
         status = s_vbiosReadStructure(pVbiosImg, &bitToken,
                                       bitAddr + bitHeader.HeaderSize +
                                         tokIdx * bitHeader.TokenSize,
-                                      BIT_TOKEN_V1_00_FMT);
+                                      bitTokenSzFmt);
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,
@@ -508,7 +533,8 @@ s_vbiosParseFwsecUcodeDescFromBit
         // catch BIOSDATA token (for capturing VBIOS version)
         if (pVbiosVersionCombined != NULL &&
             bitToken.TokenId == BIT_TOKEN_BIOSDATA &&
-            ((bitToken.DataVersion == 1) || (bitToken.DataVersion == 2)) &&
+            ((bitToken.DataVersion == BIT_DATA_BIOSDATA_VERSION_1) ||
+             (bitToken.DataVersion == BIT_DATA_BIOSDATA_VERSION_2)) &&
             bitToken.DataSize > BIT_DATA_BIOSDATA_BINVER_SIZE_5)
         {
             BIT_DATA_BIOSDATA_BINVER binver;

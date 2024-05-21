@@ -61,7 +61,7 @@ uvm_mmu_engine_type_t uvm_hal_hopper_mmu_engine_id_to_type(NvU16 mmu_engine_id)
     return UVM_MMU_ENGINE_TYPE_GRAPHICS;
 }
 
-static NvU32 page_table_depth_hopper(NvU32 page_size)
+static NvU32 page_table_depth_hopper(NvU64 page_size)
 {
     // The common-case is page_size == UVM_PAGE_SIZE_2M, hence the first check
     if (page_size == UVM_PAGE_SIZE_2M)
@@ -79,7 +79,7 @@ static NvU32 entries_per_index_hopper(NvU32 depth)
     return 1;
 }
 
-static NvLength entry_offset_hopper(NvU32 depth, NvU32 page_size)
+static NvLength entry_offset_hopper(NvU32 depth, NvU64 page_size)
 {
     UVM_ASSERT(depth < 6);
     if ((page_size == UVM_PAGE_SIZE_4K) && (depth == 4))
@@ -92,7 +92,7 @@ static NvLength entry_size_hopper(NvU32 depth)
     return entries_per_index_hopper(depth) * 8;
 }
 
-static NvU32 index_bits_hopper(NvU32 depth, NvU32 page_size)
+static NvU32 index_bits_hopper(NvU32 depth, NvU64 page_size)
 {
     static const NvU32 bit_widths[] = {1, 9, 9, 9, 8};
 
@@ -120,7 +120,7 @@ static NvU32 num_va_bits_hopper(void)
     return 57;
 }
 
-static NvLength allocation_size_hopper(NvU32 depth, NvU32 page_size)
+static NvLength allocation_size_hopper(NvU32 depth, NvU64 page_size)
 {
     UVM_ASSERT(depth < 6);
     if (depth == 5 && page_size == UVM_PAGE_SIZE_64K)
@@ -233,7 +233,7 @@ static NvU64 make_sparse_pte_hopper(void)
            HWCONST64(_MMU_VER3, PTE, PCF, SPARSE);
 }
 
-static NvU64 unmapped_pte_hopper(NvU32 page_size)
+static NvU64 unmapped_pte_hopper(NvU64 page_size)
 {
     // Setting PCF to NO_VALID_4KB_PAGE on an otherwise-zeroed big PTE causes
     // the corresponding 4k PTEs to be ignored. This allows the invalidation of
@@ -490,7 +490,7 @@ static void make_pde_hopper(void *entry,
 
 static uvm_mmu_mode_hal_t hopper_mmu_mode_hal;
 
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_hopper(NvU32 big_page_size)
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_hopper(NvU64 big_page_size)
 {
     static bool initialized = false;
 

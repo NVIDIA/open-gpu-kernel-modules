@@ -28,12 +28,21 @@
  * teardown.
  */
 
+#define NV_MEM_LOGGER_STACK_TRACE 0
+
+#if defined(NV_STACK_TRACE_PRESENT) && defined(NV_MEM_LOGGER) && defined(DEBUG)
+#define NV_MEM_LOGGER_STACK_TRACE 1
+#endif
+
 typedef struct {
     struct rb_node rb_node;
     void *addr;
     NvU64 size;
     NvU32 line;
     const char *file;
+#if NV_MEM_LOGGER_STACK_TRACE == 1
+    unsigned long stack_trace[32];
+#endif
 } nv_memdbg_node_t;
 
 struct
@@ -117,6 +126,12 @@ void nv_memdbg_add(void *addr, NvU64 size, const char *file, int line)
         node->size = size;
         node->file = file;
         node->line = line;
+
+#if NV_MEM_LOGGER_STACK_TRACE == 1
+        memset(node->stack_trace, '\0', sizeof(node->stack_trace));
+
+        stack_trace_save(node->stack_trace, NV_ARRAY_ELEMENTS(node->stack_trace), 0);
+#endif
     }
 
     NV_SPIN_LOCK_IRQSAVE(&g_nv_memdbg.lock, flags);
@@ -208,6 +223,10 @@ void nv_memdbg_exit(void)
                 "NVRM:    %llu bytes, 0x%p\n",
                 node->size, node->addr);
         }
+
+#if NV_MEM_LOGGER_STACK_TRACE == 1
+        stack_trace_print(node->stack_trace, NV_ARRAY_ELEMENTS(node->stack_trace), 1);
+#endif
 
         rb_erase(&node->rb_node, &g_nv_memdbg.rb_root);
         kfree(node);

@@ -227,8 +227,6 @@ void nvInitFlipEvoHwState(
     pFlipState->hdrInfoFrame.eotf = pHeadState->hdrInfoFrameOverride.eotf;
     pFlipState->hdrInfoFrame.staticMetadata =
         pHeadState->hdrInfoFrameOverride.staticMetadata;
-
-    pFlipState->colorimetry = pHeadState->colorimetry;
 }
 
 
@@ -1008,11 +1006,6 @@ NvBool nvUpdateFlipEvoHwState(
         pFlipState->tf = pParams->tf.val;
     }
 
-    if (pParams->colorimetry.specified) {
-        pFlipState->dirty.colorimetry = TRUE;
-        pFlipState->colorimetry = pParams->colorimetry.val;
-    }
-
     if (pParams->hdrInfoFrame.specified) {
         pFlipState->dirty.hdrStaticMetadata = TRUE;
 
@@ -1667,11 +1660,6 @@ static void UpdateHDR(NVDevEvoPtr pDevEvo,
             }
         }
 
-        dirty = TRUE;
-    }
-
-    if (pFlipState->dirty.colorimetry) {
-        pHeadState->colorimetry = pFlipState->colorimetry;
         dirty = TRUE;
     }
 

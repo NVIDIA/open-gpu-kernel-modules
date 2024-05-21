@@ -1194,9 +1194,7 @@ dmaPageArrayGetPhysAddr
 
     if (pPageArray->bOsFormat)
     {
-        OBJSYS *pSys = SYS_GET_INSTANCE();
-        OBJOS *pOS = SYS_GET_OS(pSys);
-        addr = pOS->osPageArrayGetPhysAddr(pPageArray->pOsGpuInfo,
+        addr = osPageArrayGetPhysAddr(pPageArray->pOsGpuInfo,
             pPageArray->pData, pPageArray->startIndex + pageIndex);
     }
     else
@@ -1206,8 +1204,6 @@ dmaPageArrayGetPhysAddr
             addr = pPteArray[pPageArray->startIndex + pageIndex];
         }
     }
-
-    addr |= pPageArray->orMask;
 
     return addr;
 }

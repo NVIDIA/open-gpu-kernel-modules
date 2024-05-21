@@ -39,7 +39,6 @@
 #define NV5070_CTRL_RESERVED (0x00)
 #define NV5070_CTRL_CHNCTL   (0x01)
 #define NV5070_CTRL_RG       (0x02)
-#define NV5070_CTRL_SEQ      (0x03)
 #define NV5070_CTRL_OR       (0x04)
 #define NV5070_CTRL_INST     (0x05)
 #define NV5070_CTRL_VERIF    (0x06)

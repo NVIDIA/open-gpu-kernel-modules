@@ -539,7 +539,6 @@ NV_STATUS heapInitInternal_IMPL
     //
     if ((pMemoryManager->Ram.numFBRegions > 0) && (pHeap->bHasFbRegions))
     {
-        NvBool bConsoleFbRegionContentPreserved;
         FB_REGION_DESCRIPTOR consoleFbRegion;
         portMemSet(&consoleFbRegion, 0, sizeof(consoleFbRegion));
 
@@ -570,8 +569,6 @@ NV_STATUS heapInitInternal_IMPL
             memmgrSetPmaInitialized(pMemoryManager, NV_TRUE);
             memmgrRegionSetupForPma(pGpu, pMemoryManager);
         }
-
-        bConsoleFbRegionContentPreserved = NV_FALSE;
 
         if (heapType != HEAP_TYPE_PARTITION_LOCAL)
         {
@@ -628,22 +625,16 @@ NV_STATUS heapInitInternal_IMPL
                         return status;
                     }
 
-                    if ((pMemoryManager->Ram.ReservedConsoleDispMemSize > 0) &&
-                        (pFbRegion->base == consoleFbRegion.base) && (pFbRegion->limit == consoleFbRegion.limit))
+                    if (pFbRegion->bLostOnSuspend)
                     {
-                        memdescSetFlag(pMemDesc, MEMDESC_FLAGS_LOST_ON_SUSPEND, NV_FALSE);
-                        memdescSetFlag(pMemDesc, MEMDESC_FLAGS_PRESERVE_CONTENT_ON_SUSPEND, NV_TRUE);
+                        memdescSetFlag(pMemDesc, MEMDESC_FLAGS_LOST_ON_SUSPEND, NV_TRUE);
+                    }
 
-                        bConsoleFbRegionContentPreserved = NV_TRUE;
+                    if (pFbRegion->bPreserveOnSuspend)
+                    {
+                        memdescSetFlag(pMemDesc, MEMDESC_FLAGS_PRESERVE_CONTENT_ON_SUSPEND, NV_TRUE);
                     }
                 }
-            }
-
-            if ((pMemoryManager->Ram.ReservedConsoleDispMemSize > 0) &&
-                !bConsoleFbRegionContentPreserved)
-            {
-                NV_PRINTF(LEVEL_ERROR,
-                          "failed to preserve content of console display memory\n");
             }
         }
 
@@ -1942,7 +1933,6 @@ static NV_STATUS _heapBlockFree
 {
     MEM_BLOCK       *pBlockTmp;
     NvU32            i;
-    OBJOS           *pOS            = GPU_GET_OS(pGpu);
     MemoryManager   *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     NvBool           bBlocksMerged  = NV_FALSE;
 
@@ -2011,7 +2001,7 @@ static NV_STATUS _heapBlockFree
 
         if (FLD_TEST_DRF(OS32, _ATTR2, _INTERNAL, _YES, pFbAllocInfo->pageFormat->attr2))
         {
-            pOS->osInternalReserveFreeCallback(pFbAllocInfo->offset, pGpu->gpuId);
+            osInternalReserveFreeCallback(pFbAllocInfo->offset, pGpu->gpuId);
         }
 
         // Clear the HW resource associations since this block can be reused or merged.
@@ -3336,7 +3326,6 @@ _heapProcessFreeBlock
 {
     NV_MEMORY_ALLOCATION_PARAMS *pVidHeapAlloc = pAllocRequest->pUserParams;
     MEM_BLOCK  *pBlockNew = NULL, *pBlockSplit = NULL;
-    OBJOS      *pOS       = GPU_GET_OS(pGpu);
     NV_STATUS   status    = NV_OK;
 
     if ((pAllocData->allocLo == pBlockFree->begin) &&
@@ -3627,7 +3616,7 @@ _heapProcessFreeBlock_exit:
 
     if (FLD_TEST_DRF(OS32, _ATTR2, _INTERNAL, _YES, pFbAllocInfo->pageFormat->attr2))
     {
-        pOS->osInternalReserveAllocCallback(*offset, pFbAllocInfo->size, pGpu->gpuId);
+        osInternalReserveAllocCallback(*offset, pFbAllocInfo->size, pGpu->gpuId);
     }
 
     return NV_OK;

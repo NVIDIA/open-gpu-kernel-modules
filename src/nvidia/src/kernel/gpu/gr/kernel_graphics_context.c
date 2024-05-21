@@ -2302,6 +2302,21 @@ kgrctxUnmapCtxZcullBuffer_IMPL
 }
 
 /**
+ * @brief unmap the memory for the setup context buffer
+ */
+void
+kgrctxUnmapCtxSetupBuffer_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGraphicsContext *pKernelGraphicsContext,
+    KernelGraphics *pKernelGraphics,
+    OBJVASPACE *pVAS
+)
+{
+    // TODO Bug 4153224: fill in function
+}
+
+/**
  * @brief unmap the memory for the preemption context buffers
  */
 void
@@ -2807,6 +2822,20 @@ kgrctxFreeZcullBuffer_IMPL
 }
 
 /**
+ * @brief free the memory for the setup context buffer
+ */
+void
+kgrctxFreeSetupBuffer_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGraphicsContext *pKernelGraphicsContext
+)
+{
+    // TODO Bug 4153224: fill in function
+}
+
+
+/**
  * @brief free the memory for the preemption context buffers
  */
 void
@@ -3260,16 +3289,19 @@ kgrctxDecObjectCount_IMPL
  * one VGPU configuration.
  */
 GR_GLOBALCTX_BUFFER
-kgrctxGetRegisterAccessMapId_IMPL
+kgrctxGetRegisterAccessMapId_PF
 (
     OBJGPU *pGpu,
     KernelGraphicsContext *pKernelGraphicsContext,
     KernelChannel *pKernelChannel
 )
 {
+    RmClient *pRmClient = dynamicCast(RES_GET_CLIENT(pKernelChannel), RmClient);
+    RS_PRIV_LEVEL privLevel = rmclientGetCachedPrivilege(pRmClient);
+
     // Using cached privilege because this function is called at a raised IRQL.
-    if (kchannelCheckIsAdmin(pKernelChannel)
-        && !hypervisorIsVgxHyper() && IS_GFID_PF(kchannelGetGfid(pKernelChannel)))
+    if ((privLevel >= RS_PRIV_LEVEL_USER_ROOT)
+            && !hypervisorIsVgxHyper() && IS_GFID_PF(kchannelGetGfid(pKernelChannel)))
     {
         return GR_GLOBALCTX_BUFFER_UNRESTRICTED_PRIV_ACCESS_MAP;
     }

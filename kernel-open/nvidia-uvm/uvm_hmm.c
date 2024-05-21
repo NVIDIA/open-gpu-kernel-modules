@@ -284,10 +284,8 @@ static void hmm_va_block_unregister_gpu(uvm_va_block_t *va_block,
 
     // Reset preferred location and accessed-by of policy nodes if needed.
     uvm_for_each_va_policy_node_in(node, va_block, va_block->start, va_block->end) {
-        if (uvm_va_policy_preferred_location_equal(&node->policy, gpu->id, NUMA_NO_NODE)) {
+        if (uvm_id_equal(node->policy.preferred_location, gpu->id))
             node->policy.preferred_location = UVM_ID_INVALID;
-            node->policy.preferred_nid = NUMA_NO_NODE;
-        }
 
         uvm_processor_mask_clear(&node->policy.accessed_by, gpu->id);
     }
@@ -1601,7 +1599,7 @@ static void hmm_va_block_cpu_unpopulate_chunk(uvm_va_block_t *va_block,
     UVM_ASSERT(uvm_cpu_chunk_get_size(chunk) == PAGE_SIZE);
 
     uvm_cpu_chunk_remove_from_block(va_block, chunk_nid, page_index);
-    uvm_va_block_unmap_cpu_chunk_on_gpus(va_block, chunk, page_index);
+    uvm_va_block_unmap_cpu_chunk_on_gpus(va_block, chunk);
     uvm_cpu_chunk_free(chunk);
 }
 

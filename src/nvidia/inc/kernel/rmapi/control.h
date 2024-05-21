@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -198,7 +198,7 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY  *pParamCopy, RmCtrlParams *pRmC
 // If the NON_PRIVILEGED flag is specified, the call will be allowed from any
 // client.
 //
-#define RMCTRL_FLAGS_NON_PRIVILEGED                           0x000000010
+#define RMCTRL_FLAGS_NON_PRIVILEGED                           0x000000008
 
 //
 // The resman rmcontrol handler will grab the per-device lock instead
@@ -206,7 +206,7 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY  *pParamCopy, RmCtrlParams *pRmC
 //
 // Please be sure you know what you're doing before using this!
 //
-#define RMCTRL_FLAGS_GPU_LOCK_DEVICE_ONLY                     0x000000040
+#define RMCTRL_FLAGS_GPU_LOCK_DEVICE_ONLY                     0x000000010
 
 //
 // This flag is equivalent to PRIVILEGED when the RM access rights
@@ -217,19 +217,19 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY  *pParamCopy, RmCtrlParams *pRmC
 // previously PRIVILEGED. Once access rights are enabled, this flag will no
 // longer be necessary.
 //
-#define RMCTRL_FLAGS_PRIVILEGED_IF_RS_ACCESS_DISABLED         0x000000100 // for Resserv Access Rights migration
+#define RMCTRL_FLAGS_PRIVILEGED_IF_RS_ACCESS_DISABLED         0x000000020 // for Resserv Access Rights migration
 
 //
 // This flag specifies that the control shall be directly forwarded to the
 // physical object if called on the CPU-RM kernel.
 //
-#define RMCTRL_FLAGS_ROUTE_TO_PHYSICAL                        0x000000200
+#define RMCTRL_FLAGS_ROUTE_TO_PHYSICAL                        0x000000040
 
 //
 // If the INTERNAL flag is specified, the call will only be allowed
 // to be issued from RM itself. Otherwise, NV_ERR_NOT_SUPPORTED is returned.
 //
-#define RMCTRL_FLAGS_INTERNAL                                 0x000000400
+#define RMCTRL_FLAGS_INTERNAL                                 0x000000080
 
 //
 //  If the API_LOCK_READONLY flag is specified, the call will acquire the
@@ -237,65 +237,57 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY  *pParamCopy, RmCtrlParams *pRmC
 //  also taken the read-only API lock. This flag is ignored if read-only API
 //  locking is disabled in RM.
 //
-#define RMCTRL_FLAGS_API_LOCK_READONLY                        0x000000800
-
-//
-//  If the :GPU_LOCK_READONLY flag is specified, the call will acquire a
-//  read-only GPU lock and may run concurrently with other operations that have
-//  also taken a read-only GPU lock. This flag is ignored if read-only GPU
-//  locking is disabled in RM.
-//
-#define RMCTRL_FLAGS_GPU_LOCK_READONLY                        0x000001000
+#define RMCTRL_FLAGS_API_LOCK_READONLY                        0x000000100
 
 //
 // This flag specifies that the control shall be directly forwarded to the
 // the VGPU host if called from a guest (where IS_VIRTUAL() is true)
 //
-#define RMCTRL_FLAGS_ROUTE_TO_VGPU_HOST                       0x000002000
+#define RMCTRL_FLAGS_ROUTE_TO_VGPU_HOST                       0x000000200
 
 //
 // This flag specifies that the control output does not depend on the input
 // parameters and can be cached on the receiving end.
 // The cache is transparent and may not exist on all platforms.
 //
-#define RMCTRL_FLAGS_CACHEABLE                                0x000004000
+#define RMCTRL_FLAGS_CACHEABLE                                0x000000400
 
 //
 // This flag specifies that the control parameters will be
 // copied out back to the caller even if the control call fails.
 //
-#define RMCTRL_FLAGS_COPYOUT_ON_ERROR                         0x000008000
+#define RMCTRL_FLAGS_COPYOUT_ON_ERROR                         0x000000800
 
 // ??
-#define RMCTRL_FLAGS_ALLOW_WITHOUT_SYSMEM_ACCESS              0x000010000
+#define RMCTRL_FLAGS_ALLOW_WITHOUT_SYSMEM_ACCESS              0x000001000
 
 //
 // This flag specifies that the control can be run by an admin privileged
 // client running in a full SRIOV, vGPU-GSP-ENABLED hypervisor environment.
 // Overrides regular privilege level flags.
 //
-#define RMCTRL_FLAGS_CPU_PLUGIN_FOR_VGPU_GSP                  0x000020000
+#define RMCTRL_FLAGS_CPU_PLUGIN_FOR_VGPU_GSP                  0x000002000
 
 //
 // This flag specifies that the control can be run by an admin privileged
 // client running in a full SRIOV, vGPU-GSP-DISABLED hypervisor environment.
 // Overrides regular privilege level flags.
 //
-#define RMCTRL_FLAGS_CPU_PLUGIN_FOR_SRIOV                     0x000040000
+#define RMCTRL_FLAGS_CPU_PLUGIN_FOR_SRIOV                     0x000004000
 
 //
 // This flag specifies that the control can be run by an admin privileged
 // client running in a non-SRIOV or SRIOV-Heavy hypervisor environment.
 // Overrides regular privilege level flags.
 //
-#define RMCTRL_FLAGS_CPU_PLUGIN_FOR_LEGACY                    0x000080000
+#define RMCTRL_FLAGS_CPU_PLUGIN_FOR_LEGACY                    0x000008000
 
 //
 // This flag specifies that the control can be run by an unprivileged
 // client running in GSP-RM when SRIOV and vGPU-GSP are ENABLED.
 // Overrides regular privilege level flags.
 //
-#define RMCTRL_FLAGS_GSP_PLUGIN_FOR_VGPU_GSP                  0x000100000
+#define RMCTRL_FLAGS_GSP_PLUGIN_FOR_VGPU_GSP                  0x000010000
 
 //
 // This flag specifies that the control output depends on the input
@@ -303,16 +295,17 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY  *pParamCopy, RmCtrlParams *pRmC
 // result depends on the input and the input varifies with controls,
 // the cache should be handled in a per-control bases.
 //
-#define RMCTRL_FLAGS_CACHEABLE_BY_INPUT                       0x000200000
+#define RMCTRL_FLAGS_CACHEABLE_BY_INPUT                       0x000020000
 
 
+//
 // This flag specifies that ROUTE_TO_PHYSICAL control is implemented on vGPU Guest RM.
 // If a ROUTE_TO_PHYSICAL control is supported within vGPU Guest RM,
 // it should either have this flag set (indicating the implementation in the vGPU Guest RM) or
 // the ROUTE_TO_VGPU_HOST flag set (indicating the implementation in vGPU Host RM).
 // Without either of these flags set, the control will return NV_ERR_NOT_SUPPORTED.
 //
-#define RMCTRL_FLAGS_PHYSICAL_IMPLEMENTED_ON_VGPU_GUEST       0x000400000
+#define RMCTRL_FLAGS_PHYSICAL_IMPLEMENTED_ON_VGPU_GUEST       0x000040000
 
 // The combination of cacheable flags
 #define RMCTRL_FLAGS_CACHEABLE_ANY (RMCTRL_FLAGS_CACHEABLE | RMCTRL_FLAGS_CACHEABLE_BY_INPUT)
@@ -322,7 +315,29 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY  *pParamCopy, RmCtrlParams *pRmC
 // An entry is required for any control calls that set this in
 // serverControlLookupSecondClient or Resource Server will NV_ASSERT(0).
 //
-#define RMCTRL_FLAGS_DUAL_CLIENT_LOCK                         0x000800000
+#define RMCTRL_FLAGS_DUAL_CLIENT_LOCK                         0x000080000
+
+//
+// This flag specifies that the control call is for RM test only code.
+//
+#define RMCTRL_FLAGS_RM_TEST_ONLY_CODE                        0x000100000
+
+//
+// This flag specifies that all client handles in RM need to be locked.
+// This flag should almost never be used, the only cases where it is required
+// are cases where an RM API loops accessed several/arbitrary clients in RM using
+// something like serverutilGetFirstClientUnderLock. The RW API lock is required
+// to use this flag
+//
+#define RMCTRL_FLAGS_ALL_CLIENT_LOCK                          0x000200000
+
+//
+// This flag specifies that the API lock should not be acquired for this
+// RM Control. DO NOT use this flag without consulting Locking/Resource Server
+// experts first and please consider other alternatives as much as possible
+// before resorting to using this flag!
+//
+#define RMCTRL_FLAGS_NO_API_LOCK                              0x000400000
 
 //
 //  'ACCESS_RIGHTS' Attribute

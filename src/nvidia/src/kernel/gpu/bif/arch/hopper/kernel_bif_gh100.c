@@ -29,6 +29,7 @@
 #include "gpu/fsp/kern_fsp.h"
 #include "platform/chipset/chipset.h"
 #include "ctrl/ctrl2080/ctrl2080bus.h"
+#include "kernel/gpu/nvlink/kernel_nvlink.h"
 
 #include "published/hopper/gh100/dev_xtl_ep_pcfg_gpu.h"
 
@@ -49,7 +50,6 @@ static NV_STATUS    _kbifRestorePcieConfigRegisters_GH100(OBJGPU *pGpu, KernelBi
 
 // Devinit completion timeout after FLR
 #define BIF_FLR_DEVINIT_COMPLETION_TIMEOUT_DEFAULT      900000
-
 
 /*!
  * @brief Check if MSI is enabled in HW
@@ -645,10 +645,8 @@ kbifProbePcieReqAtomicCaps_GH100
 )
 {
     NvU32   osAtomicsMask    = 0;
-    OBJSYS *pSys = SYS_GET_INSTANCE();
-    OBJCL  *pCl  = SYS_GET_CL(pSys);
 
-    if (!pCl->getProperty(pCl, PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS))
+    if (!kbifAllowGpuOutboundPcieAtomics_HAL(pGpu, pKernelBif))
     {
         NV_PRINTF(LEVEL_INFO, "PCIe atomics not supported in this platform!\n");
         return;
@@ -1562,6 +1560,61 @@ kbifRestoreBarsAndCommand_GH100
 }
 
 /*!
+ * @brief  Do any work necessary to be able to do a full chip reset.
+ *
+ * @param[in] pGpu       GPU object pointer
+ * @param[in] pKernelBif KernelBif object pointer
+ *
+ * @return  None
+ */
+void
+kbifPrepareForFullChipReset_GH100
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+    NvBool        bFLRSupportedAndEnabled;
+
+    bFLRSupportedAndEnabled = (pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_FLR_SUPPORTED)) &&
+                               !(pKernelBif->bForceDisableFLR);
+
+    if (!bFLRSupportedAndEnabled)
+    {
+        if (!(pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_FLR_SUPPORTED)))
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                "FLR is NOT supported! Failing early in fullchip reset sequence\n");
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                "FLR is force disabled using regkey/similar mechanism. Failing early.\n");
+        }
+        DBG_BREAKPOINT();
+        goto _bifPrepareForFullChipReset_GH100_exit;
+    }
+
+    pGpu->setProperty(pGpu, PDB_PROP_GPU_PREPARING_FULLCHIP_RESET, NV_TRUE);
+
+    if (pKernelNvlink && pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENABLED))
+    {
+        if (knvlinkPrepareForXVEReset(pGpu, pKernelNvlink, NV_FALSE) != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                "NVLink prepare for fullchip reset failed.\n");
+            DBG_BREAKPOINT();
+            goto _bifPrepareForFullChipReset_GH100_exit;
+        }
+    }
+
+_bifPrepareForFullChipReset_GH100_exit:
+    pGpu->setProperty(pGpu, PDB_PROP_GPU_PREPARING_FULLCHIP_RESET, NV_FALSE);
+}
+
+
+/*!
  * @brief HAL specific BIF software state initialization
  *
  * @param[in] pGpu       GPU object pointer
@@ -1615,5 +1668,71 @@ kbifGetEccCounts_GH100
     }
 
     return count;
+}
+
+/*!
+ * @brief Use Full Chip Reset to reset the chip.
+ *
+ * @param[in] pGpu       GPU object pointer
+ * @param[in] pKernelBif KernelBif object pointer
+ * 
+ * @return  NV_STATUS
+ */
+NV_STATUS
+kbifDoFullChipReset_GH100
+(
+    OBJGPU *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    NV_STATUS  status     = NV_OK;
+    NvBool     bIsFLRSupportedAndEnabled;
+
+    // We support FLR for SKUs which are FLR capable.
+    bIsFLRSupportedAndEnabled = (pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_FLR_SUPPORTED)) &&
+                                !(pKernelBif->bForceDisableFLR);
+
+    if (bIsFLRSupportedAndEnabled)
+    {
+        NV_ASSERT_OK(status = kbifDoFunctionLevelReset_HAL(pGpu, pKernelBif));
+        pGpu->setProperty(pGpu, PDB_PROP_GPU_IN_FULLCHIP_RESET, NV_TRUE);
+    }
+    else
+    {
+        NV_PRINTF(LEVEL_ERROR, "FLR is either not supported or is disabled.\n");
+    }
+
+    return status;
+}
+
+
+NvBool kbifAllowGpuOutboundPcieAtomics_GH100
+(
+    OBJGPU *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJCL  *pCl  = SYS_GET_CL(pSys);
+
+    return pCl->getProperty(pCl, PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS);
+}
+
+/*!
+ * @brief Secondary Bus Reset implementation
+ *
+ * @param[in] pGpu  GPU object pointer
+ * @param[in] pKernelBif KernelBif object pointer
+ *
+ * @return  'NV_OK' if successful, an RM error code otherwise.
+ */
+NV_STATUS
+kbifDoSecondaryBusHotReset_GH100
+(
+    OBJGPU *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    return kbifDoSecondaryBusHotReset_GM107(pGpu, pKernelBif);
 }
 

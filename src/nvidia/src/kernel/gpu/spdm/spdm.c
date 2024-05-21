@@ -46,7 +46,6 @@
 //
 #include "gpu/spdm/libspdm_includes.h"
 
-
 /* ------------------------ Static Function Prototypes --------------------- */
 static void _spdmClearContext(Spdm *pSpdm);
 libspdm_return_t _spdmAcquireTransportBuffer(void *context, void **msg_buf_ptr);
@@ -300,12 +299,6 @@ spdmContextInit_IMPL
     if (pGpu == NULL || pSpdm == NULL)
     {
         return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    if (!libspdm_check_crypto_backend())
-    {
-        NV_PRINTF(LEVEL_ERROR, "SPDM cannot boot without proper crypto backend!\n");
-        return NV_ERR_INVALID_STATE;
     }
 
     // Allocate and initialize all required memory for context and certificates.

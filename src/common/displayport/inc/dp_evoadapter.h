@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -147,6 +147,7 @@ namespace DisplayPort
         // Defines the same as NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS.dpVersionsSupported
         //
         NvU32   _gpuSupportedDpVersions;
+
         bool _isStreamCloningEnabled;
         bool _needForceRmEdid;
         bool _skipPowerdownEDPPanelWhenHeadDetach;
@@ -156,10 +157,11 @@ namespace DisplayPort
         bool _useDfpMaxLinkRateCaps;
         bool _applyLinkBwOverrideWarRegVal;
         bool _isDynamicMuxCapable;
+        bool _isMDMEnabled;
         bool _enableMSAOverrideOverMST;
-
         bool _isLTPhyRepeaterSupported;
         bool _isMSTPCONCapsReadDisabled;
+        bool _isDownspreadSupported;
         //
         // LTTPR count reported by RM, it might not be the same with DPLib probe
         // For example, some Intel LTTPR might not be ready to response 0xF0000 probe
@@ -258,6 +260,16 @@ namespace DisplayPort
             return (_isDynamicMuxCapable && _isEDP);
         }
 
+        virtual bool isMDMEnabled()
+        {
+            return (_isMDMEnabled && _isEDP);
+        }
+
+        virtual bool isDownspreadSupported()
+        {
+            return _isDownspreadSupported;
+        }
+
         // Get GPU DSC capabilities
         virtual void getDscCaps(bool *pbDscSupported,
                                 unsigned *pEncoderColorFormatMask,
@@ -313,6 +325,11 @@ namespace DisplayPort
             return this->_isLTPhyRepeaterSupported;
         }
 
+        EvoInterface * getProvider()
+        {
+            return this->provider;
+        }
+
         // Return the current mux state. Returns false if device is not mux capable
         bool getDynamicMuxState(NvU32 *muxState);
 
@@ -334,8 +351,8 @@ namespace DisplayPort
         virtual bool getMaxLinkConfigFromUefi(NvU8 &linkRate, NvU8 &laneCount);
         virtual bool setDpMSAParameters(bool bStereoEnable, const NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_PARAMS &msaparams);
         virtual bool setDpStereoMSAParameters(bool bStereoEnable, const NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_PARAMS &msaparams);
-        virtual bool setFlushMode();
-        virtual void clearFlushMode(unsigned headMask, bool testMode=false);
+        bool setFlushMode();
+        void clearFlushMode(unsigned headMask, bool testMode=false);
 
         virtual bool dscCrcTransaction(NvBool bEnable, gpuDscCrc *data, NvU16 *headIndex);
 

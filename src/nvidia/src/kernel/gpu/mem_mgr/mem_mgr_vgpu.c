@@ -32,7 +32,7 @@
  *  @returns fb tax size
  */
 NvU64
-memmgrGetFbTaxSize_VGPUSTUB
+memmgrGetFbTaxSize_VF
 (
     OBJGPU        *pGpu,
     MemoryManager *pMemoryManager
@@ -51,7 +51,7 @@ memmgrGetFbTaxSize_VGPUSTUB
  *  @brief Fill in FB region information.
  */
 NV_STATUS
-memmgrInitBaseFbRegions_VGPUSTUB
+memmgrInitBaseFbRegions_VF
 (
     OBJGPU        *pGpu,
     MemoryManager *pMemoryManager
@@ -122,7 +122,7 @@ memmgrInitBaseFbRegions_VGPUSTUB
  *  @brief Get the required heap space for GR module
  */
 NvU32
-memmgrGetGrHeapReservationSize_VGPUSTUB
+memmgrGetGrHeapReservationSize_VF
 (
     OBJGPU        *pGpu,
     MemoryManager *pMemoryManager

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -66,7 +66,15 @@ memmgrGetMemTransferType
     OBJGPU       *pGpu                = ENG_GET_GPU(pMemoryManager);
     KernelBus    *pKernelBus          = GPU_GET_KERNEL_BUS(pGpu);
 
-    if (flags & TRANSFER_FLAGS_PREFER_CE)
+    if ((pDst == NULL || memdescGetAddressSpace(pDst->pMemDesc) == ADDR_SYSMEM) &&
+        (pSrc == NULL || memdescGetAddressSpace(pSrc->pMemDesc) == ADDR_SYSMEM))
+    {
+        //
+        // If the operation only touches sysmem, use processor copy
+        //
+        transferType = TRANSFER_TYPE_PROCESSOR;
+    }
+    else if (flags & TRANSFER_FLAGS_PREFER_CE)
     {
         if (IS_SIMULATION(pGpu) && pSrc != NULL)
         {
@@ -78,21 +86,25 @@ memmgrGetMemTransferType
             return TRANSFER_TYPE_BAR0;
         }
 
-        if (pMemoryManager->pCeUtils != NULL)
+        CeUtils *pCeUtils = pMemoryManager->pCeUtils;
+
+        if (pCeUtils != NULL)
         {
-            return TRANSFER_TYPE_CE;
+            NvBool bDstCompr = pDst != NULL && memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_COMPRESSIBLE,
+                                                                memdescGetPteKind(pDst->pMemDesc));
+            NvBool bSrcCompr = pSrc != NULL && memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_COMPRESSIBLE,
+                                                                memdescGetPteKind(pSrc->pMemDesc));
+            if (!(bSrcCompr || bDstCompr) || pCeUtils->bUseVasForCeCopy)
+            {
+                return TRANSFER_TYPE_CE;
+            }
         }
 
-        NV_PRINTF(LEVEL_WARNING, "Can't copy using CE, falling back to other methods\n");
-    }
-
-    if ((pDst == NULL || memdescGetAddressSpace(pDst->pMemDesc) == ADDR_SYSMEM) &&
-        (pSrc == NULL || memdescGetAddressSpace(pSrc->pMemDesc) == ADDR_SYSMEM))
-    {
-        //
-        // If the operation only touches sysmem, use processor copy
-        //
-        transferType = TRANSFER_TYPE_PROCESSOR;
+        // On Emulation we may lack CE support so preventing excessive debug spew.
+        if (!IS_EMULATION(pGpu))
+        {
+            NV_PRINTF(LEVEL_WARNING, "Can't copy using CE, falling back to other methods\n");
+        }
     }
     else if (kbusIsBarAccessBlocked(pKernelBus) &&
             (!gpuIsCCDevToolsModeEnabled(pGpu) || !(flags & TRANSFER_FLAGS_PREFER_PROCESSOR)))
@@ -140,11 +152,11 @@ _memmgrAllocAndMapSurface
 
     NV_ASSERT_OK_OR_RETURN(
         memdescCreate(ppMemDesc, pGpu, size, RM_PAGE_SIZE, NV_TRUE,
-                      ADDR_SYSMEM, NV_MEMORY_UNCACHED, flags));
+                      ADDR_SYSMEM, NV_MEMORY_CACHED, flags));
 
-    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_77,
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_77, 
                     (*ppMemDesc));
-    NV_ASSERT_OK_OR_GOTO(status, status, failed);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, status, failed);
 
     NV_ASSERT_OK_OR_GOTO(status,
         memdescMapOld(*ppMemDesc, 0, size, NV_TRUE, NV_PROTECT_READ_WRITE,
@@ -212,7 +224,7 @@ _memmgrMemReadOrWriteWithGsp
         return NV_ERR_NOT_SUPPORTED;
 
     // Allocate and map the staging buffer
-    NV_ASSERT_OK_OR_RETURN(
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         _memmgrAllocAndMapSurface(pGpu, size, &pStagingBuf, &pStagingBufMap,
                                   &pStagingBufPriv));
 
@@ -224,9 +236,8 @@ _memmgrMemReadOrWriteWithGsp
     {
         if (gpuIsCCFeatureEnabled(pGpu))
         {
-            status = ccslEncryptWithRotationChecks(pConfCompute->pDmaCcslCtx,
-                                                   size, pBuf, NULL, 0, pStagingBufMap,
-                                                   gspParams.authTag);
+            status = ccslEncrypt_HAL(pConfCompute->pDmaCcslCtx, size, pBuf, NULL, 0,
+                                     pStagingBufMap, gspParams.authTag);
             if (status != NV_OK)
             {
                 if (status == NV_ERR_INSUFFICIENT_RESOURCES)
@@ -295,9 +306,8 @@ _memmgrMemReadOrWriteWithGsp
     {
         if (gpuIsCCFeatureEnabled(pGpu))
         {
-            status = ccslDecryptWithRotationChecks(pConfCompute->pDmaCcslCtx,
-                                                   size, pStagingBufMap, NULL, NULL, 0, pBuf,
-                                                   gspParams.authTag);
+            status = ccslDecrypt_HAL(pConfCompute->pDmaCcslCtx, size, pStagingBufMap,
+                                     NULL, NULL, 0, pBuf, gspParams.authTag);
             if (status != NV_OK)
             {
                 // Failure in GSP-DMA decrypt is considered fatal.
@@ -357,7 +367,7 @@ _memmgrMemcpyWithGsp
     }
 
     // Allocate and map the bounce buffer
-    NV_ASSERT_OK_OR_RETURN(
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         _memmgrAllocAndMapSurface(pGpu, size, &pStagingBuf, &pStagingBufMap,
                                   &pStagingBufPriv));
 
@@ -377,9 +387,8 @@ _memmgrMemcpyWithGsp
         // Copy to staging buffer, encrypting first if CC mode
         if (gpuIsCCFeatureEnabled(pGpu))
         {
-            status = ccslEncryptWithRotationChecks(pConfCompute->pDmaCcslCtx,
-                                                   size, pMap + pSrc->offset, NULL, 0,
-                                                   pStagingBufMap, gspParams.authTag);
+            status = ccslEncrypt_HAL(pConfCompute->pDmaCcslCtx, size, pMap + pSrc->offset,
+                                NULL, 0, pStagingBufMap, gspParams.authTag);
             if (status == NV_ERR_INSUFFICIENT_RESOURCES)
             {
                 //
@@ -462,9 +471,8 @@ _memmgrMemcpyWithGsp
 
         if (gpuIsCCFeatureEnabled(pGpu))
         {
-            status = ccslDecryptWithRotationChecks(pConfCompute->pDmaCcslCtx,
-                                                   size, pStagingBufMap, NULL, NULL, 0,
-                                                   pMap + pDst->offset, gspParams.authTag);
+            status = ccslDecrypt_HAL(pConfCompute->pDmaCcslCtx, size, pStagingBufMap,
+                                NULL, NULL, 0, pMap + pDst->offset, gspParams.authTag);
             if (status != NV_OK)
             {
                 //
@@ -553,8 +561,6 @@ memmgrMemCopyWithTransferType
 )
 {
     OBJGPU *pGpu = ENG_GET_GPU(pMemoryManager);
-    NvU8 *pSrc;
-    NvU8 *pDst;
 
     // Sanitize the input
     NV_ASSERT_OK_OR_RETURN(memmgrCheckSurfaceBounds(pDstInfo, size));
@@ -565,19 +571,20 @@ memmgrMemCopyWithTransferType
     switch (transferType)
     {
         case TRANSFER_TYPE_PROCESSOR:
-            pDst = memdescMapInternal(pGpu, pDstInfo->pMemDesc, TRANSFER_FLAGS_NONE);
-            NV_ASSERT_OR_RETURN(pDst != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
-            pSrc = memdescMapInternal(pGpu, pSrcInfo->pMemDesc, TRANSFER_FLAGS_NONE);
-            if (pSrc == NULL)
             {
-                memdescUnmapInternal(pGpu, pDstInfo->pMemDesc, 0);
-                NV_ASSERT_OR_RETURN(0, NV_ERR_INSUFFICIENT_RESOURCES);
+                NvU8 *pDst = memmgrMemBeginTransfer(pMemoryManager, pDstInfo, size, flags);
+                NvU8 *pSrc = memmgrMemBeginTransfer(pMemoryManager, pSrcInfo, size, flags);
+
+                if (pDst != NULL && pSrc != NULL)
+                {
+                    portMemCopy(pDst, size, pSrc, size);
+                }
+
+                memmgrMemEndTransfer(pMemoryManager, pSrcInfo, size, flags);
+                memmgrMemEndTransfer(pMemoryManager, pDstInfo, size, flags);
+
+                NV_CHECK_OR_RETURN(LEVEL_ERROR, pDst != NULL && pSrc != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
             }
-
-            portMemCopy(pDst + pDstInfo->offset, size, pSrc + pSrcInfo->offset, size);
-
-            memdescUnmapInternal(pGpu, pSrcInfo->pMemDesc, TRANSFER_FLAGS_NONE);
-            memdescUnmapInternal(pGpu, pDstInfo->pMemDesc, flags);
             break;
         case TRANSFER_TYPE_GSP_DMA:
             if (IS_GSP_CLIENT(pGpu))
@@ -635,8 +642,7 @@ _memmgrMemReadOrWriteUsingStagingBuffer
     TRANSFER_SURFACE *pDst = bRead ? &staging : pAlloc;
     NV_STATUS status = NV_OK;
 
-
-    NV_ASSERT_OK_OR_RETURN(
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         _memmgrAllocAndMapSurface(ENG_GET_GPU(pMemoryManager), size, &pStagingBuf, &pStagingBufMap,
                                   &pStagingBufPriv));
     staging.pMemDesc = pStagingBuf;
@@ -681,7 +687,6 @@ memmgrMemSetWithTransferType
 )
 {
     OBJGPU *pGpu = ENG_GET_GPU(pMemoryManager);
-    NvU8 *pDst;
 
     // Sanitize the input
     NV_ASSERT_OK_OR_RETURN(memmgrCheckSurfaceBounds(pDstInfo, size));
@@ -689,12 +694,12 @@ memmgrMemSetWithTransferType
     switch (transferType)
     {
         case TRANSFER_TYPE_PROCESSOR:
-            pDst = memdescMapInternal(pGpu, pDstInfo->pMemDesc, TRANSFER_FLAGS_NONE);
-            NV_ASSERT_OR_RETURN(pDst != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
-
-            portMemSet(pDst + pDstInfo->offset, value, size);
-
-            memdescUnmapInternal(pGpu, pDstInfo->pMemDesc, flags);
+            {
+                NvU8 *pDst = memmgrMemBeginTransfer(pMemoryManager, pDstInfo, size, flags);
+                NV_CHECK_OR_RETURN(LEVEL_ERROR, pDst != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
+                portMemSet(pDst, value, size);
+                memmgrMemEndTransfer(pMemoryManager, pDstInfo, size, flags);
+            }
             break;
         case TRANSFER_TYPE_GSP_DMA:
             if (IS_GSP_CLIENT(pGpu))
@@ -735,89 +740,6 @@ memmgrMemSetWithTransferType
 }
 
 /*!
- * @brief This function is used to map the appropriate memory descriptor,
- *        copy the memory from the given buffer, and then unmap.
- *
- * @param[in] pMemDesc Memory descriptor of buffer to write
- * @param[in] pBuf     Buffer allocated by caller
- * @param[in] offset   Offset of buffer to write
- * @param[in] size     Size in bytes of the buffer
- * @param[in] flags    Flags
- */
-static NV_STATUS
-memmgrMemWriteMapAndCopy
-(
-    MemoryManager     *pMemoryManager,
-    MEMORY_DESCRIPTOR *pMemDesc,
-    void              *pBuf,
-    NvU64              offset,
-    NvU64              size,
-    NvU32              flags
-)
-{
-    NvU8   *pDst = NULL;
-    OBJGPU *pGpu = ENG_GET_GPU(pMemoryManager);
-
-    pDst = memdescMapInternal(pGpu, pMemDesc, TRANSFER_FLAGS_NONE);
-    NV_CHECK_OR_RETURN(LEVEL_SILENT, pDst != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
-
-    portMemCopy(pDst + offset, size, pBuf, size);
-    memdescUnmapInternal(pGpu, pMemDesc, flags);
-
-    return NV_OK;
-}
-
-/*!
- * @brief This function is used for writing data placed in a caller passed buffer
- *        to a given memory region while only mapping regions as large as the given
- *        block size.
- *
- * @param[in] pMemDesc   Memory descriptor of buffer to write
- * @param[in] pBuf       Buffer allocated by caller
- * @param[in] baseOffset Offset of entire buffer to write
- * @param[in] size       Size in bytes of the buffer
- * @param[in] flags      Flags
- * @param[in] blockSize  Maximum size of a mapping to use
- */
-static NV_STATUS
-memmgrMemWriteInBlocks
-(
-    MemoryManager     *pMemoryManager,
-    MEMORY_DESCRIPTOR *pMemDesc,
-    void              *pBuf,
-    NvU64              baseOffset,
-    NvU64              size,
-    NvU32              flags,
-    NvU32              blockSize
-)
-{
-    NV_STATUS  status    = NV_OK;
-    OBJGPU    *pGpu      = ENG_GET_GPU(pMemoryManager);
-    NvU64      remaining = size;
-    NvU64      offset    = 0;
-
-    while ((remaining > 0) && (status == NV_OK))
-    {
-        MEMORY_DESCRIPTOR *pSubMemDesc = NULL;
-        NvU32              mapSize     = NV_MIN(blockSize, remaining);
-
-        NV_CHECK_OK_OR_RETURN(LEVEL_SILENT, memdescCreateSubMem(&pSubMemDesc, pMemDesc, pGpu, offset + baseOffset, mapSize));
-
-        // Set the offset to 0, as the sub descriptor already starts at the offset
-        status = memmgrMemWriteMapAndCopy(pMemoryManager, pSubMemDesc, (NvU8 *)pBuf + offset,
-                                          0, mapSize, flags);
-
-        memdescFree(pSubMemDesc);
-        memdescDestroy(pSubMemDesc);
-
-        offset += mapSize;
-        remaining -= mapSize;
-    }
-
-    return status;
-}
-
-/*!
  * @brief This function is used for writing data placed in a caller passed buffer
  *        to a given memory region using the specified memory transfer technique
  *
@@ -854,18 +776,18 @@ memmgrMemWriteWithTransferType
     switch (transferType)
     {
         case TRANSFER_TYPE_PROCESSOR:
-            if (memmgrMemWriteMapAndCopy(pMemoryManager, pDstInfo->pMemDesc, pBuf, pDstInfo->offset, size, flags) != NV_OK)
             {
-                // If we fail to map a block large enough for the entire transfer, split up the mapping.
-                NV_ASSERT_OK_OR_RETURN(memmgrMemWriteInBlocks(pMemoryManager, pDstInfo->pMemDesc, pBuf,
-                                                              pDstInfo->offset, size, flags, MEMORY_COPY_BLOCK_SIZE));
+                NvU8 *pDst = memmgrMemBeginTransfer(pMemoryManager, pDstInfo, size, flags);
+                NV_CHECK_OR_RETURN(LEVEL_ERROR, pDst != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
+                portMemCopy(pDst, size, pBuf, size);
+                memmgrMemEndTransfer(pMemoryManager, pDstInfo, size, flags);
             }
             break;
         case TRANSFER_TYPE_GSP_DMA:
             if (IS_GSP_CLIENT(pGpu))
             {
                 NV_PRINTF(LEVEL_INFO, "Calling GSP DMA task\n");
-                NV_ASSERT_OK_OR_RETURN(
+                NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
                     _memmgrMemReadOrWriteWithGsp(pGpu, pDstInfo, pBuf, size,
                                                  NV_FALSE /* bRead */));
             }
@@ -877,7 +799,7 @@ memmgrMemWriteWithTransferType
         case TRANSFER_TYPE_CE:
         case TRANSFER_TYPE_CE_PRI:
         case TRANSFER_TYPE_BAR0:
-            NV_ASSERT_OK_OR_RETURN(
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
                 _memmgrMemReadOrWriteUsingStagingBuffer(pMemoryManager, pDstInfo, pBuf, size,
                                                         transferType, NV_FALSE /* bRead */));
             break;
@@ -909,9 +831,7 @@ memmgrMemReadWithTransferType
 )
 {
     OBJGPU *pGpu = ENG_GET_GPU(pMemoryManager);
-    NvU8   *pSrc;
     NvU8   *pMapping = memdescGetKernelMapping(pSrcInfo->pMemDesc);
-
 
     // Sanitize the input
     NV_ASSERT_OK_OR_RETURN(memmgrCheckSurfaceBounds(pSrcInfo, size));
@@ -926,17 +846,17 @@ memmgrMemReadWithTransferType
     switch (transferType)
     {
         case TRANSFER_TYPE_PROCESSOR:
-            pSrc = memdescMapInternal(pGpu, pSrcInfo->pMemDesc, TRANSFER_FLAGS_NONE);
-            NV_ASSERT_OR_RETURN(pSrc != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
-
-            portMemCopy(pBuf, size, pSrc + pSrcInfo->offset, size);
-
-            memdescUnmapInternal(pGpu, pSrcInfo->pMemDesc, 0);
+            {
+                NvU8 *pSrc = memmgrMemBeginTransfer(pMemoryManager, pSrcInfo, size, flags);
+                NV_CHECK_OR_RETURN(LEVEL_INFO, pSrc != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
+                portMemCopy(pBuf, size, pSrc, size);
+                memmgrMemEndTransfer(pMemoryManager, pSrcInfo, size, flags);
+            }
             break;
         case TRANSFER_TYPE_GSP_DMA:
             if (IS_GSP_CLIENT(pGpu))
             {
-                NV_ASSERT_OK_OR_RETURN(
+                NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
                     _memmgrMemReadOrWriteWithGsp(pGpu, pSrcInfo, pBuf, size,
                                                  NV_TRUE /* bRead */));
             }
@@ -948,9 +868,9 @@ memmgrMemReadWithTransferType
         case TRANSFER_TYPE_CE:
         case TRANSFER_TYPE_CE_PRI:
         case TRANSFER_TYPE_BAR0:
-            NV_ASSERT_OK_OR_RETURN(
-            _memmgrMemReadOrWriteUsingStagingBuffer(pMemoryManager, pSrcInfo, pBuf, size,
-                                                    transferType, NV_TRUE /* bRead */));
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                _memmgrMemReadOrWriteUsingStagingBuffer(pMemoryManager, pSrcInfo, pBuf, size,
+                                                        transferType, NV_TRUE /* bRead */));
             break;
     }
 
@@ -1081,6 +1001,66 @@ memmgrMemUtilsGetMemDescFromHandle_IMPL
 }
 
 /*!
+ * @brief This function is used for write a value placed in a caller passed buffer
+ *        to a given memory region while only mapping regions as large as the given
+ *        block size.
+ *
+ * @param[in] pMemDesc   Memory descriptor of buffer to write
+ * @param[in] value      Value to be written
+ * @param[in] baseOffset Offset of entire buffer to write
+ * @param[in] size       Size in bytes of the buffer
+ * @param[in] flags      Flags
+ * @param[in] blockSize  Maximum size of a mapping to use
+ */
+NV_STATUS
+memmgrMemsetInBlocks_IMPL
+(
+    MemoryManager     *pMemoryManager,
+    MEMORY_DESCRIPTOR *pMemDesc,
+    NvU32              value,
+    NvU64              baseOffset,
+    NvU64              size,
+    NvU32              flags,
+    NvU32              blockSize
+)
+{
+    NV_STATUS  status    = NV_OK;
+    OBJGPU    *pGpu      = ENG_GET_GPU(pMemoryManager);
+    NvU64      remaining = size;
+    NvU64      offset    = 0;
+
+    if (blockSize == 0)
+    {
+        blockSize = MEMORY_COPY_BLOCK_SIZE;
+    }
+
+    while ((remaining > 0) && (status == NV_OK))
+    {
+        MEMORY_DESCRIPTOR *pSubMemDesc = NULL;
+        NvU32              mapSize     = NV_MIN(blockSize, remaining);
+        TRANSFER_SURFACE   surf = {0};
+
+        NV_CHECK_OK_OR_RETURN(LEVEL_SILENT, memdescCreateSubMem(&pSubMemDesc, pMemDesc, pGpu, offset + baseOffset, mapSize));
+
+        surf.pMemDesc = pSubMemDesc;
+        surf.offset = 0;
+
+        NV_ASSERT_OK_OR_RETURN(
+            memmgrMemSet(pMemoryManager, &surf, value,
+                         pSubMemDesc->Size,
+                         flags));
+
+        memdescFree(pSubMemDesc);
+        memdescDestroy(pSubMemDesc);
+
+        offset += mapSize;
+        remaining -= mapSize;
+    }
+
+    return status;
+}
+
+/*!
  * @brief This function is used for copying data b/w two memory regions
  *        Both memory regions can be in the same aperture of different apertures
  *
@@ -1156,6 +1136,68 @@ memmgrMemDescMemSet_IMPL
                                         transferType, flags);
 }
 
+static NV_STATUS
+memmgrMemReadOrWriteInBlocks
+(
+    MemoryManager    *pMemoryManager,
+    TRANSFER_SURFACE *pDstInfo,
+    void             *pBuf,
+    NvU64             size,
+    TRANSFER_TYPE     transferType,
+    NvU32             flags,
+    NvBool            bRead
+)
+{
+    NvBool             bCreateSubMemDesc = (transferType == TRANSFER_TYPE_PROCESSOR) &&
+                                           !(flags & TRANSFER_FLAGS_USE_BAR1);
+    NvU64              remainingSize     = size;
+    NvU64              baseOffset        = pDstInfo->offset;
+    MEMORY_DESCRIPTOR *pMemDesc          = pDstInfo->pMemDesc;
+    NvU64              offset            = 0;
+    NV_STATUS          status            = NV_OK;
+
+    while ((remainingSize > 0) && (status == NV_OK))
+    {
+        MEMORY_DESCRIPTOR *pSubMemDesc = NULL;
+        NvU64              copySize    = NV_MIN(MEMORY_COPY_BLOCK_SIZE, remainingSize);
+
+        if (bCreateSubMemDesc)
+        {
+            NV_ASSERT_OK_OR_RETURN(
+                memdescCreateSubMem(&pSubMemDesc, pMemDesc, pMemDesc->pGpu, offset + baseOffset, copySize));
+            pDstInfo->pMemDesc = pSubMemDesc;
+            pDstInfo->offset = 0;
+        }
+        else
+        {
+            pDstInfo->offset = offset + baseOffset;
+        }
+
+        if (bRead)
+        {
+            status = memmgrMemReadWithTransferType(pMemoryManager, pDstInfo, (NvU8 *)pBuf + offset,
+                                                   copySize, transferType, flags);
+        }
+        else
+        {
+            status = memmgrMemWriteWithTransferType(pMemoryManager, pDstInfo, (NvU8 *)pBuf + offset,
+                                                    copySize, transferType, flags);
+        }
+        NV_ASSERT_OK(status);
+
+        if (bCreateSubMemDesc)
+        {
+            memdescFree(pSubMemDesc);
+            memdescDestroy(pSubMemDesc);
+        }
+
+        offset += copySize;
+        remainingSize -= copySize;
+    }
+
+    return status;
+}
+
 /*!
  * @brief This function is used for writing data placed in a user buffer
  *        to a given memory region
@@ -1178,8 +1220,13 @@ memmgrMemWrite_IMPL
     TRANSFER_TYPE transferType = memmgrGetMemTransferType(pMemoryManager,
                                                           pDstInfo, NULL, flags);
 
-    return memmgrMemWriteWithTransferType(pMemoryManager, pDstInfo, pBuf,
-                                          size, transferType, flags);
+    NV_STATUS status = memmgrMemWriteWithTransferType(pMemoryManager, pDstInfo, pBuf,
+                                                      size, transferType, flags);
+    if (status == NV_OK)
+        return NV_OK;
+
+    return memmgrMemReadOrWriteInBlocks(pMemoryManager, pDstInfo, pBuf,
+                                        size, transferType, flags, NV_FALSE);
 }
 
 /*!
@@ -1204,8 +1251,13 @@ memmgrMemRead_IMPL
     TRANSFER_TYPE transferType = memmgrGetMemTransferType(pMemoryManager,
                                                           NULL, pSrcInfo, flags);
 
-    return memmgrMemReadWithTransferType(pMemoryManager, pSrcInfo, pBuf,
-                                         size, transferType, flags);
+    NV_STATUS status = memmgrMemReadWithTransferType(pMemoryManager, pSrcInfo, pBuf,
+                                                     size, transferType, flags);
+    if (status == NV_OK)
+        return NV_OK;
+
+    return memmgrMemReadOrWriteInBlocks(pMemoryManager, pSrcInfo, pBuf,
+                                        size, transferType, flags, NV_TRUE);
 }
 
 /*!
@@ -1252,12 +1304,12 @@ memmgrMemBeginTransfer_IMPL
                     protect = NV_PROTECT_WRITEABLE;
                 }
 
-                NV_ASSERT_OR_RETURN(memdescMap(pMemDesc, offset, memSz, NV_TRUE, protect,
+                NV_CHECK_OR_RETURN(LEVEL_ERROR, memdescMap(pMemDesc, offset, memSz, NV_TRUE, protect,
                     (NvP64*) &pPtr, &pPriv) == NV_OK, NULL);
                 memdescSetKernelMappingPriv(pMemDesc, pPriv);
                 break;
             }
-            NV_ASSERT_OR_RETURN((pPtr = memdescMapInternal(pGpu, pMemDesc, flags)) != NULL, NULL);
+            NV_CHECK_OR_RETURN(LEVEL_INFO, (pPtr = memdescMapInternal(pGpu, pMemDesc, flags)) != NULL, NULL);
             pPtr = &pPtr[offset];
 
             break;

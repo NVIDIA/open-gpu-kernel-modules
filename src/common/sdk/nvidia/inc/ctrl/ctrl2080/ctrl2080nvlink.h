@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -136,6 +136,7 @@ typedef struct NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS_PARAMS {
 #define NV2080_CTRL_NVLINK_CAPS_NVLINK_VERSION_3_1     (0x00000006U)
 #define NV2080_CTRL_NVLINK_CAPS_NVLINK_VERSION_4_0     (0x00000007U)
 
+
 #define NV2080_CTRL_NVLINK_CAPS_NCI_VERSION_INVALID    (0x00000000U)
 #define NV2080_CTRL_NVLINK_CAPS_NCI_VERSION_1_0        (0x00000001U)
 #define NV2080_CTRL_NVLINK_CAPS_NCI_VERSION_2_0        (0x00000002U)
@@ -259,6 +260,12 @@ typedef struct NV2080_CTRL_NVLINK_DEVICE_INFO {
  *     This field specifies the link number on the remote end of the link 
  *   remoteDeviceInfo
  *     This field stores the device information for the remote end of the link
+ *   nvlinkMinL1Threshold
+ *     This field stores the Min L1 Thresohld of the link
+ *   nvlinkMaxL1Threshold
+ *     This field stores the Max L1 Threshold of the link
+ *   nvlinkL1ThresholdUnits
+ *     This field stores the L1 Threshold Units of the link
  *
  */
 typedef struct NV2080_CTRL_NVLINK_LINK_STATUS_INFO {
@@ -309,6 +316,11 @@ typedef struct NV2080_CTRL_NVLINK_LINK_STATUS_INFO {
 
     // Ampere+ only
     NvU32  laneRxdetStatusMask;
+
+    // L1 Threshold Info
+    NvU32  nvlinkMinL1Threshold;
+    NvU32  nvlinkMaxL1Threshold;
+    NvU32  nvlinkL1ThresholdUnits;
 
     NV_DECLARE_ALIGNED(NV2080_CTRL_NVLINK_DEVICE_INFO remoteDeviceInfo, 8);
     NV_DECLARE_ALIGNED(NV2080_CTRL_NVLINK_DEVICE_INFO localDeviceInfo, 8);
@@ -361,6 +373,8 @@ typedef struct NV2080_CTRL_NVLINK_LINK_STATUS_INFO {
 #define NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_3_0            (0x00000005U)
 #define NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_3_1            (0x00000006U)
 #define NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_4_0            (0x00000007U)
+
+
 #define NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_INVALID        (0x000000FFU)
 
 #define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_1_0               (0x00000001U)
@@ -369,6 +383,8 @@ typedef struct NV2080_CTRL_NVLINK_LINK_STATUS_INFO {
 #define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_3_0               (0x00000005U)
 #define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_3_1               (0x00000006U)
 #define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_4_0               (0x00000007U)
+
+
 #define NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_INVALID           (0x000000FFU)
 
 #define NV2080_CTRL_NVLINK_STATUS_NVHS_VERSION_1_0              (0x00000001U)
@@ -387,12 +403,18 @@ typedef struct NV2080_CTRL_NVLINK_LINK_STATUS_INFO {
 
 #define NV2080_CTRL_NVLINK_STATUS_REMOTE_LINK_NUMBER_INVALID    (0x000000FFU)
 
-#define NV2080_CTRL_NVLINK_MAX_LINKS                            32
+// L1 Threshold Units
+typedef enum NV2080_CTRL_NVLINK_STATUS_L1_THRESHOLD_UNIT {
+    NV2080_CTRL_NVLINK_STATUS_L1_THRESHOLD_UNIT_100US = 0,
+    NV2080_CTRL_NVLINK_STATUS_L1_THRESHOLD_UNIT_50US = 1,
+} NV2080_CTRL_NVLINK_STATUS_L1_THRESHOLD_UNIT;
+
+#define NV2080_CTRL_NVLINK_MAX_LINKS           32
 
 // NVLink REFCLK types
-#define NV2080_CTRL_NVLINK_REFCLK_TYPE_INVALID                  (0x00U)
-#define NV2080_CTRL_NVLINK_REFCLK_TYPE_NVHS                     (0x01U)
-#define NV2080_CTRL_NVLINK_REFCLK_TYPE_PEX                      (0x02U)
+#define NV2080_CTRL_NVLINK_REFCLK_TYPE_INVALID (0x00U)
+#define NV2080_CTRL_NVLINK_REFCLK_TYPE_NVHS    (0x01U)
+#define NV2080_CTRL_NVLINK_REFCLK_TYPE_PEX     (0x02U)
 
 #define NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS_MESSAGE_ID (0x2U)
 
@@ -811,6 +833,96 @@ typedef struct NV2080_CTRL_NVLINK_CLEAR_COUNTERS_PARAMS {
 } NV2080_CTRL_NVLINK_CLEAR_COUNTERS_PARAMS;
 
 
+#define NV2080_CTRL_NVLINK_COUNTER_TP_TL_TX0                                0U
+#define NV2080_CTRL_NVLINK_COUNTER_TP_TL_TX1                                1U
+#define NV2080_CTRL_NVLINK_COUNTER_TP_TL_RX0                                2U
+#define NV2080_CTRL_NVLINK_COUNTER_TP_TL_RX1                                3U
+
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_ECC_LANE_SIZE              4U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_ECC_LANE_L0                4U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_ECC_LANE_L1                5U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_ECC_LANE_L2                6U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_ECC_LANE_L3                7U
+
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_SIZE              8U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L0                8U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L1                9U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L2                10U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L3                11U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L4                12U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L5                13U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L6                14U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_LANE_L7                15U
+
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_TX_ERR_RECOVERY                   16U
+
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_TX_ERR_REPLAY                     17U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_REPLAY                     18U
+
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_MASKED                 19U
+#define NV2080_CTRL_NVLINK_COUNTER_ERR_DL_RX_ERR_CRC_FLIT                   20U
+
+#define NV2080_CTRL_NVLINK_COUNTER_LP_DL                                    21U
+
+#define NV2080_CTRL_NVLINK_COUNTER_V1_MAX_COUNTER NV2080_CTRL_NVLINK_COUNTER_LP_DL
+
+
+
+#define NV2080_CTRL_NVLINK_COUNTER_MAX_GROUPS                               2U
+#define NV2080_CTRL_NVLINK_COUNTER_MAX_COUNTERS_PER_LINK_IN_REQ             28
+#define NV2080_CTRL_NVLINK_COUNTER_V2_GROUP(i)  ((i) / 64)
+#define NV2080_CTRL_NVLINK_COUNTER_V2_COUNTER_MASK(i) ((NvU64)1 << ((i) % 64))
+
+/*
+ * NV2080_CTRL_CMD_NVLINK_GET_COUNTERS_V2
+ *  This command gets the counts for different counter types.
+ *
+ * [in] linkMask
+ *     Mask of links to be queried
+ *
+ * [in] counterMask
+ *     Mask of counter types to be queried
+ *     One of NV2080_CTRL_NVLINK_COUNTERS_TYPE_* macros
+ *
+ * [out] counter
+ *     This array contains the error counts for each error type as requested from
+ *     the counterMask. The array indexes correspond to the mask bits one-to-one.
+ */
+
+typedef struct NV2080_CTRL_NVLINK_COUNTERS_V2_VALUES {
+    NvBool overFlow;
+    NV_DECLARE_ALIGNED(NvU64 value, 8);
+} NV2080_CTRL_NVLINK_COUNTERS_V2_VALUES;
+
+#define NV2080_CTRL_NVLINK_GET_COUNTERS_V2_PARAMS_MESSAGE_ID (0x50U)
+
+typedef struct NV2080_CTRL_NVLINK_GET_COUNTERS_V2_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 linkMask, 8);
+    NV_DECLARE_ALIGNED(NvU64 counterMask[NV2080_CTRL_NVLINK_COUNTER_MAX_GROUPS], 8);
+    NV_DECLARE_ALIGNED(NV2080_CTRL_NVLINK_COUNTERS_V2_VALUES counter[NV2080_CTRL_NVLINK_MAX_LINKS][NV2080_CTRL_NVLINK_COUNTER_MAX_COUNTERS_PER_LINK_IN_REQ], 8);
+} NV2080_CTRL_NVLINK_GET_COUNTERS_V2_PARAMS;
+#define NV2080_CTRL_CMD_NVLINK_GET_COUNTERS_V2 (0x20803050U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8 | NV2080_CTRL_NVLINK_GET_COUNTERS_V2_PARAMS_MESSAGE_ID)" */
+
+/*
+ * NV2080_CTRL_CMD_NVLINK_CLEAR_COUNTERS_V2
+ *  This command clears/resets the counters for the specified types.
+ *
+ * [in] linkMask
+ *  This parameter specifies for which links we want to clear the
+ *  counters.
+ *
+ * [in] counterMask
+ *  This parameter specifies the input mask for desired counters to be
+ *  cleared. Note that all counters cannot be cleared.
+*/
+
+#define NV2080_CTRL_NVLINK_CLEAR_COUNTERS_V2_PARAMS_MESSAGE_ID (0x51U)
+
+typedef struct NV2080_CTRL_NVLINK_CLEAR_COUNTERS_V2_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 linkMask, 8);
+    NV_DECLARE_ALIGNED(NvU64 counterMask[NV2080_CTRL_NVLINK_COUNTER_MAX_GROUPS], 8);
+} NV2080_CTRL_NVLINK_CLEAR_COUNTERS_V2_PARAMS;
+#define NV2080_CTRL_CMD_NVLINK_CLEAR_COUNTERS_V2 (0x20803051U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8 | NV2080_CTRL_NVLINK_CLEAR_COUNTERS_V2_PARAMS_MESSAGE_ID)" */
 
 /*
  * NV2080_CTRL_CMD_NVLINK_INJECT_ERROR
@@ -2225,6 +2337,9 @@ typedef struct NV2080_CTRL_NVLINK_UPDATE_CURRENT_CONFIG_PARAMS {
 #define NV2080_CTRL_NVLINK_SET_LOOPBACK_MODE_NEA                  (0x00000001)
 #define NV2080_CTRL_NVLINK_SET_LOOPBACK_MODE_NEDR                 (0x00000002)
 #define NV2080_CTRL_NVLINK_SET_LOOPBACK_MODE_NEDW                 (0x00000003)
+#define NV2080_CTRL_NVLINK_SET_LOOPBACK_MODE_PHY_REMOTE           (0x00000004)
+#define NV2080_CTRL_NVLINK_SET_LOOPBACK_MODE_PHY_LOCAL            (0x00000005)
+#define NV2080_CTRL_NVLINK_SET_LOOPBACK_MODE_EXT_LOCAL            (0x00000006)
 
 /*
  * NV2080_CTRL_CMD_NVLINK_SET_LOOPBACK_MODE
@@ -2395,11 +2510,14 @@ typedef struct NV2080_CTRL_NVLINK_CLEAR_REFRESH_COUNTERS_PARAMS {
  *
  * [Out] postRxDetLinkMask
  *     Mask of links discovered
+ * [Out] laneRxdetStatusMask
+ *     RXDET per-lane status mask
  */
 #define NV2080_CTRL_NVLINK_GET_LINK_MASK_POST_RX_DET_PARAMS_MESSAGE_ID (0x2aU)
 
 typedef struct NV2080_CTRL_NVLINK_GET_LINK_MASK_POST_RX_DET_PARAMS {
     NvU32 postRxDetLinkMask;
+    NvU32 laneRxdetStatusMask[NV2080_CTRL_NVLINK_MAX_LINKS];
 } NV2080_CTRL_NVLINK_GET_LINK_MASK_POST_RX_DET_PARAMS;
 
 #define NV2080_CTRL_CMD_NVLINK_GET_LINK_MASK_POST_RX_DET (0x2080302aU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_GET_LINK_MASK_POST_RX_DET_PARAMS_MESSAGE_ID" */
@@ -2609,6 +2727,12 @@ typedef struct NV2080_CTRL_NVLINK_DISABLE_DL_INTERRUPTS_PARAMS {
  *     Current Nvlink refclk source
  * [Out] nvlinkReqLinkClockMhz
  *     Requested link clock value
+ * [Out] nvlinkMinL1Threshold
+ *     Requested link Min L1 Threshold
+ * [Out] nvlinkMaxL1Threshold
+ *     Requested link Max L1 Threshold
+ * [Out] nvlinkL1ThresholdUnits
+ *     Requested link L1 Threshold Units
  */
 typedef struct NV2080_CTRL_NVLINK_GET_LINK_AND_CLOCK_VALUES {
     NvBool bLinkConnectedToSystem;
@@ -2625,6 +2749,9 @@ typedef struct NV2080_CTRL_NVLINK_GET_LINK_AND_CLOCK_VALUES {
     NvU32  nvlinkLinkDataRateKiBps;
     NvU8   nvlinkRefClkType;
     NvU32  nvlinkReqLinkClockMhz;
+    NvU32  nvlinkMinL1Threshold;
+    NvU32  nvlinkMaxL1Threshold;
+    NvU32  nvlinkL1ThresholdUnits;
 } NV2080_CTRL_NVLINK_GET_LINK_AND_CLOCK_VALUES;
 
 /*
@@ -2642,7 +2769,7 @@ typedef struct NV2080_CTRL_NVLINK_GET_LINK_AND_CLOCK_VALUES {
 typedef struct NV2080_CTRL_NVLINK_GET_LINK_AND_CLOCK_INFO_PARAMS {
     NvU32                                        linkMask;
     NvU32                                        nvlinkRefClkSpeedKHz;
-    NvBool                                       bSublinkStateInst; // whether instantaneous sublink state is needed 
+    NvBool                                       bSublinkStateInst; // whether instantaneous sublink state is needed
     NV2080_CTRL_NVLINK_GET_LINK_AND_CLOCK_VALUES linkInfo[NV2080_CTRL_NVLINK_MAX_LINKS];
 } NV2080_CTRL_NVLINK_GET_LINK_AND_CLOCK_INFO_PARAMS;
 
@@ -2694,15 +2821,12 @@ typedef struct NV2080_CTRL_NVLINK_PROCESS_FORCED_CONFIGS_PARAMS {
  *
  * Sync the NVLink lane shutdown properties with GSP-RM
  *
- * [In] bLaneShutdownEnabled
- *     Whether nvlink shutdown is enabled for the chip
  * [In] bLaneShutdownOnUnload
  *     Whether nvlink shutdown should be triggered on driver unload
  */
 #define NV2080_CTRL_NVLINK_SYNC_NVLINK_SHUTDOWN_PROPS_PARAMS_MESSAGE_ID (0x35U)
 
 typedef struct NV2080_CTRL_NVLINK_SYNC_NVLINK_SHUTDOWN_PROPS_PARAMS {
-    NvBool bLaneShutdownEnabled;
     NvBool bLaneShutdownOnUnload;
 } NV2080_CTRL_NVLINK_SYNC_NVLINK_SHUTDOWN_PROPS_PARAMS;
 
@@ -2888,19 +3012,26 @@ typedef struct NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS {
 
 #define NV2080_CTRL_CMD_READ_NVLINK_INBAND_RESPONSE (0x2080303d) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS_MESSAGE_ID" */
 
+#define NV2080_CTRL_NVLINK_L1_THRESHOLD_VALUE_DEFAULT (0xFFFFFFFF)
+
 /*
  * NV2080_CTRL_CMD_NVLINK_SET_L1_THRESHOLD
  *
- * This command is used to set the L1 threshold value
+ * This command is used to set the L1 threshold value.
+ * A value of NV2080_CTRL_NVLINK_L1_THRESHOLD_VALUE_DEFAULT
+ * will reset the L1 Threshold to the default values.
  *
  * [in] l1Threshold
  *     Used to set the L1 threshold value
  *
+ * [in] l1ExitThreshold
+ *     Used to set the L1 Exit threshold value
  */
 #define NV2080_CTRL_NVLINK_SET_L1_THRESHOLD_PARAMS_MESSAGE_ID (0x3eU)
 
 typedef struct NV2080_CTRL_NVLINK_SET_L1_THRESHOLD_PARAMS {
     NvU32 l1Threshold;
+    NvU32 l1ExitThreshold;
 } NV2080_CTRL_NVLINK_SET_L1_THRESHOLD_PARAMS;
 
 #define NV2080_CTRL_CMD_NVLINK_SET_L1_THRESHOLD (0x2080303eU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_SET_L1_THRESHOLD_PARAMS_MESSAGE_ID" */
@@ -2913,11 +3044,14 @@ typedef struct NV2080_CTRL_NVLINK_SET_L1_THRESHOLD_PARAMS {
  * [out] l1Threshold
  *     Used to get the L1 threshold value
  *
+ * [out] l1ExitThreshold
+ *     Used to get the L1 Exit Thrshold value
  */
 #define NV2080_CTRL_NVLINK_GET_L1_THRESHOLD_PARAMS_MESSAGE_ID (0x3fU)
 
 typedef struct NV2080_CTRL_NVLINK_GET_L1_THRESHOLD_PARAMS {
     NvU32 l1Threshold;
+    NvU32 l1ExitThreshold;
 } NV2080_CTRL_NVLINK_GET_L1_THRESHOLD_PARAMS;
 
 #define NV2080_CTRL_CMD_NVLINK_GET_L1_THRESHOLD (0x2080303fU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_GET_L1_THRESHOLD_PARAMS_MESSAGE_ID" */
@@ -3111,6 +3245,7 @@ typedef struct NV2080_CTRL_NVLINK_IS_REDUCED_CONFIG_PARAMS {
  */
 
 #define NV2080_CTRL_CMD_NVLINK_FATAL_ERROR_RECOVERY (0x20803048U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | 0x48" */
+
 
 
 /* _ctrl2080nvlink_h_ */

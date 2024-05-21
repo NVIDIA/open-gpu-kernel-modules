@@ -211,6 +211,13 @@ typedef struct
 typedef struct
 {
     NvU8   cmdType;
+    NvU32  nport;
+    NvBool bStop;
+} RM_SOE_CORE_CMD_INGRESS_STOP;
+
+typedef struct
+{
+    NvU8   cmdType;
     NvU8   moduleId;
     NvBool bAssert; 
 } RM_SOE_CORE_CMD_SET_LP_MODE;
@@ -284,6 +291,7 @@ typedef union
     RM_SOE_CORE_CMD_WRITE_CPLD writeCpld;
     RM_SOE_CORE_CMD_PERFORM_ONBOARD_PHASE performOnboardPhase;
     RM_SOE_CORE_CMD_NPORT_FATAL_INTR nportDisableIntr;
+    RM_SOE_CORE_CMD_INGRESS_STOP ingressStop;
 } RM_SOE_CORE_CMD;
 
 typedef struct

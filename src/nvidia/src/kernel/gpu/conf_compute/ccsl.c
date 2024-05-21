@@ -39,8 +39,6 @@
 
 #include "cc_drv.h"
 
-#define MAX_DECRYPT_BUNDLES 16
-
 static void
 ccslSplit32(NvU8 *dst, NvU32 num)
 {
@@ -63,6 +61,51 @@ ccslSplit64(NvU8 *dst, NvU64 num)
     dst[0] = (NvU8) (num);
 }
 
+static void
+writeKmbToContext
+(
+    pCcslContext  pCtx,
+    CC_KMB       *kmb
+)
+{
+    for (NvU32 index = 0; index < CC_AES_256_GCM_KEY_SIZE_DWORD; index++)
+    {
+        ccslSplit32(pCtx->keyOut + 4 * index, kmb->encryptBundle.key[index]);
+    }
+
+    for (NvU32 index = 0; index < CC_AES_256_GCM_IV_SIZE_DWORD; index++)
+    {
+        ccslSplit32(pCtx->ivOut + 4 * index, kmb->encryptBundle.iv[index]);
+        ccslSplit32(pCtx->ivMaskOut + 4 * index, kmb->encryptBundle.ivMask[index]);
+    }
+
+    if (kmb->bIsWorkLaunch)
+    {
+        for (NvU32 index = 0; index < CC_AES_256_GCM_KEY_SIZE_DWORD; index++)
+        {
+            ccslSplit32(pCtx->keyIn + 4 * index, kmb->hmacBundle.key[index]);
+        }
+
+        for (NvU32 index = 0; index < CC_HMAC_NONCE_SIZE_DWORD; index++)
+        {
+            ccslSplit32(pCtx->nonce + 4 * index, kmb->hmacBundle.nonce[index]);
+        }
+    }
+    else
+    {
+        for (NvU32 index = 0; index < CC_AES_256_GCM_KEY_SIZE_DWORD; index++)
+        {
+            ccslSplit32(pCtx->keyIn + 4 * index, kmb->decryptBundle.key[index]);
+        }
+
+        for (NvU32 index = 0; index < CC_AES_256_GCM_IV_SIZE_DWORD; index++)
+        {
+            ccslSplit32(pCtx->ivMaskIn + 4 * index, kmb->decryptBundle.ivMask[index]);
+            ccslSplit32(pCtx->ivIn + 4 * index, kmb->decryptBundle.iv[index]);
+        }
+    }
+}
+
 static NvBool
 isChannel
 (
@@ -70,236 +113,6 @@ isChannel
 )
 {
     return (pCtx->msgCounterSize == CSL_MSG_CTR_32) ? NV_TRUE : NV_FALSE;
-}
-
-static void
-writeKmbToContext
-(
-    pCcslContext    pCtx,
-    CC_KMB         *kmb,
-    ROTATE_IV_TYPE  rotateOperation
-)
-{
-    if ((rotateOperation == ROTATE_IV_ENCRYPT) || (rotateOperation == ROTATE_IV_ALL_VALID))
-    {
-        for (NvU32 index = 0; index < CC_AES_256_GCM_KEY_SIZE_DWORD; index++)
-        {
-            ccslSplit32(pCtx->keyOut + 4 * index, kmb->encryptBundle.key[index]);
-        }
-
-        for (NvU32 index = 0; index < CC_AES_256_GCM_IV_SIZE_DWORD; index++)
-        {
-            ccslSplit32(pCtx->ivOut + 4 * index, kmb->encryptBundle.iv[index]);
-            ccslSplit32(pCtx->ivMaskOut + 4 * index, kmb->encryptBundle.ivMask[index]);
-        }
-    }
-
-    if ((rotateOperation == ROTATE_IV_DECRYPT) || (rotateOperation == ROTATE_IV_ALL_VALID) ||
-        (rotateOperation == ROTATE_IV_HMAC))
-    {
-        if (kmb->bIsWorkLaunch)
-        {
-            for (NvU32 index = 0; index < CC_AES_256_GCM_KEY_SIZE_DWORD; index++)
-            {
-                ccslSplit32(pCtx->keyIn + 4 * index, kmb->hmacBundle.key[index]);
-            }
-
-            for (NvU32 index = 0; index < CC_HMAC_NONCE_SIZE_DWORD; index++)
-            {
-                ccslSplit32(pCtx->nonce + 4 * index, kmb->hmacBundle.nonce[index]);
-            }
-        }
-        else
-        {
-            for (NvU32 index = 0; index < CC_AES_256_GCM_KEY_SIZE_DWORD; index++)
-            {
-                ccslSplit32(pCtx->keyIn + 4 * index, kmb->decryptBundle.key[index]);
-
-                if (isChannel(pCtx))
-                {
-                    ccslSplit32(pCtx->pDecryptBundles[pCtx->currDecryptBundle].keyIn + 4 * index, kmb->decryptBundle.key[index]);
-                }
-            }
-
-            for (NvU32 index = 0; index < CC_AES_256_GCM_IV_SIZE_DWORD; index++)
-            {
-                ccslSplit32(pCtx->ivMaskIn + 4 * index, kmb->decryptBundle.ivMask[index]);
-
-                if (isChannel(pCtx))
-                {
-                    ccslSplit32(pCtx->pDecryptBundles[pCtx->currDecryptBundle].ivMaskIn + 4 * index, kmb->decryptBundle.ivMask[index]);
-                }
-
-                ccslSplit32(pCtx->ivIn + 4 * index, kmb->decryptBundle.iv[index]);
-            }
-        }
-    }
-}
-
-static NV_STATUS
-ccslUpdateViaKeyId
-(
-    ConfidentialCompute *pConfCompute,
-    pCcslContext         pCtx,
-    NvU32                globalKeyId
-)
-{
-    NV_STATUS       status;
-    CC_KMB          kmb;
-    OBJSYS         *pSys            = SYS_GET_INSTANCE();
-    OBJGPUMGR      *pGpuMgr         = SYS_GET_GPUMGR(pSys);
-    ROTATE_IV_TYPE  rotateOperation = ROTATE_IV_ALL_VALID;
-    NvU32           d2hGkeyId       = 0;
-    NvU32           h2dGkeyId       = 0;
-
-    // This function must be redesigned for multi-gpu
-    if (!pGpuMgr->ccCaps.bHccFeatureCapable)
-    {
-        return NV_ERR_NOT_SUPPORTED;
-    }
-
-    if (pCtx == NULL || pConfCompute == NULL)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    if (!confComputeKeyStoreIsValidGlobalKeyId(pConfCompute, globalKeyId))
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    // Determine whether the global key ID passed in is an encrypt key or a decrypt key.
-    confComputeGetKeyPairByKey(pConfCompute, globalKeyId, &h2dGkeyId, &d2hGkeyId);
-    rotateOperation = (globalKeyId == h2dGkeyId) ? ROTATE_IV_ENCRYPT : ROTATE_IV_DECRYPT;
-
-    status = confComputeKeyStoreRetrieveViaKeyId_HAL(pConfCompute,
-                                                     globalKeyId,
-                                                     rotateOperation,
-                                                     NV_TRUE,
-                                                     &kmb);
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    writeKmbToContext(pCtx, &kmb, rotateOperation);
-    portMemSet(&kmb, 0, sizeof(kmb));
-
-    return NV_OK;
-}
-
-static NV_STATUS
-ccslRotationChecksEncrypt
-(
-    ConfidentialCompute *pConfCompute,
-    pCcslContext         pCtx,
-    NvU32                bufferSize
-)
-{
-    NV_STATUS status = NV_OK;
-
-    if (pConfCompute == NULL || pCtx == NULL || pCtx->pEncStatsBuffer == NULL ||
-        !confComputeKeyStoreIsValidGlobalKeyId(pConfCompute, pCtx->globalKeyIdOut))
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    // Ensure additions won't overflow the counters
-    if ((pCtx->pEncStatsBuffer->bytesEncryptedH2D > (pCtx->pEncStatsBuffer->bytesEncryptedH2D + bufferSize)) ||
-        (pCtx->pEncStatsBuffer->numEncryptionsH2D > (pCtx->pEncStatsBuffer->numEncryptionsH2D + 1)))
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    pCtx->pEncStatsBuffer->bytesEncryptedH2D += bufferSize;
-    pCtx->pEncStatsBuffer->numEncryptionsH2D += 1;
-
-    // Check if we must trigger key rotation
-    if (confComputeIsGivenThresholdCrossed((void *)pCtx->pEncStatsBuffer,
-                                           pConfCompute->keyRotationInternalThreshold,
-                                           NV_TRUE))
-    {
-        NV_PRINTF(LEVEL_INFO, "Triggering key rotation for global key id 0x%x\n", pCtx->globalKeyIdOut);
-        NV_PRINTF(LEVEL_INFO, "Total bytes encrypted 0x%llx total encrypt ops 0x%llx\n",
-                  pCtx->pEncStatsBuffer->bytesEncryptedH2D - bufferSize,
-                  pCtx->pEncStatsBuffer->numEncryptionsH2D - 1);
-
-        status = confComputeKeyStoreUpdateKey(pConfCompute, pCtx->globalKeyIdOut);
-        if (status != NV_OK)
-        {
-            return status;
-        }
-
-        // Now we need to update the CCSL context
-        status = ccslUpdateViaKeyId(pConfCompute, pCtx, pCtx->globalKeyIdOut);
-        if (status != NV_OK)
-        {
-            return status;
-        }
-
-        // The aggregate stats must be reset as the keys have been rotated
-        pCtx->pEncStatsBuffer->bytesEncryptedH2D = bufferSize;
-        pCtx->pEncStatsBuffer->numEncryptionsH2D = 1;
-    }
-
-    return status;
-}
-
-static NV_STATUS
-ccslRotationChecksDecrypt
-(
-    ConfidentialCompute *pConfCompute,
-    pCcslContext         pCtx,
-    NvU32                bufferSize
-)
-{
-    NV_STATUS status = NV_OK;
-
-    if (pConfCompute == NULL || pCtx == NULL || pCtx->pEncStatsBuffer == NULL ||
-        !confComputeKeyStoreIsValidGlobalKeyId(pConfCompute, pCtx->globalKeyIdIn))
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    // Ensure additions won't overflow the counters
-    if ((pCtx->pEncStatsBuffer->bytesEncryptedD2H > (pCtx->pEncStatsBuffer->bytesEncryptedD2H + bufferSize)) ||
-        (pCtx->pEncStatsBuffer->numEncryptionsD2H > (pCtx->pEncStatsBuffer->numEncryptionsD2H + 1)))
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    pCtx->pEncStatsBuffer->bytesEncryptedD2H += bufferSize;
-    pCtx->pEncStatsBuffer->numEncryptionsD2H += 1;
-
-    // Check if we must trigger key rotation
-    if (confComputeIsGivenThresholdCrossed((void *)pCtx->pEncStatsBuffer,
-                                           pConfCompute->keyRotationInternalThreshold,
-                                           NV_FALSE))
-    {
-        NV_PRINTF(LEVEL_INFO, "Triggering key rotation for global key id 0x%x\n", pCtx->globalKeyIdIn);
-        NV_PRINTF(LEVEL_INFO, "Total bytes encrypted 0x%llx total encrypt ops 0x%llx\n",
-                  pCtx->pEncStatsBuffer->bytesEncryptedD2H - bufferSize,
-                  pCtx->pEncStatsBuffer->numEncryptionsD2H - 1);
-
-        status = confComputeKeyStoreUpdateKey(pConfCompute, pCtx->globalKeyIdIn);
-        if (status != NV_OK)
-        {
-            return status;
-        }
-
-        // Now we need to update the CCSL context
-        status = ccslUpdateViaKeyId(pConfCompute, pCtx, pCtx->globalKeyIdIn);
-        if (status != NV_OK)
-        {
-            return status;
-        }
-
-        // The aggregate stats must be reset as the keys have been rotated
-        pCtx->pEncStatsBuffer->bytesEncryptedD2H = bufferSize;
-        pCtx->pEncStatsBuffer->numEncryptionsD2H = 1;
-    }
-
-    return status;
 }
 
 NV_STATUS
@@ -403,7 +216,6 @@ ccslContextInitViaChannel_IMPL
 (
     pCcslContext *ppCtx,
     NvHandle      hClient,
-    NvHandle      hSubdevice,
     NvHandle      hChannel
 )
 {
@@ -443,28 +255,19 @@ ccslContextInitViaChannel_IMPL
     pCcslContext pCtx = portMemAllocNonPaged(sizeof(*pCtx));
     if (pCtx == NULL)
     {
-        return NV_ERR_NO_MEMORY;
+        status = NV_ERR_NO_MEMORY;
+        goto ccslContextInitViaChannelCleanup;
     }
     *ppCtx = pCtx;
 
     pCtx->openrmCtx = NULL;
-    pCtx->pDecryptBundles = NULL;
-
     if (!libspdm_aead_gcm_prealloc(&pCtx->openrmCtx))
     {
         status = NV_ERR_NO_MEMORY;
         goto ccslContextInitViaChannelCleanup;
     }
 
-    pCtx->pDecryptBundles = portMemAllocNonPaged(sizeof(*pCtx->pDecryptBundles) * MAX_DECRYPT_BUNDLES);
-    if (pCtx->pDecryptBundles == NULL)
-    {
-        status = NV_ERR_NO_MEMORY;
-        goto ccslContextInitViaChannelCleanup;
-    }
-
     pCtx->hClient = hClient;
-    pCtx->hSubdevice = hSubdevice;
     pCtx->hChannel = hChannel;
 
     if (IS_GSP_CLIENT(pGpu))
@@ -488,9 +291,7 @@ ccslContextInitViaChannel_IMPL
                              NVC56F_CTRL_CMD_GET_KMB, &getKmbParams,
                              sizeof(getKmbParams));
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, status, ccslContextInitViaChannelCleanup);
-
-    pCtx->currDecryptBundle = 0;
-
+    writeKmbToContext(pCtx, &getKmbParams.kmb);
 
     status = memdescCreate(&pMemDesc, pGpu, sizeof(CC_CRYPTOBUNDLE_STATS), sizeof(NvU64), NV_TRUE,
                            ADDR_SYSMEM, NV_MEMORY_UNCACHED, MEMDESC_FLAGS_NONE);
@@ -499,18 +300,12 @@ ccslContextInitViaChannel_IMPL
     status = memdescAlloc(pMemDesc);
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, status, ccslContextInitViaChannelmemdescDestroy);
 
-    status = kchannelSetEncryptionStatsBuffer_HAL(pGpu, pKernelChannel, pMemDesc, NV_TRUE);
+    status = kchannelSetEncryptionStatsBuffer(pGpu, pKernelChannel, pMemDesc, NV_TRUE);
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, status, ccslContextInitViaChannelmemdescFree);
 
     pCtx->pEncStatsBuffer = pKernelChannel->pEncStatsBuf;
     pCtx->pMemDesc = pMemDesc;
     pCtx->msgCounterSize = CSL_MSG_CTR_32;
-    writeKmbToContext(pCtx, &getKmbParams.kmb, ROTATE_IV_ALL_VALID);
-
-    // Set values only used for GSP keys to invalid
-    pCtx->globalKeyIdIn  = CC_GKEYID_GEN(CC_KEYSPACE_SIZE, 0);
-    pCtx->globalKeyIdOut = CC_GKEYID_GEN(CC_KEYSPACE_SIZE, 0);
-    pCtx->pConfCompute   = NULL;
 
     return NV_OK;
 
@@ -521,7 +316,6 @@ ccslContextInitViaChannelmemdescDestroy:
     memdescDestroy(pMemDesc);
 
 ccslContextInitViaChannelCleanup:
-    portMemFree(pCtx->pDecryptBundles);
     openrmCtxFree(pCtx->openrmCtx);
     portMemFree(pCtx);
 
@@ -549,18 +343,7 @@ ccslContextInitViaKeyId_KERNEL
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    if (ppCtx == NULL || pConfCompute == NULL)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    //
-    // Check to see whether key is valid, as well as explicitly an internal key.
-    // While this API would work for other keys, we only expect and explicitly
-    // support it for internal (GSP) keys.
-    //
-    if (!confComputeKeyStoreIsValidGlobalKeyId(pConfCompute, globalKeyId) ||
-        CC_GKEYID_GET_KEYSPACE(globalKeyId) != CC_KEYSPACE_GSP)
+    if (ppCtx == NULL)
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
@@ -577,15 +360,6 @@ ccslContextInitViaKeyId_KERNEL
         return NV_ERR_NO_MEMORY;
     }
 
-    pCtx->pEncStatsBuffer = (CC_CRYPTOBUNDLE_STATS *)portMemAllocNonPaged(sizeof(CC_CRYPTOBUNDLE_STATS));
-    if (pCtx->pEncStatsBuffer == NULL)
-    {
-        portMemFree(pCtx);
-        return NV_ERR_NO_MEMORY;
-    }
-
-    portMemSet((void *)pCtx->pEncStatsBuffer, 0, sizeof(CC_CRYPTOBUNDLE_STATS));
-
     status = confComputeKeyStoreRetrieveViaKeyId_HAL(pConfCompute,
                                                      globalKeyId,
                                                      ROTATE_IV_ALL_VALID,
@@ -593,7 +367,6 @@ ccslContextInitViaKeyId_KERNEL
                                                      &kmb);
     if (status != NV_OK)
     {
-        portMemFree((void *)pCtx->pEncStatsBuffer);
         openrmCtxFree(pCtx->openrmCtx);
         portMemFree(pCtx);
         return status;
@@ -601,11 +374,9 @@ ccslContextInitViaKeyId_KERNEL
 
     // For now assume any call to this function uses a 64-bit message counter.
     pCtx->msgCounterSize = CSL_MSG_CTR_64;
+    pCtx->pEncStatsBuffer = NULL;
     pCtx->pMemDesc = NULL;
-    writeKmbToContext(pCtx, &kmb, ROTATE_IV_ALL_VALID);
-
-    confComputeGetKeyPairByKey(pConfCompute, globalKeyId, &pCtx->globalKeyIdOut, &pCtx->globalKeyIdIn);
-    pCtx->pConfCompute = pConfCompute;
+    writeKmbToContext(pCtx, &kmb);
 
     return NV_OK;
 }
@@ -621,15 +392,6 @@ ccslContextClear_IMPL
     if (pCtx == NULL)
     {
         return;
-    }
-
-    if (isChannel(pCtx))
-    {
-        portMemFree(pCtx->pDecryptBundles);
-    }
-    else
-    {
-        portMemFree((void *)pCtx->pEncStatsBuffer);
     }
 
     openrmCtxFree(pCtx->openrmCtx);
@@ -693,8 +455,7 @@ ccslContextUpdate_KERNEL(pCcslContext pCtx)
         return status;
     }
 
-    pCtx->currDecryptBundle = (pCtx->currDecryptBundle + 1) % MAX_DECRYPT_BUNDLES;
-    writeKmbToContext(pCtx, &getKmbParams.kmb, ROTATE_IV_ALL_VALID);
+    writeKmbToContext(pCtx, &getKmbParams.kmb);
     portMemSet(&getKmbParams, 0, sizeof(getKmbParams));
 
     return NV_OK;
@@ -795,12 +556,24 @@ ccslRotateIv_IMPL
     switch (direction)
     {
         case CCSL_DIR_HOST_TO_DEVICE:
+            portMemCopy(pCtx->keyOut, sizeof(pCtx->keyOut),
+                        &rotateIvParams.updatedKmb.encryptBundle.key,
+                        sizeof(rotateIvParams.updatedKmb.encryptBundle.key));
+            portMemCopy(pCtx->ivMaskOut, sizeof(pCtx->ivMaskOut),
+                        &rotateIvParams.updatedKmb.encryptBundle.ivMask,
+                        sizeof(rotateIvParams.updatedKmb.encryptBundle.ivMask));
             portMemCopy(pCtx->ivOut, sizeof(pCtx->ivOut),
                         &rotateIvParams.updatedKmb.encryptBundle.iv,
                         sizeof(rotateIvParams.updatedKmb.encryptBundle.iv));
             break;
 
         case CCSL_DIR_DEVICE_TO_HOST:
+            portMemCopy(pCtx->keyIn, sizeof(pCtx->keyIn),
+                        &rotateIvParams.updatedKmb.decryptBundle.key,
+                        sizeof(rotateIvParams.updatedKmb.decryptBundle.key));
+            portMemCopy(pCtx->ivMaskIn, sizeof(pCtx->ivMaskIn),
+                        &rotateIvParams.updatedKmb.decryptBundle.ivMask,
+                        sizeof(rotateIvParams.updatedKmb.decryptBundle.ivMask));
             portMemCopy(pCtx->ivIn, sizeof(pCtx->ivIn),
                         &rotateIvParams.updatedKmb.decryptBundle.iv,
                         sizeof(rotateIvParams.updatedKmb.decryptBundle.iv));
@@ -861,6 +634,12 @@ ccslEncryptWithIv_IMPL
         return NV_ERR_GENERIC;
     }
 
+    if (isChannel(pCtx))
+    {
+        pCtx->pEncStatsBuffer->numEncryptionsH2D++;
+        pCtx->pEncStatsBuffer->bytesEncryptedH2D += bufferSize;
+    }
+
     return NV_OK;
 }
 
@@ -908,36 +687,13 @@ ccslEncrypt_KERNEL
         return NV_ERR_GENERIC;
     }
 
+    if (isChannel(pCtx))
+    {
+        pCtx->pEncStatsBuffer->numEncryptionsH2D++;
+        pCtx->pEncStatsBuffer->bytesEncryptedH2D += bufferSize;
+    }
+
     return NV_OK;
-}
-
-NV_STATUS
-ccslEncryptWithRotationChecks_KERNEL
-(
-    pCcslContext         pCtx,
-    NvU32                bufferSize,
-    NvU8 const          *inputBuffer,
-    NvU8 const          *aadBuffer,
-    NvU32                aadSize,
-    NvU8                *outputBuffer,
-    NvU8                *authTagBuffer
-)
-{
-    NV_STATUS status = NV_OK;
-
-    if (pCtx == NULL || pCtx->pConfCompute == NULL)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    status = ccslRotationChecksEncrypt(pCtx->pConfCompute, pCtx, bufferSize);
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    // If we've rolled the keys but failed to encrypt, we cannot roll back the key update.
-    return ccslEncrypt(pCtx, bufferSize, inputBuffer, aadBuffer, aadSize, outputBuffer, authTagBuffer);
 }
 
 NV_STATUS
@@ -947,7 +703,6 @@ ccslDecrypt_KERNEL
     NvU32         bufferSize,
     NvU8 const   *inputBuffer,
     NvU8 const   *decryptIv,
-    NvU32         keyRotationId,
     NvU8 const   *aadBuffer,
     NvU32         aadSize,
     NvU8         *outputBuffer,
@@ -961,20 +716,10 @@ ccslDecrypt_KERNEL
 
     NvU8   iv[CC_AES_256_GCM_IV_SIZE_BYTES] = {0};
     size_t outputBufferSize = bufferSize;
-    NvU8 *keyIn = pCtx->keyIn;
-    NvU8 *ivMaskIn = pCtx->ivMaskIn;
 
     if ((bufferSize == 0) || ((aadBuffer != NULL) && (aadSize == 0)))
     {
         return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    if (isChannel(pCtx) && (keyRotationId != NV_U32_MAX))
-    {
-        pDecryptBundle pDecryptBundle = pCtx->pDecryptBundles + (keyRotationId % MAX_DECRYPT_BUNDLES);
-
-        keyIn = pDecryptBundle->keyIn;
-        ivMaskIn = pDecryptBundle->ivMaskIn;
     }
 
     if (decryptIv == NULL)
@@ -986,19 +731,19 @@ ccslDecrypt_KERNEL
 
         for (NvU64 i = 0; i < CC_AES_256_GCM_IV_SIZE_BYTES; i++)
         {
-            iv[i] = pCtx->ivIn[i] ^ ivMaskIn[i];
+            iv[i] = pCtx->ivIn[i] ^ pCtx->ivMaskIn[i];
         }
     }
     else
     {
         for (NvU64 i = 0; i < CC_AES_256_GCM_IV_SIZE_BYTES; i++)
         {
-            iv[i] = decryptIv[i] ^ ivMaskIn[i];
+            iv[i] = decryptIv[i] ^ pCtx->ivMaskIn[i];
         }
     }
 
     if(!libspdm_aead_aes_gcm_decrypt_prealloc(pCtx->openrmCtx,
-        keyIn, CC_AES_256_GCM_KEY_SIZE_BYTES,
+        (NvU8 *)pCtx->keyIn, CC_AES_256_GCM_KEY_SIZE_BYTES,
         iv, CC_AES_256_GCM_IV_SIZE_BYTES, aadBuffer, aadSize,
         inputBuffer, bufferSize, (NvU8 *) authTagBuffer, 16,
         outputBuffer, &outputBufferSize))
@@ -1007,36 +752,6 @@ ccslDecrypt_KERNEL
     }
 
     return NV_OK;
-}
-
-NV_STATUS
-ccslDecryptWithRotationChecks_KERNEL
-(
-    pCcslContext         pCtx,
-    NvU32                bufferSize,
-    NvU8 const          *inputBuffer,
-    NvU8 const          *decryptIv,
-    NvU8 const          *aadBuffer,
-    NvU32                aadSize,
-    NvU8                *outputBuffer,
-    NvU8 const          *authTagBuffer
-)
-{
-    NV_STATUS status = NV_OK;
-
-    if (pCtx == NULL || pCtx->pConfCompute == NULL)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    status = ccslRotationChecksDecrypt(pCtx->pConfCompute, pCtx, bufferSize);
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    // If we've rolled the keys but failed to decrypt, we cannot roll back the key update.
-    return ccslDecrypt(pCtx, bufferSize, inputBuffer, decryptIv, NV_U32_MAX, aadBuffer, aadSize, outputBuffer, authTagBuffer);
 }
 
 static NV_STATUS ccslIncrementCounter192(NvU8 *ctr)
@@ -1241,17 +956,16 @@ ccslIncrementIv_IMPL
 }
 
 NV_STATUS
-ccslLogEncryption_IMPL
+ccslLogDeviceEncryption_IMPL
 (
     pCcslContext pCtx,
-    NvU8         direction,
     NvU32        bufferSize
 )
 {
     NV_STATUS status;
     NvU64 messageNum;
 
-    status = ccslQueryMessagePool(pCtx, direction, &messageNum);
+    status = ccslQueryMessagePool(pCtx, CCSL_DIR_DEVICE_TO_HOST, &messageNum);
     if (status != NV_OK)
     {
         return status;
@@ -1263,21 +977,9 @@ ccslLogEncryption_IMPL
 
     if (isChannel(pCtx))
     {
-        if (direction == CCSL_DIR_DEVICE_TO_HOST)
-        {
-            pCtx->pEncStatsBuffer->numEncryptionsD2H++;
-            pCtx->pEncStatsBuffer->bytesEncryptedD2H += bufferSize;
-        }
-        else
-        {
-            pCtx->pEncStatsBuffer->numEncryptionsH2D++;
-            pCtx->pEncStatsBuffer->bytesEncryptedH2D += bufferSize;
-        }
-    }
-    else if (pCtx->globalKeyIdIn == CC_GKEYID_GEN(CC_KEYSPACE_GSP, CC_LKEYID_GSP_CPU_REPLAYABLE_FAULT))
-    {
-        status = ccslRotationChecksDecrypt(pCtx->pConfCompute, pCtx, bufferSize);
+        pCtx->pEncStatsBuffer->numEncryptionsD2H++;
+        pCtx->pEncStatsBuffer->bytesEncryptedD2H += bufferSize;
     }
 
-    return status;
+    return NV_OK;
 }

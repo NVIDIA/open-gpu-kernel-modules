@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -725,9 +725,8 @@ bool uvm_va_block_cpu_is_region_resident_on(uvm_va_block_t *va_block, int nid, u
 }
 
 // Return the preferred NUMA node ID for the block's policy.
-// If the preferred node ID is NUMA_NO_NODE, the nearest NUMA node ID
-// with memory is returned. In most cases, this should be the current
-// NUMA node.
+// If the preferred node ID is NUMA_NO_NODE, the current NUMA node ID
+// is returned.
 static int uvm_va_block_context_get_node(uvm_va_block_context_t *va_block_context)
 {
     if (va_block_context->make_resident.dest_nid != NUMA_NO_NODE)
@@ -1329,12 +1328,12 @@ error_block_free:
 
 static void cpu_chunk_remove_sysmem_gpu_mapping(uvm_cpu_chunk_t *chunk, uvm_gpu_t *gpu)
 {
-    NvU64 gpu_mapping_addr = uvm_cpu_chunk_get_parent_gpu_phys_addr(chunk, gpu->parent);
+    NvU64 gpu_mapping_addr = uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu);
     if (gpu_mapping_addr == 0)
         return;
 
     uvm_pmm_sysmem_mappings_remove_gpu_mapping(&gpu->pmm_reverse_sysmem_mappings, gpu_mapping_addr);
-    uvm_cpu_chunk_unmap_parent_gpu_phys(chunk, gpu->parent);
+    uvm_cpu_chunk_unmap_gpu(chunk, gpu);
 }
 
 static NV_STATUS cpu_chunk_add_sysmem_gpu_mapping(uvm_cpu_chunk_t *chunk,
@@ -1357,17 +1356,14 @@ static NV_STATUS cpu_chunk_add_sysmem_gpu_mapping(uvm_cpu_chunk_t *chunk,
 
     chunk_size = uvm_cpu_chunk_get_size(chunk);
 
-    // TODO: Bug 3744779: Handle benign assertion in
-    //       pmm_sysmem_mappings_remove_gpu_mapping() in case of a
-    //       failure.
     status = uvm_pmm_sysmem_mappings_add_gpu_mapping(&gpu->pmm_reverse_sysmem_mappings,
-                                                     uvm_cpu_chunk_get_parent_gpu_phys_addr(chunk, gpu->parent),
+                                                     uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu),
                                                      uvm_va_block_cpu_page_address(block, page_index),
                                                      chunk_size,
                                                      block,
                                                      UVM_ID_CPU);
     if (status != NV_OK)
-        cpu_chunk_remove_sysmem_gpu_mapping(chunk, gpu);
+        uvm_cpu_chunk_unmap_gpu(chunk, gpu);
 
     return status;
 }
@@ -1396,10 +1392,10 @@ static NV_STATUS block_gpu_map_phys_all_cpu_pages(uvm_va_block_t *block, uvm_gpu
 
     for_each_possible_uvm_node(nid) {
         for_each_cpu_chunk_in_block(chunk, page_index, block, nid) {
-            UVM_ASSERT_MSG(uvm_cpu_chunk_get_parent_gpu_phys_addr(chunk, gpu->parent) == 0,
+            UVM_ASSERT_MSG(uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu) == 0,
                            "GPU%u DMA address 0x%llx\n",
                            uvm_id_value(gpu->id),
-                           uvm_cpu_chunk_get_parent_gpu_phys_addr(chunk, gpu->parent));
+                           uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu));
 
             status = cpu_chunk_add_sysmem_gpu_mapping(chunk, block, page_index, gpu);
             if (status != NV_OK)
@@ -1562,8 +1558,7 @@ NV_STATUS uvm_va_block_gpu_state_alloc(uvm_va_block_t *va_block)
 }
 
 void uvm_va_block_unmap_cpu_chunk_on_gpus(uvm_va_block_t *block,
-                                          uvm_cpu_chunk_t *chunk,
-                                          uvm_page_index_t page_index)
+                                          uvm_cpu_chunk_t *chunk)
 {
     uvm_gpu_id_t id;
 
@@ -1602,7 +1597,7 @@ NV_STATUS uvm_va_block_map_cpu_chunk_on_gpus(uvm_va_block_t *block,
     return NV_OK;
 
 error:
-    uvm_va_block_unmap_cpu_chunk_on_gpus(block, chunk, page_index);
+    uvm_va_block_unmap_cpu_chunk_on_gpus(block, chunk);
     return status;
 }
 
@@ -1621,7 +1616,7 @@ void uvm_va_block_remove_cpu_chunks(uvm_va_block_t *va_block, uvm_va_block_regio
             uvm_page_mask_region_clear(&va_block->cpu.pte_bits[UVM_PTE_BITS_CPU_WRITE], chunk_region);
             uvm_va_block_cpu_clear_resident_region(va_block, nid, chunk_region);
             uvm_cpu_chunk_remove_from_block(va_block, nid, page_index);
-            uvm_va_block_unmap_cpu_chunk_on_gpus(va_block, chunk, page_index);
+            uvm_va_block_unmap_cpu_chunk_on_gpus(va_block, chunk);
             uvm_cpu_chunk_free(chunk);
         }
     }
@@ -2071,17 +2066,12 @@ static NV_STATUS block_populate_pages_cpu(uvm_va_block_t *block,
     uvm_page_mask_t *allocated_mask;
     uvm_cpu_chunk_alloc_flags_t alloc_flags = UVM_CPU_CHUNK_ALLOC_FLAGS_NONE;
     uvm_va_space_t *va_space = uvm_va_block_get_va_space(block);
-    const uvm_va_policy_t *policy = uvm_va_policy_get_region(block, populate_region);
     uvm_page_index_t page_index;
     uvm_gpu_id_t id;
     int preferred_nid = block_context->make_resident.dest_nid;
 
     if (block_test && block_test->cpu_chunk_allocation_target_id != NUMA_NO_NODE)
         preferred_nid = block_test->cpu_chunk_allocation_target_id;
-
-    // If the VA range has a preferred NUMA node, use it.
-    if (preferred_nid == NUMA_NO_NODE)
-        preferred_nid = policy->preferred_nid;
 
     // TODO: Bug 4158598: Using NUMA_NO_NODE for staging allocations is sub-optimal.
     if (preferred_nid != NUMA_NO_NODE) {
@@ -2133,11 +2123,12 @@ static NV_STATUS block_populate_pages_cpu(uvm_va_block_t *block,
         uvm_page_mask_t *node_pages_mask = &block_context->make_resident.node_pages_mask;
         uvm_chunk_sizes_mask_t allocation_sizes;
 
-        if (uvm_page_mask_test(allocated_mask, page_index) ||
-            uvm_va_block_cpu_is_page_resident_on(block, preferred_nid, page_index)) {
+        if (uvm_page_mask_test(allocated_mask, page_index)) {
             page_index = uvm_va_block_next_unset_page_in_mask(populate_region, allocated_mask, page_index) - 1;
             continue;
         }
+
+        UVM_ASSERT(!uvm_va_block_cpu_is_page_resident_on(block, preferred_nid, page_index));
 
         allocation_sizes = block_calculate_largest_alloc_size(block,
                                                               page_index,
@@ -2313,7 +2304,7 @@ static bool block_gpu_supports_2m(uvm_va_block_t *block, uvm_gpu_t *gpu)
     return uvm_mmu_page_size_supported(&gpu_va_space->page_tables, UVM_PAGE_SIZE_2M);
 }
 
-NvU32 uvm_va_block_gpu_big_page_size(uvm_va_block_t *va_block, uvm_gpu_t *gpu)
+NvU64 uvm_va_block_gpu_big_page_size(uvm_va_block_t *va_block, uvm_gpu_t *gpu)
 {
     uvm_gpu_va_space_t *gpu_va_space;
 
@@ -2321,7 +2312,7 @@ NvU32 uvm_va_block_gpu_big_page_size(uvm_va_block_t *va_block, uvm_gpu_t *gpu)
     return gpu_va_space->page_tables.big_page_size;
 }
 
-static uvm_va_block_region_t range_big_page_region_all(NvU64 start, NvU64 end, NvU32 big_page_size)
+static uvm_va_block_region_t range_big_page_region_all(NvU64 start, NvU64 end, NvU64 big_page_size)
 {
     NvU64 first_addr = UVM_ALIGN_UP(start, big_page_size);
     NvU64 outer_addr = UVM_ALIGN_DOWN(end + 1, big_page_size);
@@ -2335,20 +2326,20 @@ static uvm_va_block_region_t range_big_page_region_all(NvU64 start, NvU64 end, N
     return uvm_va_block_region((first_addr - start) / PAGE_SIZE, (outer_addr - start) / PAGE_SIZE);
 }
 
-static size_t range_num_big_pages(NvU64 start, NvU64 end, NvU32 big_page_size)
+static size_t range_num_big_pages(NvU64 start, NvU64 end, NvU64 big_page_size)
 {
     uvm_va_block_region_t region = range_big_page_region_all(start, end, big_page_size);
     return (size_t)uvm_div_pow2_64(uvm_va_block_region_size(region), big_page_size);
 }
 
-uvm_va_block_region_t uvm_va_block_big_page_region_all(uvm_va_block_t *va_block, NvU32 big_page_size)
+uvm_va_block_region_t uvm_va_block_big_page_region_all(uvm_va_block_t *va_block, NvU64 big_page_size)
 {
     return range_big_page_region_all(va_block->start, va_block->end, big_page_size);
 }
 
 uvm_va_block_region_t uvm_va_block_big_page_region_subset(uvm_va_block_t *va_block,
                                                           uvm_va_block_region_t region,
-                                                          NvU32 big_page_size)
+                                                          NvU64 big_page_size)
 {
     NvU64 start = uvm_va_block_region_start(va_block, region);
     NvU64 end = uvm_va_block_region_end(va_block, region);
@@ -2366,12 +2357,12 @@ uvm_va_block_region_t uvm_va_block_big_page_region_subset(uvm_va_block_t *va_blo
     return big_region;
 }
 
-size_t uvm_va_block_num_big_pages(uvm_va_block_t *va_block, NvU32 big_page_size)
+size_t uvm_va_block_num_big_pages(uvm_va_block_t *va_block, NvU64 big_page_size)
 {
     return range_num_big_pages(va_block->start, va_block->end, big_page_size);
 }
 
-NvU64 uvm_va_block_big_page_addr(uvm_va_block_t *va_block, size_t big_page_index, NvU32 big_page_size)
+NvU64 uvm_va_block_big_page_addr(uvm_va_block_t *va_block, size_t big_page_index, NvU64 big_page_size)
 {
     NvU64 addr = UVM_ALIGN_UP(va_block->start, big_page_size) + (big_page_index * big_page_size);
     UVM_ASSERT(addr >= va_block->start);
@@ -2379,7 +2370,7 @@ NvU64 uvm_va_block_big_page_addr(uvm_va_block_t *va_block, size_t big_page_index
     return addr;
 }
 
-uvm_va_block_region_t uvm_va_block_big_page_region(uvm_va_block_t *va_block, size_t big_page_index, NvU32 big_page_size)
+uvm_va_block_region_t uvm_va_block_big_page_region(uvm_va_block_t *va_block, size_t big_page_index, NvU64 big_page_size)
 {
     NvU64 page_addr = uvm_va_block_big_page_addr(va_block, big_page_index, big_page_size);
 
@@ -2395,7 +2386,7 @@ uvm_va_block_region_t uvm_va_block_big_page_region(uvm_va_block_t *va_block, siz
 // uvm_va_block_gpu_state_t::big_ptes) corresponding to page_index. If
 // page_index cannot be covered by a big PTE due to alignment or block size,
 // MAX_BIG_PAGES_PER_UVM_VA_BLOCK is returned.
-size_t uvm_va_block_big_page_index(uvm_va_block_t *va_block, uvm_page_index_t page_index, NvU32 big_page_size)
+size_t uvm_va_block_big_page_index(uvm_va_block_t *va_block, uvm_page_index_t page_index, NvU64 big_page_size)
 {
     uvm_va_block_region_t big_region_all = uvm_va_block_big_page_region_all(va_block, big_page_size);
     size_t big_index;
@@ -2420,7 +2411,7 @@ static void uvm_page_mask_init_from_big_ptes(uvm_va_block_t *block,
 {
     uvm_va_block_region_t big_region;
     size_t big_page_index;
-    NvU32 big_page_size = uvm_va_block_gpu_big_page_size(block, gpu);
+    NvU64 big_page_size = uvm_va_block_gpu_big_page_size(block, gpu);
 
     uvm_page_mask_zero(mask_out);
 
@@ -2430,7 +2421,7 @@ static void uvm_page_mask_init_from_big_ptes(uvm_va_block_t *block,
     }
 }
 
-NvU32 uvm_va_block_page_size_cpu(uvm_va_block_t *va_block, uvm_page_index_t page_index)
+NvU64 uvm_va_block_page_size_cpu(uvm_va_block_t *va_block, uvm_page_index_t page_index)
 {
     if (!uvm_page_mask_test(&va_block->cpu.pte_bits[UVM_PTE_BITS_CPU_READ], page_index))
         return 0;
@@ -2444,7 +2435,7 @@ NvU32 uvm_va_block_page_size_cpu(uvm_va_block_t *va_block, uvm_page_index_t page
     return PAGE_SIZE;
 }
 
-NvU32 uvm_va_block_page_size_gpu(uvm_va_block_t *va_block, uvm_gpu_id_t gpu_id, uvm_page_index_t page_index)
+NvU64 uvm_va_block_page_size_gpu(uvm_va_block_t *va_block, uvm_gpu_id_t gpu_id, uvm_page_index_t page_index)
 {
     uvm_va_block_gpu_state_t *gpu_state = uvm_va_block_gpu_state_get(va_block, gpu_id);
     size_t big_page_size, big_page_index;
@@ -2472,7 +2463,7 @@ NvU32 uvm_va_block_page_size_gpu(uvm_va_block_t *va_block, uvm_gpu_id_t gpu_id, 
 // resident. Note that this is different from uvm_va_block_page_size_* because
 // those return the size of the PTE which maps the page index, which may be
 // smaller than the physical allocation.
-static NvU32 block_phys_page_size(uvm_va_block_t *block, block_phys_page_t page)
+static NvU64 block_phys_page_size(uvm_va_block_t *block, block_phys_page_t page)
 {
     uvm_va_block_gpu_state_t *gpu_state;
     uvm_chunk_size_t chunk_size;
@@ -2485,7 +2476,7 @@ static NvU32 block_phys_page_size(uvm_va_block_t *block, block_phys_page_t page)
             return 0;
 
         UVM_ASSERT(uvm_processor_mask_test(&block->resident, UVM_ID_CPU));
-        return (NvU32)uvm_cpu_chunk_get_size(chunk);
+        return uvm_cpu_chunk_get_size(chunk);
     }
 
     gpu_state = uvm_va_block_gpu_state_get(block, page.processor);
@@ -2494,10 +2485,10 @@ static NvU32 block_phys_page_size(uvm_va_block_t *block, block_phys_page_t page)
 
     UVM_ASSERT(uvm_processor_mask_test(&block->resident, page.processor));
     block_gpu_chunk_index(block, block_get_gpu(block, page.processor), page.page_index, &chunk_size);
-    return (NvU32)chunk_size;
+    return chunk_size;
 }
 
-NvU32 uvm_va_block_get_physical_size(uvm_va_block_t *block,
+NvU64 uvm_va_block_get_physical_size(uvm_va_block_t *block,
                                      uvm_processor_id_t processor,
                                      uvm_page_index_t page_index)
 {
@@ -3349,7 +3340,7 @@ static uvm_gpu_phys_address_t block_phys_page_address(uvm_va_block_t *block,
 
     if (UVM_ID_IS_CPU(block_page.processor)) {
         uvm_cpu_chunk_t *chunk = uvm_cpu_chunk_get_chunk_for_page(block, block_page.nid, block_page.page_index);
-        NvU64 dma_addr = uvm_cpu_chunk_get_parent_gpu_phys_addr(chunk, gpu->parent);
+        NvU64 dma_addr = uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu);
         uvm_va_block_region_t chunk_region = uvm_va_block_chunk_region(block,
                                                                        uvm_cpu_chunk_get_size(chunk),
                                                                        block_page.page_index);
@@ -3848,7 +3839,6 @@ static void conf_computing_block_copy_push_gpu_to_cpu(uvm_va_block_t *block,
     uvm_gpu_address_t staging_buffer = uvm_mem_gpu_address_virtual_kernel(dma_buffer->alloc, gpu);
     uvm_gpu_address_t auth_tag_buffer = uvm_mem_gpu_address_virtual_kernel(dma_buffer->auth_tag, gpu);
     uvm_gpu_address_t src_address = block_copy_get_address(block, &copy_state->src, page_index, gpu);
-    NvU32 key_version = uvm_channel_pool_key_version(push->channel->pool);
 
     UVM_ASSERT(UVM_ID_IS_GPU(copy_state->src.id));
     UVM_ASSERT(UVM_ID_IS_CPU(copy_state->dst.id));
@@ -3866,8 +3856,7 @@ static void conf_computing_block_copy_push_gpu_to_cpu(uvm_va_block_t *block,
     // crypto-operations and it only guarantees PAGE_SIZE contiguity, all
     // encryptions and decryptions must happen on a PAGE_SIZE basis.
     for_each_va_block_page_in_region(page_index, region) {
-        uvm_conf_computing_log_gpu_encryption(push->channel, PAGE_SIZE, &dma_buffer->decrypt_iv[page_index]);
-        dma_buffer->key_version[page_index] = key_version;
+        uvm_conf_computing_log_gpu_encryption(push->channel, &dma_buffer->decrypt_iv[page_index]);
 
         // All but the first encryption can be pipelined. The first encryption
         // uses the caller's pipelining settings.
@@ -3926,8 +3915,7 @@ static NV_STATUS conf_computing_copy_pages_finish(uvm_va_block_t *block,
         status = uvm_conf_computing_cpu_decrypt(push->channel,
                                                 cpu_page_address,
                                                 staging_buffer,
-                                                dma_buffer->decrypt_iv + page_index,
-                                                dma_buffer->key_version[page_index],
+                                                &dma_buffer->decrypt_iv[page_index],
                                                 PAGE_SIZE,
                                                 auth_tag_buffer);
         kunmap(dst_page);
@@ -4045,7 +4033,7 @@ static NV_STATUS block_copy_pages(uvm_va_block_t *va_block,
 
         UVM_ASSERT(dst_chunk);
         UVM_ASSERT(uvm_cpu_chunk_get_size(src_chunk) >= uvm_va_block_region_size(region));
-        UVM_ASSERT(uvm_va_block_region_size(region) <= uvm_cpu_chunk_get_size(dst_chunk));
+        UVM_ASSERT(uvm_cpu_chunk_get_size(src_chunk) <= uvm_cpu_chunk_get_size(dst_chunk));
 
         // CPU-to-CPU copies using memcpy() don't have any inherent ordering with
         // copies using GPU CEs. So, we have to make sure that all previously
@@ -5140,7 +5128,7 @@ NV_STATUS uvm_va_block_make_resident_read_duplicate(uvm_va_block_t *va_block,
     uvm_page_mask_t *dst_resident_mask;
     uvm_page_mask_t *migrated_pages;
     uvm_page_mask_t *staged_pages;
-    uvm_page_mask_t *scratch_residency_mask;
+    uvm_page_mask_t *first_touch_mask;
 
     // TODO: Bug 3660922: need to implement HMM read duplication support.
     UVM_ASSERT(!uvm_va_block_is_hmm(va_block));
@@ -5158,10 +5146,6 @@ NV_STATUS uvm_va_block_make_resident_read_duplicate(uvm_va_block_t *va_block,
 
     uvm_assert_mutex_locked(&va_block->lock);
     UVM_ASSERT(!uvm_va_block_is_dead(va_block));
-
-    scratch_residency_mask = kmem_cache_alloc(g_uvm_page_mask_cache, NV_UVM_GFP_FLAGS);
-    if (!scratch_residency_mask)
-        return NV_ERR_NO_MEMORY;
 
     // For pages that are entering read-duplication we need to unmap remote
     // mappings and revoke RW and higher access permissions.
@@ -5189,12 +5173,12 @@ NV_STATUS uvm_va_block_make_resident_read_duplicate(uvm_va_block_t *va_block,
 
         status = block_prep_read_duplicate_mapping(va_block, va_block_context, src_id, region, preprocess_page_mask);
         if (status != NV_OK)
-            goto out;
+            return status;
     }
 
     status = block_populate_pages(va_block, va_block_retry, va_block_context, dest_id, region, page_mask);
     if (status != NV_OK)
-        goto out;
+        return status;
 
     status = block_copy_resident_pages(va_block,
                                        va_block_context,
@@ -5204,17 +5188,22 @@ NV_STATUS uvm_va_block_make_resident_read_duplicate(uvm_va_block_t *va_block,
                                        prefetch_page_mask,
                                        UVM_VA_BLOCK_TRANSFER_MODE_COPY);
     if (status != NV_OK)
-        goto out;
+        return status;
 
     // Pages that weren't resident anywhere else were populated at the
     // destination directly. Mark them as resident now, since there were no
     // errors from block_copy_resident_pages() above.
+    // Note that va_block_context->scratch_page_mask is passed to
+    // block_copy_set_first_touch_residency() which is generally unsafe but in
+    // this case, block_copy_set_first_touch_residency() copies page_mask
+    // before scratch_page_mask could be clobbered.
     migrated_pages = &va_block_context->make_resident.pages_migrated;
-    uvm_page_mask_init_from_region(scratch_residency_mask, region, page_mask);
-    uvm_page_mask_andnot(scratch_residency_mask, scratch_residency_mask, migrated_pages);
+    first_touch_mask = &va_block_context->scratch_page_mask;
+    uvm_page_mask_init_from_region(first_touch_mask, region, page_mask);
+    uvm_page_mask_andnot(first_touch_mask, first_touch_mask, migrated_pages);
 
-    if (!uvm_page_mask_empty(scratch_residency_mask))
-        block_copy_set_first_touch_residency(va_block, va_block_context, dest_id, region, scratch_residency_mask);
+    if (!uvm_page_mask_empty(first_touch_mask))
+        block_copy_set_first_touch_residency(va_block, va_block_context, dest_id, region, first_touch_mask);
 
     staged_pages = &va_block_context->make_resident.pages_staged;
     if (!UVM_ID_IS_CPU(dest_id) && !uvm_page_mask_empty(staged_pages)) {
@@ -5226,18 +5215,6 @@ NV_STATUS uvm_va_block_make_resident_read_duplicate(uvm_va_block_t *va_block,
 
     if (!uvm_page_mask_empty(migrated_pages)) {
         if (UVM_ID_IS_CPU(dest_id)) {
-            // Check if the CPU is already in the resident set of processors.
-            // We need to do this since we can't have multiple NUMA nodes with
-            // resident pages.
-            // If any of the migrate pages were already resident on the CPU, the
-            // residency has to be switched to the destination NUMA node.
-            if (uvm_processor_mask_test(&va_block->resident, UVM_ID_CPU) &&
-                uvm_page_mask_and(scratch_residency_mask,
-                                  uvm_va_block_resident_mask_get(va_block, UVM_ID_CPU, NUMA_NO_NODE),
-                                  migrated_pages)) {
-                uvm_va_block_cpu_clear_resident_all_chunks(va_block, va_block_context, scratch_residency_mask);
-            }
-
             uvm_va_block_cpu_set_resident_all_chunks(va_block, va_block_context, migrated_pages);
         }
         else {
@@ -5266,9 +5243,7 @@ NV_STATUS uvm_va_block_make_resident_read_duplicate(uvm_va_block_t *va_block,
     // Check state of all chunks after residency change.
     // TODO: Bug 4207783: Check both CPU and GPU chunks.
     UVM_ASSERT(block_check_cpu_chunks(va_block));
-out:
-    kmem_cache_free(g_uvm_page_mask_cache, scratch_residency_mask);
-    return status;
+    return NV_OK;
 }
 
 // Looks up the current CPU mapping state of page from the
@@ -5408,7 +5383,7 @@ static bool block_check_gpu_chunks(uvm_va_block_t *block, uvm_gpu_id_t id)
 
         if (chunk) {
             if (chunk_size != uvm_gpu_chunk_get_size(chunk)) {
-                UVM_ERR_PRINT("chunk size mismatch: calc %u, actual %u. VA block [0x%llx, 0x%llx) GPU: %u page_index: %u chunk index: %zu\n",
+                UVM_ERR_PRINT("chunk size mismatch: calc %u, actual %u. VA block [0x%llx, 0x%llx) GPU: %u page_index: %u chunk index: %lu\n",
                               chunk_size,
                               uvm_gpu_chunk_get_size(chunk),
                               block->start,
@@ -5420,7 +5395,7 @@ static bool block_check_gpu_chunks(uvm_va_block_t *block, uvm_gpu_id_t id)
             }
 
             if (chunk->state != UVM_PMM_GPU_CHUNK_STATE_ALLOCATED) {
-                UVM_ERR_PRINT("Invalid chunk state %s. VA block [0x%llx, 0x%llx) GPU: %u page_index: %u chunk index: %zu chunk_size: %u\n",
+                UVM_ERR_PRINT("Invalid chunk state %s. VA block [0x%llx, 0x%llx) GPU: %u page_index: %u chunk index: %lu chunk_size: llu\n",
                               uvm_pmm_gpu_chunk_state_string(chunk->state),
                               block->start,
                               block->end + 1,
@@ -5553,15 +5528,13 @@ static bool block_check_mappings_page(uvm_va_block_t *block,
                    *block->read_duplicated_pages.bitmap);
 
     // Test read_duplicated_pages mask
-    UVM_ASSERT_MSG((!uvm_page_mask_test(&block->read_duplicated_pages, page_index) &&
-                    uvm_processor_mask_get_count(resident_processors) <= 1) ||
-                   (uvm_page_mask_test(&block->read_duplicated_pages, page_index) &&
-                    uvm_processor_mask_get_count(resident_processors) >= 1),
+    UVM_ASSERT_MSG((uvm_processor_mask_get_count(resident_processors) <= 1 &&
+                     !uvm_page_mask_test(&block->read_duplicated_pages, page_index)) ||
+                   (uvm_processor_mask_get_count(resident_processors) > 1 &&
+                     uvm_page_mask_test(&block->read_duplicated_pages, page_index)),
                    "Resident: 0x%lx - Mappings R: 0x%lx W: 0x%lx A: 0x%lx - SWA: 0x%lx - RD: 0x%lx\n",
                    *resident_processors->bitmap,
-                   *read_mappings->bitmap,
-                   *write_mappings->bitmap,
-                   *atomic_mappings->bitmap,
+                   *read_mappings->bitmap, *write_mappings->bitmap, *atomic_mappings->bitmap,
                    *va_space->system_wide_atomics_enabled_processors.bitmap,
                    *block->read_duplicated_pages.bitmap);
 
@@ -5741,7 +5714,7 @@ static bool block_check_mappings_ptes(uvm_va_block_t *block, uvm_va_block_contex
     uvm_pte_bits_gpu_t pte_bit;
     uvm_processor_id_t resident_id;
     uvm_prot_t prot;
-    NvU32 big_page_size;
+    NvU64 big_page_size;
     size_t num_big_pages, big_page_index;
     uvm_va_block_region_t big_region, chunk_region;
     uvm_gpu_chunk_t *chunk;
@@ -6045,7 +6018,7 @@ static bool block_has_remote_mapping_gpu(uvm_va_block_t *block,
         if (uvm_page_mask_empty(mapped_pages))
             return false;
 
-        return !uvm_va_policy_preferred_location_equal(uvm_va_range_get_policy(block->va_range), gpu_id, NUMA_NO_NODE);
+        return !uvm_id_equal(uvm_va_range_get_policy(block->va_range)->preferred_location, gpu_id);
     }
 
     // Remote pages are pages which are mapped but not resident locally
@@ -6193,7 +6166,7 @@ static void block_gpu_pte_big_split_write_4k(uvm_va_block_t *block,
     size_t big_page_index;
     uvm_processor_id_t curr_resident_id;
     uvm_prot_t curr_prot;
-    NvU32 big_page_size = uvm_va_block_gpu_big_page_size(block, gpu);
+    NvU64 big_page_size = uvm_va_block_gpu_big_page_size(block, gpu);
 
     if (UVM_ID_IS_INVALID(resident_id))
         UVM_ASSERT(new_prot == UVM_PROT_NONE);
@@ -6275,7 +6248,7 @@ static void block_gpu_pte_clear_big(uvm_va_block_t *block,
 {
     uvm_va_block_gpu_state_t *gpu_state = uvm_va_block_gpu_state_get(block, gpu->id);
     uvm_gpu_va_space_t *gpu_va_space = uvm_va_block_get_gpu_va_space(block, gpu);
-    NvU32 big_page_size = gpu_va_space->page_tables.big_page_size;
+    NvU64 big_page_size = gpu_va_space->page_tables.big_page_size;
     uvm_gpu_phys_address_t pte_addr;
     NvU32 pte_size = uvm_mmu_pte_size(&gpu_va_space->page_tables, big_page_size);
     size_t big_page_index;
@@ -6321,7 +6294,7 @@ static void block_gpu_pte_write_big(uvm_va_block_t *block,
     uvm_va_block_gpu_state_t *gpu_state = uvm_va_block_gpu_state_get(block, gpu->id);
     uvm_gpu_va_space_t *gpu_va_space = uvm_va_block_get_gpu_va_space(block, gpu);
     uvm_page_tree_t *tree = &gpu_va_space->page_tables;
-    NvU32 big_page_size = tree->big_page_size;
+    NvU64 big_page_size = tree->big_page_size;
     NvU32 pte_size = uvm_mmu_pte_size(tree, big_page_size);
     size_t big_page_index;
     uvm_va_block_region_t contig_region = {0};
@@ -6399,7 +6372,7 @@ static void block_gpu_pte_merge_big_and_end(uvm_va_block_t *block,
 {
     uvm_va_block_gpu_state_t *gpu_state = uvm_va_block_gpu_state_get(block, gpu->id);
     uvm_page_tree_t *tree = &uvm_va_block_get_gpu_va_space(block, gpu)->page_tables;
-    NvU32 big_page_size = tree->big_page_size;
+    NvU64 big_page_size = tree->big_page_size;
     NvU64 unmapped_pte_val = tree->hal->unmapped_pte(big_page_size);
     size_t big_page_index;
     DECLARE_BITMAP(dummy_big_ptes, MAX_BIG_PAGES_PER_UVM_VA_BLOCK);
@@ -6960,7 +6933,7 @@ static void block_gpu_split_big(uvm_va_block_t *block,
     uvm_page_tree_t *tree = &uvm_va_block_get_gpu_va_space(block, gpu)->page_tables;
     uvm_pte_batch_t *pte_batch = &block_context->mapping.pte_batch;
     uvm_tlb_batch_t *tlb_batch = &block_context->mapping.tlb_batch;
-    NvU32 big_page_size = tree->big_page_size;
+    NvU64 big_page_size = tree->big_page_size;
     uvm_va_block_region_t big_region;
     uvm_processor_id_t resident_id;
     size_t big_page_index;
@@ -7062,7 +7035,7 @@ static void block_gpu_map_big_and_4k(uvm_va_block_t *block,
     DECLARE_BITMAP(big_ptes_mask, MAX_BIG_PAGES_PER_UVM_VA_BLOCK);
     uvm_va_block_region_t big_region;
     size_t big_page_index;
-    NvU32 big_page_size = tree->big_page_size;
+    NvU64 big_page_size = tree->big_page_size;
     uvm_membar_t tlb_membar = block_pte_op_membar(pte_op, gpu, resident_id);
 
     UVM_ASSERT(!gpu_state->pte_is_2m);
@@ -7364,7 +7337,7 @@ static void block_gpu_unmap_big_and_4k(uvm_va_block_t *block,
     DECLARE_BITMAP(big_ptes_split, MAX_BIG_PAGES_PER_UVM_VA_BLOCK);
     DECLARE_BITMAP(big_ptes_before_or_after, MAX_BIG_PAGES_PER_UVM_VA_BLOCK);
     DECLARE_BITMAP(big_ptes_mask, MAX_BIG_PAGES_PER_UVM_VA_BLOCK);
-    NvU32 big_page_size = tree->big_page_size;
+    NvU64 big_page_size = tree->big_page_size;
     NvU64 unmapped_pte_val = tree->hal->unmapped_pte(big_page_size);
 
     UVM_ASSERT(!gpu_state->pte_is_2m);
@@ -7510,7 +7483,7 @@ static void block_gpu_compute_new_pte_state(uvm_va_block_t *block,
 {
     uvm_va_block_gpu_state_t *gpu_state = uvm_va_block_gpu_state_get(block, gpu->id);
     uvm_va_block_region_t big_region_all, big_page_region, region;
-    NvU32 big_page_size;
+    NvU64 big_page_size;
     uvm_page_index_t page_index;
     size_t big_page_index;
     DECLARE_BITMAP(big_ptes_not_covered, MAX_BIG_PAGES_PER_UVM_VA_BLOCK);
@@ -7663,7 +7636,7 @@ static void block_gpu_compute_new_pte_state(uvm_va_block_t *block,
 // happens, the pending tracker is added to the block's tracker.
 static NV_STATUS block_alloc_pt_range_with_retry(uvm_va_block_t *va_block,
                                                  uvm_gpu_t *gpu,
-                                                 NvU32 page_size,
+                                                 NvU64 page_size,
                                                  uvm_page_table_range_t *page_table_range,
                                                  uvm_tracker_t *pending_tracker)
 {
@@ -7786,13 +7759,13 @@ allocated:
 // sizes. See block_alloc_pt_range_with_retry.
 static NV_STATUS block_alloc_ptes_with_retry(uvm_va_block_t *va_block,
                                              uvm_gpu_t *gpu,
-                                             NvU32 page_sizes,
+                                             NvU64 page_sizes,
                                              uvm_tracker_t *pending_tracker)
 {
     uvm_va_block_gpu_state_t *gpu_state = uvm_va_block_gpu_state_get(va_block, gpu->id);
     uvm_gpu_va_space_t *gpu_va_space = uvm_va_block_get_gpu_va_space(va_block, gpu);
     uvm_page_table_range_t *range;
-    NvU32 page_size;
+    NvU64 page_size;
     NV_STATUS status, final_status = NV_OK;
 
     UVM_ASSERT(gpu_state);
@@ -7844,7 +7817,7 @@ static NV_STATUS block_alloc_ptes_new_state(uvm_va_block_t *va_block,
                                             uvm_va_block_new_pte_state_t *new_pte_state,
                                             uvm_tracker_t *pending_tracker)
 {
-    NvU32 page_sizes = 0;
+    NvU64 page_sizes = 0;
 
     if (new_pte_state->pte_is_2m) {
         page_sizes |= UVM_PAGE_SIZE_2M;
@@ -7876,8 +7849,8 @@ static NV_STATUS block_pre_populate_pde1_gpu(uvm_va_block_t *block,
                                              uvm_gpu_va_space_t *gpu_va_space,
                                              uvm_tracker_t *pending_tracker)
 {
-    NvU32 page_sizes;
-    NvU32 big_page_size;
+    NvU64 page_sizes;
+    NvU64 big_page_size;
     uvm_gpu_t *gpu;
     uvm_va_block_gpu_state_t *gpu_state;
 
@@ -8388,7 +8361,6 @@ static NV_STATUS block_map_gpu_to(uvm_va_block_t *va_block,
                                   uvm_va_block_context_t *block_context,
                                   uvm_gpu_t *gpu,
                                   uvm_processor_id_t resident_id,
-                                  int resident_nid,
                                   uvm_page_mask_t *map_page_mask,
                                   uvm_prot_t new_prot,
                                   uvm_tracker_t *out_tracker)
@@ -8398,7 +8370,7 @@ static NV_STATUS block_map_gpu_to(uvm_va_block_t *va_block,
     uvm_push_t push;
     NV_STATUS status;
     uvm_page_mask_t *pages_to_map = &block_context->mapping.page_mask;
-    const uvm_page_mask_t *resident_mask = uvm_va_block_resident_mask_get(va_block, resident_id, resident_nid);
+    const uvm_page_mask_t *resident_mask = uvm_va_block_resident_mask_get(va_block, resident_id, NUMA_NO_NODE);
     uvm_pte_bits_gpu_t pte_bit;
     uvm_pte_bits_gpu_t prot_pte_bit = get_gpu_pte_bit_index(new_prot);
     uvm_va_block_new_pte_state_t *new_pte_state = &block_context->mapping.new_pte_state;
@@ -8407,10 +8379,8 @@ static NV_STATUS block_map_gpu_to(uvm_va_block_t *va_block,
     UVM_ASSERT(map_page_mask);
     UVM_ASSERT(uvm_processor_mask_test(&va_space->accessible_from[uvm_id_value(resident_id)], gpu->id));
 
-    if (uvm_processor_mask_test(block_get_uvm_lite_gpus(va_block), gpu->id)) {
-        uvm_va_policy_t *policy = uvm_va_range_get_policy(va_block->va_range);
-        UVM_ASSERT(uvm_va_policy_preferred_location_equal(policy, resident_id, policy->preferred_nid));
-    }
+    if (uvm_processor_mask_test(block_get_uvm_lite_gpus(va_block), gpu->id))
+        UVM_ASSERT(uvm_id_equal(resident_id, uvm_va_range_get_policy(va_block->va_range)->preferred_location));
 
     UVM_ASSERT(!uvm_page_mask_and(&block_context->scratch_page_mask,
                                   map_page_mask,
@@ -8512,27 +8482,18 @@ static NV_STATUS block_map_gpu_to(uvm_va_block_t *va_block,
     return uvm_tracker_add_push_safe(out_tracker, &push);
 }
 
-// allowed_nid_mask is only valid if the CPU is set in allowed_mask.
 static void map_get_allowed_destinations(uvm_va_block_t *block,
                                          uvm_va_block_context_t *va_block_context,
                                          const uvm_va_policy_t *policy,
                                          uvm_processor_id_t id,
-                                         uvm_processor_mask_t *allowed_mask,
-                                         nodemask_t *allowed_nid_mask)
+                                         uvm_processor_mask_t *allowed_mask)
 {
     uvm_va_space_t *va_space = uvm_va_block_get_va_space(block);
-
-    *allowed_nid_mask = node_possible_map;
 
     if (uvm_processor_mask_test(block_get_uvm_lite_gpus(block), id)) {
         // UVM-Lite can only map resident pages on the preferred location
         uvm_processor_mask_zero(allowed_mask);
         uvm_processor_mask_set(allowed_mask, policy->preferred_location);
-        if (UVM_ID_IS_CPU(policy->preferred_location) &&
-            !uvm_va_policy_preferred_location_equal(policy, UVM_ID_CPU, NUMA_NO_NODE)) {
-            nodes_clear(*allowed_nid_mask);
-            node_set(policy->preferred_nid, *allowed_nid_mask);
-        }
     }
     else if ((uvm_va_policy_is_read_duplicate(policy, va_space) ||
               (uvm_id_equal(policy->preferred_location, id) &&
@@ -8575,7 +8536,6 @@ NV_STATUS uvm_va_block_map(uvm_va_block_t *va_block,
     uvm_page_mask_t *running_page_mask = &va_block_context->mapping.map_running_page_mask;
     NV_STATUS status = NV_OK;
     const uvm_va_policy_t *policy = uvm_va_policy_get_region(va_block, region);
-    nodemask_t *allowed_nid_destinations;
 
     va_block_context->mapping.cause = cause;
 
@@ -8625,20 +8585,10 @@ NV_STATUS uvm_va_block_map(uvm_va_block_t *va_block,
     if (!allowed_destinations)
         return NV_ERR_NO_MEMORY;
 
-    allowed_nid_destinations = uvm_kvmalloc(sizeof(*allowed_nid_destinations));
-    if (!allowed_nid_destinations) {
-        uvm_processor_mask_cache_free(allowed_destinations);
-        return NV_ERR_NO_MEMORY;
-    }
-
     // Map per resident location so we can more easily detect physically-
     // contiguous mappings.
-    map_get_allowed_destinations(va_block,
-                                 va_block_context,
-                                 policy,
-                                 id,
-                                 allowed_destinations,
-                                 allowed_nid_destinations);
+    map_get_allowed_destinations(va_block, va_block_context, policy, id, allowed_destinations);
+
     for_each_closest_id(resident_id, allowed_destinations, id, va_space) {
         if (UVM_ID_IS_CPU(id)) {
             status = block_map_cpu_to(va_block,
@@ -8649,30 +8599,11 @@ NV_STATUS uvm_va_block_map(uvm_va_block_t *va_block,
                                       new_prot,
                                       out_tracker);
         }
-        else if (UVM_ID_IS_CPU(resident_id)) {
-            int nid;
-
-            // map_get_allowed_distinations() will set the mask of CPU NUMA
-            // nodes that should be mapped.
-            for_each_node_mask(nid, *allowed_nid_destinations) {
-                status = block_map_gpu_to(va_block,
-                                          va_block_context,
-                                          gpu,
-                                          resident_id,
-                                          nid,
-                                          running_page_mask,
-                                          new_prot,
-                                          out_tracker);
-                if (status != NV_OK)
-                    break;
-            }
-        }
         else {
             status = block_map_gpu_to(va_block,
                                       va_block_context,
                                       gpu,
                                       resident_id,
-                                      NUMA_NO_NODE,
                                       running_page_mask,
                                       new_prot,
                                       out_tracker);
@@ -8687,7 +8618,6 @@ NV_STATUS uvm_va_block_map(uvm_va_block_t *va_block,
     }
 
     uvm_processor_mask_cache_free(allowed_destinations);
-    uvm_kvfree(allowed_nid_destinations);
 
     return status;
 }
@@ -9575,7 +9505,6 @@ static void block_kill(uvm_va_block_t *block)
     // Free CPU pages
     for_each_possible_uvm_node(nid) {
         uvm_va_block_cpu_node_state_t *node_state = block_node_state_get(block, nid);
-        size_t index = node_to_index(nid);
 
         for_each_cpu_chunk_in_block_safe(chunk, page_index, next_page_index, block, nid) {
             // be conservative.
@@ -9590,9 +9519,20 @@ static void block_kill(uvm_va_block_t *block)
 
         UVM_ASSERT(uvm_page_mask_empty(&node_state->allocated));
         UVM_ASSERT(node_state->chunks == 0);
-        kmem_cache_free(g_uvm_va_block_cpu_node_state_cache, block->cpu.node_state[index]);
     }
 
+    // While a per-NUMA node_state array is in use, all of its elements are
+    // expected to be valid. Therefore the teardown of these elements must occur
+    // as a single "transaction". This teardown must take place after freeing
+    // the CPU pages (see the "Free CPU pages" loop above). This is because as
+    // part of removing chunks from VA blocks, the per-page allocated bitmap is
+    // recomputed using the per-NUMA node_state array elements.
+    for_each_possible_uvm_node(nid) {
+        uvm_va_block_cpu_node_state_t *node_state;
+
+        node_state = block_node_state_get(block, nid);
+        kmem_cache_free(g_uvm_va_block_cpu_node_state_cache, node_state);
+    }
     uvm_kvfree((void *)block->cpu.node_state);
     block->cpu.node_state = NULL;
 
@@ -9708,8 +9648,8 @@ static NV_STATUS block_split_presplit_ptes_gpu(uvm_va_block_t *existing, uvm_va_
     uvm_va_block_gpu_state_t *existing_gpu_state = uvm_va_block_gpu_state_get(existing, gpu->id);
     uvm_va_space_t *va_space = uvm_va_block_get_va_space(existing);
     uvm_va_block_context_t *block_context = uvm_va_space_block_context(va_space, NULL);
-    NvU32 big_page_size = uvm_va_block_gpu_big_page_size(existing, gpu);
-    NvU32 alloc_sizes;
+    NvU64 big_page_size = uvm_va_block_gpu_big_page_size(existing, gpu);
+    NvU64 alloc_sizes;
     DECLARE_BITMAP(new_big_ptes, MAX_BIG_PAGES_PER_UVM_VA_BLOCK);
     uvm_page_index_t new_start_page_index = uvm_va_block_cpu_page_index(existing, new->start);
     size_t big_page_index;
@@ -10052,7 +9992,7 @@ static NV_STATUS block_split_cpu_chunk_one(uvm_va_block_t *block, uvm_page_index
         gpu = block_get_gpu(block, id);
 
         // If the parent chunk has not been mapped, there is nothing to split.
-        gpu_mapping_addr = uvm_cpu_chunk_get_parent_gpu_phys_addr(chunk, gpu->parent);
+        gpu_mapping_addr = uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu);
         if (gpu_mapping_addr == 0)
             continue;
 
@@ -10074,7 +10014,7 @@ static NV_STATUS block_split_cpu_chunk_one(uvm_va_block_t *block, uvm_page_index
 merge:
         for_each_gpu_id_in_mask(id, gpu_split_mask) {
             gpu = block_get_gpu(block, id);
-            gpu_mapping_addr = uvm_cpu_chunk_get_parent_gpu_phys_addr(chunk, gpu->parent);
+            gpu_mapping_addr = uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu);
             uvm_pmm_sysmem_mappings_merge_gpu_mappings(&gpu->pmm_reverse_sysmem_mappings,
                                                        gpu_mapping_addr,
                                                        chunk_size);
@@ -10260,7 +10200,7 @@ static void block_merge_cpu_chunks_one(uvm_va_block_t *block, uvm_page_index_t p
             continue;
 
         gpu = block_get_gpu(block, id);
-        gpu_mapping_addr = uvm_cpu_chunk_get_parent_gpu_phys_addr(chunk, gpu->parent);
+        gpu_mapping_addr = uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu);
         if (gpu_mapping_addr == 0)
             continue;
 
@@ -10712,8 +10652,7 @@ static void block_split_gpu(uvm_va_block_t *existing, uvm_va_block_t *new, uvm_g
     for_each_possible_uvm_node(nid) {
         for_each_cpu_chunk_in_block(cpu_chunk, page_index, new, nid) {
             uvm_pmm_sysmem_mappings_reparent_gpu_mapping(&gpu->pmm_reverse_sysmem_mappings,
-                                                         uvm_cpu_chunk_get_parent_gpu_phys_addr(cpu_chunk,
-                                                                                                gpu->parent),
+                                                         uvm_cpu_chunk_get_gpu_phys_addr(cpu_chunk, gpu),
                                                          new);
         }
     }
@@ -10751,7 +10690,7 @@ static void block_split_gpu(uvm_va_block_t *existing, uvm_va_block_t *new, uvm_g
     gpu_va_space = uvm_gpu_va_space_get(va_space, gpu);
     if (gpu_va_space) {
         if (existing_gpu_state->page_table_range_big.table) {
-            NvU32 big_page_size = uvm_va_block_gpu_big_page_size(existing, gpu);
+            NvU64 big_page_size = uvm_va_block_gpu_big_page_size(existing, gpu);
 
             // existing's end has not been adjusted yet
             existing_pages_big = range_num_big_pages(existing->start, new->start - 1, big_page_size);
@@ -11241,8 +11180,8 @@ NV_STATUS uvm_va_block_add_mappings_after_migration(uvm_va_block_t *va_block,
     // so uvm_va_block_map will be a no-op.
     uvm_processor_mask_and(map_uvm_lite_gpus, map_other_processors, block_get_uvm_lite_gpus(va_block));
     if (!uvm_processor_mask_empty(map_uvm_lite_gpus) &&
-        uvm_va_policy_preferred_location_equal(policy, new_residency, va_block_context->make_resident.dest_nid)) {
-        for_each_id_in_mask (map_processor_id, map_uvm_lite_gpus) {
+        uvm_id_equal(new_residency, preferred_location)) {
+        for_each_id_in_mask(map_processor_id, map_uvm_lite_gpus) {
             status = uvm_va_block_map(va_block,
                                       va_block_context,
                                       map_processor_id,
@@ -11703,10 +11642,6 @@ static int block_select_node_residency(uvm_va_block_t *va_block,
     // For GPU faults, the bottom half is pinned to CPUs closest to their GPU.
     // Therefore, in both cases, we can use numa_mem_id() to get the NUMA node
     // ID of the faulting processor.
-    // Note that numa_mem_id() returns the nearest node with memory. In most
-    // cases, this will be the current NUMA node. However, in the case that the
-    // current node does not have any memory, we probably want the nearest node
-    // with memory, anyway.
     int current_nid = numa_mem_id();
     bool may_read_duplicate = can_read_duplicate(va_block, page_index, policy, thrashing_hint);
 
@@ -11730,12 +11665,7 @@ static int block_select_node_residency(uvm_va_block_t *va_block,
     // If read duplication is enabled and the page is also resident on the CPU,
     // keep its current NUMA node residency.
     if (may_read_duplicate && uvm_va_block_cpu_is_page_resident_on(va_block, NUMA_NO_NODE, page_index))
-        return NUMA_NO_NODE;
-
-    // The new_residency processor is the CPU and the preferred location is not
-    // the CPU. If the page is resident on the CPU, keep its current residency.
-    if (uvm_va_block_cpu_is_page_resident_on(va_block, NUMA_NO_NODE, page_index))
-        return NUMA_NO_NODE;
+        return block_get_page_node_residency(va_block, page_index);
 
     return current_nid;
 }
@@ -12639,6 +12569,125 @@ NV_STATUS uvm_va_block_find_create(uvm_va_space_t *va_space,
         return uvm_hmm_va_block_find_create(va_space, addr, hmm_vma, out_block);
 }
 
+// Launch a synchronous, encrypted copy between GPU and CPU.
+//
+// The copy entails a GPU-side encryption (relying on the Copy Engine), and a
+// CPU-side decryption step, such that the destination CPU buffer pointed by
+// dst_plain will contain the unencrypted (plain text) contents. The destination
+// buffer can be in protected or unprotected sysmem, while the source buffer
+// must be in protected vidmem.
+//
+// The maximum copy size allowed is UVM_CONF_COMPUTING_DMA_BUFFER_SIZE.
+//
+// The input tracker, if not NULL, is internally acquired by the push
+// responsible for the encrypted copy.
+__attribute__ ((format(printf, 6, 7)))
+static NV_STATUS encrypted_memcopy_gpu_to_cpu(uvm_gpu_t *gpu,
+                                              void *dst_plain,
+                                              uvm_gpu_address_t src_gpu_address,
+                                              size_t size,
+                                              uvm_tracker_t *tracker,
+                                              const char *format,
+                                              ...)
+{
+    NV_STATUS status;
+    UvmCslIv decrypt_iv;
+    uvm_push_t push;
+    uvm_conf_computing_dma_buffer_t *dma_buffer;
+    uvm_gpu_address_t dst_gpu_address, auth_tag_gpu_address;
+    void *src_cipher, *auth_tag;
+    va_list args;
+
+    UVM_ASSERT(g_uvm_global.conf_computing_enabled);
+    UVM_ASSERT(size <= UVM_CONF_COMPUTING_DMA_BUFFER_SIZE);
+
+    status = uvm_conf_computing_dma_buffer_alloc(&gpu->conf_computing.dma_buffer_pool, &dma_buffer, NULL);
+    if (status != NV_OK)
+        return status;
+
+    va_start(args, format);
+    status = uvm_push_begin_acquire(gpu->channel_manager, UVM_CHANNEL_TYPE_GPU_TO_CPU, tracker, &push, format, args);
+    va_end(args);
+
+    if (status != NV_OK)
+        goto out;
+
+    uvm_conf_computing_log_gpu_encryption(push.channel, &decrypt_iv);
+
+    dst_gpu_address = uvm_mem_gpu_address_virtual_kernel(dma_buffer->alloc, gpu);
+    auth_tag_gpu_address = uvm_mem_gpu_address_virtual_kernel(dma_buffer->auth_tag, gpu);
+    gpu->parent->ce_hal->encrypt(&push, dst_gpu_address, src_gpu_address, size, auth_tag_gpu_address);
+
+    status = uvm_push_end_and_wait(&push);
+    if (status != NV_OK)
+        goto out;
+
+    src_cipher = uvm_mem_get_cpu_addr_kernel(dma_buffer->alloc);
+    auth_tag = uvm_mem_get_cpu_addr_kernel(dma_buffer->auth_tag);
+    status = uvm_conf_computing_cpu_decrypt(push.channel, dst_plain, src_cipher, &decrypt_iv, size, auth_tag);
+
+ out:
+    uvm_conf_computing_dma_buffer_free(&gpu->conf_computing.dma_buffer_pool, dma_buffer, NULL);
+    return status;
+}
+
+// Launch a synchronous, encrypted copy between CPU and GPU.
+//
+// The source CPU buffer pointed by src_plain contains the unencrypted (plain
+// text) contents; the function internally performs a CPU-side encryption step
+// before launching the GPU-side CE decryption. The source buffer can be in
+// protected or unprotected sysmem, while the destination buffer must be in
+// protected vidmem.
+//
+// The maximum copy size allowed is UVM_CONF_COMPUTING_DMA_BUFFER_SIZE.
+//
+// The input tracker, if not NULL, is internally acquired by the push
+// responsible for the encrypted copy.
+__attribute__ ((format(printf, 6, 7)))
+static NV_STATUS encrypted_memcopy_cpu_to_gpu(uvm_gpu_t *gpu,
+                                              uvm_gpu_address_t dst_gpu_address,
+                                              void *src_plain,
+                                              size_t size,
+                                              uvm_tracker_t *tracker,
+                                              const char *format,
+                                              ...)
+{
+    NV_STATUS status;
+    uvm_push_t push;
+    uvm_conf_computing_dma_buffer_t *dma_buffer;
+    uvm_gpu_address_t src_gpu_address, auth_tag_gpu_address;
+    void *dst_cipher, *auth_tag;
+    va_list args;
+
+    UVM_ASSERT(g_uvm_global.conf_computing_enabled);
+    UVM_ASSERT(size <= UVM_CONF_COMPUTING_DMA_BUFFER_SIZE);
+
+    status = uvm_conf_computing_dma_buffer_alloc(&gpu->conf_computing.dma_buffer_pool, &dma_buffer, NULL);
+    if (status != NV_OK)
+        return status;
+
+    va_start(args, format);
+    status = uvm_push_begin_acquire(gpu->channel_manager, UVM_CHANNEL_TYPE_CPU_TO_GPU, tracker, &push, format, args);
+    va_end(args);
+
+    if (status != NV_OK)
+        goto out;
+
+    dst_cipher = uvm_mem_get_cpu_addr_kernel(dma_buffer->alloc);
+    auth_tag = uvm_mem_get_cpu_addr_kernel(dma_buffer->auth_tag);
+    uvm_conf_computing_cpu_encrypt(push.channel, dst_cipher, src_plain, NULL, size, auth_tag);
+
+    src_gpu_address = uvm_mem_gpu_address_virtual_kernel(dma_buffer->alloc, gpu);
+    auth_tag_gpu_address = uvm_mem_gpu_address_virtual_kernel(dma_buffer->auth_tag, gpu);
+    gpu->parent->ce_hal->decrypt(&push, dst_gpu_address, src_gpu_address, size, auth_tag_gpu_address);
+
+    status = uvm_push_end_and_wait(&push);
+
+out:
+    uvm_conf_computing_dma_buffer_free(&gpu->conf_computing.dma_buffer_pool, dma_buffer, NULL);
+    return status;
+}
+
 static NV_STATUS va_block_write_cpu_to_gpu(uvm_va_block_t *va_block,
                                            uvm_gpu_t *gpu,
                                            uvm_gpu_address_t dst_gpu_address,
@@ -12651,14 +12700,14 @@ static NV_STATUS va_block_write_cpu_to_gpu(uvm_va_block_t *va_block,
     uvm_gpu_address_t src_gpu_address;
 
     if (g_uvm_global.conf_computing_enabled) {
-        return uvm_conf_computing_util_memcopy_cpu_to_gpu(gpu,
-                                                          dst_gpu_address,
-                                                          uvm_mem_get_cpu_addr_kernel(src_mem),
-                                                          size,
-                                                          &va_block->tracker,
-                                                          "Encrypted write to [0x%llx, 0x%llx)",
-                                                          dst,
-                                                          dst + size);
+        return encrypted_memcopy_cpu_to_gpu(gpu,
+                                            dst_gpu_address,
+                                            uvm_mem_get_cpu_addr_kernel(src_mem),
+                                            size,
+                                            &va_block->tracker,
+                                            "Encrypted write to [0x%llx, 0x%llx)",
+                                            dst,
+                                            dst + size);
     }
 
     status = uvm_push_begin_acquire(gpu->channel_manager,
@@ -12755,14 +12804,14 @@ static NV_STATUS va_block_read_gpu_to_cpu(uvm_va_block_t *va_block,
     uvm_gpu_address_t dst_gpu_address;
 
     if (g_uvm_global.conf_computing_enabled) {
-        return uvm_conf_computing_util_memcopy_gpu_to_cpu(gpu,
-                                                          uvm_mem_get_cpu_addr_kernel(dst_mem),
-                                                          src_gpu_address,
-                                                          size,
-                                                          &va_block->tracker,
-                                                          "Encrypted read from [0x%llx, 0x%llx)",
-                                                          src,
-                                                          src + size);
+        return encrypted_memcopy_gpu_to_cpu(gpu,
+                                            uvm_mem_get_cpu_addr_kernel(dst_mem),
+                                            src_gpu_address,
+                                            size,
+                                            &va_block->tracker,
+                                            "Encrypted read from [0x%llx, 0x%llx)",
+                                            src,
+                                            src + size);
     }
 
     status = uvm_push_begin_acquire(gpu->channel_manager,
@@ -13570,7 +13619,7 @@ NV_STATUS uvm_test_va_residency_info(UVM_TEST_VA_RESIDENCY_INFO_PARAMS *params, 
     for_each_id_in_mask(id, &block->mapped) {
         uvm_processor_id_t processor_to_map;
         block_phys_page_t block_page;
-        NvU32 page_size = uvm_va_block_page_size_processor(block, id, page_index);
+        NvU64 page_size = uvm_va_block_page_size_processor(block, id, page_index);
         int nid = NUMA_NO_NODE;
 
         if (page_size == 0)
@@ -13606,7 +13655,7 @@ NV_STATUS uvm_test_va_residency_info(UVM_TEST_VA_RESIDENCY_INFO_PARAMS *params, 
         if (uvm_processor_mask_test(resident_on_mask, UVM_ID_CPU)) {
             if (uvm_pmm_sysmem_mappings_indirect_supported()) {
                 for_each_gpu_id(id) {
-                    NvU32 page_size = uvm_va_block_page_size_processor(block, id, page_index);
+                    NvU64 page_size = uvm_va_block_page_size_processor(block, id, page_index);
                     uvm_reverse_map_t sysmem_page;
                     uvm_cpu_chunk_t *chunk = uvm_cpu_chunk_get_chunk_for_page_resident(block, page_index);
                     size_t num_pages;
@@ -13621,8 +13670,7 @@ NV_STATUS uvm_test_va_residency_info(UVM_TEST_VA_RESIDENCY_INFO_PARAMS *params, 
                         continue;
 
                     num_pages = uvm_pmm_sysmem_mappings_dma_to_virt(&gpu->pmm_reverse_sysmem_mappings,
-                                                                    uvm_cpu_chunk_get_parent_gpu_phys_addr(chunk,
-                                                                                                           gpu->parent),
+                                                                    uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu),
                                                                     uvm_cpu_chunk_get_size(chunk),
                                                                     &sysmem_page,
                                                                     1);

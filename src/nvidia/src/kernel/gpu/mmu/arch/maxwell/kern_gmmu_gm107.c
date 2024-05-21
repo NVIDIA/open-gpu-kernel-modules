@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,6 +41,42 @@ NvU64
 kgmmuGetBigPageSize_GM107(KernelGmmu *pKernelGmmu)
 {
     return pKernelGmmu->defaultBigPageSize;
+}
+
+NV_STATUS
+kgmmuCommitInvalidateTlbTest_GM107
+(
+    OBJGPU                              *pGpu,
+    KernelGmmu                          *pKernelGmmu,
+    COMMIT_TLB_INVALIDATE_TEST_PARAMS   *pTestParams
+)
+{
+    TLB_INVALIDATE_PARAMS params;
+    NvU32 regVal = 0;
+
+    if (pTestParams->invalidateAll != NV_TRUE)
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    portMemSet(&params, 0, sizeof(TLB_INVALIDATE_PARAMS));
+    params.gfid = pTestParams->gfid;
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &params.timeout,
+                  GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE |
+                  GPU_TIMEOUT_FLAGS_DEFAULT | GPU_TIMEOUT_FLAGS_BYPASS_CPU_YIELD);
+
+    NV_ASSERT_OK_OR_RETURN(kgmmuCheckPendingInvalidates_HAL(pGpu, pKernelGmmu,
+                                                            &params.timeout,
+                                                            params.gfid));
+
+    // Invalidate all VA and PDB
+    regVal = DRF_DEF(_PFB_PRI, _MMU_INVALIDATE, _ALL_VA, _TRUE) |
+             DRF_DEF(_PFB_PRI, _MMU_INVALIDATE, _ALL_PDB, _TRUE) |
+             DRF_DEF(_PFB_PRI, _MMU_INVALIDATE, _TRIGGER, _TRUE);
+
+    params.regVal = regVal;
+
+    return kgmmuCommitTlbInvalidate_HAL(pGpu, pKernelGmmu, &params);
 }
 
 /*!

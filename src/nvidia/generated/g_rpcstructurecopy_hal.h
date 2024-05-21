@@ -69,6 +69,7 @@ typedef NV_STATUS      Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_FLOORSWEEP
 typedef NV_STATUS      Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_ZCULL_INFO_PARAMS(NV2080_CTRL_INTERNAL_STATIC_GR_GET_ZCULL_INFO_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_VGPU_FIFO_GET_DEVICE_INFO_TABLE(VGPU_FIFO_GET_DEVICE_INFO_TABLE* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS(NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
+typedef NV_STATUS      Deserialize_GPU_EXEC_SYSPIPE_INFO(GPU_EXEC_SYSPIPE_INFO* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_VGPU_BSP_GET_CAPS(VGPU_BSP_GET_CAPS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS(NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
 typedef NV_STATUS      Deserialize_GPU_PARTITION_INFO(GPU_PARTITION_INFO* data, NvU8* stream, NvU32 streamSize, NvU32 *offset);
@@ -124,6 +125,7 @@ typedef struct RPCSTRUCTURECOPY_HAL_IFACES {
     Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_ZCULL_INFO_PARAMS  *deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_ZCULL_INFO_PARAMS; /* HAL function to deserialize NV2080_CTRL_INTERNAL_STATIC_GR_GET_ZCULL_INFO_PARAMS */
     Deserialize_VGPU_FIFO_GET_DEVICE_INFO_TABLE  *deserialize_VGPU_FIFO_GET_DEVICE_INFO_TABLE; /* HAL function to deserialize VGPU_FIFO_GET_DEVICE_INFO_TABLE */
     Deserialize_NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS  *deserialize_NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS; /* HAL function to deserialize NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS */
+    Deserialize_GPU_EXEC_SYSPIPE_INFO  *deserialize_GPU_EXEC_SYSPIPE_INFO; /* HAL function to deserialize GPU_EXEC_SYSPIPE_INFO */
     Deserialize_VGPU_BSP_GET_CAPS  *deserialize_VGPU_BSP_GET_CAPS; /* HAL function to deserialize VGPU_BSP_GET_CAPS */
     Deserialize_NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS  *deserialize_NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS; /* HAL function to deserialize NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS */
     Deserialize_GPU_PARTITION_INFO  *deserialize_GPU_PARTITION_INFO; /* HAL function to deserialize GPU_PARTITION_INFO */
@@ -208,6 +210,8 @@ typedef struct RPCSTRUCTURECOPY_HAL_IFACES {
         (_pRpcstructurecopy)->_hal.deserialize_VGPU_FIFO_GET_DEVICE_INFO_TABLE(_pData, _pStream, _streamSize, _pOffset)
 #define deserialize_NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
         (_pRpcstructurecopy)->_hal.deserialize_NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS(_pData, _pStream, _streamSize, _pOffset)
+#define deserialize_GPU_EXEC_SYSPIPE_INFO_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
+        (_pRpcstructurecopy)->_hal.deserialize_GPU_EXEC_SYSPIPE_INFO(_pData, _pStream, _streamSize, _pOffset)
 #define deserialize_VGPU_BSP_GET_CAPS_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \
         (_pRpcstructurecopy)->_hal.deserialize_VGPU_BSP_GET_CAPS(_pData, _pStream, _streamSize, _pOffset)
 #define deserialize_NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS_HAL(_pRpcstructurecopy, _pData, _pStream, _streamSize, _pOffset)  \

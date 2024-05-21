@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -54,7 +54,6 @@ static NvBool    _knvlinkUpdateSwitchLinkMasks(OBJGPU *, KernelNvlink *, NvU32);
 static NvBool    _knvlinkUpdateSwitchLinkMasksGpuDegraded(OBJGPU *, KernelNvlink *);
 static void      _knvlinkUpdatePeerConfigs(OBJGPU *, KernelNvlink *);
 static void      _knvlinkPrintTopologySummary(OBJGPU *, KernelNvlink *);
-static NvU32     _knvlinkGetNumPortEvents(OBJGPU *pGpu, KernelNvlink *pKernelNvlink);
 
 #endif
 
@@ -84,7 +83,6 @@ knvlinkCoreGetRemoteDeviceInfo_IMPL
     NvBool  bNvswitchProxyPresent = NV_FALSE;
     NvBool  bUpdateConnStatus     = NV_FALSE;
     NvBool  bCheckDegradedMode    = NV_FALSE;
-    NvBool  bForceDiscovery       = NV_FALSE;
     nvlink_conn_info conn_info    = {0};
     NvU32   linkId;
     NvU32     numActiveLinksPerIoctrl = 0;
@@ -154,12 +152,6 @@ knvlinkCoreGetRemoteDeviceInfo_IMPL
                 {
                     if (gpuFabricProbeIsSupported(pGpu))
                     {
-                        NvU32 numPortEvents = _knvlinkGetNumPortEvents(pGpu, pKernelNvlink);
-                        if (pKernelNvlink->numPortEvents < numPortEvents)
-                        {
-                            bForceDiscovery = NV_TRUE;
-                        }
-
                         //
                         // If FM doesn't talk to NVLink driver using control calls
                         // (i.e. uses NVLink inband comm instread) such as
@@ -167,13 +159,7 @@ knvlinkCoreGetRemoteDeviceInfo_IMPL
                         // discover remote information explicitly.
                         //
                         nvlink_lib_discover_and_get_remote_conn_info(
-                            pKernelNvlink->nvlinkLinks[linkId].core_link, &conn_info,
-                            flags, bForceDiscovery);
-
-                        if (bForceDiscovery)
-                        {
-                            pKernelNvlink->numPortEvents = numPortEvents;
-                        }
+                            pKernelNvlink->nvlinkLinks[linkId].core_link, &conn_info, flags);
                     }
                     else
                     {
@@ -189,7 +175,8 @@ knvlinkCoreGetRemoteDeviceInfo_IMPL
                     //
                     if (!conn_info.bConnected &&
                         (bNvswitchProxyPresent ||
-                        GPU_IS_NVSWITCH_DETECTED(pGpu)))
+                        (!pSys->getProperty(pSys, PDB_PROP_SYS_NVSWITCH_IS_PRESENT) &&
+                            GPU_IS_NVSWITCH_DETECTED(pGpu))))
                     {
                         conn_info.bConnected  = NV_TRUE;
                         conn_info.deviceType  = NVLINK_DEVICE_TYPE_NVSWITCH;
@@ -219,7 +206,7 @@ knvlinkCoreGetRemoteDeviceInfo_IMPL
                     }
 
                     nvlink_lib_discover_and_get_remote_conn_info(
-                            pKernelNvlink->nvlinkLinks[linkId].core_link, &conn_info, flags, NV_FALSE);
+                            pKernelNvlink->nvlinkLinks[linkId].core_link, &conn_info, flags);
                 }
 
                 // RPC into GSP-RM to update the link connected status only if its required
@@ -474,7 +461,7 @@ knvlinkCheckTrainingIsComplete_IMPL
         if (nvlink_lib_check_training_complete(pLinks, count) != 0)
         {
             NV_PRINTF(LEVEL_INFO, "Links aren't fully trained yet!\n");
-            knvlinkLogAliDebugMessages(pGpu0, pKernelNvlink0);
+            knvlinkLogAliDebugMessages(pGpu0, pKernelNvlink0, NV_FALSE);
             return NV_ERR_GENERIC;
         }
 
@@ -529,7 +516,7 @@ knvlinkCheckTrainingIsComplete_IMPL
             if (nvlink_lib_check_training_complete(pLinks, count) != 0)
             {
                 NV_PRINTF(LEVEL_INFO, "Links aren't fully trained yet!\n");
-                knvlinkLogAliDebugMessages(pGpu1, pKernelNvlink1);
+                knvlinkLogAliDebugMessages(pGpu1, pKernelNvlink1, NV_FALSE);
                 return NV_ERR_GENERIC;
             }
 
@@ -1048,7 +1035,6 @@ knvlinkCoreShutdownDeviceLinks_IMPL
     OBJSYS      *pSys  = SYS_GET_INSTANCE();
     NvU32        count = 0;
     NvU32        linkId;
-    NvlStatus    status = NV_OK;
 
     // Skip link shutdown where fabric manager is present, for nvlink version bellow 4.0
     if ((pKernelNvlink->ipVerNvlink < NVLINK_VERSION_40 &&
@@ -1111,23 +1097,13 @@ knvlinkCoreShutdownDeviceLinks_IMPL
     // Trigger laneshutdown through core lib if shutdown is supported
     if (pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_LANE_SHUTDOWN_ENABLED) && (count > 0))
     {
-        status = nvlink_lib_powerdown_links_from_active_to_off(
-                        pLinks, count, NVLINK_STATE_CHANGE_SYNC);
-        if (status != NVL_SUCCESS)
+        if (nvlink_lib_powerdown_links_from_active_to_off(
+                        pLinks, count, NVLINK_STATE_CHANGE_SYNC))
         {
-            if (status == NVL_NOT_FOUND)
-            {
-                // Bug 4419022
-                NV_PRINTF(LEVEL_ERROR, "Need to shutdown all links unilaterally for GPU%d\n",
-                      pGpu->gpuInstance);
-            }
-            else
-            {
-                NV_PRINTF(LEVEL_ERROR, "Unable to turn off links for the GPU%d\n",
+            NV_PRINTF(LEVEL_ERROR, "Unable to turn off links for the GPU%d\n",
                       pGpu->gpuInstance);
 
-                return NV_ERR_INVALID_STATE;
-            }
+            return NV_ERR_INVALID_STATE;
         }
     }
 
@@ -1369,7 +1345,7 @@ knvlinkFloorSweep_IMPL
     FOR_EACH_INDEX_IN_MASK(32, linkId, pKernelNvlink->enabledLinks)
     {
         nvlink_lib_discover_and_get_remote_conn_info(
-                    pKernelNvlink->nvlinkLinks[linkId].core_link, &conn_info, 0, NV_FALSE);
+                    pKernelNvlink->nvlinkLinks[linkId].core_link, &conn_info, 0);
     }
     FOR_EACH_INDEX_IN_MASK_END;
 
@@ -2518,32 +2494,6 @@ _knvlinkPrintTopologySummary
     }
 
 #endif
-}
-
-static NvU32
-_knvlinkGetNumPortEvents
-(
-    OBJGPU *pGpu,
-    KernelNvlink *pKernelNvlink
-)
-{
-    NV_STATUS status;
-    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-    NV2080_CTRL_NVLINK_GET_PORT_EVENTS_PARAMS params = {0};
-
-    status = pRmApi->Control(pRmApi,
-                             pGpu->hInternalClient,
-                             pGpu->hInternalSubdevice,
-                             NV2080_CTRL_CMD_NVLINK_GET_PORT_EVENTS,
-                             &params,
-                             sizeof(NV2080_CTRL_NVLINK_GET_PORT_EVENTS_PARAMS));
-    if (status != NV_OK)
-    {
-        // If this call fails, force discovery in knvlinkCoreGetRemoteDeviceInfo
-        return 0;
-    }
-
-    return params.portEventCount;
 }
 
 #endif

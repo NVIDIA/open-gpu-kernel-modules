@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,7 +33,6 @@
 #include "published/ampere/ga100/dev_fault.h"
 #include "published/ampere/ga100/dev_ram.h"
 #include "published/ampere/ga100/dev_ctrl.h"
-#include "published/ampere/ga100/dev_runlist.h"
 
 NV_STATUS
 kfifoEngineInfoXlate_GA100
@@ -211,7 +210,6 @@ kfifoGenerateWorkSubmitToken_GA100
 
     if (!RMCFG_FEATURE_PLATFORM_GSP || (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) && IS_GFID_VF(gfId)))
     {
-
         // TODO: Remove check on Ampere. Bug 200606706.
         if (!bUsedForHost && IS_GFID_VF(gfId))
         {
@@ -245,7 +243,7 @@ kfifoGenerateWorkSubmitToken_GA100
     }
     else // RMCFG_FEATURE_PLATFORM_GSP
     {
-        NV_ASSERT_OK_OR_RETURN(kfifoGenerateInternalWorkSubmitToken_HAL(pGpu, pKernelFifo, pKernelChannel));
+        NV_ASSERT_OK_OR_RETURN(kfifoGenerateInternalWorkSubmitToken_HAL(pGpu, pKernelFifo, pKernelChannel, &val));
     }
 
     *pGeneratedToken = val;
@@ -909,93 +907,3 @@ kfifoGetClientIdStringCheck_GA100
 
     }
 }
-
-/**
- * @brief Starts halting a channel. A start operation must be matched with a
- * complete operation later to wait for the channel to be preempted.
- *
- * @param[in] pGpu           GPU object pointer
- * @param[in] pKernelFifo    Kernel FIFO object pointer
- * @param[in] pKernelChannel Pointer to the channel to be halted.
- */
-void
-kfifoStartChannelHalt_GA100
-(
-    OBJGPU        *pGpu,
-    KernelFifo    *pKernelFifo,
-    KernelChannel *pKernelChannel
-)
-{
-    NvU32       chramPriBase;
-    NvU32       channelVal;
-    NvU32       runlistId;
-    NvU32       runlistPriBase;
-    NvU32       runlistVal = 0;
-
-    runlistId = kchannelGetRunlistId(pKernelChannel);
-    if (kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
-            ENGINE_INFO_TYPE_RUNLIST,        runlistId,
-            ENGINE_INFO_TYPE_CHRAM_PRI_BASE, &chramPriBase) != NV_OK)
-    {
-        return;
-    }
-    if (kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
-            ENGINE_INFO_TYPE_RUNLIST,          runlistId,
-            ENGINE_INFO_TYPE_RUNLIST_PRI_BASE, &runlistPriBase) != NV_OK)
-    {
-        return;
-    }
-
-    // Disable this channel.
-    channelVal = FLD_SET_DRF(_CHRAM, _CHANNEL, _WRITE_CONTROL, _ONES_CLEAR_BITS, 0);
-    channelVal = FLD_SET_DRF(_CHRAM, _CHANNEL, _ENABLE, _IN_USE, channelVal);
-    GPU_REG_WR32(pGpu, chramPriBase + NV_CHRAM_CHANNEL(pKernelChannel->ChID), channelVal);
-
-    // Preempt the channel.
-    runlistVal = FLD_SET_DRF(_RUNLIST, _PREEMPT, _TYPE, _RUNLIST, 0);
-    GPU_REG_WR32(pGpu, runlistPriBase + NV_RUNLIST_PREEMPT, runlistVal);
-}
-
-/**
- * @brief Completes halting a channel, waiting the channel preemption to
- * complete, up to the specified timeout.
- *
- * @param[in] pGpu           GPU object pointer
- * @param[in] pKernelFifo    Kernel FIFO object pointer
- * @param[in] pKernelChannel Pointer to the channel in process of being halted.
- * @param[in] pTimeout       Specifies the timeout to wait for the channel
- *                           preemption.
- */
-void
-kfifoCompleteChannelHalt_GA100
-(
-    OBJGPU        *pGpu,
-    KernelFifo    *pKernelFifo,
-    KernelChannel *pKernelChannel,
-    RMTIMEOUT     *pTimeout
-)
-{
-    NvU32       runlistId;
-    NvU32       runlistPriBase;
-    NvU32       runlistVal = 0;
-
-    runlistId = kchannelGetRunlistId(pKernelChannel);
-    if (kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
-            ENGINE_INFO_TYPE_RUNLIST,          runlistId,
-            ENGINE_INFO_TYPE_RUNLIST_PRI_BASE, &runlistPriBase) != NV_OK)
-    {
-        return;
-    }
-
-    // Wait for the preemption to complete.
-    do
-    {
-        if (gpuCheckTimeout(pGpu, pTimeout) == NV_ERR_TIMEOUT)
-        {
-            break;
-        }
-
-        runlistVal = GPU_REG_RD32(pGpu, runlistPriBase + NV_RUNLIST_PREEMPT);
-    } while (FLD_TEST_DRF(_RUNLIST, _PREEMPT, _RUNLIST_PREEMPT_PENDING, _TRUE, runlistVal));
-}
-

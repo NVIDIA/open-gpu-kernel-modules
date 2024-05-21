@@ -328,7 +328,7 @@ static NvU32 find_gpu_numa_nodes_in_srat(nv_linux_state_t *nvl)
             gi = (struct acpi_srat_generic_affinity *) subtable_header;
             gi_dbdf = *((NvU16 *)(&gi->device_handle[0])) << 16 |
                       *((NvU16 *)(&gi->device_handle[2]));
-
+            
             if (gi_dbdf == dev_dbdf) {
                 numa_node = pxm_to_node(gi->proximity_domain);
                 if (numa_node < MAX_NUMNODES) {
@@ -353,7 +353,6 @@ exit:
     acpi_put_table(table_header);
     return pxm_count;
 }
-
 #endif
 
 static void
@@ -379,6 +378,7 @@ nv_init_coherent_link_info
         return;
 
     gi_found = find_gpu_numa_nodes_in_srat(nvl);
+
     if (!gi_found &&
         (device_property_read_u64(nvl->dev, "nvidia,gpu-mem-pxm-start", &pxm_start) != 0 ||
          device_property_read_u64(nvl->dev, "nvidia,gpu-mem-pxm-count", &pxm_count) != 0))
@@ -534,7 +534,6 @@ nv_pci_probe
     if (pci_dev->is_virtfn)
     {
 #if defined(NV_VGPU_KVM_BUILD)
-
 #if defined(NV_BUS_TYPE_HAS_IOMMU_OPS)
         if (pci_dev->dev.bus->iommu_ops == NULL) 
 #else
@@ -677,8 +676,8 @@ next_bar:
         // Invalid 32 or 64-bit BAR.
         nv_printf(NV_DBG_ERRORS,
             "NVRM: This PCI I/O region assigned to your NVIDIA device is invalid:\n"
-            "NVRM: BAR%d is %dM @ 0x%llx (PCI:%04x:%02x:%02x.%x)\n", i,
-            (NV_PCI_RESOURCE_SIZE(pci_dev, i) >> 20),
+            "NVRM: BAR%d is %" NvU64_fmtu "M @ 0x%" NvU64_fmtx " (PCI:%04x:%02x:%02x.%x)\n", i,
+            (NvU64)(NV_PCI_RESOURCE_SIZE(pci_dev, i) >> 20),
             (NvU64)NV_PCI_RESOURCE_START(pci_dev, i),
             NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
             NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
@@ -698,10 +697,10 @@ next_bar:
                             nv_device_name))
     {
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: request_mem_region failed for %dM @ 0x%llx. This can\n"
+            "NVRM: request_mem_region failed for %" NvU64_fmtu "M @ 0x%" NvU64_fmtx ". This can\n"
             "NVRM: occur when a driver such as rivatv is loaded and claims\n"
             "NVRM: ownership of the device's registers.\n",
-            (NV_PCI_RESOURCE_SIZE(pci_dev, regs_bar_index) >> 20),
+            (NvU64)(NV_PCI_RESOURCE_SIZE(pci_dev, regs_bar_index) >> 20),
             (NvU64)NV_PCI_RESOURCE_START(pci_dev, regs_bar_index));
         goto failed;
     }

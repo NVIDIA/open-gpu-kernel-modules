@@ -1264,11 +1264,16 @@ kbusGetNvSwitchPeerId_GA100
     NvU32 peerId = BUS_INVALID_PEER;
     NvU32 i;
 
+    if (IS_VIRTUAL(pGpu) && GPU_IS_NVSWITCH_DETECTED(pGpu))
+        goto nvswitch_detected;
+
     if (pKernelNvlink == NULL)
         return BUS_INVALID_PEER;
 
     if (!knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink))
         return BUS_INVALID_PEER;
+
+nvswitch_detected:
 
     for (i = 0; i < NV_MAX_DEVICES; i++)
     {

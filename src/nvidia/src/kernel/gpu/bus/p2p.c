@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2011-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2011-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -650,9 +650,12 @@ NV_STATUS RmThirdPartyP2PNVLinkGetPages
         return NV_ERR_INVALID_STATE;
     }
 
-    NV_ASSERT(!(address & (NVRM_P2P_PAGESIZE_BIG_64K - 1)));
-    NV_ASSERT(!(length & (NVRM_P2P_PAGESIZE_BIG_64K - 1)));
-    NV_ASSERT(!(offset & (NVRM_P2P_PAGESIZE_BIG_64K - 1)));
+    NV_ASSERT_OR_RETURN(NV_IS_ALIGNED64(address, NVRM_P2P_PAGESIZE_BIG_64K),
+                        NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(NV_IS_ALIGNED64(length, NVRM_P2P_PAGESIZE_BIG_64K),
+                        NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(NV_IS_ALIGNED64(offset, NVRM_P2P_PAGESIZE_BIG_64K),
+                        NV_ERR_INVALID_ARGUMENT);
 
     lastAddress = (address + length - 1);
     while (address < lastAddress)
@@ -1006,13 +1009,10 @@ static NV_STATUS _rmP2PGetPages(
     Subdevice *pSubdevice;
     PCLI_THIRD_PARTY_P2P_VASPACE_INFO pVASpaceInfo = NULL;
 
-    if (address & (NVRM_P2P_PAGESIZE_BIG_64K - 1))
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "invalid argument in RmP2PGetPages, address=%llx is not aligned\n",
-                  address);
-        return NV_ERR_INVALID_ARGUMENT;
-    }
+    NV_ASSERT_OR_RETURN(NV_IS_ALIGNED64(address, NVRM_P2P_PAGESIZE_BIG_64K),
+                        NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(NV_IS_ALIGNED64(length, NVRM_P2P_PAGESIZE_BIG_64K),
+                        NV_ERR_INVALID_ARGUMENT);
 
     if (0 != p2pToken)
     {
@@ -1093,6 +1093,7 @@ CLI_THIRD_PARTY_P2P_VIDMEM_INFO* _createOrReuseVidmemInfoPersistent
     NvU64           address,
     NvU64           length,
     NvU64          *pOffset,
+    NvHandle        hClientInternal,
     ThirdPartyP2P  *pThirdPartyP2P,
     ThirdPartyP2P  *pThirdPartyP2PInternal
 )
@@ -1100,10 +1101,10 @@ CLI_THIRD_PARTY_P2P_VIDMEM_INFO* _createOrReuseVidmemInfoPersistent
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     CLI_THIRD_PARTY_P2P_VIDMEM_INFO *pVidmemInfo = NULL;
     CLI_THIRD_PARTY_P2P_VIDMEM_INFO *pVidmemInfoInternal = NULL;
-    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     Memory *pMemoryInternal;
     RsClient *pClientInternal;
     Device *pDevice;
+    Subdevice *pSubdevice;
     NvU64 offset = 0;
     NvHandle hMemoryDuped = 0;
     NV_STATUS status;
@@ -1154,15 +1155,27 @@ CLI_THIRD_PARTY_P2P_VIDMEM_INFO* _createOrReuseVidmemInfoPersistent
 
     pClientInternal = RES_GET_CLIENT(pThirdPartyP2PInternal);
     pDevice = GPU_RES_GET_DEVICE(pThirdPartyP2PInternal);
+    pSubdevice = GPU_RES_GET_SUBDEVICE(pThirdPartyP2PInternal);
 
     // Dupe user client's hMemory
     status = pRmApi->DupObject(pRmApi,
-                               pMemoryManager->hClient,
+                               hClientInternal,
                                RES_GET_HANDLE(pDevice),
                                &hMemoryDuped,
                                pThirdPartyP2P->hClient,
                                pVidmemInfo->hMemory,
                                0);
+    if (status == NV_ERR_INVALID_OBJECT_PARENT)
+    {
+        // If duping under Device fails, try duping under Subdevice
+        status = pRmApi->DupObject(pRmApi,
+                                   hClientInternal,
+                                   RES_GET_HANDLE(pSubdevice),
+                                   &hMemoryDuped,
+                                   pThirdPartyP2P->hClient,
+                                   pVidmemInfo->hMemory,
+                                   0);
+    }
     if (status != NV_OK)
     {
         goto failed;
@@ -1209,10 +1222,69 @@ CLI_THIRD_PARTY_P2P_VIDMEM_INFO* _createOrReuseVidmemInfoPersistent
 failed:
     if (bMemDuped)
     {
-        pRmApi->Free(pRmApi, pMemoryManager->hClient, hMemoryDuped);
+        pRmApi->Free(pRmApi, hClientInternal, hMemoryDuped);
     }
 
     return NULL;
+}
+
+static NV_STATUS RmP2PGetMigInfo(
+    OBJGPU                   *pGpu,
+    NvU64                     address,
+    NvU64                     length,
+    ThirdPartyP2P            *pThirdPartyP2P,
+    KERNEL_MIG_GPU_INSTANCE **ppGpuInstanceInfo
+)
+{
+    NvHandle hClient, hMemory;
+    MIG_INSTANCE_REF ref;
+    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    CLI_THIRD_PARTY_P2P_VIDMEM_INFO *pVidmemInfo = NULL;
+    Memory *pMemory;
+    RsClient *pClient;
+    NvU64 offset;
+
+    // Get hClient and hMemory
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                          CliGetThirdPartyP2PVidmemInfoFromAddress(pThirdPartyP2P,
+                                        address, length, &offset, &pVidmemInfo));
+    hClient = pVidmemInfo->hClient;
+    hMemory = pVidmemInfo->hMemory;
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                          serverGetClientUnderLock(&g_resServ, hClient, &pClient));
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                          memGetByHandle(pClient, hMemory, &pMemory));
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                          kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                                          pMemory->pDevice, &ref));
+
+    // Refcount++ MIG instance
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                          kmigmgrIncRefCount(ref.pKernelMIGGpuInstance->pShare));
+
+    *ppGpuInstanceInfo = (void *) ref.pKernelMIGGpuInstance;
+
+    return NV_OK;
+}
+
+static void RmP2PPutMigInfo(
+    void  *pGpuInstanceInfo
+)
+{
+    KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance;
+
+    if (pGpuInstanceInfo == NULL)
+    {
+        return;
+    }
+
+    pKernelMIGGpuInstance = (KERNEL_MIG_GPU_INSTANCE *) pGpuInstanceInfo;
+
+    // Refcount-- MIG instance
+    NV_ASSERT_OK(kmigmgrDecRefCount(pKernelMIGGpuInstance->pShare));
 }
 
 NV_STATUS RmP2PGetPagesPersistent(
@@ -1222,7 +1294,8 @@ NV_STATUS RmP2PGetPagesPersistent(
     NvU64      *pPhysicalAddresses,
     NvU32      *pEntries,
     void       *pPlatformData,
-    void       *pGpuInfo
+    void       *pGpuInfo,
+    void      **ppGpuInstanceInfo
 )
 {
     RsResourceRef *pResourceRef;
@@ -1231,9 +1304,21 @@ NV_STATUS RmP2PGetPagesPersistent(
     ThirdPartyP2P *pThirdPartyP2PInternal = NULL;
     CLI_THIRD_PARTY_P2P_VASPACE_INFO *pVASpaceInfo = NULL;
     CLI_THIRD_PARTY_P2P_VIDMEM_INFO *pVidmemInfo = NULL;
-    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance = NULL;
     NvU64 offset = 0;
+    NvHandle hClientInternal;
+    NvHandle hThirdPartyP2PInternal;
     NV_STATUS status;
+
+    NV_ASSERT_OR_RETURN(NV_IS_ALIGNED64(address, NVRM_P2P_PAGESIZE_BIG_64K),
+                        NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(NV_IS_ALIGNED64(length, NVRM_P2P_PAGESIZE_BIG_64K),
+                        NV_ERR_INVALID_ARGUMENT);
+
+    if(gpuIsApmFeatureEnabled(pGpu))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
 
     status = RmP2PGetInfoWithoutToken(address, length, NULL,
                                       &pThirdPartyP2P, &pVASpaceInfo, pGpu);
@@ -1242,22 +1327,59 @@ NV_STATUS RmP2PGetPagesPersistent(
         return status;
     }
 
-    status = serverutilGetResourceRef(pMemoryManager->hClient,
-                                      pMemoryManager->hThirdPartyP2P,
+    if (IS_MIG_ENABLED(pGpu))
+    {
+        status = RmP2PGetMigInfo(pGpu, address, length, pThirdPartyP2P,
+                                 &pKernelMIGGpuInstance);
+        if (status != NV_OK)
+        {
+            return status;
+        }
+        *ppGpuInstanceInfo = (void *) pKernelMIGGpuInstance;
+
+        if (pKernelMIGGpuInstance->instanceHandles.hThirdPartyP2P == NV01_NULL_OBJECT)
+        {
+            status = NV_ERR_NOT_SUPPORTED;
+
+            goto failed;
+        }
+
+        hClientInternal = pKernelMIGGpuInstance->instanceHandles.hClient;
+        hThirdPartyP2PInternal = pKernelMIGGpuInstance->instanceHandles.hThirdPartyP2P;
+    }
+    else
+    {
+        MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+
+        if (pMemoryManager->hThirdPartyP2P == NV01_NULL_OBJECT)
+        {
+            return NV_ERR_NOT_SUPPORTED;
+        }
+
+        hClientInternal = pMemoryManager->hClient;
+        hThirdPartyP2PInternal = pMemoryManager->hThirdPartyP2P;
+        *ppGpuInstanceInfo = NULL;
+    }
+
+    status = serverutilGetResourceRef(hClientInternal,
+                                      hThirdPartyP2PInternal,
                                       &pResourceRef);
     if (status != NV_OK)
     {
-        return status;
+        goto failed;
     }
 
     pThirdPartyP2PInternal = dynamicCast(pResourceRef->pResource, ThirdPartyP2P);
 
     pVidmemInfo = _createOrReuseVidmemInfoPersistent(pGpu, address, length, &offset,
+                                                     hClientInternal,
                                                      pThirdPartyP2P,
                                                      pThirdPartyP2PInternal);
     if (pVidmemInfo == NULL)
     {
-        return NV_ERR_INVALID_STATE;
+        status = NV_ERR_INVALID_STATE;
+
+        goto failed;
     }
 
     status = RmP2PGetPagesUsingVidmemInfo(address, length, offset,
@@ -1280,7 +1402,7 @@ NV_STATUS RmP2PGetPagesPersistent(
         //
         CliDelThirdPartyP2PVidmemInfoPersistent(pThirdPartyP2PInternal, pVidmemInfo);
 
-        return status;
+        goto failed;
     }
 
     //
@@ -1290,6 +1412,11 @@ NV_STATUS RmP2PGetPagesPersistent(
     *p2pObject = (void *) pThirdPartyP2PInternal;
 
     return NV_OK;
+
+failed:
+    RmP2PPutMigInfo(pKernelMIGGpuInstance);
+
+    return status;
 }
 
 NV_STATUS RmP2PGetPages(
@@ -1349,7 +1476,6 @@ NV_STATUS RmP2PGetGpuByAddress(
     ThirdPartyP2P *pThirdPartyP2P = NULL;
     CLI_THIRD_PARTY_P2P_VASPACE_INFO *pVASpaceInfo = NULL;
     OBJGPU *pGpu = NULL;
-    MemoryManager *pMemoryManager = NULL;
     NV_STATUS status = NV_OK;
 
     status = RmP2PGetInfoWithoutToken(address, length, NULL,
@@ -1363,18 +1489,6 @@ NV_STATUS RmP2PGetGpuByAddress(
     if (status != NV_OK)
     {
         return status;
-    }
-
-    pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-
-    // Unsupported configs/platforms for persistent mappings
-    if (IS_MIG_ENABLED(pGpu) ||
-        gpuIsApmFeatureEnabled(pGpu) ||
-        IS_VIRTUAL(pGpu) ||
-        NVCPU_IS_PPC64LE ||
-        pMemoryManager->hThirdPartyP2P == 0)
-    {
-        return NV_ERR_NOT_SUPPORTED;
     }
 
     *ppGpu = pGpu;
@@ -1431,7 +1545,8 @@ NV_STATUS RmP2PRegisterCallback(
 
 NV_STATUS RmP2PPutPagesPersistent(
     void       *p2pObject,
-    void       *pPlatformData
+    void       *pPlatformData,
+    void       *pMigInfo
 )
 {
     NV_STATUS status;
@@ -1448,6 +1563,8 @@ NV_STATUS RmP2PPutPagesPersistent(
     status = thirdpartyp2pDelPersistentMappingInfoByKey(pThirdPartyP2P, pPlatformData, NV_TRUE);
 
     NV_ASSERT(status == NV_OK);
+
+    RmP2PPutMigInfo(pMigInfo);
 
     return status;
 }

@@ -120,7 +120,6 @@
 // Enable runtime checks to ensure SPDM context validity.
 #define LIBSPDM_CHECK_SPDM_CONTEXT                1
 
-#include <rmconfig.h>
 // Enable mutual authentication and encapsulated process both.
 #define LIBSPDM_ENABLE_CAPABILITY_MUT_AUTH_CAP        1
 #define LIBSPDM_ENABLE_CAPABILITY_ENCAP_CAP           1

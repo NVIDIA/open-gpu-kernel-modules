@@ -855,7 +855,6 @@ static NV_STATUS cpu_decrypt_in_order(uvm_channel_t *channel,
                                       uvm_mem_t *dst_mem,
                                       uvm_mem_t *src_mem,
                                       const UvmCslIv *decrypt_iv,
-                                      NvU32 key_version,
                                       uvm_mem_t *auth_tag_mem,
                                       size_t size,
                                       NvU32 copy_size)
@@ -870,7 +869,6 @@ static NV_STATUS cpu_decrypt_in_order(uvm_channel_t *channel,
                                                          dst_plain + i * copy_size,
                                                          src_cipher + i * copy_size,
                                                          decrypt_iv + i,
-                                                         key_version,
                                                          copy_size,
                                                          auth_tag_buffer + i * UVM_CONF_COMPUTING_AUTH_TAG_SIZE));
     }
@@ -881,7 +879,6 @@ static NV_STATUS cpu_decrypt_out_of_order(uvm_channel_t *channel,
                                           uvm_mem_t *dst_mem,
                                           uvm_mem_t *src_mem,
                                           const UvmCslIv *decrypt_iv,
-                                          NvU32 key_version,
                                           uvm_mem_t *auth_tag_mem,
                                           size_t size,
                                           NvU32 copy_size)
@@ -899,7 +896,6 @@ static NV_STATUS cpu_decrypt_out_of_order(uvm_channel_t *channel,
                                                          dst_plain + i * copy_size,
                                                          src_cipher + i * copy_size,
                                                          decrypt_iv + i,
-                                                         key_version,
                                                          copy_size,
                                                          auth_tag_buffer + i * UVM_CONF_COMPUTING_AUTH_TAG_SIZE));
     }
@@ -963,7 +959,7 @@ static void gpu_encrypt(uvm_push_t *push,
                                                           i * UVM_CONF_COMPUTING_AUTH_TAG_SIZE,
                                                           dst_cipher);
 
-        uvm_conf_computing_log_gpu_encryption(push->channel, copy_size, decrypt_iv);
+        uvm_conf_computing_log_gpu_encryption(push->channel, decrypt_iv);
 
         if (i > 0)
             uvm_push_set_flag(push, UVM_PUSH_FLAG_CE_NEXT_PIPELINED);
@@ -1024,7 +1020,6 @@ static NV_STATUS test_cpu_to_gpu_roundtrip(uvm_gpu_t *gpu,
     size_t auth_tag_buffer_size = (size / copy_size) * UVM_CONF_COMPUTING_AUTH_TAG_SIZE;
     UvmCslIv *decrypt_iv = NULL;
     UvmCslIv *encrypt_iv = NULL;
-    NvU32 key_version;
     uvm_tracker_t tracker;
     size_t src_plain_size;
 
@@ -1094,11 +1089,6 @@ static NV_STATUS test_cpu_to_gpu_roundtrip(uvm_gpu_t *gpu,
 
     gpu_encrypt(&push, dst_cipher, dst_plain_gpu, auth_tag_mem, decrypt_iv, size, copy_size);
 
-    // There shouldn't be any key rotation between the end of the push and the
-    // CPU decryption(s), but it is more robust against test changes to force
-    // decryption to use the saved key.
-    key_version = uvm_channel_pool_key_version(push.channel->pool);
-
     TEST_NV_CHECK_GOTO(uvm_push_end_and_wait(&push), out);
 
     TEST_CHECK_GOTO(!mem_match(src_plain, src_cipher, size), out);
@@ -1111,7 +1101,6 @@ static NV_STATUS test_cpu_to_gpu_roundtrip(uvm_gpu_t *gpu,
                                                 dst_plain,
                                                 dst_cipher,
                                                 decrypt_iv,
-                                                key_version,
                                                 auth_tag_mem,
                                                 size,
                                                 copy_size),
@@ -1122,7 +1111,6 @@ static NV_STATUS test_cpu_to_gpu_roundtrip(uvm_gpu_t *gpu,
                                                     dst_plain,
                                                     dst_cipher,
                                                     decrypt_iv,
-                                                    key_version,
                                                     auth_tag_mem,
                                                     size,
                                                     copy_size),

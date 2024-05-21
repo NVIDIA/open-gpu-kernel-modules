@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1351,58 +1351,101 @@ kbifPollDeviceOnBus_IMPL
     return NV_OK;
 }
 
-/*!
- * @brief To get PCI link max spead from PCI link Gen info
- *
- * @param[in]  pGpu        GPU object pointer
- * @param[in]  pKernelBif  Kernel BIF object pointer
- * @param[in]  pciLinkGenInfo   PCI link Gen info
- * @param[in]  pciLinkMaxSpeed  pointer to PCI link max spead
-
- * @returns NV_OK
- * @returns NV_ERR_INVALID_STATE
- */
 NV_STATUS
-kbifGetPciLinkMaxSpeedByPciGenInfo_IMPL
+kbifResetFromTimeoutFullChip_IMPL
 (
-    OBJGPU     *pGpu,
-    KernelBif  *pKernelBif,
-    NvU32      pciLinkGenInfo,
-    NvU32      *pciLinkMaxSpeed
+    OBJGPU *pGpu,
+    KernelBif *pKernelBif
 )
 {
-    NV_STATUS rmStatus = NV_OK;
 
-    switch (pciLinkGenInfo)
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJCL  *pCl = SYS_GET_CL(pSys);
+    NV_STATUS status;
+
+    if (pCl == NULL || 
+        (!pCl->getProperty(pCl, PDB_PROP_CL_PCIE_CONFIG_ACCESSIBLE)
+       ))
     {
-        case NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_GEN_GEN1:
-            *pciLinkMaxSpeed = NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_2500MBPS;
-            break;
-
-        case NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_GEN_GEN2:
-            *pciLinkMaxSpeed = NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_5000MBPS;
-            break;
-
-        case NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_GEN_GEN3:
-            *pciLinkMaxSpeed = NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_8000MBPS;
-            break;
-
-        case NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_GEN_GEN4:
-            *pciLinkMaxSpeed = NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_16000MBPS;
-            break;
-
-        case NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_GEN_GEN5:
-            *pciLinkMaxSpeed = NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_32000MBPS;
-            break;
-
-        case NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_GEN_GEN6:
-            *pciLinkMaxSpeed = NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_64000MBPS;
-            break;
-
-        default:
-            rmStatus = NV_ERR_INVALID_STATE;
-            NV_PRINTF(LEVEL_ERROR, "Unknown PCIe Gen Info\n");
+        //
+        // We can not issue SW_RESET as we are not able to access PCI config
+        // space.
+        return NV_ERR_NOT_SUPPORTED;
     }
 
-    return rmStatus;
+    //
+    // Execute any workarounds or changes needed to make sure we can reset
+    // properly.
+    //
+    kbifPrepareForFullChipReset_HAL(pGpu, pKernelBif);
+
+    // Reset the gpu.
+    NV_ASSERT_OK(status = kbifDoFullChipReset_HAL(pGpu, pKernelBif));
+
+    //
+    // This 100ms wait is only required for legacy FLR where RM itself
+    // triggers FLR and it also does save/restore of config space.
+    // For hopper and later, HW will keep sending CRS status to OS
+    // until FWSEC boot sequence is not complete
+    //
+    if (!(pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_FLR_HANDLED_BY_OS)))
+    {
+        // Wait 100ms after GPU is reset to ensure Pre-OS completion.
+        osDelay(100);
+    }
+
+    return status;
 }
+
+NV_STATUS
+kbifWaitForConfigAccessAfterReset_IMPL
+(
+    OBJGPU *pGpu,
+    KernelBif *pKernelBif
+)
+{
+
+
+    NvU32 domain = gpuGetDomain(pGpu);
+    NvU8  bus    = gpuGetBus(pGpu);
+    NvU8  device = gpuGetDevice(pGpu);
+
+    NvU32 waitCount = 20; // iterations of the osDelayUs statements
+    while (NV_TRUE)
+    {
+        NvU16 vendorId;
+        NvU16 deviceId;
+        void *pGpuHandle = osPciInitHandle(domain,
+                                           bus,
+                                           device,
+                                           0 /* Function */,
+                                           &vendorId,
+                                           &deviceId);
+
+        NvU32 id = osPciReadDword(pGpuHandle, 0 /* Offset */);
+        if (id == pGpu->idInfo.PCIDeviceID)
+        {
+            // Found it.  Config space is accessible.  Break out.
+            return NV_OK;
+        }
+
+        if (waitCount == 0)
+        {
+            break;
+        }
+        waitCount--;
+
+        //
+        // Keep trying for at least 1 second.  Note that completion timeouts
+        // here can extend the amount of time we are in this loop.  But they are
+        // not fatal.
+        //
+        {
+            // Wait 50ms
+            osDelayUs(50000);
+        }
+    }
+
+    return NV_ERR_GENERIC;
+}
+

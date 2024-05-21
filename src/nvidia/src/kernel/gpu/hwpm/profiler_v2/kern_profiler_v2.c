@@ -336,22 +336,22 @@ _profilerDevConstructVgpuGuest
     NvBool *pBindPointAllocated = NULL;
 
     // Allocate the pPmaStreamList to store info about memaddr buffer CPU mapping
-    pPmaStreamList = portMemAllocNonPaged(sizeof(HWPM_PMA_STREAM) * pGpu->pKernelHwpm->maxPmaChannels);
+    pPmaStreamList = portMemAllocNonPaged(sizeof(HWPM_PMA_STREAM) * GPU_GET_KERNEL_HWPM(pGpu)->maxPmaChannels);
     if (pPmaStreamList == NULL)
     {
         return NV_ERR_NO_MEMORY;
     }
 
-    portMemSet(pPmaStreamList, 0, sizeof(HWPM_PMA_STREAM) * pGpu->pKernelHwpm->maxPmaChannels);
+    portMemSet(pPmaStreamList, 0, sizeof(HWPM_PMA_STREAM) * GPU_GET_KERNEL_HWPM(pGpu)->maxPmaChannels);
 
-    pBindPointAllocated = portMemAllocNonPaged(sizeof(NvBool) * pGpu->pKernelHwpm->maxPmaChannels);
+    pBindPointAllocated = portMemAllocNonPaged(sizeof(NvBool) * GPU_GET_KERNEL_HWPM(pGpu)->maxPmaChannels);
     if (pBindPointAllocated == NULL)
     {
         portMemFree(pPmaStreamList);
         return NV_ERR_NO_MEMORY;
     }
 
-    portMemSet(pBindPointAllocated, NV_FALSE, sizeof(NvBool) * pGpu->pKernelHwpm->maxPmaChannels);
+    portMemSet(pBindPointAllocated, NV_FALSE, sizeof(NvBool) * GPU_GET_KERNEL_HWPM(pGpu)->maxPmaChannels);
 
     pProfBase->pPmaStreamList = pPmaStreamList;
     pProfBase->pBindPointAllocated = pBindPointAllocated;
@@ -457,6 +457,24 @@ profilerDevConstructStateInterlude_IMPL
                            hObject,
                            NVB0CC_CTRL_CMD_INTERNAL_PERMISSIONS_INIT,
                            &params, sizeof(params));
+}
+
+NV_STATUS
+profilerDevConstructStateEpilogue_FWCLIENT
+(
+    ProfilerDev *pProfDev,
+    CALL_CONTEXT *pCallContext,
+    RS_RES_ALLOC_PARAMS_INTERNAL *pParams
+)
+{
+    ProfilerBase *pProfBase = staticCast(pProfDev, ProfilerBase);
+    RsResourceRef *pParentRef = pCallContext->pResourceRef->pParentRef;
+
+    NV_ASSERT_OR_RETURN((pParentRef->internalClassId == classId(Subdevice)), NV_ERR_INVALID_OBJECT_PARENT);
+
+    pProfBase->hSubDevice = pParentRef->hResource;
+
+    return NV_OK;
 }
 
 void

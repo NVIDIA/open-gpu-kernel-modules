@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -138,40 +138,6 @@ _memmgrShiftFbRegions
     pMemoryManager->Ram.numFBRegions++;
 }
 
-/*
- * Check if LostOnSuspend FB Regions are grouped together at the end of FB.
- */
-static void
-_memmgrCheckForLostOnSuspendContiguity
-(
-    OBJGPU        *pGpu,
-    MemoryManager *pMemoryManager,
-    NvU32          newRegionId
-)
-{
-    NvU32    i              = 0;
-    NvBool   bLostOnSuspend = NV_FALSE;
-
-    //
-    // Check to make sure all the regions after this new one has bLostOnSuspend set to NV_TRUE
-    //
-    for (i = 0; i < pMemoryManager->Ram.numFBRegions; i++)
-    {
-        if ((bLostOnSuspend == NV_FALSE) && (pMemoryManager->Ram.fbRegion[i].bLostOnSuspend == NV_TRUE))
-        {
-            bLostOnSuspend = NV_TRUE;
-            continue;
-        }
-
-        if ((bLostOnSuspend == NV_TRUE) && (pMemoryManager->Ram.fbRegion[i].bLostOnSuspend == NV_FALSE))
-        {
-            NV_ASSERT(0);
-            break;
-        }
-    }
-    return;
-}
-
 /*!
  * @brief: Insert a region into FbRegions[]
  *
@@ -301,8 +267,6 @@ memmgrInsertFbRegion_IMPL
         pMemoryManager->Ram.fbRegion[insertRegion-1].limit = pInsertRegion->base - 1;
     }
 
-    _memmgrCheckForLostOnSuspendContiguity(pGpu, pMemoryManager, insertRegion);
-
     // Invalidate allocation priority list and regenerate it
     memmgrRegenerateFbRegionPriority(pGpu, pMemoryManager);
 
@@ -408,6 +372,8 @@ memmgrRegionSetupCommon_IMPL
 
     for (i = 0; i < pMemoryManager->Ram.numFBRegions; i++)
     {
+        KernelMemorySystem *pKernelMemorySystem  = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+
         //
         // In NUMA systems unreserved FB memory Block is onlined to the
         // kernel after aligning to memblock size. If we have leftover
@@ -417,18 +383,36 @@ memmgrRegionSetupCommon_IMPL
         // NUMA size and the PMA size same.
         //
         if (osNumaOnliningEnabled(pGpu->pOsGpuInfo) &&
-            (pMemoryManager->Ram.fbRegion[i].bRsvdRegion == NV_FALSE) &&
-            (pMemoryManager->Ram.fbRegion[i].bInternalHeap == NV_FALSE))
+            (pMemoryManager->Ram.fbRegion[i].base == KMEMSYS_FB_NUMA_ONLINE_BASE))
         {
             NvU64 unusedBlockSize = 0;
             NvU64 memblockSize = 0;
             NvU64 regionSize = pMemoryManager->Ram.fbRegion[i].limit - pMemoryManager->Ram.fbRegion[i].base + 1;
             NvU64 usableBlockSize = regionSize - pMemoryManager->Ram.fbRegion[i].rsvdSize;
 
-            NV_ASSERT_OR_RETURN_VOID(osNumaMemblockSize(&memblockSize) == NV_OK);
-            unusedBlockSize = usableBlockSize - NV_ALIGN_DOWN64(usableBlockSize, memblockSize);
+            //
+            // If numaOnlineSize is 0, this indicates that the memory is not onlined yet and hence align
+            // the memoryblock with memblock size. (Currently this case gets executed in P9+GV100 config).
+            //
+            if (pKernelMemorySystem->numaOnlineSize == 0)
+            {
+                NV_ASSERT_OR_RETURN_VOID(osNumaMemblockSize(&memblockSize) == NV_OK);
+                unusedBlockSize = usableBlockSize - KMEMSYS_FB_NUMA_ONLINE_SIZE(usableBlockSize, memblockSize);
+            }
+            else
+            {
+                //
+                // If usableBlockSize is less than numaOnlineSize this indicates that a part
+                // of RM reserved memory is onlined to the kernel. In this case skip creating
+                // internal heap region.
+                //
+                NV_ASSERT_OR_RETURN_VOID(usableBlockSize >= pKernelMemorySystem->numaOnlineSize);
+
+                unusedBlockSize = usableBlockSize - pKernelMemorySystem->numaOnlineSize;
+            }
             pMemoryManager->Ram.fbRegion[i].rsvdSize += unusedBlockSize;
         }
+
         //
         // if the region has an RM reserved block and is not already reserved, subdivide it.
         //
@@ -543,14 +527,17 @@ memmgrDumpFbRegions_IMPL
                   pMemoryManager->Ram.fbRegion[i].base,
                   pMemoryManager->Ram.fbRegion[i].limit,
                   pMemoryManager->Ram.fbRegion[i].rsvdSize);
-        NV_PRINTF(LEVEL_INFO, "FB region %u - Reserved=%d, InternalHeap=%d, Compressed=%d, ISO=%d, Protected=%d, Performance=%u\n",
+        NV_PRINTF(LEVEL_INFO, "FB region %u - Reserved=%d, InternalHeap=%d, Compressed=%d, ISO=%d, Protected=%d, "
+                                              "Performance=%u, LostOnSuspend=%d, PreserveOnSuspend=%d\n",
                   i,
                   pMemoryManager->Ram.fbRegion[i].bRsvdRegion,
                   pMemoryManager->Ram.fbRegion[i].bInternalHeap,
                   pMemoryManager->Ram.fbRegion[i].bSupportCompressed,
                   pMemoryManager->Ram.fbRegion[i].bSupportISO,
                   pMemoryManager->Ram.fbRegion[i].bProtected,
-                  pMemoryManager->Ram.fbRegion[i].performance);
+                  pMemoryManager->Ram.fbRegion[i].performance,
+                  pMemoryManager->Ram.fbRegion[i].bLostOnSuspend,
+                  pMemoryManager->Ram.fbRegion[i].bPreserveOnSuspend);
     }
 }
 

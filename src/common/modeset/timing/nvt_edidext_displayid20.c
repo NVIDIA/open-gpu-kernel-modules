@@ -44,9 +44,9 @@ PUSH_SEGMENTS
  *                  the timings
  */
 CODE_SEGMENT(PAGE_DD_CODE)
-NVT_STATUS 
+NVT_STATUS
 getDisplayId20EDIDExtInfo(
-    NvU8 *p, 
+    NvU8 *p,
     NvU32 size,
     NVT_EDID_INFO *pEdidInfo)
 {
@@ -62,10 +62,12 @@ getDisplayId20EDIDExtInfo(
     }
 
     // Calculate the All DisplayID20 Extension checksum
-    // The function name 
+    // The function name
     if (computeDisplayId20SectionCheckSum(p, sizeof(EDIDV1STRUC)) != 0)
     {
-         nvt_assert(0 && "displayid2ext invalid checksum");
+#ifdef DD_UNITTEST
+         return NVT_STATUS_ERR;
+#endif
     }
 
     extSection = (DISPLAYID_2_0_SECTION *)(p + 1);
@@ -77,7 +79,7 @@ getDisplayId20EDIDExtInfo(
  *  @brief DisplayId20 as EDID extension block's "Section" entry point functions
  */
 CODE_SEGMENT(PAGE_DD_CODE)
-NVT_STATUS 
+NVT_STATUS
 parseDisplayId20EDIDExtSection(
     DISPLAYID_2_0_SECTION * extSection,
     NVT_EDID_INFO *pEdidInfo)
@@ -92,8 +94,8 @@ parseDisplayId20EDIDExtSection(
         return NVT_STATUS_ERR;
     }
 
-    // It is based on the DisplayID v2.0 Errata E7 
-    // First DisplayID2.0 section as EDID extension shall populate "Display Product Primary Use Case" byte with a value from 1h-8h based on the intended primary use case of the sink. 
+    // It is based on the DisplayID v2.0 Errata E7
+    // First DisplayID2.0 section as EDID extension shall populate "Display Product Primary Use Case" byte with a value from 1h-8h based on the intended primary use case of the sink.
     // Any subsequent DisplayID2.0 section EDID extension shall set the "Display Product Primary Use Case" byte to 0h.
     pEdidInfo->total_did2_extensions++;
 
@@ -104,7 +106,9 @@ parseDisplayId20EDIDExtSection(
                                                          extSection->header.extension_count != DISPLAYID_2_0_PROD_EXTENSION)) ||
             (pEdidInfo->total_did2_extensions > 1 && extSection->header.product_type != DISPLAYID_2_0_PROD_EXTENSION))
         {
-            nvt_assert(0); // product_type value set incorrect in Display Product Primary Use Case field
+#ifdef DD_UNITTEST
+            return NVT_STATUS_ERR;
+#endif
         }
 
         pEdidInfo->ext_displayid20.version = extSection->header.version;
@@ -202,7 +206,7 @@ parseDisplayId20EDIDExtDataBlocks(
     status = parseDisplayId20DataBlock(block_header, pDisplayId20Info);
 
     if (pDisplayId20Info == NULL) return status;
-    
+
     // TODO : All the data blocks shall sync the data from the datablock in DisplayID2_0 to pEdidInfo
     if (status == NVT_STATUS_SUCCESS && pDisplayId20Info->as_edid_extension == NV_TRUE)
     {
@@ -214,7 +218,7 @@ parseDisplayId20EDIDExtDataBlocks(
         case DISPLAYID_2_0_BLOCK_TYPE_INTERFACE_FEATURES:
             pDisplayId20Info->valid_data_blocks.interface_feature_present = NV_TRUE;
 
-            // Supported - Color depth is supported for all supported timings.  Supported timing includes all Display-ID exposed timings 
+            // Supported - Color depth is supported for all supported timings.  Supported timing includes all Display-ID exposed timings
             // (that is timing exposed using DisplayID timing types and CTA VICs)
             if (IS_BPC_SUPPORTED_COLORFORMAT(pDisplayId20Info->interface_features.yuv444.bpcs))
             {
@@ -226,8 +230,8 @@ parseDisplayId20EDIDExtDataBlocks(
                 pDisplayId20Info->basic_caps |= NVT_DISPLAY_2_0_CAP_YCbCr_422;
             }
 
-            if (pDisplayId20Info->interface_features.audio_capability.support_48khz   || 
-                pDisplayId20Info->interface_features.audio_capability.support_44_1khz || 
+            if (pDisplayId20Info->interface_features.audio_capability.support_48khz   ||
+                pDisplayId20Info->interface_features.audio_capability.support_44_1khz ||
                 pDisplayId20Info->interface_features.audio_capability.support_32khz)
             {
                 pDisplayId20Info->basic_caps |= NVT_DISPLAY_2_0_CAP_BASIC_AUDIO;
@@ -244,7 +248,7 @@ parseDisplayId20EDIDExtDataBlocks(
                     pEdidInfo->ext861.hdr_static_metadata.byte1 |= NVT_CEA861_EOTF_SMPTE_ST2084;
                     pEdidInfo->ext861.colorimetry.byte1 |= NVT_CEA861_COLORIMETRY_BT2020RGB;
 
-                    if (IS_BPC_SUPPORTED_COLORFORMAT(pDisplayId20Info->interface_features.yuv444.bpcs) || 
+                    if (IS_BPC_SUPPORTED_COLORFORMAT(pDisplayId20Info->interface_features.yuv444.bpcs) ||
                         IS_BPC_SUPPORTED_COLORFORMAT(pDisplayId20Info->interface_features.yuv422.bpcs))
                     {
                         pEdidInfo->ext861.colorimetry.byte1 |= NVT_CEA861_COLORIMETRY_BT2020YCC;
@@ -253,8 +257,8 @@ parseDisplayId20EDIDExtDataBlocks(
             }
         break;
 
-        // DisplayID_v2.0 E5 defined 
-        // if inside CTA embedded block existed 420 VDB/CMDB, then we follow these two blocks only. 
+        // DisplayID_v2.0 E5 defined
+        // if inside CTA embedded block existed 420 VDB/CMDB, then we follow these two blocks only.
         // * support for 420 pixel encoding is limited to the timings exposed in the restricted set exposed in the CTA data block.
         // * field of "Mini Pixel Rate at YCbCr420" shall be set 00h
         case DISPLAYID_2_0_BLOCK_TYPE_CTA_DATA:
@@ -285,11 +289,23 @@ parseDisplayId20EDIDExtDataBlocks(
                 pDisplayId20Info->basic_caps                 = pEdidInfo->ext861.basic_caps;
             }
 
-            // this is the DisplayID20 Extension, so we need to copy the data from the CTA in DID20 to CTA section
+            // this is the DisplayID20 Extension, just copy needed data block value here:
             if (pEdidInfo->ext861.revision == 0)
-                NVMISC_MEMCPY(&pEdidInfo->ext861, &pDisplayId20Info->cta.cta861_info, sizeof(NVT_EDID_CEA861_INFO));
+            {
+                if (pDisplayId20Info->cta.cta861_info.valid.colorimetry)
+                {
+                    pEdidInfo->ext861.colorimetry.byte1 = pDisplayId20Info->cta.cta861_info.colorimetry.byte1;
+                    pEdidInfo->ext861.colorimetry.byte2 = pDisplayId20Info->cta.cta861_info.colorimetry.byte2;
+                }
+            }
             else if (pEdidInfo->ext861_2.revision == 0)
-                NVMISC_MEMCPY(&pEdidInfo->ext861_2, &pDisplayId20Info->cta.cta861_info, sizeof(NVT_EDID_CEA861_INFO));
+            {
+                if (pDisplayId20Info->cta.cta861_info.valid.colorimetry)
+                {
+                    pEdidInfo->ext861_2.colorimetry.byte1 = pDisplayId20Info->cta.cta861_info.colorimetry.byte1;
+                    pEdidInfo->ext861_2.colorimetry.byte2 = pDisplayId20Info->cta.cta861_info.colorimetry.byte2;
+                }
+            }
         break;
 
         case DISPLAYID_2_0_BLOCK_TYPE_DISPLAY_PARAM:
@@ -335,11 +351,11 @@ parseDisplayId20EDIDExtDataBlocks(
             pDisplayId20Info->valid_data_blocks.dynamic_range_limit_present        = NV_TRUE;
             break;
         case DISPLAYID_2_0_BLOCK_TYPE_ADAPTIVE_SYNC:
-            pDisplayId20Info->valid_data_blocks.adaptive_sync_present              = NV_TRUE;  
+            pDisplayId20Info->valid_data_blocks.adaptive_sync_present              = NV_TRUE;
         break;
         case DISPLAYID_2_0_BLOCK_TYPE_BRIGHTNESS_LUMINANCE_RANGE:
             pDisplayId20Info->valid_data_blocks.brightness_luminance_range_present = NV_TRUE;
-        break;        
+        break;
         case DISPLAYID_2_0_BLOCK_TYPE_VENDOR_SPEC:
             pDisplayId20Info->valid_data_blocks.vendor_specific_present            = NV_TRUE;
         break;
@@ -354,21 +370,21 @@ parseDisplayId20EDIDExtDataBlocks(
 /*  @brief Update the correct color format / attribute of timings from interface feature data block
  */
 CODE_SEGMENT(PAGE_DD_CODE)
-void 
+void
 updateColorFormatForDisplayId20ExtnTimings(
-    NVT_EDID_INFO *pInfo, 
+    NVT_EDID_INFO *pInfo,
     NvU32 timingIdx)
-{   
+{
     // pDisplayId20Info parsed displayID20 info
     NVT_DISPLAYID_2_0_INFO *pDisplayId20Info = &pInfo->ext_displayid20;
     NVT_TIMING *pT= &pInfo->timing[timingIdx];
-    
+
     nvt_assert(timingIdx <= COUNT(pInfo->timing));
-    
+
     if (pDisplayId20Info->as_edid_extension)
     {
         if ((pInfo->input.u.digital.video_interface == NVT_EDID_DIGITAL_VIDEO_INTERFACE_STANDARD_HDMI_A_SUPPORTED ||
-             pInfo->input.u.digital.video_interface == NVT_EDID_DIGITAL_VIDEO_INTERFACE_STANDARD_HDMI_B_SUPPORTED || 
+             pInfo->input.u.digital.video_interface == NVT_EDID_DIGITAL_VIDEO_INTERFACE_STANDARD_HDMI_B_SUPPORTED ||
              pInfo->ext861.valid.H14B_VSDB || pInfo->ext861.valid.H20_HF_VSDB) && pInfo->ext861.revision >= NVT_CEA861_REV_A)
         {
             UPDATE_BPC_FOR_COLORFORMAT(pT->etc.rgb444, 0,

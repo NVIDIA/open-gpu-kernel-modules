@@ -93,69 +93,103 @@ __nvoc_ctor_OBJVASPACE_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_OBJVASPACE_1(OBJVASPACE *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // vaspaceConstruct_ -- pure virtual
     pThis->__vaspaceConstruct___ = NULL;
 
+    // vaspaceAlloc -- pure virtual
     pThis->__vaspaceAlloc__ = NULL;
 
+    // vaspaceFree -- pure virtual
     pThis->__vaspaceFree__ = NULL;
 
+    // vaspaceApplyDefaultAlignment -- pure virtual
     pThis->__vaspaceApplyDefaultAlignment__ = NULL;
 
+    // vaspaceIncAllocRefCnt -- inline virtual body
     pThis->__vaspaceIncAllocRefCnt__ = &vaspaceIncAllocRefCnt_b7902c;
 
+    // vaspaceGetVaStart -- virtual
     pThis->__vaspaceGetVaStart__ = &vaspaceGetVaStart_IMPL;
 
+    // vaspaceGetVaLimit -- virtual
     pThis->__vaspaceGetVaLimit__ = &vaspaceGetVaLimit_IMPL;
 
+    // vaspaceGetVasInfo -- pure virtual
     pThis->__vaspaceGetVasInfo__ = NULL;
 
+    // vaspaceGetFlags -- inline virtual body
     pThis->__vaspaceGetFlags__ = &vaspaceGetFlags_edd98b;
 
+    // vaspaceMap -- inline virtual body
     pThis->__vaspaceMap__ = &vaspaceMap_b7902c;
 
+    // vaspaceUnmap -- inline virtual body
     pThis->__vaspaceUnmap__ = &vaspaceUnmap_8b86a5;
 
+    // vaspaceReserveMempool -- inline virtual body
     pThis->__vaspaceReserveMempool__ = &vaspaceReserveMempool_ac1694;
 
+    // vaspaceGetHeap -- inline virtual body
     pThis->__vaspaceGetHeap__ = &vaspaceGetHeap_128d6d;
 
+    // vaspaceGetMapPageSize -- inline virtual body
     pThis->__vaspaceGetMapPageSize__ = &vaspaceGetMapPageSize_07238a;
 
+    // vaspaceGetBigPageSize -- inline virtual body
     pThis->__vaspaceGetBigPageSize__ = &vaspaceGetBigPageSize_07238a;
 
+    // vaspaceIsMirrored -- inline virtual body
     pThis->__vaspaceIsMirrored__ = &vaspaceIsMirrored_814c13;
 
+    // vaspaceIsFaultCapable -- inline virtual body
     pThis->__vaspaceIsFaultCapable__ = &vaspaceIsFaultCapable_814c13;
 
+    // vaspaceIsExternallyOwned -- inline virtual body
     pThis->__vaspaceIsExternallyOwned__ = &vaspaceIsExternallyOwned_814c13;
 
+    // vaspaceIsAtsEnabled -- inline virtual body
     pThis->__vaspaceIsAtsEnabled__ = &vaspaceIsAtsEnabled_814c13;
 
+    // vaspaceGetPasid -- inline virtual body
     pThis->__vaspaceGetPasid__ = &vaspaceGetPasid_b7902c;
 
+    // vaspaceGetPageDirBase -- inline virtual body
     pThis->__vaspaceGetPageDirBase__ = &vaspaceGetPageDirBase_128d6d;
 
+    // vaspaceGetKernelPageDirBase -- inline virtual body
     pThis->__vaspaceGetKernelPageDirBase__ = &vaspaceGetKernelPageDirBase_128d6d;
 
+    // vaspacePinRootPageDir -- inline virtual body
     pThis->__vaspacePinRootPageDir__ = &vaspacePinRootPageDir_b7902c;
 
+    // vaspaceUnpinRootPageDir -- inline virtual body
     pThis->__vaspaceUnpinRootPageDir__ = &vaspaceUnpinRootPageDir_8b86a5;
 
+    // vaspaceInvalidateTlb -- virtual
     pThis->__vaspaceInvalidateTlb__ = &vaspaceInvalidateTlb_IMPL;
 
+    // vaspaceGetPageTableInfo -- inline virtual body
     pThis->__vaspaceGetPageTableInfo__ = &vaspaceGetPageTableInfo_b7902c;
 
+    // vaspaceGetPteInfo -- inline virtual body
     pThis->__vaspaceGetPteInfo__ = &vaspaceGetPteInfo_b7902c;
 
+    // vaspaceSetPteInfo -- inline virtual body
     pThis->__vaspaceSetPteInfo__ = &vaspaceSetPteInfo_b7902c;
 
+    // vaspaceFreeV2 -- inline virtual body
     pThis->__vaspaceFreeV2__ = &vaspaceFreeV2_b7902c;
-}
+} // End __nvoc_init_funcTable_OBJVASPACE_1 with approximately 29 basic block(s).
 
+
+// Initialize vtable(s) for 29 virtual method(s).
 void __nvoc_init_funcTable_OBJVASPACE(OBJVASPACE *pThis) {
+
+    // Initialize vtable(s) with 29 per-object function pointer(s).
     __nvoc_init_funcTable_OBJVASPACE_1(pThis);
 }
 

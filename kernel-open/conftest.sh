@@ -5252,23 +5252,25 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_PCI_CLASS_MULTIMEDIA_HD_AUDIO_PRESENT" "" "generic"
         ;;
 
-        follow_pfn)
+        unsafe_follow_pfn)
             #
-            # Determine if follow_pfn() is present.
+            # Determine if unsafe_follow_pfn() is present.
             #
-            # follow_pfn() was added by commit 3b6748e2dd69
-            # ("mm: introduce follow_pfn()") in v2.6.31-rc1, and removed
-            # by commit 233eb0bf3b94 ("mm: remove follow_pfn")
-            # from linux-next 233eb0bf3b94.
+            # unsafe_follow_pfn() was added by commit 69bacee7f9ad
+            # ("mm: Add unsafe_follow_pfn") in v5.13-rc1.
+            #
+            # Note: this commit never made it to the linux kernel, so
+            # unsafe_follow_pfn() never existed.
             #
             CODE="
             #include <linux/mm.h>
-            void conftest_follow_pfn(void) {
-                follow_pfn();
+            void conftest_unsafe_follow_pfn(void) {
+                unsafe_follow_pfn();
             }"
 
-            compile_check_conftest "$CODE" "NV_FOLLOW_PFN_PRESENT" "" "functions"
+            compile_check_conftest "$CODE" "NV_UNSAFE_FOLLOW_PFN_PRESENT" "" "functions"
         ;;
+
         drm_plane_atomic_check_has_atomic_state_arg)
             #
             # Determine if drm_plane_helper_funcs::atomic_check takes 'state'
@@ -5554,7 +5556,8 @@ compile_test() {
 
         of_dma_configure)
             #
-            # Determine if of_dma_configure() function is present
+            # Determine if of_dma_configure() function is present, and how
+            # many arguments it takes.
             #
             # Added by commit 591c1ee465ce ("of: configure the platform
             # device dma parameters") in v3.16.  However, it was a static,
@@ -5564,17 +5567,69 @@ compile_test() {
             # commit 1f5c69aa51f9 ("of: Move of_dma_configure() to device.c
             # to help re-use") in v4.1.
             #
-            CODE="
+            # It subsequently began taking a third parameter with commit
+            # 3d6ce86ee794 ("drivers: remove force dma flag from buses")
+            # in v4.18.
+            #
+
+            echo "$CONFTEST_PREAMBLE
             #if defined(NV_LINUX_OF_DEVICE_H_PRESENT)
             #include <linux/of_device.h>
             #endif
+
             void conftest_of_dma_configure(void)
             {
                 of_dma_configure();
             }
-            "
+            " > conftest$$.c
 
-            compile_check_conftest "$CODE" "NV_OF_DMA_CONFIGURE_PRESENT" "" "functions"
+            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+            rm -f conftest$$.c
+
+            if [ -f conftest$$.o ]; then
+                rm -f conftest$$.o
+
+                echo "#undef NV_OF_DMA_CONFIGURE_PRESENT" | append_conftest "functions"
+                echo "#undef NV_OF_DMA_CONFIGURE_ARGUMENT_COUNT" | append_conftest "functions"
+            else
+                echo "#define NV_OF_DMA_CONFIGURE_PRESENT" | append_conftest "functions"
+
+                echo "$CONFTEST_PREAMBLE
+                #if defined(NV_LINUX_OF_DEVICE_H_PRESENT)
+                #include <linux/of_device.h>
+                #endif
+
+                void conftest_of_dma_configure(void) {
+                    of_dma_configure(NULL, NULL, false);
+                }" > conftest$$.c
+
+                $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+                rm -f conftest$$.c
+
+                if [ -f conftest$$.o ]; then
+                    rm -f conftest$$.o
+                    echo "#define NV_OF_DMA_CONFIGURE_ARGUMENT_COUNT 3" | append_conftest "functions"
+                    return
+                fi
+
+                echo "$CONFTEST_PREAMBLE
+                #if defined(NV_LINUX_OF_DEVICE_H_PRESENT)
+                #include <linux/of_device.h>
+                #endif
+
+                void conftest_of_dma_configure(void) {
+                    of_dma_configure(NULL, NULL);
+                }" > conftest$$.c
+
+                $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+                rm -f conftest$$.c
+
+                if [ -f conftest$$.o ]; then
+                    rm -f conftest$$.o
+                    echo "#define NV_OF_DMA_CONFIGURE_ARGUMENT_COUNT 2" | append_conftest "functions"
+                    return
+                fi
+            fi
         ;;
 
         icc_get)
@@ -6795,12 +6850,45 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_MODE_CREATE_DP_COLORSPACE_PROPERTY_HAS_SUPPORTED_COLORSPACES_ARG" "" "types"
         ;;
 
+        drm_syncobj_features_present)
+            # Determine if DRIVER_SYNCOBJ and DRIVER_SYNCOBJ_TIMELINE DRM
+            # driver features are present. Timeline DRM synchronization objects
+            # may only be used if both of these are supported by the driver.
+            #
+            # DRIVER_SYNCOBJ_TIMELINE Added by commit 060cebb20cdb ("drm:
+            # introduce a capability flag for syncobj timeline support") in
+            # v5.2
+            #
+            # DRIVER_SYNCOBJ Added by commit e9083420bbac ("drm: introduce
+            # sync objects (v4)") in v4.12
+            CODE="
+            #if defined(NV_DRM_DRM_DRV_H_PRESENT)
+            #include <drm/drm_drv.h>
+            #endif
+            int features = DRIVER_SYNCOBJ | DRIVER_SYNCOBJ_TIMELINE;"
+
+            compile_check_conftest "$CODE" "NV_DRM_SYNCOBJ_FEATURES_PRESENT" "" "types"
+        ;;
+
+        stack_trace)
+            # Determine if functions stack_trace_{save,print} are present.
+            # Added by commit e9b98e162 ("stacktrace: Provide helpers for
+            # common stack trace operations") in v5.2.
+            CODE="
+            #include <linux/stacktrace.h>
+            void conftest_stack_trace(void) {
+                stack_trace_save();
+                stack_trace_print();
+            }"
+
+            compile_check_conftest "$CODE" "NV_STACK_TRACE_PRESENT" "" "functions"
+        ;;
+
         drm_unlocked_ioctl_flag_present)
             # Determine if DRM_UNLOCKED IOCTL flag is present.
             #
             # DRM_UNLOCKED was removed by commit 2798ffcc1d6a ("drm: Remove
-            # locking for legacy ioctls and DRM_UNLOCKED") in Linux
-            # next-20231208.
+            # locking for legacy ioctls and DRM_UNLOCKED") in v6.8.
             #
             # DRM_UNLOCKED definition was moved from drmP.h to drm_ioctl.h by
             # commit 2640981f3600 ("drm: document drm_ioctl.[hc]") in v4.12.

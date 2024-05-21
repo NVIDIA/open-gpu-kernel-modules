@@ -163,4 +163,6 @@
 #define NV_XVE_CYA_2                                             0x00000704 /* RW-4R */
 #define NV_XVE_DEVICE_CONTROL_STATUS_2                           0x000000A0 /* RWI4R */
 #define NV_XVE_L1_PM_SUBSTATES_CTRL1                             0x00000260 /* RW-4R */
+#define NV_XVE_SW_RESET                                          0x00000718 /* RW-4R */
+#define NV_XVE_SW_RESET_RESET                                           0:0 /* RWCVF */
 #endif // __gm107_dev_nv_xve_h__

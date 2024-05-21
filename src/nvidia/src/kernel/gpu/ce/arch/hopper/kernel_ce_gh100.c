@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1226,14 +1226,21 @@ NV_STATUS kceGetP2PCes_GH100(KernelCE *pKCe, OBJGPU *pGpu, NvU32 gpuMask, NvU32 
         {
             //
             // In the event that the preferred HSHUB's primary LCE is not available,
-            // use the first available LCE and set that index as the new preferred hshub
+            // choose the first available LCE which was found and set that index as
+            // the new preferred hshub.
             //
-            maxLcePerHshub[maxConnectedHshubId] = GPU_GET_KCE(pGpu, maxConnectedHshubId);
-
-            NV_PRINTF(LEVEL_INFO,
-                      "GPU %d Assigning Peer %d to first available LCE %d\n",
-                      gpuGetInstance(pGpu), gpuInstance,
-                      maxLcePerHshub[maxConnectedHshubId]->publicID);
+            for (i = 0; i < NV_CE_MAX_HSHUBS; i++)
+            {
+                if (maxLcePerHshub[i] != NULL)
+                {
+                    NV_PRINTF(LEVEL_INFO,
+                              "GPU %d Assigning Peer %d to first available LCE %d\n",
+                              gpuGetInstance(pGpu), gpuInstance,
+                              maxLcePerHshub[i]->publicID);
+                    maxConnectedHshubId = i;
+                    break;
+                }
+            }
         }
 
         if (maxConnectedHshubId < NV_CE_MAX_HSHUBS)
@@ -1245,18 +1252,3 @@ NV_STATUS kceGetP2PCes_GH100(KernelCE *pKCe, OBJGPU *pGpu, NvU32 gpuMask, NvU32 
 
     return NV_OK;
 }
-
-/*! Determine if CE support confidential compute secure copy */
-NvBool kceIsSecureCe_GH100(OBJGPU *pGpu, KernelCE *pKCe)
-{
-    NV_STATUS status;
-    NvU8 ceCaps[NV2080_CTRL_CE_CAPS_TBL_SIZE];
-
-    NV_ASSERT_OK_OR_ELSE(status,
-        kceGetDeviceCaps(pGpu, pKCe, RM_ENGINE_TYPE_COPY(pKCe->publicID), ceCaps),
-        return NV_FALSE);
-
-    return (NV2080_CTRL_CE_GET_CAP(ceCaps, NV2080_CTRL_CE_CAPS_CE_CC_SECURE) != 0) ?
-               NV_TRUE : NV_FALSE;
-};
-

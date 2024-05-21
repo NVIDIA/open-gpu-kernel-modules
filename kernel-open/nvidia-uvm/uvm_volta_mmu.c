@@ -42,7 +42,7 @@ static NvU32 entries_per_index_volta(NvU32 depth)
     return 1;
 }
 
-static NvLength entry_offset_volta(NvU32 depth, NvU32 page_size)
+static NvLength entry_offset_volta(NvU32 depth, NvU64 page_size)
 {
     UVM_ASSERT(depth < 5);
     if (page_size == UVM_PAGE_SIZE_4K && depth == 3)
@@ -252,7 +252,7 @@ static NvU64 make_pte_volta(uvm_aperture_t aperture, NvU64 address, uvm_prot_t p
 
 static uvm_mmu_mode_hal_t volta_mmu_mode_hal;
 
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_volta(NvU32 big_page_size)
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_volta(NvU64 big_page_size)
 {
     static bool initialized = false;
 

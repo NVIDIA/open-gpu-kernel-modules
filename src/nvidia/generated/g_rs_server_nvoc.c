@@ -93,10 +93,13 @@ __nvoc_ctor_RsShared_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_RsShared_1(RsShared *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-}
+} // End __nvoc_init_funcTable_RsShared_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_RsShared(RsShared *pThis) {
     __nvoc_init_funcTable_RsShared_1(pThis);
 }
@@ -270,15 +273,22 @@ __nvoc_ctor_RsSession_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_RsSession_1(RsSession *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // sessionRemoveDependant -- virtual
     pThis->__sessionRemoveDependant__ = &sessionRemoveDependant_IMPL;
 
+    // sessionRemoveDependency -- virtual
     pThis->__sessionRemoveDependency__ = &sessionRemoveDependency_IMPL;
-}
+} // End __nvoc_init_funcTable_RsSession_1 with approximately 2 basic block(s).
 
+
+// Initialize vtable(s) for 2 virtual method(s).
 void __nvoc_init_funcTable_RsSession(RsSession *pThis) {
+
+    // Initialize vtable(s) with 2 per-object function pointer(s).
     __nvoc_init_funcTable_RsSession_1(pThis);
 }
 

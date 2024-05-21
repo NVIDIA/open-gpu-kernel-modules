@@ -93,106 +93,6 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_MemoryMapper =
     /*pExportInfo=*/        &__nvoc_export_info_MemoryMapper
 };
 
-static NvBool __nvoc_thunk_GpuResource_memmapperShareCallback(struct MemoryMapper *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_MemoryMapper_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_memmapperCheckMemInterUnmap(struct MemoryMapper *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_MemoryMapper_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_memmapperMapTo(struct MemoryMapper *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryMapper_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_memmapperGetMapAddrSpace(struct MemoryMapper *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_MemoryMapper_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static NvU32 __nvoc_thunk_RsResource_memmapperGetRefCount(struct MemoryMapper *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryMapper_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_memmapperAddAdditionalDependants(struct RsClient *pClient, struct MemoryMapper *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryMapper_RsResource.offset), pReference);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_memmapperControl_Prologue(struct MemoryMapper *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryMapper_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_memmapperGetRegBaseOffsetAndSize(struct MemoryMapper *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_MemoryMapper_GpuResource.offset), pGpu, pOffset, pSize);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_memmapperInternalControlForward(struct MemoryMapper *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_MemoryMapper_GpuResource.offset), command, pParams, size);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_memmapperUnmapFrom(struct MemoryMapper *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryMapper_RsResource.offset), pParams);
-}
-
-static void __nvoc_thunk_RmResource_memmapperControl_Epilogue(struct MemoryMapper *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryMapper_RmResource.offset), pCallContext, pParams);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_memmapperGetInternalObjectHandle(struct MemoryMapper *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_MemoryMapper_GpuResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_memmapperControl(struct MemoryMapper *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_MemoryMapper_GpuResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_memmapperUnmap(struct MemoryMapper *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_MemoryMapper_GpuResource.offset), pCallContext, pCpuMapping);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_memmapperGetMemInterMapParams(struct MemoryMapper *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_MemoryMapper_RmResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_memmapperGetMemoryMappingDescriptor(struct MemoryMapper *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_MemoryMapper_RmResource.offset), ppMemDesc);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_memmapperControlFilter(struct MemoryMapper *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryMapper_RsResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_memmapperControlSerialization_Prologue(struct MemoryMapper *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryMapper_RmResource.offset), pCallContext, pParams);
-}
-
-static NvBool __nvoc_thunk_RsResource_memmapperCanCopy(struct MemoryMapper *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryMapper_RsResource.offset));
-}
-
-static NvBool __nvoc_thunk_RsResource_memmapperIsPartialUnmapSupported(struct MemoryMapper *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryMapper_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_memmapperPreDestruct(struct MemoryMapper *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryMapper_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_memmapperIsDuplicate(struct MemoryMapper *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryMapper_RsResource.offset), hMemory, pDuplicate);
-}
-
-static void __nvoc_thunk_RmResource_memmapperControlSerialization_Epilogue(struct MemoryMapper *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryMapper_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_memmapperMap(struct MemoryMapper *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return gpuresMap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_MemoryMapper_GpuResource.offset), pCallContext, pParams, pCpuMapping);
-}
-
-static NvBool __nvoc_thunk_RmResource_memmapperAccessCallback(struct MemoryMapper *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryMapper_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
-}
-
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
@@ -200,12 +100,12 @@ static NvBool __nvoc_thunk_RmResource_memmapperAccessCallback(struct MemoryMappe
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_MemoryMapper[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) memmapperCtrlCmdSubmitOperations_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xfe0101u,
         /*paramSize=*/  sizeof(NV00FE_CTRL_SUBMIT_OPERATIONS_PARAMS),
@@ -214,12 +114,155 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_MemoryMa
         /*func=*/       "memmapperCtrlCmdSubmitOperations"
 #endif
     },
+    {               /*  [1] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) memmapperCtrlCmdResizeQueue_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0xfe0102u,
+        /*paramSize=*/  sizeof(NV00FE_CTRL_RESIZE_QUEUE_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_MemoryMapper.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "memmapperCtrlCmdResizeQueue"
+#endif
+    },
 
 };
 
+// 25 up-thunk(s) defined to bridge methods in MemoryMapper to superclasses
+
+// memmapperControl: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_memmapperControl(struct MemoryMapper *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_MemoryMapper_GpuResource.offset), pCallContext, pParams);
+}
+
+// memmapperMap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_memmapperMap(struct MemoryMapper *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_MemoryMapper_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+}
+
+// memmapperUnmap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_memmapperUnmap(struct MemoryMapper *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_MemoryMapper_GpuResource.offset), pCallContext, pCpuMapping);
+}
+
+// memmapperShareCallback: virtual inherited (gpures) base (gpures)
+static NvBool __nvoc_up_thunk_GpuResource_memmapperShareCallback(struct MemoryMapper *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_MemoryMapper_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+}
+
+// memmapperGetRegBaseOffsetAndSize: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_memmapperGetRegBaseOffsetAndSize(struct MemoryMapper *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_MemoryMapper_GpuResource.offset), pGpu, pOffset, pSize);
+}
+
+// memmapperGetMapAddrSpace: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_memmapperGetMapAddrSpace(struct MemoryMapper *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_MemoryMapper_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+// memmapperInternalControlForward: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_memmapperInternalControlForward(struct MemoryMapper *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_MemoryMapper_GpuResource.offset), command, pParams, size);
+}
+
+// memmapperGetInternalObjectHandle: virtual inherited (gpures) base (gpures)
+static NvHandle __nvoc_up_thunk_GpuResource_memmapperGetInternalObjectHandle(struct MemoryMapper *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_MemoryMapper_GpuResource.offset));
+}
+
+// memmapperAccessCallback: virtual inherited (rmres) base (gpures)
+static NvBool __nvoc_up_thunk_RmResource_memmapperAccessCallback(struct MemoryMapper *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMapper_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+}
+
+// memmapperGetMemInterMapParams: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_memmapperGetMemInterMapParams(struct MemoryMapper *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_MemoryMapper_RmResource.offset), pParams);
+}
+
+// memmapperCheckMemInterUnmap: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_memmapperCheckMemInterUnmap(struct MemoryMapper *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_MemoryMapper_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+// memmapperGetMemoryMappingDescriptor: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_memmapperGetMemoryMappingDescriptor(struct MemoryMapper *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_MemoryMapper_RmResource.offset), ppMemDesc);
+}
+
+// memmapperControlSerialization_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_memmapperControlSerialization_Prologue(struct MemoryMapper *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMapper_RmResource.offset), pCallContext, pParams);
+}
+
+// memmapperControlSerialization_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_memmapperControlSerialization_Epilogue(struct MemoryMapper *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMapper_RmResource.offset), pCallContext, pParams);
+}
+
+// memmapperControl_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_memmapperControl_Prologue(struct MemoryMapper *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMapper_RmResource.offset), pCallContext, pParams);
+}
+
+// memmapperControl_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_memmapperControl_Epilogue(struct MemoryMapper *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMapper_RmResource.offset), pCallContext, pParams);
+}
+
+// memmapperCanCopy: virtual inherited (res) base (gpures)
+static NvBool __nvoc_up_thunk_RsResource_memmapperCanCopy(struct MemoryMapper *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMapper_RsResource.offset));
+}
+
+// memmapperIsDuplicate: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_memmapperIsDuplicate(struct MemoryMapper *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMapper_RsResource.offset), hMemory, pDuplicate);
+}
+
+// memmapperPreDestruct: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_memmapperPreDestruct(struct MemoryMapper *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMapper_RsResource.offset));
+}
+
+// memmapperControlFilter: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_memmapperControlFilter(struct MemoryMapper *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMapper_RsResource.offset), pCallContext, pParams);
+}
+
+// memmapperIsPartialUnmapSupported: inline virtual inherited (res) base (gpures) body
+static NvBool __nvoc_up_thunk_RsResource_memmapperIsPartialUnmapSupported(struct MemoryMapper *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMapper_RsResource.offset));
+}
+
+// memmapperMapTo: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_memmapperMapTo(struct MemoryMapper *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMapper_RsResource.offset), pParams);
+}
+
+// memmapperUnmapFrom: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_memmapperUnmapFrom(struct MemoryMapper *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMapper_RsResource.offset), pParams);
+}
+
+// memmapperGetRefCount: virtual inherited (res) base (gpures)
+static NvU32 __nvoc_up_thunk_RsResource_memmapperGetRefCount(struct MemoryMapper *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMapper_RsResource.offset));
+}
+
+// memmapperAddAdditionalDependants: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_memmapperAddAdditionalDependants(struct RsClient *pClient, struct MemoryMapper *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryMapper_RsResource.offset), pReference);
+}
+
+
 const struct NVOC_EXPORT_INFO __nvoc_export_info_MemoryMapper = 
 {
-    /*numEntries=*/     1,
+    /*numEntries=*/     2,
     /*pExportEntries=*/ __nvoc_exported_method_def_MemoryMapper
 };
 
@@ -253,65 +296,101 @@ __nvoc_ctor_MemoryMapper_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_MemoryMapper_1(MemoryMapper *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // memmapperCtrlCmdSubmitOperations -- exported (id=0xfe0101)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__memmapperCtrlCmdSubmitOperations__ = &memmapperCtrlCmdSubmitOperations_IMPL;
 #endif
 
-    pThis->__memmapperShareCallback__ = &__nvoc_thunk_GpuResource_memmapperShareCallback;
+    // memmapperCtrlCmdResizeQueue -- exported (id=0xfe0102)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+    pThis->__memmapperCtrlCmdResizeQueue__ = &memmapperCtrlCmdResizeQueue_IMPL;
+#endif
 
-    pThis->__memmapperCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_memmapperCheckMemInterUnmap;
+    // memmapperControl -- virtual inherited (gpures) base (gpures)
+    pThis->__memmapperControl__ = &__nvoc_up_thunk_GpuResource_memmapperControl;
 
-    pThis->__memmapperMapTo__ = &__nvoc_thunk_RsResource_memmapperMapTo;
+    // memmapperMap -- virtual inherited (gpures) base (gpures)
+    pThis->__memmapperMap__ = &__nvoc_up_thunk_GpuResource_memmapperMap;
 
-    pThis->__memmapperGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_memmapperGetMapAddrSpace;
+    // memmapperUnmap -- virtual inherited (gpures) base (gpures)
+    pThis->__memmapperUnmap__ = &__nvoc_up_thunk_GpuResource_memmapperUnmap;
 
-    pThis->__memmapperGetRefCount__ = &__nvoc_thunk_RsResource_memmapperGetRefCount;
+    // memmapperShareCallback -- virtual inherited (gpures) base (gpures)
+    pThis->__memmapperShareCallback__ = &__nvoc_up_thunk_GpuResource_memmapperShareCallback;
 
-    pThis->__memmapperAddAdditionalDependants__ = &__nvoc_thunk_RsResource_memmapperAddAdditionalDependants;
+    // memmapperGetRegBaseOffsetAndSize -- virtual inherited (gpures) base (gpures)
+    pThis->__memmapperGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_memmapperGetRegBaseOffsetAndSize;
 
-    pThis->__memmapperControl_Prologue__ = &__nvoc_thunk_RmResource_memmapperControl_Prologue;
+    // memmapperGetMapAddrSpace -- virtual inherited (gpures) base (gpures)
+    pThis->__memmapperGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_memmapperGetMapAddrSpace;
 
-    pThis->__memmapperGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_memmapperGetRegBaseOffsetAndSize;
+    // memmapperInternalControlForward -- virtual inherited (gpures) base (gpures)
+    pThis->__memmapperInternalControlForward__ = &__nvoc_up_thunk_GpuResource_memmapperInternalControlForward;
 
-    pThis->__memmapperInternalControlForward__ = &__nvoc_thunk_GpuResource_memmapperInternalControlForward;
+    // memmapperGetInternalObjectHandle -- virtual inherited (gpures) base (gpures)
+    pThis->__memmapperGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_memmapperGetInternalObjectHandle;
 
-    pThis->__memmapperUnmapFrom__ = &__nvoc_thunk_RsResource_memmapperUnmapFrom;
+    // memmapperAccessCallback -- virtual inherited (rmres) base (gpures)
+    pThis->__memmapperAccessCallback__ = &__nvoc_up_thunk_RmResource_memmapperAccessCallback;
 
-    pThis->__memmapperControl_Epilogue__ = &__nvoc_thunk_RmResource_memmapperControl_Epilogue;
+    // memmapperGetMemInterMapParams -- virtual inherited (rmres) base (gpures)
+    pThis->__memmapperGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_memmapperGetMemInterMapParams;
 
-    pThis->__memmapperGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_memmapperGetInternalObjectHandle;
+    // memmapperCheckMemInterUnmap -- virtual inherited (rmres) base (gpures)
+    pThis->__memmapperCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_memmapperCheckMemInterUnmap;
 
-    pThis->__memmapperControl__ = &__nvoc_thunk_GpuResource_memmapperControl;
+    // memmapperGetMemoryMappingDescriptor -- virtual inherited (rmres) base (gpures)
+    pThis->__memmapperGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_memmapperGetMemoryMappingDescriptor;
 
-    pThis->__memmapperUnmap__ = &__nvoc_thunk_GpuResource_memmapperUnmap;
+    // memmapperControlSerialization_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__memmapperControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_memmapperControlSerialization_Prologue;
 
-    pThis->__memmapperGetMemInterMapParams__ = &__nvoc_thunk_RmResource_memmapperGetMemInterMapParams;
+    // memmapperControlSerialization_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__memmapperControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_memmapperControlSerialization_Epilogue;
 
-    pThis->__memmapperGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_memmapperGetMemoryMappingDescriptor;
+    // memmapperControl_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__memmapperControl_Prologue__ = &__nvoc_up_thunk_RmResource_memmapperControl_Prologue;
 
-    pThis->__memmapperControlFilter__ = &__nvoc_thunk_RsResource_memmapperControlFilter;
+    // memmapperControl_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__memmapperControl_Epilogue__ = &__nvoc_up_thunk_RmResource_memmapperControl_Epilogue;
 
-    pThis->__memmapperControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_memmapperControlSerialization_Prologue;
+    // memmapperCanCopy -- virtual inherited (res) base (gpures)
+    pThis->__memmapperCanCopy__ = &__nvoc_up_thunk_RsResource_memmapperCanCopy;
 
-    pThis->__memmapperCanCopy__ = &__nvoc_thunk_RsResource_memmapperCanCopy;
+    // memmapperIsDuplicate -- virtual inherited (res) base (gpures)
+    pThis->__memmapperIsDuplicate__ = &__nvoc_up_thunk_RsResource_memmapperIsDuplicate;
 
-    pThis->__memmapperIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_memmapperIsPartialUnmapSupported;
+    // memmapperPreDestruct -- virtual inherited (res) base (gpures)
+    pThis->__memmapperPreDestruct__ = &__nvoc_up_thunk_RsResource_memmapperPreDestruct;
 
-    pThis->__memmapperPreDestruct__ = &__nvoc_thunk_RsResource_memmapperPreDestruct;
+    // memmapperControlFilter -- virtual inherited (res) base (gpures)
+    pThis->__memmapperControlFilter__ = &__nvoc_up_thunk_RsResource_memmapperControlFilter;
 
-    pThis->__memmapperIsDuplicate__ = &__nvoc_thunk_RsResource_memmapperIsDuplicate;
+    // memmapperIsPartialUnmapSupported -- inline virtual inherited (res) base (gpures) body
+    pThis->__memmapperIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_memmapperIsPartialUnmapSupported;
 
-    pThis->__memmapperControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_memmapperControlSerialization_Epilogue;
+    // memmapperMapTo -- virtual inherited (res) base (gpures)
+    pThis->__memmapperMapTo__ = &__nvoc_up_thunk_RsResource_memmapperMapTo;
 
-    pThis->__memmapperMap__ = &__nvoc_thunk_GpuResource_memmapperMap;
+    // memmapperUnmapFrom -- virtual inherited (res) base (gpures)
+    pThis->__memmapperUnmapFrom__ = &__nvoc_up_thunk_RsResource_memmapperUnmapFrom;
 
-    pThis->__memmapperAccessCallback__ = &__nvoc_thunk_RmResource_memmapperAccessCallback;
-}
+    // memmapperGetRefCount -- virtual inherited (res) base (gpures)
+    pThis->__memmapperGetRefCount__ = &__nvoc_up_thunk_RsResource_memmapperGetRefCount;
 
+    // memmapperAddAdditionalDependants -- virtual inherited (res) base (gpures)
+    pThis->__memmapperAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_memmapperAddAdditionalDependants;
+} // End __nvoc_init_funcTable_MemoryMapper_1 with approximately 27 basic block(s).
+
+
+// Initialize vtable(s) for 27 virtual method(s).
 void __nvoc_init_funcTable_MemoryMapper(MemoryMapper *pThis) {
+
+    // Initialize vtable(s) with 27 per-object function pointer(s).
     __nvoc_init_funcTable_MemoryMapper_1(pThis);
 }
 

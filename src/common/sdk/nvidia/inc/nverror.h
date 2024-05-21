@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1993-2023, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 1993-2024, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -67,9 +67,9 @@
 #define PMU_BREAKPOINT                                  (61)
 #define PMU_HALT_ERROR                                  (62)
 #define INFOROM_PAGE_RETIREMENT_EVENT                   (63)
+#define INFOROM_DRAM_RETIREMENT_EVENT                   INFOROM_PAGE_RETIREMENT_EVENT
 #define INFOROM_PAGE_RETIREMENT_FAILURE                 (64)
-#define INFOROM_DRAM_RETIREMENT_EVENT                   (63)
-#define INFOROM_DRAM_RETIREMENT_FAILURE                 (64)
+#define INFOROM_DRAM_RETIREMENT_FAILURE                 INFOROM_PAGE_RETIREMENT_FAILURE
 #define ROBUST_CHANNEL_NVENC1_ERROR                     (65)
 #define ROBUST_CHANNEL_NVDEC0_ERROR                     (68)
 #define ROBUST_CHANNEL_GR_CLASS_ERROR                   (69)
@@ -124,8 +124,15 @@
 #define UNRECOVERABLE_ECC_ERROR_ESCAPE                  (140)
 #define ROBUST_CHANNEL_FAST_PATH_ERROR                  (141)
 #define GPU_INIT_ERROR                                  (143)
-#define ROBUST_CHANNEL_KEY_ROTATION_ERROR               (144)
-#define ROBUST_CHANNEL_LAST_ERROR                       (ROBUST_CHANNEL_KEY_ROTATION_ERROR)
+#define RESERVED0_ERROR                                 (144)
+#define RESERVED1_ERROR                                 (145)
+#define RESERVED2_ERROR                                 (146)
+#define RESERVED3_ERROR                                 (147)
+#define RESERVED4_ERROR                                 (148)
+#define RESERVED5_ERROR                                 (149)
+#define RESERVED6_ERROR                                 (150)
+#define ROBUST_CHANNEL_KEY_ROTATION_ERROR               (151)
+#define ROBUST_CHANNEL_LAST_ERROR                       (151)
 
 
 // Indexed CE reference

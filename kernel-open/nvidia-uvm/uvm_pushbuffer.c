@@ -451,6 +451,7 @@ static uvm_pushbuffer_chunk_t *gpfifo_to_chunk(uvm_pushbuffer_t *pushbuffer, uvm
 static void decrypt_push(uvm_channel_t *channel, uvm_gpfifo_entry_t *gpfifo)
 {
     NV_STATUS status;
+    NvU32 auth_tag_offset;
     void *auth_tag_cpu_va;
     void *push_protected_cpu_va;
     void *push_unprotected_cpu_va;
@@ -469,15 +470,16 @@ static void decrypt_push(uvm_channel_t *channel, uvm_gpfifo_entry_t *gpfifo)
     UVM_ASSERT(!uvm_channel_is_wlc(channel));
     UVM_ASSERT(!uvm_channel_is_lcic(channel));
 
-    push_protected_cpu_va = get_base_cpu_va(pushbuffer) + pushbuffer_offset;
+    push_protected_cpu_va = (char *)get_base_cpu_va(pushbuffer) + pushbuffer_offset;
     push_unprotected_cpu_va = (char *)uvm_rm_mem_get_cpu_va(pushbuffer->memory_unprotected_sysmem) + pushbuffer_offset;
-    auth_tag_cpu_va = uvm_channel_get_push_crypto_bundle_auth_tags_cpu_va(channel, push_info_index);
+    auth_tag_offset = push_info_index * UVM_CONF_COMPUTING_AUTH_TAG_SIZE;
+    auth_tag_cpu_va = (char *)uvm_rm_mem_get_cpu_va(channel->conf_computing.push_crypto_bundle_auth_tags) +
+                              auth_tag_offset;
 
     status = uvm_conf_computing_cpu_decrypt(channel,
                                             push_protected_cpu_va,
                                             push_unprotected_cpu_va,
                                             &crypto_bundle->iv,
-                                            crypto_bundle->key_version,
                                             crypto_bundle->push_size,
                                             auth_tag_cpu_va);
 
@@ -556,7 +558,7 @@ NvU64 uvm_pushbuffer_get_gpu_va_for_push(uvm_pushbuffer_t *pushbuffer, uvm_push_
     if (uvm_channel_is_wlc(push->channel) || uvm_channel_is_lcic(push->channel)) {
         // We need to use the same static locations for PB as the fixed
         // schedule because that's what the channels are initialized to use.
-        return uvm_channel_get_static_pb_protected_vidmem_gpu_va(push->channel);
+        return uvm_rm_mem_get_gpu_uvm_va(push->channel->conf_computing.static_pb_protected_vidmem, gpu);
     }
     else if (uvm_channel_is_sec2(push->channel)) {
         // SEC2 PBs are in unprotected sysmem
@@ -573,7 +575,7 @@ void *uvm_pushbuffer_get_unprotected_cpu_va_for_push(uvm_pushbuffer_t *pushbuffe
     if (uvm_channel_is_wlc(push->channel)) {
         // Reuse existing WLC static pb for initialization
         UVM_ASSERT(!uvm_channel_manager_is_wlc_ready(push->channel->pool->manager));
-        return uvm_channel_get_static_pb_unprotected_sysmem_cpu(push->channel);
+        return push->channel->conf_computing.static_pb_unprotected_sysmem_cpu;
     }
 
     pushbuffer_base = uvm_rm_mem_get_cpu_va(pushbuffer->memory_unprotected_sysmem);
@@ -588,8 +590,8 @@ NvU64 uvm_pushbuffer_get_unprotected_gpu_va_for_push(uvm_pushbuffer_t *pushbuffe
     if (uvm_channel_is_wlc(push->channel)) {
         // Reuse existing WLC static pb for initialization
         UVM_ASSERT(!uvm_channel_manager_is_wlc_ready(push->channel->pool->manager));
-
-        return uvm_channel_get_static_pb_unprotected_sysmem_gpu_va(push->channel);
+        return uvm_rm_mem_get_gpu_uvm_va(push->channel->conf_computing.static_pb_unprotected_sysmem,
+                                         uvm_push_get_gpu(push));
     }
 
     pushbuffer_base = uvm_rm_mem_get_gpu_uvm_va(pushbuffer->memory_unprotected_sysmem, uvm_push_get_gpu(push));

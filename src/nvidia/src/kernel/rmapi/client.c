@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -65,8 +65,13 @@ rmclientConstruct_IMPL
     API_SECURITY_INFO *pSecInfo = pParams->pSecInfo;
     OBJGPU            *pGpu = NULL;
 
+    //
     // RM client objects can only be created/destroyed with the RW API lock.
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsWriteOwner());
+    // Bug 4193761 - allow internal clients to be created with the GPU lock,
+    // GR-2409 will remove the possible race condition with the client list.
+    //
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsWriteOwner() ||
+        (serverIsClientInternal(&g_resServ, pRsClient->hClient) && rmGpuLockIsOwner()));
 
     if (RMCFG_FEATURE_PLATFORM_GSP)
     {
@@ -232,8 +237,15 @@ rmclientDestruct_IMPL
     NV_STATUS           status = NV_OK;
     NvBool              bReleaseLock = NV_FALSE;
 
+    //
     // RM client objects can only be created/destroyed with the RW API lock.
-    NV_ASSERT(rmapiLockIsWriteOwner());
+    // Bug 4193761 - allow internal clients to be created with the GPU lock,
+    // GR-2409 will remove the possible race condition with the client list.
+    //
+    NV_ASSERT_OR_ELSE(rmapiLockIsWriteOwner() ||
+        (serverIsClientInternal(&g_resServ, staticCast(pClient, RsClient)->hClient) &&
+         rmGpuLockIsOwner()),
+        return);
 
     NV_PRINTF(LEVEL_INFO, "    type: client\n");
 
@@ -560,10 +572,15 @@ NvBool rmclientIsAdminByHandle(NvHandle hClient, RS_PRIV_LEVEL privLevel)
     return pClient ? rmclientIsAdmin(pClient, privLevel) : NV_FALSE;
 }
 
+static inline NvBool rmclientIsKernelOnly(RmClient *pClient)
+{
+    return (pClient->pSecurityToken == NULL);
+}
+
 NvBool rmclientIsKernelOnlyByHandle(NvHandle hClient)
 {
     RmClient *pClient = serverutilGetClientUnderLock(hClient);
-    return pClient ? (pClient->pSecurityToken == NULL) : NV_FALSE;
+    return (pClient ? rmclientIsKernelOnly(pClient) : NV_FALSE);
 }
 
 NvBool rmclientSetClientFlagsByHandle(NvHandle hClient, NvU32 clientFlags)
@@ -750,6 +767,43 @@ rmclientValidate_IMPL
 }
 
 NV_STATUS
+rmclientValidateLocks_IMPL
+(
+    RmClient *pClient,
+    RsServer *pServer,
+    const CLIENT_ENTRY *pClientEntry
+)
+{
+    // Possessing the client lock means it's always safe to use this client object
+    if (pClientEntry->lockOwnerTid == portThreadGetCurrentThreadId())
+        return NV_OK;
+
+    //
+    // Without the client lock, the API lock in write mode guarantees safety for the
+    // client object since nothing else can execute in parallel when holding it.
+    //
+    if (rmapiLockIsWriteOwner())
+        return NV_OK;
+
+    //
+    // Without the client lock, the API lock in read mode guarantees safety for the
+    // client object IF it's a client that cannot be used directly by user space (i.e.
+    // kernel privileged client and/or internal client).
+    //
+    if (rmapiLockIsOwner() &&
+        (rmclientIsKernelOnly(pClient) ||
+         serverIsClientInternal(pServer, pClientEntry->hClient)))
+    {
+        return NV_OK;
+    }
+
+
+    NV_ASSERT(0);
+    // Otherwise we don't have the required locks to use this RM client
+    return NV_ERR_INVALID_LOCK_STATE;
+}
+
+NV_STATUS
 rmclientFreeResource_IMPL
 (
     RmClient *pClient,
@@ -761,6 +815,7 @@ rmclientFreeResource_IMPL
     OBJGPU *pGpu;
     NvBool bBcState;
     NvBool bRestoreBcState = NV_FALSE;
+    RsClient *pRsClient = staticCast(pClient, RsClient);
 
     if (gpuGetByRef(pRmFreeParams->pResourceRef, NULL, &pGpu) == NV_OK)
     {
@@ -770,7 +825,17 @@ rmclientFreeResource_IMPL
 
     rmapiFreeResourcePrologue(pRmFreeParams);
 
-    status = clientFreeResource_IMPL(staticCast(pClient, RsClient), pServer, pRmFreeParams);
+    //
+    // In the RTD3 case, the API lock isn't taken since it can be initiated
+    // from another thread that holds the API lock and because we now hold
+    // the GPU lock.
+    //
+    if (rmapiInRtd3PmPath())
+    {
+        pRmFreeParams->pLockInfo->flags |= RM_LOCK_FLAGS_NO_API_LOCK;
+    }
+
+    status = clientFreeResource_IMPL(pRsClient, pServer, pRmFreeParams);
 
     if (bRestoreBcState)
     {

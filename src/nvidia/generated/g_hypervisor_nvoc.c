@@ -93,10 +93,13 @@ __nvoc_ctor_OBJHYPERVISOR_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_OBJHYPERVISOR_1(OBJHYPERVISOR *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-}
+} // End __nvoc_init_funcTable_OBJHYPERVISOR_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_OBJHYPERVISOR(OBJHYPERVISOR *pThis) {
     __nvoc_init_funcTable_OBJHYPERVISOR_1(pThis);
 }

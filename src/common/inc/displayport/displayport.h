@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -459,12 +459,35 @@ typedef struct VesaPsrSinkCaps
 
 typedef struct PanelReplayCaps
 {
-    NvBool panelReplaySupported;
+    // Indicates if Panel replay is supported or not
+    NvBool bPanelReplaySupported;
 } panelReplayCaps;
 
 typedef struct PanelReplayConfig
 {
+    // This field is used to configure Panel replay on sink device
     NvBool   enablePanelReplay;
+
+    // This field is used to configure CRC with Panel replay on sink device
+    NvBool   bEnableCrcWithPr;
+
+    // Configures sink to Generate an IRQ_HPD when DPCD 02020h[3] = 1.
+    NvBool   bHpdOnAdaptiveSyncSdpMissing;
+
+    //
+    // Used to configure sink to Generate an IRQ_HPD after finding a VSC SDP
+    // for PR uncorrectable error.
+    //
+    NvBool   bHpdOnSdpUncorrectableError;
+
+    // Configures sink to Generate an IRQ_HPD for RFB storage error.
+    NvBool   bHpdOnRfbStorageErrors;
+
+    //
+    // Configures sink to generate an IRQ_HPD after finding an active video image
+    // CRC mismatch.
+    //
+    NvBool   bHpdOnRfbActiveFrameCrcError;
 } panelReplayConfig;
 
 // PR state
@@ -500,6 +523,7 @@ typedef struct
 // Maximum link rate of Main Link lanes = Value x 270M.
 // To get it to KHz unit, we need to multiply 270K.
 #define DP_LINK_BW_FREQUENCY_MULTIPLIER_KHZ             (270*1000)
+#define DP_LINK_BW_FREQUENCY_MULTIPLIER_270MHZ_TO_KHZ   DP_LINK_BW_FREQUENCY_MULTIPLIER_KHZ
 
 // Multiplier constant to get link rate table's in KHZ
 #define DP_LINK_RATE_TABLE_MULTIPLIER_KHZ 200

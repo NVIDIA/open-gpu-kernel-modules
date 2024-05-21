@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,16 +27,10 @@
 #include "core/core.h"
 
 typedef struct {
-    RmPhysAddr cmdQueuePhysAddr;
-} GSP_RMFS_INIT_ARGUMENTS;
-
-typedef struct {
     RmPhysAddr sharedMemPhysAddr;
     NvU32 pageTableEntryCount;
     NvLength cmdQueueOffset;
     NvLength statQueueOffset;
-    NvLength locklessCmdQueueOffset;
-    NvLength locklessStatQueueOffset;
 } MESSAGE_QUEUE_INIT_ARGUMENTS;
 
 typedef struct {

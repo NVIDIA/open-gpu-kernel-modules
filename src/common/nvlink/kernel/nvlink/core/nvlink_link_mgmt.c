@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -53,9 +53,11 @@ nvlink_core_check_link_state
 
     switch (linkState)
     {
-        case NVLINK_LINKSTATE_OFF:
         case NVLINK_LINKSTATE_RESET:
         case NVLINK_LINKSTATE_SAFE:
+
+            // fall-through
+        case NVLINK_LINKSTATE_OFF:
         case NVLINK_LINKSTATE_HS:
         {
             status = link->link_handlers->get_dl_link_mode(link, &crntDlLinkMode);

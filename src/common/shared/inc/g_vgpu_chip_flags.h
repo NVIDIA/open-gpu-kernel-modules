@@ -20,15 +20,6 @@ typedef struct _VGPU_USM_TYPES {
 #define ENTRY(a,b,c,d) { a, b, c }
 #endif
 
-static const VGPU_USM_TYPES sVgpuUsmTypesAC[] = {
-ENTRY(0x2684, 0x17D1, 0x10de, "NVIDIA AC AD102 12Q"),
-ENTRY(0x2684, 0x17D2, 0x10de, "NVIDIA AC AD102 20Q"),
-ENTRY(0x2785, 0x17D1, 0x10de, "NVIDIA AC AD104 12Q"),
-ENTRY(0x2785, 0x17D2, 0x10de, "NVIDIA AC AD104 20Q"),
-ENTRY(0x2785, 0x17D3, 0x10de, "NVIDIA AC AD104-A 4Q"),
-ENTRY(0x2785, 0x17D4, 0x10de, "NVIDIA AC AD104-A 8Q"),
-};
-
 static const VGPU_USM_TYPES sVgpuUsmTypes[] = {
 ENTRY(0x13BD, 0x11CC, 0x10de, "GRID M10-0B"),
 ENTRY(0x13BD, 0x11CD, 0x10de, "GRID M10-1B"),

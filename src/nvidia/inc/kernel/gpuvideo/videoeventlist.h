@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_videoeventlist_nvoc.h"
 
 #ifndef VIDEO_EVENT_LIST_H

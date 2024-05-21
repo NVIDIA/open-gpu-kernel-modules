@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -36,6 +36,7 @@
 #include "gpu/subdevice/subdevice.h"
 #include "vgpu/rpc.h"
 #include "platform/sli/sli.h"
+#include "deprecated/rmapi_deprecated.h"
 
 #include "class/cl0041.h" // NV04_MEMORY
 #include "class/cl003e.h" // NV01_MEMORY_SYSTEM
@@ -339,7 +340,6 @@ memConstructCommon_IMPL
 {
     OBJGPU            *pGpu           = NULL;
     NV_STATUS          status         = NV_OK;
-    NvHandle           hClient        = RES_GET_CLIENT_HANDLE(pMemory);
     NvHandle           hParent        = RES_GET_PARENT_HANDLE(pMemory);
     NvHandle           hMemory        = RES_GET_HANDLE(pMemory);
 
@@ -480,7 +480,7 @@ memConstructCommon_IMPL
     // Make GSP-RM aware of the memory descriptor so it can be used there
     if (FLD_TEST_DRF(OS32, _ATTR2, _REGISTER_MEMDESC_TO_PHYS_RM, _TRUE, attr2))
     {
-        status = memdescRegisterToGSP(pGpu, hClient, hParent, hMemory);
+        status = memRegisterWithGsp(pGpu, RES_GET_CLIENT(pMemory), hParent, hMemory);
         if (status != NV_OK)
             goto done;
     }
@@ -502,6 +502,121 @@ done:
     }
 
     return status;
+}
+
+NV_STATUS
+memRegisterWithGsp_IMPL
+(
+    OBJGPU *pGpu,
+    RsClient *pClient,
+    NvHandle hParent,
+    NvHandle hMemory
+)
+{
+    NV_STATUS          status     = NV_OK;
+    Memory            *pMemory    = NULL;
+    RsResourceRef     *pMemoryRef = NULL;
+    MEMORY_DESCRIPTOR *pMemDesc   = NULL;
+    NvU32              hClass;
+
+    // Nothing to do without GSP
+    if (!IS_GSP_CLIENT(pGpu))
+    {
+        return NV_OK;
+    }
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, clientGetResourceRef(pClient, hMemory, &pMemoryRef));
+
+    pMemory = dynamicCast(pMemoryRef->pResource, Memory);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pMemory != NULL, NV_ERR_INVALID_OBJECT);
+
+    pMemDesc = pMemory->pMemDesc;
+
+    // Check: memory already registered
+    if (pMemory->bRegisteredWithGsp)
+    {
+        return NV_OK;
+    }
+
+    // Check:  no subdevice memDescs
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                       !memdescHasSubDeviceMemDescs(pMemDesc),
+                       NV_ERR_INVALID_STATE);
+
+    // Check: SYSMEM or FBMEM only
+    if (memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM)
+        hClass = NV01_MEMORY_LIST_FBMEM;
+    else if  (memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM)
+        hClass = NV01_MEMORY_LIST_SYSTEM;
+    else
+        return NV_ERR_INVALID_STATE;
+
+    NvU32 os02Flags = 0;
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                          RmDeprecatedConvertOs32ToOs02Flags(pMemory->Attr,
+                                                             pMemory->Attr2,
+                                                             pMemory->Flags,
+                                                             &os02Flags));
+    NV_RM_RPC_ALLOC_MEMORY(pGpu,
+                           pClient->hClient,
+                           hParent,
+                           hMemory,
+                           hClass,
+                           os02Flags,
+                           pMemDesc,
+                           status);
+
+    if (status == NV_OK)
+    {
+        // Mark memory as registered in GSP
+        pMemory->bRegisteredWithGsp = NV_TRUE;
+    }
+
+    return status;
+}
+
+static void
+_memUnregisterFromGsp
+(
+    Memory *pMemory,
+    RsClient *pClient,
+    NvHandle hParent,
+    NvHandle hMemory
+)
+{
+    NV_STATUS status = NV_OK;
+
+    // Nothing to do without GSP
+    if ((pMemory->pGpu == NULL) ||
+        !IS_GSP_CLIENT(pMemory->pGpu))
+    {
+        return;
+    }
+
+    // Nothing to do if memory is not registered to GSP
+    if (!pMemory->bRegisteredWithGsp)
+    {
+        return;
+    }
+
+    NV_RM_RPC_FREE(pMemory->pGpu,
+                   pClient->hClient,
+                   hParent,
+                   hMemory,
+                   status);
+
+    if (status == NV_OK)
+    {
+        // Mark memory as not registered in GSP
+        pMemory->bRegisteredWithGsp = NV_FALSE;
+    }
+    else
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed to unregister hMemory 0x%08x from GSP, status 0x%08x\n",
+                  hMemory, status);
+    }
 }
 
 static NvBool
@@ -647,18 +762,16 @@ memDestructCommon_IMPL
     Memory *pMemory
 )
 {
-    OBJGPU             *pGpu            = pMemory->pGpu;
     RsResourceRef      *pResourceRef    = RES_GET_REF(pMemory);
     RsResourceRef      *pParentRef      = pResourceRef->pParentRef;
     RsClient           *pClient         = RES_GET_CLIENT(pMemory);
-    NvHandle            hClient         = pClient->hClient;
     NvHandle            hParent         = pParentRef->hResource;
     NvHandle            hMemory         = RES_GET_HANDLE(pMemory);
 
     if (!pMemory->bConstructed)
         return;
 
-    NV_ASSERT_OK(memdescDeregisterFromGSP(pGpu, hClient, hParent, hMemory));
+    _memUnregisterFromGsp(pMemory, pClient, hParent, hMemory);
 
     // Do device specific teardown if we have a device
     if (pMemory->pDevice != NULL)

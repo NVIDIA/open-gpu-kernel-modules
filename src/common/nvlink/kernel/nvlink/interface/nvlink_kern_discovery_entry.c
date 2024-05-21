@@ -183,8 +183,7 @@ nvlink_lib_discover_and_get_remote_conn_info
 (
     nvlink_link      *end,
     nvlink_conn_info *conn_info,
-    NvU32             flags,
-    NvBool            bForceDiscovery
+    NvU32             flags
 )
 {
     NvlStatus      status                            = NVL_SUCCESS;
@@ -259,8 +258,7 @@ nvlink_lib_discover_and_get_remote_conn_info
     conn_info->bConnected = NV_FALSE;
 
     // Get the remote_end of the link
-    nvlink_core_discover_and_get_remote_end(end, &remote_end, flags,
-                                            bForceDiscovery);
+    nvlink_core_discover_and_get_remote_end(end, &remote_end, flags);
 
     if (remote_end)
     {

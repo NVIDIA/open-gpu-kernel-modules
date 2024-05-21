@@ -93,109 +93,141 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_UserModeApi =
     /*pExportInfo=*/        &__nvoc_export_info_UserModeApi
 };
 
-static NvBool __nvoc_thunk_UserModeApi_resCanCopy(struct RsResource *pUserModeApi) {
-    return usrmodeCanCopy((struct UserModeApi *)(((unsigned char *)pUserModeApi) - __nvoc_rtti_UserModeApi_RsResource.offset));
+// 2 down-thunk(s) defined to bridge methods in UserModeApi from superclasses
+
+// usrmodeCanCopy: virtual override (res) base (mem)
+static NvBool __nvoc_down_thunk_UserModeApi_resCanCopy(struct RsResource *pUserModeApi) {
+    return usrmodeCanCopy((struct UserModeApi *)(((unsigned char *) pUserModeApi) - __nvoc_rtti_UserModeApi_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_UserModeApi_memGetMemInterMapParams(struct Memory *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return usrmodeGetMemInterMapParams((struct UserModeApi *)(((unsigned char *)pMemory) - __nvoc_rtti_UserModeApi_Memory.offset), pParams);
+// usrmodeGetMemInterMapParams: virtual override (rmres) base (mem)
+static NV_STATUS __nvoc_down_thunk_UserModeApi_memGetMemInterMapParams(struct Memory *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return usrmodeGetMemInterMapParams((struct UserModeApi *)(((unsigned char *) pMemory) - __nvoc_rtti_UserModeApi_Memory.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_usrmodeCheckMemInterUnmap(struct UserModeApi *pMemory, NvBool bSubdeviceHandleProvided) {
-    return memCheckMemInterUnmap((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), bSubdeviceHandleProvided);
+
+// 24 up-thunk(s) defined to bridge methods in UserModeApi to superclasses
+
+// usrmodeIsDuplicate: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_usrmodeIsDuplicate(struct UserModeApi *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return memIsDuplicate((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), hMemory, pDuplicate);
 }
 
-static NvBool __nvoc_thunk_RmResource_usrmodeShareCallback(struct UserModeApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return rmresShareCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_UserModeApi_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+// usrmodeGetMapAddrSpace: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_usrmodeGetMapAddrSpace(struct UserModeApi *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return memGetMapAddrSpace((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_usrmodeMapTo(struct UserModeApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_UserModeApi_RsResource.offset), pParams);
+// usrmodeControl: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_usrmodeControl(struct UserModeApi *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return memControl((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_usrmodeGetMapAddrSpace(struct UserModeApi *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), pCallContext, mapFlags, pAddrSpace);
+// usrmodeMap: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_usrmodeMap(struct UserModeApi *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+    return memMap((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), pCallContext, pParams, pCpuMapping);
 }
 
-static NvBool __nvoc_thunk_Memory_usrmodeIsExportAllowed(struct UserModeApi *pMemory) {
-    return memIsExportAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_UserModeApi_Memory.offset));
+// usrmodeUnmap: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_usrmodeUnmap(struct UserModeApi *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return memUnmap((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), pCallContext, pCpuMapping);
 }
 
-static NvU32 __nvoc_thunk_RsResource_usrmodeGetRefCount(struct UserModeApi *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_UserModeApi_RsResource.offset));
+// usrmodeCheckMemInterUnmap: inline virtual inherited (mem) base (mem) body
+static NV_STATUS __nvoc_up_thunk_Memory_usrmodeCheckMemInterUnmap(struct UserModeApi *pMemory, NvBool bSubdeviceHandleProvided) {
+    return memCheckMemInterUnmap((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), bSubdeviceHandleProvided);
 }
 
-static void __nvoc_thunk_RsResource_usrmodeAddAdditionalDependants(struct RsClient *pClient, struct UserModeApi *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_UserModeApi_RsResource.offset), pReference);
+// usrmodeGetMemoryMappingDescriptor: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_usrmodeGetMemoryMappingDescriptor(struct UserModeApi *pMemory, MEMORY_DESCRIPTOR **ppMemDesc) {
+    return memGetMemoryMappingDescriptor((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), ppMemDesc);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_usrmodeControl_Prologue(struct UserModeApi *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_UserModeApi_RmResource.offset), pCallContext, pParams);
+// usrmodeCheckCopyPermissions: inline virtual inherited (mem) base (mem) body
+static NV_STATUS __nvoc_up_thunk_Memory_usrmodeCheckCopyPermissions(struct UserModeApi *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return memCheckCopyPermissions((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), pDstGpu, pDstDevice);
 }
 
-static NvBool __nvoc_thunk_Memory_usrmodeIsGpuMapAllowed(struct UserModeApi *pMemory, struct OBJGPU *pGpu) {
-    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), pGpu);
+// usrmodeIsReady: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_usrmodeIsReady(struct UserModeApi *pMemory, NvBool bCopyConstructorContext) {
+    return memIsReady((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), bCopyConstructorContext);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_usrmodeUnmapFrom(struct UserModeApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_UserModeApi_RsResource.offset), pParams);
+// usrmodeIsGpuMapAllowed: inline virtual inherited (mem) base (mem) body
+static NvBool __nvoc_up_thunk_Memory_usrmodeIsGpuMapAllowed(struct UserModeApi *pMemory, struct OBJGPU *pGpu) {
+    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), pGpu);
 }
 
-static void __nvoc_thunk_RmResource_usrmodeControl_Epilogue(struct UserModeApi *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_UserModeApi_RmResource.offset), pCallContext, pParams);
+// usrmodeIsExportAllowed: inline virtual inherited (mem) base (mem) body
+static NvBool __nvoc_up_thunk_Memory_usrmodeIsExportAllowed(struct UserModeApi *pMemory) {
+    return memIsExportAllowed((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_UserModeApi_Memory.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Memory_usrmodeControl(struct UserModeApi *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return memControl((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), pCallContext, pParams);
+// usrmodeAccessCallback: virtual inherited (rmres) base (mem)
+static NvBool __nvoc_up_thunk_RmResource_usrmodeAccessCallback(struct UserModeApi *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_UserModeApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_usrmodeUnmap(struct UserModeApi *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return memUnmap((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), pCallContext, pCpuMapping);
+// usrmodeShareCallback: virtual inherited (rmres) base (mem)
+static NvBool __nvoc_up_thunk_RmResource_usrmodeShareCallback(struct UserModeApi *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_UserModeApi_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_usrmodeGetMemoryMappingDescriptor(struct UserModeApi *pMemory, MEMORY_DESCRIPTOR **ppMemDesc) {
-    return memGetMemoryMappingDescriptor((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), ppMemDesc);
+// usrmodeControlSerialization_Prologue: virtual inherited (rmres) base (mem)
+static NV_STATUS __nvoc_up_thunk_RmResource_usrmodeControlSerialization_Prologue(struct UserModeApi *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_UserModeApi_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_usrmodeControlFilter(struct UserModeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_UserModeApi_RsResource.offset), pCallContext, pParams);
+// usrmodeControlSerialization_Epilogue: virtual inherited (rmres) base (mem)
+static void __nvoc_up_thunk_RmResource_usrmodeControlSerialization_Epilogue(struct UserModeApi *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_UserModeApi_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_usrmodeControlSerialization_Prologue(struct UserModeApi *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_UserModeApi_RmResource.offset), pCallContext, pParams);
+// usrmodeControl_Prologue: virtual inherited (rmres) base (mem)
+static NV_STATUS __nvoc_up_thunk_RmResource_usrmodeControl_Prologue(struct UserModeApi *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_UserModeApi_RmResource.offset), pCallContext, pParams);
 }
 
-static NvBool __nvoc_thunk_RsResource_usrmodeIsPartialUnmapSupported(struct UserModeApi *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_UserModeApi_RsResource.offset));
+// usrmodeControl_Epilogue: virtual inherited (rmres) base (mem)
+static void __nvoc_up_thunk_RmResource_usrmodeControl_Epilogue(struct UserModeApi *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_UserModeApi_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_usrmodeIsReady(struct UserModeApi *pMemory, NvBool bCopyConstructorContext) {
-    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), bCopyConstructorContext);
+// usrmodePreDestruct: virtual inherited (res) base (mem)
+static void __nvoc_up_thunk_RsResource_usrmodePreDestruct(struct UserModeApi *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_UserModeApi_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Memory_usrmodeCheckCopyPermissions(struct UserModeApi *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
-    return memCheckCopyPermissions((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), pDstGpu, pDstDevice);
+// usrmodeControlFilter: virtual inherited (res) base (mem)
+static NV_STATUS __nvoc_up_thunk_RsResource_usrmodeControlFilter(struct UserModeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_UserModeApi_RsResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_usrmodePreDestruct(struct UserModeApi *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_UserModeApi_RsResource.offset));
+// usrmodeIsPartialUnmapSupported: inline virtual inherited (res) base (mem) body
+static NvBool __nvoc_up_thunk_RsResource_usrmodeIsPartialUnmapSupported(struct UserModeApi *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_UserModeApi_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Memory_usrmodeIsDuplicate(struct UserModeApi *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
-    return memIsDuplicate((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), hMemory, pDuplicate);
+// usrmodeMapTo: virtual inherited (res) base (mem)
+static NV_STATUS __nvoc_up_thunk_RsResource_usrmodeMapTo(struct UserModeApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_UserModeApi_RsResource.offset), pParams);
 }
 
-static void __nvoc_thunk_RmResource_usrmodeControlSerialization_Epilogue(struct UserModeApi *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_UserModeApi_RmResource.offset), pCallContext, pParams);
+// usrmodeUnmapFrom: virtual inherited (res) base (mem)
+static NV_STATUS __nvoc_up_thunk_RsResource_usrmodeUnmapFrom(struct UserModeApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_UserModeApi_RsResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_usrmodeMap(struct UserModeApi *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return memMap((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), pCallContext, pParams, pCpuMapping);
+// usrmodeGetRefCount: virtual inherited (res) base (mem)
+static NvU32 __nvoc_up_thunk_RsResource_usrmodeGetRefCount(struct UserModeApi *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_UserModeApi_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RmResource_usrmodeAccessCallback(struct UserModeApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_UserModeApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+// usrmodeAddAdditionalDependants: virtual inherited (res) base (mem)
+static void __nvoc_up_thunk_RsResource_usrmodeAddAdditionalDependants(struct RsClient *pClient, struct UserModeApi *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_UserModeApi_RsResource.offset), pReference);
 }
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_UserModeApi = 
 {
@@ -232,67 +264,96 @@ __nvoc_ctor_UserModeApi_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_UserModeApi_1(UserModeApi *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // usrmodeCanCopy -- virtual override (res) base (mem)
     pThis->__usrmodeCanCopy__ = &usrmodeCanCopy_IMPL;
+    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__ = &__nvoc_down_thunk_UserModeApi_resCanCopy;
 
+    // usrmodeGetMemInterMapParams -- virtual override (rmres) base (mem)
     pThis->__usrmodeGetMemInterMapParams__ = &usrmodeGetMemInterMapParams_IMPL;
+    pThis->__nvoc_base_Memory.__memGetMemInterMapParams__ = &__nvoc_down_thunk_UserModeApi_memGetMemInterMapParams;
 
-    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__ = &__nvoc_thunk_UserModeApi_resCanCopy;
+    // usrmodeIsDuplicate -- virtual inherited (mem) base (mem)
+    pThis->__usrmodeIsDuplicate__ = &__nvoc_up_thunk_Memory_usrmodeIsDuplicate;
 
-    pThis->__nvoc_base_Memory.__memGetMemInterMapParams__ = &__nvoc_thunk_UserModeApi_memGetMemInterMapParams;
+    // usrmodeGetMapAddrSpace -- virtual inherited (mem) base (mem)
+    pThis->__usrmodeGetMapAddrSpace__ = &__nvoc_up_thunk_Memory_usrmodeGetMapAddrSpace;
 
-    pThis->__usrmodeCheckMemInterUnmap__ = &__nvoc_thunk_Memory_usrmodeCheckMemInterUnmap;
+    // usrmodeControl -- virtual inherited (mem) base (mem)
+    pThis->__usrmodeControl__ = &__nvoc_up_thunk_Memory_usrmodeControl;
 
-    pThis->__usrmodeShareCallback__ = &__nvoc_thunk_RmResource_usrmodeShareCallback;
+    // usrmodeMap -- virtual inherited (mem) base (mem)
+    pThis->__usrmodeMap__ = &__nvoc_up_thunk_Memory_usrmodeMap;
 
-    pThis->__usrmodeMapTo__ = &__nvoc_thunk_RsResource_usrmodeMapTo;
+    // usrmodeUnmap -- virtual inherited (mem) base (mem)
+    pThis->__usrmodeUnmap__ = &__nvoc_up_thunk_Memory_usrmodeUnmap;
 
-    pThis->__usrmodeGetMapAddrSpace__ = &__nvoc_thunk_Memory_usrmodeGetMapAddrSpace;
+    // usrmodeCheckMemInterUnmap -- inline virtual inherited (mem) base (mem) body
+    pThis->__usrmodeCheckMemInterUnmap__ = &__nvoc_up_thunk_Memory_usrmodeCheckMemInterUnmap;
 
-    pThis->__usrmodeIsExportAllowed__ = &__nvoc_thunk_Memory_usrmodeIsExportAllowed;
+    // usrmodeGetMemoryMappingDescriptor -- virtual inherited (mem) base (mem)
+    pThis->__usrmodeGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_Memory_usrmodeGetMemoryMappingDescriptor;
 
-    pThis->__usrmodeGetRefCount__ = &__nvoc_thunk_RsResource_usrmodeGetRefCount;
+    // usrmodeCheckCopyPermissions -- inline virtual inherited (mem) base (mem) body
+    pThis->__usrmodeCheckCopyPermissions__ = &__nvoc_up_thunk_Memory_usrmodeCheckCopyPermissions;
 
-    pThis->__usrmodeAddAdditionalDependants__ = &__nvoc_thunk_RsResource_usrmodeAddAdditionalDependants;
+    // usrmodeIsReady -- virtual inherited (mem) base (mem)
+    pThis->__usrmodeIsReady__ = &__nvoc_up_thunk_Memory_usrmodeIsReady;
 
-    pThis->__usrmodeControl_Prologue__ = &__nvoc_thunk_RmResource_usrmodeControl_Prologue;
+    // usrmodeIsGpuMapAllowed -- inline virtual inherited (mem) base (mem) body
+    pThis->__usrmodeIsGpuMapAllowed__ = &__nvoc_up_thunk_Memory_usrmodeIsGpuMapAllowed;
 
-    pThis->__usrmodeIsGpuMapAllowed__ = &__nvoc_thunk_Memory_usrmodeIsGpuMapAllowed;
+    // usrmodeIsExportAllowed -- inline virtual inherited (mem) base (mem) body
+    pThis->__usrmodeIsExportAllowed__ = &__nvoc_up_thunk_Memory_usrmodeIsExportAllowed;
 
-    pThis->__usrmodeUnmapFrom__ = &__nvoc_thunk_RsResource_usrmodeUnmapFrom;
+    // usrmodeAccessCallback -- virtual inherited (rmres) base (mem)
+    pThis->__usrmodeAccessCallback__ = &__nvoc_up_thunk_RmResource_usrmodeAccessCallback;
 
-    pThis->__usrmodeControl_Epilogue__ = &__nvoc_thunk_RmResource_usrmodeControl_Epilogue;
+    // usrmodeShareCallback -- virtual inherited (rmres) base (mem)
+    pThis->__usrmodeShareCallback__ = &__nvoc_up_thunk_RmResource_usrmodeShareCallback;
 
-    pThis->__usrmodeControl__ = &__nvoc_thunk_Memory_usrmodeControl;
+    // usrmodeControlSerialization_Prologue -- virtual inherited (rmres) base (mem)
+    pThis->__usrmodeControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_usrmodeControlSerialization_Prologue;
 
-    pThis->__usrmodeUnmap__ = &__nvoc_thunk_Memory_usrmodeUnmap;
+    // usrmodeControlSerialization_Epilogue -- virtual inherited (rmres) base (mem)
+    pThis->__usrmodeControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_usrmodeControlSerialization_Epilogue;
 
-    pThis->__usrmodeGetMemoryMappingDescriptor__ = &__nvoc_thunk_Memory_usrmodeGetMemoryMappingDescriptor;
+    // usrmodeControl_Prologue -- virtual inherited (rmres) base (mem)
+    pThis->__usrmodeControl_Prologue__ = &__nvoc_up_thunk_RmResource_usrmodeControl_Prologue;
 
-    pThis->__usrmodeControlFilter__ = &__nvoc_thunk_RsResource_usrmodeControlFilter;
+    // usrmodeControl_Epilogue -- virtual inherited (rmres) base (mem)
+    pThis->__usrmodeControl_Epilogue__ = &__nvoc_up_thunk_RmResource_usrmodeControl_Epilogue;
 
-    pThis->__usrmodeControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_usrmodeControlSerialization_Prologue;
+    // usrmodePreDestruct -- virtual inherited (res) base (mem)
+    pThis->__usrmodePreDestruct__ = &__nvoc_up_thunk_RsResource_usrmodePreDestruct;
 
-    pThis->__usrmodeIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_usrmodeIsPartialUnmapSupported;
+    // usrmodeControlFilter -- virtual inherited (res) base (mem)
+    pThis->__usrmodeControlFilter__ = &__nvoc_up_thunk_RsResource_usrmodeControlFilter;
 
-    pThis->__usrmodeIsReady__ = &__nvoc_thunk_Memory_usrmodeIsReady;
+    // usrmodeIsPartialUnmapSupported -- inline virtual inherited (res) base (mem) body
+    pThis->__usrmodeIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_usrmodeIsPartialUnmapSupported;
 
-    pThis->__usrmodeCheckCopyPermissions__ = &__nvoc_thunk_Memory_usrmodeCheckCopyPermissions;
+    // usrmodeMapTo -- virtual inherited (res) base (mem)
+    pThis->__usrmodeMapTo__ = &__nvoc_up_thunk_RsResource_usrmodeMapTo;
 
-    pThis->__usrmodePreDestruct__ = &__nvoc_thunk_RsResource_usrmodePreDestruct;
+    // usrmodeUnmapFrom -- virtual inherited (res) base (mem)
+    pThis->__usrmodeUnmapFrom__ = &__nvoc_up_thunk_RsResource_usrmodeUnmapFrom;
 
-    pThis->__usrmodeIsDuplicate__ = &__nvoc_thunk_Memory_usrmodeIsDuplicate;
+    // usrmodeGetRefCount -- virtual inherited (res) base (mem)
+    pThis->__usrmodeGetRefCount__ = &__nvoc_up_thunk_RsResource_usrmodeGetRefCount;
 
-    pThis->__usrmodeControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_usrmodeControlSerialization_Epilogue;
+    // usrmodeAddAdditionalDependants -- virtual inherited (res) base (mem)
+    pThis->__usrmodeAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_usrmodeAddAdditionalDependants;
+} // End __nvoc_init_funcTable_UserModeApi_1 with approximately 28 basic block(s).
 
-    pThis->__usrmodeMap__ = &__nvoc_thunk_Memory_usrmodeMap;
 
-    pThis->__usrmodeAccessCallback__ = &__nvoc_thunk_RmResource_usrmodeAccessCallback;
-}
-
+// Initialize vtable(s) for 26 virtual method(s).
 void __nvoc_init_funcTable_UserModeApi(UserModeApi *pThis) {
+
+    // Initialize vtable(s) with 26 per-object function pointer(s).
     __nvoc_init_funcTable_UserModeApi_1(pThis);
 }
 

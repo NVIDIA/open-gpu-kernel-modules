@@ -40,6 +40,8 @@
  * NV00DE_CTRL_CMD_REQUEST_DATA_POLL
  *
  * @brief Request some polled data elements to be updated
+ *        Equivalent to requesting polling using NV00DE_ALLOC_PARAMETERS->polledDataMask
+ *        See cl00de.h for mask bits
  *
  * @param[in]  polledDataMask Bitmask of data to be updated
  *

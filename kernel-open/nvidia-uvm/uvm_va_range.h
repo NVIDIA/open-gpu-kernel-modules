@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -188,8 +188,7 @@ typedef struct
     // GPU which owns the allocation. For sysmem, this is the GPU that the
     // sysmem was originally allocated under. For the allocation to remain valid
     // we need to prevent the GPU from going away, similarly to P2P mapped
-    // memory.
-    // Similarly for EGM memory.
+    // memory and to EGM memory.
     //
     // This field is not used for sparse mappings as they don't have an
     // allocation and, hence, owning GPU.
@@ -212,6 +211,7 @@ typedef struct
     // EGM memory. If true is_sysmem also has to be true and owning_gpu
     // has to be valid.
     bool is_egm;
+
     // GPU page tables mapping the allocation
     uvm_page_table_range_vec_t pt_range_vec;
 

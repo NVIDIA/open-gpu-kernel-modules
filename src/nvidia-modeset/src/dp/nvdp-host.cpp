@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2018 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,7 @@
 #include "nvkms-utils.h"
 
 #include "dp_hostimp.h"
+#include "dp_printf.h"
 
 void *dpMalloc(NvLength sz)
 {
@@ -39,11 +40,27 @@ void dpFree(void *p)
     nvFree(p);
 }
 
+static NVEvoLogType dpSeverityToNvkmsMap(DP_LOG_LEVEL severity)
+{
+    NVEvoLogType level = EVO_LOG_INFO;
+    return level;
+}
+
 void dpPrint(const char *format, ...)
 {
     va_list ap;
     va_start(ap, format);
     nvVEvoLog(EVO_LOG_INFO, NV_INVALID_GPU_LOG_INDEX, format, ap);
+    va_end(ap);
+}
+
+void dpPrintf(DP_LOG_LEVEL severity, const char *format, ...)
+{
+    if (severity == DP_SILENT) return;
+
+    va_list ap;
+    va_start(ap, format);
+    nvVEvoLog(dpSeverityToNvkmsMap(severity), NV_INVALID_GPU_LOG_INDEX, format, ap);
     va_end(ap);
 }
 

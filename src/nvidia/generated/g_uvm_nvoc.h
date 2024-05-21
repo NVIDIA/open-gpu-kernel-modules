@@ -1,6 +1,13 @@
+
 #ifndef _G_UVM_NVOC_H_
 #define _G_UVM_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,6 +36,7 @@ extern "C" {
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_uvm_nvoc.h"
 
 #ifndef UVM_H
@@ -60,6 +68,7 @@ typedef enum
  * the OBJUVM.
  *  Contains the Unified Virtual Memory (UVM) feature related data.
  */
+
 
 struct AccessCounterBuffer;
 
@@ -108,34 +117,45 @@ typedef struct OBJUVM *POBJUVM;
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 
+
 struct OBJUVM {
+
+    // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+
+    // Parent (i.e. superclass or base class) object pointers
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
     struct IntrService __nvoc_base_IntrService;
-    struct Object *__nvoc_pbase_Object;
-    struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;
-    struct IntrService *__nvoc_pbase_IntrService;
-    struct OBJUVM *__nvoc_pbase_OBJUVM;
-    void (*__uvmStateDestroy__)(OBJGPU *, struct OBJUVM *);
-    NV_STATUS (*__uvmStateInitUnlocked__)(OBJGPU *, struct OBJUVM *);
-    NV_STATUS (*__uvmAccessCntrBufferUnregister__)(OBJGPU *, struct OBJUVM *, NvU32);
-    NV_STATUS (*__uvmAccessCntrBufferRegister__)(OBJGPU *, struct OBJUVM *, NvU32, NvU32, RmPhysAddr *);
-    void (*__uvmRegisterIntrService__)(OBJGPU *, struct OBJUVM *, IntrServiceRecord *);
-    NvU32 (*__uvmServiceInterrupt__)(OBJGPU *, struct OBJUVM *, IntrServiceServiceInterruptArguments *);
-    NV_STATUS (*__uvmStateLoad__)(POBJGPU, struct OBJUVM *, NvU32);
-    NV_STATUS (*__uvmStateUnload__)(POBJGPU, struct OBJUVM *, NvU32);
-    NV_STATUS (*__uvmServiceNotificationInterrupt__)(OBJGPU *, struct OBJUVM *, IntrServiceServiceNotificationInterruptArguments *);
-    NV_STATUS (*__uvmStateInitLocked__)(POBJGPU, struct OBJUVM *);
-    NV_STATUS (*__uvmStatePreLoad__)(POBJGPU, struct OBJUVM *, NvU32);
-    NV_STATUS (*__uvmStatePostUnload__)(POBJGPU, struct OBJUVM *, NvU32);
-    NV_STATUS (*__uvmStatePreUnload__)(POBJGPU, struct OBJUVM *, NvU32);
-    void (*__uvmInitMissing__)(POBJGPU, struct OBJUVM *);
-    NV_STATUS (*__uvmStatePreInitLocked__)(POBJGPU, struct OBJUVM *);
-    NV_STATUS (*__uvmStatePreInitUnlocked__)(POBJGPU, struct OBJUVM *);
-    NvBool (*__uvmClearInterrupt__)(OBJGPU *, struct OBJUVM *, IntrServiceClearInterruptArguments *);
-    NV_STATUS (*__uvmStatePostLoad__)(POBJGPU, struct OBJUVM *, NvU32);
-    NV_STATUS (*__uvmConstructEngine__)(POBJGPU, struct OBJUVM *, ENGDESCRIPTOR);
-    NvBool (*__uvmIsPresent__)(POBJGPU, struct OBJUVM *);
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^2
+    struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
+    struct IntrService *__nvoc_pbase_IntrService;    // intrserv super
+    struct OBJUVM *__nvoc_pbase_OBJUVM;    // uvm
+
+    // Vtable with 20 per-object function pointers
+    void (*__uvmStateDestroy__)(OBJGPU *, struct OBJUVM * /*this*/);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__uvmStateInitUnlocked__)(OBJGPU *, struct OBJUVM * /*this*/);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__uvmAccessCntrBufferUnregister__)(OBJGPU *, struct OBJUVM * /*this*/, NvU32);  // halified (2 hals)
+    NV_STATUS (*__uvmAccessCntrBufferRegister__)(OBJGPU *, struct OBJUVM * /*this*/, NvU32, NvU32, RmPhysAddr *);  // halified (2 hals)
+    void (*__uvmRegisterIntrService__)(OBJGPU *, struct OBJUVM * /*this*/, IntrServiceRecord *);  // virtual override (intrserv) base (intrserv)
+    NvU32 (*__uvmServiceInterrupt__)(OBJGPU *, struct OBJUVM * /*this*/, IntrServiceServiceInterruptArguments *);  // virtual override (intrserv) base (intrserv)
+    NV_STATUS (*__uvmConstructEngine__)(POBJGPU, struct OBJUVM * /*this*/, ENGDESCRIPTOR);  // virtual inherited (engstate) base (engstate)
+    void (*__uvmInitMissing__)(POBJGPU, struct OBJUVM * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__uvmStatePreInitLocked__)(POBJGPU, struct OBJUVM * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__uvmStatePreInitUnlocked__)(POBJGPU, struct OBJUVM * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__uvmStateInitLocked__)(POBJGPU, struct OBJUVM * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__uvmStatePreLoad__)(POBJGPU, struct OBJUVM * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__uvmStateLoad__)(POBJGPU, struct OBJUVM * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__uvmStatePostLoad__)(POBJGPU, struct OBJUVM * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__uvmStatePreUnload__)(POBJGPU, struct OBJUVM * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__uvmStateUnload__)(POBJGPU, struct OBJUVM * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__uvmStatePostUnload__)(POBJGPU, struct OBJUVM * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__uvmIsPresent__)(POBJGPU, struct OBJUVM * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__uvmClearInterrupt__)(OBJGPU *, struct OBJUVM * /*this*/, IntrServiceClearInterruptArguments *);  // virtual inherited (intrserv) base (intrserv)
+    NV_STATUS (*__uvmServiceNotificationInterrupt__)(OBJGPU *, struct OBJUVM * /*this*/, IntrServiceServiceNotificationInterruptArguments *);  // virtual inherited (intrserv) base (intrserv)
+
+    // Data members
     ACCESS_CNTR_BUFFER *pAccessCounterBuffers;
     NvU32 accessCounterBufferCount;
     NvHandle hClient;
@@ -152,6 +172,7 @@ typedef struct OBJUVM OBJUVM;
 #define __nvoc_class_id_OBJUVM 0xf9a17d
 #endif /* __nvoc_class_id_OBJUVM */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJUVM;
 
 #define __staticCast_OBJUVM(pThis) \
@@ -164,6 +185,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJUVM;
     ((OBJUVM*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJUVM)))
 #endif //__nvoc_uvm_h_disabled
 
+// Property macros
 #define PDB_PROP_UVM_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
 #define PDB_PROP_UVM_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
 
@@ -173,28 +195,132 @@ NV_STATUS __nvoc_objCreate_OBJUVM(OBJUVM**, Dynamic*, NvU32);
 #define __objCreate_OBJUVM(ppNewObj, pParent, createFlags) \
     __nvoc_objCreate_OBJUVM((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
+
+// Wrapper macros
+#define uvmStateDestroy_FNPTR(pUvm) pUvm->__uvmStateDestroy__
 #define uvmStateDestroy(pGpu, pUvm) uvmStateDestroy_DISPATCH(pGpu, pUvm)
+#define uvmStateInitUnlocked_FNPTR(pUvm) pUvm->__uvmStateInitUnlocked__
 #define uvmStateInitUnlocked(pGpu, pUvm) uvmStateInitUnlocked_DISPATCH(pGpu, pUvm)
-#define uvmAccessCntrBufferUnregister(arg0, arg1, accessCounterIndex) uvmAccessCntrBufferUnregister_DISPATCH(arg0, arg1, accessCounterIndex)
-#define uvmAccessCntrBufferUnregister_HAL(arg0, arg1, accessCounterIndex) uvmAccessCntrBufferUnregister_DISPATCH(arg0, arg1, accessCounterIndex)
-#define uvmAccessCntrBufferRegister(arg0, arg1, accessCounterIndex, arg2, arg3) uvmAccessCntrBufferRegister_DISPATCH(arg0, arg1, accessCounterIndex, arg2, arg3)
-#define uvmAccessCntrBufferRegister_HAL(arg0, arg1, accessCounterIndex, arg2, arg3) uvmAccessCntrBufferRegister_DISPATCH(arg0, arg1, accessCounterIndex, arg2, arg3)
-#define uvmRegisterIntrService(arg0, pUvm, arg1) uvmRegisterIntrService_DISPATCH(arg0, pUvm, arg1)
-#define uvmServiceInterrupt(arg0, pUvm, arg1) uvmServiceInterrupt_DISPATCH(arg0, pUvm, arg1)
-#define uvmStateLoad(pGpu, pEngstate, arg0) uvmStateLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define uvmStateUnload(pGpu, pEngstate, arg0) uvmStateUnload_DISPATCH(pGpu, pEngstate, arg0)
-#define uvmServiceNotificationInterrupt(pGpu, pIntrService, pParams) uvmServiceNotificationInterrupt_DISPATCH(pGpu, pIntrService, pParams)
-#define uvmStateInitLocked(pGpu, pEngstate) uvmStateInitLocked_DISPATCH(pGpu, pEngstate)
-#define uvmStatePreLoad(pGpu, pEngstate, arg0) uvmStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define uvmStatePostUnload(pGpu, pEngstate, arg0) uvmStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
-#define uvmStatePreUnload(pGpu, pEngstate, arg0) uvmStatePreUnload_DISPATCH(pGpu, pEngstate, arg0)
+#define uvmAccessCntrBufferUnregister_FNPTR(arg_this) arg_this->__uvmAccessCntrBufferUnregister__
+#define uvmAccessCntrBufferUnregister(arg1, arg_this, accessCounterIndex) uvmAccessCntrBufferUnregister_DISPATCH(arg1, arg_this, accessCounterIndex)
+#define uvmAccessCntrBufferUnregister_HAL(arg1, arg_this, accessCounterIndex) uvmAccessCntrBufferUnregister_DISPATCH(arg1, arg_this, accessCounterIndex)
+#define uvmAccessCntrBufferRegister_FNPTR(arg_this) arg_this->__uvmAccessCntrBufferRegister__
+#define uvmAccessCntrBufferRegister(arg1, arg_this, accessCounterIndex, arg4, arg5) uvmAccessCntrBufferRegister_DISPATCH(arg1, arg_this, accessCounterIndex, arg4, arg5)
+#define uvmAccessCntrBufferRegister_HAL(arg1, arg_this, accessCounterIndex, arg4, arg5) uvmAccessCntrBufferRegister_DISPATCH(arg1, arg_this, accessCounterIndex, arg4, arg5)
+#define uvmRegisterIntrService_FNPTR(pUvm) pUvm->__uvmRegisterIntrService__
+#define uvmRegisterIntrService(arg1, pUvm, arg3) uvmRegisterIntrService_DISPATCH(arg1, pUvm, arg3)
+#define uvmServiceInterrupt_FNPTR(pUvm) pUvm->__uvmServiceInterrupt__
+#define uvmServiceInterrupt(arg1, pUvm, arg3) uvmServiceInterrupt_DISPATCH(arg1, pUvm, arg3)
+#define uvmConstructEngine_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__
+#define uvmConstructEngine(pGpu, pEngstate, arg3) uvmConstructEngine_DISPATCH(pGpu, pEngstate, arg3)
+#define uvmInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateInitMissing__
 #define uvmInitMissing(pGpu, pEngstate) uvmInitMissing_DISPATCH(pGpu, pEngstate)
+#define uvmStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreInitLocked__
 #define uvmStatePreInitLocked(pGpu, pEngstate) uvmStatePreInitLocked_DISPATCH(pGpu, pEngstate)
+#define uvmStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreInitUnlocked__
 #define uvmStatePreInitUnlocked(pGpu, pEngstate) uvmStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define uvmClearInterrupt(pGpu, pIntrService, pParams) uvmClearInterrupt_DISPATCH(pGpu, pIntrService, pParams)
-#define uvmStatePostLoad(pGpu, pEngstate, arg0) uvmStatePostLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define uvmConstructEngine(pGpu, pEngstate, arg0) uvmConstructEngine_DISPATCH(pGpu, pEngstate, arg0)
+#define uvmStateInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__
+#define uvmStateInitLocked(pGpu, pEngstate) uvmStateInitLocked_DISPATCH(pGpu, pEngstate)
+#define uvmStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreLoad__
+#define uvmStatePreLoad(pGpu, pEngstate, arg3) uvmStatePreLoad_DISPATCH(pGpu, pEngstate, arg3)
+#define uvmStateLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStateLoad__
+#define uvmStateLoad(pGpu, pEngstate, arg3) uvmStateLoad_DISPATCH(pGpu, pEngstate, arg3)
+#define uvmStatePostLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePostLoad__
+#define uvmStatePostLoad(pGpu, pEngstate, arg3) uvmStatePostLoad_DISPATCH(pGpu, pEngstate, arg3)
+#define uvmStatePreUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreUnload__
+#define uvmStatePreUnload(pGpu, pEngstate, arg3) uvmStatePreUnload_DISPATCH(pGpu, pEngstate, arg3)
+#define uvmStateUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStateUnload__
+#define uvmStateUnload(pGpu, pEngstate, arg3) uvmStateUnload_DISPATCH(pGpu, pEngstate, arg3)
+#define uvmStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePostUnload__
+#define uvmStatePostUnload(pGpu, pEngstate, arg3) uvmStatePostUnload_DISPATCH(pGpu, pEngstate, arg3)
+#define uvmIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateIsPresent__
 #define uvmIsPresent(pGpu, pEngstate) uvmIsPresent_DISPATCH(pGpu, pEngstate)
+#define uvmClearInterrupt_FNPTR(pIntrService) pIntrService->__nvoc_base_IntrService.__intrservClearInterrupt__
+#define uvmClearInterrupt(pGpu, pIntrService, pParams) uvmClearInterrupt_DISPATCH(pGpu, pIntrService, pParams)
+#define uvmServiceNotificationInterrupt_FNPTR(pIntrService) pIntrService->__nvoc_base_IntrService.__intrservServiceNotificationInterrupt__
+#define uvmServiceNotificationInterrupt(pGpu, pIntrService, pParams) uvmServiceNotificationInterrupt_DISPATCH(pGpu, pIntrService, pParams)
+
+// Dispatch functions
+static inline void uvmStateDestroy_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pUvm) {
+    pUvm->__uvmStateDestroy__(pGpu, pUvm);
+}
+
+static inline NV_STATUS uvmStateInitUnlocked_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pUvm) {
+    return pUvm->__uvmStateInitUnlocked__(pGpu, pUvm);
+}
+
+static inline NV_STATUS uvmAccessCntrBufferUnregister_DISPATCH(OBJGPU *arg1, struct OBJUVM *arg_this, NvU32 accessCounterIndex) {
+    return arg_this->__uvmAccessCntrBufferUnregister__(arg1, arg_this, accessCounterIndex);
+}
+
+static inline NV_STATUS uvmAccessCntrBufferRegister_DISPATCH(OBJGPU *arg1, struct OBJUVM *arg_this, NvU32 accessCounterIndex, NvU32 arg4, RmPhysAddr *arg5) {
+    return arg_this->__uvmAccessCntrBufferRegister__(arg1, arg_this, accessCounterIndex, arg4, arg5);
+}
+
+static inline void uvmRegisterIntrService_DISPATCH(OBJGPU *arg1, struct OBJUVM *pUvm, IntrServiceRecord arg3[175]) {
+    pUvm->__uvmRegisterIntrService__(arg1, pUvm, arg3);
+}
+
+static inline NvU32 uvmServiceInterrupt_DISPATCH(OBJGPU *arg1, struct OBJUVM *pUvm, IntrServiceServiceInterruptArguments *arg3) {
+    return pUvm->__uvmServiceInterrupt__(arg1, pUvm, arg3);
+}
+
+static inline NV_STATUS uvmConstructEngine_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, ENGDESCRIPTOR arg3) {
+    return pEngstate->__uvmConstructEngine__(pGpu, pEngstate, arg3);
+}
+
+static inline void uvmInitMissing_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate) {
+    pEngstate->__uvmInitMissing__(pGpu, pEngstate);
+}
+
+static inline NV_STATUS uvmStatePreInitLocked_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate) {
+    return pEngstate->__uvmStatePreInitLocked__(pGpu, pEngstate);
+}
+
+static inline NV_STATUS uvmStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate) {
+    return pEngstate->__uvmStatePreInitUnlocked__(pGpu, pEngstate);
+}
+
+static inline NV_STATUS uvmStateInitLocked_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate) {
+    return pEngstate->__uvmStateInitLocked__(pGpu, pEngstate);
+}
+
+static inline NV_STATUS uvmStatePreLoad_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
+    return pEngstate->__uvmStatePreLoad__(pGpu, pEngstate, arg3);
+}
+
+static inline NV_STATUS uvmStateLoad_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
+    return pEngstate->__uvmStateLoad__(pGpu, pEngstate, arg3);
+}
+
+static inline NV_STATUS uvmStatePostLoad_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
+    return pEngstate->__uvmStatePostLoad__(pGpu, pEngstate, arg3);
+}
+
+static inline NV_STATUS uvmStatePreUnload_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
+    return pEngstate->__uvmStatePreUnload__(pGpu, pEngstate, arg3);
+}
+
+static inline NV_STATUS uvmStateUnload_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
+    return pEngstate->__uvmStateUnload__(pGpu, pEngstate, arg3);
+}
+
+static inline NV_STATUS uvmStatePostUnload_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
+    return pEngstate->__uvmStatePostUnload__(pGpu, pEngstate, arg3);
+}
+
+static inline NvBool uvmIsPresent_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate) {
+    return pEngstate->__uvmIsPresent__(pGpu, pEngstate);
+}
+
+static inline NvBool uvmClearInterrupt_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pIntrService, IntrServiceClearInterruptArguments *pParams) {
+    return pIntrService->__uvmClearInterrupt__(pGpu, pIntrService, pParams);
+}
+
+static inline NV_STATUS uvmServiceNotificationInterrupt_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pIntrService, IntrServiceServiceNotificationInterruptArguments *pParams) {
+    return pIntrService->__uvmServiceNotificationInterrupt__(pGpu, pIntrService, pParams);
+}
+
 NV_STATUS uvmInitializeAccessCntrBuffer_IMPL(OBJGPU *pGpu, struct OBJUVM *pUvm, struct AccessCounterBuffer *pAccessCounterBuffer);
 
 
@@ -279,159 +405,164 @@ static inline NV_STATUS uvmSetupAccessCntrBuffer(OBJGPU *pGpu, struct OBJUVM *pU
 
 #define uvmSetupAccessCntrBuffer_HAL(pGpu, pUvm, accessCounterIndex) uvmSetupAccessCntrBuffer(pGpu, pUvm, accessCounterIndex)
 
-NV_STATUS uvmReadAccessCntrBufferPutPtr_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 *arg0);
+NV_STATUS uvmReadAccessCntrBufferPutPtr_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 *arg4);
 
 
 #ifdef __nvoc_uvm_h_disabled
-static inline NV_STATUS uvmReadAccessCntrBufferPutPtr(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 *arg0) {
+static inline NV_STATUS uvmReadAccessCntrBufferPutPtr(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 *arg4) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_uvm_h_disabled
-#define uvmReadAccessCntrBufferPutPtr(pGpu, pUvm, accessCounterIndex, arg0) uvmReadAccessCntrBufferPutPtr_TU102(pGpu, pUvm, accessCounterIndex, arg0)
+#define uvmReadAccessCntrBufferPutPtr(pGpu, pUvm, accessCounterIndex, arg4) uvmReadAccessCntrBufferPutPtr_TU102(pGpu, pUvm, accessCounterIndex, arg4)
 #endif //__nvoc_uvm_h_disabled
 
-#define uvmReadAccessCntrBufferPutPtr_HAL(pGpu, pUvm, accessCounterIndex, arg0) uvmReadAccessCntrBufferPutPtr(pGpu, pUvm, accessCounterIndex, arg0)
+#define uvmReadAccessCntrBufferPutPtr_HAL(pGpu, pUvm, accessCounterIndex, arg4) uvmReadAccessCntrBufferPutPtr(pGpu, pUvm, accessCounterIndex, arg4)
 
-NV_STATUS uvmReadAccessCntrBufferGetPtr_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 *arg0);
+NV_STATUS uvmReadAccessCntrBufferGetPtr_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 *arg4);
 
 
 #ifdef __nvoc_uvm_h_disabled
-static inline NV_STATUS uvmReadAccessCntrBufferGetPtr(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 *arg0) {
+static inline NV_STATUS uvmReadAccessCntrBufferGetPtr(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 *arg4) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_uvm_h_disabled
-#define uvmReadAccessCntrBufferGetPtr(pGpu, pUvm, accessCounterIndex, arg0) uvmReadAccessCntrBufferGetPtr_TU102(pGpu, pUvm, accessCounterIndex, arg0)
+#define uvmReadAccessCntrBufferGetPtr(pGpu, pUvm, accessCounterIndex, arg4) uvmReadAccessCntrBufferGetPtr_TU102(pGpu, pUvm, accessCounterIndex, arg4)
 #endif //__nvoc_uvm_h_disabled
 
-#define uvmReadAccessCntrBufferGetPtr_HAL(pGpu, pUvm, accessCounterIndex, arg0) uvmReadAccessCntrBufferGetPtr(pGpu, pUvm, accessCounterIndex, arg0)
+#define uvmReadAccessCntrBufferGetPtr_HAL(pGpu, pUvm, accessCounterIndex, arg4) uvmReadAccessCntrBufferGetPtr(pGpu, pUvm, accessCounterIndex, arg4)
 
-NV_STATUS uvmReadAccessCntrBufferFullPtr_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvBool *arg0);
+NV_STATUS uvmReadAccessCntrBufferFullPtr_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvBool *arg4);
 
 
 #ifdef __nvoc_uvm_h_disabled
-static inline NV_STATUS uvmReadAccessCntrBufferFullPtr(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvBool *arg0) {
+static inline NV_STATUS uvmReadAccessCntrBufferFullPtr(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvBool *arg4) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_uvm_h_disabled
-#define uvmReadAccessCntrBufferFullPtr(pGpu, pUvm, accessCounterIndex, arg0) uvmReadAccessCntrBufferFullPtr_TU102(pGpu, pUvm, accessCounterIndex, arg0)
+#define uvmReadAccessCntrBufferFullPtr(pGpu, pUvm, accessCounterIndex, arg4) uvmReadAccessCntrBufferFullPtr_TU102(pGpu, pUvm, accessCounterIndex, arg4)
 #endif //__nvoc_uvm_h_disabled
 
-#define uvmReadAccessCntrBufferFullPtr_HAL(pGpu, pUvm, accessCounterIndex, arg0) uvmReadAccessCntrBufferFullPtr(pGpu, pUvm, accessCounterIndex, arg0)
+#define uvmReadAccessCntrBufferFullPtr_HAL(pGpu, pUvm, accessCounterIndex, arg4) uvmReadAccessCntrBufferFullPtr(pGpu, pUvm, accessCounterIndex, arg4)
 
-NV_STATUS uvmResetAccessCntrBuffer_GV100(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 arg0);
+static inline NV_STATUS uvmResetAccessCntrBuffer_92bfc3(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 arg4) {
+    NV_ASSERT_PRECOMP(0);
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS uvmResetAccessCntrBuffer_GV100(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 arg4);
 
 
 #ifdef __nvoc_uvm_h_disabled
-static inline NV_STATUS uvmResetAccessCntrBuffer(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 arg0) {
+static inline NV_STATUS uvmResetAccessCntrBuffer(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 arg4) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_uvm_h_disabled
-#define uvmResetAccessCntrBuffer(pGpu, pUvm, accessCounterIndex, arg0) uvmResetAccessCntrBuffer_GV100(pGpu, pUvm, accessCounterIndex, arg0)
+#define uvmResetAccessCntrBuffer(pGpu, pUvm, accessCounterIndex, arg4) uvmResetAccessCntrBuffer_92bfc3(pGpu, pUvm, accessCounterIndex, arg4)
 #endif //__nvoc_uvm_h_disabled
 
-#define uvmResetAccessCntrBuffer_HAL(pGpu, pUvm, accessCounterIndex, arg0) uvmResetAccessCntrBuffer(pGpu, pUvm, accessCounterIndex, arg0)
+#define uvmResetAccessCntrBuffer_HAL(pGpu, pUvm, accessCounterIndex, arg4) uvmResetAccessCntrBuffer(pGpu, pUvm, accessCounterIndex, arg4)
 
-NV_STATUS uvmAccessCntrSetGranularity_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, ACCESS_CNTR_TYPE arg0, NvU32 arg1);
+NV_STATUS uvmAccessCntrSetGranularity_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, ACCESS_CNTR_TYPE arg4, NvU32 arg5);
 
 
 #ifdef __nvoc_uvm_h_disabled
-static inline NV_STATUS uvmAccessCntrSetGranularity(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, ACCESS_CNTR_TYPE arg0, NvU32 arg1) {
+static inline NV_STATUS uvmAccessCntrSetGranularity(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, ACCESS_CNTR_TYPE arg4, NvU32 arg5) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_uvm_h_disabled
-#define uvmAccessCntrSetGranularity(pGpu, pUvm, accessCounterIndex, arg0, arg1) uvmAccessCntrSetGranularity_TU102(pGpu, pUvm, accessCounterIndex, arg0, arg1)
+#define uvmAccessCntrSetGranularity(pGpu, pUvm, accessCounterIndex, arg4, arg5) uvmAccessCntrSetGranularity_TU102(pGpu, pUvm, accessCounterIndex, arg4, arg5)
 #endif //__nvoc_uvm_h_disabled
 
-#define uvmAccessCntrSetGranularity_HAL(pGpu, pUvm, accessCounterIndex, arg0, arg1) uvmAccessCntrSetGranularity(pGpu, pUvm, accessCounterIndex, arg0, arg1)
+#define uvmAccessCntrSetGranularity_HAL(pGpu, pUvm, accessCounterIndex, arg4, arg5) uvmAccessCntrSetGranularity(pGpu, pUvm, accessCounterIndex, arg4, arg5)
 
-NV_STATUS uvmAccessCntrSetThreshold_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 arg0);
+NV_STATUS uvmAccessCntrSetThreshold_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 arg4);
 
 
 #ifdef __nvoc_uvm_h_disabled
-static inline NV_STATUS uvmAccessCntrSetThreshold(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 arg0) {
+static inline NV_STATUS uvmAccessCntrSetThreshold(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 arg4) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_uvm_h_disabled
-#define uvmAccessCntrSetThreshold(pGpu, pUvm, accessCounterIndex, arg0) uvmAccessCntrSetThreshold_TU102(pGpu, pUvm, accessCounterIndex, arg0)
+#define uvmAccessCntrSetThreshold(pGpu, pUvm, accessCounterIndex, arg4) uvmAccessCntrSetThreshold_TU102(pGpu, pUvm, accessCounterIndex, arg4)
 #endif //__nvoc_uvm_h_disabled
 
-#define uvmAccessCntrSetThreshold_HAL(pGpu, pUvm, accessCounterIndex, arg0) uvmAccessCntrSetThreshold(pGpu, pUvm, accessCounterIndex, arg0)
+#define uvmAccessCntrSetThreshold_HAL(pGpu, pUvm, accessCounterIndex, arg4) uvmAccessCntrSetThreshold(pGpu, pUvm, accessCounterIndex, arg4)
 
-NV_STATUS uvmAccessCntrSetCounterLimit_GV100(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 arg0, NvU32 arg1);
+NV_STATUS uvmAccessCntrSetCounterLimit_GV100(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 arg4, NvU32 arg5);
 
 
 #ifdef __nvoc_uvm_h_disabled
-static inline NV_STATUS uvmAccessCntrSetCounterLimit(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 arg0, NvU32 arg1) {
+static inline NV_STATUS uvmAccessCntrSetCounterLimit(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 arg4, NvU32 arg5) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_uvm_h_disabled
-#define uvmAccessCntrSetCounterLimit(pGpu, pUvm, accessCounterIndex, arg0, arg1) uvmAccessCntrSetCounterLimit_GV100(pGpu, pUvm, accessCounterIndex, arg0, arg1)
+#define uvmAccessCntrSetCounterLimit(pGpu, pUvm, accessCounterIndex, arg4, arg5) uvmAccessCntrSetCounterLimit_GV100(pGpu, pUvm, accessCounterIndex, arg4, arg5)
 #endif //__nvoc_uvm_h_disabled
 
-#define uvmAccessCntrSetCounterLimit_HAL(pGpu, pUvm, accessCounterIndex, arg0, arg1) uvmAccessCntrSetCounterLimit(pGpu, pUvm, accessCounterIndex, arg0, arg1)
+#define uvmAccessCntrSetCounterLimit_HAL(pGpu, pUvm, accessCounterIndex, arg4, arg5) uvmAccessCntrSetCounterLimit(pGpu, pUvm, accessCounterIndex, arg4, arg5)
 
-NV_STATUS uvmWriteAccessCntrBufferGetPtr_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 arg0);
+NV_STATUS uvmWriteAccessCntrBufferGetPtr_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 arg4);
 
 
 #ifdef __nvoc_uvm_h_disabled
-static inline NV_STATUS uvmWriteAccessCntrBufferGetPtr(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 arg0) {
+static inline NV_STATUS uvmWriteAccessCntrBufferGetPtr(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvU32 arg4) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_uvm_h_disabled
-#define uvmWriteAccessCntrBufferGetPtr(pGpu, pUvm, accessCounterIndex, arg0) uvmWriteAccessCntrBufferGetPtr_TU102(pGpu, pUvm, accessCounterIndex, arg0)
+#define uvmWriteAccessCntrBufferGetPtr(pGpu, pUvm, accessCounterIndex, arg4) uvmWriteAccessCntrBufferGetPtr_TU102(pGpu, pUvm, accessCounterIndex, arg4)
 #endif //__nvoc_uvm_h_disabled
 
-#define uvmWriteAccessCntrBufferGetPtr_HAL(pGpu, pUvm, accessCounterIndex, arg0) uvmWriteAccessCntrBufferGetPtr(pGpu, pUvm, accessCounterIndex, arg0)
+#define uvmWriteAccessCntrBufferGetPtr_HAL(pGpu, pUvm, accessCounterIndex, arg4) uvmWriteAccessCntrBufferGetPtr(pGpu, pUvm, accessCounterIndex, arg4)
 
-NV_STATUS uvmEnableAccessCntr_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvBool arg0);
+NV_STATUS uvmEnableAccessCntr_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvBool arg4);
 
 
 #ifdef __nvoc_uvm_h_disabled
-static inline NV_STATUS uvmEnableAccessCntr(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvBool arg0) {
+static inline NV_STATUS uvmEnableAccessCntr(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvBool arg4) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_uvm_h_disabled
-#define uvmEnableAccessCntr(pGpu, pUvm, accessCounterIndex, arg0) uvmEnableAccessCntr_TU102(pGpu, pUvm, accessCounterIndex, arg0)
+#define uvmEnableAccessCntr(pGpu, pUvm, accessCounterIndex, arg4) uvmEnableAccessCntr_TU102(pGpu, pUvm, accessCounterIndex, arg4)
 #endif //__nvoc_uvm_h_disabled
 
-#define uvmEnableAccessCntr_HAL(pGpu, pUvm, accessCounterIndex, arg0) uvmEnableAccessCntr(pGpu, pUvm, accessCounterIndex, arg0)
+#define uvmEnableAccessCntr_HAL(pGpu, pUvm, accessCounterIndex, arg4) uvmEnableAccessCntr(pGpu, pUvm, accessCounterIndex, arg4)
 
-NV_STATUS uvmDisableAccessCntr_GV100(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvBool arg0);
+NV_STATUS uvmDisableAccessCntr_GV100(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvBool arg4);
 
 
 #ifdef __nvoc_uvm_h_disabled
-static inline NV_STATUS uvmDisableAccessCntr(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvBool arg0) {
+static inline NV_STATUS uvmDisableAccessCntr(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvBool arg4) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_uvm_h_disabled
-#define uvmDisableAccessCntr(pGpu, pUvm, accessCounterIndex, arg0) uvmDisableAccessCntr_GV100(pGpu, pUvm, accessCounterIndex, arg0)
+#define uvmDisableAccessCntr(pGpu, pUvm, accessCounterIndex, arg4) uvmDisableAccessCntr_GV100(pGpu, pUvm, accessCounterIndex, arg4)
 #endif //__nvoc_uvm_h_disabled
 
-#define uvmDisableAccessCntr_HAL(pGpu, pUvm, accessCounterIndex, arg0) uvmDisableAccessCntr(pGpu, pUvm, accessCounterIndex, arg0)
+#define uvmDisableAccessCntr_HAL(pGpu, pUvm, accessCounterIndex, arg4) uvmDisableAccessCntr(pGpu, pUvm, accessCounterIndex, arg4)
 
-NV_STATUS uvmEnableAccessCntrIntr_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 arg0);
+NV_STATUS uvmEnableAccessCntrIntr_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 arg3);
 
 
 #ifdef __nvoc_uvm_h_disabled
-static inline NV_STATUS uvmEnableAccessCntrIntr(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 arg0) {
+static inline NV_STATUS uvmEnableAccessCntrIntr(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 arg3) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_uvm_h_disabled
-#define uvmEnableAccessCntrIntr(pGpu, pUvm, arg0) uvmEnableAccessCntrIntr_TU102(pGpu, pUvm, arg0)
+#define uvmEnableAccessCntrIntr(pGpu, pUvm, arg3) uvmEnableAccessCntrIntr_TU102(pGpu, pUvm, arg3)
 #endif //__nvoc_uvm_h_disabled
 
-#define uvmEnableAccessCntrIntr_HAL(pGpu, pUvm, arg0) uvmEnableAccessCntrIntr(pGpu, pUvm, arg0)
+#define uvmEnableAccessCntrIntr_HAL(pGpu, pUvm, arg3) uvmEnableAccessCntrIntr(pGpu, pUvm, arg3)
 
 NV_STATUS uvmDisableAccessCntrIntr_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm);
 
@@ -447,19 +578,19 @@ static inline NV_STATUS uvmDisableAccessCntrIntr(OBJGPU *pGpu, struct OBJUVM *pU
 
 #define uvmDisableAccessCntrIntr_HAL(pGpu, pUvm) uvmDisableAccessCntrIntr(pGpu, pUvm)
 
-NV_STATUS uvmGetAccessCntrRegisterMappings_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvP64 *arg0, NvP64 *arg1, NvP64 *arg2, NvP64 *arg3, NvP64 *arg4, NvP64 *arg5, NvU32 *arg6);
+NV_STATUS uvmGetAccessCntrRegisterMappings_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvP64 *arg4, NvP64 *arg5, NvP64 *arg6, NvP64 *arg7, NvP64 *arg8, NvP64 *arg9, NvU32 *arg10);
 
 
 #ifdef __nvoc_uvm_h_disabled
-static inline NV_STATUS uvmGetAccessCntrRegisterMappings(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvP64 *arg0, NvP64 *arg1, NvP64 *arg2, NvP64 *arg3, NvP64 *arg4, NvP64 *arg5, NvU32 *arg6) {
+static inline NV_STATUS uvmGetAccessCntrRegisterMappings(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex, NvP64 *arg4, NvP64 *arg5, NvP64 *arg6, NvP64 *arg7, NvP64 *arg8, NvP64 *arg9, NvU32 *arg10) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_uvm_h_disabled
-#define uvmGetAccessCntrRegisterMappings(pGpu, pUvm, accessCounterIndex, arg0, arg1, arg2, arg3, arg4, arg5, arg6) uvmGetAccessCntrRegisterMappings_TU102(pGpu, pUvm, accessCounterIndex, arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+#define uvmGetAccessCntrRegisterMappings(pGpu, pUvm, accessCounterIndex, arg4, arg5, arg6, arg7, arg8, arg9, arg10) uvmGetAccessCntrRegisterMappings_TU102(pGpu, pUvm, accessCounterIndex, arg4, arg5, arg6, arg7, arg8, arg9, arg10)
 #endif //__nvoc_uvm_h_disabled
 
-#define uvmGetAccessCntrRegisterMappings_HAL(pGpu, pUvm, accessCounterIndex, arg0, arg1, arg2, arg3, arg4, arg5, arg6) uvmGetAccessCntrRegisterMappings(pGpu, pUvm, accessCounterIndex, arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+#define uvmGetAccessCntrRegisterMappings_HAL(pGpu, pUvm, accessCounterIndex, arg4, arg5, arg6, arg7, arg8, arg9, arg10) uvmGetAccessCntrRegisterMappings(pGpu, pUvm, accessCounterIndex, arg4, arg5, arg6, arg7, arg8, arg9, arg10)
 
 NV_STATUS uvmAccessCntrService_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm);
 
@@ -643,103 +774,23 @@ static inline NvU32 uvmGetRegOffsetAccessCntrBufferSize(struct OBJUVM *pUvm, NvU
 
 void uvmStateDestroy_IMPL(OBJGPU *pGpu, struct OBJUVM *pUvm);
 
-static inline void uvmStateDestroy_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pUvm) {
-    pUvm->__uvmStateDestroy__(pGpu, pUvm);
-}
-
 NV_STATUS uvmStateInitUnlocked_IMPL(OBJGPU *pGpu, struct OBJUVM *pUvm);
 
-static inline NV_STATUS uvmStateInitUnlocked_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pUvm) {
-    return pUvm->__uvmStateInitUnlocked__(pGpu, pUvm);
-}
+NV_STATUS uvmAccessCntrBufferUnregister_IMPL(OBJGPU *arg1, struct OBJUVM *arg2, NvU32 accessCounterIndex);
 
-NV_STATUS uvmAccessCntrBufferUnregister_IMPL(OBJGPU *arg0, struct OBJUVM *arg1, NvU32 accessCounterIndex);
-
-static inline NV_STATUS uvmAccessCntrBufferUnregister_ac1694(OBJGPU *arg0, struct OBJUVM *arg1, NvU32 accessCounterIndex) {
+static inline NV_STATUS uvmAccessCntrBufferUnregister_ac1694(OBJGPU *arg1, struct OBJUVM *arg2, NvU32 accessCounterIndex) {
     return NV_OK;
 }
 
-static inline NV_STATUS uvmAccessCntrBufferUnregister_DISPATCH(OBJGPU *arg0, struct OBJUVM *arg1, NvU32 accessCounterIndex) {
-    return arg1->__uvmAccessCntrBufferUnregister__(arg0, arg1, accessCounterIndex);
-}
+NV_STATUS uvmAccessCntrBufferRegister_IMPL(OBJGPU *arg1, struct OBJUVM *arg2, NvU32 accessCounterIndex, NvU32 arg4, RmPhysAddr *arg5);
 
-NV_STATUS uvmAccessCntrBufferRegister_IMPL(OBJGPU *arg0, struct OBJUVM *arg1, NvU32 accessCounterIndex, NvU32 arg2, RmPhysAddr *arg3);
-
-static inline NV_STATUS uvmAccessCntrBufferRegister_ac1694(OBJGPU *arg0, struct OBJUVM *arg1, NvU32 accessCounterIndex, NvU32 arg2, RmPhysAddr *arg3) {
+static inline NV_STATUS uvmAccessCntrBufferRegister_ac1694(OBJGPU *arg1, struct OBJUVM *arg2, NvU32 accessCounterIndex, NvU32 arg4, RmPhysAddr *arg5) {
     return NV_OK;
 }
 
-static inline NV_STATUS uvmAccessCntrBufferRegister_DISPATCH(OBJGPU *arg0, struct OBJUVM *arg1, NvU32 accessCounterIndex, NvU32 arg2, RmPhysAddr *arg3) {
-    return arg1->__uvmAccessCntrBufferRegister__(arg0, arg1, accessCounterIndex, arg2, arg3);
-}
+void uvmRegisterIntrService_IMPL(OBJGPU *arg1, struct OBJUVM *pUvm, IntrServiceRecord arg3[175]);
 
-void uvmRegisterIntrService_IMPL(OBJGPU *arg0, struct OBJUVM *pUvm, IntrServiceRecord arg1[171]);
-
-static inline void uvmRegisterIntrService_DISPATCH(OBJGPU *arg0, struct OBJUVM *pUvm, IntrServiceRecord arg1[171]) {
-    pUvm->__uvmRegisterIntrService__(arg0, pUvm, arg1);
-}
-
-NvU32 uvmServiceInterrupt_IMPL(OBJGPU *arg0, struct OBJUVM *pUvm, IntrServiceServiceInterruptArguments *arg1);
-
-static inline NvU32 uvmServiceInterrupt_DISPATCH(OBJGPU *arg0, struct OBJUVM *pUvm, IntrServiceServiceInterruptArguments *arg1) {
-    return pUvm->__uvmServiceInterrupt__(arg0, pUvm, arg1);
-}
-
-static inline NV_STATUS uvmStateLoad_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, NvU32 arg0) {
-    return pEngstate->__uvmStateLoad__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS uvmStateUnload_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, NvU32 arg0) {
-    return pEngstate->__uvmStateUnload__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS uvmServiceNotificationInterrupt_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pIntrService, IntrServiceServiceNotificationInterruptArguments *pParams) {
-    return pIntrService->__uvmServiceNotificationInterrupt__(pGpu, pIntrService, pParams);
-}
-
-static inline NV_STATUS uvmStateInitLocked_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate) {
-    return pEngstate->__uvmStateInitLocked__(pGpu, pEngstate);
-}
-
-static inline NV_STATUS uvmStatePreLoad_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, NvU32 arg0) {
-    return pEngstate->__uvmStatePreLoad__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS uvmStatePostUnload_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, NvU32 arg0) {
-    return pEngstate->__uvmStatePostUnload__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS uvmStatePreUnload_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, NvU32 arg0) {
-    return pEngstate->__uvmStatePreUnload__(pGpu, pEngstate, arg0);
-}
-
-static inline void uvmInitMissing_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate) {
-    pEngstate->__uvmInitMissing__(pGpu, pEngstate);
-}
-
-static inline NV_STATUS uvmStatePreInitLocked_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate) {
-    return pEngstate->__uvmStatePreInitLocked__(pGpu, pEngstate);
-}
-
-static inline NV_STATUS uvmStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate) {
-    return pEngstate->__uvmStatePreInitUnlocked__(pGpu, pEngstate);
-}
-
-static inline NvBool uvmClearInterrupt_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pIntrService, IntrServiceClearInterruptArguments *pParams) {
-    return pIntrService->__uvmClearInterrupt__(pGpu, pIntrService, pParams);
-}
-
-static inline NV_STATUS uvmStatePostLoad_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, NvU32 arg0) {
-    return pEngstate->__uvmStatePostLoad__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS uvmConstructEngine_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, ENGDESCRIPTOR arg0) {
-    return pEngstate->__uvmConstructEngine__(pGpu, pEngstate, arg0);
-}
-
-static inline NvBool uvmIsPresent_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate) {
-    return pEngstate->__uvmIsPresent__(pGpu, pEngstate);
-}
+NvU32 uvmServiceInterrupt_IMPL(OBJGPU *arg1, struct OBJUVM *pUvm, IntrServiceServiceInterruptArguments *arg3);
 
 #undef PRIVATE_FIELD
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -62,7 +62,7 @@ nvidia_nano_timer_callback(
     nv_linux_state_t *nvl = nv_nstimer->nv_linux_state;
     nvidia_stack_t *sp = NULL;
 
-    if (nv_kmem_cache_alloc_stack(&sp) != 0)
+    if (nv_kmem_cache_alloc_stack_atomic(&sp) != 0)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: no cache memory \n");
         return;
@@ -189,12 +189,6 @@ void NV_API_CALL nv_start_nano_timer(
     NvU32 time_us;
 
     time_us = (NvU32)(time_ns / 1000);
-
-    if (time_us == 0)
-    {
-        nv_printf(NV_DBG_WARNINGS, "NVRM: Timer value cannot be less than 1 usec.\n");
-    }
-
     time_jiffies = usecs_to_jiffies(time_us);
     mod_timer(&nv_nstimer->jiffy_timer, jiffies + time_jiffies);
 #endif

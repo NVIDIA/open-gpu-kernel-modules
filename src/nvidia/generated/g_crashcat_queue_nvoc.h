@@ -1,6 +1,13 @@
+
 #ifndef _G_CRASHCAT_QUEUE_NVOC_H_
 #define _G_CRASHCAT_QUEUE_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,6 +36,7 @@ extern "C" {
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_crashcat_queue_nvoc.h"
 
 #ifndef CRASHCAT_QUEUE_H
@@ -37,6 +45,7 @@ extern "C" {
 #include "nvoc/object.h"
 #include "nv-crashcat.h"
 #include "crashcat/crashcat_wayfinder.h" // for CrashCatWayfinderHal spec
+
 
 struct CrashCatEngine;
 
@@ -48,6 +57,7 @@ typedef struct CrashCatEngine CrashCatEngine;
 #ifndef __nvoc_class_id_CrashCatEngine
 #define __nvoc_class_id_CrashCatEngine 0x654166
 #endif /* __nvoc_class_id_CrashCatEngine */
+
 
 
 struct CrashCatReport;
@@ -83,11 +93,20 @@ typedef struct
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 
+
 struct CrashCatQueue {
+
+    // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+
+    // Parent (i.e. superclass or base class) object pointers
     struct Object __nvoc_base_Object;
-    struct Object *__nvoc_pbase_Object;
-    struct CrashCatQueue *__nvoc_pbase_CrashCatQueue;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super
+    struct CrashCatQueue *__nvoc_pbase_CrashCatQueue;    // crashcatQueue
+
+    // Data members
     CrashCatQueueConfig PRIVATE_FIELD(config);
     struct CrashCatEngine *PRIVATE_FIELD(pEngine);
     void *PRIVATE_FIELD(pMapping);
@@ -102,6 +121,7 @@ typedef struct CrashCatQueue CrashCatQueue;
 #define __nvoc_class_id_CrashCatQueue 0xbaa900
 #endif /* __nvoc_class_id_CrashCatQueue */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_CrashCatQueue;
 
 #define __staticCast_CrashCatQueue(pThis) \
@@ -114,33 +134,36 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_CrashCatQueue;
     ((CrashCatQueue*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(CrashCatQueue)))
 #endif //__nvoc_crashcat_queue_h_disabled
 
-
 NV_STATUS __nvoc_objCreateDynamic_CrashCatQueue(CrashCatQueue**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_CrashCatQueue(CrashCatQueue**, Dynamic*, NvU32, CrashCatQueueConfig * arg_pQueueConfig);
 #define __objCreate_CrashCatQueue(ppNewObj, pParent, createFlags, arg_pQueueConfig) \
     __nvoc_objCreate_CrashCatQueue((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pQueueConfig)
 
-struct CrashCatReport *crashcatQueueConsumeNextReport_V1(struct CrashCatQueue *arg0);
+
+// Wrapper macros
+
+// Dispatch functions
+struct CrashCatReport *crashcatQueueConsumeNextReport_V1(struct CrashCatQueue *arg1);
 
 
 #ifdef __nvoc_crashcat_queue_h_disabled
-static inline struct CrashCatReport *crashcatQueueConsumeNextReport(struct CrashCatQueue *arg0) {
+static inline struct CrashCatReport *crashcatQueueConsumeNextReport(struct CrashCatQueue *arg1) {
     NV_ASSERT_FAILED_PRECOMP("CrashCatQueue was disabled!");
     return NULL;
 }
 #else //__nvoc_crashcat_queue_h_disabled
-#define crashcatQueueConsumeNextReport(arg0) crashcatQueueConsumeNextReport_V1(arg0)
+#define crashcatQueueConsumeNextReport(arg1) crashcatQueueConsumeNextReport_V1(arg1)
 #endif //__nvoc_crashcat_queue_h_disabled
 
-#define crashcatQueueConsumeNextReport_HAL(arg0) crashcatQueueConsumeNextReport(arg0)
+#define crashcatQueueConsumeNextReport_HAL(arg1) crashcatQueueConsumeNextReport(arg1)
 
 NV_STATUS crashcatQueueConstruct_IMPL(struct CrashCatQueue *arg_, CrashCatQueueConfig *arg_pQueueConfig);
 
 #define __nvoc_crashcatQueueConstruct(arg_, arg_pQueueConfig) crashcatQueueConstruct_IMPL(arg_, arg_pQueueConfig)
-void crashcatQueueDestruct_IMPL(struct CrashCatQueue *arg0);
+void crashcatQueueDestruct_IMPL(struct CrashCatQueue *arg1);
 
-#define __nvoc_crashcatQueueDestruct(arg0) crashcatQueueDestruct_IMPL(arg0)
+#define __nvoc_crashcatQueueDestruct(arg1) crashcatQueueDestruct_IMPL(arg1)
 #undef PRIVATE_FIELD
 
 

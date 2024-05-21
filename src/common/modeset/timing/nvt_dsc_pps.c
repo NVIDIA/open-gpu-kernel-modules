@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2019 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -2093,12 +2093,20 @@ DSC_GeneratePPSWithSliceCountMask
 
     sliceArrayCount = sizeof(validSliceNum)/sizeof(NvU32);
 
-    maxSliceCount = MIN(pDscInfo->sinkCaps.maxNumHztSlices, pDscInfo->gpuCaps.maxNumHztSlices);
+    // For 2Head1OR mode, slice count supported by GPU is always 8. 
+    maxSliceCount = MIN(pDscInfo->sinkCaps.maxNumHztSlices, 
+                        pModesetInfo->bDualMode ? 8U : pDscInfo->gpuCaps.maxNumHztSlices);
 
     // lineBufferSize is reported in 1024 units by HW, so need to multiply by 1024 to get pixels.
     maxSliceWidth = MIN(pDscInfo->sinkCaps.maxSliceWidth, pDscInfo->gpuCaps.lineBufferSize * 1024);
 
     gpuSliceCountMask = DSC_GetSliceCountMask(maxSliceCount, NV_TRUE /*bInclusive*/);
+
+    if (pModesetInfo->bDualMode)
+    {
+        // For DSC_DUAL, slice counts 1 and 6 are invalid. 
+        gpuSliceCountMask &= ~(0x11);
+    }
 
     commonSliceCountMask = gpuSliceCountMask & pDscInfo->sinkCaps.sliceCountSupportedMask;
 
@@ -2107,8 +2115,12 @@ DSC_GeneratePPSWithSliceCountMask
         return NVT_STATUS_DSC_SLICE_ERROR;
     }
 
-    if (pModesetInfo->colorFormat == NVT_COLOR_FORMAT_YCbCr422 ||
-        pModesetInfo->colorFormat == NVT_COLOR_FORMAT_YCbCr420)
+    if ((pModesetInfo->colorFormat == NVT_COLOR_FORMAT_YCbCr422 &&
+        ((pDscInfo->gpuCaps.encoderColorFormatMask & DSC_ENCODER_COLOR_FORMAT_Y_CB_CR_NATIVE_422) &&
+         (pDscInfo->sinkCaps.decoderColorFormatMask & DSC_DECODER_COLOR_FORMAT_Y_CB_CR_NATIVE_422))) ||
+        (pModesetInfo->colorFormat == NVT_COLOR_FORMAT_YCbCr420 &&
+        ((pDscInfo->gpuCaps.encoderColorFormatMask & DSC_ENCODER_COLOR_FORMAT_Y_CB_CR_NATIVE_420) &&
+         (pDscInfo->sinkCaps.decoderColorFormatMask & DSC_DECODER_COLOR_FORMAT_Y_CB_CR_NATIVE_420))))
     {
         peakThroughPutIndex = pDscInfo->sinkCaps.peakThroughputMode1;
     }
@@ -2149,7 +2161,7 @@ DSC_GeneratePPSWithSliceCountMask
 
         for(i = 0U ; i < sliceArrayCount; i++)
         {
-            if (possibleSliceCountMask & NVBIT(validSliceNum[i] - 1))
+            if (possibleSliceCountMask & DSC_SliceCountMaskforSliceNum(validSliceNum[i]))
             {
                 ppsOut = NULL;
                 localDscInfo.forcedDscParams.sliceCount = validSliceNum[i];
@@ -2162,11 +2174,23 @@ DSC_GeneratePPSWithSliceCountMask
                     //
                     ppsOut = pps;
                 }
-                if (DSC_GeneratePPS(&localDscInfo, pModesetInfo, pWARData, 
-                                    availableBandwidthBitsPerSecond, &scratchBuffer,
-                                    ppsOut, pBitsPerPixelX16) == NVT_STATUS_SUCCESS)
+                status = DSC_GeneratePPS(&localDscInfo, pModesetInfo, pWARData, 
+                                         availableBandwidthBitsPerSecond, &scratchBuffer,
+                                         ppsOut, pBitsPerPixelX16);
+                
+                if (status == NVT_STATUS_SUCCESS)
                 {
-                    validSliceCountMask |=  NVBIT(validSliceNum[i] - 1);
+                    //
+                    // DPlib and PPSlib follows DP spec to set slice count indices  
+                    // in slice count mask. This mapping of index to slice count 
+                    // is not 1:1. For eg. slice count 8 corresponds to bit
+                    // index 5 as per spec. PPSLib clients are spec agnostic  
+                    // and prefer indices to indicate corresponding slice count. 
+                    // For eg. slice count = 8 should be set at bit index 7. 
+                    // So while passing the mask back to clients, here we set
+                    //  corresponding bit index.
+                    // 
+                    validSliceCountMask |= NVBIT32((validSliceNum[i]) - 1U);
                 }
             }
         }
@@ -2174,6 +2198,12 @@ DSC_GeneratePPSWithSliceCountMask
     else
     {
         return NVT_STATUS_PPS_SLICE_COUNT_ERROR;
+    }
+
+    if (validSliceCountMask == 0U)
+    {
+        // Reason for failure with hightest possible slice count will be returned. 
+        return status;
     }
 
     *pSliceCountMask = validSliceCountMask;
@@ -2270,8 +2300,8 @@ DSC_GeneratePPS
     case NVT_COLOR_FORMAT_YCbCr420:
         in->convert_rgb = 0;
 
-        if ((pDscInfo->gpuCaps.encoderColorFormatMask & DSC_ENCODER_COLOR_FORMAT_Y_CB_CR_NATIVE_422) &&
-            (pDscInfo->sinkCaps.decoderColorFormatMask & DSC_DECODER_COLOR_FORMAT_Y_CB_CR_NATIVE_422))
+        if ((pDscInfo->gpuCaps.encoderColorFormatMask & DSC_ENCODER_COLOR_FORMAT_Y_CB_CR_NATIVE_420) &&
+            (pDscInfo->sinkCaps.decoderColorFormatMask & DSC_DECODER_COLOR_FORMAT_Y_CB_CR_NATIVE_420))
         {
             in->native_420 = 1;
         }
@@ -2477,6 +2507,9 @@ DSC_GeneratePPS
     
     if (in->native_422)
     {
+        // bits_per_pixel in PPS is defined as 5 fractional bits in native422 mode
+        in->bits_per_pixel *= 2;
+
         if (in->dsc_version_minor == 1)
         {
             // Error! DSC1.1 can't support native422!
@@ -2484,8 +2517,8 @@ DSC_GeneratePPS
             goto done;
         }
         //the bpp in native 422 mode is doubled.
-        if((((NvS32)(in->bits_per_pixel)) < (NvS32)(2*6*BPP_UNIT)) ||
-           (((NvS32)(in->bits_per_pixel)) > (NvS32)(2*32*BPP_UNIT-1)))
+        if((((NvS32)(in->bits_per_pixel)) < (NvS32)(2*7*BPP_UNIT)) ||
+           (((NvS32)(in->bits_per_pixel)) > (NvS32)(2*2*(in->bits_per_component)*BPP_UNIT-1)))
         {
             // ERROR - bits_per_pixelx16 outside valid range
             ret = NVT_STATUS_INVALID_BPP;

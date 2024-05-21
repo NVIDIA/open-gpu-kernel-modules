@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -458,6 +458,21 @@ clientValidate_IMPL
     return NV_OK;
 }
 
+NV_STATUS
+clientValidateLocks_IMPL
+(
+    RsClient           *pClient,
+    RsServer           *pServer,
+    const CLIENT_ENTRY *pClientEntry
+)
+{
+    NV_CHECK_OR_RETURN(LEVEL_SILENT,
+        pClientEntry->lockOwnerTid == portThreadGetCurrentThreadId(),
+        NV_ERR_INVALID_LOCK_STATE);
+
+    return NV_OK;
+}
+
 RS_PRIV_LEVEL
 clientGetCachedPrivilege_IMPL
 (
@@ -493,7 +508,7 @@ clientAllocResource_IMPL
 NV_STATUS
 clientCopyResource_IMPL
 (
-    RsClient   *pClient,
+    RsClient   *pClientDst,
     RsServer   *pServer,
     RS_RES_DUP_PARAMS_INTERNAL *pParams
 )
@@ -502,14 +517,8 @@ clientCopyResource_IMPL
     CALL_CONTEXT  callContext;
     CALL_CONTEXT *pOldContext = NULL;
 
-    RsClient *pClientDst = NULL;
     RsResourceRef *pParentRef = NULL;
-
     NV_STATUS status;
-
-    status = serverGetClientUnderLock(pServer, pParams->hClientDst, &pClientDst);
-    if (status != NV_OK)
-        return status;
 
     status = clientGetResourceRef(pClientDst, pParams->hParentDst, &pParentRef);
     if (status != NV_OK)
@@ -517,7 +526,7 @@ clientCopyResource_IMPL
 
     portMemSet(&callContext, 0, sizeof(callContext));
     callContext.pServer = pServer;
-    callContext.pClient = pClient;
+    callContext.pClient = pClientDst;
     callContext.pResourceRef = pParams->pSrcRef;
     callContext.pContextRef = pParentRef;
     callContext.secInfo = *pParams->pSecInfo;
@@ -532,14 +541,14 @@ clientCopyResource_IMPL
     //
     if (((pParams->pSecInfo->privLevel < RS_PRIV_LEVEL_KERNEL) ||
          (pParams->flags & NV04_DUP_HANDLE_FLAGS_REJECT_KERNEL_DUP_PRIVILEGE)) &&
-        (pServer->bRsAccessEnabled || (pParams->pSrcClient->hClient != pClient->hClient)))
+        (pServer->bRsAccessEnabled || (pParams->pSrcClient->hClient != pClientDst->hClient)))
     {
         RS_ACCESS_MASK rightsRequired;
 
         portMemSet(&rightsRequired, 0, sizeof(rightsRequired));
         RS_ACCESS_MASK_ADD(&rightsRequired, RS_ACCESS_DUP_OBJECT);
 
-        status = rsAccessCheckRights(pParams->pSrcRef, pClient, &rightsRequired);
+        status = rsAccessCheckRights(pParams->pSrcRef, pClientDst, &rightsRequired);
     }
     else
     {
@@ -552,7 +561,7 @@ clientCopyResource_IMPL
             // We only care about failing Require policies which apply to Dup, ignore everything else
             if ((pSharePolicy->action & RS_SHARE_ACTION_FLAG_REQUIRE) &&
                 RS_ACCESS_MASK_TEST(&pSharePolicy->accessMask, RS_ACCESS_DUP_OBJECT) &&
-                !resShareCallback(pParams->pSrcRef->pResource, pClient, pParentRef, pSharePolicy))
+                !resShareCallback(pParams->pSrcRef->pResource, pClientDst, pParentRef, pSharePolicy))
             {
                 status = NV_ERR_INVALID_REQUEST;
                 break;
@@ -567,7 +576,7 @@ clientCopyResource_IMPL
 
     portMemSet(&params, 0, sizeof(params));
 
-    params.hClient = pClient->hClient;
+    params.hClient = pClientDst->hClient;
     params.hParent = pParams->hParentDst;
     params.hResource = pParams->hResourceDst;
     params.externalClassId = pParams->pSrcRef->externalClassId;
@@ -579,7 +588,7 @@ clientCopyResource_IMPL
     params.pLockInfo = pParams->pLockInfo;
     params.allocFlags = pParams->flags;
 
-    return _clientAllocResourceHelper(pClient, pServer, &params, &pParams->hResourceDst);
+    return _clientAllocResourceHelper(pClientDst, pServer, &params, &pParams->hResourceDst);
 }
 
 static
@@ -1121,6 +1130,7 @@ clientUnmapResourceRefMappings
         params.pLockInfo = &lockInfo;
         lockInfo.pClient = pLockInfo->pClient;
         lockInfo.state = pLockInfo->state;
+        lockInfo.flags = pLockInfo->flags;
 
         // TODO: temp WAR for bug 2840284: deadlock during recursive free operation
         lockInfo.flags |= RS_LOCK_FLAGS_NO_CLIENT_LOCK;
@@ -1240,6 +1250,7 @@ _unmapInterMapping
         ? pLockInfo->pContextRef
         : pMapping->pContextRef;
     lockInfo.state = pLockInfo->state;
+    lockInfo.flags = pLockInfo->flags;
 
     status = serverUpdateLockFlagsForInterAutoUnmap(pServer, &params);
     if (status != NV_OK)

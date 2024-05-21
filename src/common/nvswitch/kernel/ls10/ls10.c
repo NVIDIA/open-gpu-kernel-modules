@@ -1232,6 +1232,13 @@ nvswitch_internal_latency_bin_log_ls10
         return;
     }
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return;
+    }
+
     time_nsec = nvswitch_os_get_platform_time();
     last_visited_time_nsec = chip_device->latency_stats->last_visited_time_nsec;
 
@@ -1568,7 +1575,6 @@ _nvswitch_reset_and_drain_links_ls10
         //
         // Step 4.0 : Send command to SOE to perform the following steps :
         // - Backup NPORT state before reset
-        // - Set the INGRESS_STOP bit of CTRL_STOP (0x48)
         // - Assert debug_clear for the given port NPORT by writing to the
         //   DEBUG_CLEAR (0x144) register
         // - Assert NPortWarmReset[i] using the WARMRESET (0x140) register
@@ -1641,7 +1647,6 @@ _nvswitch_reset_and_drain_links_ls10
 
         //
         // Step 6.0 : Send command to SOE to perform the following steps :
-        // - Clear the INGRESS_STOP bit of CTRL_STOP (0x48)
         // - Clear the CONTAIN_AND_DRAIN (0x5c) status
         // - Assert NPORT INITIALIZATION and program the state tracking RAMS
         // - Restore NPORT state after reset
@@ -1664,8 +1669,8 @@ _nvswitch_reset_and_drain_links_ls10
             continue;
         }
 
-        // Reset NV_NPORT_SCRATCH_WARM_PORT_RESET_REQUIRED to 0x0
-        NVSWITCH_LINK_WR32(device, link, NPORT, _NPORT, _SCRATCH_WARM, 0);
+        // Initialize select scratch registers to 0x0
+        device->hal.nvswitch_init_scratch(device);
 
         //
         // Step 9.0: Launch ALI training to re-initialize and train the links
@@ -3357,6 +3362,13 @@ _nvswitch_set_remap_policy_ls10
     NvU32 address_limit;
     NvU32 rfunc;
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return;
+    }
+
     NVSWITCH_LINK_WR32_LS10(device, portNum, NPORT, _INGRESS, _REQRSPMAPADDR,
         DRF_NUM(_INGRESS, _REQRSPMAPADDR, _RAM_ADDRESS, firstIndex) |
         DRF_NUM(_INGRESS, _REQRSPMAPADDR, _RAM_SEL, remap_ram_sel) |
@@ -3430,6 +3442,13 @@ _nvswitch_set_mc_remap_policy_ls10
     NvU32 address_limit;
     NvU32 rfunc;
     NvU32 reflective;
+
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return;
+    }
 
     NVSWITCH_LINK_WR32_LS10(device, portNum, NPORT, _INGRESS, _MCREMAPTABADDR,
         DRF_NUM(_INGRESS, _MCREMAPTABADDR, _RAM_ADDRESS, firstIndex) |
@@ -3702,13 +3721,38 @@ nvswitch_ctrl_set_remap_policy_ls10
         }
     }
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
     if (p->tableSelect == NVSWITCH_TABLE_SELECT_REMAP_MULTICAST)
     {
         _nvswitch_set_mc_remap_policy_ls10(device, p->portNum, p->firstIndex, p->numEntries, p->remapPolicy);
     }
     else
     {
+        // Stop traffic on the port
+        retval = nvswitch_soe_issue_ingress_stop(device, p->portNum, NV_TRUE);
+        if (retval != NVL_SUCCESS)
+        {
+            NVSWITCH_PRINT(device, ERROR,
+                "Failed to stop traffic on nport %d\n", p->portNum);
+            return retval;
+        }
+
         _nvswitch_set_remap_policy_ls10(device, p->portNum, remap_ram_sel, p->firstIndex, p->numEntries, p->remapPolicy);
+
+        // Allow traffic on the port
+        retval = nvswitch_soe_issue_ingress_stop(device, p->portNum, NV_FALSE);
+        if (retval != NVL_SUCCESS)
+        {
+            NVSWITCH_PRINT(device, ERROR,
+                "Failed to restart traffic on nport %d\n", p->portNum);
+            return retval;
+        }
     }
 
     return retval;
@@ -3762,6 +3806,13 @@ nvswitch_ctrl_get_remap_policy_ls10
             "%s: remapPolicy first index %d out of range[%d..%d].\n",
             __FUNCTION__, params->firstIndex, 0, ram_size - 1);
         return -NVL_BAD_ARGS;
+    }
+
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
     }
 
     nvswitch_os_memset(params->entry, 0, (NVSWITCH_REMAP_POLICY_ENTRIES_MAX *
@@ -3938,6 +3989,22 @@ nvswitch_ctrl_set_remap_policy_valid_ls10
         return -NVL_BAD_ARGS;
     }
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
+    // Stop traffic on the port
+    retval = nvswitch_soe_issue_ingress_stop(device, p->portNum, NV_TRUE);
+    if (retval != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "Failed to stop traffic on nport %d\n", p->portNum);
+        return retval;
+    }
+
     if (p->tableSelect == NVSWITCH_TABLE_SELECT_REMAP_MULTICAST)
     {
         for (i = 0; i < p->numEntries; i++)
@@ -3994,6 +4061,15 @@ nvswitch_ctrl_set_remap_policy_valid_ls10
             NVSWITCH_LINK_WR32_LS10(device, p->portNum, NPORT, _INGRESS, _REMAPTABDATA1, remap_policy_data[1]);
             NVSWITCH_LINK_WR32_LS10(device, p->portNum, NPORT, _INGRESS, _REMAPTABDATA0, remap_policy_data[0]);
         }
+    }
+
+    // Allow traffic on the port
+    retval = nvswitch_soe_issue_ingress_stop(device, p->portNum, NV_FALSE);
+    if (retval != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "Failed to restart traffic on nport %d\n", p->portNum);
+        return retval;
     }
 
     return NVL_SUCCESS;
@@ -4111,6 +4187,13 @@ NvlStatus nvswitch_ctrl_get_mc_rid_table_ls10
          NVSWITCH_PRINT(device, ERROR, "%s: index %d out of range for main table\n",
                         __FUNCTION__, p->index);
          return -NVL_BAD_ARGS;
+    }
+
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
     }
 
     nvswitch_os_memset(&table_entry, 0, sizeof(NVSWITCH_MC_RID_ENTRY_LS10));
@@ -4863,6 +4946,13 @@ nvswitch_ctrl_get_residency_bins_ls10
         return -NVL_BAD_ARGS;
     }
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
     if (p->table_select == NVSWITCH_TABLE_SELECT_MULTICAST)
     {
         // Snap the histogram
@@ -4976,6 +5066,13 @@ nvswitch_ctrl_get_rb_stall_busy_ls10
         NVSWITCH_PRINT(device, ERROR,
             "GET_RB_STALL_BUSY: Invalid link %d\n", p->link);
         return -NVL_BAD_ARGS;
+    }
+
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
     }
 
     if (p->table_select == NVSWITCH_TABLE_SELECT_MULTICAST)
@@ -6189,7 +6286,7 @@ _nvswitch_set_led_state_ls10
     regVal = FLD_SET_REF_NUM(CPLD_MACHXO3_ACCESS_LINK_LED_CTL_NVL_CABLE_LED,
                              _nvswitch_get_led_state_regval_ls10(device, ledState),
                              regVal);
-    
+
     // Set state for LED
     retval = nvswitch_cci_ports_cpld_write(device, CPLD_MACHXO3_ACCESS_LINK_LED_CTL, regVal);
     if (retval != NVL_SUCCESS)

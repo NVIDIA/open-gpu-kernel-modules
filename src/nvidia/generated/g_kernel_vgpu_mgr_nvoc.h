@@ -1,6 +1,13 @@
+
 #ifndef _G_KERNEL_VGPU_MGR_NVOC_H_
 #define _G_KERNEL_VGPU_MGR_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,6 +36,7 @@ extern "C" {
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_kernel_vgpu_mgr_nvoc.h"
 
 #ifndef __kernel_vgpu_mgr_h__
@@ -49,6 +57,7 @@ extern "C" {
 #include "virtualization/common_vgpu_mgr.h"
 #include "gpu_mgr/gpu_mgr.h"
 
+
 struct PhysMemSubAlloc;
 
 #ifndef __NVOC_CLASS_PhysMemSubAlloc_TYPEDEF__
@@ -59,6 +68,7 @@ typedef struct PhysMemSubAlloc PhysMemSubAlloc;
 #ifndef __nvoc_class_id_PhysMemSubAlloc
 #define __nvoc_class_id_PhysMemSubAlloc 0x2351fc
 #endif /* __nvoc_class_id_PhysMemSubAlloc */
+
 
 
 struct VgpuConfigApi;
@@ -219,11 +229,20 @@ MAKE_LIST(REQUEST_VGPU_INFO_NODE_LIST, REQUEST_VGPU_INFO_NODE);
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 
+
 struct KernelVgpuMgr {
+
+    // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+
+    // Parent (i.e. superclass or base class) object pointers
     struct Object __nvoc_base_Object;
-    struct Object *__nvoc_pbase_Object;
-    struct KernelVgpuMgr *__nvoc_pbase_KernelVgpuMgr;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super
+    struct KernelVgpuMgr *__nvoc_pbase_KernelVgpuMgr;    // kvgpumgr
+
+    // Data members
     KERNEL_PHYS_GPU_INFO pgpuInfo[32];
     NvU32 pgpuCount;
     VGPU_TYPE_LIST listVgpuTypeHead;
@@ -243,6 +262,7 @@ typedef struct KernelVgpuMgr KernelVgpuMgr;
 #define __nvoc_class_id_KernelVgpuMgr 0xa793dd
 #endif /* __nvoc_class_id_KernelVgpuMgr */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelVgpuMgr;
 
 #define __staticCast_KernelVgpuMgr(pThis) \
@@ -255,13 +275,16 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelVgpuMgr;
     ((KernelVgpuMgr*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(KernelVgpuMgr)))
 #endif //__nvoc_kernel_vgpu_mgr_h_disabled
 
-
 NV_STATUS __nvoc_objCreateDynamic_KernelVgpuMgr(KernelVgpuMgr**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_KernelVgpuMgr(KernelVgpuMgr**, Dynamic*, NvU32);
 #define __objCreate_KernelVgpuMgr(ppNewObj, pParent, createFlags) \
     __nvoc_objCreate_KernelVgpuMgr((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
+
+// Wrapper macros
+
+// Dispatch functions
 NV_STATUS kvgpumgrConstruct_IMPL(struct KernelVgpuMgr *arg_pKernelVgpuMgr);
 
 #define __nvoc_kvgpumgrConstruct(arg_pKernelVgpuMgr) kvgpumgrConstruct_IMPL(arg_pKernelVgpuMgr)

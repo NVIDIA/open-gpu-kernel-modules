@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,9 @@
 \***************************************************************************/
 
 #include "objtmr.h"
+
+// Minimum delay for OS timer
+#define OSTIMER_MIN_DELAY_NS        1 // 1 nanosecond
 
 //
 // This function returns current time from OS timer
@@ -114,6 +117,7 @@ NV_STATUS tmrEventScheduleRelOSTimer_OSTIMER
         return NV_ERR_INVALID_REQUEST;
     }
 
+    timeRelNs = NV_MAX(timeRelNs, OSTIMER_MIN_DELAY_NS);
     status = osStartNanoTimer(pGpu->pOsGpuInfo, pEvent->super.pOSTmrCBdata, timeRelNs);
 
     if (status != NV_OK)

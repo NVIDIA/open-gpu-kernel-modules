@@ -1,6 +1,13 @@
+
 #ifndef _G_IOACCESS_NVOC_H_
 #define _G_IOACCESS_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,6 +36,7 @@ extern "C" {
  * DEALINGS IN THE SOFTWARE.
  */
 #if (defined(NVRM) || defined(RMCFG_FEATURE_PLATFORM_GSP)) && !defined(NVWATCH)
+#pragma once
 #include "g_ioaccess_nvoc.h"
 #endif
 
@@ -69,17 +77,24 @@ extern "C" {
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 
+
 struct RegisterAperture {
+
+    // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
-    struct RegisterAperture *__nvoc_pbase_RegisterAperture;
-    NvU8 (*__regaprtReadReg08__)(struct RegisterAperture *, NvU32);
-    NvU16 (*__regaprtReadReg16__)(struct RegisterAperture *, NvU32);
-    NvU32 (*__regaprtReadReg32__)(struct RegisterAperture *, NvU32);
-    void (*__regaprtWriteReg08__)(struct RegisterAperture *, NvU32, NvV8);
-    void (*__regaprtWriteReg16__)(struct RegisterAperture *, NvU32, NvV16);
-    void (*__regaprtWriteReg32__)(struct RegisterAperture *, NvU32, NvV32);
-    void (*__regaprtWriteReg32Uc__)(struct RegisterAperture *, NvU32, NvV32);
-    NvBool (*__regaprtIsRegValid__)(struct RegisterAperture *, NvU32);
+
+    // Ancestor object pointers for `staticCast` feature
+    struct RegisterAperture *__nvoc_pbase_RegisterAperture;    // regaprt
+
+    // Vtable with 8 per-object function pointers
+    NvU8 (*__regaprtReadReg08__)(struct RegisterAperture * /*this*/, NvU32);  // pure virtual
+    NvU16 (*__regaprtReadReg16__)(struct RegisterAperture * /*this*/, NvU32);  // pure virtual
+    NvU32 (*__regaprtReadReg32__)(struct RegisterAperture * /*this*/, NvU32);  // pure virtual
+    void (*__regaprtWriteReg08__)(struct RegisterAperture * /*this*/, NvU32, NvV8);  // pure virtual
+    void (*__regaprtWriteReg16__)(struct RegisterAperture * /*this*/, NvU32, NvV16);  // pure virtual
+    void (*__regaprtWriteReg32__)(struct RegisterAperture * /*this*/, NvU32, NvV32);  // pure virtual
+    void (*__regaprtWriteReg32Uc__)(struct RegisterAperture * /*this*/, NvU32, NvV32);  // pure virtual
+    NvBool (*__regaprtIsRegValid__)(struct RegisterAperture * /*this*/, NvU32);  // pure virtual
 };
 
 #ifndef __NVOC_CLASS_RegisterAperture_TYPEDEF__
@@ -91,6 +106,7 @@ typedef struct RegisterAperture RegisterAperture;
 #define __nvoc_class_id_RegisterAperture 0xfcaf2e
 #endif /* __nvoc_class_id_RegisterAperture */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RegisterAperture;
 
 #define __staticCast_RegisterAperture(pThis) \
@@ -103,21 +119,32 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_RegisterAperture;
     ((RegisterAperture*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(RegisterAperture)))
 #endif //__nvoc_ioaccess_h_disabled
 
-
 NV_STATUS __nvoc_objCreateDynamic_RegisterAperture(RegisterAperture**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_RegisterAperture(RegisterAperture**, Dynamic*, NvU32);
 #define __objCreate_RegisterAperture(ppNewObj, pParent, createFlags) \
     __nvoc_objCreate_RegisterAperture((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
+
+// Wrapper macros
+#define regaprtReadReg08_FNPTR(pAperture) pAperture->__regaprtReadReg08__
 #define regaprtReadReg08(pAperture, addr) regaprtReadReg08_DISPATCH(pAperture, addr)
+#define regaprtReadReg16_FNPTR(pAperture) pAperture->__regaprtReadReg16__
 #define regaprtReadReg16(pAperture, addr) regaprtReadReg16_DISPATCH(pAperture, addr)
+#define regaprtReadReg32_FNPTR(pAperture) pAperture->__regaprtReadReg32__
 #define regaprtReadReg32(pAperture, addr) regaprtReadReg32_DISPATCH(pAperture, addr)
+#define regaprtWriteReg08_FNPTR(pAperture) pAperture->__regaprtWriteReg08__
 #define regaprtWriteReg08(pAperture, addr, value) regaprtWriteReg08_DISPATCH(pAperture, addr, value)
+#define regaprtWriteReg16_FNPTR(pAperture) pAperture->__regaprtWriteReg16__
 #define regaprtWriteReg16(pAperture, addr, value) regaprtWriteReg16_DISPATCH(pAperture, addr, value)
+#define regaprtWriteReg32_FNPTR(pAperture) pAperture->__regaprtWriteReg32__
 #define regaprtWriteReg32(pAperture, addr, value) regaprtWriteReg32_DISPATCH(pAperture, addr, value)
+#define regaprtWriteReg32Uc_FNPTR(pAperture) pAperture->__regaprtWriteReg32Uc__
 #define regaprtWriteReg32Uc(pAperture, addr, value) regaprtWriteReg32Uc_DISPATCH(pAperture, addr, value)
+#define regaprtIsRegValid_FNPTR(pAperture) pAperture->__regaprtIsRegValid__
 #define regaprtIsRegValid(pAperture, addr) regaprtIsRegValid_DISPATCH(pAperture, addr)
+
+// Dispatch functions
 static inline NvU8 regaprtReadReg08_DISPATCH(struct RegisterAperture *pAperture, NvU32 addr) {
     return pAperture->__regaprtReadReg08__(pAperture, addr);
 }

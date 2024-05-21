@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,49 +35,6 @@
 /* ------------------------ Static Function Prototypes --------------------- */
 /* ------------------------ Macros ----------------------------------------- */
 /* ------------------------ Public Functions ------------------------------- */
-/*!
- * @copydoc NV2080_CTRL_CMD_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES
- *
- * @params[in]     pSubdevice
- * @params[in/out] pParams
- *
- * @return NV_OK
- *
- * @return Other error
- *     Encountered un-expected error.
- */
-NV_STATUS
-subdeviceCtrlCmdPerfGetGpumonPerfmonUtilSamples_VF
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_PARAM *pParams
-)
-{
-    NV2080_CTRL_PERF_GPUMON_PERFMON_UTIL_SAMPLE *pSamples = NvP64_VALUE(pParams->pSamples);
-    CALL_CONTEXT *pCallContext  = resservGetTlsCallContext();
-    RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
-    OBJGPU       *pGpu          = GPU_RES_GET_GPU(pSubdevice);
-    NvU32         bufSize       = pParams->bufSize;
-    NV_STATUS     status        = NV_OK;
-
-    if (IS_MIG_ENABLED(pGpu))
-    {
-        NV_PRINTF(LEVEL_ERROR, "Call not supported with SMC Enabled\n");
-        return NV_ERR_NOT_SUPPORTED;
-    }
-
-    NV_ASSERT_OR_RETURN(pSamples != NULL, NV_ERR_INVALID_ARGUMENT);
-
-    NV_RM_RPC_GET_ENGINE_UTILIZATION(pGpu,
-                                     pRmCtrlParams->hClient,
-                                     pRmCtrlParams->hObject,
-                                     pRmCtrlParams->cmd,
-                                     pSamples,
-                                     bufSize,
-                                     status);
-
-    return status;
-}
 
 /*!
  * @copydoc NV2080_CTRL_CMD_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_V2

@@ -317,9 +317,15 @@ kccuapiCtrlCmdSubscribe_IMPL
     }
     else
     {
+        if ((ref.pKernelMIGGpuInstance == NULL) || (ref.pMIGComputeInstance == NULL))
+        {
+            return NV_ERR_INVALID_POINTER;
+        }
+
         // Get counter block size for mig gpu inst
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                kccuMemDescGetForSwizzId(pGpu, pKernelCcu, ref.pKernelMIGGpuInstance->swizzId, &pMemDesc));
+                kccuMemDescGetForComputeInst(pGpu, pKernelCcu, ref.pKernelMIGGpuInstance->swizzId,
+                                            ref.pMIGComputeInstance->id, &pMemDesc));
         pParams->counterBlockSize = kccuCounterBlockSizeGet(pGpu, pKernelCcu, NV_FALSE);
     }
 

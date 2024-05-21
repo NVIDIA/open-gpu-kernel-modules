@@ -508,9 +508,7 @@ memmgrIsMemDescSupportedByFla_GA100
     MEMORY_DESCRIPTOR *pMemDesc
 )
 {
-    if ((memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM)
-         || memdescIsEgm(pMemDesc)
-       )
+    if ((memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM) || memdescIsEgm(pMemDesc))
     {
         return NV_TRUE;
     }

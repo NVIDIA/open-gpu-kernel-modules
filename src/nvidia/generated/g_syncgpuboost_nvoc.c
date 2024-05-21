@@ -84,89 +84,113 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_SyncGpuBoost =
     /*pExportInfo=*/        &__nvoc_export_info_SyncGpuBoost
 };
 
-static NvBool __nvoc_thunk_RmResource_syncgpuboostShareCallback(struct SyncGpuBoost *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return rmresShareCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+// 21 up-thunk(s) defined to bridge methods in SyncGpuBoost to superclasses
+
+// syncgpuboostAccessCallback: virtual inherited (rmres) base (rmres)
+static NvBool __nvoc_up_thunk_RmResource_syncgpuboostAccessCallback(struct SyncGpuBoost *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_SyncGpuBoost_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_syncgpuboostCheckMemInterUnmap(struct SyncGpuBoost *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_SyncGpuBoost_RmResource.offset), bSubdeviceHandleProvided);
+// syncgpuboostShareCallback: virtual inherited (rmres) base (rmres)
+static NvBool __nvoc_up_thunk_RmResource_syncgpuboostShareCallback(struct SyncGpuBoost *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_SyncGpuBoost_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_syncgpuboostControl(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControl((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), pCallContext, pParams);
+// syncgpuboostGetMemInterMapParams: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_syncgpuboostGetMemInterMapParams(struct SyncGpuBoost *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_SyncGpuBoost_RmResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_syncgpuboostGetMemInterMapParams(struct SyncGpuBoost *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_SyncGpuBoost_RmResource.offset), pParams);
+// syncgpuboostCheckMemInterUnmap: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_syncgpuboostCheckMemInterUnmap(struct SyncGpuBoost *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_SyncGpuBoost_RmResource.offset), bSubdeviceHandleProvided);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_syncgpuboostGetMemoryMappingDescriptor(struct SyncGpuBoost *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_SyncGpuBoost_RmResource.offset), ppMemDesc);
+// syncgpuboostGetMemoryMappingDescriptor: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_syncgpuboostGetMemoryMappingDescriptor(struct SyncGpuBoost *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_SyncGpuBoost_RmResource.offset), ppMemDesc);
 }
 
-static NvU32 __nvoc_thunk_RsResource_syncgpuboostGetRefCount(struct SyncGpuBoost *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset));
+// syncgpuboostControlSerialization_Prologue: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_syncgpuboostControlSerialization_Prologue(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_SyncGpuBoost_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_syncgpuboostControlFilter(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), pCallContext, pParams);
+// syncgpuboostControlSerialization_Epilogue: virtual inherited (rmres) base (rmres)
+static void __nvoc_up_thunk_RmResource_syncgpuboostControlSerialization_Epilogue(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_SyncGpuBoost_RmResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_syncgpuboostAddAdditionalDependants(struct RsClient *pClient, struct SyncGpuBoost *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), pReference);
+// syncgpuboostControl_Prologue: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_syncgpuboostControl_Prologue(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_SyncGpuBoost_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_syncgpuboostControlSerialization_Prologue(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RmResource.offset), pCallContext, pParams);
+// syncgpuboostControl_Epilogue: virtual inherited (rmres) base (rmres)
+static void __nvoc_up_thunk_RmResource_syncgpuboostControl_Epilogue(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_SyncGpuBoost_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_syncgpuboostControl_Prologue(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RmResource.offset), pCallContext, pParams);
+// syncgpuboostCanCopy: virtual inherited (res) base (rmres)
+static NvBool __nvoc_up_thunk_RsResource_syncgpuboostCanCopy(struct SyncGpuBoost *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RsResource_syncgpuboostCanCopy(struct SyncGpuBoost *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset));
+// syncgpuboostIsDuplicate: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_syncgpuboostIsDuplicate(struct SyncGpuBoost *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), hMemory, pDuplicate);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_syncgpuboostUnmap(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return resUnmap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), pCallContext, pCpuMapping);
+// syncgpuboostPreDestruct: virtual inherited (res) base (rmres)
+static void __nvoc_up_thunk_RsResource_syncgpuboostPreDestruct(struct SyncGpuBoost *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RsResource_syncgpuboostIsPartialUnmapSupported(struct SyncGpuBoost *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset));
+// syncgpuboostControl: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_syncgpuboostControl(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControl((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_syncgpuboostPreDestruct(struct SyncGpuBoost *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset));
+// syncgpuboostControlFilter: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_syncgpuboostControlFilter(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_syncgpuboostMapTo(struct SyncGpuBoost *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), pParams);
+// syncgpuboostMap: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_syncgpuboostMap(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+    return resMap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), pCallContext, pParams, pCpuMapping);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_syncgpuboostIsDuplicate(struct SyncGpuBoost *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), hMemory, pDuplicate);
+// syncgpuboostUnmap: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_syncgpuboostUnmap(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return resUnmap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), pCallContext, pCpuMapping);
 }
 
-static void __nvoc_thunk_RmResource_syncgpuboostControlSerialization_Epilogue(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RmResource.offset), pCallContext, pParams);
+// syncgpuboostIsPartialUnmapSupported: inline virtual inherited (res) base (rmres) body
+static NvBool __nvoc_up_thunk_RsResource_syncgpuboostIsPartialUnmapSupported(struct SyncGpuBoost *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset));
 }
 
-static void __nvoc_thunk_RmResource_syncgpuboostControl_Epilogue(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RmResource.offset), pCallContext, pParams);
+// syncgpuboostMapTo: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_syncgpuboostMapTo(struct SyncGpuBoost *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_syncgpuboostUnmapFrom(struct SyncGpuBoost *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), pParams);
+// syncgpuboostUnmapFrom: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_syncgpuboostUnmapFrom(struct SyncGpuBoost *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_syncgpuboostMap(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return resMap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), pCallContext, pParams, pCpuMapping);
+// syncgpuboostGetRefCount: virtual inherited (res) base (rmres)
+static NvU32 __nvoc_up_thunk_RsResource_syncgpuboostGetRefCount(struct SyncGpuBoost *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RmResource_syncgpuboostAccessCallback(struct SyncGpuBoost *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+// syncgpuboostAddAdditionalDependants: virtual inherited (res) base (rmres)
+static void __nvoc_up_thunk_RsResource_syncgpuboostAddAdditionalDependants(struct RsClient *pClient, struct SyncGpuBoost *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), pReference);
 }
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_SyncGpuBoost = 
 {
@@ -204,53 +228,79 @@ __nvoc_ctor_SyncGpuBoost_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_SyncGpuBoost_1(SyncGpuBoost *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
-    pThis->__syncgpuboostShareCallback__ = &__nvoc_thunk_RmResource_syncgpuboostShareCallback;
+    // syncgpuboostAccessCallback -- virtual inherited (rmres) base (rmres)
+    pThis->__syncgpuboostAccessCallback__ = &__nvoc_up_thunk_RmResource_syncgpuboostAccessCallback;
 
-    pThis->__syncgpuboostCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_syncgpuboostCheckMemInterUnmap;
+    // syncgpuboostShareCallback -- virtual inherited (rmres) base (rmres)
+    pThis->__syncgpuboostShareCallback__ = &__nvoc_up_thunk_RmResource_syncgpuboostShareCallback;
 
-    pThis->__syncgpuboostControl__ = &__nvoc_thunk_RsResource_syncgpuboostControl;
+    // syncgpuboostGetMemInterMapParams -- virtual inherited (rmres) base (rmres)
+    pThis->__syncgpuboostGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_syncgpuboostGetMemInterMapParams;
 
-    pThis->__syncgpuboostGetMemInterMapParams__ = &__nvoc_thunk_RmResource_syncgpuboostGetMemInterMapParams;
+    // syncgpuboostCheckMemInterUnmap -- virtual inherited (rmres) base (rmres)
+    pThis->__syncgpuboostCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_syncgpuboostCheckMemInterUnmap;
 
-    pThis->__syncgpuboostGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_syncgpuboostGetMemoryMappingDescriptor;
+    // syncgpuboostGetMemoryMappingDescriptor -- virtual inherited (rmres) base (rmres)
+    pThis->__syncgpuboostGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_syncgpuboostGetMemoryMappingDescriptor;
 
-    pThis->__syncgpuboostGetRefCount__ = &__nvoc_thunk_RsResource_syncgpuboostGetRefCount;
+    // syncgpuboostControlSerialization_Prologue -- virtual inherited (rmres) base (rmres)
+    pThis->__syncgpuboostControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_syncgpuboostControlSerialization_Prologue;
 
-    pThis->__syncgpuboostControlFilter__ = &__nvoc_thunk_RsResource_syncgpuboostControlFilter;
+    // syncgpuboostControlSerialization_Epilogue -- virtual inherited (rmres) base (rmres)
+    pThis->__syncgpuboostControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_syncgpuboostControlSerialization_Epilogue;
 
-    pThis->__syncgpuboostAddAdditionalDependants__ = &__nvoc_thunk_RsResource_syncgpuboostAddAdditionalDependants;
+    // syncgpuboostControl_Prologue -- virtual inherited (rmres) base (rmres)
+    pThis->__syncgpuboostControl_Prologue__ = &__nvoc_up_thunk_RmResource_syncgpuboostControl_Prologue;
 
-    pThis->__syncgpuboostControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_syncgpuboostControlSerialization_Prologue;
+    // syncgpuboostControl_Epilogue -- virtual inherited (rmres) base (rmres)
+    pThis->__syncgpuboostControl_Epilogue__ = &__nvoc_up_thunk_RmResource_syncgpuboostControl_Epilogue;
 
-    pThis->__syncgpuboostControl_Prologue__ = &__nvoc_thunk_RmResource_syncgpuboostControl_Prologue;
+    // syncgpuboostCanCopy -- virtual inherited (res) base (rmres)
+    pThis->__syncgpuboostCanCopy__ = &__nvoc_up_thunk_RsResource_syncgpuboostCanCopy;
 
-    pThis->__syncgpuboostCanCopy__ = &__nvoc_thunk_RsResource_syncgpuboostCanCopy;
+    // syncgpuboostIsDuplicate -- virtual inherited (res) base (rmres)
+    pThis->__syncgpuboostIsDuplicate__ = &__nvoc_up_thunk_RsResource_syncgpuboostIsDuplicate;
 
-    pThis->__syncgpuboostUnmap__ = &__nvoc_thunk_RsResource_syncgpuboostUnmap;
+    // syncgpuboostPreDestruct -- virtual inherited (res) base (rmres)
+    pThis->__syncgpuboostPreDestruct__ = &__nvoc_up_thunk_RsResource_syncgpuboostPreDestruct;
 
-    pThis->__syncgpuboostIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_syncgpuboostIsPartialUnmapSupported;
+    // syncgpuboostControl -- virtual inherited (res) base (rmres)
+    pThis->__syncgpuboostControl__ = &__nvoc_up_thunk_RsResource_syncgpuboostControl;
 
-    pThis->__syncgpuboostPreDestruct__ = &__nvoc_thunk_RsResource_syncgpuboostPreDestruct;
+    // syncgpuboostControlFilter -- virtual inherited (res) base (rmres)
+    pThis->__syncgpuboostControlFilter__ = &__nvoc_up_thunk_RsResource_syncgpuboostControlFilter;
 
-    pThis->__syncgpuboostMapTo__ = &__nvoc_thunk_RsResource_syncgpuboostMapTo;
+    // syncgpuboostMap -- virtual inherited (res) base (rmres)
+    pThis->__syncgpuboostMap__ = &__nvoc_up_thunk_RsResource_syncgpuboostMap;
 
-    pThis->__syncgpuboostIsDuplicate__ = &__nvoc_thunk_RsResource_syncgpuboostIsDuplicate;
+    // syncgpuboostUnmap -- virtual inherited (res) base (rmres)
+    pThis->__syncgpuboostUnmap__ = &__nvoc_up_thunk_RsResource_syncgpuboostUnmap;
 
-    pThis->__syncgpuboostControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_syncgpuboostControlSerialization_Epilogue;
+    // syncgpuboostIsPartialUnmapSupported -- inline virtual inherited (res) base (rmres) body
+    pThis->__syncgpuboostIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_syncgpuboostIsPartialUnmapSupported;
 
-    pThis->__syncgpuboostControl_Epilogue__ = &__nvoc_thunk_RmResource_syncgpuboostControl_Epilogue;
+    // syncgpuboostMapTo -- virtual inherited (res) base (rmres)
+    pThis->__syncgpuboostMapTo__ = &__nvoc_up_thunk_RsResource_syncgpuboostMapTo;
 
-    pThis->__syncgpuboostUnmapFrom__ = &__nvoc_thunk_RsResource_syncgpuboostUnmapFrom;
+    // syncgpuboostUnmapFrom -- virtual inherited (res) base (rmres)
+    pThis->__syncgpuboostUnmapFrom__ = &__nvoc_up_thunk_RsResource_syncgpuboostUnmapFrom;
 
-    pThis->__syncgpuboostMap__ = &__nvoc_thunk_RsResource_syncgpuboostMap;
+    // syncgpuboostGetRefCount -- virtual inherited (res) base (rmres)
+    pThis->__syncgpuboostGetRefCount__ = &__nvoc_up_thunk_RsResource_syncgpuboostGetRefCount;
 
-    pThis->__syncgpuboostAccessCallback__ = &__nvoc_thunk_RmResource_syncgpuboostAccessCallback;
-}
+    // syncgpuboostAddAdditionalDependants -- virtual inherited (res) base (rmres)
+    pThis->__syncgpuboostAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_syncgpuboostAddAdditionalDependants;
+} // End __nvoc_init_funcTable_SyncGpuBoost_1 with approximately 21 basic block(s).
 
+
+// Initialize vtable(s) for 21 virtual method(s).
 void __nvoc_init_funcTable_SyncGpuBoost(SyncGpuBoost *pThis) {
+
+    // Initialize vtable(s) with 21 per-object function pointer(s).
     __nvoc_init_funcTable_SyncGpuBoost_1(pThis);
 }
 

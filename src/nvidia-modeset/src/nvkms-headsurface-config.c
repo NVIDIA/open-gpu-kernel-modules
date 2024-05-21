@@ -831,7 +831,8 @@ NvBool nvHsConfigInitModeset(
                               sizeof(*pTimings));
             nvkms_memset(pTimings, 0, sizeof(*pTimings));
 
-            if (!nvGetHwModeTimings(pDispEvo, pRequestHead, pTimings,
+            if (!nvGetHwModeTimings(pDispEvo, apiHead, pRequestHead,
+                                    pTimings, NULL /* pDpyColor */,
                                     NULL /* pInfoFrameCtrl */)) {
                 nvPreallocRelease(pDevEvo, PREALLOC_TYPE_HS_INIT_CONFIG_HW_TIMINGS);
                 return FALSE;
@@ -1247,7 +1248,8 @@ NvBool nvHsConfigDowngrade(
                                       sizeof(*pTimings));
                     nvkms_memset(pTimings, 0, sizeof(*pTimings));
 
-                    if (!nvGetHwModeTimings(pDispEvo, pRequestHead, pTimings,
+                    if (!nvGetHwModeTimings(pDispEvo, apiHead, pRequestHead,
+                                            pTimings, NULL /* pDpyColor */,
                                             NULL /* pInfoFrameCtrl */)) {
                         nvPreallocRelease(pDevEvo, PREALLOC_TYPE_HS_INIT_CONFIG_HW_TIMINGS);
                         return FALSE;

@@ -84,90 +84,6 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_ConfidentialComputeApi =
     /*pExportInfo=*/        &__nvoc_export_info_ConfidentialComputeApi
 };
 
-static NvBool __nvoc_thunk_RmResource_confComputeApiShareCallback(struct ConfidentialComputeApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return rmresShareCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_confComputeApiCheckMemInterUnmap(struct ConfidentialComputeApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_confComputeApiControl(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControl((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_confComputeApiGetMemInterMapParams(struct ConfidentialComputeApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_confComputeApiGetMemoryMappingDescriptor(struct ConfidentialComputeApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), ppMemDesc);
-}
-
-static NvU32 __nvoc_thunk_RsResource_confComputeApiGetRefCount(struct ConfidentialComputeApi *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_confComputeApiControlFilter(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), pCallContext, pParams);
-}
-
-static void __nvoc_thunk_RsResource_confComputeApiAddAdditionalDependants(struct RsClient *pClient, struct ConfidentialComputeApi *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), pReference);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_confComputeApiControlSerialization_Prologue(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_confComputeApiControl_Prologue(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NvBool __nvoc_thunk_RsResource_confComputeApiCanCopy(struct ConfidentialComputeApi *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_confComputeApiUnmap(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return resUnmap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), pCallContext, pCpuMapping);
-}
-
-static NvBool __nvoc_thunk_RsResource_confComputeApiIsPartialUnmapSupported(struct ConfidentialComputeApi *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_confComputeApiPreDestruct(struct ConfidentialComputeApi *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_confComputeApiMapTo(struct ConfidentialComputeApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_confComputeApiIsDuplicate(struct ConfidentialComputeApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), hMemory, pDuplicate);
-}
-
-static void __nvoc_thunk_RmResource_confComputeApiControlSerialization_Epilogue(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), pCallContext, pParams);
-}
-
-static void __nvoc_thunk_RmResource_confComputeApiControl_Epilogue(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_confComputeApiUnmapFrom(struct ConfidentialComputeApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_confComputeApiMap(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return resMap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), pCallContext, pParams, pCpuMapping);
-}
-
-static NvBool __nvoc_thunk_RmResource_confComputeApiAccessCallback(struct ConfidentialComputeApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
-}
-
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
@@ -190,12 +106,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Confiden
 #endif
     },
     {               /*  [1] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) confComputeApiCtrlCmdSystemGetSecurityPolicy_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xc56f010eu,
         /*paramSize=*/  sizeof(NV_CONF_COMPUTE_CTRL_GET_SECURITY_POLICY_PARAMS),
@@ -205,12 +121,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Confiden
 #endif
     },
     {               /*  [2] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) confComputeApiCtrlCmdSystemGetCapabilities_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xcb330101u,
         /*paramSize=*/  sizeof(NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_GET_CAPABILITIES_PARAMS),
@@ -220,12 +136,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Confiden
 #endif
     },
     {               /*  [3] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) confComputeApiCtrlCmdSystemGetGpusState_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xcb330104u,
         /*paramSize=*/  sizeof(NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_GET_GPUS_STATE_PARAMS),
@@ -250,12 +166,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Confiden
 #endif
     },
     {               /*  [5] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) confComputeApiCtrlCmdGpuGetVidmemSize_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xcb330106u,
         /*paramSize=*/  sizeof(NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_VIDMEM_SIZE_PARAMS),
@@ -280,12 +196,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Confiden
 #endif
     },
     {               /*  [7] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) confComputeApiCtrlCmdGetGpuCertificate_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xcb330109u,
         /*paramSize=*/  sizeof(NV_CONF_COMPUTE_CTRL_CMD_GET_GPU_CERTIFICATE_PARAMS),
@@ -295,12 +211,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Confiden
 #endif
     },
     {               /*  [8] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) confComputeApiCtrlCmdGetGpuAttestationReport_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xcb33010au,
         /*paramSize=*/  sizeof(NV_CONF_COMPUTE_CTRL_CMD_GET_GPU_ATTESTATION_REPORT_PARAMS),
@@ -310,12 +226,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Confiden
 #endif
     },
     {               /*  [9] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) confComputeApiCtrlCmdGpuGetNumSecureChannels_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xcb33010bu,
         /*paramSize=*/  sizeof(NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_NUM_SECURE_CHANNELS_PARAMS),
@@ -324,27 +240,120 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Confiden
         /*func=*/       "confComputeApiCtrlCmdGpuGetNumSecureChannels"
 #endif
     },
-    {               /*  [10] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*pFunc=*/      (void (*)(void)) NULL,
-#else
-        /*pFunc=*/      (void (*)(void)) confComputeApiCtrlCmdGpuGetKeyRotationState_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
-        /*accessRight=*/0x0u,
-        /*methodId=*/   0xcb33010cu,
-        /*paramSize=*/  sizeof(NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE_PARAMS),
-        /*pClassInfo=*/ &(__nvoc_class_def_ConfidentialComputeApi.classInfo),
-#if NV_PRINTF_STRINGS_ALLOWED
-        /*func=*/       "confComputeApiCtrlCmdGpuGetKeyRotationState"
-#endif
-    },
 
 };
 
+// 21 up-thunk(s) defined to bridge methods in ConfidentialComputeApi to superclasses
+
+// confComputeApiAccessCallback: virtual inherited (rmres) base (rmres)
+static NvBool __nvoc_up_thunk_RmResource_confComputeApiAccessCallback(struct ConfidentialComputeApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+}
+
+// confComputeApiShareCallback: virtual inherited (rmres) base (rmres)
+static NvBool __nvoc_up_thunk_RmResource_confComputeApiShareCallback(struct ConfidentialComputeApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+}
+
+// confComputeApiGetMemInterMapParams: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_confComputeApiGetMemInterMapParams(struct ConfidentialComputeApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), pParams);
+}
+
+// confComputeApiCheckMemInterUnmap: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_confComputeApiCheckMemInterUnmap(struct ConfidentialComputeApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+// confComputeApiGetMemoryMappingDescriptor: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_confComputeApiGetMemoryMappingDescriptor(struct ConfidentialComputeApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), ppMemDesc);
+}
+
+// confComputeApiControlSerialization_Prologue: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_confComputeApiControlSerialization_Prologue(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), pCallContext, pParams);
+}
+
+// confComputeApiControlSerialization_Epilogue: virtual inherited (rmres) base (rmres)
+static void __nvoc_up_thunk_RmResource_confComputeApiControlSerialization_Epilogue(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), pCallContext, pParams);
+}
+
+// confComputeApiControl_Prologue: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_confComputeApiControl_Prologue(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), pCallContext, pParams);
+}
+
+// confComputeApiControl_Epilogue: virtual inherited (rmres) base (rmres)
+static void __nvoc_up_thunk_RmResource_confComputeApiControl_Epilogue(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RmResource.offset), pCallContext, pParams);
+}
+
+// confComputeApiCanCopy: virtual inherited (res) base (rmres)
+static NvBool __nvoc_up_thunk_RsResource_confComputeApiCanCopy(struct ConfidentialComputeApi *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset));
+}
+
+// confComputeApiIsDuplicate: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_confComputeApiIsDuplicate(struct ConfidentialComputeApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), hMemory, pDuplicate);
+}
+
+// confComputeApiPreDestruct: virtual inherited (res) base (rmres)
+static void __nvoc_up_thunk_RsResource_confComputeApiPreDestruct(struct ConfidentialComputeApi *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset));
+}
+
+// confComputeApiControl: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_confComputeApiControl(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControl((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), pCallContext, pParams);
+}
+
+// confComputeApiControlFilter: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_confComputeApiControlFilter(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), pCallContext, pParams);
+}
+
+// confComputeApiMap: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_confComputeApiMap(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+    return resMap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), pCallContext, pParams, pCpuMapping);
+}
+
+// confComputeApiUnmap: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_confComputeApiUnmap(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return resUnmap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), pCallContext, pCpuMapping);
+}
+
+// confComputeApiIsPartialUnmapSupported: inline virtual inherited (res) base (rmres) body
+static NvBool __nvoc_up_thunk_RsResource_confComputeApiIsPartialUnmapSupported(struct ConfidentialComputeApi *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset));
+}
+
+// confComputeApiMapTo: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_confComputeApiMapTo(struct ConfidentialComputeApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), pParams);
+}
+
+// confComputeApiUnmapFrom: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_confComputeApiUnmapFrom(struct ConfidentialComputeApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), pParams);
+}
+
+// confComputeApiGetRefCount: virtual inherited (res) base (rmres)
+static NvU32 __nvoc_up_thunk_RsResource_confComputeApiGetRefCount(struct ConfidentialComputeApi *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset));
+}
+
+// confComputeApiAddAdditionalDependants: virtual inherited (res) base (rmres)
+static void __nvoc_up_thunk_RsResource_confComputeApiAddAdditionalDependants(struct RsClient *pClient, struct ConfidentialComputeApi *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ConfidentialComputeApi_RsResource.offset), pReference);
+}
+
+
 const struct NVOC_EXPORT_INFO __nvoc_export_info_ConfidentialComputeApi = 
 {
-    /*numEntries=*/     11,
+    /*numEntries=*/     10,
     /*pExportEntries=*/ __nvoc_exported_method_def_ConfidentialComputeApi
 };
 
@@ -378,97 +387,129 @@ __nvoc_ctor_ConfidentialComputeApi_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_ConfidentialComputeApi_1(ConfidentialComputeApi *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // confComputeApiCtrlCmdSystemGetCapabilities -- exported (id=0xcb330101)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__confComputeApiCtrlCmdSystemGetCapabilities__ = &confComputeApiCtrlCmdSystemGetCapabilities_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // confComputeApiCtrlCmdSystemGetGpusState -- exported (id=0xcb330104)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__confComputeApiCtrlCmdSystemGetGpusState__ = &confComputeApiCtrlCmdSystemGetGpusState_IMPL;
 #endif
 
+    // confComputeApiCtrlCmdSystemSetGpusState -- exported (id=0xcb330105)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
     pThis->__confComputeApiCtrlCmdSystemSetGpusState__ = &confComputeApiCtrlCmdSystemSetGpusState_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // confComputeApiCtrlCmdGpuGetVidmemSize -- exported (id=0xcb330106)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__confComputeApiCtrlCmdGpuGetVidmemSize__ = &confComputeApiCtrlCmdGpuGetVidmemSize_IMPL;
 #endif
 
+    // confComputeApiCtrlCmdGpuSetVidmemSize -- exported (id=0xcb330107)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
     pThis->__confComputeApiCtrlCmdGpuSetVidmemSize__ = &confComputeApiCtrlCmdGpuSetVidmemSize_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // confComputeApiCtrlCmdGetGpuCertificate -- exported (id=0xcb330109)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__confComputeApiCtrlCmdGetGpuCertificate__ = &confComputeApiCtrlCmdGetGpuCertificate_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // confComputeApiCtrlCmdGetGpuAttestationReport -- exported (id=0xcb33010a)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__confComputeApiCtrlCmdGetGpuAttestationReport__ = &confComputeApiCtrlCmdGetGpuAttestationReport_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // confComputeApiCtrlCmdGpuGetNumSecureChannels -- exported (id=0xcb33010b)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__confComputeApiCtrlCmdGpuGetNumSecureChannels__ = &confComputeApiCtrlCmdGpuGetNumSecureChannels_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // confComputeApiCtrlCmdSystemGetSecurityPolicy -- exported (id=0xc56f010e)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__confComputeApiCtrlCmdSystemGetSecurityPolicy__ = &confComputeApiCtrlCmdSystemGetSecurityPolicy_IMPL;
 #endif
 
+    // confComputeApiCtrlCmdSystemSetSecurityPolicy -- exported (id=0xc56f010d)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
     pThis->__confComputeApiCtrlCmdSystemSetSecurityPolicy__ = &confComputeApiCtrlCmdSystemSetSecurityPolicy_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-    pThis->__confComputeApiCtrlCmdGpuGetKeyRotationState__ = &confComputeApiCtrlCmdGpuGetKeyRotationState_IMPL;
-#endif
+    // confComputeApiAccessCallback -- virtual inherited (rmres) base (rmres)
+    pThis->__confComputeApiAccessCallback__ = &__nvoc_up_thunk_RmResource_confComputeApiAccessCallback;
 
-    pThis->__confComputeApiShareCallback__ = &__nvoc_thunk_RmResource_confComputeApiShareCallback;
+    // confComputeApiShareCallback -- virtual inherited (rmres) base (rmres)
+    pThis->__confComputeApiShareCallback__ = &__nvoc_up_thunk_RmResource_confComputeApiShareCallback;
 
-    pThis->__confComputeApiCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_confComputeApiCheckMemInterUnmap;
+    // confComputeApiGetMemInterMapParams -- virtual inherited (rmres) base (rmres)
+    pThis->__confComputeApiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_confComputeApiGetMemInterMapParams;
 
-    pThis->__confComputeApiControl__ = &__nvoc_thunk_RsResource_confComputeApiControl;
+    // confComputeApiCheckMemInterUnmap -- virtual inherited (rmres) base (rmres)
+    pThis->__confComputeApiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_confComputeApiCheckMemInterUnmap;
 
-    pThis->__confComputeApiGetMemInterMapParams__ = &__nvoc_thunk_RmResource_confComputeApiGetMemInterMapParams;
+    // confComputeApiGetMemoryMappingDescriptor -- virtual inherited (rmres) base (rmres)
+    pThis->__confComputeApiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_confComputeApiGetMemoryMappingDescriptor;
 
-    pThis->__confComputeApiGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_confComputeApiGetMemoryMappingDescriptor;
+    // confComputeApiControlSerialization_Prologue -- virtual inherited (rmres) base (rmres)
+    pThis->__confComputeApiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_confComputeApiControlSerialization_Prologue;
 
-    pThis->__confComputeApiGetRefCount__ = &__nvoc_thunk_RsResource_confComputeApiGetRefCount;
+    // confComputeApiControlSerialization_Epilogue -- virtual inherited (rmres) base (rmres)
+    pThis->__confComputeApiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_confComputeApiControlSerialization_Epilogue;
 
-    pThis->__confComputeApiControlFilter__ = &__nvoc_thunk_RsResource_confComputeApiControlFilter;
+    // confComputeApiControl_Prologue -- virtual inherited (rmres) base (rmres)
+    pThis->__confComputeApiControl_Prologue__ = &__nvoc_up_thunk_RmResource_confComputeApiControl_Prologue;
 
-    pThis->__confComputeApiAddAdditionalDependants__ = &__nvoc_thunk_RsResource_confComputeApiAddAdditionalDependants;
+    // confComputeApiControl_Epilogue -- virtual inherited (rmres) base (rmres)
+    pThis->__confComputeApiControl_Epilogue__ = &__nvoc_up_thunk_RmResource_confComputeApiControl_Epilogue;
 
-    pThis->__confComputeApiControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_confComputeApiControlSerialization_Prologue;
+    // confComputeApiCanCopy -- virtual inherited (res) base (rmres)
+    pThis->__confComputeApiCanCopy__ = &__nvoc_up_thunk_RsResource_confComputeApiCanCopy;
 
-    pThis->__confComputeApiControl_Prologue__ = &__nvoc_thunk_RmResource_confComputeApiControl_Prologue;
+    // confComputeApiIsDuplicate -- virtual inherited (res) base (rmres)
+    pThis->__confComputeApiIsDuplicate__ = &__nvoc_up_thunk_RsResource_confComputeApiIsDuplicate;
 
-    pThis->__confComputeApiCanCopy__ = &__nvoc_thunk_RsResource_confComputeApiCanCopy;
+    // confComputeApiPreDestruct -- virtual inherited (res) base (rmres)
+    pThis->__confComputeApiPreDestruct__ = &__nvoc_up_thunk_RsResource_confComputeApiPreDestruct;
 
-    pThis->__confComputeApiUnmap__ = &__nvoc_thunk_RsResource_confComputeApiUnmap;
+    // confComputeApiControl -- virtual inherited (res) base (rmres)
+    pThis->__confComputeApiControl__ = &__nvoc_up_thunk_RsResource_confComputeApiControl;
 
-    pThis->__confComputeApiIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_confComputeApiIsPartialUnmapSupported;
+    // confComputeApiControlFilter -- virtual inherited (res) base (rmres)
+    pThis->__confComputeApiControlFilter__ = &__nvoc_up_thunk_RsResource_confComputeApiControlFilter;
 
-    pThis->__confComputeApiPreDestruct__ = &__nvoc_thunk_RsResource_confComputeApiPreDestruct;
+    // confComputeApiMap -- virtual inherited (res) base (rmres)
+    pThis->__confComputeApiMap__ = &__nvoc_up_thunk_RsResource_confComputeApiMap;
 
-    pThis->__confComputeApiMapTo__ = &__nvoc_thunk_RsResource_confComputeApiMapTo;
+    // confComputeApiUnmap -- virtual inherited (res) base (rmres)
+    pThis->__confComputeApiUnmap__ = &__nvoc_up_thunk_RsResource_confComputeApiUnmap;
 
-    pThis->__confComputeApiIsDuplicate__ = &__nvoc_thunk_RsResource_confComputeApiIsDuplicate;
+    // confComputeApiIsPartialUnmapSupported -- inline virtual inherited (res) base (rmres) body
+    pThis->__confComputeApiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_confComputeApiIsPartialUnmapSupported;
 
-    pThis->__confComputeApiControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_confComputeApiControlSerialization_Epilogue;
+    // confComputeApiMapTo -- virtual inherited (res) base (rmres)
+    pThis->__confComputeApiMapTo__ = &__nvoc_up_thunk_RsResource_confComputeApiMapTo;
 
-    pThis->__confComputeApiControl_Epilogue__ = &__nvoc_thunk_RmResource_confComputeApiControl_Epilogue;
+    // confComputeApiUnmapFrom -- virtual inherited (res) base (rmres)
+    pThis->__confComputeApiUnmapFrom__ = &__nvoc_up_thunk_RsResource_confComputeApiUnmapFrom;
 
-    pThis->__confComputeApiUnmapFrom__ = &__nvoc_thunk_RsResource_confComputeApiUnmapFrom;
+    // confComputeApiGetRefCount -- virtual inherited (res) base (rmres)
+    pThis->__confComputeApiGetRefCount__ = &__nvoc_up_thunk_RsResource_confComputeApiGetRefCount;
 
-    pThis->__confComputeApiMap__ = &__nvoc_thunk_RsResource_confComputeApiMap;
+    // confComputeApiAddAdditionalDependants -- virtual inherited (res) base (rmres)
+    pThis->__confComputeApiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_confComputeApiAddAdditionalDependants;
+} // End __nvoc_init_funcTable_ConfidentialComputeApi_1 with approximately 31 basic block(s).
 
-    pThis->__confComputeApiAccessCallback__ = &__nvoc_thunk_RmResource_confComputeApiAccessCallback;
-}
 
+// Initialize vtable(s) for 31 virtual method(s).
 void __nvoc_init_funcTable_ConfidentialComputeApi(ConfidentialComputeApi *pThis) {
+
+    // Initialize vtable(s) with 31 per-object function pointer(s).
     __nvoc_init_funcTable_ConfidentialComputeApi_1(pThis);
 }
 

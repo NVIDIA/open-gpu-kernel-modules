@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -606,7 +606,7 @@ static void RmExecuteWorkItem(
     NvU32 releaseLocks = 0;
 
     if (!(pWi->flags & NV_WORK_ITEM_FLAGS_REQUIRES_GPU) &&
-        ((pWi->flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS_RW) ||
+        ((pWi->flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS) ||
          (pWi->flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE_RW) ||
          (pWi->flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW) ||
          (pWi->flags & OS_QUEUE_WORKITEM_FLAGS_FULL_GPU_SANITY)))
@@ -626,17 +626,27 @@ static void RmExecuteWorkItem(
     // Some work items may not require a valid GPU instance
     if (pWi->flags & NV_WORK_ITEM_FLAGS_REQUIRES_GPU)
     {
-        pWi->func.pGpuFunction(pWi->gpuInstance, pWi->pData);
+        // Make sure that pGpu is present
+        OBJGPU *pGpu = gpumgrGetGpu(pWi->gpuInstance);
+        if (pGpu != NULL)
+        { 
+            pWi->func.pGpuFunction(pWi->gpuInstance, pWi->pData);
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_ERROR, "Invalid GPU instance for workitem\n");
+            goto done;
+        }
     }
     else
     {
         pWi->func.pSystemFunction(pWi->pData);
     }
 
+done:
     // Release any locks taken
     workItemLocksRelease(releaseLocks, gpuMask);
 
-done:
     if ((pWi->pData != NULL) &&
         !(pWi->flags & NV_WORK_ITEM_FLAGS_DONT_FREE_DATA))
     {
@@ -694,13 +704,13 @@ static NV_STATUS RmAccessRegistry(
     NvU32      *Entry
 )
 {
-    NvU32      gpuMask = 0, gpuInstance = 0;
-    OBJGPU    *pGpu;
-    NvBool     isDevice = NV_FALSE;
-    NV_STATUS  RmStatus = NV_ERR_OPERATING_SYSTEM;
-    RsClient  *pClient;
-    Device    *pDevice;
-    Subdevice *pSubdevice;
+    NvU32         gpuMask = 0, gpuInstance = 0;
+    OBJGPU       *pGpu;
+    NvBool        isDevice = NV_FALSE;
+    NV_STATUS     RmStatus = NV_ERR_OPERATING_SYSTEM;
+    CLIENT_ENTRY *pClientEntry;
+    Device       *pDevice;
+    Subdevice    *pSubdevice;
 
     RMAPI_PARAM_COPY devNodeParamCopy;
     NvU8      *tmpDevNode = NULL;
@@ -715,8 +725,11 @@ static NV_STATUS RmAccessRegistry(
     NvU32      BinaryDataLength = 0;
     NvU32      copyOutBinaryDataLength = 0;
 
-    if (NV_OK != serverAcquireClient(&g_resServ, hClient, LOCK_ACCESS_WRITE, &pClient))
+    if (NV_OK != serverAcquireClient(&g_resServ, hClient, LOCK_ACCESS_WRITE,
+            &pClientEntry))
+    {
         return NV_ERR_INVALID_CLIENT;
+    }
 
     if (hClient == hObject)
     {
@@ -724,6 +737,8 @@ static NV_STATUS RmAccessRegistry(
     }
     else
     {
+        RsClient *pClient = pClientEntry->pClient;
+
         RmStatus = deviceGetByHandle(pClient, hObject, &pDevice);
         if (RmStatus != NV_OK)
         {
@@ -939,7 +954,7 @@ static NV_STATUS RmAccessRegistry(
         *pBinaryDataLength = copyOutBinaryDataLength;
     }
 
-    serverReleaseClient(&g_resServ, LOCK_ACCESS_WRITE, pClient);
+    serverReleaseClient(&g_resServ, LOCK_ACCESS_WRITE, pClientEntry);
     return RmStatus;
 }
 
@@ -952,6 +967,7 @@ static NV_STATUS RmUpdateDeviceMappingInfo(
 )
 {
     NV_STATUS status;
+    CLIENT_ENTRY *pClientEntry;
     RsClient *pClient;
     RsResourceRef *pMappableRef;
     RsCpuMapping *pCpuMapping;
@@ -959,9 +975,11 @@ static NV_STATUS RmUpdateDeviceMappingInfo(
     Subdevice *pSubdevice;
     NvU32 gpuMask = 0;
 
-    status = serverAcquireClient(&g_resServ, hClient, LOCK_ACCESS_WRITE, &pClient);
+    status = serverAcquireClient(&g_resServ, hClient, LOCK_ACCESS_WRITE, &pClientEntry);
     if (status != NV_OK)
         return status;
+
+    pClient = pClientEntry->pClient;
 
     status = deviceGetByHandle(pClient, hDevice, &pDevice);
     if (status != NV_OK)
@@ -1018,7 +1036,7 @@ done:
     if (gpuMask != 0)
         rmGpuGroupLockRelease(gpuMask, GPUS_LOCK_FLAGS_NONE);
 
-    serverReleaseClient(&g_resServ, LOCK_ACCESS_WRITE, pClient);
+    serverReleaseClient(&g_resServ, LOCK_ACCESS_WRITE, pClientEntry);
     return status;
 }
 
@@ -1346,32 +1364,6 @@ RmDmabufVerifyMemHandle(
 }
 
 static NV_STATUS
-RmDmabufGetParentDevice(
-    OBJGPU    *pGpu,
-    NvHandle   hClient,
-    NvHandle   hMemory,
-    Device   **ppDevice
-)
-{
-    RsClient *pClient;
-    RsResourceRef *pDeviceRef;
-    RsResourceRef *pMemoryRef;
-
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        serverGetClientUnderLock(&g_resServ, hClient, &pClient));
-
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        clientGetResourceRef(pClient, hMemory, &pMemoryRef));
-
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        refFindAncestorOfType(pMemoryRef, classId(Device), &pDeviceRef));
-
-    *ppDevice = dynamicCast(pDeviceRef->pResource, Device);
-
-    return NV_OK;
-}
-
-static NV_STATUS
 RmDmabufGetClientAndDevice(
     OBJGPU   *pGpu,
     NvHandle  hClient,
@@ -1386,30 +1378,23 @@ RmDmabufGetClientAndDevice(
 
     if (IS_MIG_ENABLED(pGpu))
     {
-        NV_STATUS status;
         MIG_INSTANCE_REF ref;
-        Device *pParentDevice;
+        RsClient *pClient;
+        Memory *pMemory;
         KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
 
-        status = RmDmabufGetParentDevice(pGpu, hClient, hMemory,
-                                         &pParentDevice);
-        if (status != NV_OK)
-        {
-            return status;
-        }
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                              serverGetClientUnderLock(&g_resServ, hClient, &pClient));
 
-        status = kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
-                                                 pParentDevice, &ref);
-        if (status != NV_OK)
-        {
-            return status;
-        }
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                              memGetByHandle(pClient, hMemory, &pMemory));
 
-        status = kmigmgrIncRefCount(ref.pKernelMIGGpuInstance->pShare);
-        if (status != NV_OK)
-        {
-            return status;
-        }
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                              kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                                              pMemory->pDevice, &ref));
+
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                              kmigmgrIncRefCount(ref.pKernelMIGGpuInstance->pShare));
 
         *phClient    = ref.pKernelMIGGpuInstance->instanceHandles.hClient;
         *phDevice    = ref.pKernelMIGGpuInstance->instanceHandles.hDevice;
@@ -2320,9 +2305,11 @@ NV_STATUS rm_create_mmap_context(
     // LOCK: acquire API lock
     if ((rmStatus = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_OSAPI)) == NV_OK)
     {
+        CLIENT_ENTRY *pClientEntry;
         RmClient *pRmClient;
 
-        if (NV_OK != serverutilAcquireClient(hClient, LOCK_ACCESS_READ, &pRmClient))
+        if (NV_OK != serverutilAcquireClient(hClient, LOCK_ACCESS_READ, &pClientEntry,
+                &pRmClient))
         {
             // UNLOCK: release API lock
             rmapiLockRelease();
@@ -2343,7 +2330,7 @@ NV_STATUS rm_create_mmap_context(
             rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
         }
 
-        serverutilReleaseClient(LOCK_ACCESS_READ, pRmClient);
+        serverutilReleaseClient(LOCK_ACCESS_READ, pClientEntry);
 
         // UNLOCK: release API lock
         rmapiLockRelease();
@@ -3552,10 +3539,10 @@ NV_STATUS NV_API_CALL rm_is_supported_device(
     {
         NvBool bIsFirmwareCapable;
 
-        bIsFirmwareCapable = gpumgrIsDeviceRmFirmwareCapable(pNv->pci_info.device_id,
-                                                             pmc_boot_42,
+        bIsFirmwareCapable = gpumgrIsDeviceRmFirmwareCapable(pmc_boot_42,
                                                              NV_IS_SOC_DISPLAY_DEVICE(pNv),
-                                                             NULL);
+                                                             NULL,
+                                                             NV_FALSE /* isMCDM */);
         if (!bIsFirmwareCapable)
         {
             if (hypervisorIsVgxHyper())
@@ -3569,7 +3556,7 @@ NV_STATUS NV_API_CALL rm_is_supported_device(
                         "NVRM: Software documentation, available at docs.nvidia.com.\n",
                         pNv->pci_info.domain, pNv->pci_info.bus, pNv->pci_info.slot,
                         pNv->pci_info.function, pNv->pci_info.vendor_id,
-                        pNv->pci_info.device_id, NV_VERSION_STRING);
+                        pNv->pci_info.device_id);
             }
             else
             {
@@ -3584,7 +3571,7 @@ NV_STATUS NV_API_CALL rm_is_supported_device(
                         "NVRM: www.nvidia.com.\n",
                         pNv->pci_info.domain, pNv->pci_info.bus, pNv->pci_info.slot,
                         pNv->pci_info.function, pNv->pci_info.vendor_id,
-                        pNv->pci_info.device_id, NV_VERSION_STRING);
+                        pNv->pci_info.device_id);
             }
             goto threadfree;
         }
@@ -3604,7 +3591,7 @@ NV_STATUS NV_API_CALL rm_is_supported_device(
                 "NVRM: Software documentation, available at docs.nvidia.com.\n",
                 pNv->pci_info.domain, pNv->pci_info.bus, pNv->pci_info.slot,
                 pNv->pci_info.function, pNv->pci_info.vendor_id,
-                pNv->pci_info.device_id, NV_VERSION_STRING);
+                pNv->pci_info.device_id);
         goto threadfree;
     }
     goto threadfree;
@@ -4532,7 +4519,8 @@ NV_STATUS NV_API_CALL rm_p2p_get_pages_persistent(
     NvU64          *pPhysicalAddresses,
     NvU32          *pEntries,
     void           *pPlatformData,
-    void           *pGpuInfo
+    void           *pGpuInfo,
+    void          **ppMigInfo
 )
 {
     THREAD_STATE_NODE threadState;
@@ -4551,7 +4539,8 @@ NV_STATUS NV_API_CALL rm_p2p_get_pages_persistent(
                                            pPhysicalAddresses,
                                            pEntries,
                                            pPlatformData,
-                                           pGpuInfo);
+                                           pGpuInfo,
+                                           ppMigInfo);
         // UNLOCK: release API lock
         rmapiLockRelease();
     }
@@ -4664,7 +4653,8 @@ NV_STATUS NV_API_CALL rm_p2p_register_callback(
 NV_STATUS NV_API_CALL rm_p2p_put_pages_persistent(
     nvidia_stack_t *sp,
     void           *p2pObject,
-    void           *pKey
+    void           *pKey,
+    void           *pMigInfo
 )
 {
     THREAD_STATE_NODE threadState;
@@ -4677,7 +4667,7 @@ NV_STATUS NV_API_CALL rm_p2p_put_pages_persistent(
     // LOCK: acquire API lock
     if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P)) == NV_OK)
     {
-        rmStatus = RmP2PPutPagesPersistent(p2pObject, pKey);
+        rmStatus = RmP2PPutPagesPersistent(p2pObject, pKey, pMigInfo);
 
         // UNLOCK: release API lock
         rmapiLockRelease();
@@ -5321,18 +5311,13 @@ NvBool NV_API_CALL rm_is_device_sequestered(
     NV_ENTER_RM_RUNTIME(sp,fp);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
-    if (rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU) == NV_OK)
-    {
-        //
-        // If gpumgrQueryGpuDrainState succeeds, bDrain will be set as needed.
-        // If gpumgrQueryGpuDrainState fails, bDrain will stay false; we assume
-        // that if core RM can't tell us the drain state, it must not be
-        // attached and the "sequestered" question is not relevant.
-        //
-        (void) gpumgrQueryGpuDrainState(pNv->gpu_id, &bDrain, NULL);
-
-        rmapiLockRelease();
-    }
+    //
+    // If gpumgrQueryGpuDrainState succeeds, bDrain will be set as needed.
+    // If gpumgrQueryGpuDrainState fails, bDrain will stay false; we assume
+    // that if core RM can't tell us the drain state, it must not be
+    // attached and the "sequestered" question is not relevant.
+    //
+    (void) gpumgrQueryGpuDrainState(pNv->gpu_id, &bDrain, NULL);
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
     NV_EXIT_RM_RUNTIME(sp,fp);

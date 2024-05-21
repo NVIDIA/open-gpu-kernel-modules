@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2023 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -61,7 +61,7 @@ typedef struct
     size_t buffer_size;
 
     // Page size in bytes
-    NvU32 page_size;
+    NvU64 page_size;
 
     // Size of a single PTE in bytes
     NvU32 pte_size;
@@ -91,7 +91,7 @@ static NV_STATUS uvm_pte_buffer_init(uvm_va_range_t *va_range,
                                      uvm_gpu_t *gpu,
                                      const uvm_map_rm_params_t *map_rm_params,
                                      NvU64 length,
-                                     NvU32 page_size,
+                                     NvU64 page_size,
                                      uvm_pte_buffer_t *pte_buffer)
 {
     uvm_gpu_va_space_t *gpu_va_space = uvm_gpu_va_space_get(va_range->va_space, gpu);
@@ -650,9 +650,7 @@ static NV_STATUS set_ext_gpu_map_location(uvm_ext_gpu_map_t *ext_gpu_map,
         return NV_OK;
     }
     // This is a local or peer allocation, so the owning GPU must have been
-    // registered.
-    // This also checks for if EGM owning GPU is registered.
-
+    // registered. This also checks for if EGM owning GPU is registered.
     owning_gpu = uvm_va_space_get_gpu_by_uuid(va_space, &mem_info->uuid);
     if (!owning_gpu)
         return NV_ERR_INVALID_DEVICE;
@@ -665,7 +663,6 @@ static NV_STATUS set_ext_gpu_map_location(uvm_ext_gpu_map_t *ext_gpu_map,
     // semantics of sysmem allocations.
 
     // Check if peer access for peer memory is enabled.
-    // This path also handles EGM allocations.
     if (owning_gpu != mapping_gpu && (!mem_info->sysmem || mem_info->egm)) {
         // TODO: Bug 1757136: In SLI, the returned UUID may be different but a
         //       local mapping must be used. We need to query SLI groups to know
@@ -856,9 +853,10 @@ static NV_STATUS uvm_map_external_allocation_on_gpu(uvm_va_range_t *va_range,
     uvm_ext_gpu_range_tree_t *range_tree = uvm_ext_gpu_range_tree(va_range, mapping_gpu);
     UvmGpuMemoryInfo mem_info;
     uvm_gpu_va_space_t *gpu_va_space = uvm_gpu_va_space_get(va_space, mapping_gpu);
-    NvU32 mapping_page_size;
+    NvU64 mapping_page_size;
+    NvU64 biggest_mapping_page_size;
     NvU64 alignments;
-    NvU32 smallest_alignment;
+    NvU64 smallest_alignment;
     NV_STATUS status;
 
     uvm_assert_rwsem_locked_read(&va_space->lock);
@@ -947,9 +945,11 @@ static NV_STATUS uvm_map_external_allocation_on_gpu(uvm_va_range_t *va_range,
 
     // Check for the maximum page size for the mapping of vidmem allocations,
     // the vMMU segment size may limit the range of page sizes.
+    biggest_mapping_page_size = uvm_mmu_biggest_page_size_up_to(&gpu_va_space->page_tables,
+                                                                mapping_gpu->mem_info.max_vidmem_page_size);
     if (!ext_gpu_map->is_sysmem && (ext_gpu_map->gpu == ext_gpu_map->owning_gpu) &&
-        (mapping_page_size > mapping_gpu->mem_info.max_vidmem_page_size))
-        mapping_page_size = mapping_gpu->mem_info.max_vidmem_page_size;
+        (mapping_page_size > biggest_mapping_page_size))
+        mapping_page_size = biggest_mapping_page_size;
 
     mem_info.pageSize = mapping_page_size;
 
@@ -986,7 +986,7 @@ static NV_STATUS uvm_map_external_allocation(uvm_va_space_t *va_space, UVM_MAP_E
     if (uvm_api_range_invalid_4k(params->base, params->length))
         return NV_ERR_INVALID_ADDRESS;
 
-    if (params->gpuAttributesCount == 0 || params->gpuAttributesCount > UVM_MAX_GPUS_V2)
+    if (params->gpuAttributesCount == 0 || params->gpuAttributesCount > UVM_MAX_GPUS)
         return NV_ERR_INVALID_ARGUMENT;
 
     mapped_gpus = uvm_processor_mask_cache_alloc();

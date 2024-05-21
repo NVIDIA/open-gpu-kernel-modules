@@ -52,7 +52,7 @@ static NvU32 entries_per_index_maxwell(NvU32 depth)
     return 1;
 }
 
-static NvLength entry_offset_maxwell(NvU32 depth, NvU32 page_size)
+static NvLength entry_offset_maxwell(NvU32 depth, NvU64 page_size)
 {
     UVM_ASSERT(depth < 2);
     if (page_size == UVM_PAGE_SIZE_4K && depth == 0)
@@ -128,7 +128,7 @@ static NvLength entry_size_maxwell(NvU32 depth)
     return 8;
 }
 
-static NvU32 index_bits_maxwell_64(NvU32 depth, NvU32 page_size)
+static NvU32 index_bits_maxwell_64(NvU32 depth, NvU64 page_size)
 {
     UVM_ASSERT(depth < 2);
     UVM_ASSERT(page_size == UVM_PAGE_SIZE_4K ||
@@ -146,7 +146,7 @@ static NvU32 index_bits_maxwell_64(NvU32 depth, NvU32 page_size)
     }
 }
 
-static NvU32 index_bits_maxwell_128(NvU32 depth, NvU32 page_size)
+static NvU32 index_bits_maxwell_128(NvU32 depth, NvU64 page_size)
 {
     UVM_ASSERT(depth < 2);
     UVM_ASSERT(page_size == UVM_PAGE_SIZE_4K ||
@@ -169,32 +169,32 @@ static NvU32 num_va_bits_maxwell(void)
     return 40;
 }
 
-static NvLength allocation_size_maxwell_64(NvU32 depth, NvU32 page_size)
+static NvLength allocation_size_maxwell_64(NvU32 depth, NvU64 page_size)
 {
     return entry_size_maxwell(depth) << index_bits_maxwell_64(depth, page_size);
 }
 
-static NvLength allocation_size_maxwell_128(NvU32 depth, NvU32 page_size)
+static NvLength allocation_size_maxwell_128(NvU32 depth, NvU64 page_size)
 {
     return entry_size_maxwell(depth) << index_bits_maxwell_128(depth, page_size);
 }
 
-static NvU32 page_table_depth_maxwell(NvU32 page_size)
+static NvU32 page_table_depth_maxwell(NvU64 page_size)
 {
     return 1;
 }
 
-static NvU32 page_sizes_maxwell_128(void)
+static NvU64 page_sizes_maxwell_128(void)
 {
     return UVM_PAGE_SIZE_128K | UVM_PAGE_SIZE_4K;
 }
 
-static NvU32 page_sizes_maxwell_64(void)
+static NvU64 page_sizes_maxwell_64(void)
 {
     return UVM_PAGE_SIZE_64K | UVM_PAGE_SIZE_4K;
 }
 
-static NvU64 unmapped_pte_maxwell(NvU32 page_size)
+static NvU64 unmapped_pte_maxwell(NvU64 page_size)
 {
     // Setting the privilege bit on an otherwise-zeroed big PTE causes the
     // corresponding 4k PTEs to be ignored. This allows the invalidation of a
@@ -356,7 +356,7 @@ static uvm_mmu_mode_hal_t maxwell_128_mmu_mode_hal =
     .page_sizes = page_sizes_maxwell_128
 };
 
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_maxwell(NvU32 big_page_size)
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_maxwell(NvU64 big_page_size)
 {
     UVM_ASSERT(big_page_size == UVM_PAGE_SIZE_64K || big_page_size == UVM_PAGE_SIZE_128K);
     if (big_page_size == UVM_PAGE_SIZE_64K)

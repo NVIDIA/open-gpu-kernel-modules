@@ -59,7 +59,8 @@
      HOPPER_WRITE_MAILBOX_SIZE)
 
 // RM reserved memory region is mapped separately as it is not added to the kernel
-#define COHERENT_CPU_MAPPING_RM_RESV_REGION   COHERENT_CPU_MAPPING_REGION_1
+#define COHERENT_CPU_MAPPING_RM_RESV_REGION             COHERENT_CPU_MAPPING_REGION_1
+#define COHERENT_CPU_MAPPING_RM_KERNEL_ONLINED_REGION   COHERENT_CPU_MAPPING_REGION_0
 
 /*!
  * @brief Tear Down BAR1 Mailbox
@@ -1104,6 +1105,129 @@ busVerifyCoherentLink_failed:
 
     return status;
 
+}
+
+/**
+ * Determine if memory described in memdesc is within a specific fb region
+ *
+ * @param[in] pKernelBus    Kernel bus pointer
+ * @param[in] pMemDesc      Pointer to memdesc describing memory range
+ * @param[in] offset        Offset from base address to check
+ * @param[in] region        Fb region to test against
+ *
+ * @return  Whether or not described memory range is within fb region.
+ */
+static NvBool
+_kbusMemoryIsInFbRegion
+(
+    KernelBus           *pKernelBus,
+    MEMORY_DESCRIPTOR   *pMemDesc,
+    NvU64                offset,
+    NvU8                 region
+)
+{
+    RmPhysAddr startAddr = memdescGetPhysAddr(pMemDesc, FORCE_VMMU_TRANSLATION(pMemDesc, AT_GPU), offset);
+    RmPhysAddr rangeStart;
+    RmPhysAddr rangeEnd;
+
+    NV_ASSERT_OR_RETURN(region < pKernelBus->coherentCpuMapping.nrMapping, NV_FALSE);
+
+    rangeStart = pKernelBus->coherentCpuMapping.physAddr[region];
+    rangeEnd = pKernelBus->coherentCpuMapping.physAddr[region] +
+               pKernelBus->coherentCpuMapping.size[region] - 1;
+
+    return (rangeStart <= startAddr) && (startAddr <= rangeEnd);
+}
+
+/**
+ * Helper function to map coherent cpu mapping.
+ *
+ * @param[in]  pGpu       Pointer to GPU
+ * @param[in]  pKernelBus Kernel bus pointer
+ * @param[in]  pMemDesc   Pointer to memdesc that is to be mapped
+ * @param[in]  offset     Offset from base address given in memdesc
+ * @param[in]  length     Length of memory to map
+ * @param[in]  protect    Protection flags
+ * @param[out] ppAddress  Virtual address of mapping
+ * @param[out] ppPriv     Private data to be retained for unmapping
+ *
+ * @return NV_OK or errors if failed to map
+ */
+NV_STATUS
+kbusMapCoherentCpuMapping_GH100
+(
+    OBJGPU                *pGpu,
+    KernelBus             *pKernelBus,
+    MEMORY_DESCRIPTOR     *pMemDesc,
+    NvU64                  offset,
+    NvU64                  length,
+    NvU32                  protect,
+    NvP64                 *ppAddress,
+    NvP64                 *ppPriv
+)
+{
+    const NvU8 regionIndex  = COHERENT_CPU_MAPPING_RM_RESV_REGION;
+    RmPhysAddr regionOffset = 0;
+    RmPhysAddr startAddr    = memdescGetPhysAddr(pMemDesc, FORCE_VMMU_TRANSLATION(pMemDesc, AT_GPU), offset);
+
+    if (_kbusMemoryIsInFbRegion(pKernelBus, pMemDesc, offset, COHERENT_CPU_MAPPING_RM_KERNEL_ONLINED_REGION))
+    {
+        return osMapSystemMemory(pMemDesc, offset, length, NV_TRUE, protect, ppAddress, ppPriv);
+    }
+
+    NV_ASSERT_OR_RETURN(memdescGetContiguity(pMemDesc, AT_CPU), NV_ERR_NOT_SUPPORTED);
+    NV_ASSERT_OR_RETURN(pKernelBus->coherentCpuMapping.pCpuMapping[regionIndex] != NvP64_NULL, NV_ERR_NO_MEMORY);
+
+    // Get the offset of the region
+    regionOffset = startAddr - pKernelBus->coherentCpuMapping.physAddr[regionIndex];
+    pKernelBus->coherentCpuMapping.refcnt[regionIndex]++;
+
+    *ppAddress = (NvU8 *)NvP64_VALUE(((NvUPtr)pKernelBus->coherentCpuMapping.pCpuMapping[regionIndex] +
+                    (NvUPtr)regionOffset));
+
+    return NV_OK;
+}
+
+/**
+ * Helper function to unmap coherent cpu mapping
+ *
+ * @param[in] pGpu       Pointer to GPU
+ * @param[in] pKernelBus Kernel bus pointer
+ * @param[in] pMemDesc   Pointer to memdesc
+ * @param[in] pAddress   Virtual address to unmap
+ * @param[in] pPriv      Private data to be passed for unmapping
+ *
+ * @return void
+ */
+void
+kbusUnmapCoherentCpuMapping_GH100
+(
+    OBJGPU              *pGpu,
+    KernelBus           *pKernelBus,
+    PMEMORY_DESCRIPTOR   pMemDesc,
+    NvP64                pAddress,
+    NvP64                pPriv
+)
+{
+    NvU8 regionIndex = COHERENT_CPU_MAPPING_RM_RESV_REGION;
+
+    if (_kbusMemoryIsInFbRegion(pKernelBus, pMemDesc, 0, COHERENT_CPU_MAPPING_RM_KERNEL_ONLINED_REGION))
+    {
+        kbusFlush_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), BUS_FLUSH_VIDEO_MEMORY);
+        osUnmapSystemMemory(pMemDesc, NV_TRUE, 0, pAddress, pPriv);
+        kbusFlush_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), BUS_FLUSH_VIDEO_MEMORY);
+        return;
+    }
+
+    NV_ASSERT_OR_RETURN_VOID(memdescGetContiguity(pMemDesc, AT_CPU));
+    NV_ASSERT_OR_RETURN_VOID(pKernelBus->coherentCpuMapping.refcnt[regionIndex] != 0);
+
+    pKernelBus->coherentCpuMapping.refcnt[regionIndex]--;
+
+    // Flush the memory since caller writes to the FB
+    kbusFlush_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), BUS_FLUSH_VIDEO_MEMORY);
+
+    return;
 }
 
 /**
@@ -2499,17 +2623,6 @@ kbusGetEgmPeerId_GH100
                   "NVLINK P2P not set up between GPU%u and GPU%u\n",
                   gpuGetInstance(pLocalGpu), gpuPeerInst);
         return BUS_INVALID_PEER;
-    }
-
-    //
-    // For Nvswitch connected systems, AAS (Alternate Address Space) is set by Nvswitch itself
-    // based on the EGM fabric address range and so there is no need for a separate peer id
-    // in the Nvswitch case.
-    //
-    if (GPU_IS_NVSWITCH_DETECTED(pLocalGpu))
-    {
-        LOWESTBITIDX_32(peerMask);
-        return peerMask;
     }
 
     FOR_EACH_INDEX_IN_MASK(32, peerId, peerMask)

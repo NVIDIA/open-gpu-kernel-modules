@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -251,6 +251,9 @@ static uvm_hal_class_ops_t host_table[] =
             .semaphore_release = uvm_hal_turing_host_semaphore_release,
             .clear_faulted_channel_method = uvm_hal_turing_host_clear_faulted_channel_method,
             .set_gpfifo_entry = uvm_hal_turing_host_set_gpfifo_entry,
+            .tlb_invalidate_all = uvm_hal_turing_host_tlb_invalidate_all,
+            .tlb_invalidate_va = uvm_hal_turing_host_tlb_invalidate_va,
+            .tlb_invalidate_test = uvm_hal_turing_host_tlb_invalidate_test,
         }
     },
     {
@@ -632,13 +635,19 @@ NV_STATUS uvm_hal_init_table(void)
         return status;
     }
 
-    status = ops_init_from_parent(host_table, ARRAY_SIZE(host_table), HOST_OP_COUNT, offsetof(uvm_hal_class_ops_t, u.host_ops));
+    status = ops_init_from_parent(host_table,
+                                  ARRAY_SIZE(host_table),
+                                  HOST_OP_COUNT,
+                                  offsetof(uvm_hal_class_ops_t, u.host_ops));
     if (status != NV_OK) {
         UVM_ERR_PRINT("ops_init_from_parent(host_table) failed: %s\n", nvstatusToString(status));
         return status;
     }
 
-    status = ops_init_from_parent(arch_table, ARRAY_SIZE(arch_table), ARCH_OP_COUNT, offsetof(uvm_hal_class_ops_t, u.arch_ops));
+    status = ops_init_from_parent(arch_table,
+                                  ARRAY_SIZE(arch_table),
+                                  ARCH_OP_COUNT,
+                                  offsetof(uvm_hal_class_ops_t, u.arch_ops));
     if (status != NV_OK) {
         UVM_ERR_PRINT("ops_init_from_parent(arch_table) failed: %s\n", nvstatusToString(status));
         return status;
@@ -932,14 +941,16 @@ const char *uvm_mmu_engine_type_string(uvm_mmu_engine_type_t mmu_engine_type)
 void uvm_hal_print_fault_entry(const uvm_fault_buffer_entry_t *entry)
 {
     UVM_DBG_PRINT("fault_address:                    0x%llx\n", entry->fault_address);
-    UVM_DBG_PRINT("    fault_instance_ptr:           {0x%llx:%s}\n", entry->instance_ptr.address,
-                                                                     uvm_aperture_string(entry->instance_ptr.aperture));
+    UVM_DBG_PRINT("    fault_instance_ptr:           {0x%llx:%s}\n",
+                  entry->instance_ptr.address,
+                  uvm_aperture_string(entry->instance_ptr.aperture));
     UVM_DBG_PRINT("    fault_type:                   %s\n", uvm_fault_type_string(entry->fault_type));
     UVM_DBG_PRINT("    fault_access_type:            %s\n", uvm_fault_access_type_string(entry->fault_access_type));
     UVM_DBG_PRINT("    is_replayable:                %s\n", entry->is_replayable? "true": "false");
     UVM_DBG_PRINT("    is_virtual:                   %s\n", entry->is_virtual? "true": "false");
     UVM_DBG_PRINT("    in_protected_mode:            %s\n", entry->in_protected_mode? "true": "false");
-    UVM_DBG_PRINT("    fault_source.client_type:     %s\n", uvm_fault_client_type_string(entry->fault_source.client_type));
+    UVM_DBG_PRINT("    fault_source.client_type:     %s\n",
+                  uvm_fault_client_type_string(entry->fault_source.client_type));
     UVM_DBG_PRINT("    fault_source.client_id:       %d\n", entry->fault_source.client_id);
     UVM_DBG_PRINT("    fault_source.gpc_id:          %d\n", entry->fault_source.gpc_id);
     UVM_DBG_PRINT("    fault_source.mmu_engine_id:   %d\n", entry->fault_source.mmu_engine_id);
@@ -962,13 +973,15 @@ const char *uvm_access_counter_type_string(uvm_access_counter_type_t access_coun
 void uvm_hal_print_access_counter_buffer_entry(const uvm_access_counter_buffer_entry_t *entry)
 {
     if (!entry->address.is_virtual) {
-        UVM_DBG_PRINT("physical address: {0x%llx:%s}\n", entry->address.address,
-                                                         uvm_aperture_string(entry->address.aperture));
+        UVM_DBG_PRINT("physical address: {0x%llx:%s}\n",
+                      entry->address.address,
+                      uvm_aperture_string(entry->address.aperture));
     }
     else {
         UVM_DBG_PRINT("virtual address: 0x%llx\n", entry->address.address);
-        UVM_DBG_PRINT("    instance_ptr    {0x%llx:%s}\n", entry->virtual_info.instance_ptr.address,
-                                                    uvm_aperture_string(entry->virtual_info.instance_ptr.aperture));
+        UVM_DBG_PRINT("    instance_ptr    {0x%llx:%s}\n",
+                      entry->virtual_info.instance_ptr.address,
+                      uvm_aperture_string(entry->virtual_info.instance_ptr.aperture));
         UVM_DBG_PRINT("    mmu_engine_type %s\n", uvm_mmu_engine_type_string(entry->virtual_info.mmu_engine_type));
         UVM_DBG_PRINT("    mmu_engine_id   %u\n", entry->virtual_info.mmu_engine_id);
         UVM_DBG_PRINT("    ve_id           %u\n", entry->virtual_info.ve_id);

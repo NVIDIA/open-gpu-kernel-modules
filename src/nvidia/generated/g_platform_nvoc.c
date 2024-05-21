@@ -94,10 +94,13 @@ __nvoc_ctor_OBJPFM_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_OBJPFM_1(OBJPFM *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-}
+} // End __nvoc_init_funcTable_OBJPFM_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_OBJPFM(OBJPFM *pThis) {
     __nvoc_init_funcTable_OBJPFM_1(pThis);
 }

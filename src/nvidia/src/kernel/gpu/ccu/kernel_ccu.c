@@ -60,7 +60,7 @@ _kccuAllocMemory
    KernelCcu  *pKernelCcu,
    NvU32      idx,
    NvU32      shrBufSize,
-   NvU64      counterBlockSize
+   NvU32      counterBlockSize
 )
 {
     NV_STATUS status            = NV_OK;
@@ -256,7 +256,18 @@ kccuShrBufInfoToCcu_IMPL
     {
         if (pKernelCcu->pMemDesc[idx] != NULL)
         {
-            inParams.phyAddr[idx] = memdescGetPhysAddr(pKernelCcu->pMemDesc[idx], AT_GPU, 0);
+            inParams.mapInfo[idx].phyAddr = memdescGetPhysAddr(pKernelCcu->pMemDesc[idx], AT_GPU, 0);
+
+            if (idx == CCU_DEV_SHRBUF_ID)
+            {
+                inParams.mapInfo[idx].shrBufSize = pKernelCcu->devSharedBufSize;
+                inParams.mapInfo[idx].cntBlkSize = pKernelCcu->devBufSize;
+            }
+            else
+            {
+                inParams.mapInfo[idx].shrBufSize = pKernelCcu->migSharedBufSize;
+                inParams.mapInfo[idx].cntBlkSize = pKernelCcu->migBufSize;
+            }
         }
     }
 
@@ -297,8 +308,7 @@ _kccuInitDevSharedBuffer
     NV_PRINTF(LEVEL_INFO, "Init shared buffer for device counters.\n");
 
     // Allocate shared buffer for device counters
-    status = _kccuAllocMemory(pGpu, pKernelCcu, CCU_DEV_SHRBUF_ID, CCU_GPU_SHARED_BUFFER_SIZE_MAX,
-                              CCU_PER_GPU_COUNTER_Q_SIZE);
+    status = _kccuAllocMemory(pGpu, pKernelCcu, CCU_DEV_SHRBUF_ID, pKernelCcu->devSharedBufSize, pKernelCcu->devBufSize);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "CCU memory allocation failed with status: 0x%x\n", status);
@@ -330,8 +340,7 @@ kccuInitMigSharedBuffer_IMPL
     // Allocate shared buffer for each mig gpu instance
     for (idx = CCU_MIG_SHRBUF_ID_START; idx < CCU_SHRBUF_COUNT_MAX; idx++)
     {
-        status = _kccuAllocMemory(pGpu, pKernelCcu, idx, CCU_MIG_INST_SHARED_BUFFER_SIZE_MAX,
-                CCU_MIG_INST_COUNTER_Q_SIZE);
+        status = _kccuAllocMemory(pGpu, pKernelCcu, idx, pKernelCcu->migSharedBufSize, pKernelCcu->migBufSize);
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR, "CCU memory allocation failed for idx(%u) with status: 0x%x\n",
@@ -367,6 +376,14 @@ NV_STATUS kccuStateLoad_IMPL
     NV_STATUS status = NV_OK;
 
     NV_PRINTF(LEVEL_INFO, "KernelCcu: State load \n");
+
+    // Get the buffer size information
+    status = kccuGetBufSize_HAL(pGpu, pKernelCcu);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to get the buffer size info(status: %u) \n", status);
+        return status;
+    }
 
     // Create device shared buffer
     status = _kccuInitDevSharedBuffer(pGpu, pKernelCcu);
@@ -458,47 +475,6 @@ NV_STATUS kccuMemDescGetForShrBufId_IMPL
 }
 
 /*!
- * Get the shared buffer memory descriptor for swizz id
- *
- * @param[in]      pGpu                GPU object pointer
- * @param[in]      pKernelCcu          KernelCcu object pointer
- * @param[in]      swizzId             Mig inst swizz-id
- * @param[out]     MEMORY_DESCRIPTOR   Location of pMemDesc
- *
- * @return  NV_OK
- * @return  NV_ERR_INVALID_ARGUMENT
- */
-NV_STATUS kccuMemDescGetForSwizzId_IMPL
-(
-    OBJGPU     *pGpu,
-    KernelCcu  *pKernelCcu,
-    NvU8       swizzId,
-    MEMORY_DESCRIPTOR **ppMemDesc
-)
-{
-    NvU32 idx = 0;
-
-    for (idx = CCU_MIG_SHRBUF_ID_START; idx < CCU_SHRBUF_COUNT_MAX; idx++)
-    {
-        if (*pKernelCcu->shrBuf[idx].pCounterDstInfo->pSwizzId == swizzId)
-        {
-            *ppMemDesc = pKernelCcu->pMemDesc[idx];
-            break;
-        }
-    }
-
-    if (idx >= CCU_SHRBUF_COUNT_MAX)
-    {
-        NV_PRINTF(LEVEL_ERROR, "KernelCcu: memdesc get failed for input swizzId(%u)\n",
-                swizzId);
-
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    return NV_OK;
-}
-
-/*!
  * Get counter block size
  *
  * @param[in]      pGpu                GPU object pointer
@@ -518,10 +494,10 @@ NvU32 kccuCounterBlockSizeGet_IMPL
     // For device counter block
     if (bDevCounter)
     {
-        return CCU_PER_GPU_COUNTER_Q_SIZE;
+        return pKernelCcu->devBufSize;
     }
 
-    return CCU_MIG_INST_COUNTER_Q_SIZE;
+    return pKernelCcu->migBufSize;
 }
 
 /*!

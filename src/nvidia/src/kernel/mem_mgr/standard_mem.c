@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -42,7 +42,7 @@ NV_STATUS stdmemValidateParams
     RS_PRIV_LEVEL  privLevel;
     CALL_CONTEXT  *pCallContext = resservGetTlsCallContext();
 
-    NV_ASSERT_OR_RETURN(RMCFG_FEATURE_KERNEL_RM, NV_ERR_NOT_SUPPORTED);
+    NV_ASSERT_OR_RETURN(RMCFG_FEATURE_KERNEL_RM || RMCFG_FEATURE_PLATFORM_GSP, NV_ERR_NOT_SUPPORTED);
 
     NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
     privLevel = pCallContext->secInfo.privLevel;
@@ -153,6 +153,18 @@ NV_STATUS stdmemValidateParams
         NV_CHECK_OR_RETURN(LEVEL_ERROR, FLD_TEST_DRF(OS32, _ATTR, _LOCATION, _VIDMEM, pAllocData->attr),
                            NV_ERR_INVALID_ARGUMENT);
         return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    //
+    // When a sparsified VA range is requested by the client, RM constructs
+    // the page tables during the VirtMem construct call causing the lazy
+    // flag to skip memory reservation. This can cause RM to OOM if the 
+    // memPool reserved memory is exhausted.
+    //
+    if ((pAllocData->flags & NVOS32_ALLOC_FLAGS_SPARSE) && 
+        (pAllocData->flags & NVOS32_ALLOC_FLAGS_VIRTUAL))
+    {
+        pAllocData->flags = pAllocData->flags &~ NVOS32_ALLOC_FLAGS_LAZY;
     }
 
     return NV_OK;

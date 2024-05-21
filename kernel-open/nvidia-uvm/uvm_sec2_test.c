@@ -322,7 +322,6 @@ static NV_STATUS cpu_decrypt(uvm_channel_t *channel,
                              uvm_mem_t *dst_mem,
                              uvm_mem_t *src_mem,
                              UvmCslIv *decrypt_iv,
-                             NvU32 key_version,
                              uvm_mem_t *auth_tag_mem,
                              size_t size,
                              size_t copy_size)
@@ -339,7 +338,6 @@ static NV_STATUS cpu_decrypt(uvm_channel_t *channel,
                                                          dst_plain,
                                                          src_cipher,
                                                          &decrypt_iv[i],
-                                                         key_version,
                                                          copy_size,
                                                          auth_tag_buffer));
 
@@ -370,7 +368,7 @@ static void gpu_encrypt(uvm_push_t *push,
     uvm_gpu_address_t auth_tag_address = uvm_mem_gpu_address_virtual_kernel(auth_tag_mem, gpu);
 
     for (i = 0; i < num_iterations; i++) {
-        uvm_conf_computing_log_gpu_encryption(push->channel, copy_size, decrypt_iv);
+        uvm_conf_computing_log_gpu_encryption(push->channel, decrypt_iv);
 
         if (i > 0)
             uvm_push_set_flag(push, UVM_PUSH_FLAG_CE_NEXT_PIPELINED);
@@ -429,7 +427,6 @@ static NV_STATUS test_cpu_to_gpu_roundtrip(uvm_gpu_t *gpu, size_t copy_size, siz
     size_t auth_tag_buffer_size = (size / copy_size) * UVM_CONF_COMPUTING_AUTH_TAG_SIZE;
     uvm_push_t push;
     UvmCslIv *decrypt_iv;
-    NvU32 key_version;
 
     decrypt_iv = uvm_kvmalloc_zero((size / copy_size) * sizeof(UvmCslIv));
     if (!decrypt_iv)
@@ -459,11 +456,6 @@ static NV_STATUS test_cpu_to_gpu_roundtrip(uvm_gpu_t *gpu, size_t copy_size, siz
 
     gpu_encrypt(&push, dst_cipher, dst_plain, decrypt_iv, auth_tag_mem, size, copy_size);
 
-    // There shouldn't be any key rotation between the end of the push and the
-    // CPU decryption(s), but it is more robust against test changes to force
-    // decryption to use the saved key.
-    key_version = uvm_channel_pool_key_version(push.channel->pool);
-
     TEST_NV_CHECK_GOTO(uvm_push_end_and_wait(&push), out);
 
     TEST_CHECK_GOTO(!mem_match(src_plain, src_cipher), out);
@@ -473,7 +465,6 @@ static NV_STATUS test_cpu_to_gpu_roundtrip(uvm_gpu_t *gpu, size_t copy_size, siz
                                    dst_plain_cpu,
                                    dst_cipher,
                                    decrypt_iv,
-                                   key_version,
                                    auth_tag_mem,
                                    size,
                                    copy_size),

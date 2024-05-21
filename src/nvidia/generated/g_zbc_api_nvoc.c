@@ -93,106 +93,6 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_ZbcApi =
     /*pExportInfo=*/        &__nvoc_export_info_ZbcApi
 };
 
-static NvBool __nvoc_thunk_GpuResource_zbcapiShareCallback(struct ZbcApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ZbcApi_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_zbcapiCheckMemInterUnmap(struct ZbcApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_ZbcApi_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_zbcapiMapTo(struct ZbcApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ZbcApi_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_zbcapiGetMapAddrSpace(struct ZbcApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ZbcApi_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static NvU32 __nvoc_thunk_RsResource_zbcapiGetRefCount(struct ZbcApi *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ZbcApi_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_zbcapiAddAdditionalDependants(struct RsClient *pClient, struct ZbcApi *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ZbcApi_RsResource.offset), pReference);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_zbcapiControl_Prologue(struct ZbcApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ZbcApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_zbcapiGetRegBaseOffsetAndSize(struct ZbcApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ZbcApi_GpuResource.offset), pGpu, pOffset, pSize);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_zbcapiInternalControlForward(struct ZbcApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ZbcApi_GpuResource.offset), command, pParams, size);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_zbcapiUnmapFrom(struct ZbcApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ZbcApi_RsResource.offset), pParams);
-}
-
-static void __nvoc_thunk_RmResource_zbcapiControl_Epilogue(struct ZbcApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ZbcApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_zbcapiGetInternalObjectHandle(struct ZbcApi *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ZbcApi_GpuResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_zbcapiControl(struct ZbcApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ZbcApi_GpuResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_zbcapiUnmap(struct ZbcApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ZbcApi_GpuResource.offset), pCallContext, pCpuMapping);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_zbcapiGetMemInterMapParams(struct ZbcApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_ZbcApi_RmResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_zbcapiGetMemoryMappingDescriptor(struct ZbcApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_ZbcApi_RmResource.offset), ppMemDesc);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_zbcapiControlFilter(struct ZbcApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ZbcApi_RsResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_zbcapiControlSerialization_Prologue(struct ZbcApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ZbcApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NvBool __nvoc_thunk_RsResource_zbcapiCanCopy(struct ZbcApi *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ZbcApi_RsResource.offset));
-}
-
-static NvBool __nvoc_thunk_RsResource_zbcapiIsPartialUnmapSupported(struct ZbcApi *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ZbcApi_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_zbcapiPreDestruct(struct ZbcApi *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ZbcApi_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_zbcapiIsDuplicate(struct ZbcApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ZbcApi_RsResource.offset), hMemory, pDuplicate);
-}
-
-static void __nvoc_thunk_RmResource_zbcapiControlSerialization_Epilogue(struct ZbcApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ZbcApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_zbcapiMap(struct ZbcApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return gpuresMap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ZbcApi_GpuResource.offset), pCallContext, pParams, pCpuMapping);
-}
-
-static NvBool __nvoc_thunk_RmResource_zbcapiAccessCallback(struct ZbcApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ZbcApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
-}
-
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
@@ -200,12 +100,12 @@ static NvBool __nvoc_thunk_RmResource_zbcapiAccessCallback(struct ZbcApi *pResou
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ZbcApi[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) zbcapiCtrlCmdSetZbcColorClear_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
-        /*flags=*/      0x2210u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+        /*flags=*/      0x248u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x90960101u,
         /*paramSize=*/  sizeof(NV9096_CTRL_SET_ZBC_COLOR_CLEAR_PARAMS),
@@ -215,12 +115,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ZbcApi[]
 #endif
     },
     {               /*  [1] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) zbcapiCtrlCmdSetZbcDepthClear_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
-        /*flags=*/      0x2210u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+        /*flags=*/      0x248u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x90960102u,
         /*paramSize=*/  sizeof(NV9096_CTRL_SET_ZBC_DEPTH_CLEAR_PARAMS),
@@ -230,12 +130,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ZbcApi[]
 #endif
     },
     {               /*  [2] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) zbcapiCtrlCmdGetZbcClearTable_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
-        /*flags=*/      0x2210u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+        /*flags=*/      0x248u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x90960103u,
         /*paramSize=*/  sizeof(NV9096_CTRL_GET_ZBC_CLEAR_TABLE_PARAMS),
@@ -245,12 +145,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ZbcApi[]
 #endif
     },
     {               /*  [3] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) zbcapiCtrlCmdSetZbcClearTable_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
-        /*flags=*/      0x2210u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+        /*flags=*/      0x248u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x90960104u,
         /*paramSize=*/  sizeof(NV9096_CTRL_SET_ZBC_CLEAR_TABLE_PARAMS),
@@ -260,12 +160,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ZbcApi[]
 #endif
     },
     {               /*  [4] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) zbcapiCtrlCmdSetZbcStencilClear_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
-        /*flags=*/      0x2210u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+        /*flags=*/      0x248u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x90960105u,
         /*paramSize=*/  sizeof(NV9096_CTRL_SET_ZBC_STENCIL_CLEAR_PARAMS),
@@ -275,12 +175,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ZbcApi[]
 #endif
     },
     {               /*  [5] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x400210u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40048u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) zbcapiCtrlCmdGetZbcClearTableSize_DISPATCH,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x400210u)
-        /*flags=*/      0x400210u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40048u)
+        /*flags=*/      0x40048u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x90960106u,
         /*paramSize=*/  sizeof(NV9096_CTRL_GET_ZBC_CLEAR_TABLE_SIZE_PARAMS),
@@ -290,12 +190,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ZbcApi[]
 #endif
     },
     {               /*  [6] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) zbcapiCtrlCmdGetZbcClearTableEntry_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
-        /*flags=*/      0x2210u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+        /*flags=*/      0x248u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x90960107u,
         /*paramSize=*/  sizeof(NV9096_CTRL_GET_ZBC_CLEAR_TABLE_ENTRY_PARAMS),
@@ -306,6 +206,134 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ZbcApi[]
     },
 
 };
+
+// 25 up-thunk(s) defined to bridge methods in ZbcApi to superclasses
+
+// zbcapiControl: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_zbcapiControl(struct ZbcApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_ZbcApi_GpuResource.offset), pCallContext, pParams);
+}
+
+// zbcapiMap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_zbcapiMap(struct ZbcApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_ZbcApi_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+}
+
+// zbcapiUnmap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_zbcapiUnmap(struct ZbcApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_ZbcApi_GpuResource.offset), pCallContext, pCpuMapping);
+}
+
+// zbcapiShareCallback: virtual inherited (gpures) base (gpures)
+static NvBool __nvoc_up_thunk_GpuResource_zbcapiShareCallback(struct ZbcApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_ZbcApi_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+}
+
+// zbcapiGetRegBaseOffsetAndSize: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_zbcapiGetRegBaseOffsetAndSize(struct ZbcApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_ZbcApi_GpuResource.offset), pGpu, pOffset, pSize);
+}
+
+// zbcapiGetMapAddrSpace: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_zbcapiGetMapAddrSpace(struct ZbcApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_ZbcApi_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+// zbcapiInternalControlForward: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_zbcapiInternalControlForward(struct ZbcApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_ZbcApi_GpuResource.offset), command, pParams, size);
+}
+
+// zbcapiGetInternalObjectHandle: virtual inherited (gpures) base (gpures)
+static NvHandle __nvoc_up_thunk_GpuResource_zbcapiGetInternalObjectHandle(struct ZbcApi *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_ZbcApi_GpuResource.offset));
+}
+
+// zbcapiAccessCallback: virtual inherited (rmres) base (gpures)
+static NvBool __nvoc_up_thunk_RmResource_zbcapiAccessCallback(struct ZbcApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ZbcApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+}
+
+// zbcapiGetMemInterMapParams: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_zbcapiGetMemInterMapParams(struct ZbcApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_ZbcApi_RmResource.offset), pParams);
+}
+
+// zbcapiCheckMemInterUnmap: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_zbcapiCheckMemInterUnmap(struct ZbcApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_ZbcApi_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+// zbcapiGetMemoryMappingDescriptor: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_zbcapiGetMemoryMappingDescriptor(struct ZbcApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_ZbcApi_RmResource.offset), ppMemDesc);
+}
+
+// zbcapiControlSerialization_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_zbcapiControlSerialization_Prologue(struct ZbcApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ZbcApi_RmResource.offset), pCallContext, pParams);
+}
+
+// zbcapiControlSerialization_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_zbcapiControlSerialization_Epilogue(struct ZbcApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ZbcApi_RmResource.offset), pCallContext, pParams);
+}
+
+// zbcapiControl_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_zbcapiControl_Prologue(struct ZbcApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ZbcApi_RmResource.offset), pCallContext, pParams);
+}
+
+// zbcapiControl_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_zbcapiControl_Epilogue(struct ZbcApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ZbcApi_RmResource.offset), pCallContext, pParams);
+}
+
+// zbcapiCanCopy: virtual inherited (res) base (gpures)
+static NvBool __nvoc_up_thunk_RsResource_zbcapiCanCopy(struct ZbcApi *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ZbcApi_RsResource.offset));
+}
+
+// zbcapiIsDuplicate: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_zbcapiIsDuplicate(struct ZbcApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ZbcApi_RsResource.offset), hMemory, pDuplicate);
+}
+
+// zbcapiPreDestruct: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_zbcapiPreDestruct(struct ZbcApi *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ZbcApi_RsResource.offset));
+}
+
+// zbcapiControlFilter: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_zbcapiControlFilter(struct ZbcApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ZbcApi_RsResource.offset), pCallContext, pParams);
+}
+
+// zbcapiIsPartialUnmapSupported: inline virtual inherited (res) base (gpures) body
+static NvBool __nvoc_up_thunk_RsResource_zbcapiIsPartialUnmapSupported(struct ZbcApi *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ZbcApi_RsResource.offset));
+}
+
+// zbcapiMapTo: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_zbcapiMapTo(struct ZbcApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ZbcApi_RsResource.offset), pParams);
+}
+
+// zbcapiUnmapFrom: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_zbcapiUnmapFrom(struct ZbcApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ZbcApi_RsResource.offset), pParams);
+}
+
+// zbcapiGetRefCount: virtual inherited (res) base (gpures)
+static NvU32 __nvoc_up_thunk_RsResource_zbcapiGetRefCount(struct ZbcApi *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ZbcApi_RsResource.offset));
+}
+
+// zbcapiAddAdditionalDependants: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_zbcapiAddAdditionalDependants(struct RsClient *pClient, struct ZbcApi *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ZbcApi_RsResource.offset), pReference);
+}
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_ZbcApi = 
 {
@@ -348,6 +376,7 @@ __nvoc_ctor_ZbcApi_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_ZbcApi_1(ZbcApi *pThis, RmHalspecOwner *pRmhalspecowner) {
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
@@ -356,27 +385,32 @@ static void __nvoc_init_funcTable_ZbcApi_1(ZbcApi *pThis, RmHalspecOwner *pRmhal
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+    // zbcapiCtrlCmdSetZbcColorClear -- exported (id=0x90960101)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
     pThis->__zbcapiCtrlCmdSetZbcColorClear__ = &zbcapiCtrlCmdSetZbcColorClear_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+    // zbcapiCtrlCmdSetZbcDepthClear -- exported (id=0x90960102)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
     pThis->__zbcapiCtrlCmdSetZbcDepthClear__ = &zbcapiCtrlCmdSetZbcDepthClear_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+    // zbcapiCtrlCmdGetZbcClearTable -- exported (id=0x90960103)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
     pThis->__zbcapiCtrlCmdGetZbcClearTable__ = &zbcapiCtrlCmdGetZbcClearTable_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+    // zbcapiCtrlCmdSetZbcClearTable -- exported (id=0x90960104)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
     pThis->__zbcapiCtrlCmdSetZbcClearTable__ = &zbcapiCtrlCmdSetZbcClearTable_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+    // zbcapiCtrlCmdSetZbcStencilClear -- exported (id=0x90960105)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
     pThis->__zbcapiCtrlCmdSetZbcStencilClear__ = &zbcapiCtrlCmdSetZbcStencilClear_IMPL;
 #endif
 
-    // Hal function -- zbcapiCtrlCmdGetZbcClearTableSize
+    // zbcapiCtrlCmdGetZbcClearTableSize -- halified (2 hals) exported (id=0x90960106) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__zbcapiCtrlCmdGetZbcClearTableSize__ = &zbcapiCtrlCmdGetZbcClearTableSize_VF;
@@ -386,62 +420,92 @@ static void __nvoc_init_funcTable_ZbcApi_1(ZbcApi *pThis, RmHalspecOwner *pRmhal
         pThis->__zbcapiCtrlCmdGetZbcClearTableSize__ = &zbcapiCtrlCmdGetZbcClearTableSize_5baef9;
     }
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+    // zbcapiCtrlCmdGetZbcClearTableEntry -- exported (id=0x90960107)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
     pThis->__zbcapiCtrlCmdGetZbcClearTableEntry__ = &zbcapiCtrlCmdGetZbcClearTableEntry_IMPL;
 #endif
 
-    pThis->__zbcapiShareCallback__ = &__nvoc_thunk_GpuResource_zbcapiShareCallback;
+    // zbcapiControl -- virtual inherited (gpures) base (gpures)
+    pThis->__zbcapiControl__ = &__nvoc_up_thunk_GpuResource_zbcapiControl;
 
-    pThis->__zbcapiCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_zbcapiCheckMemInterUnmap;
+    // zbcapiMap -- virtual inherited (gpures) base (gpures)
+    pThis->__zbcapiMap__ = &__nvoc_up_thunk_GpuResource_zbcapiMap;
 
-    pThis->__zbcapiMapTo__ = &__nvoc_thunk_RsResource_zbcapiMapTo;
+    // zbcapiUnmap -- virtual inherited (gpures) base (gpures)
+    pThis->__zbcapiUnmap__ = &__nvoc_up_thunk_GpuResource_zbcapiUnmap;
 
-    pThis->__zbcapiGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_zbcapiGetMapAddrSpace;
+    // zbcapiShareCallback -- virtual inherited (gpures) base (gpures)
+    pThis->__zbcapiShareCallback__ = &__nvoc_up_thunk_GpuResource_zbcapiShareCallback;
 
-    pThis->__zbcapiGetRefCount__ = &__nvoc_thunk_RsResource_zbcapiGetRefCount;
+    // zbcapiGetRegBaseOffsetAndSize -- virtual inherited (gpures) base (gpures)
+    pThis->__zbcapiGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_zbcapiGetRegBaseOffsetAndSize;
 
-    pThis->__zbcapiAddAdditionalDependants__ = &__nvoc_thunk_RsResource_zbcapiAddAdditionalDependants;
+    // zbcapiGetMapAddrSpace -- virtual inherited (gpures) base (gpures)
+    pThis->__zbcapiGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_zbcapiGetMapAddrSpace;
 
-    pThis->__zbcapiControl_Prologue__ = &__nvoc_thunk_RmResource_zbcapiControl_Prologue;
+    // zbcapiInternalControlForward -- virtual inherited (gpures) base (gpures)
+    pThis->__zbcapiInternalControlForward__ = &__nvoc_up_thunk_GpuResource_zbcapiInternalControlForward;
 
-    pThis->__zbcapiGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_zbcapiGetRegBaseOffsetAndSize;
+    // zbcapiGetInternalObjectHandle -- virtual inherited (gpures) base (gpures)
+    pThis->__zbcapiGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_zbcapiGetInternalObjectHandle;
 
-    pThis->__zbcapiInternalControlForward__ = &__nvoc_thunk_GpuResource_zbcapiInternalControlForward;
+    // zbcapiAccessCallback -- virtual inherited (rmres) base (gpures)
+    pThis->__zbcapiAccessCallback__ = &__nvoc_up_thunk_RmResource_zbcapiAccessCallback;
 
-    pThis->__zbcapiUnmapFrom__ = &__nvoc_thunk_RsResource_zbcapiUnmapFrom;
+    // zbcapiGetMemInterMapParams -- virtual inherited (rmres) base (gpures)
+    pThis->__zbcapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_zbcapiGetMemInterMapParams;
 
-    pThis->__zbcapiControl_Epilogue__ = &__nvoc_thunk_RmResource_zbcapiControl_Epilogue;
+    // zbcapiCheckMemInterUnmap -- virtual inherited (rmres) base (gpures)
+    pThis->__zbcapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_zbcapiCheckMemInterUnmap;
 
-    pThis->__zbcapiGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_zbcapiGetInternalObjectHandle;
+    // zbcapiGetMemoryMappingDescriptor -- virtual inherited (rmres) base (gpures)
+    pThis->__zbcapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_zbcapiGetMemoryMappingDescriptor;
 
-    pThis->__zbcapiControl__ = &__nvoc_thunk_GpuResource_zbcapiControl;
+    // zbcapiControlSerialization_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__zbcapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_zbcapiControlSerialization_Prologue;
 
-    pThis->__zbcapiUnmap__ = &__nvoc_thunk_GpuResource_zbcapiUnmap;
+    // zbcapiControlSerialization_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__zbcapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_zbcapiControlSerialization_Epilogue;
 
-    pThis->__zbcapiGetMemInterMapParams__ = &__nvoc_thunk_RmResource_zbcapiGetMemInterMapParams;
+    // zbcapiControl_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__zbcapiControl_Prologue__ = &__nvoc_up_thunk_RmResource_zbcapiControl_Prologue;
 
-    pThis->__zbcapiGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_zbcapiGetMemoryMappingDescriptor;
+    // zbcapiControl_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__zbcapiControl_Epilogue__ = &__nvoc_up_thunk_RmResource_zbcapiControl_Epilogue;
 
-    pThis->__zbcapiControlFilter__ = &__nvoc_thunk_RsResource_zbcapiControlFilter;
+    // zbcapiCanCopy -- virtual inherited (res) base (gpures)
+    pThis->__zbcapiCanCopy__ = &__nvoc_up_thunk_RsResource_zbcapiCanCopy;
 
-    pThis->__zbcapiControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_zbcapiControlSerialization_Prologue;
+    // zbcapiIsDuplicate -- virtual inherited (res) base (gpures)
+    pThis->__zbcapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_zbcapiIsDuplicate;
 
-    pThis->__zbcapiCanCopy__ = &__nvoc_thunk_RsResource_zbcapiCanCopy;
+    // zbcapiPreDestruct -- virtual inherited (res) base (gpures)
+    pThis->__zbcapiPreDestruct__ = &__nvoc_up_thunk_RsResource_zbcapiPreDestruct;
 
-    pThis->__zbcapiIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_zbcapiIsPartialUnmapSupported;
+    // zbcapiControlFilter -- virtual inherited (res) base (gpures)
+    pThis->__zbcapiControlFilter__ = &__nvoc_up_thunk_RsResource_zbcapiControlFilter;
 
-    pThis->__zbcapiPreDestruct__ = &__nvoc_thunk_RsResource_zbcapiPreDestruct;
+    // zbcapiIsPartialUnmapSupported -- inline virtual inherited (res) base (gpures) body
+    pThis->__zbcapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_zbcapiIsPartialUnmapSupported;
 
-    pThis->__zbcapiIsDuplicate__ = &__nvoc_thunk_RsResource_zbcapiIsDuplicate;
+    // zbcapiMapTo -- virtual inherited (res) base (gpures)
+    pThis->__zbcapiMapTo__ = &__nvoc_up_thunk_RsResource_zbcapiMapTo;
 
-    pThis->__zbcapiControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_zbcapiControlSerialization_Epilogue;
+    // zbcapiUnmapFrom -- virtual inherited (res) base (gpures)
+    pThis->__zbcapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_zbcapiUnmapFrom;
 
-    pThis->__zbcapiMap__ = &__nvoc_thunk_GpuResource_zbcapiMap;
+    // zbcapiGetRefCount -- virtual inherited (res) base (gpures)
+    pThis->__zbcapiGetRefCount__ = &__nvoc_up_thunk_RsResource_zbcapiGetRefCount;
 
-    pThis->__zbcapiAccessCallback__ = &__nvoc_thunk_RmResource_zbcapiAccessCallback;
-}
+    // zbcapiAddAdditionalDependants -- virtual inherited (res) base (gpures)
+    pThis->__zbcapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_zbcapiAddAdditionalDependants;
+} // End __nvoc_init_funcTable_ZbcApi_1 with approximately 33 basic block(s).
 
+
+// Initialize vtable(s) for 32 virtual method(s).
 void __nvoc_init_funcTable_ZbcApi(ZbcApi *pThis, RmHalspecOwner *pRmhalspecowner) {
+
+    // Initialize vtable(s) with 32 per-object function pointer(s).
     __nvoc_init_funcTable_ZbcApi_1(pThis, pRmhalspecowner);
 }
 

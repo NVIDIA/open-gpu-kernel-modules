@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -309,7 +309,8 @@ typedef struct NV0080_CTRL_GPU_QUERY_SW_STATE_PERSISTENCE_PARAMS {
 #define NV0080_CTRL_GPU_GET_VIRTUALIZATION_MODE_PARAMS_MESSAGE_ID (0x89U)
 
 typedef struct NV0080_CTRL_GPU_GET_VIRTUALIZATION_MODE_PARAMS {
-    NvU32 virtualizationMode;
+    NvU32  virtualizationMode;
+    NvBool isGridBuild;
 } NV0080_CTRL_GPU_GET_VIRTUALIZATION_MODE_PARAMS;
 
 
@@ -502,7 +503,7 @@ typedef struct NV0080_CTRL_GPU_GET_SRIOV_CAPS_PARAMS {
 
 
 // Update this macro if new HW exceeds GPU Classlist MAX_SIZE
-#define NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE   174
+#define NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE   100
 
 #define NV0080_CTRL_CMD_GPU_GET_CLASSLIST_V2 (0x800292) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_GPU_INTERFACE_ID << 8) | NV0080_CTRL_GPU_GET_CLASSLIST_V2_PARAMS_MESSAGE_ID" */
 

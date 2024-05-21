@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -91,8 +91,8 @@ typedef enum mctp_packet_state
     MCTP_PACKET_STATE_SINGLE_PACKET
 } MCTP_PACKET_STATE, *PMCTP_PACKET_STATE;
 
-NvlStatus nvswitch_fsp_read_message(nvswitch_device *device, NvU8 *pPayloadBuffer, NvU32 payloadBufferSize, struct NVSWITCH_TIMEOUT *pTimeout);
+NvlStatus nvswitch_fsp_read_message(nvswitch_device *device, NvU8 *pPayloadBuffer, NvU32 payloadBufferSize);
 NvlStatus nvswitch_fsp_send_packet(nvswitch_device  *device, NvU8 *pPacket, NvU32 packetSize);
-NvlStatus nvswitch_fsp_send_and_read_message(nvswitch_device  *device, NvU8 *pPayload, NvU32 size, NvU32 nvdmType, NvU8 *pResponsePayload, NvU32 responseBufferSize, struct NVSWITCH_TIMEOUT *pTimeout);
+NvlStatus nvswitch_fsp_send_and_read_message(nvswitch_device  *device, NvU8 *pPayload, NvU32 size, NvU32 nvdmType, NvU8 *pResponsePayload, NvU32 responseBufferSize);
 
 #endif //_FSPRPC_NVSWITCH_H_

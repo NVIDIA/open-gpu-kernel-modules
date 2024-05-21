@@ -68,7 +68,7 @@
     if ((i * sizeof(NvU32)) < ((sp)->size / 8))                                 \
     {                                                                           \
         nv_printf(NV_DBG_ERRORS, "NVRM: altstack: used %d of %d bytes!\n",      \
-                  ((sp)->size - (i * sizeof(NvU32))), (sp)->size);              \
+                  ((sp)->size - (i * (NvU32)sizeof(NvU32))), (sp)->size);       \
         NV_ASSERT_PRECOMP((i * sizeof(NvU32)) >= ((sp)->size / 8));             \
     }                                                                           \
 }

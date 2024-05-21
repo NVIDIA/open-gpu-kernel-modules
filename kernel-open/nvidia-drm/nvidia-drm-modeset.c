@@ -587,6 +587,9 @@ int nv_drm_atomic_commit(struct drm_device *dev,
                 NV_DRM_DEV_LOG_ERR(
                     nv_dev,
                     "Flip event timeout on head %u", nv_crtc->head);
+                while (!list_empty(&nv_crtc->flip_list)) {
+                    __nv_drm_handle_flip_event(nv_crtc);
+                }
             }
         }
     }

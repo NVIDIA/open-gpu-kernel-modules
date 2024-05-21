@@ -84,90 +84,6 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_ImexSessionApi =
     /*pExportInfo=*/        &__nvoc_export_info_ImexSessionApi
 };
 
-static NvBool __nvoc_thunk_RmResource_imexsessionapiShareCallback(struct ImexSessionApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return rmresShareCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ImexSessionApi_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_imexsessionapiCheckMemInterUnmap(struct ImexSessionApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_ImexSessionApi_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_imexsessionapiControl(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControl((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_imexsessionapiGetMemInterMapParams(struct ImexSessionApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_ImexSessionApi_RmResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_imexsessionapiGetMemoryMappingDescriptor(struct ImexSessionApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_ImexSessionApi_RmResource.offset), ppMemDesc);
-}
-
-static NvU32 __nvoc_thunk_RsResource_imexsessionapiGetRefCount(struct ImexSessionApi *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_imexsessionapiControlFilter(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset), pCallContext, pParams);
-}
-
-static void __nvoc_thunk_RsResource_imexsessionapiAddAdditionalDependants(struct RsClient *pClient, struct ImexSessionApi *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset), pReference);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_imexsessionapiControlSerialization_Prologue(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ImexSessionApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_imexsessionapiControl_Prologue(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ImexSessionApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NvBool __nvoc_thunk_RsResource_imexsessionapiCanCopy(struct ImexSessionApi *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_imexsessionapiUnmap(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return resUnmap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset), pCallContext, pCpuMapping);
-}
-
-static NvBool __nvoc_thunk_RsResource_imexsessionapiIsPartialUnmapSupported(struct ImexSessionApi *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_imexsessionapiPreDestruct(struct ImexSessionApi *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_imexsessionapiMapTo(struct ImexSessionApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_imexsessionapiIsDuplicate(struct ImexSessionApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset), hMemory, pDuplicate);
-}
-
-static void __nvoc_thunk_RmResource_imexsessionapiControlSerialization_Epilogue(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ImexSessionApi_RmResource.offset), pCallContext, pParams);
-}
-
-static void __nvoc_thunk_RmResource_imexsessionapiControl_Epilogue(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ImexSessionApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_imexsessionapiUnmapFrom(struct ImexSessionApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_imexsessionapiMap(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return resMap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset), pCallContext, pParams, pCpuMapping);
-}
-
-static NvBool __nvoc_thunk_RmResource_imexsessionapiAccessCallback(struct ImexSessionApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ImexSessionApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
-}
-
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
@@ -175,12 +91,12 @@ static NvBool __nvoc_thunk_RmResource_imexsessionapiAccessCallback(struct ImexSe
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ImexSessionApi[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x813u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) imexsessionapiCtrlCmdGetFabricEvents_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x813u)
-        /*flags=*/      0x813u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
+        /*flags=*/      0x10bu,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xf10001u,
         /*paramSize=*/  sizeof(NV00F1_CTRL_GET_FABRIC_EVENTS_PARAMS),
@@ -190,12 +106,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ImexSess
 #endif
     },
     {               /*  [1] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x813u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) imexsessionapiCtrlCmdFinishMemUnimport_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x813u)
-        /*flags=*/      0x813u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
+        /*flags=*/      0x10bu,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xf10002u,
         /*paramSize=*/  sizeof(NV00F1_CTRL_FINISH_MEM_UNIMPORT_PARAMS),
@@ -205,12 +121,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ImexSess
 #endif
     },
     {               /*  [2] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) imexsessionapiCtrlCmdDisableImporters_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xf10003u,
         /*paramSize=*/  sizeof(NV00F1_CTRL_DISABLE_IMPORTERS_PARAMS),
@@ -221,6 +137,114 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ImexSess
     },
 
 };
+
+// 21 up-thunk(s) defined to bridge methods in ImexSessionApi to superclasses
+
+// imexsessionapiAccessCallback: virtual inherited (rmres) base (rmres)
+static NvBool __nvoc_up_thunk_RmResource_imexsessionapiAccessCallback(struct ImexSessionApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ImexSessionApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+}
+
+// imexsessionapiShareCallback: virtual inherited (rmres) base (rmres)
+static NvBool __nvoc_up_thunk_RmResource_imexsessionapiShareCallback(struct ImexSessionApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ImexSessionApi_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+}
+
+// imexsessionapiGetMemInterMapParams: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_imexsessionapiGetMemInterMapParams(struct ImexSessionApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_ImexSessionApi_RmResource.offset), pParams);
+}
+
+// imexsessionapiCheckMemInterUnmap: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_imexsessionapiCheckMemInterUnmap(struct ImexSessionApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_ImexSessionApi_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+// imexsessionapiGetMemoryMappingDescriptor: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_imexsessionapiGetMemoryMappingDescriptor(struct ImexSessionApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_ImexSessionApi_RmResource.offset), ppMemDesc);
+}
+
+// imexsessionapiControlSerialization_Prologue: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_imexsessionapiControlSerialization_Prologue(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ImexSessionApi_RmResource.offset), pCallContext, pParams);
+}
+
+// imexsessionapiControlSerialization_Epilogue: virtual inherited (rmres) base (rmres)
+static void __nvoc_up_thunk_RmResource_imexsessionapiControlSerialization_Epilogue(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ImexSessionApi_RmResource.offset), pCallContext, pParams);
+}
+
+// imexsessionapiControl_Prologue: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_imexsessionapiControl_Prologue(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ImexSessionApi_RmResource.offset), pCallContext, pParams);
+}
+
+// imexsessionapiControl_Epilogue: virtual inherited (rmres) base (rmres)
+static void __nvoc_up_thunk_RmResource_imexsessionapiControl_Epilogue(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ImexSessionApi_RmResource.offset), pCallContext, pParams);
+}
+
+// imexsessionapiCanCopy: virtual inherited (res) base (rmres)
+static NvBool __nvoc_up_thunk_RsResource_imexsessionapiCanCopy(struct ImexSessionApi *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset));
+}
+
+// imexsessionapiIsDuplicate: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_imexsessionapiIsDuplicate(struct ImexSessionApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset), hMemory, pDuplicate);
+}
+
+// imexsessionapiPreDestruct: virtual inherited (res) base (rmres)
+static void __nvoc_up_thunk_RsResource_imexsessionapiPreDestruct(struct ImexSessionApi *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset));
+}
+
+// imexsessionapiControl: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_imexsessionapiControl(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControl((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset), pCallContext, pParams);
+}
+
+// imexsessionapiControlFilter: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_imexsessionapiControlFilter(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset), pCallContext, pParams);
+}
+
+// imexsessionapiMap: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_imexsessionapiMap(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+    return resMap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset), pCallContext, pParams, pCpuMapping);
+}
+
+// imexsessionapiUnmap: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_imexsessionapiUnmap(struct ImexSessionApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return resUnmap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset), pCallContext, pCpuMapping);
+}
+
+// imexsessionapiIsPartialUnmapSupported: inline virtual inherited (res) base (rmres) body
+static NvBool __nvoc_up_thunk_RsResource_imexsessionapiIsPartialUnmapSupported(struct ImexSessionApi *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset));
+}
+
+// imexsessionapiMapTo: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_imexsessionapiMapTo(struct ImexSessionApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset), pParams);
+}
+
+// imexsessionapiUnmapFrom: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_imexsessionapiUnmapFrom(struct ImexSessionApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset), pParams);
+}
+
+// imexsessionapiGetRefCount: virtual inherited (res) base (rmres)
+static NvU32 __nvoc_up_thunk_RsResource_imexsessionapiGetRefCount(struct ImexSessionApi *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset));
+}
+
+// imexsessionapiAddAdditionalDependants: virtual inherited (res) base (rmres)
+static void __nvoc_up_thunk_RsResource_imexsessionapiAddAdditionalDependants(struct RsClient *pClient, struct ImexSessionApi *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ImexSessionApi_RsResource.offset), pReference);
+}
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_ImexSessionApi = 
 {
@@ -258,65 +282,94 @@ __nvoc_ctor_ImexSessionApi_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_ImexSessionApi_1(ImexSessionApi *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x813u)
+    // imexsessionapiCtrlCmdGetFabricEvents -- exported (id=0xf10001)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
     pThis->__imexsessionapiCtrlCmdGetFabricEvents__ = &imexsessionapiCtrlCmdGetFabricEvents_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x813u)
+    // imexsessionapiCtrlCmdFinishMemUnimport -- exported (id=0xf10002)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
     pThis->__imexsessionapiCtrlCmdFinishMemUnimport__ = &imexsessionapiCtrlCmdFinishMemUnimport_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // imexsessionapiCtrlCmdDisableImporters -- exported (id=0xf10003)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__imexsessionapiCtrlCmdDisableImporters__ = &imexsessionapiCtrlCmdDisableImporters_IMPL;
 #endif
 
-    pThis->__imexsessionapiShareCallback__ = &__nvoc_thunk_RmResource_imexsessionapiShareCallback;
+    // imexsessionapiAccessCallback -- virtual inherited (rmres) base (rmres)
+    pThis->__imexsessionapiAccessCallback__ = &__nvoc_up_thunk_RmResource_imexsessionapiAccessCallback;
 
-    pThis->__imexsessionapiCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_imexsessionapiCheckMemInterUnmap;
+    // imexsessionapiShareCallback -- virtual inherited (rmres) base (rmres)
+    pThis->__imexsessionapiShareCallback__ = &__nvoc_up_thunk_RmResource_imexsessionapiShareCallback;
 
-    pThis->__imexsessionapiControl__ = &__nvoc_thunk_RsResource_imexsessionapiControl;
+    // imexsessionapiGetMemInterMapParams -- virtual inherited (rmres) base (rmres)
+    pThis->__imexsessionapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_imexsessionapiGetMemInterMapParams;
 
-    pThis->__imexsessionapiGetMemInterMapParams__ = &__nvoc_thunk_RmResource_imexsessionapiGetMemInterMapParams;
+    // imexsessionapiCheckMemInterUnmap -- virtual inherited (rmres) base (rmres)
+    pThis->__imexsessionapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_imexsessionapiCheckMemInterUnmap;
 
-    pThis->__imexsessionapiGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_imexsessionapiGetMemoryMappingDescriptor;
+    // imexsessionapiGetMemoryMappingDescriptor -- virtual inherited (rmres) base (rmres)
+    pThis->__imexsessionapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_imexsessionapiGetMemoryMappingDescriptor;
 
-    pThis->__imexsessionapiGetRefCount__ = &__nvoc_thunk_RsResource_imexsessionapiGetRefCount;
+    // imexsessionapiControlSerialization_Prologue -- virtual inherited (rmres) base (rmres)
+    pThis->__imexsessionapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_imexsessionapiControlSerialization_Prologue;
 
-    pThis->__imexsessionapiControlFilter__ = &__nvoc_thunk_RsResource_imexsessionapiControlFilter;
+    // imexsessionapiControlSerialization_Epilogue -- virtual inherited (rmres) base (rmres)
+    pThis->__imexsessionapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_imexsessionapiControlSerialization_Epilogue;
 
-    pThis->__imexsessionapiAddAdditionalDependants__ = &__nvoc_thunk_RsResource_imexsessionapiAddAdditionalDependants;
+    // imexsessionapiControl_Prologue -- virtual inherited (rmres) base (rmres)
+    pThis->__imexsessionapiControl_Prologue__ = &__nvoc_up_thunk_RmResource_imexsessionapiControl_Prologue;
 
-    pThis->__imexsessionapiControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_imexsessionapiControlSerialization_Prologue;
+    // imexsessionapiControl_Epilogue -- virtual inherited (rmres) base (rmres)
+    pThis->__imexsessionapiControl_Epilogue__ = &__nvoc_up_thunk_RmResource_imexsessionapiControl_Epilogue;
 
-    pThis->__imexsessionapiControl_Prologue__ = &__nvoc_thunk_RmResource_imexsessionapiControl_Prologue;
+    // imexsessionapiCanCopy -- virtual inherited (res) base (rmres)
+    pThis->__imexsessionapiCanCopy__ = &__nvoc_up_thunk_RsResource_imexsessionapiCanCopy;
 
-    pThis->__imexsessionapiCanCopy__ = &__nvoc_thunk_RsResource_imexsessionapiCanCopy;
+    // imexsessionapiIsDuplicate -- virtual inherited (res) base (rmres)
+    pThis->__imexsessionapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_imexsessionapiIsDuplicate;
 
-    pThis->__imexsessionapiUnmap__ = &__nvoc_thunk_RsResource_imexsessionapiUnmap;
+    // imexsessionapiPreDestruct -- virtual inherited (res) base (rmres)
+    pThis->__imexsessionapiPreDestruct__ = &__nvoc_up_thunk_RsResource_imexsessionapiPreDestruct;
 
-    pThis->__imexsessionapiIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_imexsessionapiIsPartialUnmapSupported;
+    // imexsessionapiControl -- virtual inherited (res) base (rmres)
+    pThis->__imexsessionapiControl__ = &__nvoc_up_thunk_RsResource_imexsessionapiControl;
 
-    pThis->__imexsessionapiPreDestruct__ = &__nvoc_thunk_RsResource_imexsessionapiPreDestruct;
+    // imexsessionapiControlFilter -- virtual inherited (res) base (rmres)
+    pThis->__imexsessionapiControlFilter__ = &__nvoc_up_thunk_RsResource_imexsessionapiControlFilter;
 
-    pThis->__imexsessionapiMapTo__ = &__nvoc_thunk_RsResource_imexsessionapiMapTo;
+    // imexsessionapiMap -- virtual inherited (res) base (rmres)
+    pThis->__imexsessionapiMap__ = &__nvoc_up_thunk_RsResource_imexsessionapiMap;
 
-    pThis->__imexsessionapiIsDuplicate__ = &__nvoc_thunk_RsResource_imexsessionapiIsDuplicate;
+    // imexsessionapiUnmap -- virtual inherited (res) base (rmres)
+    pThis->__imexsessionapiUnmap__ = &__nvoc_up_thunk_RsResource_imexsessionapiUnmap;
 
-    pThis->__imexsessionapiControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_imexsessionapiControlSerialization_Epilogue;
+    // imexsessionapiIsPartialUnmapSupported -- inline virtual inherited (res) base (rmres) body
+    pThis->__imexsessionapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_imexsessionapiIsPartialUnmapSupported;
 
-    pThis->__imexsessionapiControl_Epilogue__ = &__nvoc_thunk_RmResource_imexsessionapiControl_Epilogue;
+    // imexsessionapiMapTo -- virtual inherited (res) base (rmres)
+    pThis->__imexsessionapiMapTo__ = &__nvoc_up_thunk_RsResource_imexsessionapiMapTo;
 
-    pThis->__imexsessionapiUnmapFrom__ = &__nvoc_thunk_RsResource_imexsessionapiUnmapFrom;
+    // imexsessionapiUnmapFrom -- virtual inherited (res) base (rmres)
+    pThis->__imexsessionapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_imexsessionapiUnmapFrom;
 
-    pThis->__imexsessionapiMap__ = &__nvoc_thunk_RsResource_imexsessionapiMap;
+    // imexsessionapiGetRefCount -- virtual inherited (res) base (rmres)
+    pThis->__imexsessionapiGetRefCount__ = &__nvoc_up_thunk_RsResource_imexsessionapiGetRefCount;
 
-    pThis->__imexsessionapiAccessCallback__ = &__nvoc_thunk_RmResource_imexsessionapiAccessCallback;
-}
+    // imexsessionapiAddAdditionalDependants -- virtual inherited (res) base (rmres)
+    pThis->__imexsessionapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_imexsessionapiAddAdditionalDependants;
+} // End __nvoc_init_funcTable_ImexSessionApi_1 with approximately 24 basic block(s).
 
+
+// Initialize vtable(s) for 24 virtual method(s).
 void __nvoc_init_funcTable_ImexSessionApi(ImexSessionApi *pThis) {
+
+    // Initialize vtable(s) with 24 per-object function pointer(s).
     __nvoc_init_funcTable_ImexSessionApi_1(pThis);
 }
 

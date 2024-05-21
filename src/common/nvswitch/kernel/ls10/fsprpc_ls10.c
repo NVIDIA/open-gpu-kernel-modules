@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -585,16 +585,13 @@ nvswitch_fsprpc_get_caps_ls10
     TNVL_RPC_CAPS_PAYLOAD payload;
     TNVL_RPC_CAPS_RSP_PAYLOAD responsePayload;
     NvlStatus status;
-    NVSWITCH_TIMEOUT timeout;
 
     payload.subMessageId = TNVL_CAPS_SUBMESSAGE_ID;
     nvswitch_os_memset(&responsePayload, 0, sizeof(TNVL_RPC_CAPS_RSP_PAYLOAD));
 
-    nvswitch_timeout_create(5 * NVSWITCH_INTERVAL_1SEC_IN_NS, &timeout);
-
     status = nvswitch_fsp_send_and_read_message(device,
         (NvU8*) &payload, sizeof(TNVL_RPC_CAPS_PAYLOAD), NVDM_TYPE_CAPS_QUERY,
-        (NvU8*) &responsePayload, sizeof(TNVL_RPC_CAPS_RSP_PAYLOAD), &timeout);
+        (NvU8*) &responsePayload, sizeof(TNVL_RPC_CAPS_RSP_PAYLOAD));
     if (status != NVL_SUCCESS)
     {
         NVSWITCH_PRINT(device, ERROR, "RPC failed for FSP caps query\n");

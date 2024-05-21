@@ -49,6 +49,9 @@
 #define    HDCP_FLAGS_ABORT_DEVICE_INVALID     0x00080000 // Abort due to an invalid device in DP1.2 topology
 #define    HDCP_FLAGS_ABORT_HOP_LIMIT_EXCEEDED 0x80000000 // Abort, number of devices in DP1.2 topology exceeds supported limit
 
+#define    DP_TUNNEL_REQUEST_BW_MAX_TIME_MS          (1000U)
+#define    DP_TUNNEL_REQUEST_BW_POLLING_INTERVAL_MS    (10U)
+
 static inline unsigned getDataClockMultiplier(NvU64 linkRate, NvU64 laneCount)
 {
     //
@@ -102,9 +105,9 @@ namespace DisplayPort
         NvU8     cachedSourceChipRevision;
         bool     bOuiCached;
 
-        unsigned ouiId;                                              // Sink ouiId
-        unsigned char modelName[NV_DPCD_SOURCE_DEV_ID_STRING__SIZE + 1];  // Device Model-name
-        bool    bIgnoreSrcOuiHandshake;                              // Skip writing source OUI
+        unsigned ouiId;                                             // Sink ouiId
+        char modelName[NV_DPCD_SOURCE_DEV_ID_STRING__SIZE + 1];     // Device Model-name
+        bool    bIgnoreSrcOuiHandshake;                             // Skip writing source OUI
 
         LinkPolicy    linkPolicy;
 
@@ -192,6 +195,7 @@ namespace DisplayPort
         bool compoundQueryResult;
         unsigned compoundQueryCount;
         unsigned compoundQueryLocalLinkPBN;
+        NvU64 compoundQueryUsedTunnelingBw;
         bool compoundQueryForceEnableFEC;
 
         unsigned freeSlots;
@@ -309,11 +313,9 @@ namespace DisplayPort
         bool        bNoFallbackInPostLQA;
 
         bool        bReportDeviceLostBeforeNew;
-        bool        bEnableAudioBeyond48K;
         bool        bDisableSSC;
         bool        bEnableFastLT;
         NvU32       maxLinkRateFromRegkey;
-        bool        bFlushTimeslotWhenDirty;
 
         //
         // Latency(ms) to apply between link-train and FEC enable for bug
@@ -349,9 +351,6 @@ namespace DisplayPort
         //
         bool        bPowerDownPhyBeforeD3;
 
-        // Force DSC on sink irrespective of LT status
-        bool        bForceDscOnSink;
-
         //
         // Reset the MSTM_CTRL registers on branch device irrespective of
         // IRQ VECTOR register having stale message. Certain branch devices
@@ -363,6 +362,11 @@ namespace DisplayPort
         bool        bForceClearPendingMsg;
         bool        bSkipFakeDeviceDpcdAccess;
 
+        NvU64       allocatedDpTunnelBw;
+        NvU64       allocatedDpTunnelBwShadow;
+        bool        bForceDisableTunnelBwAllocation;
+        bool        bClientRequestedDpTunnelBwAllocation;
+        bool        bIsDpTunnelBwAllocationEnabled;
 
         Group *perHeadAttachedGroup[NV_MAX_HEADS];
         NvU32 inTransitionHeadMask;
@@ -445,6 +449,9 @@ namespace DisplayPort
                                          const DpModesetParams &modesetParams,      // Modeset info
                                          DscParams *pDscParams = NULL,              // DSC parameters
                                          DP_IMP_ERROR *pErrorCode = NULL);          // Error Status code
+        virtual bool compoundQueryAttachTunneling(const DpModesetParams &modesetParams,
+                                                  DscParams *pDscParams = NULL,
+                                                  DP_IMP_ERROR *pErrorCode = NULL);
 
         virtual bool endCompoundQuery();
 
@@ -496,6 +503,7 @@ namespace DisplayPort
         char tagHDCPReauthentication;
         char tagDelayedHdcpCapRead;
         char tagDelayedHDCPCPIrqHandling;
+        char tagDpBwAllocationChanged;
 
         //
         //  Enable disable TMDS mode
@@ -564,6 +572,18 @@ namespace DisplayPort
         bool willLinkSupportModeSST(const LinkConfiguration & linkConfig, const ModesetInfo & modesetInfo);
         void forceLinkTraining();
 
+        bool     updateDpTunnelBwAllocation();
+        void     configureDpTunnelBwAllocation();
+        TriState requestDpTunnelBw(NvU8 requestedBw);
+        bool     allocateDpTunnelBw(NvU64 bandwidth);
+        bool     allocateMaxDpTunnelBw();
+        NvU64    getMaxTunnelBw();
+
+        void enableDpTunnelingBwAllocationSupport()
+        {
+            bClientRequestedDpTunnelBwAllocation = true;
+        }
+
         void assessLink(LinkTrainingType trainType = NORMAL_LINK_TRAINING);
 
         bool isLinkInD3();
@@ -595,8 +615,8 @@ namespace DisplayPort
         void populateDscBranchCaps(DSC_INFO* dscInfo, DeviceImpl * dev);
         void populateDscModesetInfo(MODESET_INFO * pModesetInfo, const DpModesetParams * pModesetParams);
 
-        bool train(const LinkConfiguration & lConfig, bool force, LinkTrainingType trainType = NORMAL_LINK_TRAINING);
-        bool validateLinkConfiguration(const LinkConfiguration & lConfig);
+        virtual bool train(const LinkConfiguration & lConfig, bool force, LinkTrainingType trainType = NORMAL_LINK_TRAINING);
+        virtual bool validateLinkConfiguration(const LinkConfiguration & lConfig);
 
         virtual bool assessPCONLinkCapability(PCONLinkControl *params);
         bool trainPCONFrlLink(PCONLinkControl *pConControl);
@@ -607,12 +627,12 @@ namespace DisplayPort
         // the lowest level function(nearest to the hal) for the connector.
         bool rawTrain(const LinkConfiguration & lConfig, bool force, LinkTrainingType linkTrainingType);
 
-        bool enableFlush();
-        bool beforeAddStream(GroupImpl * group, bool force=false, bool forFlushMode = false);
-        void afterAddStream(GroupImpl * group);
-        void beforeDeleteStream(GroupImpl * group, bool forFlushMode = false);
-        void afterDeleteStream(GroupImpl * group);
-        void disableFlush(bool test=false);
+        virtual bool enableFlush();
+        virtual bool beforeAddStream(GroupImpl * group, bool force=false, bool forFlushMode = false);
+        virtual void afterAddStream(GroupImpl * group);
+        virtual void beforeDeleteStream(GroupImpl * group, bool forFlushMode = false);
+        virtual void afterDeleteStream(GroupImpl * group);
+        virtual void disableFlush(bool test=false);
 
         bool beforeAddStreamMST(GroupImpl * group, bool force = false, bool forFlushMode = false);
 
@@ -620,16 +640,17 @@ namespace DisplayPort
 
         bool deleteAllVirtualChannels();
         void clearTimeslices();
-        bool allocateTimeslice(GroupImpl * targetGroup);
+        virtual bool allocateTimeslice(GroupImpl * targetGroup);
         void freeTimeslice(GroupImpl * targetGroup);
         void flushTimeslotsToHardware();
         bool getHDCPAbortCodesDP12(NvU32 &hdcpAbortCodesDP12);
-        bool getOuiSink(unsigned &ouiId, unsigned char * modelName, size_t modelNameBufferSize, NvU8 & chipRevision);
+        bool getOuiSink(unsigned &ouiId, char * modelName, size_t modelNameBufferSize, NvU8 & chipRevision);
         bool hdcpValidateKsv(const NvU8 *ksv, NvU32 Size);
         void cancelHdcpCallbacks();
         bool handleCPIRQ();
         void handleSSC();
         void handleMCCSIRQ();
+        void handleDpTunnelingIrq();
         void handleHdmiLinkStatusChanged();
         void sortActiveGroups(bool ascending);
         void configInit();
@@ -640,7 +661,7 @@ namespace DisplayPort
         void notifyLongPulseInternal(bool statusConnected);
         virtual void notifyLongPulse(bool status);
         virtual void notifyShortPulse();
-        virtual Group * newGroup() ;
+        virtual Group * newGroup();
         virtual void destroy();
         virtual void createFakeMuxDevice(const NvU8 *buffer, NvU32 bufferSize);
         virtual void deleteFakeMuxDevice();
@@ -665,6 +686,7 @@ namespace DisplayPort
         Group * createFirmwareGroup();
         virtual void notifyGPUCapabilityChange();
         virtual void notifyHBR2WAREngage();
+        bool dpUpdateDscStream(Group *target, NvU32 dscBpp);
 
         bool getTestPattern(NV0073_CTRL_DP_TESTPATTERN *testPattern);
         bool setTestPattern(NV0073_CTRL_DP_TESTPATTERN testPattern, NvU8 laneMask, NV0073_CTRL_DP_CSTM cstm, NvBool bIsHBR2, NvBool bSkipLaneDataOverride = false);
@@ -708,16 +730,16 @@ namespace DisplayPort
     //
     struct DevicePendingEDIDRead : protected EdidReadMultistream::EdidReadMultistreamEventSink, public ListElement
     {
-        EdidReadMultistream      reader;
-        DiscoveryManager::Device device;
         ConnectorImpl *          parent;
+        DiscoveryManager::Device device;
+        EdidReadMultistream      reader;
 
         void mstEdidCompleted(EdidReadMultistream * from);
         void mstEdidReadFailed(EdidReadMultistream * from);
 
     public:
         DevicePendingEDIDRead(ConnectorImpl *  _parent, MessageManager * manager, DiscoveryManager::Device dev)
-            : reader(_parent->timer, manager, this, dev.address), device(dev), parent(_parent)
+            : parent(_parent), device(dev), reader(_parent->timer, manager, this, dev.address)
         {
         }
     };

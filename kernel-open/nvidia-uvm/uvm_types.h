@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2013-2023 NVidia Corporation
+    Copyright (c) 2013-2024 NVidia Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -52,19 +52,18 @@ typedef enum
 
 typedef unsigned long long UvmStream;
 
+// The maximum number of sub-processors per parent GPU.
+#define UVM_PARENT_ID_MAX_SUB_PROCESSORS 8
+
 // The maximum number of GPUs changed when multiple MIG instances per
-// uvm_parent_gpu_t were added. See UvmEventQueueCreate().
+// uvm_parent_gpu_t were added. The old version is kept as a convenience
+// for code that needs to maintain forward compatibility.
 #define UVM_MAX_GPUS_V1       NV_MAX_DEVICES
 #define UVM_MAX_PROCESSORS_V1 (UVM_MAX_GPUS_V1 + 1)
-#define UVM_MAX_GPUS_V2       (NV_MAX_DEVICES * NV_MAX_SUBDEVICES)
-#define UVM_MAX_PROCESSORS_V2 (UVM_MAX_GPUS_V2 + 1)
+#define UVM_MAX_GPUS          (NV_MAX_DEVICES * UVM_PARENT_ID_MAX_SUB_PROCESSORS)
+#define UVM_MAX_PROCESSORS    (UVM_MAX_GPUS + 1)
 
-// For backward compatibility:
-// TODO: Bug 4465348: remove these after replacing old references.
-#define UVM_MAX_GPUS UVM_MAX_GPUS_V1
-#define UVM_MAX_PROCESSORS UVM_MAX_PROCESSORS_V1
-
-#define UVM_PROCESSOR_MASK_SIZE ((UVM_MAX_PROCESSORS_V2 + (sizeof(NvU64) * 8) - 1) / (sizeof(NvU64) * 8))
+#define UVM_PROCESSOR_MASK_SIZE ((UVM_MAX_PROCESSORS + (sizeof(NvU64) * 8) - 1) / (sizeof(NvU64) * 8))
 
 #define UVM_INIT_FLAGS_DISABLE_HMM                       ((NvU64)0x1)
 #define UVM_INIT_FLAGS_MULTI_PROCESS_SHARING_MODE        ((NvU64)0x2)
@@ -423,29 +422,7 @@ typedef struct
     NvU32 pid;                // process id causing the fault
     NvU32 threadId;           // thread id causing the fault
     NvU64 pc;                 // address of the instruction causing the fault
-} UvmEventCpuFaultInfo_V1;
-
-typedef struct
-{
-    //
-    // eventType has to be 1st argument of this structure. Setting eventType to
-    // UvmEventTypeMemoryViolation helps to identify event data in a queue.
-    //
-    NvU8 eventType;
-    NvU8 accessType;          // read/write violation (UvmEventMemoryAccessType)
-    //
-    // This structure is shared between UVM kernel and tools.
-    // Manually padding the structure so that compiler options like pragma pack
-    // or malign-double will have no effect on the field offsets.
-    //
-    NvU16 padding16Bits;
-    NvS32 nid;                // NUMA node ID of faulting CPU
-    NvU64 address;            // faulting address
-    NvU64 timeStamp;          // cpu time when the fault occurred
-    NvU32 pid;                // process id causing the fault
-    NvU32 threadId;           // thread id causing the fault
-    NvU64 pc;                 // address of the instruction causing the fault
-} UvmEventCpuFaultInfo_V2;
+} UvmEventCpuFaultInfo;
 
 typedef enum
 {
@@ -721,13 +698,7 @@ typedef struct
     //
     NvU8 eventType;
     NvU8 faultType;       // type of gpu fault, refer UvmEventFaultType
-    NvU8 accessType;      // memory access type, refer UvmEventMemoryAccessType
-    //
-    // This structure is shared between UVM kernel and tools.
-    // Manually padding the structure so that compiler options like pragma pack
-    // or malign-double will have no effect on the field offsets
-    //
-    NvU8 padding8Bits_1;
+    NvU16 gpuIndex;       // GPU that experienced the fault
     union
     {
         NvU16 gpcId;      // If this is a replayable fault, this field contains
@@ -759,14 +730,13 @@ typedef struct
                           // UvmEventFaultClientTypeGpc indicates replayable
                           // fault, while UvmEventFaultClientTypeHub indicates
                           // non-replayable fault.
-
+    NvU8 accessType;      // memory access type, refer UvmEventMemoryAccessType
     //
     // This structure is shared between UVM kernel and tools.
     // Manually padding the structure so that compiler options like pragma pack
     // or malign-double will have no effect on the field offsets
     //
-    NvU8 padding8Bits_2;
-    NvU16 gpuIndex;       // GPU that experienced the fault
+    NvU16 padding16bits;
 } UvmEventGpuFaultInfo_V2;
 
 //------------------------------------------------------------------------------
@@ -1108,8 +1078,8 @@ typedef struct
     // or malign-double will have no effect on the field offsets
     //
     NvU8  padding8bits;
-    NvU16 padding16bits[2];
     NvU16 processorIndex;   // index of the cpu/gpu that was throttled
+    NvU32 padding32bits;
     NvU64 address;          // address of the page whose servicing is being
                             // throttled
     NvU64 timeStamp;        // cpu start time stamp for the throttling operation
@@ -1150,8 +1120,8 @@ typedef struct
     // or malign-double will have no effect on the field offsets
     //
     NvU8  padding8bits;
-    NvU16 padding16bits[2];
     NvU16 processorIndex;   // index of the cpu/gpu that was throttled
+    NvU32 padding32bits;
     NvU64 address;          // address of the page whose servicing is being
                             // throttled
     NvU64 timeStamp;        // cpu end time stamp for the throttling operation
@@ -1409,7 +1379,7 @@ typedef struct
             NvU8 eventType;
             UvmEventMigrationInfo_Lite migration_Lite;
 
-            UvmEventCpuFaultInfo_V1 cpuFault;
+            UvmEventCpuFaultInfo cpuFault;
             UvmEventMigrationInfo_V1 migration;
             UvmEventGpuFaultInfo_V1 gpuFault;
             UvmEventGpuFaultReplayInfo_V1 gpuFaultReplay;
@@ -1443,7 +1413,7 @@ typedef struct
             NvU8 eventType;
             UvmEventMigrationInfo_Lite migration_Lite;
 
-            UvmEventCpuFaultInfo_V2 cpuFault;
+            UvmEventCpuFaultInfo cpuFault;
             UvmEventMigrationInfo_V2 migration;
             UvmEventGpuFaultInfo_V2 gpuFault;
             UvmEventGpuFaultReplayInfo_V2 gpuFaultReplay;
@@ -1510,19 +1480,7 @@ typedef enum {
     UvmToolsEventQueueVersion_V2 = 2,
 } UvmToolsEventQueueVersion;
 
-typedef struct UvmEventControlData_V1_tag {
-    // entries between get_ahead and get_behind are currently being read
-    volatile NvU32 get_ahead;
-    volatile NvU32 get_behind;
-    // entries between put_ahead and put_behind are currently being written
-    volatile NvU32 put_ahead;
-    volatile NvU32 put_behind;
-
-    // counter of dropped events
-    NvU64 dropped[UvmEventNumTypesAll];
-} UvmToolsEventControlData_V1;
-
-typedef struct UvmEventControlData_V2_tag {
+typedef struct UvmEventControlData_tag {
     // entries between get_ahead and get_behind are currently being read
     volatile NvU32 get_ahead;
     volatile NvU32 get_behind;
@@ -1531,19 +1489,12 @@ typedef struct UvmEventControlData_V2_tag {
     volatile NvU32 put_ahead;
     volatile NvU32 put_behind;
 
-    // The version values are limited to UvmToolsEventQueueVersion and
-    // initialized by UvmToolsCreateEventQueue().
-    NvU32 version;
-    NvU32 padding32Bits;
-
     // counter of dropped events
     NvU64 dropped[UvmEventNumTypesAll];
-} UvmToolsEventControlData_V2;
+} UvmToolsEventControlData;
 
-// For backward compatibility:
-// TODO: Bug 4465348: remove these after replacing old references.
-typedef UvmToolsEventControlData_V1 UvmToolsEventControlData;
-typedef UvmEventEntry_V1 UvmEventEntry;
+// TODO: Bug 4465348: remove this after replacing old references.
+typedef UvmToolsEventControlData UvmToolsEventControlData_V1;
 
 //------------------------------------------------------------------------------
 // UVM Tools forward types (handles) definitions

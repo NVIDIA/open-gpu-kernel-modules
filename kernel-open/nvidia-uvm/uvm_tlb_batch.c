@@ -30,18 +30,18 @@ void uvm_tlb_batch_begin(uvm_page_tree_t *tree, uvm_tlb_batch_t *batch)
     batch->tree = tree;
 }
 
-static NvU32 smallest_page_size(NvU32 page_sizes)
+static NvU64 smallest_page_size(NvU64 page_sizes)
 {
     UVM_ASSERT(page_sizes != 0);
 
-    return 1u << __ffs(page_sizes);
+    return 1ULL << __ffs(page_sizes);
 }
 
-static NvU32 biggest_page_size(NvU32 page_sizes)
+static NvU64 biggest_page_size(NvU64 page_sizes)
 {
     UVM_ASSERT(page_sizes != 0);
 
-    return 1u << __fls(page_sizes);
+    return 1ULL << __fls(page_sizes);
 }
 
 static void tlb_batch_flush_invalidate_per_va(uvm_tlb_batch_t *batch, uvm_push_t *push)
@@ -53,8 +53,8 @@ static void tlb_batch_flush_invalidate_per_va(uvm_tlb_batch_t *batch, uvm_push_t
 
     for (i = 0; i < batch->count; ++i) {
         uvm_tlb_batch_range_t *entry = &batch->ranges[i];
-        NvU32 min_page_size = smallest_page_size(entry->page_sizes);
-        NvU32 max_page_size = biggest_page_size(entry->page_sizes);
+        NvU64 min_page_size = smallest_page_size(entry->page_sizes);
+        NvU64 max_page_size = biggest_page_size(entry->page_sizes);
 
         // Use the depth of the max page size as it's the broadest
         NvU32 depth = tree->hal->page_table_depth(max_page_size);
@@ -113,7 +113,7 @@ void uvm_tlb_batch_end(uvm_tlb_batch_t *batch, uvm_push_t *push, uvm_membar_t tl
         tlb_batch_flush_invalidate_per_va(batch, push);
 }
 
-void uvm_tlb_batch_invalidate(uvm_tlb_batch_t *batch, NvU64 start, NvU64 size, NvU32 page_sizes, uvm_membar_t tlb_membar)
+void uvm_tlb_batch_invalidate(uvm_tlb_batch_t *batch, NvU64 start, NvU64 size, NvU64 page_sizes, uvm_membar_t tlb_membar)
 {
     uvm_tlb_batch_range_t *new_entry;
 

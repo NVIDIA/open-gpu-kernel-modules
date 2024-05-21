@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -65,30 +65,30 @@
 
 typedef enum
 {
-    UVM_CHUNK_SIZE_1       =           1ULL,
-    UVM_CHUNK_SIZE_2       =           2ULL,
-    UVM_CHUNK_SIZE_4       =           4ULL,
-    UVM_CHUNK_SIZE_8       =           8ULL,
-    UVM_CHUNK_SIZE_16      =          16ULL,
-    UVM_CHUNK_SIZE_32      =          32ULL,
-    UVM_CHUNK_SIZE_64      =          64ULL,
-    UVM_CHUNK_SIZE_128     =         128ULL,
-    UVM_CHUNK_SIZE_256     =         256ULL,
-    UVM_CHUNK_SIZE_512     =         512ULL,
-    UVM_CHUNK_SIZE_1K      =        1024ULL,
-    UVM_CHUNK_SIZE_2K      =      2*1024ULL,
-    UVM_CHUNK_SIZE_4K      =      4*1024ULL,
-    UVM_CHUNK_SIZE_8K      =      8*1024ULL,
-    UVM_CHUNK_SIZE_16K     =     16*1024ULL,
-    UVM_CHUNK_SIZE_32K     =     32*1024ULL,
-    UVM_CHUNK_SIZE_64K     =     64*1024ULL,
-    UVM_CHUNK_SIZE_128K    =    128*1024ULL,
-    UVM_CHUNK_SIZE_256K    =    256*1024ULL,
-    UVM_CHUNK_SIZE_512K    =    512*1024ULL,
-    UVM_CHUNK_SIZE_1M      =   1024*1024ULL,
-    UVM_CHUNK_SIZE_2M      = 2*1024*1024ULL,
+    UVM_CHUNK_SIZE_1       =           1,
+    UVM_CHUNK_SIZE_2       =           2,
+    UVM_CHUNK_SIZE_4       =           4,
+    UVM_CHUNK_SIZE_8       =           8,
+    UVM_CHUNK_SIZE_16      =          16,
+    UVM_CHUNK_SIZE_32      =          32,
+    UVM_CHUNK_SIZE_64      =          64,
+    UVM_CHUNK_SIZE_128     =         128,
+    UVM_CHUNK_SIZE_256     =         256,
+    UVM_CHUNK_SIZE_512     =         512,
+    UVM_CHUNK_SIZE_1K      =        1024,
+    UVM_CHUNK_SIZE_2K      =      2*1024,
+    UVM_CHUNK_SIZE_4K      =      4*1024,
+    UVM_CHUNK_SIZE_8K      =      8*1024,
+    UVM_CHUNK_SIZE_16K     =     16*1024,
+    UVM_CHUNK_SIZE_32K     =     32*1024,
+    UVM_CHUNK_SIZE_64K     =     64*1024,
+    UVM_CHUNK_SIZE_128K    =    128*1024,
+    UVM_CHUNK_SIZE_256K    =    256*1024,
+    UVM_CHUNK_SIZE_512K    =    512*1024,
+    UVM_CHUNK_SIZE_1M      =   1024*1024,
+    UVM_CHUNK_SIZE_2M      = 2*1024*1024,
     UVM_CHUNK_SIZE_MAX     = UVM_CHUNK_SIZE_2M,
-    UVM_CHUNK_SIZE_INVALID = UVM_CHUNK_SIZE_MAX * 2ULL
+    UVM_CHUNK_SIZE_INVALID = UVM_CHUNK_SIZE_MAX * 2
 } uvm_chunk_size_t;
 
 #define UVM_CHUNK_SIZES_MASK     (uvm_chunk_sizes_mask_t)(UVM_CHUNK_SIZE_MAX | (UVM_CHUNK_SIZE_MAX-1))

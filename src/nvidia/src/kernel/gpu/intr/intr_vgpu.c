@@ -205,72 +205,41 @@ _intrCopyVfDynamicInterruptTable
 }
 
 NV_STATUS
-intrInitInterruptTable_VIRTUAL
+intrInitInterruptTable_VF
 (
     OBJGPU *pGpu,
     Intr   *pIntr
 )
 {
-    NV_STATUS         status      = NV_OK;
-    NvHandle          hClient     = NV01_NULL_OBJECT;
-    NvHandle          hObject     = NV01_NULL_OBJECT;
     NvU32             numEngines  = kfifoGetNumEngines_HAL(pGpu, GPU_GET_KERNEL_FIFO(pGpu));
     VGPU_STATIC_INFO *pVSI        = GPU_GET_STATIC_INFO(pGpu);
-
-    NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS *pStaticParams = NULL;
+    NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS *pStaticParams = &pVSI->mcStaticIntrTable;
 
     NV_ASSERT_OR_RETURN(vectIsEmpty(&pIntr->intrTable), NV_ERR_INVALID_STATE);
 
-    // Allocate params on the heap to avoid stack overflow
-    pStaticParams = portMemAllocNonPaged(sizeof *pStaticParams);
-    NV_ASSERT_TRUE_OR_GOTO(status,
-                           pStaticParams != NULL,
-                           NV_ERR_NO_MEMORY,
-                           cleanup);
+    NV_ASSERT_OR_RETURN(pStaticParams->numEntries <=
+                            NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_MAX,
+                        NV_ERR_OUT_OF_RANGE);
 
-    NV_RM_RPC_CONTROL(pGpu,
-                      hClient,
-                      hObject,
-                      NV2080_CTRL_CMD_MC_GET_STATIC_INTR_TABLE,
-                      pStaticParams,
-                      sizeof(*pStaticParams),
-                      status);
-    NV_ASSERT_OR_GOTO(status == NV_OK, cleanup);
-    NV_ASSERT_TRUE_OR_GOTO(status,
-                           pStaticParams->numEntries <=
-                               NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_MAX,
-                           NV_ERR_OUT_OF_RANGE,
-                           cleanup);
-
-    NV_ASSERT_TRUE_OR_GOTO(status,
+    NV_ASSERT_OR_RETURN(
         pVSI->mcEngineNotificationIntrVectors.numEntries <=
             NV2080_CTRL_MC_GET_ENGINE_NOTIFICATION_INTR_VECTORS_MAX_ENGINES,
-        NV_ERR_OUT_OF_RANGE,
-        cleanup);
+        NV_ERR_OUT_OF_RANGE);
 
-    NV_ASSERT_OK_OR_GOTO(status,
+    NV_ASSERT_OK_OR_RETURN(
         vectReserve(&pIntr->intrTable,
-                    pStaticParams->numEntries + pVSI->mcEngineNotificationIntrVectors.numEntries),
-        cleanup);
-    NV_ASSERT_OK_OR_GOTO(status,
-                         _intrCopyVfStaticInterruptTable(pGpu, pIntr,
-                                                         &pIntr->intrTable,
-                                                         pStaticParams),
-                         cleanup);
-    NV_ASSERT_OK_OR_GOTO(status,
-                         _intrCopyVfDynamicInterruptTable(pGpu, pIntr,
-                                                          numEngines,
-                                                          &pIntr->intrTable,
-                                                          &pVSI->mcEngineNotificationIntrVectors),
-                         cleanup);
+                    pStaticParams->numEntries + pVSI->mcEngineNotificationIntrVectors.numEntries));
+    NV_ASSERT_OK_OR_RETURN(_intrCopyVfStaticInterruptTable(pGpu, pIntr,
+                                                           &pIntr->intrTable,
+                                                           pStaticParams));
+    NV_ASSERT_OK_OR_RETURN(_intrCopyVfDynamicInterruptTable(pGpu, pIntr,
+                                                            numEngines,
+                                                            &pIntr->intrTable,
+                                                            &pVSI->mcEngineNotificationIntrVectors));
     vectTrim(&pIntr->intrTable, 0);
-
-    status = NV_OK;
 
     // Bug 3823562 TODO: Fetch this from Host RM
     intrInitSubtreeMap_HAL(pGpu, pIntr);
 
-cleanup:
-    portMemFree(pStaticParams);
-    return status;
+    return NV_OK;
 }

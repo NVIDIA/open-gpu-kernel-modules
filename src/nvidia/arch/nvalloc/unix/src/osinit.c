@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -79,8 +79,6 @@
 #include <class/cl0073.h>
 #include <class/cl2080.h>
 #include <class/cl402c.h>
-
-#include <gpu/conf_compute/conf_compute.h>
 
 #include <gpu/dce_client/dce_client.h>
 // RMCONFIG: need definition of REGISTER_ALL_HALS()
@@ -188,11 +186,10 @@ static void        initVendorSpecificRegistry(OBJGPU *, NvU16);
 static NV_STATUS   teardownCoreLogic(OBJOS *, OBJGPU *);
 static void        initUnixSpecificRegistry(OBJGPU *);
 
-NvBool osRmInitRm(OBJOS *pOS)
+NV_STATUS osRmInitRm(void)
 {
     OBJSYS    *pSys = SYS_GET_INSTANCE();
-
-    NV_PRINTF(LEVEL_INFO, "init rm\n");
+    NV_STATUS  status;
 
     if (os_is_efi_enabled())
     {
@@ -268,10 +265,11 @@ NvBool osRmInitRm(OBJOS *pOS)
     NVLOG_UPDATE();
 
     // Register all supported hals
-    if (REGISTER_ALL_HALS() != NV_OK)
+    status = REGISTER_ALL_HALS();
+    if (status != NV_OK)
     {
         RmDestroyRegistry(NULL);
-        return NV_FALSE;
+        return status;
     }
 
     // Setup any ThreadState defaults
@@ -280,7 +278,7 @@ NvBool osRmInitRm(OBJOS *pOS)
                               THREAD_STATE_SETUP_FLAGS_SLI_LOGIC_ENABLED |
                               THREAD_STATE_SETUP_FLAGS_DO_NOT_INCLUDE_SLEEP_TIME_ENABLED);
 
-    return NV_TRUE;
+    return NV_OK;
 }
 
 void RmShutdownRm(void)
@@ -366,6 +364,8 @@ osHandleGpuLost
         //
         nvErrorLog_va((void *)pGpu, ROBUST_CHANNEL_GPU_HAS_FALLEN_OFF_THE_BUS,
                       "GPU has fallen off the bus.");
+
+        gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_RC_ERROR, NULL, 0, ROBUST_CHANNEL_GPU_HAS_FALLEN_OFF_THE_BUS, 0);
 
         NV_DEV_PRINTF(NV_DBG_ERRORS, nv, "GPU has fallen off the bus.\n");
 
@@ -871,6 +871,91 @@ osTeardownScalability(
     return clTeardownPcie(pGpu, pCl);
 }
 
+#define NV_DBG_PRINT_VGA_STATUS(nv, src)    \
+    NV_DEV_PRINTF(NV_DBG_SETUP, nv, "%s reports GPU is %s VGA\n", \
+              src, NV_PRIMARY_VGA(nv) ? "primary" : "not primary");
+
+static void
+RmAssignPrimaryVga(
+    nv_state_t *nv,
+    OBJGPU     *pGpu
+)
+{
+    //
+    // Check with the OS for the primary VGA status of the adapter. If it knows
+    // definitively (nv_set_primary_vga_status() returns NV_OK), then we should
+    // use that value.
+    //
+    // Otherwise, check the I/O access and VGA decoding along the path from the
+    // adapter to the root. We expect that the primary VGA will be the only
+    // non-3D controller with these properties enabled along the entire path.
+    //
+    if (nv_set_primary_vga_status(nv) != NV_OK)
+    {
+        KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
+        OBJSYS    *pSys       = SYS_GET_INSTANCE();
+        OBJCL     *pCl        = SYS_GET_CL(pSys);
+
+        nv->primary_vga = (kbifIsPciIoAccessEnabled_HAL(pGpu, pKernelBif) &&
+                           !kbifIs3dController_HAL(pGpu, pKernelBif) && (pCl != NULL) &&
+                           clUpstreamVgaDecodeEnabled(pGpu, pCl));
+
+        NV_DBG_PRINT_VGA_STATUS(nv, "PCI config space");
+    }
+    else
+    {
+        NV_DBG_PRINT_VGA_STATUS(nv, "OS");
+    }
+}
+
+static void
+RmDeterminePrimaryDevice(OBJGPU *pGpu)
+{
+    nv_state_t *nv = NV_GET_NV_STATE(pGpu);
+    NvBool bFrameBufferConsoleDevice = NV_FALSE;
+
+    // Skip updating nv->primary_vga while RM is recovering after GPU reset
+    if (nv->flags & NV_FLAG_IN_RECOVERY)
+    {
+        return;
+    }
+
+    nv->primary_vga = NV_FALSE;
+
+    //
+    // In case of Passthru, GPU will always be secondary
+    //
+    if (IS_PASSTHRU(pGpu))
+    {
+        return;
+    }
+
+    //
+    // In case of VIRTUAL GPU, there is no display, hence it will be secondary
+    //
+    if (IS_VIRTUAL(pGpu))
+    {
+        return;
+    }
+
+    RmAssignPrimaryVga(nv, pGpu);
+
+    NV_DEV_PRINTF(NV_DBG_SETUP, nv, " is %s VGA\n",
+              !!nv->primary_vga ? "primary" : "not primary");
+
+    //
+    // If GPU is driving any frame buffer console(vesafb, efifb etc)
+    // mark the GPU as Primary.
+    //
+    bFrameBufferConsoleDevice = rm_get_uefi_console_status(nv);
+
+    NV_DEV_PRINTF(NV_DBG_SETUP, nv, " is %s UEFI console device\n",
+              bFrameBufferConsoleDevice ? "primary" : "not primary");
+
+    pGpu->setProperty(pGpu, PDB_PROP_GPU_PRIMARY_DEVICE,
+                      (bFrameBufferConsoleDevice || !!nv->primary_vga));
+}
+
 static void
 RmSetConsolePreservationParams(OBJGPU *pGpu)
 {
@@ -910,34 +995,23 @@ RmSetConsolePreservationParams(OBJGPU *pGpu)
     // mode, so we need to create a BAR1 mapping for the console
     // driver to use.
     //
-    // If the console driver is not using _either_ of those
-    // mappings, then the console driver will not be able to
-    // access the memory we reserve. This happens on some
-    // UEFI systems with multiple GPUs, because the firmware
-    // initializes the GOP driver on more than one GPU. In
-    // that case, just skip reserving anything for GPUs where
-    // neither BAR1 nor BAR2 match the console's base
-    // address.
-    //
     fbConsoleSize = rm_get_uefi_console_size(nv, &fbBaseAddress);
-
-    if (fbConsoleSize == 0)
-    {
-        if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_UEFI))
-        {
-            fbConsoleSize = 0x40000;
-        }
-        else
-        {
-            NV_PRINTF(LEVEL_INFO, "No Frame Buffer Present\n");
-        }
-    }
 
     if ((fbConsoleSize > 0) && (fbBaseAddress != 0))
     {
         KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
         pKernelBus->bPreserveBar1ConsoleEnabled =
                           (fbBaseAddress == nv->fb->cpu_address);
+    }
+
+    //
+    // Case for legacy console, where OS will not give console size
+    // and primary_vga will be set for the device.
+    // Hence, reserving default size for VGA text modes.
+    //
+    if ((fbConsoleSize == 0) && nv->primary_vga)
+    {
+        fbConsoleSize = 0x40000;
     }
 
     pMemoryManager->Ram.ReservedConsoleDispMemSize = NV_ALIGN_UP(fbConsoleSize, 0x10000);
@@ -1209,12 +1283,12 @@ RmSetupRegisters(
     NV_DEV_PRINTF(NV_DBG_SETUP, nv, "RmSetupRegisters for 0x%x:0x%x\n",
               nv->pci_info.vendor_id, nv->pci_info.device_id);
     NV_DEV_PRINTF(NV_DBG_SETUP, nv, "pci config info:\n");
-    NV_DEV_PRINTF(NV_DBG_SETUP, nv, "   registers look  like: " NvP64_fmt " " NvP64_fmt,
+    NV_DEV_PRINTF(NV_DBG_SETUP, nv, "   registers look  like: 0x%" NvU64_fmtx " 0x%" NvU64_fmtx,
               nv->regs->cpu_address, nv->regs->size);
 
     if (nv->fb != NULL)
     {
-        NV_DEV_PRINTF(NV_DBG_SETUP, nv, "   fb        looks like: " NvP64_fmt " " NvP64_fmt,
+        NV_DEV_PRINTF(NV_DBG_SETUP, nv, "   fb        looks like: 0x%" NvU64_fmtx " 0x%" NvU64_fmtx,
                 nv->fb->cpu_address, nv->fb->size);
     }
 
@@ -1231,7 +1305,7 @@ RmSetupRegisters(
     }
     NV_DEV_PRINTF(NV_DBG_SETUP, nv, "Successfully mapped framebuffer and registers\n");
     NV_DEV_PRINTF(NV_DBG_SETUP, nv, "final mappings:\n");
-    NV_DEV_PRINTF(NV_DBG_SETUP, nv, "    regs: " NvP64_fmt " " NvP64_fmt " 0x%p\n",
+    NV_DEV_PRINTF(NV_DBG_SETUP, nv, "    regs: 0x%" NvU64_fmtx " 0x%" NvU64_fmtx " 0x%p\n",
               nv->regs->cpu_address, nv->regs->size, nv->regs->map);
 
     ret = RmSetupDpauxRegisters(nv, status);
@@ -1755,6 +1829,8 @@ NvBool RmInitAdapter(
         }
     }
 
+    RmDeterminePrimaryDevice(pGpu);
+
     RmSetConsolePreservationParams(pGpu);
 
     RmInitAcpiMethods(pOS, pSys, pGpu);
@@ -1808,21 +1884,19 @@ NvBool RmInitAdapter(
     if (IS_PASSTHRU(pGpu))
         nv->flags |= NV_FLAG_PASSTHRU;
 
+    status.rmStatus = RmInitX86Emu(pGpu);
+    if (status.rmStatus != NV_OK)
+    {
+        RM_SET_ERROR(status, RM_INIT_VBIOS_X86EMU_FAILED);
+        NV_PRINTF(LEVEL_ERROR,
+                  "RmInitX86Emu failed, bailing out of RmInitAdapter\n");
+        goto shutdown;
+    }
+
     initVendorSpecificRegistry(pGpu, nv->pci_info.device_id);
     if (!IS_VIRTUAL(pGpu))
     {
         initNbsiTable(pGpu);
-    }
-
-    //
-    // Load GSP proxy if early init is required. We need to do this
-    // before we trigger a full gpuStateInit and gpuStateLoad in
-    // RmInitNvDevice
-    // TODO: Check bug 200744430
-    //
-    if (gpuIsCCFeatureEnabled(pGpu))
-    {
-        confComputeEarlyInit(pGpu, GPU_GET_CONF_COMPUTE(pGpu));
     }
 
     // finally, initialize the device
@@ -1937,15 +2011,6 @@ NvBool RmInitAdapter(
         goto shutdown;
     }
 
-    status.rmStatus = RmInitX86Emu(pGpu);
-    if (status.rmStatus != NV_OK)
-    {
-        RM_SET_ERROR(status, RM_INIT_VBIOS_X86EMU_FAILED);
-        NV_PRINTF(LEVEL_ERROR,
-                  "RmInitX86Emu failed, bailing out of RmInitAdapter\n");
-        goto shutdown;
-    }
-
     // i2c only on master device??
     RmI2cAddGpuPorts(nv);
     nvp->flags |= NV_INIT_FLAG_PUBLIC_I2C;
@@ -2057,86 +2122,97 @@ void RmShutdownAdapter(
         nv->ud.cpu_address = 0;
         nv->ud.size = 0;
 
-        // LOCK: acquire GPUs lock
-        if (rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DESTROY) == NV_OK)
+        //
+        // LOCK: lock all clients in case of eGPU hot unplug, which
+        // will not wait for all existing RM clients to stop using the GPU.
+        //
+        if (!nv->is_external_gpu || serverLockAllClients(&g_resServ) == NV_OK)
         {
-            //
-            // Shutdown path requires expanded GPU visibility in GPUMGR in order
-            // to access the GPU undergoing shutdown which may not be fully
-            // initialized, and to continue accessing the GPU undergoing shutdown
-            // after state destroy.
-            //
-            NV_ASSERT_OK(gpumgrThreadEnableExpandedGpuVisibility());
-
-            RmDestroyDeferredDynamicPowerManagement(nv);
-
-            freeNbsiTable(pGpu);
-
-            gpuFreeEventHandle(pGpu);
-
-            OBJCL          *pCl  = SYS_GET_CL(pSys);
-            OBJOS          *pOS  = GPU_GET_OS(pGpu);
-            if (pCl != NULL)
+            // LOCK: acquire GPUs lock
+            if (rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DESTROY) == NV_OK)
             {
-                if (nvp->flags & NV_INIT_FLAG_CORE_LOGIC)
+                //
+                // Shutdown path requires expanded GPU visibility in GPUMGR in order
+                // to access the GPU undergoing shutdown which may not be fully
+                // initialized, and to continue accessing the GPU undergoing shutdown
+                // after state destroy.
+                //
+                NV_ASSERT_OK(gpumgrThreadEnableExpandedGpuVisibility());
+
+                RmDestroyDeferredDynamicPowerManagement(nv);
+
+                freeNbsiTable(pGpu);
+
+                gpuFreeEventHandle(pGpu);
+
+                OBJCL          *pCl  = SYS_GET_CL(pSys);
+                OBJOS          *pOS  = GPU_GET_OS(pGpu);
+                if (pCl != NULL)
                 {
-                    teardownCoreLogic(pOS, pGpu);
+                    if (nvp->flags & NV_INIT_FLAG_CORE_LOGIC)
+                    {
+                        teardownCoreLogic(pOS, pGpu);
+                    }
+                    else if (nvp->flags & NV_INIT_FLAG_SCALABILITY)
+                    {
+                        osTeardownScalability(pGpu);
+                    }
                 }
-                else if (nvp->flags & NV_INIT_FLAG_SCALABILITY)
+
+                rmapiSetDelPendingClientResourcesFromGpuMask(NVBIT(gpuInstance));
+                rmapiDelPendingDevices(NVBIT(gpuInstance));
+
+                os_disable_console_access();
+
+                if (nvp->flags & NV_INIT_FLAG_GPU_STATE_LOAD)
                 {
-                     osTeardownScalability(pGpu);
+                    rmStatus = gpuStateUnload(pGpu, GPU_STATE_DEFAULT);
+                    NV_ASSERT(rmStatus == NV_OK);
                 }
-            }
 
-            rmapiSetDelPendingClientResourcesFromGpuMask(NVBIT(gpuInstance));
-            rmapiDelPendingDevices(NVBIT(gpuInstance));
+                if (nvp->flags & NV_INIT_FLAG_GPU_STATE)
+                {
+                    rmStatus = gpuStateDestroy(pGpu);
+                    NV_ASSERT(rmStatus == NV_OK);
+                }
 
-            os_disable_console_access();
+                os_enable_console_access();
 
-            if (nvp->flags & NV_INIT_FLAG_GPU_STATE_LOAD)
-            {
-                rmStatus = gpuStateUnload(pGpu, GPU_STATE_DEFAULT);
-                NV_ASSERT(rmStatus == NV_OK);
-            }
-
-            if (nvp->flags & NV_INIT_FLAG_GPU_STATE)
-            {
-                rmStatus = gpuStateDestroy(pGpu);
-                NV_ASSERT(rmStatus == NV_OK);
-            }
-
-            os_enable_console_access();
-
-            //if (nvp->flags & NV_INIT_FLAG_HAL)
-              //  destroyHal(pDev);
+                //if (nvp->flags & NV_INIT_FLAG_HAL)
+                //  destroyHal(pDev);
 
 #if NVCPU_IS_X86_64
-            RmFreeX86EmuState(pGpu);
+                RmFreeX86EmuState(pGpu);
 #endif
 
-            gpumgrDetachGpu(gpuInstance);
-            gpumgrDestroyDevice(deviceInstance);
+                gpumgrDetachGpu(gpuInstance);
+                gpumgrDestroyDevice(deviceInstance);
 
-            //
-            // Expanded GPU visibility in GPUMGR is no longer needed once the
-            // GPU is removed from GPUMGR.
-            //
-            gpumgrThreadDisableExpandedGpuVisibility();
+                //
+                // Expanded GPU visibility in GPUMGR is no longer needed once the
+                // GPU is removed from GPUMGR.
+                //
+                gpumgrThreadDisableExpandedGpuVisibility();
 
-            if (nvp->flags & NV_INIT_FLAG_DMA)
-            {
-                RmTeardownDeviceDma(nv);
+                if (nvp->flags & NV_INIT_FLAG_DMA)
+                {
+                    RmTeardownDeviceDma(nv);
+                }
+
+                RmClearPrivateState(nv);
+
+                RmUnInitAcpiMethods(pSys);
+
+                // UNLOCK: release GPUs lock
+                rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
+
+                // RM_BASIC_LOCK_MODEL: free GPU lock
+                rmGpuLockFree(deviceInstance);
             }
 
-            RmClearPrivateState(nv);
-
-            RmUnInitAcpiMethods(pSys);
-
-            // UNLOCK: release GPUs lock
-            rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
-
-            // RM_BASIC_LOCK_MODEL: free GPU lock
-            rmGpuLockFree(deviceInstance);
+            // UNLOCK: unlock all clients for eGPU hot unplug path
+            if (nv->is_external_gpu)
+                serverUnlockAllClients(&g_resServ);
         }
     }
     else
@@ -2189,54 +2265,66 @@ void RmDisableAdapter(
     }
 
     //
-    // Free the client allocated resources.
+    // LOCK: lock all clients in case of eGPU hot unplug, which
+    // will not wait for all existing RM clients to stop using the GPU.
     //
-    // This needs to happen prior to tearing down SLI state when SLI is enabled.
-    //
-    // Note this doesn't free RM internal resource allocations. Those are
-    // freed during (gpumgrUpdateSLIConfig->...->)gpuStateUnload.
-    //
-    // We need to free resources for all GPUs linked in a group as
-    // gpumgrUpdateSLIConfig will teardown GPU state for the entire set.
-    //
-    gpuMask = gpumgrGetGpuMask(pGpu);
-
-    rmapiSetDelPendingClientResourcesFromGpuMask(gpuMask);
-    rmapiDelPendingDevices(gpuMask);
-
-    // LOCK: acquire GPUs lock
-    if (rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DESTROY) == NV_OK)
+    if (!nv->is_external_gpu || serverLockAllClients(&g_resServ) == NV_OK)
     {
-        nv_stop_rc_timer(nv);
 
-        OBJSYS    *pSys = SYS_GET_INSTANCE();
-        OBJCL     *pCl  = SYS_GET_CL(pSys);
-        OBJOS     *pOS  = SYS_GET_OS(pSys);
-        if (pCl != NULL)
+        // LOCK: acquire GPUs lock
+        if (rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DESTROY) == NV_OK)
         {
-            teardownCoreLogic(pOS, pGpu);
-            nvp->flags &= ~NV_INIT_FLAG_CORE_LOGIC;
+            //
+            // Free the client allocated resources.
+            //
+            // This needs to happen prior to tearing down SLI state when SLI is enabled.
+            //
+            // Note this doesn't free RM internal resource allocations. Those are
+            // freed during (gpumgrUpdateSLIConfig->...->)gpuStateUnload.
+            //
+            // We need to free resources for all GPUs linked in a group as
+            // gpumgrUpdateSLIConfig will teardown GPU state for the entire set.
+            //
+            gpuMask = gpumgrGetGpuMask(pGpu);
+
+            rmapiSetDelPendingClientResourcesFromGpuMask(gpuMask);
+            rmapiDelPendingDevices(gpuMask);
+
+            nv_stop_rc_timer(nv);
+
+            OBJSYS    *pSys = SYS_GET_INSTANCE();
+            OBJCL     *pCl  = SYS_GET_CL(pSys);
+            OBJOS     *pOS  = SYS_GET_OS(pSys);
+            if (pCl != NULL)
+            {
+                teardownCoreLogic(pOS, pGpu);
+                nvp->flags &= ~NV_INIT_FLAG_CORE_LOGIC;
+            }
+
+            if (nvp->flags & NV_INIT_FLAG_FIFO_WATCHDOG)
+            {
+                krcWatchdogShutdown(pGpu, GPU_GET_KERNEL_RC(pGpu));
+                nvp->flags &= ~NV_INIT_FLAG_FIFO_WATCHDOG;
+            }
+
+            os_disable_console_access();
+
+            if (nvp->flags & NV_INIT_FLAG_GPU_STATE_LOAD)
+            {
+                rmStatus = gpuStateUnload(pGpu, GPU_STATE_DEFAULT);
+                NV_ASSERT(rmStatus == NV_OK);
+                nvp->flags &= ~NV_INIT_FLAG_GPU_STATE_LOAD;
+            }
+
+            os_enable_console_access();
+
+            // UNLOCK: release GPUs lock
+            rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
         }
 
-        if (nvp->flags & NV_INIT_FLAG_FIFO_WATCHDOG)
-        {
-            krcWatchdogShutdown(pGpu, GPU_GET_KERNEL_RC(pGpu));
-            nvp->flags &= ~NV_INIT_FLAG_FIFO_WATCHDOG;
-        }
-
-        os_disable_console_access();
-
-        if (nvp->flags & NV_INIT_FLAG_GPU_STATE_LOAD)
-        {
-            rmStatus = gpuStateUnload(pGpu, GPU_STATE_DEFAULT);
-            NV_ASSERT(rmStatus == NV_OK);
-            nvp->flags &= ~NV_INIT_FLAG_GPU_STATE_LOAD;
-        }
-
-        os_enable_console_access();
-
-        // UNLOCK: release GPUs lock
-        rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
+        // UNLOCK: unlock all clients for eGPU hot unplug path
+        if (nv->is_external_gpu)
+            serverUnlockAllClients(&g_resServ);
     }
 }
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1429,22 +1429,5 @@ kchangrpapiCtrlCmdGetInterleaveLevel_IMPL
 
     pParams->tsgInterleaveLevel = pKernelChannelGroup->pInterleaveLevel[subdevInst];
 
-    return NV_OK;
-}
-
-/*!
- * @brief Handler for NVA06C_CTRL_CMD_INTERNAL_PROMOTE_FAULT_METHOD_BUFFERS
- *
- * This is currently un-implemented as split change for bug 200691429
- */
-NV_STATUS
-kchangrpapiCtrlCmdInternalPromoteFaultMethodBuffers_IMPL
-(
-    KernelChannelGroupApi *pKernelChannelGroupApi,
-    NVA06C_CTRL_INTERNAL_PROMOTE_FAULT_METHOD_BUFFERS_PARAMS *pParams
-)
-{
-    NV_PRINTF(LEVEL_INFO,
-        "bug 200691429: kchangrpapiCtrlCmdInternalPromoteFaultMethodBuffers_IMPL received\n");
     return NV_OK;
 }

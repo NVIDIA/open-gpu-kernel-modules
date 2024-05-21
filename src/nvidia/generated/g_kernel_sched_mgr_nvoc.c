@@ -89,10 +89,13 @@ __nvoc_ctor_KernelSchedMgr_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_KernelSchedMgr_1(KernelSchedMgr *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-}
+} // End __nvoc_init_funcTable_KernelSchedMgr_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_KernelSchedMgr(KernelSchedMgr *pThis) {
     __nvoc_init_funcTable_KernelSchedMgr_1(pThis);
 }

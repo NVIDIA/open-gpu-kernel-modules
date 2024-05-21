@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,6 +35,7 @@
 #include "dp_deviceimpl.h"
 #include "dp_groupimpl.h"
 #include "dp_connectorimpl.h"
+#include "dp_printf.h"
 
 using namespace DisplayPort;
 
@@ -110,11 +111,11 @@ void GroupImpl::update(Device * dev, bool allocationState)
         {
             if (allocationState)
             {
-                DP_LOG(("DP-TM> Attached stream:%d to %s", streamIndex, dev->getTopologyAddress().toString(sb)));
+                DP_PRINTF(DP_NOTICE, "DP-TM> Attached stream:%d to %s", streamIndex, dev->getTopologyAddress().toString(sb));
             }
             else
             {
-                DP_LOG(("DP-TM> Detached stream:%d from %s", streamIndex, dev->getTopologyAddress().toString(sb)));
+                DP_PRINTF(DP_NOTICE, "DP-TM> Detached stream:%d from %s", streamIndex, dev->getTopologyAddress().toString(sb));
             }
 
             ((DeviceImpl *)dev)->payloadAllocated = allocationState;
@@ -126,12 +127,12 @@ void GroupImpl::update(Device * dev, bool allocationState)
     // we should not have ideally reached here unless allocate payload failed.
     if (allocationState)
     {
-        DP_LOG(("DP-TM> Allocate_payload: Failed to ATTACH stream:%d to %s", streamIndex, dev->getTopologyAddress().toString(sb)));
+        DP_PRINTF(DP_ERROR, "DP-TM> Allocate_payload: Failed to ATTACH stream:%d to %s", streamIndex, dev->getTopologyAddress().toString(sb));
         DP_ASSERT(0);
     }
     else
     {
-        DP_LOG(("DP-TM> Allocate_payload: Failed to DETACH stream:%d from %s", streamIndex, dev->getTopologyAddress().toString(sb)));
+        DP_PRINTF(DP_ERROR, "DP-TM> Allocate_payload: Failed to DETACH stream:%d from %s", streamIndex, dev->getTopologyAddress().toString(sb));
         DP_ASSERT(0);
     }
 

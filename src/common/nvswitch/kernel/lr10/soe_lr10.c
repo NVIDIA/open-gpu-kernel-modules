@@ -2552,6 +2552,18 @@ _soeWaitForInitAck_LR10
     return NV_OK;
 }
 
+NvlStatus
+nvswitch_soe_issue_ingress_stop_lr10
+(
+    nvswitch_device *device,
+    NvU32 nport,
+    NvBool bStop
+)
+{
+    // Not supported on LR10
+    return NVL_SUCCESS;
+}
+
 /*!
  * @brief   set hal function pointers for functions defined in LR10 (i.e. this file)
  *

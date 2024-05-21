@@ -39,7 +39,9 @@
 #define RSA_PSS_PADDING_ZEROS_SIZE_BYTE        (8)
 #define RSA_PSS_TRAILER_FIELD                  (0xbc)
 #define SHIFT_RIGHT_AND_GET_BYTE(val, x)       ((val >> x) & 0xFF)
+#ifndef BITS_TO_BYTES
 #define BITS_TO_BYTES(b)                       (b >> 3)
+#endif
 
 static const unsigned char zeroes[RSA_PSS_PADDING_ZEROS_SIZE_BYTE] = { 0 };
 

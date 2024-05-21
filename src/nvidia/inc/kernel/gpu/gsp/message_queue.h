@@ -29,8 +29,7 @@
 
 // Used for indexing into the MESSAGE_QUEUE_COLLECTION array.
 #define RPC_TASK_RM_QUEUE_IDX      0
-#define RPC_TASK_ISR_QUEUE_IDX     1
-#define RPC_QUEUE_COUNT            2
+#define RPC_QUEUE_COUNT            1
 
 typedef struct _message_queue_info MESSAGE_QUEUE_INFO;
 typedef struct MESSAGE_QUEUE_COLLECTION MESSAGE_QUEUE_COLLECTION;

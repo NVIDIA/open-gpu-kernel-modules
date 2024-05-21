@@ -35,7 +35,10 @@
 #define GSP_TRACING_RATS_ENABLED 0
 #define GSP_TRACE_RATS_ADD_RECORD(recordIdentifier, pGpu, info) (void) 0
 
-#define KERNEL_GSP_TRACING_RATS_ENABLED 0
+#include "kernel/gpu/gsp/kernel_gsp_trace_rats.h"
+#include "class/cl90cdtrace.h"
+
+#define KERNEL_GSP_TRACING_RATS_ENABLED 1
 
 #ifndef GET_RATS_TIMESTAMP_NS
 #define GET_RATS_TIMESTAMP_NS()         NV_ASSERT(0)

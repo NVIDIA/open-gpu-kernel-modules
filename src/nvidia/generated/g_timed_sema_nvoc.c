@@ -31,7 +31,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_ChannelDescendant;
 
 void __nvoc_init_TimedSemaSwObject(TimedSemaSwObject*, RmHalspecOwner* );
 void __nvoc_init_funcTable_TimedSemaSwObject(TimedSemaSwObject*);
-NV_STATUS __nvoc_ctor_TimedSemaSwObject(TimedSemaSwObject*, RmHalspecOwner* , struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+NV_STATUS __nvoc_ctor_TimedSemaSwObject(TimedSemaSwObject*, RmHalspecOwner* , CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
 void __nvoc_init_dataField_TimedSemaSwObject(TimedSemaSwObject*);
 void __nvoc_dtor_TimedSemaSwObject(TimedSemaSwObject*);
 extern const struct NVOC_EXPORT_INFO __nvoc_export_info_TimedSemaSwObject;
@@ -120,134 +120,6 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_TimedSemaSwObject =
     /*pExportInfo=*/        &__nvoc_export_info_TimedSemaSwObject
 };
 
-static NV_STATUS __nvoc_thunk_TimedSemaSwObject_chandesGetSwMethods(struct ChannelDescendant *pTimedSemSw, const METHOD **ppMethods, NvU32 *pNumMethods) {
-    return tsemaGetSwMethods((struct TimedSemaSwObject *)(((unsigned char *)pTimedSemSw) - __nvoc_rtti_TimedSemaSwObject_ChannelDescendant.offset), ppMethods, pNumMethods);
-}
-
-static NV_STATUS __nvoc_thunk_ChannelDescendant_tsemaCheckMemInterUnmap(struct TimedSemaSwObject *pChannelDescendant, NvBool bSubdeviceHandleProvided) {
-    return chandesCheckMemInterUnmap((struct ChannelDescendant *)(((unsigned char *)pChannelDescendant) + __nvoc_rtti_TimedSemaSwObject_ChannelDescendant.offset), bSubdeviceHandleProvided);
-}
-
-static NvBool __nvoc_thunk_GpuResource_tsemaShareCallback(struct TimedSemaSwObject *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_TimedSemaSwObject_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
-}
-
-static NvBool __nvoc_thunk_RmResource_tsemaAccessCallback(struct TimedSemaSwObject *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimedSemaSwObject_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_tsemaMapTo(struct TimedSemaSwObject *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimedSemaSwObject_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_tsemaGetMapAddrSpace(struct TimedSemaSwObject *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_TimedSemaSwObject_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static void __nvoc_thunk_Notifier_tsemaSetNotificationShare(struct TimedSemaSwObject *pNotifier, struct NotifShare *pNotifShare) {
-    notifySetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_TimedSemaSwObject_Notifier.offset), pNotifShare);
-}
-
-static NvU32 __nvoc_thunk_RsResource_tsemaGetRefCount(struct TimedSemaSwObject *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimedSemaSwObject_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_tsemaAddAdditionalDependants(struct RsClient *pClient, struct TimedSemaSwObject *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimedSemaSwObject_RsResource.offset), pReference);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_tsemaControl_Prologue(struct TimedSemaSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimedSemaSwObject_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_tsemaGetRegBaseOffsetAndSize(struct TimedSemaSwObject *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_TimedSemaSwObject_GpuResource.offset), pGpu, pOffset, pSize);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_tsemaInternalControlForward(struct TimedSemaSwObject *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_TimedSemaSwObject_GpuResource.offset), command, pParams, size);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_tsemaUnmapFrom(struct TimedSemaSwObject *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimedSemaSwObject_RsResource.offset), pParams);
-}
-
-static void __nvoc_thunk_RmResource_tsemaControl_Epilogue(struct TimedSemaSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimedSemaSwObject_RmResource.offset), pCallContext, pParams);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_tsemaGetInternalObjectHandle(struct TimedSemaSwObject *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_TimedSemaSwObject_GpuResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_tsemaControl(struct TimedSemaSwObject *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_TimedSemaSwObject_GpuResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_tsemaUnmap(struct TimedSemaSwObject *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_TimedSemaSwObject_GpuResource.offset), pCallContext, pCpuMapping);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_tsemaGetMemInterMapParams(struct TimedSemaSwObject *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_TimedSemaSwObject_RmResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_tsemaGetMemoryMappingDescriptor(struct TimedSemaSwObject *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_TimedSemaSwObject_RmResource.offset), ppMemDesc);
-}
-
-static NvBool __nvoc_thunk_ChannelDescendant_tsemaIsSwMethodStalling(struct TimedSemaSwObject *pChannelDescendant, NvU32 hHandle) {
-    return chandesIsSwMethodStalling((struct ChannelDescendant *)(((unsigned char *)pChannelDescendant) + __nvoc_rtti_TimedSemaSwObject_ChannelDescendant.offset), hHandle);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_tsemaControlFilter(struct TimedSemaSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimedSemaSwObject_RsResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_Notifier_tsemaUnregisterEvent(struct TimedSemaSwObject *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_TimedSemaSwObject_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_tsemaControlSerialization_Prologue(struct TimedSemaSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimedSemaSwObject_RmResource.offset), pCallContext, pParams);
-}
-
-static NvBool __nvoc_thunk_RsResource_tsemaCanCopy(struct TimedSemaSwObject *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimedSemaSwObject_RsResource.offset));
-}
-
-static NvBool __nvoc_thunk_RsResource_tsemaIsPartialUnmapSupported(struct TimedSemaSwObject *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimedSemaSwObject_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_tsemaPreDestruct(struct TimedSemaSwObject *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimedSemaSwObject_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_tsemaIsDuplicate(struct TimedSemaSwObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimedSemaSwObject_RsResource.offset), hMemory, pDuplicate);
-}
-
-static void __nvoc_thunk_RmResource_tsemaControlSerialization_Epilogue(struct TimedSemaSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimedSemaSwObject_RmResource.offset), pCallContext, pParams);
-}
-
-static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_tsemaGetNotificationListPtr(struct TimedSemaSwObject *pNotifier) {
-    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_TimedSemaSwObject_Notifier.offset));
-}
-
-static struct NotifShare *__nvoc_thunk_Notifier_tsemaGetNotificationShare(struct TimedSemaSwObject *pNotifier) {
-    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_TimedSemaSwObject_Notifier.offset));
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_tsemaMap(struct TimedSemaSwObject *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return gpuresMap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_TimedSemaSwObject_GpuResource.offset), pCallContext, pParams, pCpuMapping);
-}
-
-static NV_STATUS __nvoc_thunk_Notifier_tsemaGetOrAllocNotifShare(struct TimedSemaSwObject *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_TimedSemaSwObject_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
-}
-
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
@@ -255,12 +127,12 @@ static NV_STATUS __nvoc_thunk_Notifier_tsemaGetOrAllocNotifShare(struct TimedSem
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_TimedSemaSwObject[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) tsemaCtrlCmdFlush_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+        /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x90740101u,
         /*paramSize=*/  sizeof(NV9074_CTRL_CMD_FLUSH_PARAMS),
@@ -270,12 +142,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_TimedSem
 #endif
     },
     {               /*  [1] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) tsemaCtrlCmdGetTime_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x90740102u,
         /*paramSize=*/  sizeof(NV9074_CTRL_CMD_GET_TIME_PARAMS),
@@ -285,12 +157,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_TimedSem
 #endif
     },
     {               /*  [2] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) tsemaCtrlCmdRelease_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+        /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x90740103u,
         /*paramSize=*/  sizeof(NV9074_CTRL_CMD_RELEASE_PARAMS),
@@ -301,6 +173,172 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_TimedSem
     },
 
 };
+
+// 1 down-thunk(s) defined to bridge methods in TimedSemaSwObject from superclasses
+
+// tsemaGetSwMethods: virtual override (chandes) base (chandes)
+static NV_STATUS __nvoc_down_thunk_TimedSemaSwObject_chandesGetSwMethods(struct ChannelDescendant *pTimedSemSw, const METHOD **ppMethods, NvU32 *pNumMethods) {
+    return tsemaGetSwMethods((struct TimedSemaSwObject *)(((unsigned char *) pTimedSemSw) - __nvoc_rtti_TimedSemaSwObject_ChannelDescendant.offset), ppMethods, pNumMethods);
+}
+
+
+// 31 up-thunk(s) defined to bridge methods in TimedSemaSwObject to superclasses
+
+// tsemaIsSwMethodStalling: virtual inherited (chandes) base (chandes)
+static NvBool __nvoc_up_thunk_ChannelDescendant_tsemaIsSwMethodStalling(struct TimedSemaSwObject *pChannelDescendant, NvU32 hHandle) {
+    return chandesIsSwMethodStalling((struct ChannelDescendant *)(((unsigned char *) pChannelDescendant) + __nvoc_rtti_TimedSemaSwObject_ChannelDescendant.offset), hHandle);
+}
+
+// tsemaCheckMemInterUnmap: virtual inherited (chandes) base (chandes)
+static NV_STATUS __nvoc_up_thunk_ChannelDescendant_tsemaCheckMemInterUnmap(struct TimedSemaSwObject *pChannelDescendant, NvBool bSubdeviceHandleProvided) {
+    return chandesCheckMemInterUnmap((struct ChannelDescendant *)(((unsigned char *) pChannelDescendant) + __nvoc_rtti_TimedSemaSwObject_ChannelDescendant.offset), bSubdeviceHandleProvided);
+}
+
+// tsemaControl: virtual inherited (gpures) base (chandes)
+static NV_STATUS __nvoc_up_thunk_GpuResource_tsemaControl(struct TimedSemaSwObject *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_TimedSemaSwObject_GpuResource.offset), pCallContext, pParams);
+}
+
+// tsemaMap: virtual inherited (gpures) base (chandes)
+static NV_STATUS __nvoc_up_thunk_GpuResource_tsemaMap(struct TimedSemaSwObject *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_TimedSemaSwObject_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+}
+
+// tsemaUnmap: virtual inherited (gpures) base (chandes)
+static NV_STATUS __nvoc_up_thunk_GpuResource_tsemaUnmap(struct TimedSemaSwObject *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_TimedSemaSwObject_GpuResource.offset), pCallContext, pCpuMapping);
+}
+
+// tsemaShareCallback: virtual inherited (gpures) base (chandes)
+static NvBool __nvoc_up_thunk_GpuResource_tsemaShareCallback(struct TimedSemaSwObject *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_TimedSemaSwObject_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+}
+
+// tsemaGetRegBaseOffsetAndSize: virtual inherited (gpures) base (chandes)
+static NV_STATUS __nvoc_up_thunk_GpuResource_tsemaGetRegBaseOffsetAndSize(struct TimedSemaSwObject *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_TimedSemaSwObject_GpuResource.offset), pGpu, pOffset, pSize);
+}
+
+// tsemaGetMapAddrSpace: virtual inherited (gpures) base (chandes)
+static NV_STATUS __nvoc_up_thunk_GpuResource_tsemaGetMapAddrSpace(struct TimedSemaSwObject *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_TimedSemaSwObject_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+// tsemaInternalControlForward: virtual inherited (gpures) base (chandes)
+static NV_STATUS __nvoc_up_thunk_GpuResource_tsemaInternalControlForward(struct TimedSemaSwObject *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_TimedSemaSwObject_GpuResource.offset), command, pParams, size);
+}
+
+// tsemaGetInternalObjectHandle: virtual inherited (gpures) base (chandes)
+static NvHandle __nvoc_up_thunk_GpuResource_tsemaGetInternalObjectHandle(struct TimedSemaSwObject *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_TimedSemaSwObject_GpuResource.offset));
+}
+
+// tsemaAccessCallback: virtual inherited (rmres) base (chandes)
+static NvBool __nvoc_up_thunk_RmResource_tsemaAccessCallback(struct TimedSemaSwObject *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimedSemaSwObject_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+}
+
+// tsemaGetMemInterMapParams: virtual inherited (rmres) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RmResource_tsemaGetMemInterMapParams(struct TimedSemaSwObject *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_TimedSemaSwObject_RmResource.offset), pParams);
+}
+
+// tsemaGetMemoryMappingDescriptor: virtual inherited (rmres) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RmResource_tsemaGetMemoryMappingDescriptor(struct TimedSemaSwObject *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_TimedSemaSwObject_RmResource.offset), ppMemDesc);
+}
+
+// tsemaControlSerialization_Prologue: virtual inherited (rmres) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RmResource_tsemaControlSerialization_Prologue(struct TimedSemaSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimedSemaSwObject_RmResource.offset), pCallContext, pParams);
+}
+
+// tsemaControlSerialization_Epilogue: virtual inherited (rmres) base (chandes)
+static void __nvoc_up_thunk_RmResource_tsemaControlSerialization_Epilogue(struct TimedSemaSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimedSemaSwObject_RmResource.offset), pCallContext, pParams);
+}
+
+// tsemaControl_Prologue: virtual inherited (rmres) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RmResource_tsemaControl_Prologue(struct TimedSemaSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimedSemaSwObject_RmResource.offset), pCallContext, pParams);
+}
+
+// tsemaControl_Epilogue: virtual inherited (rmres) base (chandes)
+static void __nvoc_up_thunk_RmResource_tsemaControl_Epilogue(struct TimedSemaSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimedSemaSwObject_RmResource.offset), pCallContext, pParams);
+}
+
+// tsemaCanCopy: virtual inherited (res) base (chandes)
+static NvBool __nvoc_up_thunk_RsResource_tsemaCanCopy(struct TimedSemaSwObject *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimedSemaSwObject_RsResource.offset));
+}
+
+// tsemaIsDuplicate: virtual inherited (res) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RsResource_tsemaIsDuplicate(struct TimedSemaSwObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimedSemaSwObject_RsResource.offset), hMemory, pDuplicate);
+}
+
+// tsemaPreDestruct: virtual inherited (res) base (chandes)
+static void __nvoc_up_thunk_RsResource_tsemaPreDestruct(struct TimedSemaSwObject *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimedSemaSwObject_RsResource.offset));
+}
+
+// tsemaControlFilter: virtual inherited (res) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RsResource_tsemaControlFilter(struct TimedSemaSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimedSemaSwObject_RsResource.offset), pCallContext, pParams);
+}
+
+// tsemaIsPartialUnmapSupported: inline virtual inherited (res) base (chandes) body
+static NvBool __nvoc_up_thunk_RsResource_tsemaIsPartialUnmapSupported(struct TimedSemaSwObject *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimedSemaSwObject_RsResource.offset));
+}
+
+// tsemaMapTo: virtual inherited (res) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RsResource_tsemaMapTo(struct TimedSemaSwObject *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimedSemaSwObject_RsResource.offset), pParams);
+}
+
+// tsemaUnmapFrom: virtual inherited (res) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RsResource_tsemaUnmapFrom(struct TimedSemaSwObject *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimedSemaSwObject_RsResource.offset), pParams);
+}
+
+// tsemaGetRefCount: virtual inherited (res) base (chandes)
+static NvU32 __nvoc_up_thunk_RsResource_tsemaGetRefCount(struct TimedSemaSwObject *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimedSemaSwObject_RsResource.offset));
+}
+
+// tsemaAddAdditionalDependants: virtual inherited (res) base (chandes)
+static void __nvoc_up_thunk_RsResource_tsemaAddAdditionalDependants(struct RsClient *pClient, struct TimedSemaSwObject *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimedSemaSwObject_RsResource.offset), pReference);
+}
+
+// tsemaGetNotificationListPtr: virtual inherited (notify) base (chandes)
+static PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_tsemaGetNotificationListPtr(struct TimedSemaSwObject *pNotifier) {
+    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_TimedSemaSwObject_Notifier.offset));
+}
+
+// tsemaGetNotificationShare: virtual inherited (notify) base (chandes)
+static struct NotifShare * __nvoc_up_thunk_Notifier_tsemaGetNotificationShare(struct TimedSemaSwObject *pNotifier) {
+    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_TimedSemaSwObject_Notifier.offset));
+}
+
+// tsemaSetNotificationShare: virtual inherited (notify) base (chandes)
+static void __nvoc_up_thunk_Notifier_tsemaSetNotificationShare(struct TimedSemaSwObject *pNotifier, struct NotifShare *pNotifShare) {
+    notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_TimedSemaSwObject_Notifier.offset), pNotifShare);
+}
+
+// tsemaUnregisterEvent: virtual inherited (notify) base (chandes)
+static NV_STATUS __nvoc_up_thunk_Notifier_tsemaUnregisterEvent(struct TimedSemaSwObject *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
+    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_TimedSemaSwObject_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
+}
+
+// tsemaGetOrAllocNotifShare: virtual inherited (notify) base (chandes)
+static NV_STATUS __nvoc_up_thunk_Notifier_tsemaGetOrAllocNotifShare(struct TimedSemaSwObject *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
+    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_TimedSemaSwObject_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
+}
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_TimedSemaSwObject = 
 {
@@ -319,8 +357,8 @@ void __nvoc_init_dataField_TimedSemaSwObject(TimedSemaSwObject *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-NV_STATUS __nvoc_ctor_ChannelDescendant(ChannelDescendant* , RmHalspecOwner* , struct CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *, PARAM_TO_ENGDESC_FUNCTION *);
-NV_STATUS __nvoc_ctor_TimedSemaSwObject(TimedSemaSwObject *pThis, RmHalspecOwner *pRmhalspecowner, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_ctor_ChannelDescendant(ChannelDescendant* , RmHalspecOwner* , CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *, PARAM_TO_ENGDESC_FUNCTION *);
+NV_STATUS __nvoc_ctor_TimedSemaSwObject(TimedSemaSwObject *pThis, RmHalspecOwner *pRmhalspecowner, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
     NV_STATUS status = NV_OK;
     status = __nvoc_ctor_ChannelDescendant(&pThis->__nvoc_base_ChannelDescendant, pRmhalspecowner, arg_pCallContext, arg_pParams, ((void *)0));
     if (status != NV_OK) goto __nvoc_ctor_TimedSemaSwObject_fail_ChannelDescendant;
@@ -338,89 +376,128 @@ __nvoc_ctor_TimedSemaSwObject_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_TimedSemaSwObject_1(TimedSemaSwObject *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // tsemaGetSwMethods -- virtual override (chandes) base (chandes)
     pThis->__tsemaGetSwMethods__ = &tsemaGetSwMethods_IMPL;
+    pThis->__nvoc_base_ChannelDescendant.__chandesGetSwMethods__ = &__nvoc_down_thunk_TimedSemaSwObject_chandesGetSwMethods;
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // tsemaCtrlCmdFlush -- exported (id=0x90740101)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
     pThis->__tsemaCtrlCmdFlush__ = &tsemaCtrlCmdFlush_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // tsemaCtrlCmdGetTime -- exported (id=0x90740102)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__tsemaCtrlCmdGetTime__ = &tsemaCtrlCmdGetTime_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // tsemaCtrlCmdRelease -- exported (id=0x90740103)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
     pThis->__tsemaCtrlCmdRelease__ = &tsemaCtrlCmdRelease_IMPL;
 #endif
 
-    pThis->__nvoc_base_ChannelDescendant.__chandesGetSwMethods__ = &__nvoc_thunk_TimedSemaSwObject_chandesGetSwMethods;
+    // tsemaIsSwMethodStalling -- virtual inherited (chandes) base (chandes)
+    pThis->__tsemaIsSwMethodStalling__ = &__nvoc_up_thunk_ChannelDescendant_tsemaIsSwMethodStalling;
 
-    pThis->__tsemaCheckMemInterUnmap__ = &__nvoc_thunk_ChannelDescendant_tsemaCheckMemInterUnmap;
+    // tsemaCheckMemInterUnmap -- virtual inherited (chandes) base (chandes)
+    pThis->__tsemaCheckMemInterUnmap__ = &__nvoc_up_thunk_ChannelDescendant_tsemaCheckMemInterUnmap;
 
-    pThis->__tsemaShareCallback__ = &__nvoc_thunk_GpuResource_tsemaShareCallback;
+    // tsemaControl -- virtual inherited (gpures) base (chandes)
+    pThis->__tsemaControl__ = &__nvoc_up_thunk_GpuResource_tsemaControl;
 
-    pThis->__tsemaAccessCallback__ = &__nvoc_thunk_RmResource_tsemaAccessCallback;
+    // tsemaMap -- virtual inherited (gpures) base (chandes)
+    pThis->__tsemaMap__ = &__nvoc_up_thunk_GpuResource_tsemaMap;
 
-    pThis->__tsemaMapTo__ = &__nvoc_thunk_RsResource_tsemaMapTo;
+    // tsemaUnmap -- virtual inherited (gpures) base (chandes)
+    pThis->__tsemaUnmap__ = &__nvoc_up_thunk_GpuResource_tsemaUnmap;
 
-    pThis->__tsemaGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_tsemaGetMapAddrSpace;
+    // tsemaShareCallback -- virtual inherited (gpures) base (chandes)
+    pThis->__tsemaShareCallback__ = &__nvoc_up_thunk_GpuResource_tsemaShareCallback;
 
-    pThis->__tsemaSetNotificationShare__ = &__nvoc_thunk_Notifier_tsemaSetNotificationShare;
+    // tsemaGetRegBaseOffsetAndSize -- virtual inherited (gpures) base (chandes)
+    pThis->__tsemaGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_tsemaGetRegBaseOffsetAndSize;
 
-    pThis->__tsemaGetRefCount__ = &__nvoc_thunk_RsResource_tsemaGetRefCount;
+    // tsemaGetMapAddrSpace -- virtual inherited (gpures) base (chandes)
+    pThis->__tsemaGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_tsemaGetMapAddrSpace;
 
-    pThis->__tsemaAddAdditionalDependants__ = &__nvoc_thunk_RsResource_tsemaAddAdditionalDependants;
+    // tsemaInternalControlForward -- virtual inherited (gpures) base (chandes)
+    pThis->__tsemaInternalControlForward__ = &__nvoc_up_thunk_GpuResource_tsemaInternalControlForward;
 
-    pThis->__tsemaControl_Prologue__ = &__nvoc_thunk_RmResource_tsemaControl_Prologue;
+    // tsemaGetInternalObjectHandle -- virtual inherited (gpures) base (chandes)
+    pThis->__tsemaGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_tsemaGetInternalObjectHandle;
 
-    pThis->__tsemaGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_tsemaGetRegBaseOffsetAndSize;
+    // tsemaAccessCallback -- virtual inherited (rmres) base (chandes)
+    pThis->__tsemaAccessCallback__ = &__nvoc_up_thunk_RmResource_tsemaAccessCallback;
 
-    pThis->__tsemaInternalControlForward__ = &__nvoc_thunk_GpuResource_tsemaInternalControlForward;
+    // tsemaGetMemInterMapParams -- virtual inherited (rmres) base (chandes)
+    pThis->__tsemaGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_tsemaGetMemInterMapParams;
 
-    pThis->__tsemaUnmapFrom__ = &__nvoc_thunk_RsResource_tsemaUnmapFrom;
+    // tsemaGetMemoryMappingDescriptor -- virtual inherited (rmres) base (chandes)
+    pThis->__tsemaGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_tsemaGetMemoryMappingDescriptor;
 
-    pThis->__tsemaControl_Epilogue__ = &__nvoc_thunk_RmResource_tsemaControl_Epilogue;
+    // tsemaControlSerialization_Prologue -- virtual inherited (rmres) base (chandes)
+    pThis->__tsemaControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_tsemaControlSerialization_Prologue;
 
-    pThis->__tsemaGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_tsemaGetInternalObjectHandle;
+    // tsemaControlSerialization_Epilogue -- virtual inherited (rmres) base (chandes)
+    pThis->__tsemaControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_tsemaControlSerialization_Epilogue;
 
-    pThis->__tsemaControl__ = &__nvoc_thunk_GpuResource_tsemaControl;
+    // tsemaControl_Prologue -- virtual inherited (rmres) base (chandes)
+    pThis->__tsemaControl_Prologue__ = &__nvoc_up_thunk_RmResource_tsemaControl_Prologue;
 
-    pThis->__tsemaUnmap__ = &__nvoc_thunk_GpuResource_tsemaUnmap;
+    // tsemaControl_Epilogue -- virtual inherited (rmres) base (chandes)
+    pThis->__tsemaControl_Epilogue__ = &__nvoc_up_thunk_RmResource_tsemaControl_Epilogue;
 
-    pThis->__tsemaGetMemInterMapParams__ = &__nvoc_thunk_RmResource_tsemaGetMemInterMapParams;
+    // tsemaCanCopy -- virtual inherited (res) base (chandes)
+    pThis->__tsemaCanCopy__ = &__nvoc_up_thunk_RsResource_tsemaCanCopy;
 
-    pThis->__tsemaGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_tsemaGetMemoryMappingDescriptor;
+    // tsemaIsDuplicate -- virtual inherited (res) base (chandes)
+    pThis->__tsemaIsDuplicate__ = &__nvoc_up_thunk_RsResource_tsemaIsDuplicate;
 
-    pThis->__tsemaIsSwMethodStalling__ = &__nvoc_thunk_ChannelDescendant_tsemaIsSwMethodStalling;
+    // tsemaPreDestruct -- virtual inherited (res) base (chandes)
+    pThis->__tsemaPreDestruct__ = &__nvoc_up_thunk_RsResource_tsemaPreDestruct;
 
-    pThis->__tsemaControlFilter__ = &__nvoc_thunk_RsResource_tsemaControlFilter;
+    // tsemaControlFilter -- virtual inherited (res) base (chandes)
+    pThis->__tsemaControlFilter__ = &__nvoc_up_thunk_RsResource_tsemaControlFilter;
 
-    pThis->__tsemaUnregisterEvent__ = &__nvoc_thunk_Notifier_tsemaUnregisterEvent;
+    // tsemaIsPartialUnmapSupported -- inline virtual inherited (res) base (chandes) body
+    pThis->__tsemaIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_tsemaIsPartialUnmapSupported;
 
-    pThis->__tsemaControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_tsemaControlSerialization_Prologue;
+    // tsemaMapTo -- virtual inherited (res) base (chandes)
+    pThis->__tsemaMapTo__ = &__nvoc_up_thunk_RsResource_tsemaMapTo;
 
-    pThis->__tsemaCanCopy__ = &__nvoc_thunk_RsResource_tsemaCanCopy;
+    // tsemaUnmapFrom -- virtual inherited (res) base (chandes)
+    pThis->__tsemaUnmapFrom__ = &__nvoc_up_thunk_RsResource_tsemaUnmapFrom;
 
-    pThis->__tsemaIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_tsemaIsPartialUnmapSupported;
+    // tsemaGetRefCount -- virtual inherited (res) base (chandes)
+    pThis->__tsemaGetRefCount__ = &__nvoc_up_thunk_RsResource_tsemaGetRefCount;
 
-    pThis->__tsemaPreDestruct__ = &__nvoc_thunk_RsResource_tsemaPreDestruct;
+    // tsemaAddAdditionalDependants -- virtual inherited (res) base (chandes)
+    pThis->__tsemaAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_tsemaAddAdditionalDependants;
 
-    pThis->__tsemaIsDuplicate__ = &__nvoc_thunk_RsResource_tsemaIsDuplicate;
+    // tsemaGetNotificationListPtr -- virtual inherited (notify) base (chandes)
+    pThis->__tsemaGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_tsemaGetNotificationListPtr;
 
-    pThis->__tsemaControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_tsemaControlSerialization_Epilogue;
+    // tsemaGetNotificationShare -- virtual inherited (notify) base (chandes)
+    pThis->__tsemaGetNotificationShare__ = &__nvoc_up_thunk_Notifier_tsemaGetNotificationShare;
 
-    pThis->__tsemaGetNotificationListPtr__ = &__nvoc_thunk_Notifier_tsemaGetNotificationListPtr;
+    // tsemaSetNotificationShare -- virtual inherited (notify) base (chandes)
+    pThis->__tsemaSetNotificationShare__ = &__nvoc_up_thunk_Notifier_tsemaSetNotificationShare;
 
-    pThis->__tsemaGetNotificationShare__ = &__nvoc_thunk_Notifier_tsemaGetNotificationShare;
+    // tsemaUnregisterEvent -- virtual inherited (notify) base (chandes)
+    pThis->__tsemaUnregisterEvent__ = &__nvoc_up_thunk_Notifier_tsemaUnregisterEvent;
 
-    pThis->__tsemaMap__ = &__nvoc_thunk_GpuResource_tsemaMap;
+    // tsemaGetOrAllocNotifShare -- virtual inherited (notify) base (chandes)
+    pThis->__tsemaGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_tsemaGetOrAllocNotifShare;
+} // End __nvoc_init_funcTable_TimedSemaSwObject_1 with approximately 36 basic block(s).
 
-    pThis->__tsemaGetOrAllocNotifShare__ = &__nvoc_thunk_Notifier_tsemaGetOrAllocNotifShare;
-}
 
+// Initialize vtable(s) for 35 virtual method(s).
 void __nvoc_init_funcTable_TimedSemaSwObject(TimedSemaSwObject *pThis) {
+
+    // Initialize vtable(s) with 35 per-object function pointer(s).
     __nvoc_init_funcTable_TimedSemaSwObject_1(pThis);
 }
 
@@ -439,7 +516,7 @@ void __nvoc_init_TimedSemaSwObject(TimedSemaSwObject *pThis, RmHalspecOwner *pRm
     __nvoc_init_funcTable_TimedSemaSwObject(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_TimedSemaSwObject(TimedSemaSwObject **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+NV_STATUS __nvoc_objCreate_TimedSemaSwObject(TimedSemaSwObject **ppThis, Dynamic *pParent, NvU32 createFlags, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
 {
     NV_STATUS status;
     Object *pParentObj = NULL;
@@ -507,7 +584,7 @@ __nvoc_objCreate_TimedSemaSwObject_cleanup:
 
 NV_STATUS __nvoc_objCreateDynamic_TimedSemaSwObject(TimedSemaSwObject **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
     NV_STATUS status;
-    struct CALL_CONTEXT * arg_pCallContext = va_arg(args, struct CALL_CONTEXT *);
+    CALL_CONTEXT * arg_pCallContext = va_arg(args, CALL_CONTEXT *);
     struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams = va_arg(args, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
 
     status = __nvoc_objCreate_TimedSemaSwObject(ppThis, pParent, createFlags, arg_pCallContext, arg_pParams);

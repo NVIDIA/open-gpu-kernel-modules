@@ -30,6 +30,25 @@
 /* ------------------------ Public Functions -------------------------------- */
 
 /*!
+ * @brief  Do any operations to get ready for a XVE sw reset.
+ *
+ * @param[in]  pGpu           GPU object pointer
+ * @param[in]  pKernelBif     KernelBif object pointer
+ *
+ * @return  NV_OK
+ */
+NV_STATUS
+kbifPrepareForXveReset_GP100
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+
+    return NV_OK;
+}
+
+/*!
  * @brief  Get the PMC bit of the valid Engines to reset.
  *
  * @return All valid engines

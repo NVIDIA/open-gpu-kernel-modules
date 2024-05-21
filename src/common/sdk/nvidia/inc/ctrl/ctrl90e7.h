@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,50 +23,12 @@
 
 #pragma once
 
-#include <nvtypes.h>
-
 //
 // This file was generated with FINN, an NVIDIA coding tool.
 // Source file:      ctrl/ctrl90e7.finn
 //
 
-#include "nvfixedtypes.h"
-#include "ctrl/ctrlxxxx.h"
-/* GF100_SUBDEVICE_INFOROM control commands and parameters */
-
-#define NV90E7_CTRL_CMD(cat,idx) NVXXXX_CTRL_CMD(0x90E7, NV90E7_CTRL_##cat, idx)
-
-/* Command categories (6 bits) */
-#define NV90E7_CTRL_RESERVED                    (0x00)
-#define NV90E7_CTRL_BBX                         (0x01)
 
 
-
-/*
- * NV90E7_CTRL_CMD_BBX_GET_LAST_FLUSH_TIME
- *
- * This command is used to query the last BBX flush timestamp and duration. If BBX has not yet
- * been flushed, the status returned is NV_ERR_NOT_READY.
- *
- *   timestamp
- *     This parameter specifies the start timestamp of the last BBX flush.
- *
- *   durationUs
- *     This parameter specifies the duration (us) of the last BBX flush.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_NOT_READY
- *   NV_ERR_NOT_SUPPORTED
- */
-#define NV90E7_CTRL_CMD_BBX_GET_LAST_FLUSH_TIME (0x90e70113) /* finn: Evaluated from "(FINN_GF100_SUBDEVICE_INFOROM_BBX_INTERFACE_ID << 8) | NV90E7_CTRL_BBX_GET_LAST_FLUSH_TIME_PARAMS_MESSAGE_ID" */
-
-#define NV90E7_CTRL_BBX_GET_LAST_FLUSH_TIME_PARAMS_MESSAGE_ID (0x13U)
-
-typedef struct NV90E7_CTRL_BBX_GET_LAST_FLUSH_TIME_PARAMS {
-    NV_DECLARE_ALIGNED(NvU64 timestamp, 8);
-    NvU32 durationUs;
-} NV90E7_CTRL_BBX_GET_LAST_FLUSH_TIME_PARAMS;
-
-
+#include "ctrl90e7/ctrl90e7bbx.h"
 

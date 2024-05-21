@@ -1,13 +1,20 @@
+
 #ifndef _G_RESSERV_NVOC_H_
 #define _G_RESSERV_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +36,7 @@ extern "C" {
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_resserv_nvoc.h"
 
 #ifndef _RESSERV_H_
@@ -119,6 +127,7 @@ typedef struct RS_LOCK_INFO RS_LOCK_INFO;
 typedef struct RS_CONTROL_COOKIE RS_CONTROL_COOKIE;
 typedef NV_STATUS RsCtrlFunc(struct RS_RES_CONTROL_PARAMS_INTERNAL*);
 
+
 struct RsClient;
 
 #ifndef __NVOC_CLASS_RsClient_TYPEDEF__
@@ -131,6 +140,7 @@ typedef struct RsClient RsClient;
 #endif /* __nvoc_class_id_RsClient */
 
 
+
 struct RsResource;
 
 #ifndef __NVOC_CLASS_RsResource_TYPEDEF__
@@ -141,6 +151,7 @@ typedef struct RsResource RsResource;
 #ifndef __nvoc_class_id_RsResource
 #define __nvoc_class_id_RsResource 0xd551cb
 #endif /* __nvoc_class_id_RsResource */
+
 
 
 struct RsShared;
@@ -159,7 +170,6 @@ typedef struct RsShared RsShared;
 MAKE_LIST(RsResourceRefList, RsResourceRef*);
 MAKE_LIST(RsResourceList, RsResource*);
 MAKE_LIST(RsHandleList, NvHandle);
-MAKE_LIST(RsClientList, CLIENT_ENTRY*);
 MAKE_LIST(RsShareList, RS_SHARE_POLICY);
 MAKE_MULTIMAP(RsIndex, RsResourceRef*);
 
@@ -366,6 +376,12 @@ struct ACCESS_CONTROL
 #define RS_LOCK_VALIDATOR_INIT(lock, lockClass, inst) \
     do { NV_ASSERT_OK(lockvalLockInit((lock), (lockClass), (inst))); } while(0)
 
+#define RS_SPINLOCK_ACQUIRE(lock)                            do \
+{                                                               \
+    NV_ASSERT_OK(lockvalPreAcquire((validator)));               \
+    portSyncSpinlockAcquire((lock))  ;                          \
+    lockvalPostAcquire((validator), LOCK_VAL_SPINLOCK);         \
+
 #define RS_RWLOCK_ACQUIRE_READ(lock, validator)              do \
 {                                                               \
     NV_ASSERT_OK(lockvalPreAcquire((validator)));               \
@@ -378,6 +394,17 @@ struct ACCESS_CONTROL
     NV_ASSERT_OK(lockvalPreAcquire((validator)));               \
     portSyncRwLockAcquireWrite((lock));                         \
     lockvalPostAcquire((validator), LOCK_VAL_WLOCK);            \
+} while(0)
+
+#define RS_SPINLOCK_RELEASE_EXT(lock, validator, bOutOfOrder)                                                       do \
+{                                                                                                                      \
+    void *pLockValTlsEntry, *pReleasedLockNode;                                                                        \
+    if (bOutOfOrder)                                                                                                   \
+        NV_ASSERT_OK(lockvalReleaseOutOfOrder((validator), LOCK_VAL_SPINLOCK, &pLockValTlsEntry, &pReleasedLockNode)); \
+    else                                                                                                               \
+        NV_ASSERT_OK(lockvalRelease((validator), LOCK_VAL_SPINLOCK, &pLockValTlsEntry, &pReleasedLockNode));           \
+    portSyncSpinlockRelease((lock));                                                                                   \
+    lockvalMemoryRelease(pLockValTlsEntry, pReleasedLockNode);                                                         \
 } while(0)
 
 #define RS_RWLOCK_RELEASE_READ_EXT(lock, validator, bOutOfOrder)                                                 do \
@@ -404,12 +431,15 @@ struct ACCESS_CONTROL
 
 #else
 #define RS_LOCK_VALIDATOR_INIT(lock, lockClass, inst)
+#define RS_SPINLOCK_ACQUIRE(lock, validator)                        do { portSyncSpinlockAcquire((lock)); } while(0)
 #define RS_RWLOCK_ACQUIRE_READ(lock, validator)                     do { portSyncRwLockAcquireRead((lock)); } while(0)
 #define RS_RWLOCK_ACQUIRE_WRITE(lock, validator)                    do { portSyncRwLockAcquireWrite((lock)); } while(0)
+#define RS_SPINLOCK_RELEASE_EXT(lock, validator, bOutOfOrder)       do { portSyncSpinlockRelease((lock)); } while(0)
 #define RS_RWLOCK_RELEASE_READ_EXT(lock, validator, bOutOfOrder)    do { portSyncRwLockReleaseRead((lock)); } while(0)
 #define RS_RWLOCK_RELEASE_WRITE_EXT(lock, validator, bOutOfOrder)   do { portSyncRwLockReleaseWrite((lock)); } while(0)
 #endif
 
+#define RS_SPINLOCK_RELEASE(lock, validator)       RS_SPINLOCK_RELEASE_EXT(lock, validator, NV_FALSE)
 #define RS_RWLOCK_RELEASE_READ(lock, validator)    RS_RWLOCK_RELEASE_READ_EXT(lock, validator, NV_FALSE)
 #define RS_RWLOCK_RELEASE_WRITE(lock, validator)   RS_RWLOCK_RELEASE_WRITE_EXT(lock, validator, NV_FALSE)
 

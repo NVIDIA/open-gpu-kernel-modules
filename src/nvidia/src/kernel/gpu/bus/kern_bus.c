@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -742,7 +742,9 @@ kbusPatchBar1Pdb_GSPCLIENT
     memdescDescribe(pMemDesc, ADDR_FBMEM, pGSCI->bar1PdeBase, rootSize);
     memdescSetPageSize(pMemDesc, VAS_ADDRESS_TRANSLATION(pKernelBus->bar1[GPU_GFID_PF].pVAS), RM_PAGE_SIZE);
 
-    gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx);
+    NV_ASSERT_OK_OR_GOTO(status,
+        gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx),
+        done);
 
     //
     // Modify the CPU-RM's walker state with the new backing memory.
@@ -757,13 +759,17 @@ kbusPatchBar1Pdb_GSPCLIENT
                                         NV_TRUE,
                                         NV_FALSE);
     gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
-    if (NV_OK != status)
+
+done:
+    if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Failed to modify CPU-RM's BAR1 PDB to GSP-RM's BAR1 PDB.\n");
-        return status;
+        memdescDestroy(pMemDesc);
     }
-
-    gvaspaceInvalidateTlb(pGVAS, pGpu, PTE_DOWNGRADE);
+    else
+    {
+        gvaspaceInvalidateTlb(pGVAS, pGpu, PTE_DOWNGRADE);
+    }
 
     return status;
 }
@@ -991,7 +997,7 @@ kbusCheckEngineWithOrderList_KERNEL
    case ENG_OFA(0):
             return !!NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps,
                 RM_ENGINE_TYPE_OFA(GET_OFA_IDX(engDesc)));
-        
+
         case ENG_NVJPEG(0):
         case ENG_NVJPEG(1):
         case ENG_NVJPEG(2):
@@ -1283,20 +1289,33 @@ kbusSendBusInfo_IMPL
 )
 {
     NV_STATUS status = NV_OK;
-    NV2080_CTRL_BUS_GET_INFO_V2_PARAMS busGetInfoParams = {0};
 
-    busGetInfoParams.busInfoList[0] = *pBusInfo;
-    busGetInfoParams.busInfoListSize = 1;
+    if (IS_VIRTUAL(pGpu))
+    {
+        VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
 
-    NV_RM_RPC_CONTROL(pGpu,
-                      pGpu->hInternalClient,
-                      pGpu->hInternalSubdevice,
-                      NV2080_CTRL_CMD_BUS_GET_INFO_V2,
-                      &busGetInfoParams,
-                      sizeof(busGetInfoParams),
-                      status);
+        NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
 
-    pBusInfo->data = busGetInfoParams.busInfoList[0].data;
+        pBusInfo->data = pVSI->busGetInfoV2.busInfoList[pBusInfo->index].data;
+    }
+    else
+    {
+        RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+        NV2080_CTRL_BUS_GET_INFO_V2_PARAMS busGetInfoParams = {0};
+
+        busGetInfoParams.busInfoList[0] = *pBusInfo;
+        busGetInfoParams.busInfoListSize = 1;
+
+        status = pRmApi->Control(pRmApi,
+                                 pGpu->hInternalClient,
+                                 pGpu->hInternalSubdevice,
+                                 NV2080_CTRL_CMD_BUS_GET_INFO_V2,
+                                 &busGetInfoParams,
+                                 sizeof(busGetInfoParams));
+
+        pBusInfo->data = busGetInfoParams.busInfoList[0].data;
+    }
+
     return status;
 }
 

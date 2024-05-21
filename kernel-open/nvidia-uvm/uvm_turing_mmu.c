@@ -138,7 +138,7 @@ static NvU64 poisoned_pte_turing(void)
 
 static uvm_mmu_mode_hal_t turing_mmu_mode_hal;
 
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_turing(NvU32 big_page_size)
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_turing(NvU64 big_page_size)
 {
     static bool initialized = false;
 

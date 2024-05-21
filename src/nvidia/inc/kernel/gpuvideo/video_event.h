@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -199,6 +199,9 @@ typedef struct
 } VIDEO_ENGINE_EVENT__RECORD;
 
 #define VIDEO_ENGINE_EVENT__LOG_DATA_SIZE(s) (sizeof(VIDEO_ENGINE_EVENT__RECORD) + s.event_log_data.size)
+
+#define VIDEO_ENGINE_EVENT__TRACE_ADDR__OFFSET_LO (0xF90UL)
+#define VIDEO_ENGINE_EVENT__TRACE_ADDR__OFFSET_HI (0xF94UL)
 
 /*!
 * Client information passing down by RM and saved at offset VIDEO_ENGINE_EVENT__LOG_INFO__OFFSET

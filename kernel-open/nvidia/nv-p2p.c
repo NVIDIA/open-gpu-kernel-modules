@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2011-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2011-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,6 +31,8 @@
 #include "nv-p2p.h"
 #include "rmp2pdefines.h"
 
+#include "nvmisc.h"
+
 typedef enum nv_p2p_page_table_type {
     NV_P2P_PAGE_TABLE_TYPE_NON_PERSISTENT = 0,
     NV_P2P_PAGE_TABLE_TYPE_PERSISTENT,
@@ -50,6 +52,7 @@ typedef struct nv_p2p_mem_info {
         struct semaphore lock;
     } dma_mapping_list;
     void *private;
+    void *mig_info;
 } nv_p2p_mem_info_t;
 
 // declared and created in nv.c
@@ -73,7 +76,7 @@ static struct nvidia_status_mapping {
 };
 
 #define NVIDIA_STATUS_MAPPINGS \
-    (sizeof(nvidia_status_mappings) / sizeof(struct nvidia_status_mapping))
+    NV_ARRAY_ELEMENTS(nvidia_status_mappings)
 
 static int nvidia_p2p_map_status(NV_STATUS status)
 {
@@ -314,7 +317,7 @@ static NV_STATUS nv_p2p_put_pages(
          * callback which can free it unlike non-persistent page_table.
          */
         mem_info = container_of(*page_table, nv_p2p_mem_info_t, page_table);
-        status = rm_p2p_put_pages_persistent(sp, mem_info->private, *page_table);
+        status = rm_p2p_put_pages_persistent(sp, mem_info->private, *page_table, mem_info->mig_info);
     }
     else
     {
@@ -412,6 +415,17 @@ static int nv_p2p_get_pages(
     NvU8 uuid[NVIDIA_P2P_GPU_UUID_LEN] = {0};
     int rc;
 
+    if (!NV_IS_ALIGNED64(virtual_address, NVRM_P2P_PAGESIZE_BIG_64K) ||
+        !NV_IS_ALIGNED64(length, NVRM_P2P_PAGESIZE_BIG_64K))
+    {
+        nv_printf(NV_DBG_ERRORS,
+                  "NVRM: Invalid argument in nv_p2p_get_pages,"
+                  "address or length are not aligned "
+                  "address=0x%llx, length=0x%llx\n",
+                  virtual_address, length);
+        return -EINVAL;
+    }
+
     rc = nv_kmem_cache_alloc_stack(&sp);
     if (rc != 0)
     {
@@ -495,7 +509,7 @@ static int nv_p2p_get_pages(
         status = rm_p2p_get_pages_persistent(sp, virtual_address, length,
                                              &mem_info->private,
                                              physical_addresses, &entries,
-                                             *page_table, gpu_info);
+                                             *page_table, gpu_info, &mem_info->mig_info);
         if (status != NV_OK)
         {
             goto failed;

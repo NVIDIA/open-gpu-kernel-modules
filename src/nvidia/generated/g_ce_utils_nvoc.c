@@ -93,10 +93,13 @@ __nvoc_ctor_CeUtils_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_CeUtils_1(CeUtils *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-}
+} // End __nvoc_init_funcTable_CeUtils_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_CeUtils(CeUtils *pThis) {
     __nvoc_init_funcTable_CeUtils_1(pThis);
 }
@@ -264,106 +267,6 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_CeUtilsApi =
     /*pExportInfo=*/        &__nvoc_export_info_CeUtilsApi
 };
 
-static NvBool __nvoc_thunk_GpuResource_ceutilsapiShareCallback(struct CeUtilsApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_CeUtilsApi_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_ceutilsapiCheckMemInterUnmap(struct CeUtilsApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_CeUtilsApi_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_ceutilsapiMapTo(struct CeUtilsApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_CeUtilsApi_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_ceutilsapiGetMapAddrSpace(struct CeUtilsApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_CeUtilsApi_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static NvU32 __nvoc_thunk_RsResource_ceutilsapiGetRefCount(struct CeUtilsApi *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_CeUtilsApi_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_ceutilsapiAddAdditionalDependants(struct RsClient *pClient, struct CeUtilsApi *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_CeUtilsApi_RsResource.offset), pReference);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_ceutilsapiControl_Prologue(struct CeUtilsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_CeUtilsApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_ceutilsapiGetRegBaseOffsetAndSize(struct CeUtilsApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_CeUtilsApi_GpuResource.offset), pGpu, pOffset, pSize);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_ceutilsapiInternalControlForward(struct CeUtilsApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_CeUtilsApi_GpuResource.offset), command, pParams, size);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_ceutilsapiUnmapFrom(struct CeUtilsApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_CeUtilsApi_RsResource.offset), pParams);
-}
-
-static void __nvoc_thunk_RmResource_ceutilsapiControl_Epilogue(struct CeUtilsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_CeUtilsApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_ceutilsapiGetInternalObjectHandle(struct CeUtilsApi *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_CeUtilsApi_GpuResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_ceutilsapiControl(struct CeUtilsApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_CeUtilsApi_GpuResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_ceutilsapiUnmap(struct CeUtilsApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_CeUtilsApi_GpuResource.offset), pCallContext, pCpuMapping);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_ceutilsapiGetMemInterMapParams(struct CeUtilsApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_CeUtilsApi_RmResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_ceutilsapiGetMemoryMappingDescriptor(struct CeUtilsApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_CeUtilsApi_RmResource.offset), ppMemDesc);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_ceutilsapiControlFilter(struct CeUtilsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_CeUtilsApi_RsResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_ceutilsapiControlSerialization_Prologue(struct CeUtilsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_CeUtilsApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NvBool __nvoc_thunk_RsResource_ceutilsapiCanCopy(struct CeUtilsApi *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_CeUtilsApi_RsResource.offset));
-}
-
-static NvBool __nvoc_thunk_RsResource_ceutilsapiIsPartialUnmapSupported(struct CeUtilsApi *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_CeUtilsApi_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_ceutilsapiPreDestruct(struct CeUtilsApi *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_CeUtilsApi_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_ceutilsapiIsDuplicate(struct CeUtilsApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_CeUtilsApi_RsResource.offset), hMemory, pDuplicate);
-}
-
-static void __nvoc_thunk_RmResource_ceutilsapiControlSerialization_Epilogue(struct CeUtilsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_CeUtilsApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_ceutilsapiMap(struct CeUtilsApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return gpuresMap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_CeUtilsApi_GpuResource.offset), pCallContext, pParams, pCpuMapping);
-}
-
-static NvBool __nvoc_thunk_RmResource_ceutilsapiAccessCallback(struct CeUtilsApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_CeUtilsApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
-}
-
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
@@ -371,12 +274,12 @@ static NvBool __nvoc_thunk_RmResource_ceutilsapiAccessCallback(struct CeUtilsApi
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_CeUtilsApi[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x804u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x104u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) ceutilsapiCtrlCmdMemset_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x804u)
-        /*flags=*/      0x804u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x104u)
+        /*flags=*/      0x104u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x500101u,
         /*paramSize=*/  sizeof(NV0050_CTRL_MEMSET_PARAMS),
@@ -386,12 +289,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_CeUtilsA
 #endif
     },
     {               /*  [1] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x804u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x104u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) ceutilsapiCtrlCmdMemcopy_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x804u)
-        /*flags=*/      0x804u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x104u)
+        /*flags=*/      0x104u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x500102u,
         /*paramSize=*/  sizeof(NV0050_CTRL_MEMCOPY_PARAMS),
@@ -401,12 +304,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_CeUtilsA
 #endif
     },
     {               /*  [2] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x804u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x104u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) ceutilsapiCtrlCmdCheckProgress_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x804u)
-        /*flags=*/      0x804u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x104u)
+        /*flags=*/      0x104u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x500103u,
         /*paramSize=*/  sizeof(NV0050_CTRL_CHECK_PROGRESS_PARAMS),
@@ -417,6 +320,134 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_CeUtilsA
     },
 
 };
+
+// 25 up-thunk(s) defined to bridge methods in CeUtilsApi to superclasses
+
+// ceutilsapiControl: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_ceutilsapiControl(struct CeUtilsApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_CeUtilsApi_GpuResource.offset), pCallContext, pParams);
+}
+
+// ceutilsapiMap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_ceutilsapiMap(struct CeUtilsApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_CeUtilsApi_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+}
+
+// ceutilsapiUnmap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_ceutilsapiUnmap(struct CeUtilsApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_CeUtilsApi_GpuResource.offset), pCallContext, pCpuMapping);
+}
+
+// ceutilsapiShareCallback: virtual inherited (gpures) base (gpures)
+static NvBool __nvoc_up_thunk_GpuResource_ceutilsapiShareCallback(struct CeUtilsApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_CeUtilsApi_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+}
+
+// ceutilsapiGetRegBaseOffsetAndSize: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_ceutilsapiGetRegBaseOffsetAndSize(struct CeUtilsApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_CeUtilsApi_GpuResource.offset), pGpu, pOffset, pSize);
+}
+
+// ceutilsapiGetMapAddrSpace: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_ceutilsapiGetMapAddrSpace(struct CeUtilsApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_CeUtilsApi_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+// ceutilsapiInternalControlForward: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_ceutilsapiInternalControlForward(struct CeUtilsApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_CeUtilsApi_GpuResource.offset), command, pParams, size);
+}
+
+// ceutilsapiGetInternalObjectHandle: virtual inherited (gpures) base (gpures)
+static NvHandle __nvoc_up_thunk_GpuResource_ceutilsapiGetInternalObjectHandle(struct CeUtilsApi *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_CeUtilsApi_GpuResource.offset));
+}
+
+// ceutilsapiAccessCallback: virtual inherited (rmres) base (gpures)
+static NvBool __nvoc_up_thunk_RmResource_ceutilsapiAccessCallback(struct CeUtilsApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_CeUtilsApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+}
+
+// ceutilsapiGetMemInterMapParams: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_ceutilsapiGetMemInterMapParams(struct CeUtilsApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_CeUtilsApi_RmResource.offset), pParams);
+}
+
+// ceutilsapiCheckMemInterUnmap: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_ceutilsapiCheckMemInterUnmap(struct CeUtilsApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_CeUtilsApi_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+// ceutilsapiGetMemoryMappingDescriptor: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_ceutilsapiGetMemoryMappingDescriptor(struct CeUtilsApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_CeUtilsApi_RmResource.offset), ppMemDesc);
+}
+
+// ceutilsapiControlSerialization_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_ceutilsapiControlSerialization_Prologue(struct CeUtilsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_CeUtilsApi_RmResource.offset), pCallContext, pParams);
+}
+
+// ceutilsapiControlSerialization_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_ceutilsapiControlSerialization_Epilogue(struct CeUtilsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_CeUtilsApi_RmResource.offset), pCallContext, pParams);
+}
+
+// ceutilsapiControl_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_ceutilsapiControl_Prologue(struct CeUtilsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_CeUtilsApi_RmResource.offset), pCallContext, pParams);
+}
+
+// ceutilsapiControl_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_ceutilsapiControl_Epilogue(struct CeUtilsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_CeUtilsApi_RmResource.offset), pCallContext, pParams);
+}
+
+// ceutilsapiCanCopy: virtual inherited (res) base (gpures)
+static NvBool __nvoc_up_thunk_RsResource_ceutilsapiCanCopy(struct CeUtilsApi *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_CeUtilsApi_RsResource.offset));
+}
+
+// ceutilsapiIsDuplicate: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_ceutilsapiIsDuplicate(struct CeUtilsApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_CeUtilsApi_RsResource.offset), hMemory, pDuplicate);
+}
+
+// ceutilsapiPreDestruct: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_ceutilsapiPreDestruct(struct CeUtilsApi *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_CeUtilsApi_RsResource.offset));
+}
+
+// ceutilsapiControlFilter: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_ceutilsapiControlFilter(struct CeUtilsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_CeUtilsApi_RsResource.offset), pCallContext, pParams);
+}
+
+// ceutilsapiIsPartialUnmapSupported: inline virtual inherited (res) base (gpures) body
+static NvBool __nvoc_up_thunk_RsResource_ceutilsapiIsPartialUnmapSupported(struct CeUtilsApi *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_CeUtilsApi_RsResource.offset));
+}
+
+// ceutilsapiMapTo: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_ceutilsapiMapTo(struct CeUtilsApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_CeUtilsApi_RsResource.offset), pParams);
+}
+
+// ceutilsapiUnmapFrom: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_ceutilsapiUnmapFrom(struct CeUtilsApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_CeUtilsApi_RsResource.offset), pParams);
+}
+
+// ceutilsapiGetRefCount: virtual inherited (res) base (gpures)
+static NvU32 __nvoc_up_thunk_RsResource_ceutilsapiGetRefCount(struct CeUtilsApi *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_CeUtilsApi_RsResource.offset));
+}
+
+// ceutilsapiAddAdditionalDependants: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_ceutilsapiAddAdditionalDependants(struct RsClient *pClient, struct CeUtilsApi *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_CeUtilsApi_RsResource.offset), pReference);
+}
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_CeUtilsApi = 
 {
@@ -454,73 +485,106 @@ __nvoc_ctor_CeUtilsApi_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_CeUtilsApi_1(CeUtilsApi *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x804u)
+    // ceutilsapiCtrlCmdMemset -- exported (id=0x500101)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x104u)
     pThis->__ceutilsapiCtrlCmdMemset__ = &ceutilsapiCtrlCmdMemset_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x804u)
+    // ceutilsapiCtrlCmdMemcopy -- exported (id=0x500102)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x104u)
     pThis->__ceutilsapiCtrlCmdMemcopy__ = &ceutilsapiCtrlCmdMemcopy_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x804u)
+    // ceutilsapiCtrlCmdCheckProgress -- exported (id=0x500103)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x104u)
     pThis->__ceutilsapiCtrlCmdCheckProgress__ = &ceutilsapiCtrlCmdCheckProgress_IMPL;
 #endif
 
-    pThis->__ceutilsapiShareCallback__ = &__nvoc_thunk_GpuResource_ceutilsapiShareCallback;
+    // ceutilsapiControl -- virtual inherited (gpures) base (gpures)
+    pThis->__ceutilsapiControl__ = &__nvoc_up_thunk_GpuResource_ceutilsapiControl;
 
-    pThis->__ceutilsapiCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_ceutilsapiCheckMemInterUnmap;
+    // ceutilsapiMap -- virtual inherited (gpures) base (gpures)
+    pThis->__ceutilsapiMap__ = &__nvoc_up_thunk_GpuResource_ceutilsapiMap;
 
-    pThis->__ceutilsapiMapTo__ = &__nvoc_thunk_RsResource_ceutilsapiMapTo;
+    // ceutilsapiUnmap -- virtual inherited (gpures) base (gpures)
+    pThis->__ceutilsapiUnmap__ = &__nvoc_up_thunk_GpuResource_ceutilsapiUnmap;
 
-    pThis->__ceutilsapiGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_ceutilsapiGetMapAddrSpace;
+    // ceutilsapiShareCallback -- virtual inherited (gpures) base (gpures)
+    pThis->__ceutilsapiShareCallback__ = &__nvoc_up_thunk_GpuResource_ceutilsapiShareCallback;
 
-    pThis->__ceutilsapiGetRefCount__ = &__nvoc_thunk_RsResource_ceutilsapiGetRefCount;
+    // ceutilsapiGetRegBaseOffsetAndSize -- virtual inherited (gpures) base (gpures)
+    pThis->__ceutilsapiGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_ceutilsapiGetRegBaseOffsetAndSize;
 
-    pThis->__ceutilsapiAddAdditionalDependants__ = &__nvoc_thunk_RsResource_ceutilsapiAddAdditionalDependants;
+    // ceutilsapiGetMapAddrSpace -- virtual inherited (gpures) base (gpures)
+    pThis->__ceutilsapiGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_ceutilsapiGetMapAddrSpace;
 
-    pThis->__ceutilsapiControl_Prologue__ = &__nvoc_thunk_RmResource_ceutilsapiControl_Prologue;
+    // ceutilsapiInternalControlForward -- virtual inherited (gpures) base (gpures)
+    pThis->__ceutilsapiInternalControlForward__ = &__nvoc_up_thunk_GpuResource_ceutilsapiInternalControlForward;
 
-    pThis->__ceutilsapiGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_ceutilsapiGetRegBaseOffsetAndSize;
+    // ceutilsapiGetInternalObjectHandle -- virtual inherited (gpures) base (gpures)
+    pThis->__ceutilsapiGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_ceutilsapiGetInternalObjectHandle;
 
-    pThis->__ceutilsapiInternalControlForward__ = &__nvoc_thunk_GpuResource_ceutilsapiInternalControlForward;
+    // ceutilsapiAccessCallback -- virtual inherited (rmres) base (gpures)
+    pThis->__ceutilsapiAccessCallback__ = &__nvoc_up_thunk_RmResource_ceutilsapiAccessCallback;
 
-    pThis->__ceutilsapiUnmapFrom__ = &__nvoc_thunk_RsResource_ceutilsapiUnmapFrom;
+    // ceutilsapiGetMemInterMapParams -- virtual inherited (rmres) base (gpures)
+    pThis->__ceutilsapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_ceutilsapiGetMemInterMapParams;
 
-    pThis->__ceutilsapiControl_Epilogue__ = &__nvoc_thunk_RmResource_ceutilsapiControl_Epilogue;
+    // ceutilsapiCheckMemInterUnmap -- virtual inherited (rmres) base (gpures)
+    pThis->__ceutilsapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_ceutilsapiCheckMemInterUnmap;
 
-    pThis->__ceutilsapiGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_ceutilsapiGetInternalObjectHandle;
+    // ceutilsapiGetMemoryMappingDescriptor -- virtual inherited (rmres) base (gpures)
+    pThis->__ceutilsapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_ceutilsapiGetMemoryMappingDescriptor;
 
-    pThis->__ceutilsapiControl__ = &__nvoc_thunk_GpuResource_ceutilsapiControl;
+    // ceutilsapiControlSerialization_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__ceutilsapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_ceutilsapiControlSerialization_Prologue;
 
-    pThis->__ceutilsapiUnmap__ = &__nvoc_thunk_GpuResource_ceutilsapiUnmap;
+    // ceutilsapiControlSerialization_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__ceutilsapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_ceutilsapiControlSerialization_Epilogue;
 
-    pThis->__ceutilsapiGetMemInterMapParams__ = &__nvoc_thunk_RmResource_ceutilsapiGetMemInterMapParams;
+    // ceutilsapiControl_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__ceutilsapiControl_Prologue__ = &__nvoc_up_thunk_RmResource_ceutilsapiControl_Prologue;
 
-    pThis->__ceutilsapiGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_ceutilsapiGetMemoryMappingDescriptor;
+    // ceutilsapiControl_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__ceutilsapiControl_Epilogue__ = &__nvoc_up_thunk_RmResource_ceutilsapiControl_Epilogue;
 
-    pThis->__ceutilsapiControlFilter__ = &__nvoc_thunk_RsResource_ceutilsapiControlFilter;
+    // ceutilsapiCanCopy -- virtual inherited (res) base (gpures)
+    pThis->__ceutilsapiCanCopy__ = &__nvoc_up_thunk_RsResource_ceutilsapiCanCopy;
 
-    pThis->__ceutilsapiControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_ceutilsapiControlSerialization_Prologue;
+    // ceutilsapiIsDuplicate -- virtual inherited (res) base (gpures)
+    pThis->__ceutilsapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_ceutilsapiIsDuplicate;
 
-    pThis->__ceutilsapiCanCopy__ = &__nvoc_thunk_RsResource_ceutilsapiCanCopy;
+    // ceutilsapiPreDestruct -- virtual inherited (res) base (gpures)
+    pThis->__ceutilsapiPreDestruct__ = &__nvoc_up_thunk_RsResource_ceutilsapiPreDestruct;
 
-    pThis->__ceutilsapiIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_ceutilsapiIsPartialUnmapSupported;
+    // ceutilsapiControlFilter -- virtual inherited (res) base (gpures)
+    pThis->__ceutilsapiControlFilter__ = &__nvoc_up_thunk_RsResource_ceutilsapiControlFilter;
 
-    pThis->__ceutilsapiPreDestruct__ = &__nvoc_thunk_RsResource_ceutilsapiPreDestruct;
+    // ceutilsapiIsPartialUnmapSupported -- inline virtual inherited (res) base (gpures) body
+    pThis->__ceutilsapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_ceutilsapiIsPartialUnmapSupported;
 
-    pThis->__ceutilsapiIsDuplicate__ = &__nvoc_thunk_RsResource_ceutilsapiIsDuplicate;
+    // ceutilsapiMapTo -- virtual inherited (res) base (gpures)
+    pThis->__ceutilsapiMapTo__ = &__nvoc_up_thunk_RsResource_ceutilsapiMapTo;
 
-    pThis->__ceutilsapiControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_ceutilsapiControlSerialization_Epilogue;
+    // ceutilsapiUnmapFrom -- virtual inherited (res) base (gpures)
+    pThis->__ceutilsapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_ceutilsapiUnmapFrom;
 
-    pThis->__ceutilsapiMap__ = &__nvoc_thunk_GpuResource_ceutilsapiMap;
+    // ceutilsapiGetRefCount -- virtual inherited (res) base (gpures)
+    pThis->__ceutilsapiGetRefCount__ = &__nvoc_up_thunk_RsResource_ceutilsapiGetRefCount;
 
-    pThis->__ceutilsapiAccessCallback__ = &__nvoc_thunk_RmResource_ceutilsapiAccessCallback;
-}
+    // ceutilsapiAddAdditionalDependants -- virtual inherited (res) base (gpures)
+    pThis->__ceutilsapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_ceutilsapiAddAdditionalDependants;
+} // End __nvoc_init_funcTable_CeUtilsApi_1 with approximately 28 basic block(s).
 
+
+// Initialize vtable(s) for 28 virtual method(s).
 void __nvoc_init_funcTable_CeUtilsApi(CeUtilsApi *pThis) {
+
+    // Initialize vtable(s) with 28 per-object function pointer(s).
     __nvoc_init_funcTable_CeUtilsApi_1(pThis);
 }
 

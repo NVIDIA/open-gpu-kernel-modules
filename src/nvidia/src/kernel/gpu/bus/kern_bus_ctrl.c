@@ -677,3 +677,45 @@ subdeviceCtrlCmdBusSysmemAccess_IMPL
 
     return kbifDisableSysmemAccess_HAL(pGpu, pKernelBif, pParams->bDisable);
 }
+
+NV_STATUS
+subdeviceCtrlCmdBusGetPcieSupportedGpuAtomics_VF
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+
+    NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
+
+    for (NvU32 i = 0; i < NV2080_CTRL_PCIE_SUPPORTED_GPU_ATOMICS_OP_TYPE_COUNT; i++)
+    {
+        pParams->atomicOp[i].bSupported = pVSI->pcieSupportedGpuAtomics.atomicOp[i].bSupported;
+        pParams->atomicOp[i].attributes = pVSI->pcieSupportedGpuAtomics.atomicOp[i].attributes;
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS
+subdeviceCtrlCmdBusGetC2CInfo_VF
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+
+    NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
+
+    pParams->bIsLinkUp = pVSI->c2cInfo.bIsLinkUp;
+    pParams->nrLinks = pVSI->c2cInfo.nrLinks;
+    pParams->linkMask = pVSI->c2cInfo.linkMask;
+    pParams->perLinkBwMBps = pVSI->c2cInfo.perLinkBwMBps;
+    pParams->remoteType = pVSI->c2cInfo.remoteType;
+
+    return NV_OK;
+}

@@ -93,33 +93,52 @@ __nvoc_ctor_RsClient_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_RsClient_1(RsClient *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // clientValidate -- virtual
     pThis->__clientValidate__ = &clientValidate_IMPL;
 
+    // clientValidateLocks -- virtual
+    pThis->__clientValidateLocks__ = &clientValidateLocks_IMPL;
+
+    // clientGetCachedPrivilege -- virtual
     pThis->__clientGetCachedPrivilege__ = &clientGetCachedPrivilege_IMPL;
 
+    // clientIsAdmin -- virtual
     pThis->__clientIsAdmin__ = &clientIsAdmin_IMPL;
 
+    // clientFreeResource -- virtual
     pThis->__clientFreeResource__ = &clientFreeResource_IMPL;
 
+    // clientDestructResourceRef -- virtual
     pThis->__clientDestructResourceRef__ = &clientDestructResourceRef_IMPL;
 
+    // clientUnmapMemory -- virtual
     pThis->__clientUnmapMemory__ = &clientUnmapMemory_IMPL;
 
+    // clientInterMap -- virtual
     pThis->__clientInterMap__ = &clientInterMap_IMPL;
 
+    // clientInterUnmap -- virtual
     pThis->__clientInterUnmap__ = &clientInterUnmap_IMPL;
 
+    // clientValidateNewResourceHandle -- virtual
     pThis->__clientValidateNewResourceHandle__ = &clientValidateNewResourceHandle_IMPL;
 
+    // clientPostProcessPendingFreeList -- virtual
     pThis->__clientPostProcessPendingFreeList__ = &clientPostProcessPendingFreeList_IMPL;
 
+    // clientShareResource -- virtual
     pThis->__clientShareResource__ = &clientShareResource_IMPL;
-}
+} // End __nvoc_init_funcTable_RsClient_1 with approximately 12 basic block(s).
 
+
+// Initialize vtable(s) for 12 virtual method(s).
 void __nvoc_init_funcTable_RsClient(RsClient *pThis) {
+
+    // Initialize vtable(s) with 12 per-object function pointer(s).
     __nvoc_init_funcTable_RsClient_1(pThis);
 }
 
@@ -258,77 +277,98 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_RsClientResource =
     /*pExportInfo=*/        &__nvoc_export_info_RsClientResource
 };
 
-static NvBool __nvoc_thunk_RsResource_clientresShareCallback(struct RsClientResource *pResource, struct RsClient *pInvokingClient, RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return resShareCallback((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+// 18 up-thunk(s) defined to bridge methods in RsClientResource to superclasses
+
+// clientresCanCopy: virtual inherited (res) base (res)
+static NvBool __nvoc_up_thunk_RsResource_clientresCanCopy(struct RsClientResource *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RsClientResource_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_clientresControl(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControl((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pCallContext, pParams);
+// clientresIsDuplicate: virtual inherited (res) base (res)
+static NV_STATUS __nvoc_up_thunk_RsResource_clientresIsDuplicate(struct RsClientResource *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), hMemory, pDuplicate);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_clientresUnmap(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return resUnmap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pCallContext, pCpuMapping);
+// clientresPreDestruct: virtual inherited (res) base (res)
+static void __nvoc_up_thunk_RsResource_clientresPreDestruct(struct RsClientResource *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RsClientResource_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_clientresMapTo(struct RsClientResource *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pParams);
+// clientresControl: virtual inherited (res) base (res)
+static NV_STATUS __nvoc_up_thunk_RsResource_clientresControl(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControl((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pCallContext, pParams);
 }
 
-static NvU32 __nvoc_thunk_RsResource_clientresGetRefCount(struct RsClientResource *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset));
+// clientresControlFilter: virtual inherited (res) base (res)
+static NV_STATUS __nvoc_up_thunk_RsResource_clientresControlFilter(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_clientresControlFilter(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pCallContext, pParams);
+// clientresControlSerialization_Prologue: virtual inherited (res) base (res)
+static NV_STATUS __nvoc_up_thunk_RsResource_clientresControlSerialization_Prologue(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlSerialization_Prologue((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_clientresAddAdditionalDependants(struct RsClient *pClient, struct RsClientResource *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pReference);
+// clientresControlSerialization_Epilogue: virtual inherited (res) base (res)
+static void __nvoc_up_thunk_RsResource_clientresControlSerialization_Epilogue(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    resControlSerialization_Epilogue((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_clientresControlSerialization_Prologue(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlSerialization_Prologue((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pCallContext, pParams);
+// clientresControl_Prologue: virtual inherited (res) base (res)
+static NV_STATUS __nvoc_up_thunk_RsResource_clientresControl_Prologue(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControl_Prologue((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pCallContext, pParams);
 }
 
-static NvBool __nvoc_thunk_RsResource_clientresCanCopy(struct RsClientResource *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset));
+// clientresControl_Epilogue: virtual inherited (res) base (res)
+static void __nvoc_up_thunk_RsResource_clientresControl_Epilogue(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    resControl_Epilogue((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_clientresControl_Prologue(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControl_Prologue((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pCallContext, pParams);
+// clientresMap: virtual inherited (res) base (res)
+static NV_STATUS __nvoc_up_thunk_RsResource_clientresMap(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+    return resMap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pCallContext, pParams, pCpuMapping);
 }
 
-static NvBool __nvoc_thunk_RsResource_clientresIsPartialUnmapSupported(struct RsClientResource *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset));
+// clientresUnmap: virtual inherited (res) base (res)
+static NV_STATUS __nvoc_up_thunk_RsResource_clientresUnmap(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return resUnmap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pCallContext, pCpuMapping);
 }
 
-static void __nvoc_thunk_RsResource_clientresPreDestruct(struct RsClientResource *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset));
+// clientresIsPartialUnmapSupported: inline virtual inherited (res) base (res) body
+static NvBool __nvoc_up_thunk_RsResource_clientresIsPartialUnmapSupported(struct RsClientResource *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RsClientResource_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_clientresUnmapFrom(struct RsClientResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pParams);
+// clientresMapTo: virtual inherited (res) base (res)
+static NV_STATUS __nvoc_up_thunk_RsResource_clientresMapTo(struct RsClientResource *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_clientresIsDuplicate(struct RsClientResource *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), hMemory, pDuplicate);
+// clientresUnmapFrom: virtual inherited (res) base (res)
+static NV_STATUS __nvoc_up_thunk_RsResource_clientresUnmapFrom(struct RsClientResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pParams);
 }
 
-static void __nvoc_thunk_RsResource_clientresControlSerialization_Epilogue(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    resControlSerialization_Epilogue((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pCallContext, pParams);
+// clientresGetRefCount: virtual inherited (res) base (res)
+static NvU32 __nvoc_up_thunk_RsResource_clientresGetRefCount(struct RsClientResource *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RsClientResource_RsResource.offset));
 }
 
-static void __nvoc_thunk_RsResource_clientresControl_Epilogue(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    resControl_Epilogue((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pCallContext, pParams);
+// clientresAccessCallback: virtual inherited (res) base (res)
+static NvBool __nvoc_up_thunk_RsResource_clientresAccessCallback(struct RsClientResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return resAccessCallback((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_clientresMap(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return resMap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pCallContext, pParams, pCpuMapping);
+// clientresShareCallback: virtual inherited (res) base (res)
+static NvBool __nvoc_up_thunk_RsResource_clientresShareCallback(struct RsClientResource *pResource, struct RsClient *pInvokingClient, RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return resShareCallback((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NvBool __nvoc_thunk_RsResource_clientresAccessCallback(struct RsClientResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return resAccessCallback((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pInvokingClient, pAllocParams, accessRight);
+// clientresAddAdditionalDependants: virtual inherited (res) base (res)
+static void __nvoc_up_thunk_RsResource_clientresAddAdditionalDependants(struct RsClient *pClient, struct RsClientResource *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pReference);
 }
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_RsClientResource = 
 {
@@ -366,47 +406,70 @@ __nvoc_ctor_RsClientResource_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_RsClientResource_1(RsClientResource *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
-    pThis->__clientresShareCallback__ = &__nvoc_thunk_RsResource_clientresShareCallback;
+    // clientresCanCopy -- virtual inherited (res) base (res)
+    pThis->__clientresCanCopy__ = &__nvoc_up_thunk_RsResource_clientresCanCopy;
 
-    pThis->__clientresControl__ = &__nvoc_thunk_RsResource_clientresControl;
+    // clientresIsDuplicate -- virtual inherited (res) base (res)
+    pThis->__clientresIsDuplicate__ = &__nvoc_up_thunk_RsResource_clientresIsDuplicate;
 
-    pThis->__clientresUnmap__ = &__nvoc_thunk_RsResource_clientresUnmap;
+    // clientresPreDestruct -- virtual inherited (res) base (res)
+    pThis->__clientresPreDestruct__ = &__nvoc_up_thunk_RsResource_clientresPreDestruct;
 
-    pThis->__clientresMapTo__ = &__nvoc_thunk_RsResource_clientresMapTo;
+    // clientresControl -- virtual inherited (res) base (res)
+    pThis->__clientresControl__ = &__nvoc_up_thunk_RsResource_clientresControl;
 
-    pThis->__clientresGetRefCount__ = &__nvoc_thunk_RsResource_clientresGetRefCount;
+    // clientresControlFilter -- virtual inherited (res) base (res)
+    pThis->__clientresControlFilter__ = &__nvoc_up_thunk_RsResource_clientresControlFilter;
 
-    pThis->__clientresControlFilter__ = &__nvoc_thunk_RsResource_clientresControlFilter;
+    // clientresControlSerialization_Prologue -- virtual inherited (res) base (res)
+    pThis->__clientresControlSerialization_Prologue__ = &__nvoc_up_thunk_RsResource_clientresControlSerialization_Prologue;
 
-    pThis->__clientresAddAdditionalDependants__ = &__nvoc_thunk_RsResource_clientresAddAdditionalDependants;
+    // clientresControlSerialization_Epilogue -- virtual inherited (res) base (res)
+    pThis->__clientresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RsResource_clientresControlSerialization_Epilogue;
 
-    pThis->__clientresControlSerialization_Prologue__ = &__nvoc_thunk_RsResource_clientresControlSerialization_Prologue;
+    // clientresControl_Prologue -- virtual inherited (res) base (res)
+    pThis->__clientresControl_Prologue__ = &__nvoc_up_thunk_RsResource_clientresControl_Prologue;
 
-    pThis->__clientresCanCopy__ = &__nvoc_thunk_RsResource_clientresCanCopy;
+    // clientresControl_Epilogue -- virtual inherited (res) base (res)
+    pThis->__clientresControl_Epilogue__ = &__nvoc_up_thunk_RsResource_clientresControl_Epilogue;
 
-    pThis->__clientresControl_Prologue__ = &__nvoc_thunk_RsResource_clientresControl_Prologue;
+    // clientresMap -- virtual inherited (res) base (res)
+    pThis->__clientresMap__ = &__nvoc_up_thunk_RsResource_clientresMap;
 
-    pThis->__clientresIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_clientresIsPartialUnmapSupported;
+    // clientresUnmap -- virtual inherited (res) base (res)
+    pThis->__clientresUnmap__ = &__nvoc_up_thunk_RsResource_clientresUnmap;
 
-    pThis->__clientresPreDestruct__ = &__nvoc_thunk_RsResource_clientresPreDestruct;
+    // clientresIsPartialUnmapSupported -- inline virtual inherited (res) base (res) body
+    pThis->__clientresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_clientresIsPartialUnmapSupported;
 
-    pThis->__clientresUnmapFrom__ = &__nvoc_thunk_RsResource_clientresUnmapFrom;
+    // clientresMapTo -- virtual inherited (res) base (res)
+    pThis->__clientresMapTo__ = &__nvoc_up_thunk_RsResource_clientresMapTo;
 
-    pThis->__clientresIsDuplicate__ = &__nvoc_thunk_RsResource_clientresIsDuplicate;
+    // clientresUnmapFrom -- virtual inherited (res) base (res)
+    pThis->__clientresUnmapFrom__ = &__nvoc_up_thunk_RsResource_clientresUnmapFrom;
 
-    pThis->__clientresControlSerialization_Epilogue__ = &__nvoc_thunk_RsResource_clientresControlSerialization_Epilogue;
+    // clientresGetRefCount -- virtual inherited (res) base (res)
+    pThis->__clientresGetRefCount__ = &__nvoc_up_thunk_RsResource_clientresGetRefCount;
 
-    pThis->__clientresControl_Epilogue__ = &__nvoc_thunk_RsResource_clientresControl_Epilogue;
+    // clientresAccessCallback -- virtual inherited (res) base (res)
+    pThis->__clientresAccessCallback__ = &__nvoc_up_thunk_RsResource_clientresAccessCallback;
 
-    pThis->__clientresMap__ = &__nvoc_thunk_RsResource_clientresMap;
+    // clientresShareCallback -- virtual inherited (res) base (res)
+    pThis->__clientresShareCallback__ = &__nvoc_up_thunk_RsResource_clientresShareCallback;
 
-    pThis->__clientresAccessCallback__ = &__nvoc_thunk_RsResource_clientresAccessCallback;
-}
+    // clientresAddAdditionalDependants -- virtual inherited (res) base (res)
+    pThis->__clientresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_clientresAddAdditionalDependants;
+} // End __nvoc_init_funcTable_RsClientResource_1 with approximately 18 basic block(s).
 
+
+// Initialize vtable(s) for 18 virtual method(s).
 void __nvoc_init_funcTable_RsClientResource(RsClientResource *pThis) {
+
+    // Initialize vtable(s) with 18 per-object function pointer(s).
     __nvoc_init_funcTable_RsClientResource_1(pThis);
 }
 

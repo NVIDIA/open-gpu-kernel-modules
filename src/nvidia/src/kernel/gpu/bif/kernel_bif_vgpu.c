@@ -34,7 +34,7 @@
  * @param[in]  pKernelBif  Kernel BIF object pointer
  */
 void
-kbifInitDmaCaps_VGPUSTUB
+kbifInitDmaCaps_VF
 (
     OBJGPU    *pGpu,
     KernelBif *pKernelBif
@@ -60,7 +60,7 @@ kbifInitDmaCaps_VGPUSTUB
  * @return     NV_OK
  */
 NV_STATUS
-subdeviceCtrlCmdBifGetStaticInfo_VGPUSTUB
+subdeviceCtrlCmdBifGetStaticInfo_VF
 (
     Subdevice                                       *pSubdevice,
     NV2080_CTRL_INTERNAL_BIF_GET_STATIC_INFO_PARAMS *pParams

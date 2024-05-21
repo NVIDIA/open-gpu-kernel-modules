@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,6 +32,7 @@
 typedef struct _RM_API RM_API;
 typedef struct RsServer RsServer;
 typedef struct OBJGPU OBJGPU;
+typedef struct RsClient RsClient;
 typedef struct RsResource RsResource;
 typedef struct RsCpuMapping RsCpuMapping;
 typedef struct CALL_CONTEXT CALL_CONTEXT;
@@ -100,6 +101,24 @@ NvBool rmapiLockIsWriteOwner(void);
  * Retrieve total RM API lock wait and hold times
  */
 void rmapiLockGetTimes(NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS *);
+
+/**
+ * Indicates current thread is in the RTD3 PM path (rm_transition_dynamic_power) which
+ * means that certain locking asserts/checks must be skipped due to inability to acquire
+ * the API lock in this path.
+ */
+void rmapiEnterRtd3PmPath(void);
+
+/**
+ * Signifies that current thread is leaving the RTD3 PM path, restoring lock
+ * asserting/checking behavior to normal.
+ */
+void rmapiLeaveRtd3PmPath(void);
+
+/**
+ * Checks if current thread is currently running in the RTD3 PM path.
+ */
+NvBool rmapiInRtd3PmPath(void);
 
 /**
  * Type of RM API client interface
@@ -287,7 +306,7 @@ NV_STATUS rmapiControlCacheGet(NvHandle hClient, NvHandle hObject, NvU32 cmd,
                                void* params, NvU32 paramsSize);
 NV_STATUS rmapiControlCacheSet(NvHandle hClient, NvHandle hObject, NvU32 cmd,
                                void* params, NvU32 paramsSize);
-NV_STATUS rmapiControlCacheSetGpuInstForObject(NvHandle hClient, NvHandle hObject, NvU32 gpuInst);
+NV_STATUS rmapiControlCacheSetGpuAttrForObject(NvHandle hClient, NvHandle hObject, OBJGPU *pGpu);
 void rmapiControlCacheFreeAllCacheForGpu(NvU32 gpuInst);
 void rmapiControlCacheSetMode(NvU32 mode);
 NvU32 rmapiControlCacheGetMode(void);

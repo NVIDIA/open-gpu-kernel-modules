@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVidia Corporation
+    Copyright (c) 2015-2024 NVidia Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -191,7 +191,7 @@ typedef struct
     NvU32                           read_duplication;                                   // Out (UVM_TEST_READ_DUPLICATION_POLICY)
     NvProcessorUuid                 preferred_location;                                 // Out
     NvS32                           preferred_cpu_nid;                                  // Out
-    NvProcessorUuid                 accessed_by[UVM_MAX_PROCESSORS_V2];                 // Out
+    NvProcessorUuid                 accessed_by[UVM_MAX_PROCESSORS];                    // Out
     NvU32                           accessed_by_count;                                  // Out
     NvU32                           type;                                               // Out (UVM_TEST_VA_RANGE_TYPE)
     union
@@ -347,30 +347,20 @@ typedef enum
     UVM_TEST_CHANNEL_STRESS_MODE_NOOP_PUSH = 0,
     UVM_TEST_CHANNEL_STRESS_MODE_UPDATE_CHANNELS,
     UVM_TEST_CHANNEL_STRESS_MODE_STREAM,
-    UVM_TEST_CHANNEL_STRESS_MODE_KEY_ROTATION,
 } UVM_TEST_CHANNEL_STRESS_MODE;
-
-typedef enum
-{
-    UVM_TEST_CHANNEL_STRESS_KEY_ROTATION_OPERATION_CPU_TO_GPU,
-    UVM_TEST_CHANNEL_STRESS_KEY_ROTATION_OPERATION_GPU_TO_CPU,
-    UVM_TEST_CHANNEL_STRESS_KEY_ROTATION_OPERATION_ROTATE,
-} UVM_TEST_CHANNEL_STRESS_KEY_ROTATION_OPERATION;
 
 #define UVM_TEST_CHANNEL_STRESS                          UVM_TEST_IOCTL_BASE(15)
 typedef struct
 {
-    NvU32     mode;                   // In, one of UVM_TEST_CHANNEL_STRESS_MODE
+    NvU32     mode;                   // In
 
     // Number of iterations:
     //   mode == NOOP_PUSH: number of noop pushes
     //   mode == UPDATE_CHANNELS: number of updates
     //   mode == STREAM: number of iterations per stream
-    //   mode == ROTATION: number of operations
     NvU32     iterations;
 
-    NvU32     num_streams;            // In, used only if mode == STREAM
-    NvU32     key_rotation_operation; // In, used only if mode == ROTATION
+    NvU32     num_streams;            // In, used only for mode == UVM_TEST_CHANNEL_STRESS_MODE_STREAM
     NvU32     seed;                   // In
     NvU32     verbose;                // In
     NV_STATUS rmStatus;               // Out
@@ -634,7 +624,7 @@ typedef struct
 
     // Array of processors which have a resident copy of the page containing
     // lookup_address.
-    NvProcessorUuid                 resident_on[UVM_MAX_PROCESSORS_V2];                 // Out
+    NvProcessorUuid                 resident_on[UVM_MAX_PROCESSORS];                    // Out
     NvU32                           resident_on_count;                                  // Out
 
     // If the memory is resident on the CPU, the NUMA node on which the page
@@ -645,24 +635,24 @@ typedef struct
     // system-page-sized portion of this allocation which contains
     // lookup_address is guaranteed to be resident on the corresponding
     // processor.
-    NvU32                           resident_physical_size[UVM_MAX_PROCESSORS_V2];      // Out
+    NvU32                           resident_physical_size[UVM_MAX_PROCESSORS];         // Out
 
     // The physical address of the physical allocation backing lookup_address.
-    NvU64                           resident_physical_address[UVM_MAX_PROCESSORS_V2] NV_ALIGN_BYTES(8); // Out
+    NvU64                           resident_physical_address[UVM_MAX_PROCESSORS] NV_ALIGN_BYTES(8); // Out
 
     // Array of processors which have a virtual mapping covering lookup_address.
-    NvProcessorUuid                 mapped_on[UVM_MAX_PROCESSORS_V2];                   // Out
-    NvU32                           mapping_type[UVM_MAX_PROCESSORS_V2];                // Out
-    NvU64                           mapping_physical_address[UVM_MAX_PROCESSORS_V2] NV_ALIGN_BYTES(8); // Out
+    NvProcessorUuid                 mapped_on[UVM_MAX_PROCESSORS];                      // Out
+    NvU32                           mapping_type[UVM_MAX_PROCESSORS];                   // Out
+    NvU64                           mapping_physical_address[UVM_MAX_PROCESSORS] NV_ALIGN_BYTES(8); // Out
     NvU32                           mapped_on_count;                                    // Out
 
     // The size of the virtual mapping covering lookup_address on each
     // mapped_on processor.
-    NvU32                           page_size[UVM_MAX_PROCESSORS_V2];                   // Out
+    NvU32                           page_size[UVM_MAX_PROCESSORS];                      // Out
 
     // Array of processors which have physical memory populated that would back
     // lookup_address if it was resident.
-    NvProcessorUuid                 populated_on[UVM_MAX_PROCESSORS_V2];                // Out
+    NvProcessorUuid                 populated_on[UVM_MAX_PROCESSORS];                   // Out
     NvU32                           populated_on_count;                                 // Out
 
     NV_STATUS rmStatus;                                                                 // Out
@@ -1220,6 +1210,8 @@ typedef struct
 typedef struct
 {
     NvProcessorUuid                 gpu_uuid;                                           // In
+    NvHandle                        client;                                             // In
+    NvHandle                        smc_part_ref;                                       // In
 
     NV_STATUS                       rmStatus;                                           // Out
 } UVM_TEST_NUMA_CHECK_AFFINITY_PARAMS;

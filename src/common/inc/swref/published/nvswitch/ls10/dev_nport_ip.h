@@ -467,4 +467,9 @@
 #define NV_NPORT_SCRATCH_WARM                              0x00000fc0      /* RW-4R */
 #define NV_NPORT_SCRATCH_WARM_DATA                         31:0            /* RWEVF */
 #define NV_NPORT_SCRATCH_WARM_DATA_INIT                    0xdeadbaad      /* RWE-V */
+#define NV_NPORT_STATUS                                    0x00000474      /* R--4R */
+#define NV_NPORT_STATUS_INGRESS_IDLE                       0:0             /* R-XVF */
+#define NV_NPORT_STATUS_INGRESS_IDLE_IDLE                  0x00000001      /* R---V */
+#define NV_NPORT_STATUS_ROUTE_IDLE                         1:1             /* R-XVF */
+#define NV_NPORT_STATUS_ROUTE_IDLE_IDLE                    0x00000001      /* R---V */
 #endif // __ls10_dev_nport_ip_h__

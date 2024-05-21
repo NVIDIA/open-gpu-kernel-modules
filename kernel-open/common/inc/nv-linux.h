@@ -58,14 +58,10 @@
 #include <linux/version.h>
 #include <linux/utsname.h>
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 32)
-#error "This driver does not support kernels older than 2.6.32!"
-#elif LINUX_VERSION_CODE < KERNEL_VERSION(2, 7, 0)
-#  define KERNEL_2_6
-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(3, 0, 0)
-#  define KERNEL_3
-#else
-#error "This driver does not support development kernels!"
+#if LINUX_VERSION_CODE == KERNEL_VERSION(4, 4, 0)
+// Version 4.4 is allowed, temporarily, although not officially supported.
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
+#error "This driver does not support kernels older than Linux 4.15!"
 #endif
 
 #if defined (CONFIG_SMP) && !defined (__SMP__)
@@ -836,16 +832,16 @@ static inline dma_addr_t nv_phys_to_dma(struct device *dev, NvU64 pa)
 #define NV_PRINT_AT(nv_debug_level,at)                                           \
     {                                                                            \
         nv_printf(nv_debug_level,                                                \
-            "NVRM: VM: %s:%d: 0x%p, %d page(s), count = %d, flags = 0x%08x, "    \
+            "NVRM: VM: %s:%d: 0x%p, %d page(s), count = %d, "                    \
             "page_table = 0x%p\n",  __FUNCTION__, __LINE__, at,                  \
             at->num_pages, NV_ATOMIC_READ(at->usage_count),                      \
-            at->flags, at->page_table);                                          \
+            at->page_table);                                                     \
     }
 
 #define NV_PRINT_VMA(nv_debug_level,vma)                                                 \
     {                                                                                    \
         nv_printf(nv_debug_level,                                                        \
-            "NVRM: VM: %s:%d: 0x%lx - 0x%lx, 0x%08x bytes @ 0x%016llx, 0x%p, 0x%p\n",    \
+            "NVRM: VM: %s:%d: 0x%lx - 0x%lx, 0x%08lx bytes @ 0x%016llx, 0x%p, 0x%p\n",    \
             __FUNCTION__, __LINE__, vma->vm_start, vma->vm_end, NV_VMA_SIZE(vma),        \
             NV_VMA_OFFSET(vma), NV_VMA_PRIVATE(vma), NV_VMA_FILE(vma));                  \
     }
@@ -1078,6 +1074,8 @@ static inline void nv_kmem_ctor_dummy(void *arg)
         kmem_cache_destroy(kmem_cache);     \
     }
 
+#define NV_KMEM_CACHE_ALLOC_ATOMIC(kmem_cache)     \
+    kmem_cache_alloc(kmem_cache, GFP_ATOMIC)
 #define NV_KMEM_CACHE_ALLOC(kmem_cache)     \
     kmem_cache_alloc(kmem_cache, GFP_KERNEL)
 #define NV_KMEM_CACHE_FREE(ptr, kmem_cache) \
@@ -1102,6 +1100,23 @@ static inline void *nv_kmem_cache_zalloc(struct kmem_cache *k, gfp_t flags)
 #else
     return kmem_cache_zalloc(k, flags);
 #endif
+}
+
+static inline int nv_kmem_cache_alloc_stack_atomic(nvidia_stack_t **stack)
+{
+    nvidia_stack_t *sp = NULL;
+#if defined(NVCPU_X86_64)
+    if (rm_is_altstack_in_use())
+    {
+        sp = NV_KMEM_CACHE_ALLOC_ATOMIC(nvidia_stack_t_cache);
+        if (sp == NULL)
+            return -ENOMEM;
+        sp->size = sizeof(sp->stack);
+        sp->top = sp->stack + sp->size;
+    }
+#endif
+    *stack = sp;
+    return 0;
 }
 
 static inline int nv_kmem_cache_alloc_stack(nvidia_stack_t **stack)

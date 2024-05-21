@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2010-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2010-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,6 +31,7 @@
 #include "dp_buffer.h"
 #include "dp_internal.h"
 #include "dp_edid.h"
+#include "dp_printf.h"
 
 using namespace DisplayPort;
 
@@ -259,13 +260,13 @@ NvU8 Edid::getLastPageChecksum()
 
     if (bufferSize == 0 || bufferSize < (this->getBlockCount() * 128))
     {
-        DP_LOG(("DP-EDID> Edid length is 0 or less than required"));
+        DP_PRINTF(DP_ERROR, "DP-EDID> Edid length is 0 or less than required");
         return 0;
     }
 
     if (bufferSize % 128 != 0)
     {
-        DP_LOG(("DP-EDID> Edid length is not a multiple of 128"));
+        DP_PRINTF(DP_ERROR, "DP-EDID> Edid length is not a multiple of 128");
         return 0;
     }
 
@@ -358,9 +359,8 @@ unsigned Edid::getBlockCount()
 
         if (blockCount > EDID_MAX_BLOCK_COUNT)
         {
-            DP_LOG(("DPEDID> %s: DDC read returned questionable results: "
-                   "Total block Count too high: %d",
-                   __FUNCTION__, blockCount));
+            DP_PRINTF(DP_ERROR, "DPEDID> %s: DDC read returned questionable results: "
+                      "Total block Count too high: %d", __FUNCTION__, blockCount);
             return 1;
         }
         //
@@ -404,7 +404,7 @@ unsigned Edid::getBlockCount()
     else
     {
         // Unknown EDID version. Skip it.
-        DP_LOG(("DPEDID> %s: Unknown EDID Version!",__FUNCTION__));
+        DP_PRINTF(DP_ERROR, "DPEDID> %s: Unknown EDID Version!",__FUNCTION__);
         DP_ASSERT(0 && "Unknown EDID version!");
         return 1;
     }
@@ -624,4 +624,25 @@ NvU8 DisplayPort::getEDIDBlockChecksum(const Buffer & buffer)
     }
     chksum = chksum & 0xFF;
     return (NvU8)chksum;
+}
+
+bool DisplayPort::Edid::isValidHeader() const
+{
+    NvU8 validHeaderData[8] = {
+        0x00, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0x00};
+
+    if (buffer.getLength() < 0x8)
+        return false;
+
+    for (unsigned i = 0; i < 8; i++)
+    {
+        if (buffer.data[i] != validHeaderData[i])
+        {
+            DP_PRINTF(DP_WARNING, "DP-EDID> Invalid EDID Header");
+            return false;
+        }
+    }
+
+    return true;
 }

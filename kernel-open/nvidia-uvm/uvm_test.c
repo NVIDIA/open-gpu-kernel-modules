@@ -124,23 +124,24 @@ static NV_STATUS uvm_test_verify_bh_affinity(uvm_intr_handler_t *isr, int node)
 static NV_STATUS uvm_test_numa_check_affinity(UVM_TEST_NUMA_CHECK_AFFINITY_PARAMS *params, struct file *filp)
 {
     uvm_gpu_t *gpu;
-    NV_STATUS status = NV_OK;
+    NV_STATUS status;
+    uvm_rm_user_object_t user_rm_va_space = {
+        .rm_control_fd = -1,
+        .user_client = params->client,
+        .user_object = params->smc_part_ref
+    };
 
     if (!UVM_THREAD_AFFINITY_SUPPORTED())
         return NV_ERR_NOT_SUPPORTED;
 
-    uvm_mutex_lock(&g_uvm_global.global_lock);
-
-    gpu = uvm_gpu_get_by_uuid(&params->gpu_uuid);
-    if (!gpu) {
-        status = NV_ERR_INVALID_DEVICE;
-        goto unlock;
-    }
+    status = uvm_gpu_retain_by_uuid(&params->gpu_uuid, &user_rm_va_space, &gpu);
+    if (status != NV_OK)
+        return status;
 
     // If the GPU is not attached to a NUMA node, there is nothing to do.
     if (gpu->parent->closest_cpu_numa_node == NUMA_NO_NODE) {
         status = NV_ERR_NOT_SUPPORTED;
-        goto unlock;
+        goto release;
     }
 
     if (gpu->parent->replayable_faults_supported) {
@@ -149,7 +150,7 @@ static NV_STATUS uvm_test_numa_check_affinity(UVM_TEST_NUMA_CHECK_AFFINITY_PARAM
                                               gpu->parent->closest_cpu_numa_node);
         uvm_parent_gpu_replayable_faults_isr_unlock(gpu->parent);
         if (status != NV_OK)
-            goto unlock;
+            goto release;
 
         if (gpu->parent->non_replayable_faults_supported) {
             uvm_parent_gpu_non_replayable_faults_isr_lock(gpu->parent);
@@ -157,7 +158,7 @@ static NV_STATUS uvm_test_numa_check_affinity(UVM_TEST_NUMA_CHECK_AFFINITY_PARAM
                                                   gpu->parent->closest_cpu_numa_node);
             uvm_parent_gpu_non_replayable_faults_isr_unlock(gpu->parent);
             if (status != NV_OK)
-                goto unlock;
+                goto release;
         }
 
         if (gpu->parent->access_counters_supported) {
@@ -167,9 +168,8 @@ static NV_STATUS uvm_test_numa_check_affinity(UVM_TEST_NUMA_CHECK_AFFINITY_PARAM
             uvm_parent_gpu_access_counters_isr_unlock(gpu->parent);
         }
     }
-
-unlock:
-    uvm_mutex_unlock(&g_uvm_global.global_lock);
+release:
+    uvm_gpu_release(gpu);
     return status;
 }
 

@@ -111,125 +111,161 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannel =
     /*pExportInfo=*/        &__nvoc_export_info_DispChannel
 };
 
-static NV_STATUS __nvoc_thunk_DispChannel_gpuresGetRegBaseOffsetAndSize(struct GpuResource *pDispChannel, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return dispchnGetRegBaseOffsetAndSize((struct DispChannel *)(((unsigned char *)pDispChannel) - __nvoc_rtti_DispChannel_GpuResource.offset), pGpu, pOffset, pSize);
+// 1 down-thunk(s) defined to bridge methods in DispChannel from superclasses
+
+// dispchnGetRegBaseOffsetAndSize: virtual override (gpures) base (gpures)
+static NV_STATUS __nvoc_down_thunk_DispChannel_gpuresGetRegBaseOffsetAndSize(struct GpuResource *pDispChannel, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return dispchnGetRegBaseOffsetAndSize((struct DispChannel *)(((unsigned char *) pDispChannel) - __nvoc_rtti_DispChannel_GpuResource.offset), pGpu, pOffset, pSize);
 }
 
-static NvBool __nvoc_thunk_GpuResource_dispchnShareCallback(struct DispChannel *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannel_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+
+// 29 up-thunk(s) defined to bridge methods in DispChannel to superclasses
+
+// dispchnControl: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_dispchnControl(struct DispChannel *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispChannel_GpuResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_dispchnCheckMemInterUnmap(struct DispChannel *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DispChannel_RmResource.offset), bSubdeviceHandleProvided);
+// dispchnMap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_dispchnMap(struct DispChannel *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispChannel_GpuResource.offset), pCallContext, pParams, pCpuMapping);
 }
 
-static NV_STATUS __nvoc_thunk_Notifier_dispchnGetOrAllocNotifShare(struct DispChannel *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannel_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
+// dispchnUnmap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_dispchnUnmap(struct DispChannel *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispChannel_GpuResource.offset), pCallContext, pCpuMapping);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_dispchnMapTo(struct DispChannel *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RsResource.offset), pParams);
+// dispchnShareCallback: virtual inherited (gpures) base (gpures)
+static NvBool __nvoc_up_thunk_GpuResource_dispchnShareCallback(struct DispChannel *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispChannel_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_dispchnGetMapAddrSpace(struct DispChannel *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannel_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+// dispchnGetMapAddrSpace: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_dispchnGetMapAddrSpace(struct DispChannel *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispChannel_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
-static void __nvoc_thunk_Notifier_dispchnSetNotificationShare(struct DispChannel *pNotifier, struct NotifShare *pNotifShare) {
-    notifySetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannel_Notifier.offset), pNotifShare);
+// dispchnInternalControlForward: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_dispchnInternalControlForward(struct DispChannel *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispChannel_GpuResource.offset), command, pParams, size);
 }
 
-static NvU32 __nvoc_thunk_RsResource_dispchnGetRefCount(struct DispChannel *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RsResource.offset));
+// dispchnGetInternalObjectHandle: virtual inherited (gpures) base (gpures)
+static NvHandle __nvoc_up_thunk_GpuResource_dispchnGetInternalObjectHandle(struct DispChannel *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispChannel_GpuResource.offset));
 }
 
-static void __nvoc_thunk_RsResource_dispchnAddAdditionalDependants(struct RsClient *pClient, struct DispChannel *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RsResource.offset), pReference);
+// dispchnAccessCallback: virtual inherited (rmres) base (gpures)
+static NvBool __nvoc_up_thunk_RmResource_dispchnAccessCallback(struct DispChannel *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannel_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_dispchnControl_Prologue(struct DispChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RmResource.offset), pCallContext, pParams);
+// dispchnGetMemInterMapParams: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_dispchnGetMemInterMapParams(struct DispChannel *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DispChannel_RmResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_dispchnInternalControlForward(struct DispChannel *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannel_GpuResource.offset), command, pParams, size);
+// dispchnCheckMemInterUnmap: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_dispchnCheckMemInterUnmap(struct DispChannel *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DispChannel_RmResource.offset), bSubdeviceHandleProvided);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_dispchnUnmapFrom(struct DispChannel *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RsResource.offset), pParams);
+// dispchnGetMemoryMappingDescriptor: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_dispchnGetMemoryMappingDescriptor(struct DispChannel *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DispChannel_RmResource.offset), ppMemDesc);
 }
 
-static void __nvoc_thunk_RmResource_dispchnControl_Epilogue(struct DispChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RmResource.offset), pCallContext, pParams);
+// dispchnControlSerialization_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_dispchnControlSerialization_Prologue(struct DispChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannel_RmResource.offset), pCallContext, pParams);
 }
 
-static NvHandle __nvoc_thunk_GpuResource_dispchnGetInternalObjectHandle(struct DispChannel *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannel_GpuResource.offset));
+// dispchnControlSerialization_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_dispchnControlSerialization_Epilogue(struct DispChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannel_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_dispchnControl(struct DispChannel *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannel_GpuResource.offset), pCallContext, pParams);
+// dispchnControl_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_dispchnControl_Prologue(struct DispChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannel_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_dispchnUnmap(struct DispChannel *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannel_GpuResource.offset), pCallContext, pCpuMapping);
+// dispchnControl_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_dispchnControl_Epilogue(struct DispChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannel_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_dispchnGetMemInterMapParams(struct DispChannel *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DispChannel_RmResource.offset), pParams);
+// dispchnCanCopy: virtual inherited (res) base (gpures)
+static NvBool __nvoc_up_thunk_RsResource_dispchnCanCopy(struct DispChannel *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannel_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_dispchnGetMemoryMappingDescriptor(struct DispChannel *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DispChannel_RmResource.offset), ppMemDesc);
+// dispchnIsDuplicate: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_dispchnIsDuplicate(struct DispChannel *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannel_RsResource.offset), hMemory, pDuplicate);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_dispchnControlFilter(struct DispChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RsResource.offset), pCallContext, pParams);
+// dispchnPreDestruct: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_dispchnPreDestruct(struct DispChannel *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannel_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Notifier_dispchnUnregisterEvent(struct DispChannel *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannel_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
+// dispchnControlFilter: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_dispchnControlFilter(struct DispChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannel_RsResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_dispchnControlSerialization_Prologue(struct DispChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RmResource.offset), pCallContext, pParams);
+// dispchnIsPartialUnmapSupported: inline virtual inherited (res) base (gpures) body
+static NvBool __nvoc_up_thunk_RsResource_dispchnIsPartialUnmapSupported(struct DispChannel *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannel_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RsResource_dispchnCanCopy(struct DispChannel *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RsResource.offset));
+// dispchnMapTo: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_dispchnMapTo(struct DispChannel *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannel_RsResource.offset), pParams);
 }
 
-static NvBool __nvoc_thunk_RsResource_dispchnIsPartialUnmapSupported(struct DispChannel *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RsResource.offset));
+// dispchnUnmapFrom: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_dispchnUnmapFrom(struct DispChannel *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannel_RsResource.offset), pParams);
 }
 
-static void __nvoc_thunk_RsResource_dispchnPreDestruct(struct DispChannel *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RsResource.offset));
+// dispchnGetRefCount: virtual inherited (res) base (gpures)
+static NvU32 __nvoc_up_thunk_RsResource_dispchnGetRefCount(struct DispChannel *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannel_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_dispchnIsDuplicate(struct DispChannel *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RsResource.offset), hMemory, pDuplicate);
+// dispchnAddAdditionalDependants: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_dispchnAddAdditionalDependants(struct RsClient *pClient, struct DispChannel *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannel_RsResource.offset), pReference);
 }
 
-static void __nvoc_thunk_RmResource_dispchnControlSerialization_Epilogue(struct DispChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RmResource.offset), pCallContext, pParams);
+// dispchnGetNotificationListPtr: virtual inherited (notify) base (notify)
+static PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_dispchnGetNotificationListPtr(struct DispChannel *pNotifier) {
+    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispChannel_Notifier.offset));
 }
 
-static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_dispchnGetNotificationListPtr(struct DispChannel *pNotifier) {
-    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannel_Notifier.offset));
+// dispchnGetNotificationShare: virtual inherited (notify) base (notify)
+static struct NotifShare * __nvoc_up_thunk_Notifier_dispchnGetNotificationShare(struct DispChannel *pNotifier) {
+    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispChannel_Notifier.offset));
 }
 
-static struct NotifShare *__nvoc_thunk_Notifier_dispchnGetNotificationShare(struct DispChannel *pNotifier) {
-    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannel_Notifier.offset));
+// dispchnSetNotificationShare: virtual inherited (notify) base (notify)
+static void __nvoc_up_thunk_Notifier_dispchnSetNotificationShare(struct DispChannel *pNotifier, struct NotifShare *pNotifShare) {
+    notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispChannel_Notifier.offset), pNotifShare);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_dispchnMap(struct DispChannel *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return gpuresMap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannel_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+// dispchnUnregisterEvent: virtual inherited (notify) base (notify)
+static NV_STATUS __nvoc_up_thunk_Notifier_dispchnUnregisterEvent(struct DispChannel *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
+    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispChannel_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
-static NvBool __nvoc_thunk_RmResource_dispchnAccessCallback(struct DispChannel *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+// dispchnGetOrAllocNotifShare: virtual inherited (notify) base (notify)
+static NV_STATUS __nvoc_up_thunk_Notifier_dispchnGetOrAllocNotifShare(struct DispChannel *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
+    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispChannel_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_DispChannel = 
 {
@@ -274,73 +310,107 @@ __nvoc_ctor_DispChannel_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_DispChannel_1(DispChannel *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // dispchnGetRegBaseOffsetAndSize -- virtual override (gpures) base (gpures)
     pThis->__dispchnGetRegBaseOffsetAndSize__ = &dispchnGetRegBaseOffsetAndSize_IMPL;
+    pThis->__nvoc_base_GpuResource.__gpuresGetRegBaseOffsetAndSize__ = &__nvoc_down_thunk_DispChannel_gpuresGetRegBaseOffsetAndSize;
 
-    pThis->__nvoc_base_GpuResource.__gpuresGetRegBaseOffsetAndSize__ = &__nvoc_thunk_DispChannel_gpuresGetRegBaseOffsetAndSize;
+    // dispchnControl -- virtual inherited (gpures) base (gpures)
+    pThis->__dispchnControl__ = &__nvoc_up_thunk_GpuResource_dispchnControl;
 
-    pThis->__dispchnShareCallback__ = &__nvoc_thunk_GpuResource_dispchnShareCallback;
+    // dispchnMap -- virtual inherited (gpures) base (gpures)
+    pThis->__dispchnMap__ = &__nvoc_up_thunk_GpuResource_dispchnMap;
 
-    pThis->__dispchnCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_dispchnCheckMemInterUnmap;
+    // dispchnUnmap -- virtual inherited (gpures) base (gpures)
+    pThis->__dispchnUnmap__ = &__nvoc_up_thunk_GpuResource_dispchnUnmap;
 
-    pThis->__dispchnGetOrAllocNotifShare__ = &__nvoc_thunk_Notifier_dispchnGetOrAllocNotifShare;
+    // dispchnShareCallback -- virtual inherited (gpures) base (gpures)
+    pThis->__dispchnShareCallback__ = &__nvoc_up_thunk_GpuResource_dispchnShareCallback;
 
-    pThis->__dispchnMapTo__ = &__nvoc_thunk_RsResource_dispchnMapTo;
+    // dispchnGetMapAddrSpace -- virtual inherited (gpures) base (gpures)
+    pThis->__dispchnGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_dispchnGetMapAddrSpace;
 
-    pThis->__dispchnGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_dispchnGetMapAddrSpace;
+    // dispchnInternalControlForward -- virtual inherited (gpures) base (gpures)
+    pThis->__dispchnInternalControlForward__ = &__nvoc_up_thunk_GpuResource_dispchnInternalControlForward;
 
-    pThis->__dispchnSetNotificationShare__ = &__nvoc_thunk_Notifier_dispchnSetNotificationShare;
+    // dispchnGetInternalObjectHandle -- virtual inherited (gpures) base (gpures)
+    pThis->__dispchnGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_dispchnGetInternalObjectHandle;
 
-    pThis->__dispchnGetRefCount__ = &__nvoc_thunk_RsResource_dispchnGetRefCount;
+    // dispchnAccessCallback -- virtual inherited (rmres) base (gpures)
+    pThis->__dispchnAccessCallback__ = &__nvoc_up_thunk_RmResource_dispchnAccessCallback;
 
-    pThis->__dispchnAddAdditionalDependants__ = &__nvoc_thunk_RsResource_dispchnAddAdditionalDependants;
+    // dispchnGetMemInterMapParams -- virtual inherited (rmres) base (gpures)
+    pThis->__dispchnGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispchnGetMemInterMapParams;
 
-    pThis->__dispchnControl_Prologue__ = &__nvoc_thunk_RmResource_dispchnControl_Prologue;
+    // dispchnCheckMemInterUnmap -- virtual inherited (rmres) base (gpures)
+    pThis->__dispchnCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispchnCheckMemInterUnmap;
 
-    pThis->__dispchnInternalControlForward__ = &__nvoc_thunk_GpuResource_dispchnInternalControlForward;
+    // dispchnGetMemoryMappingDescriptor -- virtual inherited (rmres) base (gpures)
+    pThis->__dispchnGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispchnGetMemoryMappingDescriptor;
 
-    pThis->__dispchnUnmapFrom__ = &__nvoc_thunk_RsResource_dispchnUnmapFrom;
+    // dispchnControlSerialization_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__dispchnControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispchnControlSerialization_Prologue;
 
-    pThis->__dispchnControl_Epilogue__ = &__nvoc_thunk_RmResource_dispchnControl_Epilogue;
+    // dispchnControlSerialization_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__dispchnControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchnControlSerialization_Epilogue;
 
-    pThis->__dispchnGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_dispchnGetInternalObjectHandle;
+    // dispchnControl_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__dispchnControl_Prologue__ = &__nvoc_up_thunk_RmResource_dispchnControl_Prologue;
 
-    pThis->__dispchnControl__ = &__nvoc_thunk_GpuResource_dispchnControl;
+    // dispchnControl_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__dispchnControl_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchnControl_Epilogue;
 
-    pThis->__dispchnUnmap__ = &__nvoc_thunk_GpuResource_dispchnUnmap;
+    // dispchnCanCopy -- virtual inherited (res) base (gpures)
+    pThis->__dispchnCanCopy__ = &__nvoc_up_thunk_RsResource_dispchnCanCopy;
 
-    pThis->__dispchnGetMemInterMapParams__ = &__nvoc_thunk_RmResource_dispchnGetMemInterMapParams;
+    // dispchnIsDuplicate -- virtual inherited (res) base (gpures)
+    pThis->__dispchnIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispchnIsDuplicate;
 
-    pThis->__dispchnGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_dispchnGetMemoryMappingDescriptor;
+    // dispchnPreDestruct -- virtual inherited (res) base (gpures)
+    pThis->__dispchnPreDestruct__ = &__nvoc_up_thunk_RsResource_dispchnPreDestruct;
 
-    pThis->__dispchnControlFilter__ = &__nvoc_thunk_RsResource_dispchnControlFilter;
+    // dispchnControlFilter -- virtual inherited (res) base (gpures)
+    pThis->__dispchnControlFilter__ = &__nvoc_up_thunk_RsResource_dispchnControlFilter;
 
-    pThis->__dispchnUnregisterEvent__ = &__nvoc_thunk_Notifier_dispchnUnregisterEvent;
+    // dispchnIsPartialUnmapSupported -- inline virtual inherited (res) base (gpures) body
+    pThis->__dispchnIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispchnIsPartialUnmapSupported;
 
-    pThis->__dispchnControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_dispchnControlSerialization_Prologue;
+    // dispchnMapTo -- virtual inherited (res) base (gpures)
+    pThis->__dispchnMapTo__ = &__nvoc_up_thunk_RsResource_dispchnMapTo;
 
-    pThis->__dispchnCanCopy__ = &__nvoc_thunk_RsResource_dispchnCanCopy;
+    // dispchnUnmapFrom -- virtual inherited (res) base (gpures)
+    pThis->__dispchnUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispchnUnmapFrom;
 
-    pThis->__dispchnIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_dispchnIsPartialUnmapSupported;
+    // dispchnGetRefCount -- virtual inherited (res) base (gpures)
+    pThis->__dispchnGetRefCount__ = &__nvoc_up_thunk_RsResource_dispchnGetRefCount;
 
-    pThis->__dispchnPreDestruct__ = &__nvoc_thunk_RsResource_dispchnPreDestruct;
+    // dispchnAddAdditionalDependants -- virtual inherited (res) base (gpures)
+    pThis->__dispchnAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispchnAddAdditionalDependants;
 
-    pThis->__dispchnIsDuplicate__ = &__nvoc_thunk_RsResource_dispchnIsDuplicate;
+    // dispchnGetNotificationListPtr -- virtual inherited (notify) base (notify)
+    pThis->__dispchnGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispchnGetNotificationListPtr;
 
-    pThis->__dispchnControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_dispchnControlSerialization_Epilogue;
+    // dispchnGetNotificationShare -- virtual inherited (notify) base (notify)
+    pThis->__dispchnGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchnGetNotificationShare;
 
-    pThis->__dispchnGetNotificationListPtr__ = &__nvoc_thunk_Notifier_dispchnGetNotificationListPtr;
+    // dispchnSetNotificationShare -- virtual inherited (notify) base (notify)
+    pThis->__dispchnSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchnSetNotificationShare;
 
-    pThis->__dispchnGetNotificationShare__ = &__nvoc_thunk_Notifier_dispchnGetNotificationShare;
+    // dispchnUnregisterEvent -- virtual inherited (notify) base (notify)
+    pThis->__dispchnUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispchnUnregisterEvent;
 
-    pThis->__dispchnMap__ = &__nvoc_thunk_GpuResource_dispchnMap;
+    // dispchnGetOrAllocNotifShare -- virtual inherited (notify) base (notify)
+    pThis->__dispchnGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispchnGetOrAllocNotifShare;
+} // End __nvoc_init_funcTable_DispChannel_1 with approximately 31 basic block(s).
 
-    pThis->__dispchnAccessCallback__ = &__nvoc_thunk_RmResource_dispchnAccessCallback;
-}
 
+// Initialize vtable(s) for 30 virtual method(s).
 void __nvoc_init_funcTable_DispChannel(DispChannel *pThis) {
+
+    // Initialize vtable(s) with 30 per-object function pointer(s).
     __nvoc_init_funcTable_DispChannel_1(pThis);
 }
 
@@ -542,125 +612,158 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannelPio =
     /*pExportInfo=*/        &__nvoc_export_info_DispChannelPio
 };
 
-static NvBool __nvoc_thunk_GpuResource_dispchnpioShareCallback(struct DispChannelPio *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannelPio_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+// 30 up-thunk(s) defined to bridge methods in DispChannelPio to superclasses
+
+// dispchnpioGetRegBaseOffsetAndSize: virtual inherited (dispchn) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_DispChannel_dispchnpioGetRegBaseOffsetAndSize(struct DispChannelPio *pDispChannel, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return dispchnGetRegBaseOffsetAndSize((struct DispChannel *)(((unsigned char *) pDispChannel) + __nvoc_rtti_DispChannelPio_DispChannel.offset), pGpu, pOffset, pSize);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_dispchnpioCheckMemInterUnmap(struct DispChannelPio *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DispChannelPio_RmResource.offset), bSubdeviceHandleProvided);
+// dispchnpioControl: virtual inherited (gpures) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_GpuResource_dispchnpioControl(struct DispChannelPio *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispChannelPio_GpuResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Notifier_dispchnpioGetOrAllocNotifShare(struct DispChannelPio *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannelPio_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
+// dispchnpioMap: virtual inherited (gpures) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_GpuResource_dispchnpioMap(struct DispChannelPio *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispChannelPio_GpuResource.offset), pCallContext, pParams, pCpuMapping);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_dispchnpioMapTo(struct DispChannelPio *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset), pParams);
+// dispchnpioUnmap: virtual inherited (gpures) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_GpuResource_dispchnpioUnmap(struct DispChannelPio *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispChannelPio_GpuResource.offset), pCallContext, pCpuMapping);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_dispchnpioGetMapAddrSpace(struct DispChannelPio *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannelPio_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+// dispchnpioShareCallback: virtual inherited (gpures) base (dispchn)
+static NvBool __nvoc_up_thunk_GpuResource_dispchnpioShareCallback(struct DispChannelPio *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispChannelPio_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static void __nvoc_thunk_Notifier_dispchnpioSetNotificationShare(struct DispChannelPio *pNotifier, struct NotifShare *pNotifShare) {
-    notifySetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannelPio_Notifier.offset), pNotifShare);
+// dispchnpioGetMapAddrSpace: virtual inherited (gpures) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_GpuResource_dispchnpioGetMapAddrSpace(struct DispChannelPio *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispChannelPio_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
-static NvU32 __nvoc_thunk_RsResource_dispchnpioGetRefCount(struct DispChannelPio *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset));
+// dispchnpioInternalControlForward: virtual inherited (gpures) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_GpuResource_dispchnpioInternalControlForward(struct DispChannelPio *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispChannelPio_GpuResource.offset), command, pParams, size);
 }
 
-static void __nvoc_thunk_RsResource_dispchnpioAddAdditionalDependants(struct RsClient *pClient, struct DispChannelPio *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset), pReference);
+// dispchnpioGetInternalObjectHandle: virtual inherited (gpures) base (dispchn)
+static NvHandle __nvoc_up_thunk_GpuResource_dispchnpioGetInternalObjectHandle(struct DispChannelPio *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispChannelPio_GpuResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_dispchnpioControl_Prologue(struct DispChannelPio *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RmResource.offset), pCallContext, pParams);
+// dispchnpioAccessCallback: virtual inherited (rmres) base (dispchn)
+static NvBool __nvoc_up_thunk_RmResource_dispchnpioAccessCallback(struct DispChannelPio *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelPio_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
-static NV_STATUS __nvoc_thunk_DispChannel_dispchnpioGetRegBaseOffsetAndSize(struct DispChannelPio *pDispChannel, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return dispchnGetRegBaseOffsetAndSize((struct DispChannel *)(((unsigned char *)pDispChannel) + __nvoc_rtti_DispChannelPio_DispChannel.offset), pGpu, pOffset, pSize);
+// dispchnpioGetMemInterMapParams: virtual inherited (rmres) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_RmResource_dispchnpioGetMemInterMapParams(struct DispChannelPio *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DispChannelPio_RmResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_dispchnpioInternalControlForward(struct DispChannelPio *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannelPio_GpuResource.offset), command, pParams, size);
+// dispchnpioCheckMemInterUnmap: virtual inherited (rmres) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_RmResource_dispchnpioCheckMemInterUnmap(struct DispChannelPio *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DispChannelPio_RmResource.offset), bSubdeviceHandleProvided);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_dispchnpioUnmapFrom(struct DispChannelPio *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset), pParams);
+// dispchnpioGetMemoryMappingDescriptor: virtual inherited (rmres) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_RmResource_dispchnpioGetMemoryMappingDescriptor(struct DispChannelPio *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DispChannelPio_RmResource.offset), ppMemDesc);
 }
 
-static void __nvoc_thunk_RmResource_dispchnpioControl_Epilogue(struct DispChannelPio *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RmResource.offset), pCallContext, pParams);
+// dispchnpioControlSerialization_Prologue: virtual inherited (rmres) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_RmResource_dispchnpioControlSerialization_Prologue(struct DispChannelPio *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelPio_RmResource.offset), pCallContext, pParams);
 }
 
-static NvHandle __nvoc_thunk_GpuResource_dispchnpioGetInternalObjectHandle(struct DispChannelPio *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannelPio_GpuResource.offset));
+// dispchnpioControlSerialization_Epilogue: virtual inherited (rmres) base (dispchn)
+static void __nvoc_up_thunk_RmResource_dispchnpioControlSerialization_Epilogue(struct DispChannelPio *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelPio_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_dispchnpioControl(struct DispChannelPio *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannelPio_GpuResource.offset), pCallContext, pParams);
+// dispchnpioControl_Prologue: virtual inherited (rmres) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_RmResource_dispchnpioControl_Prologue(struct DispChannelPio *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelPio_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_dispchnpioUnmap(struct DispChannelPio *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannelPio_GpuResource.offset), pCallContext, pCpuMapping);
+// dispchnpioControl_Epilogue: virtual inherited (rmres) base (dispchn)
+static void __nvoc_up_thunk_RmResource_dispchnpioControl_Epilogue(struct DispChannelPio *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelPio_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_dispchnpioGetMemInterMapParams(struct DispChannelPio *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DispChannelPio_RmResource.offset), pParams);
+// dispchnpioCanCopy: virtual inherited (res) base (dispchn)
+static NvBool __nvoc_up_thunk_RsResource_dispchnpioCanCopy(struct DispChannelPio *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_dispchnpioGetMemoryMappingDescriptor(struct DispChannelPio *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DispChannelPio_RmResource.offset), ppMemDesc);
+// dispchnpioIsDuplicate: virtual inherited (res) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_RsResource_dispchnpioIsDuplicate(struct DispChannelPio *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset), hMemory, pDuplicate);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_dispchnpioControlFilter(struct DispChannelPio *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset), pCallContext, pParams);
+// dispchnpioPreDestruct: virtual inherited (res) base (dispchn)
+static void __nvoc_up_thunk_RsResource_dispchnpioPreDestruct(struct DispChannelPio *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Notifier_dispchnpioUnregisterEvent(struct DispChannelPio *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannelPio_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
+// dispchnpioControlFilter: virtual inherited (res) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_RsResource_dispchnpioControlFilter(struct DispChannelPio *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_dispchnpioControlSerialization_Prologue(struct DispChannelPio *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RmResource.offset), pCallContext, pParams);
+// dispchnpioIsPartialUnmapSupported: inline virtual inherited (res) base (dispchn) body
+static NvBool __nvoc_up_thunk_RsResource_dispchnpioIsPartialUnmapSupported(struct DispChannelPio *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RsResource_dispchnpioCanCopy(struct DispChannelPio *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset));
+// dispchnpioMapTo: virtual inherited (res) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_RsResource_dispchnpioMapTo(struct DispChannelPio *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset), pParams);
 }
 
-static NvBool __nvoc_thunk_RsResource_dispchnpioIsPartialUnmapSupported(struct DispChannelPio *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset));
+// dispchnpioUnmapFrom: virtual inherited (res) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_RsResource_dispchnpioUnmapFrom(struct DispChannelPio *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset), pParams);
 }
 
-static void __nvoc_thunk_RsResource_dispchnpioPreDestruct(struct DispChannelPio *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset));
+// dispchnpioGetRefCount: virtual inherited (res) base (dispchn)
+static NvU32 __nvoc_up_thunk_RsResource_dispchnpioGetRefCount(struct DispChannelPio *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_dispchnpioIsDuplicate(struct DispChannelPio *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset), hMemory, pDuplicate);
+// dispchnpioAddAdditionalDependants: virtual inherited (res) base (dispchn)
+static void __nvoc_up_thunk_RsResource_dispchnpioAddAdditionalDependants(struct RsClient *pClient, struct DispChannelPio *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset), pReference);
 }
 
-static void __nvoc_thunk_RmResource_dispchnpioControlSerialization_Epilogue(struct DispChannelPio *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RmResource.offset), pCallContext, pParams);
+// dispchnpioGetNotificationListPtr: virtual inherited (notify) base (dispchn)
+static PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_dispchnpioGetNotificationListPtr(struct DispChannelPio *pNotifier) {
+    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispChannelPio_Notifier.offset));
 }
 
-static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_dispchnpioGetNotificationListPtr(struct DispChannelPio *pNotifier) {
-    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannelPio_Notifier.offset));
+// dispchnpioGetNotificationShare: virtual inherited (notify) base (dispchn)
+static struct NotifShare * __nvoc_up_thunk_Notifier_dispchnpioGetNotificationShare(struct DispChannelPio *pNotifier) {
+    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispChannelPio_Notifier.offset));
 }
 
-static struct NotifShare *__nvoc_thunk_Notifier_dispchnpioGetNotificationShare(struct DispChannelPio *pNotifier) {
-    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannelPio_Notifier.offset));
+// dispchnpioSetNotificationShare: virtual inherited (notify) base (dispchn)
+static void __nvoc_up_thunk_Notifier_dispchnpioSetNotificationShare(struct DispChannelPio *pNotifier, struct NotifShare *pNotifShare) {
+    notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispChannelPio_Notifier.offset), pNotifShare);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_dispchnpioMap(struct DispChannelPio *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return gpuresMap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannelPio_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+// dispchnpioUnregisterEvent: virtual inherited (notify) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_Notifier_dispchnpioUnregisterEvent(struct DispChannelPio *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
+    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispChannelPio_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
-static NvBool __nvoc_thunk_RmResource_dispchnpioAccessCallback(struct DispChannelPio *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+// dispchnpioGetOrAllocNotifShare: virtual inherited (notify) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_Notifier_dispchnpioGetOrAllocNotifShare(struct DispChannelPio *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
+    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispChannelPio_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_DispChannelPio = 
 {
@@ -697,71 +800,106 @@ __nvoc_ctor_DispChannelPio_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_DispChannelPio_1(DispChannelPio *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
-    pThis->__dispchnpioShareCallback__ = &__nvoc_thunk_GpuResource_dispchnpioShareCallback;
+    // dispchnpioGetRegBaseOffsetAndSize -- virtual inherited (dispchn) base (dispchn)
+    pThis->__dispchnpioGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_DispChannel_dispchnpioGetRegBaseOffsetAndSize;
 
-    pThis->__dispchnpioCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_dispchnpioCheckMemInterUnmap;
+    // dispchnpioControl -- virtual inherited (gpures) base (dispchn)
+    pThis->__dispchnpioControl__ = &__nvoc_up_thunk_GpuResource_dispchnpioControl;
 
-    pThis->__dispchnpioGetOrAllocNotifShare__ = &__nvoc_thunk_Notifier_dispchnpioGetOrAllocNotifShare;
+    // dispchnpioMap -- virtual inherited (gpures) base (dispchn)
+    pThis->__dispchnpioMap__ = &__nvoc_up_thunk_GpuResource_dispchnpioMap;
 
-    pThis->__dispchnpioMapTo__ = &__nvoc_thunk_RsResource_dispchnpioMapTo;
+    // dispchnpioUnmap -- virtual inherited (gpures) base (dispchn)
+    pThis->__dispchnpioUnmap__ = &__nvoc_up_thunk_GpuResource_dispchnpioUnmap;
 
-    pThis->__dispchnpioGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_dispchnpioGetMapAddrSpace;
+    // dispchnpioShareCallback -- virtual inherited (gpures) base (dispchn)
+    pThis->__dispchnpioShareCallback__ = &__nvoc_up_thunk_GpuResource_dispchnpioShareCallback;
 
-    pThis->__dispchnpioSetNotificationShare__ = &__nvoc_thunk_Notifier_dispchnpioSetNotificationShare;
+    // dispchnpioGetMapAddrSpace -- virtual inherited (gpures) base (dispchn)
+    pThis->__dispchnpioGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_dispchnpioGetMapAddrSpace;
 
-    pThis->__dispchnpioGetRefCount__ = &__nvoc_thunk_RsResource_dispchnpioGetRefCount;
+    // dispchnpioInternalControlForward -- virtual inherited (gpures) base (dispchn)
+    pThis->__dispchnpioInternalControlForward__ = &__nvoc_up_thunk_GpuResource_dispchnpioInternalControlForward;
 
-    pThis->__dispchnpioAddAdditionalDependants__ = &__nvoc_thunk_RsResource_dispchnpioAddAdditionalDependants;
+    // dispchnpioGetInternalObjectHandle -- virtual inherited (gpures) base (dispchn)
+    pThis->__dispchnpioGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_dispchnpioGetInternalObjectHandle;
 
-    pThis->__dispchnpioControl_Prologue__ = &__nvoc_thunk_RmResource_dispchnpioControl_Prologue;
+    // dispchnpioAccessCallback -- virtual inherited (rmres) base (dispchn)
+    pThis->__dispchnpioAccessCallback__ = &__nvoc_up_thunk_RmResource_dispchnpioAccessCallback;
 
-    pThis->__dispchnpioGetRegBaseOffsetAndSize__ = &__nvoc_thunk_DispChannel_dispchnpioGetRegBaseOffsetAndSize;
+    // dispchnpioGetMemInterMapParams -- virtual inherited (rmres) base (dispchn)
+    pThis->__dispchnpioGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispchnpioGetMemInterMapParams;
 
-    pThis->__dispchnpioInternalControlForward__ = &__nvoc_thunk_GpuResource_dispchnpioInternalControlForward;
+    // dispchnpioCheckMemInterUnmap -- virtual inherited (rmres) base (dispchn)
+    pThis->__dispchnpioCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispchnpioCheckMemInterUnmap;
 
-    pThis->__dispchnpioUnmapFrom__ = &__nvoc_thunk_RsResource_dispchnpioUnmapFrom;
+    // dispchnpioGetMemoryMappingDescriptor -- virtual inherited (rmres) base (dispchn)
+    pThis->__dispchnpioGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispchnpioGetMemoryMappingDescriptor;
 
-    pThis->__dispchnpioControl_Epilogue__ = &__nvoc_thunk_RmResource_dispchnpioControl_Epilogue;
+    // dispchnpioControlSerialization_Prologue -- virtual inherited (rmres) base (dispchn)
+    pThis->__dispchnpioControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispchnpioControlSerialization_Prologue;
 
-    pThis->__dispchnpioGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_dispchnpioGetInternalObjectHandle;
+    // dispchnpioControlSerialization_Epilogue -- virtual inherited (rmres) base (dispchn)
+    pThis->__dispchnpioControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchnpioControlSerialization_Epilogue;
 
-    pThis->__dispchnpioControl__ = &__nvoc_thunk_GpuResource_dispchnpioControl;
+    // dispchnpioControl_Prologue -- virtual inherited (rmres) base (dispchn)
+    pThis->__dispchnpioControl_Prologue__ = &__nvoc_up_thunk_RmResource_dispchnpioControl_Prologue;
 
-    pThis->__dispchnpioUnmap__ = &__nvoc_thunk_GpuResource_dispchnpioUnmap;
+    // dispchnpioControl_Epilogue -- virtual inherited (rmres) base (dispchn)
+    pThis->__dispchnpioControl_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchnpioControl_Epilogue;
 
-    pThis->__dispchnpioGetMemInterMapParams__ = &__nvoc_thunk_RmResource_dispchnpioGetMemInterMapParams;
+    // dispchnpioCanCopy -- virtual inherited (res) base (dispchn)
+    pThis->__dispchnpioCanCopy__ = &__nvoc_up_thunk_RsResource_dispchnpioCanCopy;
 
-    pThis->__dispchnpioGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_dispchnpioGetMemoryMappingDescriptor;
+    // dispchnpioIsDuplicate -- virtual inherited (res) base (dispchn)
+    pThis->__dispchnpioIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispchnpioIsDuplicate;
 
-    pThis->__dispchnpioControlFilter__ = &__nvoc_thunk_RsResource_dispchnpioControlFilter;
+    // dispchnpioPreDestruct -- virtual inherited (res) base (dispchn)
+    pThis->__dispchnpioPreDestruct__ = &__nvoc_up_thunk_RsResource_dispchnpioPreDestruct;
 
-    pThis->__dispchnpioUnregisterEvent__ = &__nvoc_thunk_Notifier_dispchnpioUnregisterEvent;
+    // dispchnpioControlFilter -- virtual inherited (res) base (dispchn)
+    pThis->__dispchnpioControlFilter__ = &__nvoc_up_thunk_RsResource_dispchnpioControlFilter;
 
-    pThis->__dispchnpioControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_dispchnpioControlSerialization_Prologue;
+    // dispchnpioIsPartialUnmapSupported -- inline virtual inherited (res) base (dispchn) body
+    pThis->__dispchnpioIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispchnpioIsPartialUnmapSupported;
 
-    pThis->__dispchnpioCanCopy__ = &__nvoc_thunk_RsResource_dispchnpioCanCopy;
+    // dispchnpioMapTo -- virtual inherited (res) base (dispchn)
+    pThis->__dispchnpioMapTo__ = &__nvoc_up_thunk_RsResource_dispchnpioMapTo;
 
-    pThis->__dispchnpioIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_dispchnpioIsPartialUnmapSupported;
+    // dispchnpioUnmapFrom -- virtual inherited (res) base (dispchn)
+    pThis->__dispchnpioUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispchnpioUnmapFrom;
 
-    pThis->__dispchnpioPreDestruct__ = &__nvoc_thunk_RsResource_dispchnpioPreDestruct;
+    // dispchnpioGetRefCount -- virtual inherited (res) base (dispchn)
+    pThis->__dispchnpioGetRefCount__ = &__nvoc_up_thunk_RsResource_dispchnpioGetRefCount;
 
-    pThis->__dispchnpioIsDuplicate__ = &__nvoc_thunk_RsResource_dispchnpioIsDuplicate;
+    // dispchnpioAddAdditionalDependants -- virtual inherited (res) base (dispchn)
+    pThis->__dispchnpioAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispchnpioAddAdditionalDependants;
 
-    pThis->__dispchnpioControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_dispchnpioControlSerialization_Epilogue;
+    // dispchnpioGetNotificationListPtr -- virtual inherited (notify) base (dispchn)
+    pThis->__dispchnpioGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispchnpioGetNotificationListPtr;
 
-    pThis->__dispchnpioGetNotificationListPtr__ = &__nvoc_thunk_Notifier_dispchnpioGetNotificationListPtr;
+    // dispchnpioGetNotificationShare -- virtual inherited (notify) base (dispchn)
+    pThis->__dispchnpioGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchnpioGetNotificationShare;
 
-    pThis->__dispchnpioGetNotificationShare__ = &__nvoc_thunk_Notifier_dispchnpioGetNotificationShare;
+    // dispchnpioSetNotificationShare -- virtual inherited (notify) base (dispchn)
+    pThis->__dispchnpioSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchnpioSetNotificationShare;
 
-    pThis->__dispchnpioMap__ = &__nvoc_thunk_GpuResource_dispchnpioMap;
+    // dispchnpioUnregisterEvent -- virtual inherited (notify) base (dispchn)
+    pThis->__dispchnpioUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispchnpioUnregisterEvent;
 
-    pThis->__dispchnpioAccessCallback__ = &__nvoc_thunk_RmResource_dispchnpioAccessCallback;
-}
+    // dispchnpioGetOrAllocNotifShare -- virtual inherited (notify) base (dispchn)
+    pThis->__dispchnpioGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispchnpioGetOrAllocNotifShare;
+} // End __nvoc_init_funcTable_DispChannelPio_1 with approximately 30 basic block(s).
 
+
+// Initialize vtable(s) for 30 virtual method(s).
 void __nvoc_init_funcTable_DispChannelPio(DispChannelPio *pThis) {
+
+    // Initialize vtable(s) with 30 per-object function pointer(s).
     __nvoc_init_funcTable_DispChannelPio_1(pThis);
 }
 
@@ -961,125 +1099,158 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_DispChannelDma =
     /*pExportInfo=*/        &__nvoc_export_info_DispChannelDma
 };
 
-static NvBool __nvoc_thunk_GpuResource_dispchndmaShareCallback(struct DispChannelDma *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannelDma_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+// 30 up-thunk(s) defined to bridge methods in DispChannelDma to superclasses
+
+// dispchndmaGetRegBaseOffsetAndSize: virtual inherited (dispchn) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_DispChannel_dispchndmaGetRegBaseOffsetAndSize(struct DispChannelDma *pDispChannel, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return dispchnGetRegBaseOffsetAndSize((struct DispChannel *)(((unsigned char *) pDispChannel) + __nvoc_rtti_DispChannelDma_DispChannel.offset), pGpu, pOffset, pSize);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_dispchndmaCheckMemInterUnmap(struct DispChannelDma *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DispChannelDma_RmResource.offset), bSubdeviceHandleProvided);
+// dispchndmaControl: virtual inherited (gpures) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_GpuResource_dispchndmaControl(struct DispChannelDma *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispChannelDma_GpuResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Notifier_dispchndmaGetOrAllocNotifShare(struct DispChannelDma *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannelDma_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
+// dispchndmaMap: virtual inherited (gpures) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_GpuResource_dispchndmaMap(struct DispChannelDma *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispChannelDma_GpuResource.offset), pCallContext, pParams, pCpuMapping);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_dispchndmaMapTo(struct DispChannelDma *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset), pParams);
+// dispchndmaUnmap: virtual inherited (gpures) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_GpuResource_dispchndmaUnmap(struct DispChannelDma *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispChannelDma_GpuResource.offset), pCallContext, pCpuMapping);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_dispchndmaGetMapAddrSpace(struct DispChannelDma *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannelDma_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+// dispchndmaShareCallback: virtual inherited (gpures) base (dispchn)
+static NvBool __nvoc_up_thunk_GpuResource_dispchndmaShareCallback(struct DispChannelDma *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispChannelDma_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static void __nvoc_thunk_Notifier_dispchndmaSetNotificationShare(struct DispChannelDma *pNotifier, struct NotifShare *pNotifShare) {
-    notifySetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannelDma_Notifier.offset), pNotifShare);
+// dispchndmaGetMapAddrSpace: virtual inherited (gpures) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_GpuResource_dispchndmaGetMapAddrSpace(struct DispChannelDma *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispChannelDma_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
-static NvU32 __nvoc_thunk_RsResource_dispchndmaGetRefCount(struct DispChannelDma *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset));
+// dispchndmaInternalControlForward: virtual inherited (gpures) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_GpuResource_dispchndmaInternalControlForward(struct DispChannelDma *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispChannelDma_GpuResource.offset), command, pParams, size);
 }
 
-static void __nvoc_thunk_RsResource_dispchndmaAddAdditionalDependants(struct RsClient *pClient, struct DispChannelDma *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset), pReference);
+// dispchndmaGetInternalObjectHandle: virtual inherited (gpures) base (dispchn)
+static NvHandle __nvoc_up_thunk_GpuResource_dispchndmaGetInternalObjectHandle(struct DispChannelDma *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DispChannelDma_GpuResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_dispchndmaControl_Prologue(struct DispChannelDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RmResource.offset), pCallContext, pParams);
+// dispchndmaAccessCallback: virtual inherited (rmres) base (dispchn)
+static NvBool __nvoc_up_thunk_RmResource_dispchndmaAccessCallback(struct DispChannelDma *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelDma_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
-static NV_STATUS __nvoc_thunk_DispChannel_dispchndmaGetRegBaseOffsetAndSize(struct DispChannelDma *pDispChannel, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return dispchnGetRegBaseOffsetAndSize((struct DispChannel *)(((unsigned char *)pDispChannel) + __nvoc_rtti_DispChannelDma_DispChannel.offset), pGpu, pOffset, pSize);
+// dispchndmaGetMemInterMapParams: virtual inherited (rmres) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_RmResource_dispchndmaGetMemInterMapParams(struct DispChannelDma *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DispChannelDma_RmResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_dispchndmaInternalControlForward(struct DispChannelDma *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannelDma_GpuResource.offset), command, pParams, size);
+// dispchndmaCheckMemInterUnmap: virtual inherited (rmres) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_RmResource_dispchndmaCheckMemInterUnmap(struct DispChannelDma *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DispChannelDma_RmResource.offset), bSubdeviceHandleProvided);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_dispchndmaUnmapFrom(struct DispChannelDma *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset), pParams);
+// dispchndmaGetMemoryMappingDescriptor: virtual inherited (rmres) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_RmResource_dispchndmaGetMemoryMappingDescriptor(struct DispChannelDma *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DispChannelDma_RmResource.offset), ppMemDesc);
 }
 
-static void __nvoc_thunk_RmResource_dispchndmaControl_Epilogue(struct DispChannelDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RmResource.offset), pCallContext, pParams);
+// dispchndmaControlSerialization_Prologue: virtual inherited (rmres) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_RmResource_dispchndmaControlSerialization_Prologue(struct DispChannelDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelDma_RmResource.offset), pCallContext, pParams);
 }
 
-static NvHandle __nvoc_thunk_GpuResource_dispchndmaGetInternalObjectHandle(struct DispChannelDma *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannelDma_GpuResource.offset));
+// dispchndmaControlSerialization_Epilogue: virtual inherited (rmres) base (dispchn)
+static void __nvoc_up_thunk_RmResource_dispchndmaControlSerialization_Epilogue(struct DispChannelDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelDma_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_dispchndmaControl(struct DispChannelDma *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannelDma_GpuResource.offset), pCallContext, pParams);
+// dispchndmaControl_Prologue: virtual inherited (rmres) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_RmResource_dispchndmaControl_Prologue(struct DispChannelDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelDma_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_dispchndmaUnmap(struct DispChannelDma *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannelDma_GpuResource.offset), pCallContext, pCpuMapping);
+// dispchndmaControl_Epilogue: virtual inherited (rmres) base (dispchn)
+static void __nvoc_up_thunk_RmResource_dispchndmaControl_Epilogue(struct DispChannelDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelDma_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_dispchndmaGetMemInterMapParams(struct DispChannelDma *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DispChannelDma_RmResource.offset), pParams);
+// dispchndmaCanCopy: virtual inherited (res) base (dispchn)
+static NvBool __nvoc_up_thunk_RsResource_dispchndmaCanCopy(struct DispChannelDma *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_dispchndmaGetMemoryMappingDescriptor(struct DispChannelDma *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DispChannelDma_RmResource.offset), ppMemDesc);
+// dispchndmaIsDuplicate: virtual inherited (res) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_RsResource_dispchndmaIsDuplicate(struct DispChannelDma *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset), hMemory, pDuplicate);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_dispchndmaControlFilter(struct DispChannelDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset), pCallContext, pParams);
+// dispchndmaPreDestruct: virtual inherited (res) base (dispchn)
+static void __nvoc_up_thunk_RsResource_dispchndmaPreDestruct(struct DispChannelDma *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Notifier_dispchndmaUnregisterEvent(struct DispChannelDma *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannelDma_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
+// dispchndmaControlFilter: virtual inherited (res) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_RsResource_dispchndmaControlFilter(struct DispChannelDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_dispchndmaControlSerialization_Prologue(struct DispChannelDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RmResource.offset), pCallContext, pParams);
+// dispchndmaIsPartialUnmapSupported: inline virtual inherited (res) base (dispchn) body
+static NvBool __nvoc_up_thunk_RsResource_dispchndmaIsPartialUnmapSupported(struct DispChannelDma *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RsResource_dispchndmaCanCopy(struct DispChannelDma *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset));
+// dispchndmaMapTo: virtual inherited (res) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_RsResource_dispchndmaMapTo(struct DispChannelDma *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset), pParams);
 }
 
-static NvBool __nvoc_thunk_RsResource_dispchndmaIsPartialUnmapSupported(struct DispChannelDma *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset));
+// dispchndmaUnmapFrom: virtual inherited (res) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_RsResource_dispchndmaUnmapFrom(struct DispChannelDma *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset), pParams);
 }
 
-static void __nvoc_thunk_RsResource_dispchndmaPreDestruct(struct DispChannelDma *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset));
+// dispchndmaGetRefCount: virtual inherited (res) base (dispchn)
+static NvU32 __nvoc_up_thunk_RsResource_dispchndmaGetRefCount(struct DispChannelDma *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_dispchndmaIsDuplicate(struct DispChannelDma *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset), hMemory, pDuplicate);
+// dispchndmaAddAdditionalDependants: virtual inherited (res) base (dispchn)
+static void __nvoc_up_thunk_RsResource_dispchndmaAddAdditionalDependants(struct RsClient *pClient, struct DispChannelDma *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset), pReference);
 }
 
-static void __nvoc_thunk_RmResource_dispchndmaControlSerialization_Epilogue(struct DispChannelDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RmResource.offset), pCallContext, pParams);
+// dispchndmaGetNotificationListPtr: virtual inherited (notify) base (dispchn)
+static PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_dispchndmaGetNotificationListPtr(struct DispChannelDma *pNotifier) {
+    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispChannelDma_Notifier.offset));
 }
 
-static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_dispchndmaGetNotificationListPtr(struct DispChannelDma *pNotifier) {
-    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannelDma_Notifier.offset));
+// dispchndmaGetNotificationShare: virtual inherited (notify) base (dispchn)
+static struct NotifShare * __nvoc_up_thunk_Notifier_dispchndmaGetNotificationShare(struct DispChannelDma *pNotifier) {
+    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispChannelDma_Notifier.offset));
 }
 
-static struct NotifShare *__nvoc_thunk_Notifier_dispchndmaGetNotificationShare(struct DispChannelDma *pNotifier) {
-    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannelDma_Notifier.offset));
+// dispchndmaSetNotificationShare: virtual inherited (notify) base (dispchn)
+static void __nvoc_up_thunk_Notifier_dispchndmaSetNotificationShare(struct DispChannelDma *pNotifier, struct NotifShare *pNotifShare) {
+    notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispChannelDma_Notifier.offset), pNotifShare);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_dispchndmaMap(struct DispChannelDma *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return gpuresMap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannelDma_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+// dispchndmaUnregisterEvent: virtual inherited (notify) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_Notifier_dispchndmaUnregisterEvent(struct DispChannelDma *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
+    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispChannelDma_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
-static NvBool __nvoc_thunk_RmResource_dispchndmaAccessCallback(struct DispChannelDma *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+// dispchndmaGetOrAllocNotifShare: virtual inherited (notify) base (dispchn)
+static NV_STATUS __nvoc_up_thunk_Notifier_dispchndmaGetOrAllocNotifShare(struct DispChannelDma *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
+    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispChannelDma_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_DispChannelDma = 
 {
@@ -1116,71 +1287,106 @@ __nvoc_ctor_DispChannelDma_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_DispChannelDma_1(DispChannelDma *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
-    pThis->__dispchndmaShareCallback__ = &__nvoc_thunk_GpuResource_dispchndmaShareCallback;
+    // dispchndmaGetRegBaseOffsetAndSize -- virtual inherited (dispchn) base (dispchn)
+    pThis->__dispchndmaGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_DispChannel_dispchndmaGetRegBaseOffsetAndSize;
 
-    pThis->__dispchndmaCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_dispchndmaCheckMemInterUnmap;
+    // dispchndmaControl -- virtual inherited (gpures) base (dispchn)
+    pThis->__dispchndmaControl__ = &__nvoc_up_thunk_GpuResource_dispchndmaControl;
 
-    pThis->__dispchndmaGetOrAllocNotifShare__ = &__nvoc_thunk_Notifier_dispchndmaGetOrAllocNotifShare;
+    // dispchndmaMap -- virtual inherited (gpures) base (dispchn)
+    pThis->__dispchndmaMap__ = &__nvoc_up_thunk_GpuResource_dispchndmaMap;
 
-    pThis->__dispchndmaMapTo__ = &__nvoc_thunk_RsResource_dispchndmaMapTo;
+    // dispchndmaUnmap -- virtual inherited (gpures) base (dispchn)
+    pThis->__dispchndmaUnmap__ = &__nvoc_up_thunk_GpuResource_dispchndmaUnmap;
 
-    pThis->__dispchndmaGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_dispchndmaGetMapAddrSpace;
+    // dispchndmaShareCallback -- virtual inherited (gpures) base (dispchn)
+    pThis->__dispchndmaShareCallback__ = &__nvoc_up_thunk_GpuResource_dispchndmaShareCallback;
 
-    pThis->__dispchndmaSetNotificationShare__ = &__nvoc_thunk_Notifier_dispchndmaSetNotificationShare;
+    // dispchndmaGetMapAddrSpace -- virtual inherited (gpures) base (dispchn)
+    pThis->__dispchndmaGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_dispchndmaGetMapAddrSpace;
 
-    pThis->__dispchndmaGetRefCount__ = &__nvoc_thunk_RsResource_dispchndmaGetRefCount;
+    // dispchndmaInternalControlForward -- virtual inherited (gpures) base (dispchn)
+    pThis->__dispchndmaInternalControlForward__ = &__nvoc_up_thunk_GpuResource_dispchndmaInternalControlForward;
 
-    pThis->__dispchndmaAddAdditionalDependants__ = &__nvoc_thunk_RsResource_dispchndmaAddAdditionalDependants;
+    // dispchndmaGetInternalObjectHandle -- virtual inherited (gpures) base (dispchn)
+    pThis->__dispchndmaGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_dispchndmaGetInternalObjectHandle;
 
-    pThis->__dispchndmaControl_Prologue__ = &__nvoc_thunk_RmResource_dispchndmaControl_Prologue;
+    // dispchndmaAccessCallback -- virtual inherited (rmres) base (dispchn)
+    pThis->__dispchndmaAccessCallback__ = &__nvoc_up_thunk_RmResource_dispchndmaAccessCallback;
 
-    pThis->__dispchndmaGetRegBaseOffsetAndSize__ = &__nvoc_thunk_DispChannel_dispchndmaGetRegBaseOffsetAndSize;
+    // dispchndmaGetMemInterMapParams -- virtual inherited (rmres) base (dispchn)
+    pThis->__dispchndmaGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispchndmaGetMemInterMapParams;
 
-    pThis->__dispchndmaInternalControlForward__ = &__nvoc_thunk_GpuResource_dispchndmaInternalControlForward;
+    // dispchndmaCheckMemInterUnmap -- virtual inherited (rmres) base (dispchn)
+    pThis->__dispchndmaCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispchndmaCheckMemInterUnmap;
 
-    pThis->__dispchndmaUnmapFrom__ = &__nvoc_thunk_RsResource_dispchndmaUnmapFrom;
+    // dispchndmaGetMemoryMappingDescriptor -- virtual inherited (rmres) base (dispchn)
+    pThis->__dispchndmaGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispchndmaGetMemoryMappingDescriptor;
 
-    pThis->__dispchndmaControl_Epilogue__ = &__nvoc_thunk_RmResource_dispchndmaControl_Epilogue;
+    // dispchndmaControlSerialization_Prologue -- virtual inherited (rmres) base (dispchn)
+    pThis->__dispchndmaControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispchndmaControlSerialization_Prologue;
 
-    pThis->__dispchndmaGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_dispchndmaGetInternalObjectHandle;
+    // dispchndmaControlSerialization_Epilogue -- virtual inherited (rmres) base (dispchn)
+    pThis->__dispchndmaControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchndmaControlSerialization_Epilogue;
 
-    pThis->__dispchndmaControl__ = &__nvoc_thunk_GpuResource_dispchndmaControl;
+    // dispchndmaControl_Prologue -- virtual inherited (rmres) base (dispchn)
+    pThis->__dispchndmaControl_Prologue__ = &__nvoc_up_thunk_RmResource_dispchndmaControl_Prologue;
 
-    pThis->__dispchndmaUnmap__ = &__nvoc_thunk_GpuResource_dispchndmaUnmap;
+    // dispchndmaControl_Epilogue -- virtual inherited (rmres) base (dispchn)
+    pThis->__dispchndmaControl_Epilogue__ = &__nvoc_up_thunk_RmResource_dispchndmaControl_Epilogue;
 
-    pThis->__dispchndmaGetMemInterMapParams__ = &__nvoc_thunk_RmResource_dispchndmaGetMemInterMapParams;
+    // dispchndmaCanCopy -- virtual inherited (res) base (dispchn)
+    pThis->__dispchndmaCanCopy__ = &__nvoc_up_thunk_RsResource_dispchndmaCanCopy;
 
-    pThis->__dispchndmaGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_dispchndmaGetMemoryMappingDescriptor;
+    // dispchndmaIsDuplicate -- virtual inherited (res) base (dispchn)
+    pThis->__dispchndmaIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispchndmaIsDuplicate;
 
-    pThis->__dispchndmaControlFilter__ = &__nvoc_thunk_RsResource_dispchndmaControlFilter;
+    // dispchndmaPreDestruct -- virtual inherited (res) base (dispchn)
+    pThis->__dispchndmaPreDestruct__ = &__nvoc_up_thunk_RsResource_dispchndmaPreDestruct;
 
-    pThis->__dispchndmaUnregisterEvent__ = &__nvoc_thunk_Notifier_dispchndmaUnregisterEvent;
+    // dispchndmaControlFilter -- virtual inherited (res) base (dispchn)
+    pThis->__dispchndmaControlFilter__ = &__nvoc_up_thunk_RsResource_dispchndmaControlFilter;
 
-    pThis->__dispchndmaControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_dispchndmaControlSerialization_Prologue;
+    // dispchndmaIsPartialUnmapSupported -- inline virtual inherited (res) base (dispchn) body
+    pThis->__dispchndmaIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispchndmaIsPartialUnmapSupported;
 
-    pThis->__dispchndmaCanCopy__ = &__nvoc_thunk_RsResource_dispchndmaCanCopy;
+    // dispchndmaMapTo -- virtual inherited (res) base (dispchn)
+    pThis->__dispchndmaMapTo__ = &__nvoc_up_thunk_RsResource_dispchndmaMapTo;
 
-    pThis->__dispchndmaIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_dispchndmaIsPartialUnmapSupported;
+    // dispchndmaUnmapFrom -- virtual inherited (res) base (dispchn)
+    pThis->__dispchndmaUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispchndmaUnmapFrom;
 
-    pThis->__dispchndmaPreDestruct__ = &__nvoc_thunk_RsResource_dispchndmaPreDestruct;
+    // dispchndmaGetRefCount -- virtual inherited (res) base (dispchn)
+    pThis->__dispchndmaGetRefCount__ = &__nvoc_up_thunk_RsResource_dispchndmaGetRefCount;
 
-    pThis->__dispchndmaIsDuplicate__ = &__nvoc_thunk_RsResource_dispchndmaIsDuplicate;
+    // dispchndmaAddAdditionalDependants -- virtual inherited (res) base (dispchn)
+    pThis->__dispchndmaAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispchndmaAddAdditionalDependants;
 
-    pThis->__dispchndmaControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_dispchndmaControlSerialization_Epilogue;
+    // dispchndmaGetNotificationListPtr -- virtual inherited (notify) base (dispchn)
+    pThis->__dispchndmaGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispchndmaGetNotificationListPtr;
 
-    pThis->__dispchndmaGetNotificationListPtr__ = &__nvoc_thunk_Notifier_dispchndmaGetNotificationListPtr;
+    // dispchndmaGetNotificationShare -- virtual inherited (notify) base (dispchn)
+    pThis->__dispchndmaGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchndmaGetNotificationShare;
 
-    pThis->__dispchndmaGetNotificationShare__ = &__nvoc_thunk_Notifier_dispchndmaGetNotificationShare;
+    // dispchndmaSetNotificationShare -- virtual inherited (notify) base (dispchn)
+    pThis->__dispchndmaSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispchndmaSetNotificationShare;
 
-    pThis->__dispchndmaMap__ = &__nvoc_thunk_GpuResource_dispchndmaMap;
+    // dispchndmaUnregisterEvent -- virtual inherited (notify) base (dispchn)
+    pThis->__dispchndmaUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispchndmaUnregisterEvent;
 
-    pThis->__dispchndmaAccessCallback__ = &__nvoc_thunk_RmResource_dispchndmaAccessCallback;
-}
+    // dispchndmaGetOrAllocNotifShare -- virtual inherited (notify) base (dispchn)
+    pThis->__dispchndmaGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispchndmaGetOrAllocNotifShare;
+} // End __nvoc_init_funcTable_DispChannelDma_1 with approximately 30 basic block(s).
 
+
+// Initialize vtable(s) for 30 virtual method(s).
 void __nvoc_init_funcTable_DispChannelDma(DispChannelDma *pThis) {
+
+    // Initialize vtable(s) with 30 per-object function pointer(s).
     __nvoc_init_funcTable_DispChannelDma_1(pThis);
 }
 

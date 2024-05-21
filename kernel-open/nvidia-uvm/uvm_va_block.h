@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -110,8 +110,6 @@ typedef struct
 
     // Pages that have been evicted to sysmem
     uvm_page_mask_t evicted;
-
-    NvU64 *cpu_chunks_dma_addrs;
 
     // Array of naturally-aligned chunks. Each chunk has the largest possible
     // size which can fit within the block, so they are not uniform size.
@@ -2155,8 +2153,7 @@ NV_STATUS uvm_va_block_map_cpu_chunk_on_gpus(uvm_va_block_t *va_block,
 // Physically unmap a CPU chunk from all registered GPUs.
 // Locking: The va_block lock must be held.
 void uvm_va_block_unmap_cpu_chunk_on_gpus(uvm_va_block_t *va_block,
-                                          uvm_cpu_chunk_t *chunk,
-                                          uvm_page_index_t page_index);
+                                          uvm_cpu_chunk_t *chunk);
 
 // Remove any CPU chunks in the given region.
 // Locking: The va_block lock must be held.
@@ -2166,19 +2163,19 @@ void uvm_va_block_remove_cpu_chunks(uvm_va_block_t *va_block, uvm_va_block_regio
 // specified processor in the block. Returns 0 if the address is not resident on
 // the specified processor.
 // Locking: The va_block lock must be held.
-NvU32 uvm_va_block_get_physical_size(uvm_va_block_t *block,
+NvU64 uvm_va_block_get_physical_size(uvm_va_block_t *block,
                                      uvm_processor_id_t processor,
                                      uvm_page_index_t page_index);
 
 // Get CPU page size or 0 if it is not mapped
-NvU32 uvm_va_block_page_size_cpu(uvm_va_block_t *va_block,
+NvU64 uvm_va_block_page_size_cpu(uvm_va_block_t *va_block,
                                  uvm_page_index_t page_index);
 
 // Get GPU page size or 0 if it is not mapped on the given GPU
-NvU32 uvm_va_block_page_size_gpu(uvm_va_block_t *va_block, uvm_gpu_id_t gpu_id, uvm_page_index_t page_index);
+NvU64 uvm_va_block_page_size_gpu(uvm_va_block_t *va_block, uvm_gpu_id_t gpu_id, uvm_page_index_t page_index);
 
 // Get page size or 0 if it is not mapped on the given processor
-static NvU32 uvm_va_block_page_size_processor(uvm_va_block_t *va_block,
+static NvU64 uvm_va_block_page_size_processor(uvm_va_block_t *va_block,
                                               uvm_processor_id_t processor_id,
                                               uvm_page_index_t page_index)
 {
@@ -2189,10 +2186,10 @@ static NvU32 uvm_va_block_page_size_processor(uvm_va_block_t *va_block,
 }
 
 // Returns the big page size for the GPU VA space of the block
-NvU32 uvm_va_block_gpu_big_page_size(uvm_va_block_t *va_block, uvm_gpu_t *gpu);
+NvU64 uvm_va_block_gpu_big_page_size(uvm_va_block_t *va_block, uvm_gpu_t *gpu);
 
 // Returns the number of big pages in the VA block for the given size
-size_t uvm_va_block_num_big_pages(uvm_va_block_t *va_block, NvU32 big_page_size);
+size_t uvm_va_block_num_big_pages(uvm_va_block_t *va_block, NvU64 big_page_size);
 
 // Returns the number of big pages in the VA block for the big page size on the
 // given GPU
@@ -2202,29 +2199,29 @@ static size_t uvm_va_block_gpu_num_big_pages(uvm_va_block_t *va_block, uvm_gpu_t
 }
 
 // Returns the start address of the given big page index and big page size
-NvU64 uvm_va_block_big_page_addr(uvm_va_block_t *va_block, size_t big_page_index, NvU32 big_page_size);
+NvU64 uvm_va_block_big_page_addr(uvm_va_block_t *va_block, size_t big_page_index, NvU64 big_page_size);
 
 // Returns the region [start, end] of the given big page index and big page size
 uvm_va_block_region_t uvm_va_block_big_page_region(uvm_va_block_t *va_block,
                                                    size_t big_page_index,
-                                                   NvU32 big_page_size);
+                                                   NvU64 big_page_size);
 
 // Returns the largest sub-region region of [start, end] which can fit big
 // pages. If the region cannot fit any big pages, an invalid region (0, 0) is
 // returned.
-uvm_va_block_region_t uvm_va_block_big_page_region_all(uvm_va_block_t *va_block, NvU32 big_page_size);
+uvm_va_block_region_t uvm_va_block_big_page_region_all(uvm_va_block_t *va_block, NvU64 big_page_size);
 
 // Returns the largest sub-region region of 'region' which can fit big pages.
 // If the region cannot fit any big pages, an invalid region (0, 0) is returned.
 uvm_va_block_region_t uvm_va_block_big_page_region_subset(uvm_va_block_t *va_block,
                                                           uvm_va_block_region_t region,
-                                                          NvU32 big_page_size);
+                                                          NvU64 big_page_size);
 
 // Returns the big page index (the bit index within
 // uvm_va_block_gpu_state_t::big_ptes) corresponding to page_index. If
 // page_index cannot be covered by a big PTE due to alignment or block size,
 // MAX_BIG_PAGES_PER_UVM_VA_BLOCK is returned.
-size_t uvm_va_block_big_page_index(uvm_va_block_t *va_block, uvm_page_index_t page_index, NvU32 big_page_size);
+size_t uvm_va_block_big_page_index(uvm_va_block_t *va_block, uvm_page_index_t page_index, NvU64 big_page_size);
 
 // Returns the new residency for a page that faulted or triggered access counter
 // notifications. The read_duplicate output parameter indicates if the page

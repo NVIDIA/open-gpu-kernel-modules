@@ -1076,7 +1076,8 @@ static NVSurfaceEvoPtr GetSurfaceFromHandle(
     const NvKmsSurfaceHandle surfaceHandle,
     const NvBool isUsedByCursorChannel,
     const NvBool isUsedByLayerChannel,
-    const NvBool requireDisplayHardwareAccess)
+    const NvBool requireDisplayHardwareAccess,
+    const NvBool maybeUsedBy3d)
 {
     NVSurfaceEvoPtr pSurfaceEvo =
         nvEvoGetPointerFromApiHandle(pOpenDevSurfaceHandles, surfaceHandle);
@@ -1102,15 +1103,13 @@ static NVSurfaceEvoPtr GetSurfaceFromHandle(
     }
 
     /*
-     * XXX If !requireDisplayHardwareAccess, fetched surfaces aren't going to be
-     * accessed by the display hardware, so they shouldn't need to be checked by
-     * nvEvoGetHeadSetStoragePitchValue(). These surfaces will be used as a
-     * texture by the 3d engine. But previously all surfaces were checked by
+     * XXX If maybeUsedBy3d, the fetched surface may be used as a texture by the
+     * 3d engine.  Previously, all surfaces were checked by
      * nvEvoGetHeadSetStoragePitchValue() at registration time, and we don't
      * know if nvEvoGetHeadSetStoragePitchValue() was protecting us from any
      * surface dimensions that could cause trouble for the 3d engine.
      */
-    if (isUsedByLayerChannel || !requireDisplayHardwareAccess) {
+    if (isUsedByLayerChannel || maybeUsedBy3d) {
         NvU8 planeIndex;
 
         FOR_ALL_VALID_PLANES(planeIndex, pSurfaceEvo) {
@@ -1138,7 +1137,8 @@ NVSurfaceEvoPtr nvEvoGetSurfaceFromHandle(
                                 surfaceHandle,
                                 isUsedByCursorChannel,
                                 isUsedByLayerChannel,
-                                TRUE /* requireDisplayHardwareAccess */);
+                                TRUE /* requireDisplayHardwareAccess */,
+                                TRUE /* maybeUsedBy3d */);
 }
 
 NVSurfaceEvoPtr nvEvoGetSurfaceFromHandleNoDispHWAccessOk(
@@ -1151,7 +1151,22 @@ NVSurfaceEvoPtr nvEvoGetSurfaceFromHandleNoDispHWAccessOk(
                                 surfaceHandle,
                                 FALSE /* isUsedByCursorChannel */,
                                 FALSE /* isUsedByLayerChannel */,
-                                FALSE /* requireDisplayHardwareAccess */);
+                                FALSE /* requireDisplayHardwareAccess */,
+                                TRUE /* maybeUsedBy3d */);
+}
+
+NVSurfaceEvoPtr nvEvoGetSurfaceFromHandleNoHWAccess(
+    const NVDevEvoRec *pDevEvo,
+    const NVEvoApiHandlesRec *pOpenDevSurfaceHandles,
+    NvKmsSurfaceHandle surfaceHandle)
+{
+    return GetSurfaceFromHandle(pDevEvo,
+                                pOpenDevSurfaceHandles,
+                                surfaceHandle,
+                                FALSE /* isUsedByCursorChannel */,
+                                FALSE /* isUsedByLayerChannel */,
+                                FALSE /* requireDisplayHardwareAccess */,
+                                FALSE /* maybeUsedBy3d */);
 }
 
 /*!
@@ -1226,35 +1241,44 @@ void nvEvoUnregisterDeferredRequestFifo(
     nvFree(pDeferredRequestFifo);
 }
 
-static NvBool UpdateVblankSemControl(
-    NVDevEvoRec *pDevEvo,
-    NVVblankSemControl *pVblankSemControl,
-    NvBool enable)
+static NvBool AssignVblankSemControlHwHeadMask(
+    NVDispEvoRec *pDispEvo,
+    NvU32 apiHeadMask,
+    NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_ENABLE_PARAMS *pParams)
 {
-    NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_PARAMS params = { };
+    NvU32 apiHead;
 
-    params.subDeviceInstance = pVblankSemControl->dispIndex;
-    params.head = pVblankSemControl->hwHead;
-    params.hMemory = pVblankSemControl->pSurfaceEvo->planes[0].rmHandle;
-    params.memoryOffset = pVblankSemControl->surfaceOffset;
-    params.bEnable = enable;
+    FOR_ALL_HEADS(apiHead, apiHeadMask) {
 
-    return nvRmApiControl(nvEvoGlobal.clientHandle,
-                          pDevEvo->displayCommonHandle,
-                          NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL,
-                          &params, sizeof(params)) == NVOS_STATUS_SUCCESS;
+        NvU32 hwHead = nvGetPrimaryHwHead(pDispEvo, apiHead);
+
+        if (hwHead == NV_INVALID_HEAD) {
+            return FALSE;
+        }
+
+        pParams->headMask |= NVBIT(hwHead);
+        pParams->headIndexMap[hwHead] = apiHead;
+    }
+
+    pParams->bUseHeadIndexMap = TRUE;
+    return TRUE;
 }
 
 NVVblankSemControl *nvEvoEnableVblankSemControl(
     NVDevEvoRec *pDevEvo,
     NVDispEvoRec *pDispEvo,
-    NvU32 hwHead,
+    NvU32 apiHeadMask,
     NVSurfaceEvoRec *pSurfaceEvo,
     NvU64 surfaceOffset)
 {
+    NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_ENABLE_PARAMS params = { };
     NVVblankSemControl *pVblankSemControl;
 
     if (!pDevEvo->supportsVblankSemControl) {
+        return NULL;
+    }
+
+    if (!AssignVblankSemControlHwHeadMask(pDispEvo, apiHeadMask, &params)) {
         return NULL;
     }
 
@@ -1279,14 +1303,19 @@ NVVblankSemControl *nvEvoEnableVblankSemControl(
         return NULL;
     }
 
-    pVblankSemControl->hwHead = hwHead;
     pVblankSemControl->dispIndex = pDispEvo->displayOwner;
     pVblankSemControl->surfaceOffset = surfaceOffset;
     pVblankSemControl->pSurfaceEvo = pSurfaceEvo;
 
-    if (UpdateVblankSemControl(pDevEvo,
-                               pVblankSemControl,
-                               TRUE /* enable */)) {
+    params.subDeviceInstance = pVblankSemControl->dispIndex;
+    params.hMemory = pVblankSemControl->pSurfaceEvo->planes[0].rmHandle;
+    params.memoryOffset = pVblankSemControl->surfaceOffset;
+
+    if (nvRmApiControl(nvEvoGlobal.clientHandle,
+                       pDevEvo->displayCommonHandle,
+                       NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_ENABLE,
+                       &params, sizeof(params)) == NVOS_STATUS_SUCCESS) {
+
         nvEvoIncrementSurfaceRefCnts(pSurfaceEvo);
         return pVblankSemControl;
     } else {
@@ -1299,13 +1328,21 @@ NvBool nvEvoDisableVblankSemControl(
     NVDevEvoRec *pDevEvo,
     NVVblankSemControl *pVblankSemControl)
 {
+    NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DISABLE_PARAMS params = { };
+
     if (!pDevEvo->supportsVblankSemControl) {
         return FALSE;
     }
 
-    if (UpdateVblankSemControl(pDevEvo,
-                               pVblankSemControl,
-                               FALSE /* enable */)) {
+    params.subDeviceInstance = pVblankSemControl->dispIndex;
+    params.hMemory = pVblankSemControl->pSurfaceEvo->planes[0].rmHandle;
+    params.memoryOffset = pVblankSemControl->surfaceOffset;
+
+    if (nvRmApiControl(nvEvoGlobal.clientHandle,
+                       pDevEvo->displayCommonHandle,
+                       NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DISABLE,
+                       &params, sizeof(params)) == NVOS_STATUS_SUCCESS) {
+
         nvEvoDecrementSurfaceRefCnts(pDevEvo, pVblankSemControl->pSurfaceEvo);
         nvFree(pVblankSemControl);
         return TRUE;

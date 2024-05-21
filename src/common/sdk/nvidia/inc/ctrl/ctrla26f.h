@@ -1,17 +1,17 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2011-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2011-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
  * to deal in the Software without restriction, including without limitation
  * the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
@@ -57,92 +57,11 @@
 
 
 
-
-
-/*
- * NVA26F_CTRL_GET_CLASS_ENGINEID
- *
- * Please see description of NV906F_CTRL_GET_CLASS_ENGINEID for more information.
- *   
- */
-#define NVA26F_CTRL_GET_CLASS_ENGINEID (0xa26f0101) /* finn: Evaluated from "(FINN_KEPLER_CHANNEL_GPFIFO_C_GPFIFO_INTERFACE_ID << 8) | NVA26F_CTRL_GET_CLASS_ENGINEID_PARAMS_MESSAGE_ID" */
-
-#define NVA26F_CTRL_GET_CLASS_ENGINEID_PARAMS_MESSAGE_ID (0x1U)
-
-typedef NV906F_CTRL_GET_CLASS_ENGINEID_PARAMS NVA26F_CTRL_GET_CLASS_ENGINEID_PARAMS;
-
-/*
- * NVA26F_CTRL_RESET_CHANNEL
- *
- * Please see description of NVA06F_CTRL_CMD_RESET_CHANNEL for more information. 
- *
- */
-#define NVA26F_CTRL_CMD_RESET_CHANNEL (0xa26f0102) /* finn: Evaluated from "(FINN_KEPLER_CHANNEL_GPFIFO_C_GPFIFO_INTERFACE_ID << 8) | NVA26F_CTRL_CMD_RESET_CHANNEL_PARAMS_MESSAGE_ID" */
-
-#define NVA26F_CTRL_CMD_RESET_CHANNEL_PARAMS_MESSAGE_ID (0x2U)
-
-typedef NVA06F_CTRL_CMD_RESET_CHANNEL_PARAMS NVA26F_CTRL_CMD_RESET_CHANNEL_PARAMS;
-
-/*
- * NVA26F_CTRL_CMD_GPFIFO_SCHEDULE
- *
- * Please see description of NVA06F_CTRL_CMD_GPFIFO_SCHEDULE for more information.
- *
- */
-#define NVA26F_CTRL_CMD_GPFIFO_SCHEDULE (0xa26f0103) /* finn: Evaluated from "(FINN_KEPLER_CHANNEL_GPFIFO_C_GPFIFO_INTERFACE_ID << 8) | NVA26F_CTRL_GPFIFO_SCHEDULE_PARAMS_MESSAGE_ID" */
-
-#define NVA26F_CTRL_GPFIFO_SCHEDULE_PARAMS_MESSAGE_ID (0x3U)
-
-typedef NVA06F_CTRL_GPFIFO_SCHEDULE_PARAMS NVA26F_CTRL_GPFIFO_SCHEDULE_PARAMS;
-
-/*
- * NVA26F_CTRL_CMD_BIND
- *
- * Please see description of NVA06F_CTRL_CMD_BIND for more information.
- */
-#define NVA26F_CTRL_CMD_BIND (0xa26f0104) /* finn: Evaluated from "(FINN_KEPLER_CHANNEL_GPFIFO_C_GPFIFO_INTERFACE_ID << 8) | NVA26F_CTRL_BIND_PARAMS_MESSAGE_ID" */
-
-#define NVA26F_CTRL_BIND_PARAMS_MESSAGE_ID (0x4U)
-
-typedef NVA06F_CTRL_BIND_PARAMS NVA26F_CTRL_BIND_PARAMS;
-
-/*
- * NVA26F_CTRL_CMD_EVENT_SET_NOTIFICATION
- *
- * Please see description of NVA06F_CTRL_CMD_EVENT_SET_NOTIFICATION for more information.
-*/
-#define NVA26F_CTRL_CMD_EVENT_SET_NOTIFICATION (0xa26f0205) /* finn: Evaluated from "(FINN_KEPLER_CHANNEL_GPFIFO_C_EVENT_INTERFACE_ID << 8) | NVA26F_CTRL_EVENT_SET_NOTIFICATION_PARAMS_MESSAGE_ID" */
-
-#define NVA26F_CTRL_EVENT_SET_NOTIFICATION_PARAMS_MESSAGE_ID (0x5U)
-
-typedef NVA06F_CTRL_EVENT_SET_NOTIFICATION_PARAMS NVA26F_CTRL_EVENT_SET_NOTIFICATION_PARAMS;
-
-/* valid action values */
-#define NVA26F_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE NVA06F_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE
-#define NVA26F_CTRL_EVENT_SET_NOTIFICATION_ACTION_SINGLE  NVA06F_CTRL_EVENT_SET_NOTIFICATION_ACTION_SINGLE
-#define NVA26F_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT  NVA06F_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT
-
 /*
  * NVA26F_CTRL_CMD_EVENT_SET_TRIGGER
  *
  * Please see description of NVA06F_CTRL_CMD_EVENT_SET_TRIGGER for more information.
  */
-#define NVA26F_CTRL_CMD_EVENT_SET_TRIGGER                 (0xa26f0206) /* finn: Evaluated from "(FINN_KEPLER_CHANNEL_GPFIFO_C_EVENT_INTERFACE_ID << 8) | 0x6" */
-
-
-
-
-
-/*
- * NVA26F_CTRL_CMD_GET_MMU_FAULT_INFO
- *
- * Please see description of NV906F_CTRL_CMD_GET_MMU_FAULT_INFO for more information.
- *   
- */
-#define NVA26F_CTRL_CMD_GET_MMU_FAULT_INFO (0xa26f0107) /* finn: Evaluated from "(FINN_KEPLER_CHANNEL_GPFIFO_C_GPFIFO_INTERFACE_ID << 8) | NVA26F_CTRL_GET_MMU_FAULT_INFO_PARAMS_MESSAGE_ID" */
-
-#define NVA26F_CTRL_GET_MMU_FAULT_INFO_PARAMS_MESSAGE_ID (0x7U)
-
-typedef NV906F_CTRL_GET_MMU_FAULT_INFO_PARAMS NVA26F_CTRL_GET_MMU_FAULT_INFO_PARAMS;
+#define NVA26F_CTRL_CMD_EVENT_SET_TRIGGER (0xa26f0106) /* finn: Evaluated from "(FINN_KEPLER_CHANNEL_GPFIFO_C_EVENT_INTERFACE_ID << 8) | 0x6" */
 
 /* _ctrla26f.h_ */

@@ -73,10 +73,13 @@ __nvoc_ctor_Ccsl_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_Ccsl_1(Ccsl *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-}
+} // End __nvoc_init_funcTable_Ccsl_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_Ccsl(Ccsl *pThis) {
     __nvoc_init_funcTable_Ccsl_1(pThis);
 }

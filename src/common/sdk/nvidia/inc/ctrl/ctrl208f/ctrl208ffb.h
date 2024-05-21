@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -460,20 +460,11 @@ typedef struct NV208F_CTRL_FB_ECC_SET_WRITE_KILL_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 address, 8);
 } NV208F_CTRL_FB_ECC_SET_WRITE_KILL_PARAMS;
 
-typedef struct NV208F_CTRL_FB_REMAPPING_RBC_ADDRESS_INFO {
-    NvU32 bank;
-    NvU32 stackId;
-    NvU32 row;
-    NvU32 partition;
-    NvU32 sublocation;
-} NV208F_CTRL_FB_REMAPPING_RBC_ADDRESS_INFO;
-
-#define NV208F_CTRL_FB_REMAP_ROW_ADDRESS_TYPE_PHYSICAL 0x0
-#define NV208F_CTRL_FB_REMAP_ROW_ADDRESS_TYPE_RBC      0x1
-
 /*
  * NV208F_CTRL_FB_REMAPPING_ADDRESS_INFO
  *
+ *   physicalAddress
+ *     Physical address to be remapped
  *   source
  *     The reason for retirement. Valid values for this parameter are
  *     from NV2080_CTRL_FB_REMAPPED_ROW_SOURCE_*
@@ -489,23 +480,11 @@ typedef struct NV208F_CTRL_FB_REMAPPING_RBC_ADDRESS_INFO {
  *         Attempting to remap a reserved row
  *       NV208F_CTRL_FB_REMAP_ROW_STATUS_INTERNAL_ERROR
  *         Some other RM failure
- *   addressType
- *     Type of address passed. Valid values are:
- *       NV208F_CTRL_FB_REMAP_ROW_ADDRESS_TYPE_PHYSICAL
- *         The specified address is physical address.
- *       NV208F_CTRL_FB_REMAP_ROW_ADDRESS_TYPE_RBC
- *         The specified address is DRAM Row Bank Column address.
- *   address
- *     Union of physicalAddress and rbcAddress. Set the appropriate one based on the address type.
  */
 typedef struct NV208F_CTRL_FB_REMAPPING_ADDRESS_INFO {
+    NV_DECLARE_ALIGNED(NvU64 physicalAddress, 8);
     NvU8  source;
     NvU32 status;
-    NvU8  addressType;
-    union {
-        NV_DECLARE_ALIGNED(NvU64 physicalAddress, 8);
-        NV208F_CTRL_FB_REMAPPING_RBC_ADDRESS_INFO rbcAddress;
-    } address;
 } NV208F_CTRL_FB_REMAPPING_ADDRESS_INFO;
 
 /* valid values for status */
@@ -611,26 +590,5 @@ typedef struct NV208F_CTRL_FB_CLEAR_REMAPPED_ROWS_PARAMS {
     NvU32  sourceMask;
     NvBool bForcePurge;
 } NV208F_CTRL_FB_CLEAR_REMAPPED_ROWS_PARAMS;
-
-/*
- * NV208F_CTRL_CMD_FB_GET_FLOORSWEPT_FBPA_MASK
- *
- * This command calculates the floorswept fbpa mask by taking 1/2 HBM
- * floorsweeping into account
- *
- *   fbpaMask
- *     This value of the mask.
- *
- *   Possbile status values returned are:
- *     NV_OK
- *     NV_ERR_NOT_SUPPORTED
- */
-#define NV208F_CTRL_CMD_FB_GET_FLOORSWEPT_FBPA_MASK (0x208f0516) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_FB_INTERFACE_ID << 8) | NV208F_CTRL_FB_GET_FLOORSWEPT_FBPA_MASK_PARAMS_MESSAGE_ID" */
-
-#define NV208F_CTRL_FB_GET_FLOORSWEPT_FBPA_MASK_PARAMS_MESSAGE_ID (0x16U)
-
-typedef struct NV208F_CTRL_FB_GET_FLOORSWEPT_FBPA_MASK_PARAMS {
-    NvU32 fbpaMask;
-} NV208F_CTRL_FB_GET_FLOORSWEPT_FBPA_MASK_PARAMS;
 
 /* _ctrl208ffb_h_ */

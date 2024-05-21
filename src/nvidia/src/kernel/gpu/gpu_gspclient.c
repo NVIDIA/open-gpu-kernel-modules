@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -164,7 +164,7 @@ gpuGenGidData_FWCLIENT
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NvU32 gpuGetActiveFBIOs_FWCLIENT(OBJGPU *pGpu)
+NvU64 gpuGetActiveFBIOs_FWCLIENT(OBJGPU *pGpu)
 {
     GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
     return pGSCI->fbio_mask;
@@ -182,9 +182,18 @@ void gpuInitProperties_FWCLIENT(OBJGPU *pGpu)
 
     pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_MOBILE, pGSCI->bIsMobile);
     pGpu->setProperty(pGpu, PDB_PROP_GPU_RTD3_GC6_SUPPORTED, pGSCI->bIsGc6Rtd3Allowed);
+    pGpu->setProperty(pGpu, PDB_PROP_GPU_RTD3_GC8_SUPPORTED, pGSCI->bIsGc8Rtd3Allowed);
     pGpu->setProperty(pGpu, PDB_PROP_GPU_RTD3_GCOFF_SUPPORTED, pGSCI->bIsGcOffRtd3Allowed);
     pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_UEFI, pGSCI->bIsGpuUefi);
     pGpu->setProperty(pGpu, PDB_PROP_GPU_LEGACY_GCOFF_SUPPORTED, pGSCI->bIsGcoffLegacyAllowed);
+}
+
+void gpuGetRtd3GC6Data_FWCLIENT(OBJGPU *pGpu)
+{
+    GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
+
+    pGpu->gc6State.GC6PerstDelay      = pGSCI->RTD3GC6PerstDelay;
+    pGpu->gc6State.GC6TotalBoardPower = pGSCI->RTD3GC6TotalBoardPower;
 }
 
 NvU32
@@ -247,6 +256,45 @@ gpuConstructDeviceInfoTable_FWCLIENT
 done:
     portMemFree(pParams);
     return status;
+}
+
+NV_STATUS
+gpuGetNameString_FWCLIENT
+(
+    OBJGPU *pGpu,
+    NvU32 type,
+    void *nameStringBuffer
+)
+{
+    GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
+
+    if (type == NV2080_CTRL_GPU_GET_NAME_STRING_FLAGS_TYPE_ASCII)
+    {
+        portMemCopy(nameStringBuffer, sizeof(pGSCI->gpuNameString),
+                    pGSCI->gpuNameString, sizeof(pGSCI->gpuNameString));
+    }
+    else
+    {
+        portMemCopy(nameStringBuffer, sizeof(pGSCI->gpuNameString_Unicode),
+                    pGSCI->gpuNameString_Unicode, sizeof(pGSCI->gpuNameString_Unicode));
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS
+gpuGetShortNameString_FWCLIENT
+(
+    OBJGPU *pGpu,
+    NvU8 *nameStringBuffer
+)
+{
+    GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
+
+    portMemCopy(nameStringBuffer, sizeof(pGSCI->gpuShortNameString),
+                pGSCI->gpuShortNameString, sizeof(pGSCI->gpuShortNameString));
+
+    return NV_OK;
 }
 
 NV_STATUS

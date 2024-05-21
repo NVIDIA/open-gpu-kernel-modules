@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -112,6 +112,10 @@ void uvm_hal_pascal_host_tlb_invalidate_all(uvm_push_t *push,
                                             uvm_gpu_phys_address_t pdb,
                                             NvU32 depth,
                                             uvm_membar_t membar);
+void uvm_hal_turing_host_tlb_invalidate_all(uvm_push_t *push,
+                                            uvm_gpu_phys_address_t pdb,
+                                            NvU32 depth,
+                                            uvm_membar_t membar);
 void uvm_hal_ampere_host_tlb_invalidate_all(uvm_push_t *push,
                                             uvm_gpu_phys_address_t pdb,
                                             NvU32 depth,
@@ -149,42 +153,49 @@ typedef void (*uvm_hal_host_tlb_invalidate_va_t)(uvm_push_t *push,
                                                  NvU32 depth,
                                                  NvU64 base,
                                                  NvU64 size,
-                                                 NvU32 page_size,
+                                                 NvU64 page_size,
                                                  uvm_membar_t membar);
 void uvm_hal_maxwell_host_tlb_invalidate_va(uvm_push_t *push,
                                             uvm_gpu_phys_address_t pdb,
                                             NvU32 depth,
                                             NvU64 base,
                                             NvU64 size,
-                                            NvU32 page_size,
+                                            NvU64 page_size,
                                             uvm_membar_t membar);
 void uvm_hal_pascal_host_tlb_invalidate_va(uvm_push_t *push,
                                            uvm_gpu_phys_address_t pdb,
                                            NvU32 depth,
                                            NvU64 base,
                                            NvU64 size,
-                                           NvU32 page_size,
+                                           NvU64 page_size,
                                            uvm_membar_t membar);
 void uvm_hal_volta_host_tlb_invalidate_va(uvm_push_t *push,
                                           uvm_gpu_phys_address_t pdb,
                                           NvU32 depth,
                                           NvU64 base,
                                           NvU64 size,
-                                          NvU32 page_size,
+                                          NvU64 page_size,
                                           uvm_membar_t membar);
+void uvm_hal_turing_host_tlb_invalidate_va(uvm_push_t *push,
+                                           uvm_gpu_phys_address_t pdb,
+                                           NvU32 depth,
+                                           NvU64 base,
+                                           NvU64 size,
+                                           NvU64 page_size,
+                                           uvm_membar_t membar);
 void uvm_hal_ampere_host_tlb_invalidate_va(uvm_push_t *push,
                                            uvm_gpu_phys_address_t pdb,
                                            NvU32 depth,
                                            NvU64 base,
                                            NvU64 size,
-                                           NvU32 page_size,
+                                           NvU64 page_size,
                                            uvm_membar_t membar);
 void uvm_hal_hopper_host_tlb_invalidate_va(uvm_push_t *push,
                                            uvm_gpu_phys_address_t pdb,
                                            NvU32 depth,
                                            NvU64 base,
                                            NvU64 size,
-                                           NvU32 page_size,
+                                           NvU64 page_size,
                                            uvm_membar_t membar);
 
 typedef void (*uvm_hal_host_tlb_invalidate_test_t)(uvm_push_t *push,
@@ -194,6 +205,9 @@ void uvm_hal_maxwell_host_tlb_invalidate_test(uvm_push_t *push,
                                               uvm_gpu_phys_address_t pdb,
                                               UVM_TEST_INVALIDATE_TLB_PARAMS *params);
 void uvm_hal_pascal_host_tlb_invalidate_test(uvm_push_t *push,
+                                             uvm_gpu_phys_address_t pdb,
+                                             UVM_TEST_INVALIDATE_TLB_PARAMS *params);
+void uvm_hal_turing_host_tlb_invalidate_test(uvm_push_t *push,
                                              uvm_gpu_phys_address_t pdb,
                                              UVM_TEST_INVALIDATE_TLB_PARAMS *params);
 void uvm_hal_ampere_host_tlb_invalidate_test(uvm_push_t *push,
@@ -445,15 +459,15 @@ void uvm_hal_ada_arch_init_properties(uvm_parent_gpu_t *parent_gpu);
 void uvm_hal_hopper_arch_init_properties(uvm_parent_gpu_t *parent_gpu);
 
 // Retrieve the page-tree HAL for a given big page size
-typedef uvm_mmu_mode_hal_t *(*uvm_hal_lookup_mode_hal_t)(NvU32 big_page_size);
+typedef uvm_mmu_mode_hal_t *(*uvm_hal_lookup_mode_hal_t)(NvU64 big_page_size);
 typedef void (*uvm_hal_mmu_enable_prefetch_faults_t)(uvm_parent_gpu_t *parent_gpu);
 typedef void (*uvm_hal_mmu_disable_prefetch_faults_t)(uvm_parent_gpu_t *parent_gpu);
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_maxwell(NvU32 big_page_size);
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_pascal(NvU32 big_page_size);
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_volta(NvU32 big_page_size);
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_turing(NvU32 big_page_size);
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_ampere(NvU32 big_page_size);
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_hopper(NvU32 big_page_size);
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_maxwell(NvU64 big_page_size);
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_pascal(NvU64 big_page_size);
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_volta(NvU64 big_page_size);
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_turing(NvU64 big_page_size);
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_ampere(NvU64 big_page_size);
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_hopper(NvU64 big_page_size);
 void uvm_hal_maxwell_mmu_enable_prefetch_faults_unsupported(uvm_parent_gpu_t *parent_gpu);
 void uvm_hal_maxwell_mmu_disable_prefetch_faults_unsupported(uvm_parent_gpu_t *parent_gpu);
 void uvm_hal_pascal_mmu_enable_prefetch_faults(uvm_parent_gpu_t *parent_gpu);

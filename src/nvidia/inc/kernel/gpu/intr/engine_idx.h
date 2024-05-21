@@ -152,8 +152,12 @@
 #define MC_ENGINE_IDX_PXUC                          168
 #define MC_ENGINE_IDX_SYSLTC                        169
 #define MC_ENGINE_IDX_LRCC                          170
+#define MC_ENGINE_IDX_RESERVED171                   171
+#define MC_ENGINE_IDX_RESERVED172                   172
+#define MC_ENGINE_IDX_RESERVED173                   173
+#define MC_ENGINE_IDX_RESERVED174                   174
 // This must be kept as the max bit if we need to add more engines
-#define MC_ENGINE_IDX_MAX                           171
+#define MC_ENGINE_IDX_MAX                           175
 
 // Index GR reference
 #define MC_ENGINE_IDX_GRn(x)            (MC_ENGINE_IDX_GR0 + (x))
@@ -178,7 +182,7 @@
     ((MC_ENGINE_IDX_CE(0) <= (x)) && ((x) <= MC_ENGINE_IDX_CE_MAX))
 
 // Index OFA reference
-#define MC_ENGINE_IDX_OFA(x)           (MC_ENGINE_IDX_OFA0 + (x))
+#define MC_ENGINE_IDX_OFA(x)            (MC_ENGINE_IDX_OFA0 + (x))
 
 MAKE_BITVECTOR(MC_ENGINE_BITVECTOR, MC_ENGINE_IDX_MAX);
 typedef MC_ENGINE_BITVECTOR *PMC_ENGINE_BITVECTOR;

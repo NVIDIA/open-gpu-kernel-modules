@@ -50,5 +50,5 @@ void      nvswitch_heartbeat_soe_callback_ls10(nvswitch_device *device, RM_FLCN_
 NvlStatus nvswitch_soe_set_nport_interrupts_ls10(nvswitch_device *device, NvU32 nport, NvBool bEnable);
 void      nvswitch_soe_disable_nport_fatal_interrupts_ls10(nvswitch_device *device, NvU32 nport,
                                                         NvU32 nportIntrEnable, NvU8 nportIntrType);
-
+NvlStatus nvswitch_soe_issue_ingress_stop_ls10(nvswitch_device *device, NvU32 nport, NvBool bStop);
 #endif //_SOE_LS10_H_

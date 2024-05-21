@@ -134,7 +134,6 @@ typedef NV_STATUS      RpcSetPageDirectory(POBJGPU, POBJRPC, NvHandle, NvHandle,
 typedef NV_STATUS      RpcCtrlGetP2pCapsV2(POBJGPU, POBJRPC, void*);
 typedef NV_STATUS      RpcCtrlNvlinkGetInbandReceivedData(POBJGPU, POBJRPC, NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS*, NvU16, NvBool*);
 typedef NV_STATUS      RpcCtrlGetCePceMask(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
-typedef NV_STATUS      RpcCtrlGetNvlinkPeerIdMask(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlGpuEvictCtx(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlGetMmuDebugMode(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcInvalidateTlb(POBJGPU, POBJRPC, NvU64, NvU32);
@@ -170,6 +169,7 @@ typedef NV_STATUS      RpcAllocObject(POBJGPU, POBJRPC, NvHandle, NvHandle, NvHa
 typedef NV_STATUS      RpcCtrlGpuHandleVfPriFault(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcRmApiControl(POBJGPU, POBJRPC, NvHandle, NvHandle, NvU32, void*, NvU32);
 typedef NV_STATUS      RpcCtrlFabricMemStats(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
+typedef NV_STATUS      RpcCtrlCmdNvlinkInbandSendData(POBJGPU, POBJRPC, NV2080_CTRL_NVLINK_INBAND_SEND_DATA_PARAMS*);
 typedef NV_STATUS      RpcCtrlGrCtxswZcullBind(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlInternalMemsysSetZbcReferenced(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlPerfRatedTdpSetControl(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
@@ -282,7 +282,6 @@ typedef struct RPC_HAL_IFACES {
     RpcCtrlGetP2pCapsV2         *rpcCtrlGetP2pCapsV2;         /* CTRL_GET_P2P_CAPS_V2 */
     RpcCtrlNvlinkGetInbandReceivedData  *rpcCtrlNvlinkGetInbandReceivedData; /* CTRL_NVLINK_GET_INBAND_RECEIVED_DATA */
     RpcCtrlGetCePceMask         *rpcCtrlGetCePceMask;         /* CTRL_GET_CE_PCE_MASK */
-    RpcCtrlGetNvlinkPeerIdMask  *rpcCtrlGetNvlinkPeerIdMask;  /* CTRL_GET_NVLINK_PEER_ID_MASK */
     RpcCtrlGpuEvictCtx          *rpcCtrlGpuEvictCtx;          /* CTRL_GPU_EVICT_CTX */
     RpcCtrlGetMmuDebugMode      *rpcCtrlGetMmuDebugMode;      /* CTRL_GET_MMU_DEBUG_MODE */
     RpcInvalidateTlb            *rpcInvalidateTlb;            /* INVALIDATE_TLB */
@@ -313,6 +312,7 @@ typedef struct RPC_HAL_IFACES {
     RpcCtrlGpuHandleVfPriFault  *rpcCtrlGpuHandleVfPriFault;  /* CTRL_GPU_HANDLE_VF_PRI_FAULT */
     RpcRmApiControl             *rpcRmApiControl;             /* RM_API_CONTROL */
     RpcCtrlFabricMemStats       *rpcCtrlFabricMemStats;       /* CTRL_FABRIC_MEM_STATS */
+    RpcCtrlCmdNvlinkInbandSendData  *rpcCtrlCmdNvlinkInbandSendData; /* CTRL_CMD_NVLINK_INBAND_SEND_DATA */
     RpcCtrlGrCtxswZcullBind     *rpcCtrlGrCtxswZcullBind;     /* CTRL_GR_CTXSW_ZCULL_BIND */
     RpcCtrlInternalMemsysSetZbcReferenced  *rpcCtrlInternalMemsysSetZbcReferenced; /* CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED */
     RpcCtrlPerfRatedTdpSetControl  *rpcCtrlPerfRatedTdpSetControl; /* CTRL_PERF_RATED_TDP_SET_CONTROL */
@@ -484,8 +484,6 @@ typedef struct RPC_HAL_IFACES {
         (_pRpc)->_hal.rpcCtrlNvlinkGetInbandReceivedData(_pGpu, _pRpc, _pArg0, _arg1, _pArg2)
 #define rpcCtrlGetCePceMask_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlGetCePceMask(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
-#define rpcCtrlGetNvlinkPeerIdMask_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
-        (_pRpc)->_hal.rpcCtrlGetNvlinkPeerIdMask(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlGpuEvictCtx_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlGpuEvictCtx(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlGetMmuDebugMode_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
@@ -546,6 +544,8 @@ typedef struct RPC_HAL_IFACES {
         (_pRpc)->_hal.rpcRmApiControl(_pGpu, _pRpc, _arg0, _arg1, _arg2, _pArg3, _arg4)
 #define rpcCtrlFabricMemStats_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlFabricMemStats(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
+#define rpcCtrlCmdNvlinkInbandSendData_HAL(_pGpu, _pRpc, _pArg0)  \
+        (_pRpc)->_hal.rpcCtrlCmdNvlinkInbandSendData(_pGpu, _pRpc, _pArg0)
 #define rpcCtrlGrCtxswZcullBind_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlGrCtxswZcullBind(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlInternalMemsysSetZbcReferenced_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \

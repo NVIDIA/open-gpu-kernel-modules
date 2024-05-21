@@ -54,7 +54,7 @@ static NvU32 entries_per_index_pascal(NvU32 depth)
     return 1;
 }
 
-static NvLength entry_offset_pascal(NvU32 depth, NvU32 page_size)
+static NvLength entry_offset_pascal(NvU32 depth, NvU64 page_size)
 {
     UVM_ASSERT(depth < 5);
     if (page_size == UVM_PAGE_SIZE_4K && depth == 3)
@@ -178,7 +178,7 @@ static NvLength entry_size_pascal(NvU32 depth)
         return 8;
 }
 
-static NvU32 index_bits_pascal(NvU32 depth, NvU32 page_size)
+static NvU32 index_bits_pascal(NvU32 depth, NvU64 page_size)
 {
     static const NvU32 bit_widths[] = {2, 9, 9, 8};
     // some code paths keep on querying this until they get a 0, meaning only the page offset remains.
@@ -204,7 +204,7 @@ static NvU32 num_va_bits_pascal(void)
     return 49;
 }
 
-static NvLength allocation_size_pascal(NvU32 depth, NvU32 page_size)
+static NvLength allocation_size_pascal(NvU32 depth, NvU64 page_size)
 {
     UVM_ASSERT(depth < 5);
     if (depth == 4 && page_size == UVM_PAGE_SIZE_64K)
@@ -213,7 +213,7 @@ static NvLength allocation_size_pascal(NvU32 depth, NvU32 page_size)
     return 4096;
 }
 
-static NvU32 page_table_depth_pascal(NvU32 page_size)
+static NvU32 page_table_depth_pascal(NvU64 page_size)
 {
     if (page_size == UVM_PAGE_SIZE_2M)
         return 3;
@@ -221,12 +221,12 @@ static NvU32 page_table_depth_pascal(NvU32 page_size)
         return 4;
 }
 
-static NvU32 page_sizes_pascal(void)
+static NvU64 page_sizes_pascal(void)
 {
     return UVM_PAGE_SIZE_2M | UVM_PAGE_SIZE_64K | UVM_PAGE_SIZE_4K;
 }
 
-static NvU64 unmapped_pte_pascal(NvU32 page_size)
+static NvU64 unmapped_pte_pascal(NvU64 page_size)
 {
     // Setting the privilege bit on an otherwise-zeroed big PTE causes the
     // corresponding 4k PTEs to be ignored. This allows the invalidation of a
@@ -362,7 +362,7 @@ static uvm_mmu_mode_hal_t pascal_mmu_mode_hal =
     .page_sizes = page_sizes_pascal
 };
 
-uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_pascal(NvU32 big_page_size)
+uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_pascal(NvU64 big_page_size)
 {
     UVM_ASSERT(big_page_size == UVM_PAGE_SIZE_64K || big_page_size == UVM_PAGE_SIZE_128K);
 

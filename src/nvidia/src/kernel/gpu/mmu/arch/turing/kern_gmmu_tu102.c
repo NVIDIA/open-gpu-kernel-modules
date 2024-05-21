@@ -159,40 +159,6 @@ kgmmuSetPdbToInvalidate_TU102
     }
 }
 
-/**
- * @brief     Initialize the GMMU format families.
- * @details   Turing supports PA based comptagline allocation policy
- *
- * @param[in] pGpu
- * @param[in] pKernelGmmu
- */
-NV_STATUS
-kgmmuFmtFamiliesInit_TU102(OBJGPU *pGpu, KernelGmmu *pKernelGmmu)
-{
-    extern NV_STATUS kgmmuFmtFamiliesInit_GV100(OBJGPU *pGpu, KernelGmmu *pKernelGmmu);
-
-    NvU32            v;
-    NV_STATUS        result;
-    GMMU_FMT_FAMILY *pFam;
-
-    for (v = 0; v < GMMU_FMT_MAX_VERSION_COUNT; ++v)
-    {
-        pFam = pKernelGmmu->pFmtFamilies[v];
-        if (NULL != pFam)
-        {
-            if (kgmmuIsBug2720120WarEnabled(pKernelGmmu))
-            {
-                NV_ASSERT_OK_OR_RETURN(kgmmuSetupWarForBug2720120_HAL(pKernelGmmu, pFam));
-            }
-        }
-    }
-
-    // inherit former FmtFamilies setup procedure
-    result = kgmmuFmtFamiliesInit_GV100(pGpu, pKernelGmmu);
-
-    return result;
-}
-
 /*!
  * @brief Set membar parameters for tlb invalidation and return
  * any additional sysmembar flushes that is required after tlb invalidation

@@ -49,6 +49,9 @@ EXTRA_CFLAGS          ?=
 STACK_USAGE_WARNING   ?=
 CFLAGS                += $(if $(STACK_USAGE_WARNING),-Wstack-usage=$(STACK_USAGE_WARNING))
 
+IMPLICIT_FALLTHROUGH_WARNING ?=
+CFLAGS                += $(if $(IMPLICIT_FALLTHROUGH_WARNING),-Wimplicit-fallthrough=$(IMPLICIT_FALLTHROUGH_WARNING))
+
 HOST_CC               ?= $(CC)
 HOST_LD               ?= $(LD)
 HOST_CFLAGS           ?= $(CFLAGS)

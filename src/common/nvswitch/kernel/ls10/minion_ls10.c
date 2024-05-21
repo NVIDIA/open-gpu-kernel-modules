@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -208,6 +208,13 @@ nvswitch_minion_send_command_ls10
                 NVSWITCH_GET_LINK_ENG_INST(device, linkNumber, MINION), _MINION, _MISC_0, data);
             break;
         case NV_MINION_NVLINK_DL_CMD_COMMAND_INITPHASE1:
+            if (nvswitch_is_tnvl_mode_locked(device))
+            {
+                NVSWITCH_PRINT(device, ERROR,
+                    "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+                return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+            }
+
             //
             // WAR bug 2708497
             // Before INITPHASE1, we must clear these values, then set back to
@@ -285,8 +292,7 @@ nvswitch_minion_send_command_ls10
 
                 data = FLD_SET_DRF_NUM(_MINION, _NVLINK_DL_CMD, _FAULT, 1, 0x0);
                 NVSWITCH_MINION_LINK_WR32_LS10(device, linkNumber, _MINION, _NVLINK_DL_CMD(localLinkNumber), data);
-                return (DRF_VAL(_NVLSTAT, _MN00, _LINK_INTR_SUBCODE, statData) == MINION_ALARM_BUSY) ?
-                        -NVL_ERR_STATE_IN_USE : -NVL_ERR_INVALID_STATE;
+                return -NVL_ERR_INVALID_STATE;
             }
             else
             {

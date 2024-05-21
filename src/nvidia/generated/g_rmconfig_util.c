@@ -236,9 +236,14 @@ NvBool rmcfg_IsGH10XorBetter(POBJGPU pGpu)
     return IsGH100orBetter(pGpu);
 }
 
-NvBool rmcfg_IsDISPLAYLESS(POBJGPU pGpu)
+NvBool rmcfg_IsDISPLAYLESS_CLASSIC_GPUS(POBJGPU pGpu)
 {
     return IsGA100(pGpu) || IsGH100(pGpu);
+}
+
+NvBool rmcfg_IsDISPLAYLESS_CLASSIC_GPUSorBetter(POBJGPU pGpu)
+{
+    return IsGF117(pGpu) || IsGK20A(pGpu) || IsGM108(pGpu) || IsGV11B(pGpu) || IsGA100(pGpu) || IsGA10B(pGpu) || IsGH100orBetter(pGpu);
 }
 
 NvBool rmcfg_IsdTURING(POBJGPU pGpu)

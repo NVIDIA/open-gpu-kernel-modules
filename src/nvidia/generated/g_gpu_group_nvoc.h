@@ -1,6 +1,13 @@
+
 #ifndef _G_GPU_GROUP_NVOC_H_
 #define _G_GPU_GROUP_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,6 +35,7 @@ extern "C" {
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+#pragma once
 #include "g_gpu_group_nvoc.h"
 
 #ifndef GPU_GROUP_H
@@ -127,11 +135,20 @@ typedef struct _def_vid_link_node
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 
+
 struct OBJGPUGRP {
+
+    // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+
+    // Parent (i.e. superclass or base class) object pointers
     struct Object __nvoc_base_Object;
-    struct Object *__nvoc_pbase_Object;
-    struct OBJGPUGRP *__nvoc_pbase_OBJGPUGRP;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super
+    struct OBJGPUGRP *__nvoc_pbase_OBJGPUGRP;    // gpugrp
+
+    // Data members
     NvU32 gpuMask;
     NvU32 gpuSliLinkMask;
     NvU32 linkingGpuMask;
@@ -154,6 +171,7 @@ typedef struct OBJGPUGRP OBJGPUGRP;
 #define __nvoc_class_id_OBJGPUGRP 0xe40531
 #endif /* __nvoc_class_id_OBJGPUGRP */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGPUGRP;
 
 #define __staticCast_OBJGPUGRP(pThis) \
@@ -166,13 +184,16 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGPUGRP;
     ((OBJGPUGRP*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJGPUGRP)))
 #endif //__nvoc_gpu_group_h_disabled
 
-
 NV_STATUS __nvoc_objCreateDynamic_OBJGPUGRP(OBJGPUGRP**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJGPUGRP(OBJGPUGRP**, Dynamic*, NvU32);
 #define __objCreate_OBJGPUGRP(ppNewObj, pParent, createFlags) \
     __nvoc_objCreate_OBJGPUGRP((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
+
+// Wrapper macros
+
+// Dispatch functions
 NV_STATUS gpugrpCreate_IMPL(struct OBJGPUGRP *pGpuGrp, NvU32 gpuMask);
 
 #ifdef __nvoc_gpu_group_h_disabled

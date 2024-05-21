@@ -57,78 +57,12 @@ _Class5080GetDeferredApiInfo(DeferredApiObject  *pDeferredApiObject,
                              DEFERRED_API_INFO **ppCliDeferredApi);
 
 static NV_STATUS
-_Class5080AddDeferredApi(DeferredApiObject               *pDeferredApiObject,
-                         NvHandle                         hDeferredApi,
-                         NV5080_CTRL_DEFERRED_API_PARAMS *pDeferredApi,
-                         NvU32                            size,
-                         NvBool                           bUserModeArgs);
-
-static NV_STATUS
-_Class5080AddDeferredApiV2(DeferredApiObject *pDeferredApiObject,
-                           NvHandle           hDeferredApi,
-                           NV5080_CTRL_DEFERRED_API_V2_PARAMS *pDeferredApi,
-                           NvU32                               size);
-
-
-static NV_STATUS
 _Class5080AddDeferredApi
 (
-    DeferredApiObject               *pDeferredApiObject,
-    NvHandle                         hDeferredApi,
-    NV5080_CTRL_DEFERRED_API_PARAMS *pDeferredApi,
-    NvU32                            size,
-    NvBool                           bUserModeArgs
-)
-{
-    NV_STATUS          rmStatus = NV_OK;
-    DEFERRED_API_INFO *pCliDeferredApi;
-    CALL_CONTEXT      *pCallContext = resservGetTlsCallContext();
-    NvHandle           hClient = RES_GET_CLIENT_HANDLE(pDeferredApiObject);
-
-    NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
-
-    // validate handle
-    if (!serverutilValidateNewResourceHandle(hClient, hDeferredApi))
-    {
-        return NV_ERR_INVALID_OBJECT_HANDLE;
-    }
-
-    // allocate a new Deferred Api and add to the client
-    pCliDeferredApi = portMemAllocNonPaged(sizeof(DEFERRED_API_INFO) + size);
-    if (NULL != pCliDeferredApi)
-    {
-        // initialize the entry
-        pCliDeferredApi->Handle      = hDeferredApi;
-        pCliDeferredApi->pDeferredApiInfo = (NvU8 *)pCliDeferredApi + sizeof(DEFERRED_API_INFO);
-        pCliDeferredApi->Node.keyStart = pCliDeferredApi->Handle;
-        pCliDeferredApi->Node.keyEnd = pCliDeferredApi->Handle;
-        pCliDeferredApi->Node.Data   = pCliDeferredApi;
-        pCliDeferredApi->privLevel   = pCallContext->secInfo.privLevel;
-        pCliDeferredApi->Flags       = 0;
-        portMemCopy(pCliDeferredApi->pDeferredApiInfo, size, pDeferredApi, size);
-
-        // link in the new entry
-        rmStatus = btreeInsert(&pCliDeferredApi->Node, &pDeferredApiObject->DeferredApiList);
-        if (rmStatus != NV_OK)
-        {
-            portMemFree(pCliDeferredApi);
-            pCliDeferredApi = NULL;
-        }
-    }
-    else
-        return NV_ERR_NO_MEMORY;
-
-    return rmStatus;
-}
-
-
-static NV_STATUS
-_Class5080AddDeferredApiV2
-(
-    DeferredApiObject                  *pDeferredApiObject,
-    NvHandle                            hDeferredApi,
-    NV5080_CTRL_DEFERRED_API_V2_PARAMS *pDeferredApi,
-    NvU32                               size
+    DeferredApiObject *pDeferredApiObject,
+    NvHandle hDeferredApi,
+    void *pDeferredApi,
+    NvU32 size
 )
 {
     NV_STATUS          rmStatus = NV_OK;
@@ -226,11 +160,6 @@ static NV_STATUS _Class5080DelDeferredApi
         {
             NV5080_CTRL_DEFERRED_API_PARAMS *pDeferredApiParams;
             pDeferredApiParams = (NV5080_CTRL_DEFERRED_API_PARAMS *)pDeferredApi->pDeferredApiInfo;
-
-            if (pDeferredApi->Flags & DEFERRED_API_INFO_FLAGS_HAS_PRIVATE_DATA_ALLOC)
-            {
-                portMemFree((void *)NvP64_VALUE(pDeferredApi->pDeferredPrivateData));
-            }
 
             if (DRF_VAL(5080_CTRL, _CMD_DEFERRED_API, _FLAGS_WAIT_FOR_TLB_FLUSH, pDeferredApiParams->flags) ==
                   NV5080_CTRL_CMD_DEFERRED_API_FLAGS_WAIT_FOR_TLB_FLUSH_TRUE)
@@ -355,7 +284,6 @@ defapiCtrlCmdDeferredApi_IMPL
     NV5080_CTRL_DEFERRED_API_PARAMS *pDeferredApi
 )
 {
-    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
     OBJGPU   *pGpu   = GPU_RES_GET_GPU(pDeferredApiObj);
     NV_STATUS status = NV_OK;
 
@@ -372,8 +300,8 @@ defapiCtrlCmdDeferredApi_IMPL
                                        RES_GET_CLIENT_HANDLE(pDeferredApiObj),
                                        RES_GET_PARENT_HANDLE(pDeferredApiObj),
                                        RES_GET_HANDLE(pDeferredApiObj),
-                                       (void *)pDeferredApi,
-                                       sizeof(NV5080_CTRL_DEFERRED_API_PARAMS),
+                                       pDeferredApi,
+                                       sizeof(*pDeferredApi),
                                        status);
         return status;
     }
@@ -381,8 +309,7 @@ defapiCtrlCmdDeferredApi_IMPL
     return _Class5080AddDeferredApi(pDeferredApiObj,
                                     pDeferredApi->hApiHandle,
                                     pDeferredApi,
-                                    sizeof(NV5080_CTRL_DEFERRED_API_PARAMS),
-                                    (pCallContext->secInfo.paramLocation != PARAM_LOCATION_KERNEL));
+                                    sizeof(*pDeferredApi));
 }
 
 NV_STATUS
@@ -394,6 +321,7 @@ defapiCtrlCmdDeferredApiV2_IMPL
 {
     NV_STATUS status = NV_OK;
     OBJGPU   *pGpu   = GPU_RES_GET_GPU(pDeferredApiObj);
+    RM_API   *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
     //
     // vGPU:
@@ -408,16 +336,77 @@ defapiCtrlCmdDeferredApiV2_IMPL
                                        RES_GET_CLIENT_HANDLE(pDeferredApiObj),
                                        RES_GET_PARENT_HANDLE(pDeferredApiObj),
                                        RES_GET_HANDLE(pDeferredApiObj),
-                                       (void *)pDeferredApi,
-                                       sizeof(NV5080_CTRL_DEFERRED_API_V2_PARAMS),
+                                       pDeferredApi,
+                                       sizeof(*pDeferredApi),
                                        status);
         return status;
     }
 
-    return _Class5080AddDeferredApiV2(pDeferredApiObj,
-                                      pDeferredApi->hApiHandle,
-                                      pDeferredApi,
-                                      sizeof(NV5080_CTRL_DEFERRED_API_V2_PARAMS));
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        switch (pDeferredApi->cmd)
+        {
+            case NV2080_CTRL_CMD_FIFO_UPDATE_CHANNEL_INFO:
+            {
+                RsClient *pClient = NULL;
+                RsResourceRef *pResourceRef = NULL;
+                NV2080_CTRL_FIFO_UPDATE_CHANNEL_INFO_PARAMS *pParams =
+                    &pDeferredApi->api_bundle.ChannelInfoUpdate;
+
+                NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                    serverGetClientUnderLock(&g_resServ, pParams->hClient, &pClient));
+
+                NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                    clientGetResourceRef(pClient, pParams->hUserdMemory, &pResourceRef));
+
+                NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                                   pResourceRef->pParentRef != NULL,
+                                   NV_ERR_INVALID_OBJECT_PARENT);
+
+                //
+                // Register the client-specified USERD hMemory with GSP-RM before
+                // calling physical RM.
+                //
+                NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                    memRegisterWithGsp(pGpu, pClient,
+                                       pResourceRef->pParentRef->hResource,
+                                       pResourceRef->hResource));
+
+                break;
+            }
+            default:
+                // Nothing to do in kernel RM; just forward to physical RM.
+                break;
+        }
+    }
+
+    //
+    // NV5080_CTRL_DEFERRED_API_V2_PARAMS and
+    // NV5080_CTRL_DEFERRED_API_INTERNAL_PARAMS are equivalent, so just pass
+    // pDeferredApi through.
+    //
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        pRmApi->Control(pRmApi,
+                        RES_GET_CLIENT_HANDLE(pDeferredApiObj),
+                        RES_GET_HANDLE(pDeferredApiObj),
+                        NV5080_CTRL_CMD_DEFERRED_API_INTERNAL,
+                        pDeferredApi,
+                        sizeof(*pDeferredApi)));
+
+    return NV_OK;
+}
+
+NV_STATUS
+defapiCtrlCmdDeferredApiInternal_IMPL
+(
+    DeferredApiObject                  *pDeferredApiObj,
+    NV5080_CTRL_DEFERRED_API_INTERNAL_PARAMS *pDeferredApi
+)
+{
+    return _Class5080AddDeferredApi(pDeferredApiObj,
+                                    pDeferredApi->hApiHandle,
+                                    pDeferredApi,
+                                    sizeof(*pDeferredApi));
 }
 
 NV_STATUS

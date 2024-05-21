@@ -101,7 +101,8 @@ CliGetSystemP2pCaps_GSPCLIENT
     NvU32 *p2pOptimalReadCEs,
     NvU32 *p2pOptimalWriteCEs,
     NvU8  *p2pCapsStatus,
-    NvU32 *busPeerIds
+    NvU32 *busPeerIds,
+    NvU32 *busEgmPeerIds
 );
 
 static
@@ -434,6 +435,7 @@ CliGetSystemP2pCaps
                 pBusPeerIds[(localGpuIndex * gpuCount) + peerGpuIndex] =
                     kbusGetPeerId_HAL(pGpuLocalLoop, GPU_GET_KERNEL_BUS(pGpuLocalLoop), pGpuPeer);
             }
+
             if (pBusEgmPeerIds != NULL)
             {
                 pBusEgmPeerIds[(localGpuIndex * gpuCount) + peerGpuIndex] =
@@ -798,12 +800,6 @@ cliresCtrlCmdSystemGetFeatures_IMPL
     NV_ASSERT_OR_RETURN(pSys != NULL, NV_ERR_INVALID_STATE);
 
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
-
-    if (pSys->getProperty(pSys, PDB_PROP_SYS_IS_UEFI))
-    {
-         featuresMask = FLD_SET_DRF(0000, _CTRL_SYSTEM_GET_FEATURES,
-            _UEFI, _TRUE, featuresMask);
-    }
 
     // Don't update EFI init on non Display system
     if (pSys->getProperty(pSys, PDB_PROP_SYS_IS_EFI_INIT))
@@ -3364,7 +3360,8 @@ CliGetSystemP2pCaps_GSPCLIENT
     NvU32 *p2pOptimalReadCEs,
     NvU32 *p2pOptimalWriteCEs,
     NvU8  *p2pCapsStatus,
-    NvU32 *busPeerIds
+    NvU32 *busPeerIds,
+    NvU32 *pBusEgmPeerIds
 )
 {
     NV_STATUS status = NV_OK;
@@ -3404,6 +3401,14 @@ CliGetSystemP2pCaps_GSPCLIENT
         for (i = 0; i < (gpuCount * gpuCount); i++)
         {
             busPeerIds[i] = NV0000_CTRL_SYSTEM_GET_P2P_CAPS_INVALID_PEER;
+        }
+    }
+
+    if (pBusEgmPeerIds != NULL)
+    {
+        for (i = 0; i < (gpuCount * gpuCount); i++)
+        {
+            pBusEgmPeerIds[i] = NV0000_CTRL_SYSTEM_GET_P2P_CAPS_INVALID_PEER;
         }
     }
 
@@ -3504,6 +3509,13 @@ CliGetSystemP2pCaps_GSPCLIENT
         {
             for (j = 0; j < gpuCount; ++j)
                 busPeerIds[i * gpuCount + j] = pGetParams->peerGpuCaps[j].busPeerId;
+        }
+
+        // Fill out gpu EGM peerId matrix
+        if (pBusEgmPeerIds != NULL)
+        {
+            for (j = 0; j < gpuCount; ++j)
+                pBusEgmPeerIds[i * gpuCount + j] = pGetParams->peerGpuCaps[j].busEgmPeerId;
         }
     }
 
@@ -3801,7 +3813,8 @@ cliresCtrlCmdSystemGetP2pCaps_IMPL
                                                  &pP2PParams->p2pOptimalReadCEs,
                                                  &pP2PParams->p2pOptimalWriteCEs,
                                                  pP2PParams->p2pCapsStatus,
-                                                 pP2PParams->busPeerIds);
+                                                 pP2PParams->busPeerIds,
+                                                 pP2PParams->busEgmPeerIds);
         }
     }
 
@@ -3864,7 +3877,8 @@ cliresCtrlCmdSystemGetP2pCapsV2_IMPL
                                                  &pP2PParams->p2pOptimalReadCEs,
                                                  &pP2PParams->p2pOptimalWriteCEs,
                                                  pP2PParams->p2pCapsStatus,
-                                                 pP2PParams->busPeerIds);
+                                                 pP2PParams->busPeerIds,
+                                                 pP2PParams->busEgmPeerIds);
         }
     }
 

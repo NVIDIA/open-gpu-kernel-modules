@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,10 +28,6 @@
 #define TNVL_GET_ATT_CERTS_SUBMESSAGE_ID  0x0
 #define TNVL_GET_ATT_REPORT_SUBMESSAGE_ID 0x1
 #define TNVL_LOCK_CONFIG_SUBMESSAGE_ID    0x2
-
-#define NVSWITCH_IK_HASH_LENGTH             (48)
-#define NVSWITCH_ATT_CERT_SIZE_FIELD_LENGTH (2)
-#define NVSWITCH_ATT_RSVD1_FIELD_LENGTH     (2)
 
 #pragma pack(1)
 
@@ -65,11 +61,10 @@ typedef struct
 } TNVL_GET_ATT_CERTS_CMD_PAYLOAD;
 
 /*!
- * @brief TNVL response payload for attestation cert chain
- */
+  * @brief TNVL response payload for attestation cert chain
+  */
 typedef struct
 {
-    NvU8 nvdmType;
     NVDM_PAYLOAD_COMMAND_RESPONSE cmdResponse;
     NvU8 subMessageId;
     NvU8 rsvd0;
@@ -77,7 +72,6 @@ typedef struct
     NvU8 majorVersion;
     NvU16 certChainLength;
     NvU16 rsvd1;
-    NvU8 devIkHash[NVSWITCH_IK_HASH_LENGTH];
     NvU8 certChain[NVSWITCH_ATTESTATION_CERT_CHAIN_MAX_SIZE];
 } TNVL_GET_ATT_CERTS_RSP_PAYLOAD;
 
@@ -98,7 +92,6 @@ typedef struct
  */
 typedef struct
 {
-    NvU8 nvdmType;
     NVDM_PAYLOAD_COMMAND_RESPONSE cmdResponse;
     NvU8 subMessageId;
     NvU8 rsvd0;
@@ -124,7 +117,6 @@ typedef struct
  */
 typedef struct
 {
-    NvU8 nvdmType;
     NVDM_PAYLOAD_COMMAND_RESPONSE cmdResponse;
     NvU8 subMessageId;
     NvU8 rsvd0;

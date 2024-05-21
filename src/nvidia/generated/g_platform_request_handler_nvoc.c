@@ -92,10 +92,13 @@ __nvoc_ctor_PlatformRequestHandler_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_PlatformRequestHandler_1(PlatformRequestHandler *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-}
+} // End __nvoc_init_funcTable_PlatformRequestHandler_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_PlatformRequestHandler(PlatformRequestHandler *pThis) {
     __nvoc_init_funcTable_PlatformRequestHandler_1(pThis);
 }

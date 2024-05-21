@@ -96,6 +96,7 @@ __nvoc_ctor_OBJFBSR_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_OBJFBSR_1(OBJFBSR *pThis, RmHalspecOwner *pRmhalspecowner) {
     ChipHal *chipHal = &pRmhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
@@ -108,7 +109,7 @@ static void __nvoc_init_funcTable_OBJFBSR_1(OBJFBSR *pThis, RmHalspecOwner *pRmh
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
-    // Hal function -- fbsrBegin
+    // fbsrBegin -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x100003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GH100 */ 
     {
         pThis->__fbsrBegin__ = &fbsrBegin_GM107;
@@ -118,7 +119,7 @@ static void __nvoc_init_funcTable_OBJFBSR_1(OBJFBSR *pThis, RmHalspecOwner *pRmh
         pThis->__fbsrBegin__ = &fbsrBegin_GA100;
     }
 
-    // Hal function -- fbsrEnd
+    // fbsrEnd -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x100003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GH100 */ 
     {
         pThis->__fbsrEnd__ = &fbsrEnd_GM107;
@@ -128,7 +129,7 @@ static void __nvoc_init_funcTable_OBJFBSR_1(OBJFBSR *pThis, RmHalspecOwner *pRmh
         pThis->__fbsrEnd__ = &fbsrEnd_GA100;
     }
 
-    // Hal function -- fbsrSendMemsysProgramRawCompressionMode
+    // fbsrSendMemsysProgramRawCompressionMode -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
     {
         pThis->__fbsrSendMemsysProgramRawCompressionMode__ = &fbsrSendMemsysProgramRawCompressionMode_GA100;
@@ -138,9 +139,13 @@ static void __nvoc_init_funcTable_OBJFBSR_1(OBJFBSR *pThis, RmHalspecOwner *pRmh
     {
         pThis->__fbsrSendMemsysProgramRawCompressionMode__ = &fbsrSendMemsysProgramRawCompressionMode_56cd7a;
     }
-}
+} // End __nvoc_init_funcTable_OBJFBSR_1 with approximately 6 basic block(s).
 
+
+// Initialize vtable(s) for 3 virtual method(s).
 void __nvoc_init_funcTable_OBJFBSR(OBJFBSR *pThis, RmHalspecOwner *pRmhalspecowner) {
+
+    // Initialize vtable(s) with 3 per-object function pointer(s).
     __nvoc_init_funcTable_OBJFBSR_1(pThis, pRmhalspecowner);
 }
 

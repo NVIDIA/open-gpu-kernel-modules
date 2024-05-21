@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -152,6 +152,7 @@ NV_STATUS_CODE(NV_ERR_FABRIC_MANAGER_NOT_PRESENT,      0x0000007A, "Fabric Manag
 NV_STATUS_CODE(NV_ERR_ALREADY_SIGNALLED,               0x0000007B, "Semaphore Surface value already >= requested wait value")
 NV_STATUS_CODE(NV_ERR_QUEUE_TASK_SLOT_NOT_AVAILABLE,   0x0000007C, "PMU RPC error due to no queue slot available for this event")
 NV_STATUS_CODE(NV_ERR_KEY_ROTATION_IN_PROGRESS,        0x0000007D, "Operation not allowed as key rotation is in progress")
+NV_STATUS_CODE(NV_ERR_TEST_ONLY_CODE_NOT_ENABLED,      0x0000007E, "Test-only code path not enabled")
 
 // Warnings:
 NV_STATUS_CODE(NV_WARN_HOT_SWITCH,                     0x00010001, "WARNING Hot switch")

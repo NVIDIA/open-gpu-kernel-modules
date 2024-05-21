@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -48,8 +48,7 @@ nvlink_core_discover_and_get_remote_end
 (
     nvlink_link  *end,
     nvlink_link **remote_end,
-    NvU32         flags,
-    NvBool        bForceDiscovery
+    NvU32         flags
 )
 {
     nvlink_intranode_conn *conn      = NULL;
@@ -69,7 +68,7 @@ nvlink_core_discover_and_get_remote_end
         return;
     }
 
-    if (nvlinkLibCtx.bNewEndpoints || bForceDiscovery)
+    if (nvlinkLibCtx.bNewEndpoints)
     {
         if (!_nvlink_core_all_links_initialized())
         {

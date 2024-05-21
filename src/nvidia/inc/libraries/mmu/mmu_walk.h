@@ -513,7 +513,7 @@ struct MMU_MAP_TARGET
     /*!
      * Page array granularity of the physical target memory
      */
-    NvU32 pageArrayGranularity;
+    NvU64 pageArrayGranularity;
 };
 
 /*----------------------------Public Interface--------------------------------*/

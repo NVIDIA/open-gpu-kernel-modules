@@ -67,8 +67,11 @@ typedef cryptoBundle_t keySlot_t[CC_KEYSPACE_TOTAL_SIZE];
 static NV_STATUS checkSlot(ConfidentialCompute *pConfCompute, NvU32 slotNumber);
 static void incrementChannelCounter(ConfidentialCompute *pConfCompute, NvU32 slotNumber);
 static NvU64 getChannelCounter(ConfidentialCompute *pConfCompute, NvU32 slotNumber);
+static NV_STATUS getKeyIdLce(KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation,
+                             NvU16 *keyId);
 static NV_STATUS getKeyIdSec2(KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation,
                               NvU16 *keyId);
+static NV_STATUS getKeyspaceLce(KernelChannel *pKernelChannel, NvU16 *keyspace);
 
 NV_STATUS
 confComputeKeyStoreInit_GH100(ConfidentialCompute *pConfCompute)
@@ -96,10 +99,8 @@ confComputeKeyStoreInit_GH100(ConfidentialCompute *pConfCompute)
     }
 
     // SEC2 key slots are a mix of encryption / decryption with channel counter and HMAC.
-    ct_assert(CC_KEYSPACE_SEC2_SIZE == 6);
+    ct_assert(CC_KEYSPACE_SEC2_SIZE == 4);
 
-    (*pKeyStore)[index++].type = CRYPT_COUNTER;
-    (*pKeyStore)[index++].type = HMAC_COUNTER;
     (*pKeyStore)[index++].type = CRYPT_COUNTER;
     (*pKeyStore)[index++].type = HMAC_COUNTER;
     (*pKeyStore)[index++].type = CRYPT_COUNTER;
@@ -149,8 +150,7 @@ confComputeKeyStoreDeriveKey_GH100(ConfidentialCompute *pConfCompute, NvU32 glob
     NV_PRINTF(LEVEL_INFO, "Deriving key for global key ID %x.\n", globalKeyId);
 
     if ((globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_USER)) ||
-        (globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_KERN)) ||
-        (globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER)))
+        (globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_KERN)))
     {
         pKey = (uint8_t *)(*pKeyStore)[slotIndex].hmacBundle.key;
         keySize = sizeof((*pKeyStore)[slotIndex].hmacBundle.key);
@@ -173,7 +173,7 @@ confComputeKeyStoreDeriveKey_GH100(ConfidentialCompute *pConfCompute, NvU32 glob
 
     // LCEs will return an error / interrupt if the key is all 0s.
     if ((CC_GKEYID_GET_KEYSPACE(globalKeyId) >= CC_KEYSPACE_LCE0) &&
-        (CC_GKEYID_GET_KEYSPACE(globalKeyId) <= confComputeGetMaxCeKeySpaceIdx(pConfCompute)))
+        (CC_GKEYID_GET_KEYSPACE(globalKeyId) <= CC_KEYSPACE_LCE7))
     {
         for (NvU32 index = 0; index < CC_AES_256_GCM_KEY_SIZE_DWORD; index++)
         {
@@ -232,21 +232,19 @@ confComputeKeyStoreRetrieveViaChannel_GH100
 
     if (RM_ENGINE_TYPE_IS_COPY(kchannelGetEngineType(pKernelChannel)))
     {
-        NvU16 keySpace;
+        NvU16 keyspace;
 
-        if (confComputeGetKeySpaceFromKChannel_HAL(pConfCompute, pKernelChannel,
-                                                   &keySpace) != NV_OK)
+        if (getKeyspaceLce(pKernelChannel, &keyspace) != NV_OK)
         {
             return NV_ERR_INVALID_PARAMETER;
         }
 
-        if (confComputeGetLceKeyIdFromKChannel_HAL(pConfCompute, pKernelChannel,
-                                                   rotateOperation, &keyId) != NV_OK)
+        if (getKeyIdLce(pKernelChannel, rotateOperation, &keyId) != NV_OK)
         {
             return NV_ERR_INVALID_PARAMETER;
         }
 
-        globalKeyId = CC_GKEYID_GEN(keySpace, keyId);
+        globalKeyId = CC_GKEYID_GEN(keyspace, keyId);
     }
     else if (kchannelGetEngineType(pKernelChannel) == RM_ENGINE_TYPE_SEC2)
     {
@@ -401,8 +399,7 @@ confComputeKeyStoreUpdateKey_GH100(ConfidentialCompute *pConfCompute, NvU32 glob
     pKeyStore = pConfCompute->m_keySlot;
 
     if ((globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_USER)) ||
-        (globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_KERN)) ||
-        (globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER)))
+        (globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_KERN)))
     {
         pKey = (uint8_t *)(*pKeyStore)[slotIndex].hmacBundle.key;
         keySize = sizeof((*pKeyStore)[slotIndex].hmacBundle.key);
@@ -432,7 +429,7 @@ confComputeKeyStoreUpdateKey_GH100(ConfidentialCompute *pConfCompute, NvU32 glob
 
     // LCEs will return an error / interrupt if the key is all 0s.
     if ((CC_GKEYID_GET_KEYSPACE(globalKeyId) >= CC_KEYSPACE_LCE0) &&
-        (CC_GKEYID_GET_KEYSPACE(globalKeyId) <= confComputeGetMaxCeKeySpaceIdx(pConfCompute)))
+        (CC_GKEYID_GET_KEYSPACE(globalKeyId) <= CC_KEYSPACE_LCE7))
     {
         for (NvU32 index = 0; index < CC_AES_256_GCM_KEY_SIZE_DWORD; index++)
         {
@@ -479,12 +476,9 @@ confComputeGetKeyPairByChannel_GH100
     }
     else
     {
-        NV_ASSERT_OK_OR_RETURN(confComputeGetKeySpaceFromKChannel_HAL(pConfCompute,
-                                    pKernelChannel, &keySpace) != NV_OK);
-        NV_ASSERT_OK_OR_RETURN(confComputeGetLceKeyIdFromKChannel_HAL(pConfCompute, pKernelChannel,
-                                    ROTATE_IV_ENCRYPT, &lh2dKeyId));
-        NV_ASSERT_OK_OR_RETURN(confComputeGetLceKeyIdFromKChannel_HAL(pConfCompute, pKernelChannel,
-                                    ROTATE_IV_DECRYPT, &ld2hKeyId));
+        NV_ASSERT_OK_OR_RETURN(getKeyspaceLce(pKernelChannel, &keySpace));
+        NV_ASSERT_OK_OR_RETURN(getKeyIdLce(pKernelChannel, ROTATE_IV_ENCRYPT, &lh2dKeyId));
+        NV_ASSERT_OK_OR_RETURN(getKeyIdLce(pKernelChannel, ROTATE_IV_DECRYPT, &ld2hKeyId));
     }
 
     if (pH2DKey != NULL)
@@ -498,61 +492,41 @@ confComputeGetKeyPairByChannel_GH100
     return NV_OK;
 }
 
-NvBool
-confComputeKeyStoreIsValidGlobalKeyId_GH100
+//
+// Return the key ID for a given LCE channel and rotation operation.
+// If rotateOperation is ROTATE_IV_ALL_VALID then it will return the least
+// key ID of the key pair; ie the one that corresponds to an even numbered slot.
+//
+static NV_STATUS
+getKeyIdLce
 (
-    ConfidentialCompute *pConfCompute,
-    NvU32                globalKeyId
-)
-{
-    const char *globalKeyIdString = CC_GKEYID_GET_STR(globalKeyId);
-
-    return (globalKeyIdString != NULL);
-}
-
-/*!
- * Return the key ID for a given LCE channel and rotation operation.
- * If rotateOperation is ROTATE_IV_ALL_VALID then it will return the least
- * key ID of the key pair; ie the one that corresponds to an even numbered slot.
- *
- * @param[in]   pConfCompute    : conf comp pointer
- * @param[in]   pKernelChannel  : KernelChannel pointer
- * @param[in]   rotateOperation : The type of rotation operation
- * @param[out]  pKeyId          : pointer to keyId
- */
-NV_STATUS
-confComputeGetLceKeyIdFromKChannel_GH100
-(
-    ConfidentialCompute *pConfCompute,
-    KernelChannel       *pKernelChannel,
-    ROTATE_IV_TYPE       rotateOperation,
-    NvU16               *pKeyId
+    KernelChannel  *pKernelChannel,
+    ROTATE_IV_TYPE  rotateOperation,
+    NvU16          *keyId
 )
 {
     if (kchannelCheckIsUserMode(pKernelChannel))
     {
-        if ((rotateOperation == ROTATE_IV_ENCRYPT) ||
-            (rotateOperation == ROTATE_IV_ALL_VALID))
+        if ((rotateOperation == ROTATE_IV_ENCRYPT) || (rotateOperation == ROTATE_IV_ALL_VALID))
         {
-            *pKeyId = CC_LKEYID_LCE_H2D_USER;
+            *keyId = CC_LKEYID_LCE_H2D_USER;
         }
         else
         {
-            *pKeyId = CC_LKEYID_LCE_D2H_USER;
+            *keyId = CC_LKEYID_LCE_D2H_USER;
         }
 
         return NV_OK;
     }
     else if (kchannelCheckIsKernel(pKernelChannel))
     {
-        if ((rotateOperation == ROTATE_IV_ENCRYPT) ||
-            (rotateOperation == ROTATE_IV_ALL_VALID))
+        if ((rotateOperation == ROTATE_IV_ENCRYPT) || (rotateOperation == ROTATE_IV_ALL_VALID))
         {
-            *pKeyId = CC_LKEYID_LCE_H2D_KERN;
+            *keyId = CC_LKEYID_LCE_H2D_KERN;
         }
         else
         {
-            *pKeyId = CC_LKEYID_LCE_D2H_KERN;
+            *keyId = CC_LKEYID_LCE_D2H_KERN;
         }
 
         return NV_OK;
@@ -591,38 +565,24 @@ getKeyIdSec2
     {
         if ((rotateOperation == ROTATE_IV_ENCRYPT) || (rotateOperation == ROTATE_IV_ALL_VALID))
         {
-            if (pKernelChannel->bUseScrubKey)
-                *keyId = CC_LKEYID_CPU_SEC2_DATA_SCRUBBER;
-            else
-                *keyId = CC_LKEYID_CPU_SEC2_DATA_KERN;
+            *keyId = CC_LKEYID_CPU_SEC2_DATA_KERN;
         }
         else
         {
-            if (pKernelChannel->bUseScrubKey)
-                *keyId = CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER;
-            else
-                *keyId = CC_LKEYID_CPU_SEC2_HMAC_KERN;
+            *keyId = CC_LKEYID_CPU_SEC2_HMAC_KERN;
         }
+
         return NV_OK;
     }
 
     return NV_ERR_GENERIC;
 }
 
-/*!
- * Returns a key space corresponding to a channel
- *
- * @param[in]   pConfCompute               : ConfidentialCompute pointer
- * @param[in]   pKernelChannel             : KernelChannel pointer
- * @param[out]  keySpace                   : value of keyspace from cc_keystore.h
- *
- */
-NV_STATUS
-confComputeGetKeySpaceFromKChannel_GH100
+static NV_STATUS
+getKeyspaceLce
 (
-    ConfidentialCompute *pConfCompute,
-    KernelChannel       *pKernelChannel,
-    NvU16               *keyspace
+    KernelChannel *pKernelChannel,
+    NvU16         *keyspace
 )
 {
     // The actual copy engine (2 through 9) is normalized to start at 0.

@@ -90,6 +90,8 @@ memmgrInitBaseFbRegions_FWCLIENT
         pMemoryManager->Ram.fbRegion[i].bSupportCompressed = pFbRegionInfo->supportCompressed;
         pMemoryManager->Ram.fbRegion[i].bSupportISO        = pFbRegionInfo->supportISO;
         pMemoryManager->Ram.fbRegion[i].rsvdSize           = pFbRegionInfo->reserved;
+        // CPU-RM is not responsible for saving GSP-RM allocations
+        pMemoryManager->Ram.fbRegion[i].bLostOnSuspend     = NV_TRUE;
 
         if (pFbRegionInfo->reserved)
         {

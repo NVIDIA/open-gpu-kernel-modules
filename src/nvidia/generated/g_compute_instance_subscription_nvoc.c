@@ -93,106 +93,6 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_ComputeInstanceSubscription =
     /*pExportInfo=*/        &__nvoc_export_info_ComputeInstanceSubscription
 };
 
-static NvBool __nvoc_thunk_ComputeInstanceSubscription_resCanCopy(struct RsResource *arg0) {
-    return cisubscriptionCanCopy((struct ComputeInstanceSubscription *)(((unsigned char *)arg0) - __nvoc_rtti_ComputeInstanceSubscription_RsResource.offset));
-}
-
-static NvBool __nvoc_thunk_GpuResource_cisubscriptionShareCallback(struct ComputeInstanceSubscription *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ComputeInstanceSubscription_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_cisubscriptionCheckMemInterUnmap(struct ComputeInstanceSubscription *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_ComputeInstanceSubscription_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_cisubscriptionMapTo(struct ComputeInstanceSubscription *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ComputeInstanceSubscription_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_cisubscriptionGetMapAddrSpace(struct ComputeInstanceSubscription *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ComputeInstanceSubscription_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static NvU32 __nvoc_thunk_RsResource_cisubscriptionGetRefCount(struct ComputeInstanceSubscription *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ComputeInstanceSubscription_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_cisubscriptionAddAdditionalDependants(struct RsClient *pClient, struct ComputeInstanceSubscription *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ComputeInstanceSubscription_RsResource.offset), pReference);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_cisubscriptionControl_Prologue(struct ComputeInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ComputeInstanceSubscription_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_cisubscriptionGetRegBaseOffsetAndSize(struct ComputeInstanceSubscription *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ComputeInstanceSubscription_GpuResource.offset), pGpu, pOffset, pSize);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_cisubscriptionInternalControlForward(struct ComputeInstanceSubscription *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ComputeInstanceSubscription_GpuResource.offset), command, pParams, size);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_cisubscriptionUnmapFrom(struct ComputeInstanceSubscription *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ComputeInstanceSubscription_RsResource.offset), pParams);
-}
-
-static void __nvoc_thunk_RmResource_cisubscriptionControl_Epilogue(struct ComputeInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ComputeInstanceSubscription_RmResource.offset), pCallContext, pParams);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_cisubscriptionGetInternalObjectHandle(struct ComputeInstanceSubscription *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ComputeInstanceSubscription_GpuResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_cisubscriptionControl(struct ComputeInstanceSubscription *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ComputeInstanceSubscription_GpuResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_cisubscriptionUnmap(struct ComputeInstanceSubscription *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ComputeInstanceSubscription_GpuResource.offset), pCallContext, pCpuMapping);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_cisubscriptionGetMemInterMapParams(struct ComputeInstanceSubscription *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_ComputeInstanceSubscription_RmResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_cisubscriptionGetMemoryMappingDescriptor(struct ComputeInstanceSubscription *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_ComputeInstanceSubscription_RmResource.offset), ppMemDesc);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_cisubscriptionControlFilter(struct ComputeInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ComputeInstanceSubscription_RsResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_cisubscriptionControlSerialization_Prologue(struct ComputeInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ComputeInstanceSubscription_RmResource.offset), pCallContext, pParams);
-}
-
-static NvBool __nvoc_thunk_RsResource_cisubscriptionIsPartialUnmapSupported(struct ComputeInstanceSubscription *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ComputeInstanceSubscription_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_cisubscriptionPreDestruct(struct ComputeInstanceSubscription *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ComputeInstanceSubscription_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_cisubscriptionIsDuplicate(struct ComputeInstanceSubscription *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ComputeInstanceSubscription_RsResource.offset), hMemory, pDuplicate);
-}
-
-static void __nvoc_thunk_RmResource_cisubscriptionControlSerialization_Epilogue(struct ComputeInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ComputeInstanceSubscription_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_cisubscriptionMap(struct ComputeInstanceSubscription *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return gpuresMap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ComputeInstanceSubscription_GpuResource.offset), pCallContext, pParams, pCpuMapping);
-}
-
-static NvBool __nvoc_thunk_RmResource_cisubscriptionAccessCallback(struct ComputeInstanceSubscription *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ComputeInstanceSubscription_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
-}
-
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
@@ -200,12 +100,12 @@ static NvBool __nvoc_thunk_RmResource_cisubscriptionAccessCallback(struct Comput
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ComputeInstanceSubscription[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) cisubscriptionCtrlCmdGetUuid_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xc6380101u,
         /*paramSize=*/  sizeof(NVC638_CTRL_GET_UUID_PARAMS),
@@ -216,6 +116,137 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ComputeI
     },
 
 };
+
+// 1 down-thunk(s) defined to bridge methods in ComputeInstanceSubscription from superclasses
+
+// cisubscriptionCanCopy: virtual override (res) base (gpures)
+static NvBool __nvoc_down_thunk_ComputeInstanceSubscription_resCanCopy(struct RsResource *arg_this) {
+    return cisubscriptionCanCopy((struct ComputeInstanceSubscription *)(((unsigned char *) arg_this) - __nvoc_rtti_ComputeInstanceSubscription_RsResource.offset));
+}
+
+
+// 24 up-thunk(s) defined to bridge methods in ComputeInstanceSubscription to superclasses
+
+// cisubscriptionControl: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_cisubscriptionControl(struct ComputeInstanceSubscription *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_ComputeInstanceSubscription_GpuResource.offset), pCallContext, pParams);
+}
+
+// cisubscriptionMap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_cisubscriptionMap(struct ComputeInstanceSubscription *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_ComputeInstanceSubscription_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+}
+
+// cisubscriptionUnmap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_cisubscriptionUnmap(struct ComputeInstanceSubscription *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_ComputeInstanceSubscription_GpuResource.offset), pCallContext, pCpuMapping);
+}
+
+// cisubscriptionShareCallback: virtual inherited (gpures) base (gpures)
+static NvBool __nvoc_up_thunk_GpuResource_cisubscriptionShareCallback(struct ComputeInstanceSubscription *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_ComputeInstanceSubscription_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+}
+
+// cisubscriptionGetRegBaseOffsetAndSize: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_cisubscriptionGetRegBaseOffsetAndSize(struct ComputeInstanceSubscription *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_ComputeInstanceSubscription_GpuResource.offset), pGpu, pOffset, pSize);
+}
+
+// cisubscriptionGetMapAddrSpace: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_cisubscriptionGetMapAddrSpace(struct ComputeInstanceSubscription *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_ComputeInstanceSubscription_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+// cisubscriptionInternalControlForward: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_cisubscriptionInternalControlForward(struct ComputeInstanceSubscription *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_ComputeInstanceSubscription_GpuResource.offset), command, pParams, size);
+}
+
+// cisubscriptionGetInternalObjectHandle: virtual inherited (gpures) base (gpures)
+static NvHandle __nvoc_up_thunk_GpuResource_cisubscriptionGetInternalObjectHandle(struct ComputeInstanceSubscription *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_ComputeInstanceSubscription_GpuResource.offset));
+}
+
+// cisubscriptionAccessCallback: virtual inherited (rmres) base (gpures)
+static NvBool __nvoc_up_thunk_RmResource_cisubscriptionAccessCallback(struct ComputeInstanceSubscription *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ComputeInstanceSubscription_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+}
+
+// cisubscriptionGetMemInterMapParams: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_cisubscriptionGetMemInterMapParams(struct ComputeInstanceSubscription *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_ComputeInstanceSubscription_RmResource.offset), pParams);
+}
+
+// cisubscriptionCheckMemInterUnmap: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_cisubscriptionCheckMemInterUnmap(struct ComputeInstanceSubscription *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_ComputeInstanceSubscription_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+// cisubscriptionGetMemoryMappingDescriptor: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_cisubscriptionGetMemoryMappingDescriptor(struct ComputeInstanceSubscription *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_ComputeInstanceSubscription_RmResource.offset), ppMemDesc);
+}
+
+// cisubscriptionControlSerialization_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_cisubscriptionControlSerialization_Prologue(struct ComputeInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ComputeInstanceSubscription_RmResource.offset), pCallContext, pParams);
+}
+
+// cisubscriptionControlSerialization_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_cisubscriptionControlSerialization_Epilogue(struct ComputeInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ComputeInstanceSubscription_RmResource.offset), pCallContext, pParams);
+}
+
+// cisubscriptionControl_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_cisubscriptionControl_Prologue(struct ComputeInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ComputeInstanceSubscription_RmResource.offset), pCallContext, pParams);
+}
+
+// cisubscriptionControl_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_cisubscriptionControl_Epilogue(struct ComputeInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ComputeInstanceSubscription_RmResource.offset), pCallContext, pParams);
+}
+
+// cisubscriptionIsDuplicate: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_cisubscriptionIsDuplicate(struct ComputeInstanceSubscription *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ComputeInstanceSubscription_RsResource.offset), hMemory, pDuplicate);
+}
+
+// cisubscriptionPreDestruct: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_cisubscriptionPreDestruct(struct ComputeInstanceSubscription *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ComputeInstanceSubscription_RsResource.offset));
+}
+
+// cisubscriptionControlFilter: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_cisubscriptionControlFilter(struct ComputeInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ComputeInstanceSubscription_RsResource.offset), pCallContext, pParams);
+}
+
+// cisubscriptionIsPartialUnmapSupported: inline virtual inherited (res) base (gpures) body
+static NvBool __nvoc_up_thunk_RsResource_cisubscriptionIsPartialUnmapSupported(struct ComputeInstanceSubscription *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ComputeInstanceSubscription_RsResource.offset));
+}
+
+// cisubscriptionMapTo: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_cisubscriptionMapTo(struct ComputeInstanceSubscription *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ComputeInstanceSubscription_RsResource.offset), pParams);
+}
+
+// cisubscriptionUnmapFrom: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_cisubscriptionUnmapFrom(struct ComputeInstanceSubscription *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ComputeInstanceSubscription_RsResource.offset), pParams);
+}
+
+// cisubscriptionGetRefCount: virtual inherited (res) base (gpures)
+static NvU32 __nvoc_up_thunk_RsResource_cisubscriptionGetRefCount(struct ComputeInstanceSubscription *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ComputeInstanceSubscription_RsResource.offset));
+}
+
+// cisubscriptionAddAdditionalDependants: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_cisubscriptionAddAdditionalDependants(struct RsClient *pClient, struct ComputeInstanceSubscription *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ComputeInstanceSubscription_RsResource.offset), pReference);
+}
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_ComputeInstanceSubscription = 
 {
@@ -253,67 +284,97 @@ __nvoc_ctor_ComputeInstanceSubscription_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_ComputeInstanceSubscription_1(ComputeInstanceSubscription *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // cisubscriptionCanCopy -- virtual override (res) base (gpures)
     pThis->__cisubscriptionCanCopy__ = &cisubscriptionCanCopy_IMPL;
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__ = &__nvoc_down_thunk_ComputeInstanceSubscription_resCanCopy;
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // cisubscriptionCtrlCmdGetUuid -- exported (id=0xc6380101)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__cisubscriptionCtrlCmdGetUuid__ = &cisubscriptionCtrlCmdGetUuid_IMPL;
 #endif
 
-    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__ = &__nvoc_thunk_ComputeInstanceSubscription_resCanCopy;
+    // cisubscriptionControl -- virtual inherited (gpures) base (gpures)
+    pThis->__cisubscriptionControl__ = &__nvoc_up_thunk_GpuResource_cisubscriptionControl;
 
-    pThis->__cisubscriptionShareCallback__ = &__nvoc_thunk_GpuResource_cisubscriptionShareCallback;
+    // cisubscriptionMap -- virtual inherited (gpures) base (gpures)
+    pThis->__cisubscriptionMap__ = &__nvoc_up_thunk_GpuResource_cisubscriptionMap;
 
-    pThis->__cisubscriptionCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_cisubscriptionCheckMemInterUnmap;
+    // cisubscriptionUnmap -- virtual inherited (gpures) base (gpures)
+    pThis->__cisubscriptionUnmap__ = &__nvoc_up_thunk_GpuResource_cisubscriptionUnmap;
 
-    pThis->__cisubscriptionMapTo__ = &__nvoc_thunk_RsResource_cisubscriptionMapTo;
+    // cisubscriptionShareCallback -- virtual inherited (gpures) base (gpures)
+    pThis->__cisubscriptionShareCallback__ = &__nvoc_up_thunk_GpuResource_cisubscriptionShareCallback;
 
-    pThis->__cisubscriptionGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_cisubscriptionGetMapAddrSpace;
+    // cisubscriptionGetRegBaseOffsetAndSize -- virtual inherited (gpures) base (gpures)
+    pThis->__cisubscriptionGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_cisubscriptionGetRegBaseOffsetAndSize;
 
-    pThis->__cisubscriptionGetRefCount__ = &__nvoc_thunk_RsResource_cisubscriptionGetRefCount;
+    // cisubscriptionGetMapAddrSpace -- virtual inherited (gpures) base (gpures)
+    pThis->__cisubscriptionGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_cisubscriptionGetMapAddrSpace;
 
-    pThis->__cisubscriptionAddAdditionalDependants__ = &__nvoc_thunk_RsResource_cisubscriptionAddAdditionalDependants;
+    // cisubscriptionInternalControlForward -- virtual inherited (gpures) base (gpures)
+    pThis->__cisubscriptionInternalControlForward__ = &__nvoc_up_thunk_GpuResource_cisubscriptionInternalControlForward;
 
-    pThis->__cisubscriptionControl_Prologue__ = &__nvoc_thunk_RmResource_cisubscriptionControl_Prologue;
+    // cisubscriptionGetInternalObjectHandle -- virtual inherited (gpures) base (gpures)
+    pThis->__cisubscriptionGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_cisubscriptionGetInternalObjectHandle;
 
-    pThis->__cisubscriptionGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_cisubscriptionGetRegBaseOffsetAndSize;
+    // cisubscriptionAccessCallback -- virtual inherited (rmres) base (gpures)
+    pThis->__cisubscriptionAccessCallback__ = &__nvoc_up_thunk_RmResource_cisubscriptionAccessCallback;
 
-    pThis->__cisubscriptionInternalControlForward__ = &__nvoc_thunk_GpuResource_cisubscriptionInternalControlForward;
+    // cisubscriptionGetMemInterMapParams -- virtual inherited (rmres) base (gpures)
+    pThis->__cisubscriptionGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_cisubscriptionGetMemInterMapParams;
 
-    pThis->__cisubscriptionUnmapFrom__ = &__nvoc_thunk_RsResource_cisubscriptionUnmapFrom;
+    // cisubscriptionCheckMemInterUnmap -- virtual inherited (rmres) base (gpures)
+    pThis->__cisubscriptionCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_cisubscriptionCheckMemInterUnmap;
 
-    pThis->__cisubscriptionControl_Epilogue__ = &__nvoc_thunk_RmResource_cisubscriptionControl_Epilogue;
+    // cisubscriptionGetMemoryMappingDescriptor -- virtual inherited (rmres) base (gpures)
+    pThis->__cisubscriptionGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_cisubscriptionGetMemoryMappingDescriptor;
 
-    pThis->__cisubscriptionGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_cisubscriptionGetInternalObjectHandle;
+    // cisubscriptionControlSerialization_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__cisubscriptionControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_cisubscriptionControlSerialization_Prologue;
 
-    pThis->__cisubscriptionControl__ = &__nvoc_thunk_GpuResource_cisubscriptionControl;
+    // cisubscriptionControlSerialization_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__cisubscriptionControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_cisubscriptionControlSerialization_Epilogue;
 
-    pThis->__cisubscriptionUnmap__ = &__nvoc_thunk_GpuResource_cisubscriptionUnmap;
+    // cisubscriptionControl_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__cisubscriptionControl_Prologue__ = &__nvoc_up_thunk_RmResource_cisubscriptionControl_Prologue;
 
-    pThis->__cisubscriptionGetMemInterMapParams__ = &__nvoc_thunk_RmResource_cisubscriptionGetMemInterMapParams;
+    // cisubscriptionControl_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__cisubscriptionControl_Epilogue__ = &__nvoc_up_thunk_RmResource_cisubscriptionControl_Epilogue;
 
-    pThis->__cisubscriptionGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_cisubscriptionGetMemoryMappingDescriptor;
+    // cisubscriptionIsDuplicate -- virtual inherited (res) base (gpures)
+    pThis->__cisubscriptionIsDuplicate__ = &__nvoc_up_thunk_RsResource_cisubscriptionIsDuplicate;
 
-    pThis->__cisubscriptionControlFilter__ = &__nvoc_thunk_RsResource_cisubscriptionControlFilter;
+    // cisubscriptionPreDestruct -- virtual inherited (res) base (gpures)
+    pThis->__cisubscriptionPreDestruct__ = &__nvoc_up_thunk_RsResource_cisubscriptionPreDestruct;
 
-    pThis->__cisubscriptionControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_cisubscriptionControlSerialization_Prologue;
+    // cisubscriptionControlFilter -- virtual inherited (res) base (gpures)
+    pThis->__cisubscriptionControlFilter__ = &__nvoc_up_thunk_RsResource_cisubscriptionControlFilter;
 
-    pThis->__cisubscriptionIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_cisubscriptionIsPartialUnmapSupported;
+    // cisubscriptionIsPartialUnmapSupported -- inline virtual inherited (res) base (gpures) body
+    pThis->__cisubscriptionIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_cisubscriptionIsPartialUnmapSupported;
 
-    pThis->__cisubscriptionPreDestruct__ = &__nvoc_thunk_RsResource_cisubscriptionPreDestruct;
+    // cisubscriptionMapTo -- virtual inherited (res) base (gpures)
+    pThis->__cisubscriptionMapTo__ = &__nvoc_up_thunk_RsResource_cisubscriptionMapTo;
 
-    pThis->__cisubscriptionIsDuplicate__ = &__nvoc_thunk_RsResource_cisubscriptionIsDuplicate;
+    // cisubscriptionUnmapFrom -- virtual inherited (res) base (gpures)
+    pThis->__cisubscriptionUnmapFrom__ = &__nvoc_up_thunk_RsResource_cisubscriptionUnmapFrom;
 
-    pThis->__cisubscriptionControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_cisubscriptionControlSerialization_Epilogue;
+    // cisubscriptionGetRefCount -- virtual inherited (res) base (gpures)
+    pThis->__cisubscriptionGetRefCount__ = &__nvoc_up_thunk_RsResource_cisubscriptionGetRefCount;
 
-    pThis->__cisubscriptionMap__ = &__nvoc_thunk_GpuResource_cisubscriptionMap;
+    // cisubscriptionAddAdditionalDependants -- virtual inherited (res) base (gpures)
+    pThis->__cisubscriptionAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_cisubscriptionAddAdditionalDependants;
+} // End __nvoc_init_funcTable_ComputeInstanceSubscription_1 with approximately 27 basic block(s).
 
-    pThis->__cisubscriptionAccessCallback__ = &__nvoc_thunk_RmResource_cisubscriptionAccessCallback;
-}
 
+// Initialize vtable(s) for 26 virtual method(s).
 void __nvoc_init_funcTable_ComputeInstanceSubscription(ComputeInstanceSubscription *pThis) {
+
+    // Initialize vtable(s) with 26 per-object function pointer(s).
     __nvoc_init_funcTable_ComputeInstanceSubscription_1(pThis);
 }
 

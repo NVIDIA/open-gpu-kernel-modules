@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1116,7 +1116,7 @@ rmapiFreeResourcePrologue
         tmrapiDeregisterEvents(pTimerApi);
     }
 
-    CliDelObjectEvents(pRmFreeParams->hClient, pRmFreeParams->hResource);
+    CliDelObjectEvents(pResourceRef);
 
     return NV_OK;
 }
@@ -1208,10 +1208,18 @@ rmapiAllocWithSecInfo
     // RS-TODO: Fix calls that use RMAPI_GPU_LOCK_INTERNAL without holding the API lock
     if (pRmApi->bGpuLockInternal && !rmapiLockIsOwner())
     {
-        NV_PRINTF(LEVEL_ERROR, "RMAPI_GPU_LOCK_INTERNAL alloc requested without holding the RMAPI lock\n");
+        // CORERM-6052 targets fixing the API lockless path for RTD3.
+        if (!rmapiInRtd3PmPath())
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                "NVRM: %s: RMAPI_GPU_LOCK_INTERNAL alloc requested without holding the RMAPI lock: client:0x%x parent:0x%x object:0x%x class:0x%x\n",
+                __FUNCTION__, hClient, hParent, *phObject, hClass);
+        }
+
         pLockInfo->flags |= RM_LOCK_FLAGS_NO_API_LOCK;
         pLockInfo->state &= ~RM_LOCK_STATES_API_LOCK_ACQUIRED;
     }
+
 
     // This flag applies to both VGPU and GSP cases
     if (flags & RMAPI_ALLOC_FLAGS_SKIP_RPC)
@@ -1335,7 +1343,7 @@ resservResourceFactory
 
     if (pResDesc->internalClassId == classId(Device))
     {
-        if (pParams == NULL || pParams->pAllocParams == NULL)
+        if (pParams->pAllocParams == NULL)
             return NV_ERR_INVALID_ARGUMENT;
 
         NV0080_ALLOC_PARAMETERS *pNv0080AllocParams = pParams->pAllocParams;
@@ -1372,7 +1380,7 @@ resservResourceFactory
 
         if (pGpu && !IS_MIG_IN_USE(pGpu))
         {
-            rmapiControlCacheSetGpuInstForObject(pParams->hClient, pParams->hResource, pGpu->gpuInstance);
+            rmapiControlCacheSetGpuAttrForObject(pParams->hClient, pParams->hResource, pGpu);
         }
     }
 
@@ -1459,7 +1467,12 @@ rmapiFreeWithSecInfo
     // RS-TODO: Fix calls that use RMAPI_GPU_LOCK_INTERNAL without holding the API lock
     if (pRmApi->bGpuLockInternal && !rmapiLockIsOwner())
     {
-        NV_PRINTF(LEVEL_ERROR, "RMAPI_GPU_LOCK_INTERNAL free requested without holding the RMAPI lock\n");
+        // CORERM-6052 targets fixing the API lockless path for RTD3.
+        if (!rmapiInRtd3PmPath())
+        {
+            NV_PRINTF(LEVEL_ERROR, "RMAPI_GPU_LOCK_INTERNAL free requested without holding the RMAPI lock\n");
+        }
+
         lockInfo.flags |= RM_LOCK_FLAGS_NO_API_LOCK;
         lockInfo.state &= ~RM_LOCK_STATES_API_LOCK_ACQUIRED;
     }

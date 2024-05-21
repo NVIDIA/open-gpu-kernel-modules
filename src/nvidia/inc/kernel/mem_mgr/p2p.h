@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,10 +28,10 @@
 
 NV_STATUS  RmP2PGetPages            (NvU64, NvU32, NvU64, NvU64, NvU64 *, NvU32 *, NvU32 *, NvU32 *, OBJGPU **, void *, void (*)(void *), void *);
 NV_STATUS  RmP2PGetPagesWithoutCallbackRegistration (NvU64, NvU32, NvU64, NvU64, NvU64 *, NvU32 *, NvU32 *, NvU32 *, OBJGPU **, void *);
-NV_STATUS  RmP2PGetPagesPersistent  (NvU64, NvU64, void **, NvU64 *, NvU32 *, void *, void *);
+NV_STATUS  RmP2PGetPagesPersistent  (NvU64, NvU64, void **, NvU64 *, NvU32 *, void *, void *, void **);
 NV_STATUS  RmP2PRegisterCallback    (NvU64, NvU64, NvU64, void *, void (*)(void *), void *);
 NV_STATUS  RmP2PPutPages            (NvU64, NvU32, NvU64, void *);
 NV_STATUS  RmP2PGetGpuByAddress     (NvU64, NvU64, OBJGPU **);
-NV_STATUS  RmP2PPutPagesPersistent  (void *, void *);
+NV_STATUS  RmP2PPutPagesPersistent  (void *, void *, void *);
 
 #endif

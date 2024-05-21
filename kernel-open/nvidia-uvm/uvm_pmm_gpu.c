@@ -1890,8 +1890,11 @@ static uvm_gpu_chunk_t *claim_free_chunk(uvm_pmm_gpu_t *pmm, uvm_pmm_gpu_memory_
     if (!chunk)
         goto out;
 
-    UVM_ASSERT_MSG(uvm_gpu_chunk_get_size(chunk) == chunk_size, "chunk size %u expected %u\n",
-            uvm_gpu_chunk_get_size(chunk), chunk_size);
+    UVM_ASSERT_MSG(uvm_gpu_chunk_get_size(chunk) == chunk_size,
+                   "chunk size %u expected %u\n",
+                   uvm_gpu_chunk_get_size(chunk),
+                   chunk_size);
+
     UVM_ASSERT(chunk->type == type);
     UVM_ASSERT(chunk->state == UVM_PMM_GPU_CHUNK_STATE_FREE);
     UVM_ASSERT(!chunk_is_in_eviction(pmm, chunk));
@@ -2756,7 +2759,7 @@ static bool uvm_pmm_should_inject_pma_eviction_error(uvm_pmm_gpu_t *pmm)
 // See the documentation of pmaEvictPagesCb_t in pma.h for details of the
 // expected semantics.
 static NV_STATUS uvm_pmm_gpu_pma_evict_pages(void *void_pmm,
-                                             NvU32 page_size,
+                                             NvU64 page_size,
                                              NvU64 *pages,
                                              NvU32 num_pages_to_evict,
                                              NvU64 phys_start,
@@ -2861,7 +2864,7 @@ error:
 }
 
 static NV_STATUS uvm_pmm_gpu_pma_evict_pages_wrapper(void *void_pmm,
-                                                     NvU32 page_size,
+                                                     NvU64 page_size,
                                                      NvU64 *pages,
                                                      NvU32 num_pages_to_evict,
                                                      NvU64 phys_start,

@@ -2419,6 +2419,7 @@ nvswitch_ctrl_set_routing_id_valid_lr10
     NvU32 ram_address = p->firstIndex;
     NvU32 i;
     NvU32 ram_size;
+    NvlStatus retval;
 
     if (!NVSWITCH_IS_LINK_ENG_VALID_LR10(device, NPORT, p->portNum))
     {
@@ -2439,6 +2440,15 @@ nvswitch_ctrl_set_routing_id_valid_lr10
             0, ram_size - 1,
             NVSWITCH_ROUTING_ID_ENTRIES_MAX);
         return -NVL_BAD_ARGS;
+    }
+
+    // Stop traffic on the port
+    retval = nvswitch_soe_issue_ingress_stop(device, p->portNum, NV_TRUE);
+    if (retval != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "Failed to stop traffic on nport %d\n", p->portNum);
+        return retval;
     }
 
     // Select RID RAM and disable Auto Increment.
@@ -2472,6 +2482,14 @@ nvswitch_ctrl_set_routing_id_valid_lr10
         NVSWITCH_LINK_WR32_LR10(device, p->portNum, NPORT, _INGRESS, _RIDTABDATA0, rid_tab_data0);
     }
 
+    // Allow traffic on the port
+    retval = nvswitch_soe_issue_ingress_stop(device, p->portNum, NV_FALSE);
+    if (retval != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "Failed to restart traffic on nport %d\n", p->portNum);
+        return retval;
+    }
     return NVL_SUCCESS;
 }
 
@@ -2543,7 +2561,25 @@ nvswitch_ctrl_set_routing_id_lr10
         }
     }
 
+    // Stop traffic on the port
+    retval = nvswitch_soe_issue_ingress_stop(device, p->portNum, NV_TRUE);
+    if (retval != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "Failed to stop traffic on nport %d\n", p->portNum);
+        return retval;
+    }
+
     _nvswitch_set_routing_id_lr10(device, p->portNum, p->firstIndex, p->numEntries, p->routingId);
+
+    // Allow traffic on the port
+    retval = nvswitch_soe_issue_ingress_stop(device, p->portNum, NV_FALSE);
+    if (retval != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "Failed to restart traffic on nport %d\n", p->portNum);
+        return retval;
+    }
 
     return retval;
 }
@@ -2702,7 +2738,25 @@ nvswitch_ctrl_set_routing_lan_lr10
         }
     }
 
+    // Stop traffic on the port
+    retval = nvswitch_soe_issue_ingress_stop(device, p->portNum, NV_TRUE);
+    if (retval != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "Failed to stop traffic on nport %d\n", p->portNum);
+        return retval;
+    }
+
     _nvswitch_set_routing_lan_lr10(device, p->portNum, p->firstIndex, p->numEntries, p->routingLan);
+
+    // Allow traffic on the port
+    retval = nvswitch_soe_issue_ingress_stop(device, p->portNum, NV_FALSE);
+    if (retval != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "Failed to restart traffic on nport %d\n", p->portNum);
+        return retval;
+    }
 
     return retval;
 }
@@ -2907,6 +2961,7 @@ nvswitch_ctrl_set_routing_lan_valid_lr10
     NvU32 ram_address = p->firstIndex;
     NvU32 i;
     NvU32 ram_size;
+    NvlStatus retval;
 
     if (!NVSWITCH_IS_LINK_ENG_VALID_LR10(device, NPORT, p->portNum))
     {
@@ -2927,6 +2982,15 @@ nvswitch_ctrl_set_routing_lan_valid_lr10
             0, ram_size - 1,
             NVSWITCH_ROUTING_LAN_ENTRIES_MAX);
         return -NVL_BAD_ARGS;
+    }
+
+    // Stop traffic on the port
+    retval = nvswitch_soe_issue_ingress_stop(device, p->portNum, NV_TRUE);
+    if (retval != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "Failed to stop traffic on nport %d\n", p->portNum);
+        return retval;
     }
 
     // Select RLAN RAM and disable Auto Increament.
@@ -2957,6 +3021,15 @@ nvswitch_ctrl_set_routing_lan_valid_lr10
         NVSWITCH_LINK_WR32_LR10(device, p->portNum, NPORT, _INGRESS, _RLANTABDATA4, rlan_tab_data[4]);
         NVSWITCH_LINK_WR32_LR10(device, p->portNum, NPORT, _INGRESS, _RLANTABDATA5, rlan_tab_data[5]);
         NVSWITCH_LINK_WR32_LR10(device, p->portNum, NPORT, _INGRESS, _RLANTABDATA0, rlan_tab_data[0]);
+    }
+
+    // Allow traffic on the port
+    retval = nvswitch_soe_issue_ingress_stop(device, p->portNum, NV_FALSE);
+    if (retval != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "Failed to restart traffic on nport %d\n", p->portNum);
+        return retval;
     }
 
     return NVL_SUCCESS;
@@ -4075,9 +4148,7 @@ nvswitch_ctrl_get_nvlink_status_lr10
         }
         else
         {
-            nvlink_lib_discover_and_get_remote_conn_info(link, &conn_info,
-                                                         NVLINK_STATE_CHANGE_SYNC,
-                                                         NV_FALSE);
+            nvlink_lib_discover_and_get_remote_conn_info(link, &conn_info, NVLINK_STATE_CHANGE_SYNC);
         }
 
         // Set NVLINK per-link caps

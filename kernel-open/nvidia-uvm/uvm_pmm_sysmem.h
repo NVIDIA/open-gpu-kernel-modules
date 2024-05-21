@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2017-2023 NVIDIA Corporation
+    Copyright (c) 2017-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -246,8 +246,19 @@ struct uvm_cpu_chunk_struct
 
 typedef struct
 {
+    // Physical GPU DMA address of the CPU chunk.
     NvU64 dma_addr;
+
+    // Reference count of all sub_processors using this mapping across logical
+    // and physical chunks.
     NvU32 map_count;
+
+    // Mask of MIG instances or physical GPU.
+    // This is only valid for physical CPU chunks that have not been split into
+    // logical chunks. When the chunk is split, all the
+    // uvm_cpu_logical_chunk_t::mapped_gpus masks have a bit set for each
+    // count in map_count and sub_processors is set to zero.
+    uvm_sub_processor_mask_t sub_processors;
 } uvm_cpu_phys_mapping_t;
 
 typedef struct
@@ -304,7 +315,9 @@ typedef struct
 
     // Pointer to the parent chunk (which could also be a logical chunk).
     uvm_cpu_chunk_t *parent;
-    uvm_parent_processor_mask_t mapped_gpus;
+
+    // This is a reference per bit but also recorded in mapping->map_count.
+    uvm_processor_mask_t mapped_gpus;
 } uvm_cpu_logical_chunk_t;
 
 // Return the set of allowed CPU chunk allocation sizes.
@@ -417,15 +430,15 @@ void uvm_cpu_chunk_free(uvm_cpu_chunk_t *chunk);
 // For more details see uvm_mmu_sysmem_map().
 NV_STATUS uvm_cpu_chunk_map_gpu(uvm_cpu_chunk_t *chunk, uvm_gpu_t *gpu);
 
-// Destroy a CPU chunk's DMA mapping for the parent GPU.
+// Destroy a CPU chunk's DMA mapping for the given GPU.
 // If chunk is a logical chunk, this call may not necessarily destroy the DMA
-// mapping of the parent physical chunk since all logical chunks share the
-// parent's DMA mapping.
-void uvm_cpu_chunk_unmap_parent_gpu_phys(uvm_cpu_chunk_t *chunk, uvm_parent_gpu_t *parent_gpu);
+// mapping of the parent physical chunk since all logical chunks and MIG
+// partitions share the parent's DMA mapping.
+void uvm_cpu_chunk_unmap_gpu(uvm_cpu_chunk_t *chunk, uvm_gpu_t *gpu);
 
 // Get the CPU chunk's DMA mapping address for the specified GPU ID.
 // If there is no mapping for the GPU, 0 is returned.
-NvU64 uvm_cpu_chunk_get_parent_gpu_phys_addr(uvm_cpu_chunk_t *chunk, uvm_parent_gpu_t *parent_gpu);
+NvU64 uvm_cpu_chunk_get_gpu_phys_addr(uvm_cpu_chunk_t *chunk, uvm_gpu_t *gpu);
 
 // Split a CPU chunk into a set of CPU chunks of the next size down from the set
 // of enabled CPU chunk sizes.

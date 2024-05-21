@@ -39,7 +39,7 @@
  * @returns NV_OK on success.
  */
 NV_STATUS
-kbusBar2BootStrapInPhysicalMode_VGPUSTUB
+kbusBar2BootStrapInPhysicalMode_VF
 (
     OBJGPU    *pGpu,
     KernelBus *pKernelBus
@@ -94,7 +94,7 @@ cleanup:
  * @returns void
  */
 NV_STATUS
-kbusInitBarsSize_VGPUSTUB(OBJGPU *pGpu, KernelBus *pKernelBus)
+kbusInitBarsSize_VF(OBJGPU *pGpu, KernelBus *pKernelBus)
 {
     if (!pKernelBus->bPciBarSizesValid)
     {
@@ -108,7 +108,7 @@ kbusInitBarsSize_VGPUSTUB(OBJGPU *pGpu, KernelBus *pKernelBus)
 }
 
 NV_STATUS
-subdeviceCtrlCmdBusSetP2pMapping_VGPUSTUB
+subdeviceCtrlCmdBusSetP2pMapping_VF
 (
     Subdevice *pSubdevice,
     NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS *pParams
@@ -147,7 +147,7 @@ subdeviceCtrlCmdBusSetP2pMapping_VGPUSTUB
 }
 
 NV_STATUS
-subdeviceCtrlCmdBusUnsetP2pMapping_VGPUSTUB
+subdeviceCtrlCmdBusUnsetP2pMapping_VF
 (
     Subdevice *pSubdevice,
     NV2080_CTRL_BUS_UNSET_P2P_MAPPING_PARAMS *pParams

@@ -93,105 +93,133 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_RgLineCallback =
     /*pExportInfo=*/        &__nvoc_export_info_RgLineCallback
 };
 
-static NvBool __nvoc_thunk_GpuResource_rglcbShareCallback(struct RgLineCallback *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+// 25 up-thunk(s) defined to bridge methods in RgLineCallback to superclasses
+
+// rglcbControl: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_rglcbControl(struct RgLineCallback *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_rglcbCheckMemInterUnmap(struct RgLineCallback *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), bSubdeviceHandleProvided);
+// rglcbMap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_rglcbMap(struct RgLineCallback *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset), pCallContext, pParams, pCpuMapping);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_rglcbMapTo(struct RgLineCallback *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset), pParams);
+// rglcbUnmap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_rglcbUnmap(struct RgLineCallback *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset), pCallContext, pCpuMapping);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_rglcbGetMapAddrSpace(struct RgLineCallback *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+// rglcbShareCallback: virtual inherited (gpures) base (gpures)
+static NvBool __nvoc_up_thunk_GpuResource_rglcbShareCallback(struct RgLineCallback *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NvU32 __nvoc_thunk_RsResource_rglcbGetRefCount(struct RgLineCallback *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset));
+// rglcbGetRegBaseOffsetAndSize: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_rglcbGetRegBaseOffsetAndSize(struct RgLineCallback *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset), pGpu, pOffset, pSize);
 }
 
-static void __nvoc_thunk_RsResource_rglcbAddAdditionalDependants(struct RsClient *pClient, struct RgLineCallback *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset), pReference);
+// rglcbGetMapAddrSpace: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_rglcbGetMapAddrSpace(struct RgLineCallback *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_rglcbControl_Prologue(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), pCallContext, pParams);
+// rglcbInternalControlForward: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_rglcbInternalControlForward(struct RgLineCallback *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset), command, pParams, size);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_rglcbGetRegBaseOffsetAndSize(struct RgLineCallback *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset), pGpu, pOffset, pSize);
+// rglcbGetInternalObjectHandle: virtual inherited (gpures) base (gpures)
+static NvHandle __nvoc_up_thunk_GpuResource_rglcbGetInternalObjectHandle(struct RgLineCallback *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_rglcbInternalControlForward(struct RgLineCallback *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset), command, pParams, size);
+// rglcbAccessCallback: virtual inherited (rmres) base (gpures)
+static NvBool __nvoc_up_thunk_RmResource_rglcbAccessCallback(struct RgLineCallback *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_rglcbUnmapFrom(struct RgLineCallback *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset), pParams);
+// rglcbGetMemInterMapParams: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_rglcbGetMemInterMapParams(struct RgLineCallback *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), pParams);
 }
 
-static void __nvoc_thunk_RmResource_rglcbControl_Epilogue(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), pCallContext, pParams);
+// rglcbCheckMemInterUnmap: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_rglcbCheckMemInterUnmap(struct RgLineCallback *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), bSubdeviceHandleProvided);
 }
 
-static NvHandle __nvoc_thunk_GpuResource_rglcbGetInternalObjectHandle(struct RgLineCallback *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset));
+// rglcbGetMemoryMappingDescriptor: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_rglcbGetMemoryMappingDescriptor(struct RgLineCallback *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), ppMemDesc);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_rglcbControl(struct RgLineCallback *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset), pCallContext, pParams);
+// rglcbControlSerialization_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_rglcbControlSerialization_Prologue(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_rglcbUnmap(struct RgLineCallback *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset), pCallContext, pCpuMapping);
+// rglcbControlSerialization_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_rglcbControlSerialization_Epilogue(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_rglcbGetMemInterMapParams(struct RgLineCallback *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), pParams);
+// rglcbControl_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_rglcbControl_Prologue(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_rglcbGetMemoryMappingDescriptor(struct RgLineCallback *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), ppMemDesc);
+// rglcbControl_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_rglcbControl_Epilogue(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_rglcbControlFilter(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset), pCallContext, pParams);
+// rglcbCanCopy: virtual inherited (res) base (gpures)
+static NvBool __nvoc_up_thunk_RsResource_rglcbCanCopy(struct RgLineCallback *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_rglcbControlSerialization_Prologue(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), pCallContext, pParams);
+// rglcbIsDuplicate: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_rglcbIsDuplicate(struct RgLineCallback *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset), hMemory, pDuplicate);
 }
 
-static NvBool __nvoc_thunk_RsResource_rglcbCanCopy(struct RgLineCallback *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset));
+// rglcbPreDestruct: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_rglcbPreDestruct(struct RgLineCallback *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RsResource_rglcbIsPartialUnmapSupported(struct RgLineCallback *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset));
+// rglcbControlFilter: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_rglcbControlFilter(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_rglcbPreDestruct(struct RgLineCallback *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset));
+// rglcbIsPartialUnmapSupported: inline virtual inherited (res) base (gpures) body
+static NvBool __nvoc_up_thunk_RsResource_rglcbIsPartialUnmapSupported(struct RgLineCallback *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_rglcbIsDuplicate(struct RgLineCallback *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset), hMemory, pDuplicate);
+// rglcbMapTo: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_rglcbMapTo(struct RgLineCallback *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset), pParams);
 }
 
-static void __nvoc_thunk_RmResource_rglcbControlSerialization_Epilogue(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), pCallContext, pParams);
+// rglcbUnmapFrom: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_rglcbUnmapFrom(struct RgLineCallback *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_rglcbMap(struct RgLineCallback *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return gpuresMap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+// rglcbGetRefCount: virtual inherited (res) base (gpures)
+static NvU32 __nvoc_up_thunk_RsResource_rglcbGetRefCount(struct RgLineCallback *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RmResource_rglcbAccessCallback(struct RgLineCallback *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+// rglcbAddAdditionalDependants: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_rglcbAddAdditionalDependants(struct RsClient *pClient, struct RgLineCallback *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset), pReference);
 }
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_RgLineCallback = 
 {
@@ -229,61 +257,91 @@ __nvoc_ctor_RgLineCallback_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_RgLineCallback_1(RgLineCallback *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
-    pThis->__rglcbShareCallback__ = &__nvoc_thunk_GpuResource_rglcbShareCallback;
+    // rglcbControl -- virtual inherited (gpures) base (gpures)
+    pThis->__rglcbControl__ = &__nvoc_up_thunk_GpuResource_rglcbControl;
 
-    pThis->__rglcbCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_rglcbCheckMemInterUnmap;
+    // rglcbMap -- virtual inherited (gpures) base (gpures)
+    pThis->__rglcbMap__ = &__nvoc_up_thunk_GpuResource_rglcbMap;
 
-    pThis->__rglcbMapTo__ = &__nvoc_thunk_RsResource_rglcbMapTo;
+    // rglcbUnmap -- virtual inherited (gpures) base (gpures)
+    pThis->__rglcbUnmap__ = &__nvoc_up_thunk_GpuResource_rglcbUnmap;
 
-    pThis->__rglcbGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_rglcbGetMapAddrSpace;
+    // rglcbShareCallback -- virtual inherited (gpures) base (gpures)
+    pThis->__rglcbShareCallback__ = &__nvoc_up_thunk_GpuResource_rglcbShareCallback;
 
-    pThis->__rglcbGetRefCount__ = &__nvoc_thunk_RsResource_rglcbGetRefCount;
+    // rglcbGetRegBaseOffsetAndSize -- virtual inherited (gpures) base (gpures)
+    pThis->__rglcbGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_rglcbGetRegBaseOffsetAndSize;
 
-    pThis->__rglcbAddAdditionalDependants__ = &__nvoc_thunk_RsResource_rglcbAddAdditionalDependants;
+    // rglcbGetMapAddrSpace -- virtual inherited (gpures) base (gpures)
+    pThis->__rglcbGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_rglcbGetMapAddrSpace;
 
-    pThis->__rglcbControl_Prologue__ = &__nvoc_thunk_RmResource_rglcbControl_Prologue;
+    // rglcbInternalControlForward -- virtual inherited (gpures) base (gpures)
+    pThis->__rglcbInternalControlForward__ = &__nvoc_up_thunk_GpuResource_rglcbInternalControlForward;
 
-    pThis->__rglcbGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_rglcbGetRegBaseOffsetAndSize;
+    // rglcbGetInternalObjectHandle -- virtual inherited (gpures) base (gpures)
+    pThis->__rglcbGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_rglcbGetInternalObjectHandle;
 
-    pThis->__rglcbInternalControlForward__ = &__nvoc_thunk_GpuResource_rglcbInternalControlForward;
+    // rglcbAccessCallback -- virtual inherited (rmres) base (gpures)
+    pThis->__rglcbAccessCallback__ = &__nvoc_up_thunk_RmResource_rglcbAccessCallback;
 
-    pThis->__rglcbUnmapFrom__ = &__nvoc_thunk_RsResource_rglcbUnmapFrom;
+    // rglcbGetMemInterMapParams -- virtual inherited (rmres) base (gpures)
+    pThis->__rglcbGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_rglcbGetMemInterMapParams;
 
-    pThis->__rglcbControl_Epilogue__ = &__nvoc_thunk_RmResource_rglcbControl_Epilogue;
+    // rglcbCheckMemInterUnmap -- virtual inherited (rmres) base (gpures)
+    pThis->__rglcbCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_rglcbCheckMemInterUnmap;
 
-    pThis->__rglcbGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_rglcbGetInternalObjectHandle;
+    // rglcbGetMemoryMappingDescriptor -- virtual inherited (rmres) base (gpures)
+    pThis->__rglcbGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_rglcbGetMemoryMappingDescriptor;
 
-    pThis->__rglcbControl__ = &__nvoc_thunk_GpuResource_rglcbControl;
+    // rglcbControlSerialization_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__rglcbControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_rglcbControlSerialization_Prologue;
 
-    pThis->__rglcbUnmap__ = &__nvoc_thunk_GpuResource_rglcbUnmap;
+    // rglcbControlSerialization_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__rglcbControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_rglcbControlSerialization_Epilogue;
 
-    pThis->__rglcbGetMemInterMapParams__ = &__nvoc_thunk_RmResource_rglcbGetMemInterMapParams;
+    // rglcbControl_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__rglcbControl_Prologue__ = &__nvoc_up_thunk_RmResource_rglcbControl_Prologue;
 
-    pThis->__rglcbGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_rglcbGetMemoryMappingDescriptor;
+    // rglcbControl_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__rglcbControl_Epilogue__ = &__nvoc_up_thunk_RmResource_rglcbControl_Epilogue;
 
-    pThis->__rglcbControlFilter__ = &__nvoc_thunk_RsResource_rglcbControlFilter;
+    // rglcbCanCopy -- virtual inherited (res) base (gpures)
+    pThis->__rglcbCanCopy__ = &__nvoc_up_thunk_RsResource_rglcbCanCopy;
 
-    pThis->__rglcbControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_rglcbControlSerialization_Prologue;
+    // rglcbIsDuplicate -- virtual inherited (res) base (gpures)
+    pThis->__rglcbIsDuplicate__ = &__nvoc_up_thunk_RsResource_rglcbIsDuplicate;
 
-    pThis->__rglcbCanCopy__ = &__nvoc_thunk_RsResource_rglcbCanCopy;
+    // rglcbPreDestruct -- virtual inherited (res) base (gpures)
+    pThis->__rglcbPreDestruct__ = &__nvoc_up_thunk_RsResource_rglcbPreDestruct;
 
-    pThis->__rglcbIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_rglcbIsPartialUnmapSupported;
+    // rglcbControlFilter -- virtual inherited (res) base (gpures)
+    pThis->__rglcbControlFilter__ = &__nvoc_up_thunk_RsResource_rglcbControlFilter;
 
-    pThis->__rglcbPreDestruct__ = &__nvoc_thunk_RsResource_rglcbPreDestruct;
+    // rglcbIsPartialUnmapSupported -- inline virtual inherited (res) base (gpures) body
+    pThis->__rglcbIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rglcbIsPartialUnmapSupported;
 
-    pThis->__rglcbIsDuplicate__ = &__nvoc_thunk_RsResource_rglcbIsDuplicate;
+    // rglcbMapTo -- virtual inherited (res) base (gpures)
+    pThis->__rglcbMapTo__ = &__nvoc_up_thunk_RsResource_rglcbMapTo;
 
-    pThis->__rglcbControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_rglcbControlSerialization_Epilogue;
+    // rglcbUnmapFrom -- virtual inherited (res) base (gpures)
+    pThis->__rglcbUnmapFrom__ = &__nvoc_up_thunk_RsResource_rglcbUnmapFrom;
 
-    pThis->__rglcbMap__ = &__nvoc_thunk_GpuResource_rglcbMap;
+    // rglcbGetRefCount -- virtual inherited (res) base (gpures)
+    pThis->__rglcbGetRefCount__ = &__nvoc_up_thunk_RsResource_rglcbGetRefCount;
 
-    pThis->__rglcbAccessCallback__ = &__nvoc_thunk_RmResource_rglcbAccessCallback;
-}
+    // rglcbAddAdditionalDependants -- virtual inherited (res) base (gpures)
+    pThis->__rglcbAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rglcbAddAdditionalDependants;
+} // End __nvoc_init_funcTable_RgLineCallback_1 with approximately 25 basic block(s).
 
+
+// Initialize vtable(s) for 25 virtual method(s).
 void __nvoc_init_funcTable_RgLineCallback(RgLineCallback *pThis) {
+
+    // Initialize vtable(s) with 25 per-object function pointer(s).
     __nvoc_init_funcTable_RgLineCallback_1(pThis);
 }
 

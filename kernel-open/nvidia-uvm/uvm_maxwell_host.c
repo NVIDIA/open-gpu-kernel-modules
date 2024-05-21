@@ -108,7 +108,7 @@ void uvm_hal_maxwell_host_tlb_invalidate_va(uvm_push_t *push,
                                             NvU32 depth,
                                             NvU64 base,
                                             NvU64 size,
-                                            NvU32 page_size,
+                                            NvU64 page_size,
                                             uvm_membar_t membar)
 {
     // No per VA invalidate on Maxwell, redirect to invalidate all.

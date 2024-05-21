@@ -111,126 +111,6 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_VidmemAccessBitBuffer =
     /*pExportInfo=*/        &__nvoc_export_info_VidmemAccessBitBuffer
 };
 
-static NvBool __nvoc_thunk_GpuResource_vidmemAccessBitBufShareCallback(struct VidmemAccessBitBuffer *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_VidmemAccessBitBuffer_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_vidmemAccessBitBufCheckMemInterUnmap(struct VidmemAccessBitBuffer *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_VidmemAccessBitBuffer_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_Notifier_vidmemAccessBitBufGetOrAllocNotifShare(struct VidmemAccessBitBuffer *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_VidmemAccessBitBuffer_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_vidmemAccessBitBufMapTo(struct VidmemAccessBitBuffer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_vidmemAccessBitBufGetMapAddrSpace(struct VidmemAccessBitBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_VidmemAccessBitBuffer_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static void __nvoc_thunk_Notifier_vidmemAccessBitBufSetNotificationShare(struct VidmemAccessBitBuffer *pNotifier, struct NotifShare *pNotifShare) {
-    notifySetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_VidmemAccessBitBuffer_Notifier.offset), pNotifShare);
-}
-
-static NvU32 __nvoc_thunk_RsResource_vidmemAccessBitBufGetRefCount(struct VidmemAccessBitBuffer *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_vidmemAccessBitBufAddAdditionalDependants(struct RsClient *pClient, struct VidmemAccessBitBuffer *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RsResource.offset), pReference);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_vidmemAccessBitBufControl_Prologue(struct VidmemAccessBitBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_vidmemAccessBitBufGetRegBaseOffsetAndSize(struct VidmemAccessBitBuffer *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_VidmemAccessBitBuffer_GpuResource.offset), pGpu, pOffset, pSize);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_vidmemAccessBitBufInternalControlForward(struct VidmemAccessBitBuffer *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_VidmemAccessBitBuffer_GpuResource.offset), command, pParams, size);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_vidmemAccessBitBufUnmapFrom(struct VidmemAccessBitBuffer *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RsResource.offset), pParams);
-}
-
-static void __nvoc_thunk_RmResource_vidmemAccessBitBufControl_Epilogue(struct VidmemAccessBitBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RmResource.offset), pCallContext, pParams);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_vidmemAccessBitBufGetInternalObjectHandle(struct VidmemAccessBitBuffer *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_VidmemAccessBitBuffer_GpuResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_vidmemAccessBitBufControl(struct VidmemAccessBitBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_VidmemAccessBitBuffer_GpuResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_vidmemAccessBitBufUnmap(struct VidmemAccessBitBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_VidmemAccessBitBuffer_GpuResource.offset), pCallContext, pCpuMapping);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_vidmemAccessBitBufGetMemInterMapParams(struct VidmemAccessBitBuffer *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_VidmemAccessBitBuffer_RmResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_vidmemAccessBitBufGetMemoryMappingDescriptor(struct VidmemAccessBitBuffer *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_VidmemAccessBitBuffer_RmResource.offset), ppMemDesc);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_vidmemAccessBitBufControlFilter(struct VidmemAccessBitBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RsResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_Notifier_vidmemAccessBitBufUnregisterEvent(struct VidmemAccessBitBuffer *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_VidmemAccessBitBuffer_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_vidmemAccessBitBufControlSerialization_Prologue(struct VidmemAccessBitBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RmResource.offset), pCallContext, pParams);
-}
-
-static NvBool __nvoc_thunk_RsResource_vidmemAccessBitBufCanCopy(struct VidmemAccessBitBuffer *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RsResource.offset));
-}
-
-static NvBool __nvoc_thunk_RsResource_vidmemAccessBitBufIsPartialUnmapSupported(struct VidmemAccessBitBuffer *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_vidmemAccessBitBufPreDestruct(struct VidmemAccessBitBuffer *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_vidmemAccessBitBufIsDuplicate(struct VidmemAccessBitBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RsResource.offset), hMemory, pDuplicate);
-}
-
-static void __nvoc_thunk_RmResource_vidmemAccessBitBufControlSerialization_Epilogue(struct VidmemAccessBitBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RmResource.offset), pCallContext, pParams);
-}
-
-static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_vidmemAccessBitBufGetNotificationListPtr(struct VidmemAccessBitBuffer *pNotifier) {
-    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_VidmemAccessBitBuffer_Notifier.offset));
-}
-
-static struct NotifShare *__nvoc_thunk_Notifier_vidmemAccessBitBufGetNotificationShare(struct VidmemAccessBitBuffer *pNotifier) {
-    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_VidmemAccessBitBuffer_Notifier.offset));
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_vidmemAccessBitBufMap(struct VidmemAccessBitBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return gpuresMap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_VidmemAccessBitBuffer_GpuResource.offset), pCallContext, pParams, pCpuMapping);
-}
-
-static NvBool __nvoc_thunk_RmResource_vidmemAccessBitBufAccessCallback(struct VidmemAccessBitBuffer *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
-}
-
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
@@ -238,12 +118,12 @@ static NvBool __nvoc_thunk_RmResource_vidmemAccessBitBufAccessCallback(struct Vi
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_VidmemAccessBitBuffer[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x160200u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x16040u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) vidmemAccessBitBufCtrlCmdVidmemAccessBitDump_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x160200u)
-        /*flags=*/      0x160200u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x16040u)
+        /*flags=*/      0x16040u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xc7630103u,
         /*paramSize=*/  sizeof(NVC763_CTRL_VIDMEM_ACCESS_BIT_BUFFER_DUMP_PARAMS),
@@ -254,6 +134,159 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_VidmemAc
     },
 
 };
+
+// 30 up-thunk(s) defined to bridge methods in VidmemAccessBitBuffer to superclasses
+
+// vidmemAccessBitBufControl: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_vidmemAccessBitBufControl(struct VidmemAccessBitBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_VidmemAccessBitBuffer_GpuResource.offset), pCallContext, pParams);
+}
+
+// vidmemAccessBitBufMap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_vidmemAccessBitBufMap(struct VidmemAccessBitBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_VidmemAccessBitBuffer_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+}
+
+// vidmemAccessBitBufUnmap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_vidmemAccessBitBufUnmap(struct VidmemAccessBitBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_VidmemAccessBitBuffer_GpuResource.offset), pCallContext, pCpuMapping);
+}
+
+// vidmemAccessBitBufShareCallback: virtual inherited (gpures) base (gpures)
+static NvBool __nvoc_up_thunk_GpuResource_vidmemAccessBitBufShareCallback(struct VidmemAccessBitBuffer *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_VidmemAccessBitBuffer_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+}
+
+// vidmemAccessBitBufGetRegBaseOffsetAndSize: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_vidmemAccessBitBufGetRegBaseOffsetAndSize(struct VidmemAccessBitBuffer *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_VidmemAccessBitBuffer_GpuResource.offset), pGpu, pOffset, pSize);
+}
+
+// vidmemAccessBitBufGetMapAddrSpace: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_vidmemAccessBitBufGetMapAddrSpace(struct VidmemAccessBitBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_VidmemAccessBitBuffer_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+// vidmemAccessBitBufInternalControlForward: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_vidmemAccessBitBufInternalControlForward(struct VidmemAccessBitBuffer *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_VidmemAccessBitBuffer_GpuResource.offset), command, pParams, size);
+}
+
+// vidmemAccessBitBufGetInternalObjectHandle: virtual inherited (gpures) base (gpures)
+static NvHandle __nvoc_up_thunk_GpuResource_vidmemAccessBitBufGetInternalObjectHandle(struct VidmemAccessBitBuffer *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_VidmemAccessBitBuffer_GpuResource.offset));
+}
+
+// vidmemAccessBitBufAccessCallback: virtual inherited (rmres) base (gpures)
+static NvBool __nvoc_up_thunk_RmResource_vidmemAccessBitBufAccessCallback(struct VidmemAccessBitBuffer *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+}
+
+// vidmemAccessBitBufGetMemInterMapParams: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_vidmemAccessBitBufGetMemInterMapParams(struct VidmemAccessBitBuffer *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_VidmemAccessBitBuffer_RmResource.offset), pParams);
+}
+
+// vidmemAccessBitBufCheckMemInterUnmap: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_vidmemAccessBitBufCheckMemInterUnmap(struct VidmemAccessBitBuffer *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_VidmemAccessBitBuffer_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+// vidmemAccessBitBufGetMemoryMappingDescriptor: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_vidmemAccessBitBufGetMemoryMappingDescriptor(struct VidmemAccessBitBuffer *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_VidmemAccessBitBuffer_RmResource.offset), ppMemDesc);
+}
+
+// vidmemAccessBitBufControlSerialization_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_vidmemAccessBitBufControlSerialization_Prologue(struct VidmemAccessBitBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RmResource.offset), pCallContext, pParams);
+}
+
+// vidmemAccessBitBufControlSerialization_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_vidmemAccessBitBufControlSerialization_Epilogue(struct VidmemAccessBitBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RmResource.offset), pCallContext, pParams);
+}
+
+// vidmemAccessBitBufControl_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_vidmemAccessBitBufControl_Prologue(struct VidmemAccessBitBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RmResource.offset), pCallContext, pParams);
+}
+
+// vidmemAccessBitBufControl_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_vidmemAccessBitBufControl_Epilogue(struct VidmemAccessBitBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RmResource.offset), pCallContext, pParams);
+}
+
+// vidmemAccessBitBufCanCopy: virtual inherited (res) base (gpures)
+static NvBool __nvoc_up_thunk_RsResource_vidmemAccessBitBufCanCopy(struct VidmemAccessBitBuffer *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RsResource.offset));
+}
+
+// vidmemAccessBitBufIsDuplicate: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_vidmemAccessBitBufIsDuplicate(struct VidmemAccessBitBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RsResource.offset), hMemory, pDuplicate);
+}
+
+// vidmemAccessBitBufPreDestruct: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_vidmemAccessBitBufPreDestruct(struct VidmemAccessBitBuffer *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RsResource.offset));
+}
+
+// vidmemAccessBitBufControlFilter: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_vidmemAccessBitBufControlFilter(struct VidmemAccessBitBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RsResource.offset), pCallContext, pParams);
+}
+
+// vidmemAccessBitBufIsPartialUnmapSupported: inline virtual inherited (res) base (gpures) body
+static NvBool __nvoc_up_thunk_RsResource_vidmemAccessBitBufIsPartialUnmapSupported(struct VidmemAccessBitBuffer *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RsResource.offset));
+}
+
+// vidmemAccessBitBufMapTo: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_vidmemAccessBitBufMapTo(struct VidmemAccessBitBuffer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RsResource.offset), pParams);
+}
+
+// vidmemAccessBitBufUnmapFrom: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_vidmemAccessBitBufUnmapFrom(struct VidmemAccessBitBuffer *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RsResource.offset), pParams);
+}
+
+// vidmemAccessBitBufGetRefCount: virtual inherited (res) base (gpures)
+static NvU32 __nvoc_up_thunk_RsResource_vidmemAccessBitBufGetRefCount(struct VidmemAccessBitBuffer *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RsResource.offset));
+}
+
+// vidmemAccessBitBufAddAdditionalDependants: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_vidmemAccessBitBufAddAdditionalDependants(struct RsClient *pClient, struct VidmemAccessBitBuffer *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RsResource.offset), pReference);
+}
+
+// vidmemAccessBitBufGetNotificationListPtr: virtual inherited (notify) base (notify)
+static PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_vidmemAccessBitBufGetNotificationListPtr(struct VidmemAccessBitBuffer *pNotifier) {
+    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_VidmemAccessBitBuffer_Notifier.offset));
+}
+
+// vidmemAccessBitBufGetNotificationShare: virtual inherited (notify) base (notify)
+static struct NotifShare * __nvoc_up_thunk_Notifier_vidmemAccessBitBufGetNotificationShare(struct VidmemAccessBitBuffer *pNotifier) {
+    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_VidmemAccessBitBuffer_Notifier.offset));
+}
+
+// vidmemAccessBitBufSetNotificationShare: virtual inherited (notify) base (notify)
+static void __nvoc_up_thunk_Notifier_vidmemAccessBitBufSetNotificationShare(struct VidmemAccessBitBuffer *pNotifier, struct NotifShare *pNotifShare) {
+    notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_VidmemAccessBitBuffer_Notifier.offset), pNotifShare);
+}
+
+// vidmemAccessBitBufUnregisterEvent: virtual inherited (notify) base (notify)
+static NV_STATUS __nvoc_up_thunk_Notifier_vidmemAccessBitBufUnregisterEvent(struct VidmemAccessBitBuffer *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
+    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_VidmemAccessBitBuffer_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
+}
+
+// vidmemAccessBitBufGetOrAllocNotifShare: virtual inherited (notify) base (notify)
+static NV_STATUS __nvoc_up_thunk_Notifier_vidmemAccessBitBufGetOrAllocNotifShare(struct VidmemAccessBitBuffer *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
+    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_VidmemAccessBitBuffer_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
+}
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_VidmemAccessBitBuffer = 
 {
@@ -303,6 +336,7 @@ __nvoc_ctor_VidmemAccessBitBuffer_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_VidmemAccessBitBuffer_1(VidmemAccessBitBuffer *pThis, RmHalspecOwner *pRmhalspecowner) {
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
@@ -311,72 +345,107 @@ static void __nvoc_init_funcTable_VidmemAccessBitBuffer_1(VidmemAccessBitBuffer 
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x160200u)
+    // vidmemAccessBitBufCtrlCmdVidmemAccessBitDump -- exported (id=0xc7630103)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x16040u)
     pThis->__vidmemAccessBitBufCtrlCmdVidmemAccessBitDump__ = &vidmemAccessBitBufCtrlCmdVidmemAccessBitDump_IMPL;
 #endif
 
-    pThis->__vidmemAccessBitBufShareCallback__ = &__nvoc_thunk_GpuResource_vidmemAccessBitBufShareCallback;
+    // vidmemAccessBitBufControl -- virtual inherited (gpures) base (gpures)
+    pThis->__vidmemAccessBitBufControl__ = &__nvoc_up_thunk_GpuResource_vidmemAccessBitBufControl;
 
-    pThis->__vidmemAccessBitBufCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_vidmemAccessBitBufCheckMemInterUnmap;
+    // vidmemAccessBitBufMap -- virtual inherited (gpures) base (gpures)
+    pThis->__vidmemAccessBitBufMap__ = &__nvoc_up_thunk_GpuResource_vidmemAccessBitBufMap;
 
-    pThis->__vidmemAccessBitBufGetOrAllocNotifShare__ = &__nvoc_thunk_Notifier_vidmemAccessBitBufGetOrAllocNotifShare;
+    // vidmemAccessBitBufUnmap -- virtual inherited (gpures) base (gpures)
+    pThis->__vidmemAccessBitBufUnmap__ = &__nvoc_up_thunk_GpuResource_vidmemAccessBitBufUnmap;
 
-    pThis->__vidmemAccessBitBufMapTo__ = &__nvoc_thunk_RsResource_vidmemAccessBitBufMapTo;
+    // vidmemAccessBitBufShareCallback -- virtual inherited (gpures) base (gpures)
+    pThis->__vidmemAccessBitBufShareCallback__ = &__nvoc_up_thunk_GpuResource_vidmemAccessBitBufShareCallback;
 
-    pThis->__vidmemAccessBitBufGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_vidmemAccessBitBufGetMapAddrSpace;
+    // vidmemAccessBitBufGetRegBaseOffsetAndSize -- virtual inherited (gpures) base (gpures)
+    pThis->__vidmemAccessBitBufGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_vidmemAccessBitBufGetRegBaseOffsetAndSize;
 
-    pThis->__vidmemAccessBitBufSetNotificationShare__ = &__nvoc_thunk_Notifier_vidmemAccessBitBufSetNotificationShare;
+    // vidmemAccessBitBufGetMapAddrSpace -- virtual inherited (gpures) base (gpures)
+    pThis->__vidmemAccessBitBufGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_vidmemAccessBitBufGetMapAddrSpace;
 
-    pThis->__vidmemAccessBitBufGetRefCount__ = &__nvoc_thunk_RsResource_vidmemAccessBitBufGetRefCount;
+    // vidmemAccessBitBufInternalControlForward -- virtual inherited (gpures) base (gpures)
+    pThis->__vidmemAccessBitBufInternalControlForward__ = &__nvoc_up_thunk_GpuResource_vidmemAccessBitBufInternalControlForward;
 
-    pThis->__vidmemAccessBitBufAddAdditionalDependants__ = &__nvoc_thunk_RsResource_vidmemAccessBitBufAddAdditionalDependants;
+    // vidmemAccessBitBufGetInternalObjectHandle -- virtual inherited (gpures) base (gpures)
+    pThis->__vidmemAccessBitBufGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_vidmemAccessBitBufGetInternalObjectHandle;
 
-    pThis->__vidmemAccessBitBufControl_Prologue__ = &__nvoc_thunk_RmResource_vidmemAccessBitBufControl_Prologue;
+    // vidmemAccessBitBufAccessCallback -- virtual inherited (rmres) base (gpures)
+    pThis->__vidmemAccessBitBufAccessCallback__ = &__nvoc_up_thunk_RmResource_vidmemAccessBitBufAccessCallback;
 
-    pThis->__vidmemAccessBitBufGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_vidmemAccessBitBufGetRegBaseOffsetAndSize;
+    // vidmemAccessBitBufGetMemInterMapParams -- virtual inherited (rmres) base (gpures)
+    pThis->__vidmemAccessBitBufGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_vidmemAccessBitBufGetMemInterMapParams;
 
-    pThis->__vidmemAccessBitBufInternalControlForward__ = &__nvoc_thunk_GpuResource_vidmemAccessBitBufInternalControlForward;
+    // vidmemAccessBitBufCheckMemInterUnmap -- virtual inherited (rmres) base (gpures)
+    pThis->__vidmemAccessBitBufCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_vidmemAccessBitBufCheckMemInterUnmap;
 
-    pThis->__vidmemAccessBitBufUnmapFrom__ = &__nvoc_thunk_RsResource_vidmemAccessBitBufUnmapFrom;
+    // vidmemAccessBitBufGetMemoryMappingDescriptor -- virtual inherited (rmres) base (gpures)
+    pThis->__vidmemAccessBitBufGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_vidmemAccessBitBufGetMemoryMappingDescriptor;
 
-    pThis->__vidmemAccessBitBufControl_Epilogue__ = &__nvoc_thunk_RmResource_vidmemAccessBitBufControl_Epilogue;
+    // vidmemAccessBitBufControlSerialization_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__vidmemAccessBitBufControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_vidmemAccessBitBufControlSerialization_Prologue;
 
-    pThis->__vidmemAccessBitBufGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_vidmemAccessBitBufGetInternalObjectHandle;
+    // vidmemAccessBitBufControlSerialization_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__vidmemAccessBitBufControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_vidmemAccessBitBufControlSerialization_Epilogue;
 
-    pThis->__vidmemAccessBitBufControl__ = &__nvoc_thunk_GpuResource_vidmemAccessBitBufControl;
+    // vidmemAccessBitBufControl_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__vidmemAccessBitBufControl_Prologue__ = &__nvoc_up_thunk_RmResource_vidmemAccessBitBufControl_Prologue;
 
-    pThis->__vidmemAccessBitBufUnmap__ = &__nvoc_thunk_GpuResource_vidmemAccessBitBufUnmap;
+    // vidmemAccessBitBufControl_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__vidmemAccessBitBufControl_Epilogue__ = &__nvoc_up_thunk_RmResource_vidmemAccessBitBufControl_Epilogue;
 
-    pThis->__vidmemAccessBitBufGetMemInterMapParams__ = &__nvoc_thunk_RmResource_vidmemAccessBitBufGetMemInterMapParams;
+    // vidmemAccessBitBufCanCopy -- virtual inherited (res) base (gpures)
+    pThis->__vidmemAccessBitBufCanCopy__ = &__nvoc_up_thunk_RsResource_vidmemAccessBitBufCanCopy;
 
-    pThis->__vidmemAccessBitBufGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_vidmemAccessBitBufGetMemoryMappingDescriptor;
+    // vidmemAccessBitBufIsDuplicate -- virtual inherited (res) base (gpures)
+    pThis->__vidmemAccessBitBufIsDuplicate__ = &__nvoc_up_thunk_RsResource_vidmemAccessBitBufIsDuplicate;
 
-    pThis->__vidmemAccessBitBufControlFilter__ = &__nvoc_thunk_RsResource_vidmemAccessBitBufControlFilter;
+    // vidmemAccessBitBufPreDestruct -- virtual inherited (res) base (gpures)
+    pThis->__vidmemAccessBitBufPreDestruct__ = &__nvoc_up_thunk_RsResource_vidmemAccessBitBufPreDestruct;
 
-    pThis->__vidmemAccessBitBufUnregisterEvent__ = &__nvoc_thunk_Notifier_vidmemAccessBitBufUnregisterEvent;
+    // vidmemAccessBitBufControlFilter -- virtual inherited (res) base (gpures)
+    pThis->__vidmemAccessBitBufControlFilter__ = &__nvoc_up_thunk_RsResource_vidmemAccessBitBufControlFilter;
 
-    pThis->__vidmemAccessBitBufControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_vidmemAccessBitBufControlSerialization_Prologue;
+    // vidmemAccessBitBufIsPartialUnmapSupported -- inline virtual inherited (res) base (gpures) body
+    pThis->__vidmemAccessBitBufIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_vidmemAccessBitBufIsPartialUnmapSupported;
 
-    pThis->__vidmemAccessBitBufCanCopy__ = &__nvoc_thunk_RsResource_vidmemAccessBitBufCanCopy;
+    // vidmemAccessBitBufMapTo -- virtual inherited (res) base (gpures)
+    pThis->__vidmemAccessBitBufMapTo__ = &__nvoc_up_thunk_RsResource_vidmemAccessBitBufMapTo;
 
-    pThis->__vidmemAccessBitBufIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_vidmemAccessBitBufIsPartialUnmapSupported;
+    // vidmemAccessBitBufUnmapFrom -- virtual inherited (res) base (gpures)
+    pThis->__vidmemAccessBitBufUnmapFrom__ = &__nvoc_up_thunk_RsResource_vidmemAccessBitBufUnmapFrom;
 
-    pThis->__vidmemAccessBitBufPreDestruct__ = &__nvoc_thunk_RsResource_vidmemAccessBitBufPreDestruct;
+    // vidmemAccessBitBufGetRefCount -- virtual inherited (res) base (gpures)
+    pThis->__vidmemAccessBitBufGetRefCount__ = &__nvoc_up_thunk_RsResource_vidmemAccessBitBufGetRefCount;
 
-    pThis->__vidmemAccessBitBufIsDuplicate__ = &__nvoc_thunk_RsResource_vidmemAccessBitBufIsDuplicate;
+    // vidmemAccessBitBufAddAdditionalDependants -- virtual inherited (res) base (gpures)
+    pThis->__vidmemAccessBitBufAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_vidmemAccessBitBufAddAdditionalDependants;
 
-    pThis->__vidmemAccessBitBufControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_vidmemAccessBitBufControlSerialization_Epilogue;
+    // vidmemAccessBitBufGetNotificationListPtr -- virtual inherited (notify) base (notify)
+    pThis->__vidmemAccessBitBufGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_vidmemAccessBitBufGetNotificationListPtr;
 
-    pThis->__vidmemAccessBitBufGetNotificationListPtr__ = &__nvoc_thunk_Notifier_vidmemAccessBitBufGetNotificationListPtr;
+    // vidmemAccessBitBufGetNotificationShare -- virtual inherited (notify) base (notify)
+    pThis->__vidmemAccessBitBufGetNotificationShare__ = &__nvoc_up_thunk_Notifier_vidmemAccessBitBufGetNotificationShare;
 
-    pThis->__vidmemAccessBitBufGetNotificationShare__ = &__nvoc_thunk_Notifier_vidmemAccessBitBufGetNotificationShare;
+    // vidmemAccessBitBufSetNotificationShare -- virtual inherited (notify) base (notify)
+    pThis->__vidmemAccessBitBufSetNotificationShare__ = &__nvoc_up_thunk_Notifier_vidmemAccessBitBufSetNotificationShare;
 
-    pThis->__vidmemAccessBitBufMap__ = &__nvoc_thunk_GpuResource_vidmemAccessBitBufMap;
+    // vidmemAccessBitBufUnregisterEvent -- virtual inherited (notify) base (notify)
+    pThis->__vidmemAccessBitBufUnregisterEvent__ = &__nvoc_up_thunk_Notifier_vidmemAccessBitBufUnregisterEvent;
 
-    pThis->__vidmemAccessBitBufAccessCallback__ = &__nvoc_thunk_RmResource_vidmemAccessBitBufAccessCallback;
-}
+    // vidmemAccessBitBufGetOrAllocNotifShare -- virtual inherited (notify) base (notify)
+    pThis->__vidmemAccessBitBufGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_vidmemAccessBitBufGetOrAllocNotifShare;
+} // End __nvoc_init_funcTable_VidmemAccessBitBuffer_1 with approximately 31 basic block(s).
 
+
+// Initialize vtable(s) for 31 virtual method(s).
 void __nvoc_init_funcTable_VidmemAccessBitBuffer(VidmemAccessBitBuffer *pThis, RmHalspecOwner *pRmhalspecowner) {
+
+    // Initialize vtable(s) with 31 per-object function pointer(s).
     __nvoc_init_funcTable_VidmemAccessBitBuffer_1(pThis, pRmhalspecowner);
 }
 

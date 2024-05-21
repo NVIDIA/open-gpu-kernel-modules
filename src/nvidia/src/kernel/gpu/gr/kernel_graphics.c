@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -49,20 +49,7 @@
 #include "vgpu/vgpu_events.h"
 #include "vgpu/rpc.h"
 
-#include "class/clb0c0.h"
-#include "class/clb1c0.h"
-#include "class/clc0c0.h"
-#include "class/clc1c0.h"
-#include "class/clc3c0.h"
-#include "class/clc5c0.h"
-#include "class/clc6c0.h"
-#include "class/clc7c0.h"
-#include "class/clcbc0.h"
-
-#include "class/cl0080.h"
-#include "class/cl2080.h"
 #include "class/cla06f.h"
-#include "class/cla06fsubch.h"
 #include "class/cl90f1.h" // FERMI_VASPACE_A
 #include "class/cl003e.h" // NV01_MEMORY_SYSTEM
 #include "class/cl50a0.h" // NV50_MEMORY_VIRTUAL
@@ -100,21 +87,6 @@ static NV_STATUS _kgraphicsPostSchedulingEnableHandler(OBJGPU *, void *);
 static void
 _kgraphicsInitRegistryOverrides(OBJGPU *pGpu, KernelGraphics *pKernelGraphics)
 {
-    {
-        NvU32 data;
-
-        if (osReadRegistryDword(pGpu, NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL, &data) == NV_OK)
-        {
-            if (data == NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL_DISABLE)
-            {
-                kgraphicsSetBug4208224WAREnabled(pGpu, pKernelGraphics, NV_FALSE);
-            }
-            else if (data == NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL_ENABLE)
-            {
-                kgraphicsSetBug4208224WAREnabled(pGpu, pKernelGraphics, NV_TRUE);
-            }
-        }
-    }
     return;
 }
 
@@ -327,10 +299,6 @@ kgraphicsStateInitLocked_IMPL
                                       NULL, NULL));
     }
 
-    pKernelGraphics->bug4208224Info.hClient      = NV01_NULL_OBJECT;
-    pKernelGraphics->bug4208224Info.hDeviceId    = NV01_NULL_OBJECT;
-    pKernelGraphics->bug4208224Info.hSubdeviceId = NV01_NULL_OBJECT;
-    pKernelGraphics->bug4208224Info.bConstructed = NV_FALSE;
     return NV_OK;
 }
 
@@ -381,21 +349,6 @@ kgraphicsStatePreUnload_IMPL
     NvU32 flags
 )
 {
-    if (pKernelGraphics->bug4208224Info.bConstructed)
-    {
-        RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-        NV2080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS params = {0};
-
-        params.bTeardown = NV_TRUE;
-        NV_ASSERT_OK(pRmApi->Control(pRmApi,
-                     pKernelGraphics->bug4208224Info.hClient,
-                     pKernelGraphics->bug4208224Info.hSubdeviceId,
-                     NV2080_CTRL_CMD_INTERNAL_KGR_INIT_BUG4208224_WAR,
-                     &params,
-                     sizeof(params)));
-        NV_ASSERT_OK(pRmApi->Free(pRmApi, pKernelGraphics->bug4208224Info.hClient, pKernelGraphics->bug4208224Info.hClient));
-        pKernelGraphics->bug4208224Info.bConstructed = NV_FALSE;
-    }
 
     fecsBufferUnmap(pGpu, pKernelGraphics);
 
@@ -479,8 +432,7 @@ _kgraphicsPostSchedulingEnableHandler
     KernelGraphics *pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, ((NvU32)(NvUPtr)pGrIndex));
     const KGRAPHICS_STATIC_INFO *pKernelGraphicsStaticInfo = kgraphicsGetStaticInfo(pGpu, pKernelGraphics);
 
-    // Nothing to do for non-GSPCLIENT
-    if (!IS_GSP_CLIENT(pGpu) && !kgraphicsIsBug4208224WARNeeded_HAL(pGpu, pKernelGraphics))
+    if (!IS_GSP_CLIENT(pGpu))
         return NV_OK;
 
     // Defer golden context channel creation to GPU instance configuration
@@ -511,13 +463,7 @@ _kgraphicsPostSchedulingEnableHandler
         }
     }
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kgraphicsCreateGoldenImageChannel(pGpu, pKernelGraphics));
-    if (kgraphicsIsBug4208224WARNeeded_HAL(pGpu, pKernelGraphics) && !pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_RESUME_CODEPATH))
-    {
-        return kgraphicsInitializeBug4208224WAR_HAL(pGpu, pKernelGraphics);
-    }
-
-    return NV_OK;
+    return kgraphicsCreateGoldenImageChannel(pGpu, pKernelGraphics);
 }
 
 void
@@ -1029,13 +975,6 @@ kgraphicsLoadStaticInfo_VF
 
         // Cache legacy GR mask info (i.e. GR0 with MIG disabled) to pKernelGraphicsManager->legacyFsMaskState
         kgrmgrSetLegacyKgraphicsStaticInfo(pGpu, pKernelGraphicsManager, pKernelGraphics);
-    }
-
-    // FECS ctxsw logging is consumed when profiling support is available in guest
-    if (!pVSI->vgpuStaticProperties.bProfilingTracingEnabled)
-    {
-        kgraphicsSetCtxswLoggingSupported(pGpu, pKernelGraphics, NV_FALSE);
-        NV_PRINTF(LEVEL_NOTICE, "Profiling support not requested. Disabling ctxsw logging\n");
     }
 
 cleanup :

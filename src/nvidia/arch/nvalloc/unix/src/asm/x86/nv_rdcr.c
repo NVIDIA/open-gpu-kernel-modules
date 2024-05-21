@@ -34,11 +34,4 @@ NvU32 nv_rdcr4(OBJOS *pOS)
     return (NvU32)val;
 }
 
-NvU64 nv_rdcr3(OBJOS *pOS)
-{
-    NvU64 val;
-    asm volatile ("movq %%cr3,%0" : "=r" (val));
-    return val;
-}
-
 #endif
