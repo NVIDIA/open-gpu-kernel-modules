@@ -23,7 +23,7 @@
 //
 //  File:       nvtiming_pvt.h
 //
-//  Purpose:    the private functions/structures which are only used inside 
+//  Purpose:    the private functions/structures which are only used inside
 //              the nv timing library.
 //
 //*****************************************************************************
@@ -43,6 +43,11 @@
 #endif
 
 #define nvt_assert(p) ((void)0)
+
+#ifdef DD_UNITTEST
+#undef nvt_assert(p)
+#define nvt_assert(p) ((void)0)
+#endif // DD_UNITTEST
 
 #include <stddef.h> // NULL
 
@@ -84,7 +89,7 @@ void       parseEdidHdmiForumVSDB(VSDB_DATA *pVsdb, NVT_HDMI_FORUM_INFO *pHdmiIn
 void       getEdidHDM1_4bVsdbTiming(NVT_EDID_INFO *pInfo);
 void       parseEdidHDMILLCTiming(NVT_EDID_INFO *pInfo, VSDB_DATA *pVsdb, NvU32 *pSupported, HDMI3DSUPPORTMAP * pM);
 void       parseEdidNvidiaVSDBBlock(VSDB_DATA *pVsdb, NVDA_VSDB_PARSED_INFO *vsdbInfo);
-void       parseCea861HdrStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
+void       parseCta861HdrStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
 void       parseCta861DvStaticMetadataDataBlock(VSVDB_DATA* pVsvdb, NVT_DV_STATIC_METADATA* pDvInfo);
 void       parseCta861Hdr10PlusDataBlock(VSVDB_DATA* pVsvdb, NVT_HDR10PLUS_INFO* pHdr10PlusInfo);
 void       parseCta861DIDType7VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo);

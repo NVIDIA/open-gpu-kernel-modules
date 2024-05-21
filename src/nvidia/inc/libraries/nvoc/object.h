@@ -25,6 +25,7 @@
  * This file is part of the NVOC runtime.
  */
 
+#pragma once
 #include "g_object_nvoc.h"
 
 #ifndef _NVOC_OBJECT_H_

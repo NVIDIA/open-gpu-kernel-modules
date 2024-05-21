@@ -1,6 +1,13 @@
+
 #ifndef _G_HAL_NVOC_H_
 #define _G_HAL_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,6 +36,7 @@ extern "C" {
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_hal_nvoc.h"
 
 #ifndef _OBJHAL_H_
@@ -87,11 +95,20 @@ typedef struct OBJHAL OBJHAL;
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 
+
 struct OBJHAL {
+
+    // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+
+    // Parent (i.e. superclass or base class) object pointers
     struct Object __nvoc_base_Object;
-    struct Object *__nvoc_pbase_Object;
-    struct OBJHAL *__nvoc_pbase_OBJHAL;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super
+    struct OBJHAL *__nvoc_pbase_OBJHAL;    // objhal
+
+    // Data members
     struct MODULEDESCRIPTOR moduleDescriptor;
 };
 
@@ -104,6 +121,7 @@ typedef struct OBJHAL OBJHAL;
 #define __nvoc_class_id_OBJHAL 0xe803b6
 #endif /* __nvoc_class_id_OBJHAL */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJHAL;
 
 #define __staticCast_OBJHAL(pThis) \
@@ -116,13 +134,16 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJHAL;
     ((OBJHAL*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJHAL)))
 #endif //__nvoc_hal_h_disabled
 
-
 NV_STATUS __nvoc_objCreateDynamic_OBJHAL(OBJHAL**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJHAL(OBJHAL**, Dynamic*, NvU32);
 #define __objCreate_OBJHAL(ppNewObj, pParent, createFlags) \
     __nvoc_objCreate_OBJHAL((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
+
+// Wrapper macros
+
+// Dispatch functions
 PMODULEDESCRIPTOR objhalGetModuleDescriptor_IMPL(struct OBJHAL *pHal);
 
 #ifdef __nvoc_hal_h_disabled

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -56,6 +56,8 @@ RsServer          g_resServ;
 static RM_API     g_RmApiList[RMAPI_TYPE_MAX];
 static NvBool     g_bResServInit = NV_FALSE;
 static RMAPI_LOCK g_RmApiLock;
+
+static NvU64 g_rtd3PmPathThreadId = ~0ULL;
 
 static void _rmapiInitInterface(RM_API *pRmApi, API_SECURITY_INFO *pDefaultSecurityInfo, NvBool bTlsInternal,
                                 NvBool bApiLockInternal, NvBool bGpuLockInternal);
@@ -401,76 +403,82 @@ rmapiInitLockInfo
         {
             pLockInfo->state = pCallContext->pLockInfo->state;
 
-            // If no clients are locked, then we need to acquire client locks
-            if (pCallContext->pLockInfo->pClient == NULL)
-                pLockInfo->state &= ~RM_LOCK_STATES_CLIENT_LOCK_ACQUIRED;
-
-            // If we only need one client locked
-            else if (hSecondClient == NV01_NULL_OBJECT)
+            if (!serverAllClientsLockIsOwner(&g_resServ))
             {
-                if (pCallContext->pLockInfo->pClient->hClient == hClient)
-                    pLockInfo->pClient = pCallContext->pLockInfo->pClient;
-                else if ((pCallContext->pLockInfo->pSecondClient != NULL) &&
-                         (pCallContext->pLockInfo->pSecondClient->hClient == hClient))
-                {
-                    pLockInfo->pClient = pCallContext->pLockInfo->pSecondClient;
-                }
-                else
+                // If no clients are locked, then we need to acquire client locks
+                if (pCallContext->pLockInfo->pClient == NULL)
                     pLockInfo->state &= ~RM_LOCK_STATES_CLIENT_LOCK_ACQUIRED;
-            }
 
-            // If we only have one client locked, but we need two
-            else if (pCallContext->pLockInfo->pSecondClient == NULL)
-            {
-                if ((pCallContext->pLockInfo->pClient->hClient == hClient) ||
-                     (pCallContext->pLockInfo->pClient->hClient == hSecondClient))
+                // If we only need one client locked
+                else if (hSecondClient == NV01_NULL_OBJECT)
                 {
-                    pLockInfo->pClient = pCallContext->pLockInfo->pClient;
-
-                    //
-                    // Special case: if both clients are the same -
-                    // Set both pClient's so _serverLockDualClientWithLockInfo
-                    // doesn't complain about the lock state being invalid.
-                    //
-                    if (hClient == hSecondClient)
-                        pLockInfo->pSecondClient = pCallContext->pLockInfo->pClient;
-                }
-                else
-                    pLockInfo->state &= ~RM_LOCK_STATES_CLIENT_LOCK_ACQUIRED;
-            }
-
-            // If we need two clients locked, and already have two
-            else
-            {
-                //
-                // Check whether both clients match, keep the original order of the
-                // clients (dual client locking always locks the lower numbered client
-                // handle first).
-                //
-                if (((pCallContext->pLockInfo->pClient->hClient == hClient) &&
-                     (pCallContext->pLockInfo->pSecondClient->hClient == hSecondClient)) ||
-                    ((pCallContext->pLockInfo->pClient->hClient == hSecondClient) &&
-                     (pCallContext->pLockInfo->pSecondClient->hClient == hClient)))
-                {
-                    pLockInfo->pClient = pCallContext->pLockInfo->pClient;
-                    pLockInfo->pSecondClient = pCallContext->pLockInfo->pSecondClient;
+                    if (pCallContext->pLockInfo->pClient->hClient == hClient)
+                        pLockInfo->pClient = pCallContext->pLockInfo->pClient;
+                    else if ((pCallContext->pLockInfo->pSecondClient != NULL) &&
+                             (pCallContext->pLockInfo->pSecondClient->hClient == hClient))
+                    {
+                        pLockInfo->pClient = pCallContext->pLockInfo->pSecondClient;
+                    }
+                    else
+                        pLockInfo->state &= ~RM_LOCK_STATES_CLIENT_LOCK_ACQUIRED;
                 }
 
-                // Check whether one client handle matches
-                else if ((pCallContext->pLockInfo->pClient->hClient == hClient) ||
+                // If we only have one client locked, but we need two
+                else if (pCallContext->pLockInfo->pSecondClient == NULL)
+                {
+                    if ((pCallContext->pLockInfo->pClient->hClient == hClient) ||
                          (pCallContext->pLockInfo->pClient->hClient == hSecondClient))
-                {
-                    pLockInfo->pClient = pCallContext->pLockInfo->pClient;
-                    pLockInfo->state &= ~RM_LOCK_STATES_CLIENT_LOCK_ACQUIRED;
+                    {
+                        pLockInfo->pClient = pCallContext->pLockInfo->pClient;
+
+                        //
+                        // Special case: if both clients are the same -
+                        // Set both pClient's so _serverLockDualClientWithLockInfo
+                        // doesn't complain about the lock state being invalid.
+                        //
+                        if (hClient == hSecondClient)
+                            pLockInfo->pSecondClient = pCallContext->pLockInfo->pClient;
+                    }
+                    else
+                        pLockInfo->state &= ~RM_LOCK_STATES_CLIENT_LOCK_ACQUIRED;
                 }
-                else if ((pCallContext->pLockInfo->pSecondClient->hClient == hClient) ||
-                         (pCallContext->pLockInfo->pSecondClient->hClient == hSecondClient))
-                {
-                    pLockInfo->pClient = pCallContext->pLockInfo->pSecondClient;
-                    pLockInfo->state &= ~RM_LOCK_STATES_CLIENT_LOCK_ACQUIRED;
-                }
+
+                // If we need two clients locked, and already have two
                 else
-                    pLockInfo->state &= ~RM_LOCK_STATES_CLIENT_LOCK_ACQUIRED;
+                {
+                    //
+                    // Check whether both clients match, keep the original order of the
+                    // clients (dual client locking always locks the lower numbered client
+                    // handle first).
+                    //
+                    if (((pCallContext->pLockInfo->pClient->hClient == hClient) &&
+                         (pCallContext->pLockInfo->pSecondClient->hClient ==
+                          hSecondClient)) ||
+                        ((pCallContext->pLockInfo->pClient->hClient == hSecondClient) &&
+                         (pCallContext->pLockInfo->pSecondClient->hClient == hClient)))
+                    {
+                        pLockInfo->pClient = pCallContext->pLockInfo->pClient;
+                        pLockInfo->pSecondClient = pCallContext->pLockInfo->pSecondClient;
+                    }
+
+                    // Check whether one client handle matches
+                    else if ((pCallContext->pLockInfo->pClient->hClient == hClient) ||
+                             (pCallContext->pLockInfo->pClient->hClient == hSecondClient))
+                    {
+                        pLockInfo->pClient = pCallContext->pLockInfo->pClient;
+                        pLockInfo->state &= ~RM_LOCK_STATES_CLIENT_LOCK_ACQUIRED;
+                    }
+                    else if ((pCallContext->pLockInfo->pSecondClient->hClient ==
+                              hClient) ||
+                             (pCallContext->pLockInfo->pSecondClient->hClient ==
+                              hSecondClient))
+                    {
+                        pLockInfo->pClient = pCallContext->pLockInfo->pSecondClient;
+                        pLockInfo->state &= ~RM_LOCK_STATES_CLIENT_LOCK_ACQUIRED;
+                    }
+                    else
+                        pLockInfo->state &= ~RM_LOCK_STATES_CLIENT_LOCK_ACQUIRED;
+                }
             }
         }
     }
@@ -483,84 +491,13 @@ rmapiInitLockInfo
         pLockInfo->state |= RM_LOCK_STATES_API_LOCK_ACQUIRED;
 
         //
-        // If we don't have the exact clients we need locked,
-        // and this is an internal call we MUST have the RW API lock in order
-        // to prevent the client from being modified concurrently.
+        // Don't acquire client locks if we already hold the API lock since we might've
+        // already acquired RM locks that are ordered after client locks (such as higher numbered
+        // client/GPU locks) and don't want to violate RM lock ordering.
         //
-        if (((hClient != NV01_NULL_OBJECT) && (pLockInfo->pClient == NULL)) ||
-            ((hSecondClient != NV01_NULL_OBJECT) && (pLockInfo->pSecondClient == NULL)))
+        if (rmapiLockIsOwner())
         {
-            NvBool bPrevClientsLocked = 
-                ((pCallContext != NULL &&
-                  pCallContext->pLockInfo != NULL) &&
-                 (pCallContext->pLockInfo->pClient != NULL ||
-                  pCallContext->pLockInfo->pSecondClient != NULL));
-
-            //
-            // Check for the RW API lock only if we have one or more non-internal client
-            // handles that aren't already locked. Assume that in the case of RM
-            // internal clients the caller, which can only be RM for internal clients,
-            // has checked the path's locking properly and doesn't require the RW API
-            // lock. However, ensure that at least the RO API lock is held.
-            //
-
-            // If we haven't locked either hClient or hSecondClient yet
-            if (pLockInfo->pClient == NULL)
-            {
-                //
-                // Both client handles have to be kernel only to execute with the
-                // RO API lock.
-                //
-                if (!rmclientIsKernelOnlyByHandle(hClient) ||
-                    ((hSecondClient != NV01_NULL_OBJECT) &&
-                     (!rmclientIsKernelOnlyByHandle(hSecondClient))))
-                {
-                    LOCK_ASSERT_AND_RETURN(rmapiLockIsWriteOwner());
-                }
-
-                //
-                // Require the API lock if there are previous clients locked since
-                // that will prevent us from locking any individual client objects
-                // and therefore prevent them from being freed concurrently.
-                //
-                else if (bPrevClientsLocked)
-                {
-                    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
-                }
-            }
-
-            // If we have 1 client already locked but we're using 2
-            else if ((hSecondClient != NV01_NULL_OBJECT) &&
-                     (pLockInfo->pSecondClient == NULL))  
-            {
-                NvHandle hUnlockedClient = (pLockInfo->pClient->hClient == hClient ?
-                                            hSecondClient : hClient);
-
-                //
-                // The unlocked client handle has to be unusable from user space to
-                // execute with the RO API lock.
-                //
-                if (!rmclientIsKernelOnlyByHandle(hUnlockedClient))
-                {
-                    LOCK_ASSERT_AND_RETURN(rmapiLockIsWriteOwner());
-                }
-
-                //
-                // Require the API lock if there are previous clients locked since
-                // that will prevent us from locking any individual client objects
-                // and therefore prevent them from being freed concurrently.
-                //
-                else if (bPrevClientsLocked)
-                {
-                    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
-                }
-            }
-
-            // Don't acquire client locks if we already hold the API lock.
-            if (rmapiLockIsOwner())
-            {
-                pLockInfo->flags |= RM_LOCK_FLAGS_NO_CLIENT_LOCK;
-            }
+            pLockInfo->flags |= RM_LOCK_FLAGS_NO_CLIENT_LOCK;
         }
     }
 
@@ -831,6 +768,38 @@ rmapiLockGetTimes(NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS *pParams)
     pParams->waitApiLock   = g_RmApiLock.totalWaitTime;
     pParams->holdRoApiLock = g_RmApiLock.totalRoHoldTime;
     pParams->holdRwApiLock = g_RmApiLock.totalRwHoldTime;
+}
+
+//
+// Indicates current thread is in the RTD3 PM path (rm_transition_dynamic_power) which
+// means that certain locking asserts/checks must be skipped due to inability to acquire
+// the API lock in this path.
+//
+void rmapiEnterRtd3PmPath(void)
+{
+    // RTD3 path cannot be entered without the GPU lock
+    NV_ASSERT(rmGpuLockIsOwner());
+
+    NV_ASSERT(g_rtd3PmPathThreadId == ~0ULL);
+    g_rtd3PmPathThreadId = portThreadGetCurrentThreadId();
+}
+
+//
+// Signifies that current thread is leaving the RTD3 PM path, restoring lock
+// asserting/checking behavior to normal.
+//
+void rmapiLeaveRtd3PmPath(void)
+{
+    NV_ASSERT(rmapiInRtd3PmPath());
+    g_rtd3PmPathThreadId = ~0ULL;
+}
+
+//
+// Checks if current thread is currently running in the RTD3 PM path.
+//
+NvBool rmapiInRtd3PmPath(void)
+{
+    return (g_rtd3PmPathThreadId == portThreadGetCurrentThreadId());
 }
 
 //

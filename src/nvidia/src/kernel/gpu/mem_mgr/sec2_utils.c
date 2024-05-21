@@ -221,8 +221,6 @@ sec2utilsConstruct_IMPL
     pChannel->type = SWL_SCRUBBER_CHANNEL;
     pChannel->engineType = RM_ENGINE_TYPE_SEC2;
 
-    pChannel->bSecure = NV_TRUE;
-
     // Detect if we can enable fast scrub on this channel
     NV_ASSERT_OK_OR_GOTO(status, _sec2GetClass(pGpu, &pSec2Utils->sec2Class), free_client);
     pChannel->sec2Class = pSec2Utils->sec2Class;

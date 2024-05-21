@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -942,6 +942,10 @@ kgspService_TU102
 
         kgspDumpGspLogs(pKernelGsp, NV_FALSE);
         (void)kgspHealthCheck_HAL(pGpu, pKernelGsp);
+#if defined(DEBUG)
+        NV_PRINTF(LEVEL_ERROR, "GSP-RM entered into ICD\n");
+        DBG_BREAKPOINT();
+#endif
     }
     if (intrStatus & DRF_DEF(_PFALCON, _FALCON_IRQSTAT, _SWGEN0, _TRUE))
     {

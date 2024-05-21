@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -67,7 +67,7 @@ static NV_STATUS _class9074TimerCallback
 (
     OBJGPU  *pGpu,
     OBJTMR  *pTmr,
-    void    *pContext
+    TMR_EVENT *pTmrEvent
 );
 
 //---------------------------------------------------------------------------
@@ -212,9 +212,9 @@ _9074TimedSemRequest
     // Schedule the callback when entry was added to an empty list.
     if (listCount(&pTimedSemSw->entryList) == 1)
     {
-        tmrScheduleCallbackAbs(pTmr, _class9074TimerCallback, pObject,
-            pTimedSemEntry->WaitTimestamp, TMR_FLAG_RELEASE_SEMAPHORE,
-            staticCast(pTimedSemSw, ChannelDescendant)->pKernelChannel->ChID);
+        tmrEventScheduleAbs(pTmr,
+            pTimedSemSw->pTmrEvent,
+            pTimedSemEntry->WaitTimestamp);
     }
 
     return status;
@@ -234,6 +234,11 @@ tsemaConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
+    ChannelDescendant *pChannelDescendant = staticCast(pTimedSemSw, ChannelDescendant);
+    OBJTMR            *pTmr = GPU_GET_TIMER(GPU_RES_GET_GPU(pChannelDescendant));
+
+    tmrEventCreate(pTmr, &pTimedSemSw->pTmrEvent, _class9074TimerCallback, pChannelDescendant, TMR_FLAG_RECUR);
+
     listInit(&pTimedSemSw->entryList, portMemAllocatorGetGlobalNonPaged());
 
     return NV_OK;
@@ -248,7 +253,8 @@ tsemaDestruct_IMPL
     ChannelDescendant      *pChannelDescendant = staticCast(pTimedSemSw, ChannelDescendant);
     OBJTMR                 *pTmr = GPU_GET_TIMER(GPU_RES_GET_GPU(pChannelDescendant));
 
-    tmrCancelCallback(pTmr, pChannelDescendant);
+    tmrEventDestroy(pTmr, pTimedSemSw->pTmrEvent);
+    pTimedSemSw->pTmrEvent = NULL;
 
     chandesIsolateOnDestruct(pChannelDescendant);
 
@@ -270,7 +276,6 @@ tsemaCtrlCmdFlush_IMPL
 )
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pTimedSemaSwObject);
-    ChannelDescendant *pObject = staticCast(pTimedSemaSwObject, ChannelDescendant);
 
     if (pFlushParams->isFlushing) {
         pTimedSemaSwObject->Flags |= F_FLUSHING;
@@ -286,8 +291,8 @@ tsemaCtrlCmdFlush_IMPL
         tmrGetCurrentTime(pTmr, &pTimedSemaSwObject->FlushLimitTimestamp);
         pTimedSemaSwObject->FlushLimitTimestamp += pFlushParams->maxFlushTime;
 
-        tmrCancelCallback(pTmr, pObject);
-        _class9074TimerCallback(pGpu, pTmr, pObject);
+        tmrEventCancel(pTmr, pTimedSemaSwObject->pTmrEvent);
+        _class9074TimerCallback(pGpu, pTmr, pTimedSemaSwObject->pTmrEvent);
     }
 
     return NV_OK;
@@ -538,10 +543,10 @@ static NV_STATUS _class9074TimerCallback
 (
     OBJGPU  *pGpu,
     OBJTMR  *pTmr,
-    void    *pContext
+    TMR_EVENT *pTmrEvent
 )
 {
-    ChannelDescendant *pObject = pContext;
+    ChannelDescendant *pObject = pTmrEvent->pUserData;
     PGF100_TIMED_SEM_SW_OBJECT pTimedSemSw = dynamicCast(pObject, TimedSemaSwObject);
     PGF100_TIMED_SEM_ENTRY     pTimedSemEntry = NULL;
     PGF100_TIMED_SEM_ENTRY     pTimedSemEntryNext = NULL;
@@ -582,9 +587,9 @@ static NV_STATUS _class9074TimerCallback
     // Schedule the callback for entry at the head of the queue.
     if (pTimedSemEntry != NULL)
     {
-        tmrScheduleCallbackAbs(pTmr, _class9074TimerCallback, pObject,
-            pTimedSemEntry->WaitTimestamp, TMR_FLAG_RELEASE_SEMAPHORE,
-            staticCast(pTimedSemSw, ChannelDescendant)->pKernelChannel->ChID);
+        tmrEventScheduleAbs(pTmr,
+            pTimedSemSw->pTmrEvent,
+            pTimedSemEntry->WaitTimestamp);
     }
 
     return status;
@@ -614,6 +619,16 @@ NV_STATUS tsemaGetSwMethods_IMPL
     *ppMethods = GF100TimedSemSwMethods;
     *pNumMethods = NV_ARRAY_ELEMENTS(GF100TimedSemSwMethods);
     return NV_OK;
+}
+
+NvBool
+tsemaCheckCallbackReleaseSem_IMPL
+(
+    TimedSemaSwObject *pTimedSemSw
+)
+{
+    OBJTMR *pTmr = GPU_GET_TIMER(GPU_RES_GET_GPU(pTimedSemSw));
+    return tmrEventOnList(pTmr, pTimedSemSw->pTmrEvent);
 }
 
 NV_STATUS

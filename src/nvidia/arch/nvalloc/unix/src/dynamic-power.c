@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -565,134 +565,42 @@ subdeviceCtrlCmdOsUnixAudioDynamicPower_IMPL
 }
 
 /*!
- * @brief: Function to indicate if Video Memory is powered off or not by
- * checking if GPU is in GCOFF state.
- *
- * @param[in]   sp     nvidia_stack_t pointer.
- * @param[in]   pNv    nv_state_t pointer.
- *
- * @return      String indicating Video Memory power status.
- */
-
-const char* NV_API_CALL rm_get_vidmem_power_status(
-    nvidia_stack_t *sp,
-    nv_state_t     *pNv
-)
-{
-    THREAD_STATE_NODE threadState;
-    void              *fp;
-    GPU_MASK          gpuMask;
-    const char        *pVidmemPowerStatus = "?";
-
-    NV_ENTER_RM_RUNTIME(sp,fp);
-    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
-
-    // LOCK: acquire API lock
-    if ((rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DYN_POWER)) == NV_OK)
-    {
-        OBJGPU *pGpu = NV_GET_NV_PRIV_PGPU(pNv);
-
-        // LOCK: acquire per device lock
-        if ((pGpu != NULL) &&
-           ((rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_SUBDEVICE,
-                                   GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DYN_POWER,
-                                   &gpuMask)) == NV_OK))
-        {
-            if (pGpu->getProperty(pGpu, PDB_PROP_GPU_GCOFF_STATE_ENTERED))
-            {
-                pVidmemPowerStatus = "Off";
-            }
-            else
-            {
-                pVidmemPowerStatus = "Active";
-            }
-
-            // UNLOCK: release per device lock
-            rmGpuGroupLockRelease(gpuMask, GPUS_LOCK_FLAGS_NONE);
-        }
-
-        // UNLOCK: release API lock
-        rmapiLockRelease();
-    }
-
-    threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
-    NV_EXIT_RM_RUNTIME(sp,fp);
-
-    return pVidmemPowerStatus;
-}
-
-/*!
  * @brief: Function to indicate if GC6/GC-OFF is supported
  * or not on the SKU.
  *
- * @param[in]   sp             nvidia_stack_t pointer.
- * @param[in]   pNv            nv_state_t pointer.
+ * @param[in]   pGpu           OBJGPU pointer.
  * @param[in]   bGcxTypeGc6    If true, returns string indicating GC6 support
  *                             otherwise returns GC-OFF support.
  *
  * @return      String indicating GC6/GC-OFF support status.
  */
-const char* NV_API_CALL rm_get_gpu_gcx_support(
-    nvidia_stack_t *sp,
-    nv_state_t     *pNv,
-    NvBool         bGcxTypeGC6
+static const char* RmGetGpuGcxSupport(
+    OBJGPU *pGpu,
+    NvBool  bGcxTypeGC6
 )
 {
-    THREAD_STATE_NODE threadState;
-    void              *fp;
-    GPU_MASK          gpuMask;
-    const char        *pSupported = "?";
-
-    NV_ENTER_RM_RUNTIME(sp,fp);
-    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
-
-    // LOCK: acquire API lock
-    if ((rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DYN_POWER)) == NV_OK)
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_UNIX_DYNAMIC_POWER_SUPPORTED))
     {
-        OBJGPU *pGpu = NV_GET_NV_PRIV_PGPU(pNv);
-
-        // LOCK: acquire per device lock
-        if ((pGpu != NULL) &&
-            ((rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_SUBDEVICE,
-                                    GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DYN_POWER,
-                                    &gpuMask)) == NV_OK))
-        {
-            pSupported = "Not Supported";
-
-            if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_UNIX_DYNAMIC_POWER_SUPPORTED))
-            {
-                goto done;
-            }
-
-            if (bGcxTypeGC6)
-            {
-                if (pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GC6_SUPPORTED))
-                {
-                    pSupported = "Supported";
-                }
-            }
-            else
-            {
-                if ((pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GCOFF_SUPPORTED)) ||
-                    (pGpu->getProperty(pGpu, PDB_PROP_GPU_LEGACY_GCOFF_SUPPORTED)))
-                {
-                    pSupported = "Supported";
-                }
-            }
-
-done:
-            // UNLOCK: release per device lock
-            rmGpuGroupLockRelease(gpuMask, GPUS_LOCK_FLAGS_NONE);
-        }
-
-        //UNLOCK: release API lock
-        rmapiLockRelease();
+        return "Not Supported";
     }
 
-    threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
-    NV_EXIT_RM_RUNTIME(sp,fp);
+    if (bGcxTypeGC6)
+    {
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GC6_SUPPORTED))
+        {
+            return "Supported";
+        }
+    }
+    else
+    {
+        if ((pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GCOFF_SUPPORTED)) ||
+            (pGpu->getProperty(pGpu, PDB_PROP_GPU_LEGACY_GCOFF_SUPPORTED)))
+        {
+            return "Supported";
+        }
+    }
 
-    return pSupported;
+    return "Not Supported";
 }
 
 /*!
@@ -2555,7 +2463,11 @@ NV_STATUS NV_API_CALL rm_transition_dynamic_power(
     status = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DYN_POWER);
     if (status == NV_OK)
     {
+        rmapiEnterRtd3PmPath();
+
         status = RmTransitionDynamicPower(pGpu, bEnter, bTryAgain);
+
+        rmapiLeaveRtd3PmPath();
 
         // UNLOCK: release GPUs lock
         rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
@@ -2632,64 +2544,40 @@ void RmHandleDisplayChange(
 /*!
  * @brief: Function to query Dynamic Power Management
  *
- * @param[in]   sp     nvidia_stack_t pointer.
- * @param[in]   pNv    nv_state_t pointer.
+ * @param[in]   nvp     nv_priv_t pointer.
  *
  * @return      String indicating Dynamic Power Management status.
  */
-const char* NV_API_CALL rm_get_dynamic_power_management_status(
-    nvidia_stack_t *sp,
-    nv_state_t     *pNv
+static const char* RmGetDynamicPowerManagementStatus(
+        nv_priv_t *nvp
 )
 {
-    void              *fp;
-    nv_priv_t         *nvp = NV_GET_NV_PRIV(pNv);
-    const char        *returnString = "?";
-
-    NV_ENTER_RM_RUNTIME(sp,fp);
-
-    // LOCK: acquire API lock
-    if ((rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DYN_POWER)) == NV_OK)
+   /*
+    * If the platform/driver does not support Dynamic Power Management,
+    * we set mode as NV_DYNAMIC_PM_NEVER. Hence, after RmInit if the
+    * mode is still NV_DYNAMIC_PM_FINE, we are sure that it is
+    * supported and enabled. Also see NOTE.
+    */
+    if (nvp->dynamic_power.mode == NV_DYNAMIC_PM_FINE)
     {
-        OBJGPU *pGpu = NV_GET_NV_PRIV_PGPU(pNv);
+        return "Enabled (fine-grained)";
+    }
+    else if (nvp->dynamic_power.mode == NV_DYNAMIC_PM_COARSE)
+    {
+        return "Enabled (coarse-grained)";
+    }
+    else if (nvp->dynamic_power.mode == NV_DYNAMIC_PM_NEVER)
+    {
 
-        // Check if RM is inited
-        if (pGpu != NULL)
-        {
-           /*
-            * If the platform/driver does not support Dynamic Power Management,
-            * we set mode as NV_DYNAMIC_PM_NEVER. Hence, after RmInit if the
-            * mode is still NV_DYNAMIC_PM_FINE, we are sure that it is
-            * supported and enabled. Also see NOTE.
-            */
-            if (nvp->dynamic_power.mode == NV_DYNAMIC_PM_FINE)
-            {
-                returnString = "Enabled (fine-grained)";
-            }
-            else if (nvp->dynamic_power.mode == NV_DYNAMIC_PM_COARSE)
-            {
-                returnString = "Enabled (coarse-grained)";
-            }
-            else if (nvp->dynamic_power.mode == NV_DYNAMIC_PM_NEVER)
-            {
-
-                if (nvp->dynamic_power.dynamic_power_regkey ==
-                    NV_REG_DYNAMIC_POWER_MANAGEMENT_NEVER)
-                    returnString = "Disabled";
-                else if (nvp->dynamic_power.dynamic_power_regkey ==
-                         NV_REG_DYNAMIC_POWER_MANAGEMENT_DEFAULT)
-                    returnString = "Disabled by default";
-                else
-                    returnString = "Not supported";
-            }
-        }
-        //UNLOCK: release API lock
-        rmapiLockRelease();
+        if (nvp->dynamic_power.dynamic_power_regkey ==
+            NV_REG_DYNAMIC_POWER_MANAGEMENT_NEVER)
+            return "Disabled";
+        else if (nvp->dynamic_power.dynamic_power_regkey ==
+                 NV_REG_DYNAMIC_POWER_MANAGEMENT_DEFAULT)
+            return "Disabled by default";
     }
 
-    NV_EXIT_RM_RUNTIME(sp,fp);
-
-    return returnString;
+    return "Not supported";
 }
 
 static void RmHandleIdleSustained(
@@ -2789,3 +2677,60 @@ RmInitS0ixPowerManagement(
         }
     }
 }
+
+void NV_API_CALL rm_get_power_info(
+    nvidia_stack_t  *sp,
+    nv_state_t      *pNv,
+    nv_power_info_t *powerInfo
+)
+{
+    THREAD_STATE_NODE threadState;
+    void              *fp;
+    GPU_MASK          gpuMask;
+    const char       *pVidmemPowerStatus = "?";
+    const char       *pGc6Supported = "?";
+    const char       *pGcoffSupported = "?";
+    const char       *pDynamicPowerStatus = "?";
+    const char       *pS0ixStatus = "?";
+
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
+
+    // LOCK: acquire API lock
+    if ((rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DYN_POWER)) == NV_OK)
+    {
+        OBJGPU *pGpu = NV_GET_NV_PRIV_PGPU(pNv);
+
+        // LOCK: acquire per device lock
+        if ((pGpu != NULL) &&
+           ((rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_SUBDEVICE,
+                                   GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DYN_POWER,
+                                   &gpuMask)) == NV_OK))
+        {
+            nv_priv_t *pNvp = NV_GET_NV_PRIV(pNv);
+
+            pVidmemPowerStatus = pGpu->getProperty(pGpu, PDB_PROP_GPU_GCOFF_STATE_ENTERED) ?
+                                    "Off" : "Active";
+            pDynamicPowerStatus = RmGetDynamicPowerManagementStatus(pNvp);
+            pGc6Supported = RmGetGpuGcxSupport(pGpu, NV_TRUE);
+            pGcoffSupported = RmGetGpuGcxSupport(pGpu, NV_FALSE);
+            pS0ixStatus = pNvp->s0ix_pm_enabled ? "Enabled" : "Disabled";
+
+            // UNLOCK: release per device lock
+            rmGpuGroupLockRelease(gpuMask, GPUS_LOCK_FLAGS_NONE);
+        }
+
+        // UNLOCK: release API lock
+        rmapiLockRelease();
+    }
+
+    threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+
+    powerInfo->vidmem_power_status = pVidmemPowerStatus;
+    powerInfo->dynamic_power_status = pDynamicPowerStatus;
+    powerInfo->gc6_support = pGc6Supported;
+    powerInfo->gcoff_support = pGcoffSupported;
+    powerInfo->s0ix_status = pS0ixStatus;
+}
+

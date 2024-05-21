@@ -111,126 +111,6 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_TimerApi =
     /*pExportInfo=*/        &__nvoc_export_info_TimerApi
 };
 
-static NV_STATUS __nvoc_thunk_TimerApi_gpuresGetRegBaseOffsetAndSize(struct GpuResource *pTimerApi, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return tmrapiGetRegBaseOffsetAndSize((struct TimerApi *)(((unsigned char *)pTimerApi) - __nvoc_rtti_TimerApi_GpuResource.offset), pGpu, pOffset, pSize);
-}
-
-static NvBool __nvoc_thunk_GpuResource_tmrapiShareCallback(struct TimerApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_TimerApi_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_tmrapiCheckMemInterUnmap(struct TimerApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_TimerApi_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_Notifier_tmrapiGetOrAllocNotifShare(struct TimerApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_TimerApi_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_tmrapiMapTo(struct TimerApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_tmrapiGetMapAddrSpace(struct TimerApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_TimerApi_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static void __nvoc_thunk_Notifier_tmrapiSetNotificationShare(struct TimerApi *pNotifier, struct NotifShare *pNotifShare) {
-    notifySetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_TimerApi_Notifier.offset), pNotifShare);
-}
-
-static NvU32 __nvoc_thunk_RsResource_tmrapiGetRefCount(struct TimerApi *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_tmrapiAddAdditionalDependants(struct RsClient *pClient, struct TimerApi *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RsResource.offset), pReference);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_tmrapiControl_Prologue(struct TimerApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_tmrapiInternalControlForward(struct TimerApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_TimerApi_GpuResource.offset), command, pParams, size);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_tmrapiUnmapFrom(struct TimerApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RsResource.offset), pParams);
-}
-
-static void __nvoc_thunk_RmResource_tmrapiControl_Epilogue(struct TimerApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_tmrapiGetInternalObjectHandle(struct TimerApi *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_TimerApi_GpuResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_tmrapiControl(struct TimerApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_TimerApi_GpuResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_tmrapiUnmap(struct TimerApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_TimerApi_GpuResource.offset), pCallContext, pCpuMapping);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_tmrapiGetMemInterMapParams(struct TimerApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_TimerApi_RmResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_tmrapiGetMemoryMappingDescriptor(struct TimerApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_TimerApi_RmResource.offset), ppMemDesc);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_tmrapiControlFilter(struct TimerApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RsResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_Notifier_tmrapiUnregisterEvent(struct TimerApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_TimerApi_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_tmrapiControlSerialization_Prologue(struct TimerApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NvBool __nvoc_thunk_RsResource_tmrapiCanCopy(struct TimerApi *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RsResource.offset));
-}
-
-static NvBool __nvoc_thunk_RsResource_tmrapiIsPartialUnmapSupported(struct TimerApi *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_tmrapiPreDestruct(struct TimerApi *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_tmrapiIsDuplicate(struct TimerApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RsResource.offset), hMemory, pDuplicate);
-}
-
-static void __nvoc_thunk_RmResource_tmrapiControlSerialization_Epilogue(struct TimerApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RmResource.offset), pCallContext, pParams);
-}
-
-static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_tmrapiGetNotificationListPtr(struct TimerApi *pNotifier) {
-    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_TimerApi_Notifier.offset));
-}
-
-static struct NotifShare *__nvoc_thunk_Notifier_tmrapiGetNotificationShare(struct TimerApi *pNotifier) {
-    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_TimerApi_Notifier.offset));
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_tmrapiMap(struct TimerApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return gpuresMap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_TimerApi_GpuResource.offset), pCallContext, pParams, pCpuMapping);
-}
-
-static NvBool __nvoc_thunk_RmResource_tmrapiAccessCallback(struct TimerApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
-}
-
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
@@ -238,12 +118,12 @@ static NvBool __nvoc_thunk_RmResource_tmrapiAccessCallback(struct TimerApi *pRes
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_TimerApi[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) tmrapiCtrlCmdTmrSetAlarmNotify_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x40110u,
         /*paramSize=*/  sizeof(NV0004_CTRL_TMR_SET_ALARM_NOTIFY_PARAMS),
@@ -254,6 +134,162 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_TimerApi
     },
 
 };
+
+// 1 down-thunk(s) defined to bridge methods in TimerApi from superclasses
+
+// tmrapiGetRegBaseOffsetAndSize: virtual override (gpures) base (gpures)
+static NV_STATUS __nvoc_down_thunk_TimerApi_gpuresGetRegBaseOffsetAndSize(struct GpuResource *pTimerApi, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return tmrapiGetRegBaseOffsetAndSize((struct TimerApi *)(((unsigned char *) pTimerApi) - __nvoc_rtti_TimerApi_GpuResource.offset), pGpu, pOffset, pSize);
+}
+
+
+// 29 up-thunk(s) defined to bridge methods in TimerApi to superclasses
+
+// tmrapiControl: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_tmrapiControl(struct TimerApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_TimerApi_GpuResource.offset), pCallContext, pParams);
+}
+
+// tmrapiMap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_tmrapiMap(struct TimerApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_TimerApi_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+}
+
+// tmrapiUnmap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_tmrapiUnmap(struct TimerApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_TimerApi_GpuResource.offset), pCallContext, pCpuMapping);
+}
+
+// tmrapiShareCallback: virtual inherited (gpures) base (gpures)
+static NvBool __nvoc_up_thunk_GpuResource_tmrapiShareCallback(struct TimerApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_TimerApi_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+}
+
+// tmrapiGetMapAddrSpace: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_tmrapiGetMapAddrSpace(struct TimerApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_TimerApi_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+// tmrapiInternalControlForward: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_tmrapiInternalControlForward(struct TimerApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_TimerApi_GpuResource.offset), command, pParams, size);
+}
+
+// tmrapiGetInternalObjectHandle: virtual inherited (gpures) base (gpures)
+static NvHandle __nvoc_up_thunk_GpuResource_tmrapiGetInternalObjectHandle(struct TimerApi *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_TimerApi_GpuResource.offset));
+}
+
+// tmrapiAccessCallback: virtual inherited (rmres) base (gpures)
+static NvBool __nvoc_up_thunk_RmResource_tmrapiAccessCallback(struct TimerApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimerApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+}
+
+// tmrapiGetMemInterMapParams: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_tmrapiGetMemInterMapParams(struct TimerApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_TimerApi_RmResource.offset), pParams);
+}
+
+// tmrapiCheckMemInterUnmap: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_tmrapiCheckMemInterUnmap(struct TimerApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_TimerApi_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+// tmrapiGetMemoryMappingDescriptor: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_tmrapiGetMemoryMappingDescriptor(struct TimerApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_TimerApi_RmResource.offset), ppMemDesc);
+}
+
+// tmrapiControlSerialization_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_tmrapiControlSerialization_Prologue(struct TimerApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimerApi_RmResource.offset), pCallContext, pParams);
+}
+
+// tmrapiControlSerialization_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_tmrapiControlSerialization_Epilogue(struct TimerApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimerApi_RmResource.offset), pCallContext, pParams);
+}
+
+// tmrapiControl_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_tmrapiControl_Prologue(struct TimerApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimerApi_RmResource.offset), pCallContext, pParams);
+}
+
+// tmrapiControl_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_tmrapiControl_Epilogue(struct TimerApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimerApi_RmResource.offset), pCallContext, pParams);
+}
+
+// tmrapiCanCopy: virtual inherited (res) base (gpures)
+static NvBool __nvoc_up_thunk_RsResource_tmrapiCanCopy(struct TimerApi *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimerApi_RsResource.offset));
+}
+
+// tmrapiIsDuplicate: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_tmrapiIsDuplicate(struct TimerApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimerApi_RsResource.offset), hMemory, pDuplicate);
+}
+
+// tmrapiPreDestruct: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_tmrapiPreDestruct(struct TimerApi *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimerApi_RsResource.offset));
+}
+
+// tmrapiControlFilter: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_tmrapiControlFilter(struct TimerApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimerApi_RsResource.offset), pCallContext, pParams);
+}
+
+// tmrapiIsPartialUnmapSupported: inline virtual inherited (res) base (gpures) body
+static NvBool __nvoc_up_thunk_RsResource_tmrapiIsPartialUnmapSupported(struct TimerApi *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimerApi_RsResource.offset));
+}
+
+// tmrapiMapTo: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_tmrapiMapTo(struct TimerApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimerApi_RsResource.offset), pParams);
+}
+
+// tmrapiUnmapFrom: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_tmrapiUnmapFrom(struct TimerApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimerApi_RsResource.offset), pParams);
+}
+
+// tmrapiGetRefCount: virtual inherited (res) base (gpures)
+static NvU32 __nvoc_up_thunk_RsResource_tmrapiGetRefCount(struct TimerApi *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimerApi_RsResource.offset));
+}
+
+// tmrapiAddAdditionalDependants: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_tmrapiAddAdditionalDependants(struct RsClient *pClient, struct TimerApi *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_TimerApi_RsResource.offset), pReference);
+}
+
+// tmrapiGetNotificationListPtr: virtual inherited (notify) base (notify)
+static PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_tmrapiGetNotificationListPtr(struct TimerApi *pNotifier) {
+    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_TimerApi_Notifier.offset));
+}
+
+// tmrapiGetNotificationShare: virtual inherited (notify) base (notify)
+static struct NotifShare * __nvoc_up_thunk_Notifier_tmrapiGetNotificationShare(struct TimerApi *pNotifier) {
+    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_TimerApi_Notifier.offset));
+}
+
+// tmrapiSetNotificationShare: virtual inherited (notify) base (notify)
+static void __nvoc_up_thunk_Notifier_tmrapiSetNotificationShare(struct TimerApi *pNotifier, struct NotifShare *pNotifShare) {
+    notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_TimerApi_Notifier.offset), pNotifShare);
+}
+
+// tmrapiUnregisterEvent: virtual inherited (notify) base (notify)
+static NV_STATUS __nvoc_up_thunk_Notifier_tmrapiUnregisterEvent(struct TimerApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
+    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_TimerApi_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
+}
+
+// tmrapiGetOrAllocNotifShare: virtual inherited (notify) base (notify)
+static NV_STATUS __nvoc_up_thunk_Notifier_tmrapiGetOrAllocNotifShare(struct TimerApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
+    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_TimerApi_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
+}
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_TimerApi = 
 {
@@ -298,77 +334,112 @@ __nvoc_ctor_TimerApi_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_TimerApi_1(TimerApi *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // tmrapiGetRegBaseOffsetAndSize -- virtual override (gpures) base (gpures)
     pThis->__tmrapiGetRegBaseOffsetAndSize__ = &tmrapiGetRegBaseOffsetAndSize_IMPL;
+    pThis->__nvoc_base_GpuResource.__gpuresGetRegBaseOffsetAndSize__ = &__nvoc_down_thunk_TimerApi_gpuresGetRegBaseOffsetAndSize;
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // tmrapiCtrlCmdTmrSetAlarmNotify -- exported (id=0x40110)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__tmrapiCtrlCmdTmrSetAlarmNotify__ = &tmrapiCtrlCmdTmrSetAlarmNotify_IMPL;
 #endif
 
-    pThis->__nvoc_base_GpuResource.__gpuresGetRegBaseOffsetAndSize__ = &__nvoc_thunk_TimerApi_gpuresGetRegBaseOffsetAndSize;
+    // tmrapiControl -- virtual inherited (gpures) base (gpures)
+    pThis->__tmrapiControl__ = &__nvoc_up_thunk_GpuResource_tmrapiControl;
 
-    pThis->__tmrapiShareCallback__ = &__nvoc_thunk_GpuResource_tmrapiShareCallback;
+    // tmrapiMap -- virtual inherited (gpures) base (gpures)
+    pThis->__tmrapiMap__ = &__nvoc_up_thunk_GpuResource_tmrapiMap;
 
-    pThis->__tmrapiCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_tmrapiCheckMemInterUnmap;
+    // tmrapiUnmap -- virtual inherited (gpures) base (gpures)
+    pThis->__tmrapiUnmap__ = &__nvoc_up_thunk_GpuResource_tmrapiUnmap;
 
-    pThis->__tmrapiGetOrAllocNotifShare__ = &__nvoc_thunk_Notifier_tmrapiGetOrAllocNotifShare;
+    // tmrapiShareCallback -- virtual inherited (gpures) base (gpures)
+    pThis->__tmrapiShareCallback__ = &__nvoc_up_thunk_GpuResource_tmrapiShareCallback;
 
-    pThis->__tmrapiMapTo__ = &__nvoc_thunk_RsResource_tmrapiMapTo;
+    // tmrapiGetMapAddrSpace -- virtual inherited (gpures) base (gpures)
+    pThis->__tmrapiGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_tmrapiGetMapAddrSpace;
 
-    pThis->__tmrapiGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_tmrapiGetMapAddrSpace;
+    // tmrapiInternalControlForward -- virtual inherited (gpures) base (gpures)
+    pThis->__tmrapiInternalControlForward__ = &__nvoc_up_thunk_GpuResource_tmrapiInternalControlForward;
 
-    pThis->__tmrapiSetNotificationShare__ = &__nvoc_thunk_Notifier_tmrapiSetNotificationShare;
+    // tmrapiGetInternalObjectHandle -- virtual inherited (gpures) base (gpures)
+    pThis->__tmrapiGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_tmrapiGetInternalObjectHandle;
 
-    pThis->__tmrapiGetRefCount__ = &__nvoc_thunk_RsResource_tmrapiGetRefCount;
+    // tmrapiAccessCallback -- virtual inherited (rmres) base (gpures)
+    pThis->__tmrapiAccessCallback__ = &__nvoc_up_thunk_RmResource_tmrapiAccessCallback;
 
-    pThis->__tmrapiAddAdditionalDependants__ = &__nvoc_thunk_RsResource_tmrapiAddAdditionalDependants;
+    // tmrapiGetMemInterMapParams -- virtual inherited (rmres) base (gpures)
+    pThis->__tmrapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_tmrapiGetMemInterMapParams;
 
-    pThis->__tmrapiControl_Prologue__ = &__nvoc_thunk_RmResource_tmrapiControl_Prologue;
+    // tmrapiCheckMemInterUnmap -- virtual inherited (rmres) base (gpures)
+    pThis->__tmrapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_tmrapiCheckMemInterUnmap;
 
-    pThis->__tmrapiInternalControlForward__ = &__nvoc_thunk_GpuResource_tmrapiInternalControlForward;
+    // tmrapiGetMemoryMappingDescriptor -- virtual inherited (rmres) base (gpures)
+    pThis->__tmrapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_tmrapiGetMemoryMappingDescriptor;
 
-    pThis->__tmrapiUnmapFrom__ = &__nvoc_thunk_RsResource_tmrapiUnmapFrom;
+    // tmrapiControlSerialization_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__tmrapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_tmrapiControlSerialization_Prologue;
 
-    pThis->__tmrapiControl_Epilogue__ = &__nvoc_thunk_RmResource_tmrapiControl_Epilogue;
+    // tmrapiControlSerialization_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__tmrapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_tmrapiControlSerialization_Epilogue;
 
-    pThis->__tmrapiGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_tmrapiGetInternalObjectHandle;
+    // tmrapiControl_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__tmrapiControl_Prologue__ = &__nvoc_up_thunk_RmResource_tmrapiControl_Prologue;
 
-    pThis->__tmrapiControl__ = &__nvoc_thunk_GpuResource_tmrapiControl;
+    // tmrapiControl_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__tmrapiControl_Epilogue__ = &__nvoc_up_thunk_RmResource_tmrapiControl_Epilogue;
 
-    pThis->__tmrapiUnmap__ = &__nvoc_thunk_GpuResource_tmrapiUnmap;
+    // tmrapiCanCopy -- virtual inherited (res) base (gpures)
+    pThis->__tmrapiCanCopy__ = &__nvoc_up_thunk_RsResource_tmrapiCanCopy;
 
-    pThis->__tmrapiGetMemInterMapParams__ = &__nvoc_thunk_RmResource_tmrapiGetMemInterMapParams;
+    // tmrapiIsDuplicate -- virtual inherited (res) base (gpures)
+    pThis->__tmrapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_tmrapiIsDuplicate;
 
-    pThis->__tmrapiGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_tmrapiGetMemoryMappingDescriptor;
+    // tmrapiPreDestruct -- virtual inherited (res) base (gpures)
+    pThis->__tmrapiPreDestruct__ = &__nvoc_up_thunk_RsResource_tmrapiPreDestruct;
 
-    pThis->__tmrapiControlFilter__ = &__nvoc_thunk_RsResource_tmrapiControlFilter;
+    // tmrapiControlFilter -- virtual inherited (res) base (gpures)
+    pThis->__tmrapiControlFilter__ = &__nvoc_up_thunk_RsResource_tmrapiControlFilter;
 
-    pThis->__tmrapiUnregisterEvent__ = &__nvoc_thunk_Notifier_tmrapiUnregisterEvent;
+    // tmrapiIsPartialUnmapSupported -- inline virtual inherited (res) base (gpures) body
+    pThis->__tmrapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_tmrapiIsPartialUnmapSupported;
 
-    pThis->__tmrapiControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_tmrapiControlSerialization_Prologue;
+    // tmrapiMapTo -- virtual inherited (res) base (gpures)
+    pThis->__tmrapiMapTo__ = &__nvoc_up_thunk_RsResource_tmrapiMapTo;
 
-    pThis->__tmrapiCanCopy__ = &__nvoc_thunk_RsResource_tmrapiCanCopy;
+    // tmrapiUnmapFrom -- virtual inherited (res) base (gpures)
+    pThis->__tmrapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_tmrapiUnmapFrom;
 
-    pThis->__tmrapiIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_tmrapiIsPartialUnmapSupported;
+    // tmrapiGetRefCount -- virtual inherited (res) base (gpures)
+    pThis->__tmrapiGetRefCount__ = &__nvoc_up_thunk_RsResource_tmrapiGetRefCount;
 
-    pThis->__tmrapiPreDestruct__ = &__nvoc_thunk_RsResource_tmrapiPreDestruct;
+    // tmrapiAddAdditionalDependants -- virtual inherited (res) base (gpures)
+    pThis->__tmrapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_tmrapiAddAdditionalDependants;
 
-    pThis->__tmrapiIsDuplicate__ = &__nvoc_thunk_RsResource_tmrapiIsDuplicate;
+    // tmrapiGetNotificationListPtr -- virtual inherited (notify) base (notify)
+    pThis->__tmrapiGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_tmrapiGetNotificationListPtr;
 
-    pThis->__tmrapiControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_tmrapiControlSerialization_Epilogue;
+    // tmrapiGetNotificationShare -- virtual inherited (notify) base (notify)
+    pThis->__tmrapiGetNotificationShare__ = &__nvoc_up_thunk_Notifier_tmrapiGetNotificationShare;
 
-    pThis->__tmrapiGetNotificationListPtr__ = &__nvoc_thunk_Notifier_tmrapiGetNotificationListPtr;
+    // tmrapiSetNotificationShare -- virtual inherited (notify) base (notify)
+    pThis->__tmrapiSetNotificationShare__ = &__nvoc_up_thunk_Notifier_tmrapiSetNotificationShare;
 
-    pThis->__tmrapiGetNotificationShare__ = &__nvoc_thunk_Notifier_tmrapiGetNotificationShare;
+    // tmrapiUnregisterEvent -- virtual inherited (notify) base (notify)
+    pThis->__tmrapiUnregisterEvent__ = &__nvoc_up_thunk_Notifier_tmrapiUnregisterEvent;
 
-    pThis->__tmrapiMap__ = &__nvoc_thunk_GpuResource_tmrapiMap;
+    // tmrapiGetOrAllocNotifShare -- virtual inherited (notify) base (notify)
+    pThis->__tmrapiGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_tmrapiGetOrAllocNotifShare;
+} // End __nvoc_init_funcTable_TimerApi_1 with approximately 32 basic block(s).
 
-    pThis->__tmrapiAccessCallback__ = &__nvoc_thunk_RmResource_tmrapiAccessCallback;
-}
 
+// Initialize vtable(s) for 31 virtual method(s).
 void __nvoc_init_funcTable_TimerApi(TimerApi *pThis) {
+
+    // Initialize vtable(s) with 31 per-object function pointer(s).
     __nvoc_init_funcTable_TimerApi_1(pThis);
 }
 

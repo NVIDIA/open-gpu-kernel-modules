@@ -202,7 +202,7 @@ extern "C" {
 #define NV2080_NOTIFIERS_INFOROM_PBL_OBJECT_UPDATED                (161)
 #define NV2080_NOTIFIERS_LPWR_DIFR_PREFETCH_REQUEST                (162)
 #define NV2080_NOTIFIERS_SEC_FAULT_ERROR                           (163)
-#define NV2080_NOTIFIERS_POSSIBLE_ERROR                            (164)
+#define NV2080_NOTIFIERS_UNUSED_1                                  (164) // Unused
 #define NV2080_NOTIFIERS_NVLINK_INFO_LINK_UP                       (165)
 #define NV2080_NOTIFIERS_RESERVED166                               (166)
 #define NV2080_NOTIFIERS_RESERVED167                               (167)

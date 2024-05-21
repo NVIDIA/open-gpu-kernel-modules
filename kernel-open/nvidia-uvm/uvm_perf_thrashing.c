@@ -1987,20 +1987,11 @@ NV_STATUS uvm_perf_thrashing_init(void)
                                          UVM_PERF_THRASHING_PIN_THRESHOLD_DEFAULT,
                                          UVM_PERF_THRASHING_PIN_THRESHOLD_MAX);
 
-
-
-    // In Confidential Computing, the DMA path is slower due to cryptographic
-    // operations & other associated overhead. Enforce a larger window to allow
-    // the thrashing mitigation mechanisms to work properly.
-    if (g_uvm_global.conf_computing_enabled)
-        INIT_THRASHING_PARAMETER_NONZERO(uvm_perf_thrashing_lapse_usec, UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT * 10);
-    else
-        INIT_THRASHING_PARAMETER_NONZERO(uvm_perf_thrashing_lapse_usec, UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT);
+    INIT_THRASHING_PARAMETER_NONZERO(uvm_perf_thrashing_lapse_usec, UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT);
 
     INIT_THRASHING_PARAMETER_NONZERO_MAX(uvm_perf_thrashing_nap,
                                          UVM_PERF_THRASHING_NAP_DEFAULT,
                                          UVM_PERF_THRASHING_NAP_MAX);
-
 
     INIT_THRASHING_PARAMETER_NONZERO(uvm_perf_thrashing_epoch, UVM_PERF_THRASHING_EPOCH_DEFAULT);
 

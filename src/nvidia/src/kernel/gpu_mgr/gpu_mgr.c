@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -962,12 +962,12 @@ NvBool gpumgrGetRmFirmwareLogsEnabled
 
 void gpumgrGetRmFirmwarePolicy
 (
-    NvU32   chipId,
     NvU32   pmcBoot42,
     NvBool  bIsSoc,
     NvU32   enableFirmwareRegVal,
     NvBool *pbRequestFirmware,
-    NvBool *pbAllowFallbackToMonolithicRm
+    NvBool *pbAllowFallbackToMonolithicRm,
+    NvBool  bIsMcdm
 )
 {
     NvBool bFirmwareCapable = NV_FALSE;
@@ -979,9 +979,10 @@ void gpumgrGetRmFirmwarePolicy
     *pbAllowFallbackToMonolithicRm =
         !!(enableFirmwareRegVal & NV_REG_ENABLE_GPU_FIRMWARE_POLICY_ALLOW_FALLBACK);
 
-    bFirmwareCapable = gpumgrIsDeviceRmFirmwareCapable(chipId, pmcBoot42,
+    bFirmwareCapable = gpumgrIsDeviceRmFirmwareCapable(pmcBoot42,
                                                        bIsSoc,
-                                                       &bEnableByDefault);
+                                                       &bEnableByDefault,
+                                                       bIsMcdm);
 
     *pbRequestFirmware =
         (bFirmwareCapable &&
@@ -1005,9 +1006,14 @@ NvBool gpumgrIsVgxRmFirmwareCapableChip(NvU32 pmcBoot42)
     return NV_FALSE;
 }
 
-static NvBool _gpumgrIsRmFirmwareDefaultChip(NvU32 pmcBoot42)
+static NvBool _gpumgrIsMcdmRmFirmwareDefaultChip(NvU32 pmcBoot42)
 {
-    return FLD_TEST_DRF(_PMC, _BOOT_42, _ARCHITECTURE, _GH100, pmcBoot42);
+    if (FLD_TEST_DRF(_PMC, _BOOT_42, _ARCHITECTURE, _GH100, pmcBoot42))
+    {
+        return NV_TRUE;
+    }
+
+    return NV_FALSE;
 }
 
 static NvBool _gpumgrIsVgxRmFirmwareDefaultChip(NvU32 pmcBoot42)
@@ -1017,10 +1023,10 @@ static NvBool _gpumgrIsVgxRmFirmwareDefaultChip(NvU32 pmcBoot42)
 
 NvBool gpumgrIsDeviceRmFirmwareCapable
 (
-    NvU16 devId,
     NvU32 pmcBoot42,
     NvBool bIsSoc,
-    NvBool *pbEnabledByDefault
+    NvBool *pbEnabledByDefault,
+    NvBool bIsMcdm
 )
 {
     NvBool bEnabledByDefault = NV_FALSE;
@@ -1046,74 +1052,28 @@ NvBool gpumgrIsDeviceRmFirmwareCapable
     bEnabledByDefault = NV_FALSE;
     goto finish;
 #else
+    if (hypervisorIsVgxHyper())
     {
-        static const NvU16 defaultGspRmGpus[] = {
-            0x1E37, // GFN
-            0x1E38, // TU102
-            0x1EB4, // T4G
-            0x1EB8, // T4
-            0x1EB9, // T4
-
-            0x20B0, // A100
-            0x20B1, // A100
-            0x20B2, // A100
-            0x20B3, // A200
-            0x20B5, // A100 80GB
-            0x20B6, // A100
-            0x20B7, // A30
-            0x20B8, // A100X SKU230/231 Roy-100
-            0x20B9, // A30X  SKU205/206 Roy-30
-            0x20F0, // A100
-            0x20F1, // A100
-            0x20F2, // A100
-            0x2235, // A40
-            0x2236, // A10   SKU215     Pris-24
-            0x2237, // A10G  SKU215     Pris-24
-            0x25B6, // A16
-            0x20F5, // A800-80
-            0x20F6, // A800-40
-            0x20FD, // A100T RoyB
-
-            0x26B5, // L40
-            0x26B8, // L40G
-            0x26F5, // L40-CNX
-            0x27B7, // L16
-            0x27B8, // L4 (both SKUs)
-        };
-
-        if (hypervisorIsVgxHyper() && _gpumgrIsVgxRmFirmwareDefaultChip(pmcBoot42))
+        if (_gpumgrIsVgxRmFirmwareDefaultChip(pmcBoot42))
         {
             bEnabledByDefault = NV_TRUE;
-        }
-        else if (!hypervisorIsVgxHyper() && _gpumgrIsRmFirmwareDefaultChip(pmcBoot42))
-        {
-            bEnabledByDefault = NV_TRUE;
-        }
-        else if (!hypervisorIsVgxHyper() || RMCFG_FEATURE_PLATFORM_GSP)
-        {
-            for (NvU32 i = 0; i < NV_ARRAY_ELEMENTS(defaultGspRmGpus); i++)
-            {
-                if (defaultGspRmGpus[i] == devId)
-                {
-                    bEnabledByDefault = NV_TRUE;
-                    break;
-                }
-            }
         }
     }
+    else
+    {
+        bEnabledByDefault = NV_TRUE;
+    }
 #endif
+    // enable GSP-RM by default on Hopper+ chips in MCDM mode
+    if (bIsMcdm && _gpumgrIsMcdmRmFirmwareDefaultChip(pmcBoot42))
+    {
+        bEnabledByDefault = NV_TRUE;
+    }
 
 finish:
     if (pbEnabledByDefault != NULL)
     {
         *pbEnabledByDefault = bEnabledByDefault;
-
-        if (bEnabledByDefault)
-        {
-            NV_PRINTF(LEVEL_INFO,
-                      "DevId 0x%x is GSP-RM enabled by default\n",
-                      devId);
-        }
     }
 
     return bFirmwareCapable;

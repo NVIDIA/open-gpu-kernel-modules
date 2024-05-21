@@ -82,27 +82,40 @@ __nvoc_ctor_RegisterAperture_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_RegisterAperture_1(RegisterAperture *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // regaprtReadReg08 -- pure virtual
     pThis->__regaprtReadReg08__ = NULL;
 
+    // regaprtReadReg16 -- pure virtual
     pThis->__regaprtReadReg16__ = NULL;
 
+    // regaprtReadReg32 -- pure virtual
     pThis->__regaprtReadReg32__ = NULL;
 
+    // regaprtWriteReg08 -- pure virtual
     pThis->__regaprtWriteReg08__ = NULL;
 
+    // regaprtWriteReg16 -- pure virtual
     pThis->__regaprtWriteReg16__ = NULL;
 
+    // regaprtWriteReg32 -- pure virtual
     pThis->__regaprtWriteReg32__ = NULL;
 
+    // regaprtWriteReg32Uc -- pure virtual
     pThis->__regaprtWriteReg32Uc__ = NULL;
 
+    // regaprtIsRegValid -- pure virtual
     pThis->__regaprtIsRegValid__ = NULL;
-}
+} // End __nvoc_init_funcTable_RegisterAperture_1 with approximately 8 basic block(s).
 
+
+// Initialize vtable(s) for 8 virtual method(s).
 void __nvoc_init_funcTable_RegisterAperture(RegisterAperture *pThis) {
+
+    // Initialize vtable(s) with 8 per-object function pointer(s).
     __nvoc_init_funcTable_RegisterAperture_1(pThis);
 }
 

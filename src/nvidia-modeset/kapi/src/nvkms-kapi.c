@@ -52,7 +52,6 @@
 #include "ctrl/ctrl003e.h" /* NV003E_CTRL_CMD_GET_SURFACE_PHYS_PAGES */
 #include "ctrl/ctrl0041.h" /* NV0041_CTRL_SURFACE_INFO */
 
-
 ct_assert(NVKMS_KAPI_LAYER_PRIMARY_IDX == NVKMS_MAIN_LAYER);
 ct_assert(NVKMS_KAPI_LAYER_MAX == NVKMS_MAX_LAYERS_PER_HEAD);
 
@@ -74,6 +73,7 @@ static NvU32 EnumerateGpus(nv_gpu_info_t *gpuInfo)
  */
 static void RmFreeDevice(struct NvKmsKapiDevice *device)
 {
+
     if (device->hRmSubDevice != 0x0) {
         nvRmApiFree(device->hRmClient,
                     device->hRmDevice,
@@ -3010,9 +3010,9 @@ static NvBool KmsSetMode(
         goto done;
     }
 
-    status = nvkms_ioctl_from_kapi(device->pKmsOpen,
-                                   NVKMS_IOCTL_SET_MODE,
-                                   params, sizeof(*params));
+    status = nvkms_ioctl_from_kapi_try_pmlock(device->pKmsOpen,
+                                              NVKMS_IOCTL_SET_MODE,
+                                              params, sizeof(*params));
 
     replyConfig->flipResult =
         (params->reply.status == NVKMS_SET_MODE_STATUS_SUCCESS) ?
@@ -3198,9 +3198,9 @@ static NvBool KmsFlip(
         goto done;
     }
 
-    status = nvkms_ioctl_from_kapi(device->pKmsOpen,
-                                   NVKMS_IOCTL_FLIP,
-                                   params, sizeof(*params));
+    status = nvkms_ioctl_from_kapi_try_pmlock(device->pKmsOpen,
+                                              NVKMS_IOCTL_FLIP,
+                                              params, sizeof(*params));
 
     replyConfig->flipResult = params->reply.flipResult;
 

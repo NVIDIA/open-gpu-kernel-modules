@@ -1,13 +1,20 @@
+
 #ifndef _G_GPU_MGR_NVOC_H_
 #define _G_GPU_MGR_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +35,7 @@ extern "C" {
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+#pragma once
 #include "g_gpu_mgr_nvoc.h"
 
 
@@ -275,11 +283,20 @@ MAKE_INTRUSIVE_LIST(pcieP2PCapsInfoList, PCIEP2PCAPSINFO, node);
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 
+
 struct OBJGPUMGR {
+
+    // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+
+    // Parent (i.e. superclass or base class) object pointers
     struct Object __nvoc_base_Object;
-    struct Object *__nvoc_pbase_Object;
-    struct OBJGPUMGR *__nvoc_pbase_OBJGPUMGR;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super
+    struct OBJGPUMGR *__nvoc_pbase_OBJGPUMGR;    // gpumgr
+
+    // Data members
     PROBEDGPU probedGpus[32];
     void *probedGpusLock;
     NvU32 gpuAttachCount;
@@ -317,6 +334,7 @@ typedef struct OBJGPUMGR OBJGPUMGR;
 #define __nvoc_class_id_OBJGPUMGR 0xcf1b25
 #endif /* __nvoc_class_id_OBJGPUMGR */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGPUMGR;
 
 #define __staticCast_OBJGPUMGR(pThis) \
@@ -329,13 +347,16 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGPUMGR;
     ((OBJGPUMGR*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJGPUMGR)))
 #endif //__nvoc_gpu_mgr_h_disabled
 
-
 NV_STATUS __nvoc_objCreateDynamic_OBJGPUMGR(OBJGPUMGR**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJGPUMGR(OBJGPUMGR**, Dynamic*, NvU32);
 #define __objCreate_OBJGPUMGR(ppNewObj, pParent, createFlags) \
     __nvoc_objCreate_OBJGPUMGR((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
+
+// Wrapper macros
+
+// Dispatch functions
 NV_STATUS gpumgrInitPcieP2PCapsCache_IMPL(struct OBJGPUMGR *pGpuMgr);
 
 
@@ -369,9 +390,9 @@ NvBool gpumgrGetPcieP2PCapsFromCache_IMPL(NvU32 gpuMask, NvU8 *pP2PWriteCapStatu
 NV_STATUS gpumgrConstruct_IMPL(struct OBJGPUMGR *arg_);
 
 #define __nvoc_gpumgrConstruct(arg_) gpumgrConstruct_IMPL(arg_)
-void gpumgrDestruct_IMPL(struct OBJGPUMGR *arg0);
+void gpumgrDestruct_IMPL(struct OBJGPUMGR *arg1);
 
-#define __nvoc_gpumgrDestruct(arg0) gpumgrDestruct_IMPL(arg0)
+#define __nvoc_gpumgrDestruct(arg1) gpumgrDestruct_IMPL(arg1)
 void gpumgrAddSystemNvlinkTopo_IMPL(NvU64 DomainBusDevice);
 
 #define gpumgrAddSystemNvlinkTopo(DomainBusDevice) gpumgrAddSystemNvlinkTopo_IMPL(DomainBusDevice)
@@ -432,12 +453,12 @@ void gpumgrCacheSetMIGEnabled_IMPL(struct OBJGPU *pGpu, NvBool bMIGEnabled);
 NV_STATUS gpumgrCacheGetActiveDeviceIds_IMPL(NV0000_CTRL_GPU_GET_ACTIVE_DEVICE_IDS_PARAMS *pActiveDeviceIdsParams);
 
 #define gpumgrCacheGetActiveDeviceIds(pActiveDeviceIdsParams) gpumgrCacheGetActiveDeviceIds_IMPL(pActiveDeviceIdsParams)
-void gpumgrUpdateBoardId_IMPL(struct OBJGPU *arg0);
+void gpumgrUpdateBoardId_IMPL(struct OBJGPU *arg1);
 
-#define gpumgrUpdateBoardId(arg0) gpumgrUpdateBoardId_IMPL(arg0)
-void gpumgrServiceInterrupts_IMPL(NvU32 arg0, MC_ENGINE_BITVECTOR *arg1, NvBool arg2);
+#define gpumgrUpdateBoardId(arg1) gpumgrUpdateBoardId_IMPL(arg1)
+void gpumgrServiceInterrupts_IMPL(NvU32 arg1, MC_ENGINE_BITVECTOR *arg2, NvBool arg3);
 
-#define gpumgrServiceInterrupts(arg0, arg1, arg2) gpumgrServiceInterrupts_IMPL(arg0, arg1, arg2)
+#define gpumgrServiceInterrupts(arg1, arg2, arg3) gpumgrServiceInterrupts_IMPL(arg1, arg2, arg3)
 #undef PRIVATE_FIELD
 
 
@@ -516,12 +537,13 @@ NV_STATUS   gpumgrGetGpuUuidInfo(NvU32 gpuId, NvU8 **ppUuidStr, NvU32 *pUuidStrL
 // gpumgrGetRmFirmwarePolicy() and  gpumgrGetRmFirmwareLogsEnabled() contain
 // all logic for deciding the policies for loading firmwares, and so need to be
 // compiled for all platforms besides those actually running the firmwares
-void        gpumgrGetRmFirmwarePolicy(NvU32 chipId, NvU32 pmcBoot42, NvBool bIsSoc,
+void        gpumgrGetRmFirmwarePolicy(NvU32 pmcBoot42, NvBool bIsSoc,
                                       NvU32 enableFirmwareRegVal, NvBool *pbRequestFirmware,
-                                      NvBool *pbAllowFallbackToMonolithicRm);
+                                      NvBool *pbAllowFallbackToMonolithicRm,
+                                      NvBool bIsMcdm);
 NvBool      gpumgrGetRmFirmwareLogsEnabled(NvU32 enableFirmwareLogsRegVal);
-NvBool      gpumgrIsDeviceRmFirmwareCapable(NvU16 devId, NvU32 pmcBoot42,
-                                            NvBool bIsSoc, NvBool *pbEnableByDefault);
+NvBool      gpumgrIsDeviceRmFirmwareCapable(NvU32 pmcBoot42,
+                                            NvBool bIsSoc, NvBool *pbEnableByDefault, NvBool bIsMcdm);
 NvBool      gpumgrIsVgxRmFirmwareCapableChip(NvU32 pmcBoot42);
 NV_STATUS   gpumgrAttachGpu(NvU32 deviceInstance, GPUATTACHARG *);
 NV_STATUS   gpumgrDetachGpu(NvU32 deviceInstance);

@@ -93,109 +93,141 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_PhysicalMemory =
     /*pExportInfo=*/        &__nvoc_export_info_PhysicalMemory
 };
 
-static NvBool __nvoc_thunk_PhysicalMemory_resCanCopy(struct RsResource *pPhysicalMemory) {
-    return physmemCanCopy((struct PhysicalMemory *)(((unsigned char *)pPhysicalMemory) - __nvoc_rtti_PhysicalMemory_RsResource.offset));
+// 1 down-thunk(s) defined to bridge methods in PhysicalMemory from superclasses
+
+// physmemCanCopy: virtual override (res) base (mem)
+static NvBool __nvoc_down_thunk_PhysicalMemory_resCanCopy(struct RsResource *pPhysicalMemory) {
+    return physmemCanCopy((struct PhysicalMemory *)(((unsigned char *) pPhysicalMemory) - __nvoc_rtti_PhysicalMemory_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Memory_physmemCheckMemInterUnmap(struct PhysicalMemory *pMemory, NvBool bSubdeviceHandleProvided) {
-    return memCheckMemInterUnmap((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), bSubdeviceHandleProvided);
+
+// 25 up-thunk(s) defined to bridge methods in PhysicalMemory to superclasses
+
+// physmemIsDuplicate: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_physmemIsDuplicate(struct PhysicalMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return memIsDuplicate((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), hMemory, pDuplicate);
 }
 
-static NvBool __nvoc_thunk_RmResource_physmemShareCallback(struct PhysicalMemory *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return rmresShareCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_PhysicalMemory_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+// physmemGetMapAddrSpace: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_physmemGetMapAddrSpace(struct PhysicalMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return memGetMapAddrSpace((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_physmemMapTo(struct PhysicalMemory *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PhysicalMemory_RsResource.offset), pParams);
+// physmemControl: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_physmemControl(struct PhysicalMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return memControl((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_physmemGetMapAddrSpace(struct PhysicalMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), pCallContext, mapFlags, pAddrSpace);
+// physmemMap: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_physmemMap(struct PhysicalMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+    return memMap((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), pCallContext, pParams, pCpuMapping);
 }
 
-static NvBool __nvoc_thunk_Memory_physmemIsExportAllowed(struct PhysicalMemory *pMemory) {
-    return memIsExportAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset));
+// physmemUnmap: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_physmemUnmap(struct PhysicalMemory *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return memUnmap((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), pCallContext, pCpuMapping);
 }
 
-static NvU32 __nvoc_thunk_RsResource_physmemGetRefCount(struct PhysicalMemory *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PhysicalMemory_RsResource.offset));
+// physmemGetMemInterMapParams: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_physmemGetMemInterMapParams(struct PhysicalMemory *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return memGetMemInterMapParams((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), pParams);
 }
 
-static void __nvoc_thunk_RsResource_physmemAddAdditionalDependants(struct RsClient *pClient, struct PhysicalMemory *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PhysicalMemory_RsResource.offset), pReference);
+// physmemCheckMemInterUnmap: inline virtual inherited (mem) base (mem) body
+static NV_STATUS __nvoc_up_thunk_Memory_physmemCheckMemInterUnmap(struct PhysicalMemory *pMemory, NvBool bSubdeviceHandleProvided) {
+    return memCheckMemInterUnmap((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), bSubdeviceHandleProvided);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_physmemControl_Prologue(struct PhysicalMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_PhysicalMemory_RmResource.offset), pCallContext, pParams);
+// physmemGetMemoryMappingDescriptor: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_physmemGetMemoryMappingDescriptor(struct PhysicalMemory *pMemory, MEMORY_DESCRIPTOR **ppMemDesc) {
+    return memGetMemoryMappingDescriptor((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), ppMemDesc);
 }
 
-static NvBool __nvoc_thunk_Memory_physmemIsGpuMapAllowed(struct PhysicalMemory *pMemory, struct OBJGPU *pGpu) {
-    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), pGpu);
+// physmemCheckCopyPermissions: inline virtual inherited (mem) base (mem) body
+static NV_STATUS __nvoc_up_thunk_Memory_physmemCheckCopyPermissions(struct PhysicalMemory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return memCheckCopyPermissions((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), pDstGpu, pDstDevice);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_physmemUnmapFrom(struct PhysicalMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PhysicalMemory_RsResource.offset), pParams);
+// physmemIsReady: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_physmemIsReady(struct PhysicalMemory *pMemory, NvBool bCopyConstructorContext) {
+    return memIsReady((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), bCopyConstructorContext);
 }
 
-static void __nvoc_thunk_RmResource_physmemControl_Epilogue(struct PhysicalMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_PhysicalMemory_RmResource.offset), pCallContext, pParams);
+// physmemIsGpuMapAllowed: inline virtual inherited (mem) base (mem) body
+static NvBool __nvoc_up_thunk_Memory_physmemIsGpuMapAllowed(struct PhysicalMemory *pMemory, struct OBJGPU *pGpu) {
+    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), pGpu);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_physmemControl(struct PhysicalMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return memControl((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), pCallContext, pParams);
+// physmemIsExportAllowed: inline virtual inherited (mem) base (mem) body
+static NvBool __nvoc_up_thunk_Memory_physmemIsExportAllowed(struct PhysicalMemory *pMemory) {
+    return memIsExportAllowed((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Memory_physmemUnmap(struct PhysicalMemory *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return memUnmap((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), pCallContext, pCpuMapping);
+// physmemAccessCallback: virtual inherited (rmres) base (mem)
+static NvBool __nvoc_up_thunk_RmResource_physmemAccessCallback(struct PhysicalMemory *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_PhysicalMemory_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_physmemGetMemInterMapParams(struct PhysicalMemory *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return memGetMemInterMapParams((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), pParams);
+// physmemShareCallback: virtual inherited (rmres) base (mem)
+static NvBool __nvoc_up_thunk_RmResource_physmemShareCallback(struct PhysicalMemory *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_PhysicalMemory_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_physmemGetMemoryMappingDescriptor(struct PhysicalMemory *pMemory, MEMORY_DESCRIPTOR **ppMemDesc) {
-    return memGetMemoryMappingDescriptor((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), ppMemDesc);
+// physmemControlSerialization_Prologue: virtual inherited (rmres) base (mem)
+static NV_STATUS __nvoc_up_thunk_RmResource_physmemControlSerialization_Prologue(struct PhysicalMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_PhysicalMemory_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_physmemControlFilter(struct PhysicalMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PhysicalMemory_RsResource.offset), pCallContext, pParams);
+// physmemControlSerialization_Epilogue: virtual inherited (rmres) base (mem)
+static void __nvoc_up_thunk_RmResource_physmemControlSerialization_Epilogue(struct PhysicalMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_PhysicalMemory_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_physmemControlSerialization_Prologue(struct PhysicalMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_PhysicalMemory_RmResource.offset), pCallContext, pParams);
+// physmemControl_Prologue: virtual inherited (rmres) base (mem)
+static NV_STATUS __nvoc_up_thunk_RmResource_physmemControl_Prologue(struct PhysicalMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_PhysicalMemory_RmResource.offset), pCallContext, pParams);
 }
 
-static NvBool __nvoc_thunk_RsResource_physmemIsPartialUnmapSupported(struct PhysicalMemory *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PhysicalMemory_RsResource.offset));
+// physmemControl_Epilogue: virtual inherited (rmres) base (mem)
+static void __nvoc_up_thunk_RmResource_physmemControl_Epilogue(struct PhysicalMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_PhysicalMemory_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_physmemIsReady(struct PhysicalMemory *pMemory, NvBool bCopyConstructorContext) {
-    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), bCopyConstructorContext);
+// physmemPreDestruct: virtual inherited (res) base (mem)
+static void __nvoc_up_thunk_RsResource_physmemPreDestruct(struct PhysicalMemory *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_PhysicalMemory_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Memory_physmemCheckCopyPermissions(struct PhysicalMemory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
-    return memCheckCopyPermissions((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), pDstGpu, pDstDevice);
+// physmemControlFilter: virtual inherited (res) base (mem)
+static NV_STATUS __nvoc_up_thunk_RsResource_physmemControlFilter(struct PhysicalMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_PhysicalMemory_RsResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_physmemPreDestruct(struct PhysicalMemory *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PhysicalMemory_RsResource.offset));
+// physmemIsPartialUnmapSupported: inline virtual inherited (res) base (mem) body
+static NvBool __nvoc_up_thunk_RsResource_physmemIsPartialUnmapSupported(struct PhysicalMemory *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_PhysicalMemory_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Memory_physmemIsDuplicate(struct PhysicalMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
-    return memIsDuplicate((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), hMemory, pDuplicate);
+// physmemMapTo: virtual inherited (res) base (mem)
+static NV_STATUS __nvoc_up_thunk_RsResource_physmemMapTo(struct PhysicalMemory *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_PhysicalMemory_RsResource.offset), pParams);
 }
 
-static void __nvoc_thunk_RmResource_physmemControlSerialization_Epilogue(struct PhysicalMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_PhysicalMemory_RmResource.offset), pCallContext, pParams);
+// physmemUnmapFrom: virtual inherited (res) base (mem)
+static NV_STATUS __nvoc_up_thunk_RsResource_physmemUnmapFrom(struct PhysicalMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_PhysicalMemory_RsResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_physmemMap(struct PhysicalMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return memMap((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), pCallContext, pParams, pCpuMapping);
+// physmemGetRefCount: virtual inherited (res) base (mem)
+static NvU32 __nvoc_up_thunk_RsResource_physmemGetRefCount(struct PhysicalMemory *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_PhysicalMemory_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RmResource_physmemAccessCallback(struct PhysicalMemory *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_PhysicalMemory_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+// physmemAddAdditionalDependants: virtual inherited (res) base (mem)
+static void __nvoc_up_thunk_RsResource_physmemAddAdditionalDependants(struct RsClient *pClient, struct PhysicalMemory *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_PhysicalMemory_RsResource.offset), pReference);
 }
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_PhysicalMemory = 
 {
@@ -232,65 +264,95 @@ __nvoc_ctor_PhysicalMemory_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_PhysicalMemory_1(PhysicalMemory *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // physmemCanCopy -- virtual override (res) base (mem)
     pThis->__physmemCanCopy__ = &physmemCanCopy_IMPL;
+    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__ = &__nvoc_down_thunk_PhysicalMemory_resCanCopy;
 
-    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__ = &__nvoc_thunk_PhysicalMemory_resCanCopy;
+    // physmemIsDuplicate -- virtual inherited (mem) base (mem)
+    pThis->__physmemIsDuplicate__ = &__nvoc_up_thunk_Memory_physmemIsDuplicate;
 
-    pThis->__physmemCheckMemInterUnmap__ = &__nvoc_thunk_Memory_physmemCheckMemInterUnmap;
+    // physmemGetMapAddrSpace -- virtual inherited (mem) base (mem)
+    pThis->__physmemGetMapAddrSpace__ = &__nvoc_up_thunk_Memory_physmemGetMapAddrSpace;
 
-    pThis->__physmemShareCallback__ = &__nvoc_thunk_RmResource_physmemShareCallback;
+    // physmemControl -- virtual inherited (mem) base (mem)
+    pThis->__physmemControl__ = &__nvoc_up_thunk_Memory_physmemControl;
 
-    pThis->__physmemMapTo__ = &__nvoc_thunk_RsResource_physmemMapTo;
+    // physmemMap -- virtual inherited (mem) base (mem)
+    pThis->__physmemMap__ = &__nvoc_up_thunk_Memory_physmemMap;
 
-    pThis->__physmemGetMapAddrSpace__ = &__nvoc_thunk_Memory_physmemGetMapAddrSpace;
+    // physmemUnmap -- virtual inherited (mem) base (mem)
+    pThis->__physmemUnmap__ = &__nvoc_up_thunk_Memory_physmemUnmap;
 
-    pThis->__physmemIsExportAllowed__ = &__nvoc_thunk_Memory_physmemIsExportAllowed;
+    // physmemGetMemInterMapParams -- virtual inherited (mem) base (mem)
+    pThis->__physmemGetMemInterMapParams__ = &__nvoc_up_thunk_Memory_physmemGetMemInterMapParams;
 
-    pThis->__physmemGetRefCount__ = &__nvoc_thunk_RsResource_physmemGetRefCount;
+    // physmemCheckMemInterUnmap -- inline virtual inherited (mem) base (mem) body
+    pThis->__physmemCheckMemInterUnmap__ = &__nvoc_up_thunk_Memory_physmemCheckMemInterUnmap;
 
-    pThis->__physmemAddAdditionalDependants__ = &__nvoc_thunk_RsResource_physmemAddAdditionalDependants;
+    // physmemGetMemoryMappingDescriptor -- virtual inherited (mem) base (mem)
+    pThis->__physmemGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_Memory_physmemGetMemoryMappingDescriptor;
 
-    pThis->__physmemControl_Prologue__ = &__nvoc_thunk_RmResource_physmemControl_Prologue;
+    // physmemCheckCopyPermissions -- inline virtual inherited (mem) base (mem) body
+    pThis->__physmemCheckCopyPermissions__ = &__nvoc_up_thunk_Memory_physmemCheckCopyPermissions;
 
-    pThis->__physmemIsGpuMapAllowed__ = &__nvoc_thunk_Memory_physmemIsGpuMapAllowed;
+    // physmemIsReady -- virtual inherited (mem) base (mem)
+    pThis->__physmemIsReady__ = &__nvoc_up_thunk_Memory_physmemIsReady;
 
-    pThis->__physmemUnmapFrom__ = &__nvoc_thunk_RsResource_physmemUnmapFrom;
+    // physmemIsGpuMapAllowed -- inline virtual inherited (mem) base (mem) body
+    pThis->__physmemIsGpuMapAllowed__ = &__nvoc_up_thunk_Memory_physmemIsGpuMapAllowed;
 
-    pThis->__physmemControl_Epilogue__ = &__nvoc_thunk_RmResource_physmemControl_Epilogue;
+    // physmemIsExportAllowed -- inline virtual inherited (mem) base (mem) body
+    pThis->__physmemIsExportAllowed__ = &__nvoc_up_thunk_Memory_physmemIsExportAllowed;
 
-    pThis->__physmemControl__ = &__nvoc_thunk_Memory_physmemControl;
+    // physmemAccessCallback -- virtual inherited (rmres) base (mem)
+    pThis->__physmemAccessCallback__ = &__nvoc_up_thunk_RmResource_physmemAccessCallback;
 
-    pThis->__physmemUnmap__ = &__nvoc_thunk_Memory_physmemUnmap;
+    // physmemShareCallback -- virtual inherited (rmres) base (mem)
+    pThis->__physmemShareCallback__ = &__nvoc_up_thunk_RmResource_physmemShareCallback;
 
-    pThis->__physmemGetMemInterMapParams__ = &__nvoc_thunk_Memory_physmemGetMemInterMapParams;
+    // physmemControlSerialization_Prologue -- virtual inherited (rmres) base (mem)
+    pThis->__physmemControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_physmemControlSerialization_Prologue;
 
-    pThis->__physmemGetMemoryMappingDescriptor__ = &__nvoc_thunk_Memory_physmemGetMemoryMappingDescriptor;
+    // physmemControlSerialization_Epilogue -- virtual inherited (rmres) base (mem)
+    pThis->__physmemControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_physmemControlSerialization_Epilogue;
 
-    pThis->__physmemControlFilter__ = &__nvoc_thunk_RsResource_physmemControlFilter;
+    // physmemControl_Prologue -- virtual inherited (rmres) base (mem)
+    pThis->__physmemControl_Prologue__ = &__nvoc_up_thunk_RmResource_physmemControl_Prologue;
 
-    pThis->__physmemControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_physmemControlSerialization_Prologue;
+    // physmemControl_Epilogue -- virtual inherited (rmres) base (mem)
+    pThis->__physmemControl_Epilogue__ = &__nvoc_up_thunk_RmResource_physmemControl_Epilogue;
 
-    pThis->__physmemIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_physmemIsPartialUnmapSupported;
+    // physmemPreDestruct -- virtual inherited (res) base (mem)
+    pThis->__physmemPreDestruct__ = &__nvoc_up_thunk_RsResource_physmemPreDestruct;
 
-    pThis->__physmemIsReady__ = &__nvoc_thunk_Memory_physmemIsReady;
+    // physmemControlFilter -- virtual inherited (res) base (mem)
+    pThis->__physmemControlFilter__ = &__nvoc_up_thunk_RsResource_physmemControlFilter;
 
-    pThis->__physmemCheckCopyPermissions__ = &__nvoc_thunk_Memory_physmemCheckCopyPermissions;
+    // physmemIsPartialUnmapSupported -- inline virtual inherited (res) base (mem) body
+    pThis->__physmemIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_physmemIsPartialUnmapSupported;
 
-    pThis->__physmemPreDestruct__ = &__nvoc_thunk_RsResource_physmemPreDestruct;
+    // physmemMapTo -- virtual inherited (res) base (mem)
+    pThis->__physmemMapTo__ = &__nvoc_up_thunk_RsResource_physmemMapTo;
 
-    pThis->__physmemIsDuplicate__ = &__nvoc_thunk_Memory_physmemIsDuplicate;
+    // physmemUnmapFrom -- virtual inherited (res) base (mem)
+    pThis->__physmemUnmapFrom__ = &__nvoc_up_thunk_RsResource_physmemUnmapFrom;
 
-    pThis->__physmemControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_physmemControlSerialization_Epilogue;
+    // physmemGetRefCount -- virtual inherited (res) base (mem)
+    pThis->__physmemGetRefCount__ = &__nvoc_up_thunk_RsResource_physmemGetRefCount;
 
-    pThis->__physmemMap__ = &__nvoc_thunk_Memory_physmemMap;
+    // physmemAddAdditionalDependants -- virtual inherited (res) base (mem)
+    pThis->__physmemAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_physmemAddAdditionalDependants;
+} // End __nvoc_init_funcTable_PhysicalMemory_1 with approximately 27 basic block(s).
 
-    pThis->__physmemAccessCallback__ = &__nvoc_thunk_RmResource_physmemAccessCallback;
-}
 
+// Initialize vtable(s) for 26 virtual method(s).
 void __nvoc_init_funcTable_PhysicalMemory(PhysicalMemory *pThis) {
+
+    // Initialize vtable(s) with 26 per-object function pointer(s).
     __nvoc_init_funcTable_PhysicalMemory_1(pThis);
 }
 

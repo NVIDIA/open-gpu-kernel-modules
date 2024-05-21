@@ -135,6 +135,7 @@ _nvswitch_initialize_nvlipt_interrupts_ls10
 {
     NvU32 i;
     NvU32 regval = 0;
+    NvU64 link_enable_mask;
 
     //
     // NVLipt interrupt routing (NVLIPT_COMMON, NVLIPT_LNK, NVLDL, NVLTLC)
@@ -234,6 +235,24 @@ _nvswitch_initialize_nvlipt_interrupts_ls10
     regval = DRF_DEF(_CPR_SYS, _NVLW_INTR_2_MASK, _CPR_INTR, _DISABLE) |
           DRF_DEF(_CPR_SYS, _NVLW_INTR_2_MASK, _INTR2, _ENABLE);
     NVSWITCH_ENG_WR32(device, CPR, _BCAST, 0, _CPR_SYS, _NVLW_INTR_2_MASK, regval);
+
+    //
+    // Disable engine interrupts requested by regkey "LinkEnableMask".
+    // All the links are enabled by default.
+    //
+    link_enable_mask = ((NvU64)device->regkeys.link_enable_mask2 << 32 |
+        (NvU64)device->regkeys.link_enable_mask);
+
+    for (i = 0; i < NVSWITCH_NUM_LINKS_LS10; i++)
+    {
+        if ((NVBIT64(i) & link_enable_mask) == 0)
+        {
+            NVSWITCH_PRINT(device, SETUP,
+                "%s: Disabling interrupts for link #%d\n",
+                __FUNCTION__, i);
+            nvswitch_link_disable_interrupts_ls10(device, i);
+        }
+    }
 }
 
 static void
@@ -5860,8 +5879,6 @@ _nvswitch_deferred_link_state_check_ls10
     // Sanity Check
     NVSWITCH_ASSERT(nvswitch_is_link_valid(device, link));
 
-    nvswitch_os_free(pErrorReportParams);
-    pErrorReportParams = NULL;
     chip_device->deferredLinkErrors[link].state.bLinkStateCallBackEnabled = NV_FALSE;
     bRedeferLinkStateCheck = NV_FALSE;
 
@@ -5922,18 +5939,17 @@ nvswitch_create_deferred_link_state_check_task_ls10
     }
 
     status = NVL_ERR_GENERIC;
-    pErrorReportParams = nvswitch_os_malloc(sizeof(NVSWITCH_DEFERRED_ERROR_REPORTING_ARGS));
-    if(pErrorReportParams != NULL)
-    {
-        pErrorReportParams->nvlipt_instance = nvlipt_instance;
-        pErrorReportParams->link = link;
+    pErrorReportParams = &chip_device->deferredLinkErrorsArgs[link];
+    nvswitch_os_memset(pErrorReportParams, 0, sizeof(NVSWITCH_DEFERRED_ERROR_REPORTING_ARGS));
+ 
+    pErrorReportParams->nvlipt_instance = nvlipt_instance;
+    pErrorReportParams->link = link;
 
-        status = nvswitch_task_create_args(device, (void*)pErrorReportParams,
-                                           &_nvswitch_deferred_link_state_check_ls10,
-                                           NVSWITCH_DEFERRED_LINK_STATE_CHECK_INTERVAL_NS,
-                                           NVSWITCH_TASK_TYPE_FLAGS_RUN_ONCE |
-                                           NVSWITCH_TASK_TYPE_FLAGS_VOID_PTR_ARGS);
-    }
+    status = nvswitch_task_create_args(device, (void*)pErrorReportParams,
+                                        &_nvswitch_deferred_link_state_check_ls10,
+                                        NVSWITCH_DEFERRED_LINK_STATE_CHECK_INTERVAL_NS,
+                                        NVSWITCH_TASK_TYPE_FLAGS_RUN_ONCE |
+                                        NVSWITCH_TASK_TYPE_FLAGS_VOID_PTR_ARGS);
 
     if (status == NVL_SUCCESS)
     {
@@ -5946,7 +5962,6 @@ nvswitch_create_deferred_link_state_check_task_ls10
                         __FUNCTION__);
         _nvswitch_emit_deferred_link_errors_ls10(device, nvlipt_instance, link);
         _nvswitch_clear_deferred_link_errors_ls10(device, link);
-        nvswitch_os_free(pErrorReportParams);
     }
 }
 
@@ -5963,9 +5978,6 @@ _nvswitch_deferred_link_errors_check_ls10
     NvU32 link = pErrorReportParams->link;
     ls10_device *chip_device;
     NvU32 pending;
-
-    nvswitch_os_free(pErrorReportParams);
-    pErrorReportParams = NULL;
 
     chip_device = NVSWITCH_GET_CHIP_DEVICE_LS10(device);
     chip_device->deferredLinkErrors[link].state.bLinkErrorsCallBackEnabled = NV_FALSE;
@@ -6007,18 +6019,18 @@ _nvswitch_create_deferred_link_errors_task_ls10
     }
 
     status = NVL_ERR_GENERIC;
-    pErrorReportParams = nvswitch_os_malloc(sizeof(NVSWITCH_DEFERRED_ERROR_REPORTING_ARGS));
-    if(pErrorReportParams != NULL)
-    {
-        pErrorReportParams->nvlipt_instance = nvlipt_instance;
-        pErrorReportParams->link = link;
+    pErrorReportParams = &chip_device->deferredLinkErrorsArgs[link];
+    nvswitch_os_memset(pErrorReportParams, 0, sizeof(NVSWITCH_DEFERRED_ERROR_REPORTING_ARGS));
+    
+    pErrorReportParams->nvlipt_instance = nvlipt_instance;
+    pErrorReportParams->link = link;
 
-        status = nvswitch_task_create_args(device, (void*)pErrorReportParams,
-                                           &_nvswitch_deferred_link_errors_check_ls10,
-                                           NVSWITCH_DEFERRED_FAULT_UP_CHECK_INTERVAL_NS,
-                                           NVSWITCH_TASK_TYPE_FLAGS_RUN_ONCE |
-                                           NVSWITCH_TASK_TYPE_FLAGS_VOID_PTR_ARGS);
-    }
+    status = nvswitch_task_create_args(device, (void*)pErrorReportParams,
+                                        &_nvswitch_deferred_link_errors_check_ls10,
+                                        NVSWITCH_DEFERRED_FAULT_UP_CHECK_INTERVAL_NS,
+                                        NVSWITCH_TASK_TYPE_FLAGS_RUN_ONCE |
+                                        NVSWITCH_TASK_TYPE_FLAGS_VOID_PTR_ARGS);
+    
 
     if (status == NVL_SUCCESS)
     {
@@ -6031,7 +6043,6 @@ _nvswitch_create_deferred_link_errors_task_ls10
                         __FUNCTION__);
         _nvswitch_emit_deferred_link_errors_ls10(device, nvlipt_instance, link);
         _nvswitch_clear_deferred_link_errors_ls10(device, link);
-        nvswitch_os_free(pErrorReportParams);
     }
 }
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,7 +33,6 @@
 #include "published/ampere/ga100/dev_fault.h"
 #include "published/ampere/ga100/dev_ram.h"
 #include "published/ampere/ga100/dev_ctrl.h"
-
 
 NV_STATUS
 kfifoEngineInfoXlate_GA100
@@ -211,7 +210,6 @@ kfifoGenerateWorkSubmitToken_GA100
 
     if (!RMCFG_FEATURE_PLATFORM_GSP || (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) && IS_GFID_VF(gfId)))
     {
-
         // TODO: Remove check on Ampere. Bug 200606706.
         if (!bUsedForHost && IS_GFID_VF(gfId))
         {
@@ -245,7 +243,7 @@ kfifoGenerateWorkSubmitToken_GA100
     }
     else // RMCFG_FEATURE_PLATFORM_GSP
     {
-        NV_ASSERT_OK_OR_RETURN(kfifoGenerateInternalWorkSubmitToken_HAL(pGpu, pKernelFifo, pKernelChannel));
+        NV_ASSERT_OK_OR_RETURN(kfifoGenerateInternalWorkSubmitToken_HAL(pGpu, pKernelFifo, pKernelChannel, &val));
     }
 
     *pGeneratedToken = val;

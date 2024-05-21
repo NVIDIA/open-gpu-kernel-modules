@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -127,52 +127,64 @@ kbusDestroyCpuPointerForBusFlush_GV100
 /**
  * Helper function to map coherent cpu mapping.
  *
- * @param[in] pGpu       Pointer to GPU
- * @param[in] pKernelBus Kernel bus pointer
- * @param[in] pMemDesc   Pointer to memdesc that is to be mapped.
+ * @param[in]  pGpu       Pointer to GPU
+ * @param[in]  pKernelBus Kernel bus pointer
+ * @param[in]  pMemDesc   Pointer to memdesc that is to be mapped.
+ * @param[in]  offset     Offset from base address given in memdesc
+ * @param[in]  length     Length of memory to map
+ * @param[in]  protect    Protection flags
+ * @param[out] ppAddress  Virtual address of mapping
+ * @param[out] ppPriv     Private data to be retained for unmapping
  *
- * @return cpu pointer if success
- *         NULL on other errors
+ * @return NV_OK or errors if failed to map
  */
-NvU8*
+NV_STATUS
 kbusMapCoherentCpuMapping_GV100
 (
     OBJGPU                *pGpu,
     KernelBus             *pKernelBus,
-    PMEMORY_DESCRIPTOR     pMemDesc
+    MEMORY_DESCRIPTOR     *pMemDesc,
+    NvU64                  offset,
+    NvU64                  length,
+    NvU32                  protect,
+    NvP64                 *ppAddress,
+    NvP64                 *ppPriv
 )
 {
-    RmPhysAddr startAddr = memdescGetPhysAddr(pMemDesc, FORCE_VMMU_TRANSLATION(pMemDesc, AT_GPU), 0);
+    RmPhysAddr startAddr = memdescGetPhysAddr(pMemDesc, FORCE_VMMU_TRANSLATION(pMemDesc, AT_GPU), offset);
     NvU64      size = memdescGetSize(pMemDesc);
     RmPhysAddr endAddr = startAddr + size - 1;
     RmPhysAddr rangeStart = 0;
     RmPhysAddr rangeEnd = 0;
-    RmPhysAddr offset = 0;
+    RmPhysAddr regionOffset = 0;
     NvU32 i = 0;
+
+    NV_ASSERT_OR_RETURN(memdescGetContiguity(pMemDesc, AT_GPU), NV_ERR_NOT_SUPPORTED);
 
     for (i = COHERENT_CPU_MAPPING_REGION_0; i < pKernelBus->coherentCpuMapping.nrMapping; ++i)
     {
         // Check if requested mem in the mappings.
         rangeStart = pKernelBus->coherentCpuMapping.physAddr[i];
-        rangeEnd = pKernelBus->coherentCpuMapping.physAddr[i] + pKernelBus->coherentCpuMapping.size[i] - 1;
-        offset = 0;
+        rangeEnd = pKernelBus->coherentCpuMapping.physAddr[i] + pKernelBus->coherentCpuMapping.size[i] - 1 ;
+        regionOffset = 0;
 
         if (rangeStart <= startAddr && endAddr <= rangeEnd)
         {
             NV_ASSERT_OR_RETURN(
-                pKernelBus->coherentCpuMapping.pCpuMapping[i] != NvP64_NULL, NvP64_NULL);
+                pKernelBus->coherentCpuMapping.pCpuMapping[i] != NvP64_NULL, NV_ERR_INVALID_STATE);
 
             // Get the offset of the region
-            offset = startAddr - pKernelBus->coherentCpuMapping.physAddr[i];
+            regionOffset = startAddr - pKernelBus->coherentCpuMapping.physAddr[i];
             pKernelBus->coherentCpuMapping.refcnt[i]++;
-            return (NvU8 *)NvP64_VALUE(
+            *ppAddress = (NvU8 *)NvP64_VALUE(
                 ((NvUPtr)pKernelBus->coherentCpuMapping.pCpuMapping[i] +
-                 (NvUPtr)offset));
+                 (NvUPtr)regionOffset));
+            return NV_OK;
         }
     }
 
     NV_ASSERT_FAILED("No mappings found");
-    return NvP64_NULL;
+    return NV_ERR_INVALID_ARGUMENT;
 }
 
 /**
@@ -181,6 +193,8 @@ kbusMapCoherentCpuMapping_GV100
  * @param[in] pGpu       Pointer to GPU
  * @param[in] pKernelBus Kernel bus pointer
  * @param[in] pMemDesc   Pointer to memdesc
+ * @param[in] pAddress   Virtual address to unmap
+ * @param[in] pPriv      Private data to be passed for unmapping
  *
  * @return void
  */
@@ -189,7 +203,9 @@ kbusUnmapCoherentCpuMapping_GV100
 (
     OBJGPU              *pGpu,
     KernelBus           *pKernelBus,
-    PMEMORY_DESCRIPTOR   pMemDesc
+    MEMORY_DESCRIPTOR   *pMemDesc,
+    NvP64                pAddress,
+    NvP64                pPriv
 )
 {
     RmPhysAddr startAddr = memdescGetPhysAddr(pMemDesc, FORCE_VMMU_TRANSLATION(pMemDesc, AT_GPU), 0);

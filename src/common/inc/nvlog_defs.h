@@ -438,6 +438,26 @@ typedef enum _NVLOG_ARGTYPE
     NVLOG_ARGTYPE__COUNT
 } NVLOG_ARGTYPE;
 
+// Default flags for NvLog registry, used for single-buffer option or the read fails
+#ifndef   NVLOG_DEFAULT_FLAGS
+#define   NVLOG_DEFAULT_FLAGS                                                  \
+    (                                                                          \
+        DRF_NUM(_REG_STR_RM, _NVLOG, _BUFFER_FLAGS,                            \
+            (                                                                  \
+                DRF_DEF(LOG, _BUFFER_FLAGS, _DISABLED,   _NO)       |          \
+                DRF_DEF(LOG, _BUFFER_FLAGS, _TYPE,       _RING)     |          \
+                DRF_DEF(LOG, _BUFFER_FLAGS, _EXPANDABLE, _NO)       |          \
+                DRF_DEF(LOG, _BUFFER_FLAGS, _NONPAGED,   _YES)      |          \
+                DRF_DEF(LOG, _BUFFER_FLAGS, _LOCKING,    _STATE)    |          \
+                DRF_DEF(LOG, _BUFFER_FLAGS, _OCA,        _YES)                 \
+            ))                                                      |          \
+        DRF_DEF(_REG_STR_RM, _NVLOG, _BUFFER_SIZE,   _DEFAULT)      |          \
+        DRF_NUM(_REG_STR_RM, _NVLOG, _RUNTIME_LEVEL, 0)             |          \
+        DRF_DEF(_REG_STR_RM, _NVLOG, _TIMESTAMP,     _32)           |          \
+        DRF_DEF(_REG_STR_RM, _NVLOG, _INITED,        _YES)                     \
+    )
+#endif // NVLOG_DEFAULT_FLAGS
+
 /**
  * @brief General info about the NvLog Print system
  */

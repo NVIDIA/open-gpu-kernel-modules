@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -249,28 +249,6 @@ NV_STATUS embeddedParamCopyIn(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmCt
                             ((NV2080_CTRL_GPU_GET_ENGINES_PARAMS*)pParams)->engineCount, sizeof(NvU32));
             break;
         }
-        case NV2080_CTRL_CMD_BUS_GET_INFO:
-        {
-            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV2080_CTRL_BUS_GET_INFO_PARAMS);
-
-            RMAPI_PARAM_COPY_INIT(paramCopies[0],
-                            ((NV2080_CTRL_BUS_GET_INFO_PARAMS*)pParams)->busInfoList,
-                            ((NV2080_CTRL_BUS_GET_INFO_PARAMS*)pParams)->busInfoList,
-                            ((NV2080_CTRL_BUS_GET_INFO_PARAMS*)pParams)->busInfoListSize,
-                            sizeof(NV2080_CTRL_BUS_INFO));
-            break;
-        }
-        case NV2080_CTRL_CMD_FB_GET_INFO:
-        {
-            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV2080_CTRL_FB_GET_INFO_PARAMS);
-
-            RMAPI_PARAM_COPY_INIT(paramCopies[0],
-                            ((NV2080_CTRL_FB_GET_INFO_PARAMS*)pParams)->fbInfoList,
-                            ((NV2080_CTRL_FB_GET_INFO_PARAMS*)pParams)->fbInfoList,
-                            ((NV2080_CTRL_FB_GET_INFO_PARAMS*)pParams)->fbInfoListSize,
-                            sizeof(NV2080_CTRL_FB_INFO));
-            break;
-        }
 #ifdef USE_AMAPLIB
         case NV2080_CTRL_CMD_FB_GET_AMAP_CONF:
         {
@@ -377,19 +355,6 @@ NV_STATUS embeddedParamCopyIn(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmCt
                             ((NV0080_CTRL_HOST_GET_CAPS_PARAMS*)pParams)->capsTbl,
                             ((NV0080_CTRL_HOST_GET_CAPS_PARAMS*)pParams)->capsTbl,
                             ((NV0080_CTRL_HOST_GET_CAPS_PARAMS*)pParams)->capsTblSize, 1);
-            paramCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYIN;
-            paramCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_ZERO_BUFFER;
-
-            break;
-        }
-        case NV0080_CTRL_CMD_MSENC_GET_CAPS:
-        {
-            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0080_CTRL_MSENC_GET_CAPS_PARAMS);
-
-            RMAPI_PARAM_COPY_INIT(paramCopies[0],
-                            ((NV0080_CTRL_MSENC_GET_CAPS_PARAMS*)pParams)->capsTbl,
-                            ((NV0080_CTRL_MSENC_GET_CAPS_PARAMS*)pParams)->capsTbl,
-                            ((NV0080_CTRL_MSENC_GET_CAPS_PARAMS*)pParams)->capsTblSize, 1);
             paramCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYIN;
             paramCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_ZERO_BUFFER;
 
@@ -813,22 +778,6 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmC
             ((NV2080_CTRL_GPU_GET_ENGINES_PARAMS*)pParams)->engineList = paramCopies[0].pUserParams;
             break;
         }
-        case NV2080_CTRL_CMD_BUS_GET_INFO:
-        {
-            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV2080_CTRL_BUS_GET_INFO_PARAMS);
-
-            status = rmapiParamsRelease(&paramCopies[0]);
-            ((NV2080_CTRL_BUS_GET_INFO_PARAMS*)pParams)->busInfoList = paramCopies[0].pUserParams;
-            break;
-        }
-        case NV2080_CTRL_CMD_FB_GET_INFO:
-        {
-            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV2080_CTRL_FB_GET_INFO_PARAMS);
-
-            status = rmapiParamsRelease(&paramCopies[0]);
-            ((NV2080_CTRL_FB_GET_INFO_PARAMS*)pParams)->fbInfoList = paramCopies[0].pUserParams;
-            break;
-        }
 #ifdef USE_AMAPLIB
         case NV2080_CTRL_CMD_FB_GET_AMAP_CONF:
         {
@@ -938,14 +887,6 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmC
 
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV0080_CTRL_HOST_GET_CAPS_PARAMS*)pParams)->capsTbl = paramCopies[0].pUserParams;
-            break;
-        }
-        case NV0080_CTRL_CMD_MSENC_GET_CAPS:
-        {
-            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0080_CTRL_MSENC_GET_CAPS_PARAMS);
-
-            status = rmapiParamsRelease(&paramCopies[0]);
-            ((NV0080_CTRL_MSENC_GET_CAPS_PARAMS*)pParams)->capsTbl = paramCopies[0].pUserParams;
             break;
         }
         case NV2080_CTRL_CMD_BIOS_GET_INFO:

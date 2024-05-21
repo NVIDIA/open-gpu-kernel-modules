@@ -1,13 +1,20 @@
+
 #ifndef _G_KERNEL_FIFO_NVOC_H_
 #define _G_KERNEL_FIFO_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +36,7 @@ extern "C" {
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_kernel_fifo_nvoc.h"
 
 #ifndef _KERNELFIFO_H_
@@ -59,6 +67,7 @@ extern "C" {
 
 #include "class/clc369.h" // MMU_FAULT_BUFFER
 
+
 struct KernelChannel;
 
 #ifndef __NVOC_CLASS_KernelChannel_TYPEDEF__
@@ -71,6 +80,7 @@ typedef struct KernelChannel KernelChannel;
 #endif /* __nvoc_class_id_KernelChannel */
 
 
+
 struct KernelChannelGroup;
 
 #ifndef __NVOC_CLASS_KernelChannelGroup_TYPEDEF__
@@ -81,6 +91,7 @@ typedef struct KernelChannelGroup KernelChannelGroup;
 #ifndef __nvoc_class_id_KernelChannelGroup
 #define __nvoc_class_id_KernelChannelGroup 0xec6de1
 #endif /* __nvoc_class_id_KernelChannelGroup */
+
 
 
 struct KernelSchedMgr;
@@ -341,6 +352,7 @@ typedef struct _def_preallocated_userd_info
     NvU64      userdBar1MapStartOffset;  // <b> base offset of <a>'s BAR1 map
     NvU32      userdBar1MapSize;         // <c> sizeof <b>'s map
     NvU8      *userdBar1CpuPtr;          // <d> cpu map of <b>
+    NvU8      *userdBar1Priv;            // <e> priv data of <d>
     NvU32      userdBar1RefMask;         // mask of GPUs referencing userD
 } PREALLOCATED_USERD_INFO;
 
@@ -389,47 +401,58 @@ MAKE_LIST(FifoSchedulingHandlerEntryList, FifoSchedulingHandlerEntry);
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 
+
 struct KernelFifo {
+
+    // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+
+    // Parent (i.e. superclass or base class) object pointers
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
-    struct Object *__nvoc_pbase_Object;
-    struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;
-    struct KernelFifo *__nvoc_pbase_KernelFifo;
-    NV_STATUS (*__kfifoConstructEngine__)(struct OBJGPU *, struct KernelFifo *, ENGDESCRIPTOR);
-    NV_STATUS (*__kfifoStateLoad__)(struct OBJGPU *, struct KernelFifo *, NvU32);
-    NV_STATUS (*__kfifoStateUnload__)(struct OBJGPU *, struct KernelFifo *, NvU32);
-    NV_STATUS (*__kfifoStateInitLocked__)(struct OBJGPU *, struct KernelFifo *);
-    void (*__kfifoStateDestroy__)(struct OBJGPU *, struct KernelFifo *);
-    NV_STATUS (*__kfifoStatePostLoad__)(struct OBJGPU *, struct KernelFifo *, NvU32);
-    NV_STATUS (*__kfifoStatePreUnload__)(struct OBJGPU *, struct KernelFifo *, NvU32);
-    NV_STATUS (*__kfifoCheckChannelAllocAddrSpaces__)(struct KernelFifo *, NV_ADDRESS_SPACE, NV_ADDRESS_SPACE, NV_ADDRESS_SPACE);
-    NV_STATUS (*__kfifoConstructUsermodeMemdescs__)(struct OBJGPU *, struct KernelFifo *);
-    NvU32 (*__kfifoChannelGroupGetLocalMaxSubcontext__)(struct OBJGPU *, struct KernelFifo *, struct KernelChannelGroup *, NvBool);
-    void (*__kfifoGetCtxBufferMapFlags__)(struct OBJGPU *, struct KernelFifo *, NvU32, NvU32 *);
-    NV_STATUS (*__kfifoEngineInfoXlate__)(struct OBJGPU *, struct KernelFifo *, ENGINE_INFO_TYPE, NvU32, ENGINE_INFO_TYPE, NvU32 *);
-    NV_STATUS (*__kfifoGenerateWorkSubmitToken__)(struct OBJGPU *, struct KernelFifo *, struct KernelChannel *, NvU32 *, NvBool);
-    NV_STATUS (*__kfifoUpdateUsermodeDoorbell__)(struct OBJGPU *, struct KernelFifo *, NvU32, NvU32);
-    NvU32 (*__kfifoRunlistGetBaseShift__)(struct KernelFifo *);
-    NvU64 (*__kfifoGetUserdBar1MapStartOffset__)(struct OBJGPU *, struct KernelFifo *);
-    NvU32 (*__kfifoGetMaxCeChannelGroups__)(struct OBJGPU *, struct KernelFifo *);
-    NV_STATUS (*__kfifoGetVChIdForSChId__)(struct OBJGPU *, struct KernelFifo *, NvU32, NvU32, NvU32, NvU32 *);
-    NV_STATUS (*__kfifoProgramChIdTable__)(struct OBJGPU *, struct KernelFifo *, CHID_MGR *, NvU32, NvU32, NvU32, struct Device *, NvU32, FIFO_ENGINE_LIST *);
-    NV_STATUS (*__kfifoRecoverAllChannels__)(struct OBJGPU *, struct KernelFifo *, NvU32);
-    NV_STATUS (*__kfifoGetEnginePbdmaFaultIds__)(struct OBJGPU *, struct KernelFifo *, ENGINE_INFO_TYPE, NvU32, NvU32 **, NvU32 *);
-    NvU32 (*__kfifoGetNumPBDMAs__)(struct OBJGPU *, struct KernelFifo *);
-    const char *(*__kfifoPrintPbdmaId__)(struct OBJGPU *, struct KernelFifo *, NvU32);
-    const char *(*__kfifoPrintInternalEngine__)(struct OBJGPU *, struct KernelFifo *, NvU32);
-    const char *(*__kfifoPrintInternalEngineCheck__)(struct OBJGPU *, struct KernelFifo *, NvU32);
-    const char *(*__kfifoGetClientIdStringCommon__)(struct OBJGPU *, struct KernelFifo *, FIFO_MMU_EXCEPTION_DATA *);
-    const char *(*__kfifoGetClientIdString__)(struct OBJGPU *, struct KernelFifo *, FIFO_MMU_EXCEPTION_DATA *);
-    const char *(*__kfifoGetClientIdStringCheck__)(struct OBJGPU *, struct KernelFifo *, NvU32);
-    NV_STATUS (*__kfifoStatePreLoad__)(POBJGPU, struct KernelFifo *, NvU32);
-    NV_STATUS (*__kfifoStatePostUnload__)(POBJGPU, struct KernelFifo *, NvU32);
-    NV_STATUS (*__kfifoStateInitUnlocked__)(POBJGPU, struct KernelFifo *);
-    void (*__kfifoInitMissing__)(POBJGPU, struct KernelFifo *);
-    NV_STATUS (*__kfifoStatePreInitLocked__)(POBJGPU, struct KernelFifo *);
-    NV_STATUS (*__kfifoStatePreInitUnlocked__)(POBJGPU, struct KernelFifo *);
-    NvBool (*__kfifoIsPresent__)(POBJGPU, struct KernelFifo *);
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^2
+    struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
+    struct KernelFifo *__nvoc_pbase_KernelFifo;    // kfifo
+
+    // Vtable with 35 per-object function pointers
+    NV_STATUS (*__kfifoConstructEngine__)(struct OBJGPU *, struct KernelFifo * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__kfifoStateLoad__)(struct OBJGPU *, struct KernelFifo * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
+    NV_STATUS (*__kfifoStateUnload__)(struct OBJGPU *, struct KernelFifo * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
+    NV_STATUS (*__kfifoStateInitLocked__)(struct OBJGPU *, struct KernelFifo * /*this*/);  // virtual override (engstate) base (engstate)
+    void (*__kfifoStateDestroy__)(struct OBJGPU *, struct KernelFifo * /*this*/);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__kfifoStatePostLoad__)(struct OBJGPU *, struct KernelFifo * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
+    NV_STATUS (*__kfifoStatePreUnload__)(struct OBJGPU *, struct KernelFifo * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
+    NV_STATUS (*__kfifoCheckChannelAllocAddrSpaces__)(struct KernelFifo * /*this*/, NV_ADDRESS_SPACE, NV_ADDRESS_SPACE, NV_ADDRESS_SPACE);  // halified (2 hals) body
+    NV_STATUS (*__kfifoConstructUsermodeMemdescs__)(struct OBJGPU *, struct KernelFifo * /*this*/);  // halified (2 hals) body
+    NvU32 (*__kfifoChannelGroupGetLocalMaxSubcontext__)(struct OBJGPU *, struct KernelFifo * /*this*/, struct KernelChannelGroup *, NvBool);  // halified (2 hals) body
+    void (*__kfifoGetCtxBufferMapFlags__)(struct OBJGPU *, struct KernelFifo * /*this*/, NvU32, NvU32 *);  // halified (2 hals) body
+    NV_STATUS (*__kfifoEngineInfoXlate__)(struct OBJGPU *, struct KernelFifo * /*this*/, ENGINE_INFO_TYPE, NvU32, ENGINE_INFO_TYPE, NvU32 *);  // halified (2 hals) body
+    NV_STATUS (*__kfifoGenerateWorkSubmitToken__)(struct OBJGPU *, struct KernelFifo * /*this*/, struct KernelChannel *, NvU32 *, NvBool);  // halified (2 hals)
+    NV_STATUS (*__kfifoUpdateUsermodeDoorbell__)(struct OBJGPU *, struct KernelFifo * /*this*/, NvU32, NvU32);  // halified (2 hals)
+    NvU32 (*__kfifoRunlistGetBaseShift__)(struct KernelFifo * /*this*/);  // halified (3 hals) body
+    NvU64 (*__kfifoGetUserdBar1MapStartOffset__)(struct OBJGPU *, struct KernelFifo * /*this*/);  // halified (2 hals) body
+    NvU32 (*__kfifoGetMaxCeChannelGroups__)(struct OBJGPU *, struct KernelFifo * /*this*/);  // halified (2 hals) body
+    NV_STATUS (*__kfifoGetVChIdForSChId__)(struct OBJGPU *, struct KernelFifo * /*this*/, NvU32, NvU32, NvU32, NvU32 *);  // halified (2 hals) body
+    NV_STATUS (*__kfifoProgramChIdTable__)(struct OBJGPU *, struct KernelFifo * /*this*/, CHID_MGR *, NvU32, NvU32, NvU32, struct Device *, NvU32, FIFO_ENGINE_LIST *);  // halified (2 hals) body
+    NV_STATUS (*__kfifoRecoverAllChannels__)(struct OBJGPU *, struct KernelFifo * /*this*/, NvU32);  // halified (2 hals) body
+    NV_STATUS (*__kfifoGetEnginePbdmaFaultIds__)(struct OBJGPU *, struct KernelFifo * /*this*/, ENGINE_INFO_TYPE, NvU32, NvU32 **, NvU32 *);  // halified (2 hals) body
+    NvU32 (*__kfifoGetNumPBDMAs__)(struct OBJGPU *, struct KernelFifo * /*this*/);  // halified (2 hals) body
+    const char * (*__kfifoPrintPbdmaId__)(struct OBJGPU *, struct KernelFifo * /*this*/, NvU32);  // halified (2 hals) body
+    const char * (*__kfifoPrintInternalEngine__)(struct OBJGPU *, struct KernelFifo * /*this*/, NvU32);  // halified (4 hals) body
+    const char * (*__kfifoPrintInternalEngineCheck__)(struct OBJGPU *, struct KernelFifo * /*this*/, NvU32);  // halified (2 hals) body
+    const char * (*__kfifoGetClientIdStringCommon__)(struct OBJGPU *, struct KernelFifo * /*this*/, FIFO_MMU_EXCEPTION_DATA *);  // halified (2 hals) body
+    const char * (*__kfifoGetClientIdString__)(struct OBJGPU *, struct KernelFifo * /*this*/, FIFO_MMU_EXCEPTION_DATA *);  // halified (4 hals) body
+    const char * (*__kfifoGetClientIdStringCheck__)(struct OBJGPU *, struct KernelFifo * /*this*/, NvU32);  // halified (2 hals) body
+    void (*__kfifoInitMissing__)(POBJGPU, struct KernelFifo * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kfifoStatePreInitLocked__)(POBJGPU, struct KernelFifo * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kfifoStatePreInitUnlocked__)(POBJGPU, struct KernelFifo * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kfifoStateInitUnlocked__)(POBJGPU, struct KernelFifo * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kfifoStatePreLoad__)(POBJGPU, struct KernelFifo * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kfifoStatePostUnload__)(POBJGPU, struct KernelFifo * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__kfifoIsPresent__)(POBJGPU, struct KernelFifo * /*this*/);  // virtual inherited (engstate) base (engstate)
+
+    // Data members
     struct KernelSchedMgr *pKernelSchedMgr;
     CHID_MGR **ppChidMgr;
     NvU32 numChidMgrs;
@@ -478,6 +501,7 @@ typedef struct KernelFifo KernelFifo;
 #define __nvoc_class_id_KernelFifo 0xf3e155
 #endif /* __nvoc_class_id_KernelFifo */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelFifo;
 
 #define __staticCast_KernelFifo(pThis) \
@@ -490,6 +514,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelFifo;
     ((KernelFifo*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(KernelFifo)))
 #endif //__nvoc_kernel_fifo_h_disabled
 
+// Property macros
 #define PDB_PROP_KFIFO_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
 #define PDB_PROP_KFIFO_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
 
@@ -499,66 +524,245 @@ NV_STATUS __nvoc_objCreate_KernelFifo(KernelFifo**, Dynamic*, NvU32);
 #define __objCreate_KernelFifo(ppNewObj, pParent, createFlags) \
     __nvoc_objCreate_KernelFifo((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
+
+// Wrapper macros
+#define kfifoConstructEngine_FNPTR(pKernelFifo) pKernelFifo->__kfifoConstructEngine__
 #define kfifoConstructEngine(pGpu, pKernelFifo, engDesc) kfifoConstructEngine_DISPATCH(pGpu, pKernelFifo, engDesc)
+#define kfifoStateLoad_FNPTR(pKernelFifo) pKernelFifo->__kfifoStateLoad__
 #define kfifoStateLoad(pGpu, pKernelFifo, flags) kfifoStateLoad_DISPATCH(pGpu, pKernelFifo, flags)
 #define kfifoStateLoad_HAL(pGpu, pKernelFifo, flags) kfifoStateLoad_DISPATCH(pGpu, pKernelFifo, flags)
+#define kfifoStateUnload_FNPTR(pKernelFifo) pKernelFifo->__kfifoStateUnload__
 #define kfifoStateUnload(pGpu, pKernelFifo, flags) kfifoStateUnload_DISPATCH(pGpu, pKernelFifo, flags)
 #define kfifoStateUnload_HAL(pGpu, pKernelFifo, flags) kfifoStateUnload_DISPATCH(pGpu, pKernelFifo, flags)
+#define kfifoStateInitLocked_FNPTR(pKernelFifo) pKernelFifo->__kfifoStateInitLocked__
 #define kfifoStateInitLocked(pGpu, pKernelFifo) kfifoStateInitLocked_DISPATCH(pGpu, pKernelFifo)
+#define kfifoStateDestroy_FNPTR(pKernelFifo) pKernelFifo->__kfifoStateDestroy__
 #define kfifoStateDestroy(pGpu, pKernelFifo) kfifoStateDestroy_DISPATCH(pGpu, pKernelFifo)
+#define kfifoStatePostLoad_FNPTR(pKernelFifo) pKernelFifo->__kfifoStatePostLoad__
 #define kfifoStatePostLoad(pGpu, pKernelFifo, flags) kfifoStatePostLoad_DISPATCH(pGpu, pKernelFifo, flags)
 #define kfifoStatePostLoad_HAL(pGpu, pKernelFifo, flags) kfifoStatePostLoad_DISPATCH(pGpu, pKernelFifo, flags)
+#define kfifoStatePreUnload_FNPTR(pKernelFifo) pKernelFifo->__kfifoStatePreUnload__
 #define kfifoStatePreUnload(pGpu, pKernelFifo, flags) kfifoStatePreUnload_DISPATCH(pGpu, pKernelFifo, flags)
 #define kfifoStatePreUnload_HAL(pGpu, pKernelFifo, flags) kfifoStatePreUnload_DISPATCH(pGpu, pKernelFifo, flags)
+#define kfifoCheckChannelAllocAddrSpaces_FNPTR(pKernelFifo) pKernelFifo->__kfifoCheckChannelAllocAddrSpaces__
 #define kfifoCheckChannelAllocAddrSpaces(pKernelFifo, userdAddrSpace, pushBuffAddrSpace, gpFifoAddrSpace) kfifoCheckChannelAllocAddrSpaces_DISPATCH(pKernelFifo, userdAddrSpace, pushBuffAddrSpace, gpFifoAddrSpace)
 #define kfifoCheckChannelAllocAddrSpaces_HAL(pKernelFifo, userdAddrSpace, pushBuffAddrSpace, gpFifoAddrSpace) kfifoCheckChannelAllocAddrSpaces_DISPATCH(pKernelFifo, userdAddrSpace, pushBuffAddrSpace, gpFifoAddrSpace)
+#define kfifoConstructUsermodeMemdescs_FNPTR(pKernelFifo) pKernelFifo->__kfifoConstructUsermodeMemdescs__
 #define kfifoConstructUsermodeMemdescs(pGpu, pKernelFifo) kfifoConstructUsermodeMemdescs_DISPATCH(pGpu, pKernelFifo)
 #define kfifoConstructUsermodeMemdescs_HAL(pGpu, pKernelFifo) kfifoConstructUsermodeMemdescs_DISPATCH(pGpu, pKernelFifo)
-#define kfifoChannelGroupGetLocalMaxSubcontext(pGpu, pKernelFifo, arg0, arg1) kfifoChannelGroupGetLocalMaxSubcontext_DISPATCH(pGpu, pKernelFifo, arg0, arg1)
-#define kfifoChannelGroupGetLocalMaxSubcontext_HAL(pGpu, pKernelFifo, arg0, arg1) kfifoChannelGroupGetLocalMaxSubcontext_DISPATCH(pGpu, pKernelFifo, arg0, arg1)
+#define kfifoChannelGroupGetLocalMaxSubcontext_FNPTR(pKernelFifo) pKernelFifo->__kfifoChannelGroupGetLocalMaxSubcontext__
+#define kfifoChannelGroupGetLocalMaxSubcontext(pGpu, pKernelFifo, arg3, arg4) kfifoChannelGroupGetLocalMaxSubcontext_DISPATCH(pGpu, pKernelFifo, arg3, arg4)
+#define kfifoChannelGroupGetLocalMaxSubcontext_HAL(pGpu, pKernelFifo, arg3, arg4) kfifoChannelGroupGetLocalMaxSubcontext_DISPATCH(pGpu, pKernelFifo, arg3, arg4)
+#define kfifoGetCtxBufferMapFlags_FNPTR(pKernelFifo) pKernelFifo->__kfifoGetCtxBufferMapFlags__
 #define kfifoGetCtxBufferMapFlags(pGpu, pKernelFifo, engine, pFlags) kfifoGetCtxBufferMapFlags_DISPATCH(pGpu, pKernelFifo, engine, pFlags)
 #define kfifoGetCtxBufferMapFlags_HAL(pGpu, pKernelFifo, engine, pFlags) kfifoGetCtxBufferMapFlags_DISPATCH(pGpu, pKernelFifo, engine, pFlags)
+#define kfifoEngineInfoXlate_FNPTR(pKernelFifo) pKernelFifo->__kfifoEngineInfoXlate__
 #define kfifoEngineInfoXlate(pGpu, pKernelFifo, inType, inVal, outType, pOutVal) kfifoEngineInfoXlate_DISPATCH(pGpu, pKernelFifo, inType, inVal, outType, pOutVal)
 #define kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo, inType, inVal, outType, pOutVal) kfifoEngineInfoXlate_DISPATCH(pGpu, pKernelFifo, inType, inVal, outType, pOutVal)
-#define kfifoGenerateWorkSubmitToken(pGpu, arg0, arg1, pGeneratedToken, bUsedForHost) kfifoGenerateWorkSubmitToken_DISPATCH(pGpu, arg0, arg1, pGeneratedToken, bUsedForHost)
-#define kfifoGenerateWorkSubmitToken_HAL(pGpu, arg0, arg1, pGeneratedToken, bUsedForHost) kfifoGenerateWorkSubmitToken_DISPATCH(pGpu, arg0, arg1, pGeneratedToken, bUsedForHost)
-#define kfifoUpdateUsermodeDoorbell(arg0, arg1, workSubmitToken, runlisId) kfifoUpdateUsermodeDoorbell_DISPATCH(arg0, arg1, workSubmitToken, runlisId)
-#define kfifoUpdateUsermodeDoorbell_HAL(arg0, arg1, workSubmitToken, runlisId) kfifoUpdateUsermodeDoorbell_DISPATCH(arg0, arg1, workSubmitToken, runlisId)
+#define kfifoGenerateWorkSubmitToken_FNPTR(arg_this) arg_this->__kfifoGenerateWorkSubmitToken__
+#define kfifoGenerateWorkSubmitToken(pGpu, arg_this, arg3, pGeneratedToken, bUsedForHost) kfifoGenerateWorkSubmitToken_DISPATCH(pGpu, arg_this, arg3, pGeneratedToken, bUsedForHost)
+#define kfifoGenerateWorkSubmitToken_HAL(pGpu, arg_this, arg3, pGeneratedToken, bUsedForHost) kfifoGenerateWorkSubmitToken_DISPATCH(pGpu, arg_this, arg3, pGeneratedToken, bUsedForHost)
+#define kfifoUpdateUsermodeDoorbell_FNPTR(arg_this) arg_this->__kfifoUpdateUsermodeDoorbell__
+#define kfifoUpdateUsermodeDoorbell(arg1, arg_this, workSubmitToken, runlisId) kfifoUpdateUsermodeDoorbell_DISPATCH(arg1, arg_this, workSubmitToken, runlisId)
+#define kfifoUpdateUsermodeDoorbell_HAL(arg1, arg_this, workSubmitToken, runlisId) kfifoUpdateUsermodeDoorbell_DISPATCH(arg1, arg_this, workSubmitToken, runlisId)
+#define kfifoRunlistGetBaseShift_FNPTR(pKernelFifo) pKernelFifo->__kfifoRunlistGetBaseShift__
 #define kfifoRunlistGetBaseShift(pKernelFifo) kfifoRunlistGetBaseShift_DISPATCH(pKernelFifo)
 #define kfifoRunlistGetBaseShift_HAL(pKernelFifo) kfifoRunlistGetBaseShift_DISPATCH(pKernelFifo)
+#define kfifoGetUserdBar1MapStartOffset_FNPTR(pKernelFifo) pKernelFifo->__kfifoGetUserdBar1MapStartOffset__
 #define kfifoGetUserdBar1MapStartOffset(pGpu, pKernelFifo) kfifoGetUserdBar1MapStartOffset_DISPATCH(pGpu, pKernelFifo)
 #define kfifoGetUserdBar1MapStartOffset_HAL(pGpu, pKernelFifo) kfifoGetUserdBar1MapStartOffset_DISPATCH(pGpu, pKernelFifo)
+#define kfifoGetMaxCeChannelGroups_FNPTR(pKernelFifo) pKernelFifo->__kfifoGetMaxCeChannelGroups__
 #define kfifoGetMaxCeChannelGroups(pGpu, pKernelFifo) kfifoGetMaxCeChannelGroups_DISPATCH(pGpu, pKernelFifo)
 #define kfifoGetMaxCeChannelGroups_HAL(pGpu, pKernelFifo) kfifoGetMaxCeChannelGroups_DISPATCH(pGpu, pKernelFifo)
+#define kfifoGetVChIdForSChId_FNPTR(pKernelFifo) pKernelFifo->__kfifoGetVChIdForSChId__
 #define kfifoGetVChIdForSChId(pGpu, pKernelFifo, chId, gfid, engineId, pVChid) kfifoGetVChIdForSChId_DISPATCH(pGpu, pKernelFifo, chId, gfid, engineId, pVChid)
 #define kfifoGetVChIdForSChId_HAL(pGpu, pKernelFifo, chId, gfid, engineId, pVChid) kfifoGetVChIdForSChId_DISPATCH(pGpu, pKernelFifo, chId, gfid, engineId, pVChid)
+#define kfifoProgramChIdTable_FNPTR(pKernelFifo) pKernelFifo->__kfifoProgramChIdTable__
 #define kfifoProgramChIdTable(pGpu, pKernelFifo, pChidMgr, offset, numChannels, gfid, pMigDevice, engineFifoListNumEntries, pEngineFifoList) kfifoProgramChIdTable_DISPATCH(pGpu, pKernelFifo, pChidMgr, offset, numChannels, gfid, pMigDevice, engineFifoListNumEntries, pEngineFifoList)
 #define kfifoProgramChIdTable_HAL(pGpu, pKernelFifo, pChidMgr, offset, numChannels, gfid, pMigDevice, engineFifoListNumEntries, pEngineFifoList) kfifoProgramChIdTable_DISPATCH(pGpu, pKernelFifo, pChidMgr, offset, numChannels, gfid, pMigDevice, engineFifoListNumEntries, pEngineFifoList)
+#define kfifoRecoverAllChannels_FNPTR(pKernelFifo) pKernelFifo->__kfifoRecoverAllChannels__
 #define kfifoRecoverAllChannels(pGpu, pKernelFifo, gfid) kfifoRecoverAllChannels_DISPATCH(pGpu, pKernelFifo, gfid)
 #define kfifoRecoverAllChannels_HAL(pGpu, pKernelFifo, gfid) kfifoRecoverAllChannels_DISPATCH(pGpu, pKernelFifo, gfid)
-#define kfifoGetEnginePbdmaFaultIds(pGpu, pKernelFifo, arg0, arg1, arg2, arg3) kfifoGetEnginePbdmaFaultIds_DISPATCH(pGpu, pKernelFifo, arg0, arg1, arg2, arg3)
-#define kfifoGetEnginePbdmaFaultIds_HAL(pGpu, pKernelFifo, arg0, arg1, arg2, arg3) kfifoGetEnginePbdmaFaultIds_DISPATCH(pGpu, pKernelFifo, arg0, arg1, arg2, arg3)
+#define kfifoGetEnginePbdmaFaultIds_FNPTR(pKernelFifo) pKernelFifo->__kfifoGetEnginePbdmaFaultIds__
+#define kfifoGetEnginePbdmaFaultIds(pGpu, pKernelFifo, arg3, arg4, arg5, arg6) kfifoGetEnginePbdmaFaultIds_DISPATCH(pGpu, pKernelFifo, arg3, arg4, arg5, arg6)
+#define kfifoGetEnginePbdmaFaultIds_HAL(pGpu, pKernelFifo, arg3, arg4, arg5, arg6) kfifoGetEnginePbdmaFaultIds_DISPATCH(pGpu, pKernelFifo, arg3, arg4, arg5, arg6)
+#define kfifoGetNumPBDMAs_FNPTR(pKernelFifo) pKernelFifo->__kfifoGetNumPBDMAs__
 #define kfifoGetNumPBDMAs(pGpu, pKernelFifo) kfifoGetNumPBDMAs_DISPATCH(pGpu, pKernelFifo)
 #define kfifoGetNumPBDMAs_HAL(pGpu, pKernelFifo) kfifoGetNumPBDMAs_DISPATCH(pGpu, pKernelFifo)
+#define kfifoPrintPbdmaId_FNPTR(pKernelFifo) pKernelFifo->__kfifoPrintPbdmaId__
 #define kfifoPrintPbdmaId(pGpu, pKernelFifo, pbdmaId) kfifoPrintPbdmaId_DISPATCH(pGpu, pKernelFifo, pbdmaId)
 #define kfifoPrintPbdmaId_HAL(pGpu, pKernelFifo, pbdmaId) kfifoPrintPbdmaId_DISPATCH(pGpu, pKernelFifo, pbdmaId)
-#define kfifoPrintInternalEngine(pGpu, pKernelFifo, arg0) kfifoPrintInternalEngine_DISPATCH(pGpu, pKernelFifo, arg0)
-#define kfifoPrintInternalEngine_HAL(pGpu, pKernelFifo, arg0) kfifoPrintInternalEngine_DISPATCH(pGpu, pKernelFifo, arg0)
-#define kfifoPrintInternalEngineCheck(pGpu, pKernelFifo, arg0) kfifoPrintInternalEngineCheck_DISPATCH(pGpu, pKernelFifo, arg0)
-#define kfifoPrintInternalEngineCheck_HAL(pGpu, pKernelFifo, arg0) kfifoPrintInternalEngineCheck_DISPATCH(pGpu, pKernelFifo, arg0)
-#define kfifoGetClientIdStringCommon(pGpu, pKernelFifo, arg0) kfifoGetClientIdStringCommon_DISPATCH(pGpu, pKernelFifo, arg0)
-#define kfifoGetClientIdStringCommon_HAL(pGpu, pKernelFifo, arg0) kfifoGetClientIdStringCommon_DISPATCH(pGpu, pKernelFifo, arg0)
-#define kfifoGetClientIdString(pGpu, pKernelFifo, arg0) kfifoGetClientIdString_DISPATCH(pGpu, pKernelFifo, arg0)
-#define kfifoGetClientIdString_HAL(pGpu, pKernelFifo, arg0) kfifoGetClientIdString_DISPATCH(pGpu, pKernelFifo, arg0)
-#define kfifoGetClientIdStringCheck(pGpu, pKernelFifo, arg0) kfifoGetClientIdStringCheck_DISPATCH(pGpu, pKernelFifo, arg0)
-#define kfifoGetClientIdStringCheck_HAL(pGpu, pKernelFifo, arg0) kfifoGetClientIdStringCheck_DISPATCH(pGpu, pKernelFifo, arg0)
-#define kfifoStatePreLoad(pGpu, pEngstate, arg0) kfifoStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define kfifoStatePostUnload(pGpu, pEngstate, arg0) kfifoStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
-#define kfifoStateInitUnlocked(pGpu, pEngstate) kfifoStateInitUnlocked_DISPATCH(pGpu, pEngstate)
+#define kfifoPrintInternalEngine_FNPTR(pKernelFifo) pKernelFifo->__kfifoPrintInternalEngine__
+#define kfifoPrintInternalEngine(pGpu, pKernelFifo, arg3) kfifoPrintInternalEngine_DISPATCH(pGpu, pKernelFifo, arg3)
+#define kfifoPrintInternalEngine_HAL(pGpu, pKernelFifo, arg3) kfifoPrintInternalEngine_DISPATCH(pGpu, pKernelFifo, arg3)
+#define kfifoPrintInternalEngineCheck_FNPTR(pKernelFifo) pKernelFifo->__kfifoPrintInternalEngineCheck__
+#define kfifoPrintInternalEngineCheck(pGpu, pKernelFifo, arg3) kfifoPrintInternalEngineCheck_DISPATCH(pGpu, pKernelFifo, arg3)
+#define kfifoPrintInternalEngineCheck_HAL(pGpu, pKernelFifo, arg3) kfifoPrintInternalEngineCheck_DISPATCH(pGpu, pKernelFifo, arg3)
+#define kfifoGetClientIdStringCommon_FNPTR(pKernelFifo) pKernelFifo->__kfifoGetClientIdStringCommon__
+#define kfifoGetClientIdStringCommon(pGpu, pKernelFifo, arg3) kfifoGetClientIdStringCommon_DISPATCH(pGpu, pKernelFifo, arg3)
+#define kfifoGetClientIdStringCommon_HAL(pGpu, pKernelFifo, arg3) kfifoGetClientIdStringCommon_DISPATCH(pGpu, pKernelFifo, arg3)
+#define kfifoGetClientIdString_FNPTR(pKernelFifo) pKernelFifo->__kfifoGetClientIdString__
+#define kfifoGetClientIdString(pGpu, pKernelFifo, arg3) kfifoGetClientIdString_DISPATCH(pGpu, pKernelFifo, arg3)
+#define kfifoGetClientIdString_HAL(pGpu, pKernelFifo, arg3) kfifoGetClientIdString_DISPATCH(pGpu, pKernelFifo, arg3)
+#define kfifoGetClientIdStringCheck_FNPTR(pKernelFifo) pKernelFifo->__kfifoGetClientIdStringCheck__
+#define kfifoGetClientIdStringCheck(pGpu, pKernelFifo, arg3) kfifoGetClientIdStringCheck_DISPATCH(pGpu, pKernelFifo, arg3)
+#define kfifoGetClientIdStringCheck_HAL(pGpu, pKernelFifo, arg3) kfifoGetClientIdStringCheck_DISPATCH(pGpu, pKernelFifo, arg3)
+#define kfifoInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateInitMissing__
 #define kfifoInitMissing(pGpu, pEngstate) kfifoInitMissing_DISPATCH(pGpu, pEngstate)
+#define kfifoStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreInitLocked__
 #define kfifoStatePreInitLocked(pGpu, pEngstate) kfifoStatePreInitLocked_DISPATCH(pGpu, pEngstate)
+#define kfifoStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreInitUnlocked__
 #define kfifoStatePreInitUnlocked(pGpu, pEngstate) kfifoStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
+#define kfifoStateInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStateInitUnlocked__
+#define kfifoStateInitUnlocked(pGpu, pEngstate) kfifoStateInitUnlocked_DISPATCH(pGpu, pEngstate)
+#define kfifoStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreLoad__
+#define kfifoStatePreLoad(pGpu, pEngstate, arg3) kfifoStatePreLoad_DISPATCH(pGpu, pEngstate, arg3)
+#define kfifoStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePostUnload__
+#define kfifoStatePostUnload(pGpu, pEngstate, arg3) kfifoStatePostUnload_DISPATCH(pGpu, pEngstate, arg3)
+#define kfifoIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateIsPresent__
 #define kfifoIsPresent(pGpu, pEngstate) kfifoIsPresent_DISPATCH(pGpu, pEngstate)
+
+// Dispatch functions
+static inline NV_STATUS kfifoConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, ENGDESCRIPTOR engDesc) {
+    return pKernelFifo->__kfifoConstructEngine__(pGpu, pKernelFifo, engDesc);
+}
+
+static inline NV_STATUS kfifoStateLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 flags) {
+    return pKernelFifo->__kfifoStateLoad__(pGpu, pKernelFifo, flags);
+}
+
+static inline NV_STATUS kfifoStateUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 flags) {
+    return pKernelFifo->__kfifoStateUnload__(pGpu, pKernelFifo, flags);
+}
+
+static inline NV_STATUS kfifoStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo) {
+    return pKernelFifo->__kfifoStateInitLocked__(pGpu, pKernelFifo);
+}
+
+static inline void kfifoStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo) {
+    pKernelFifo->__kfifoStateDestroy__(pGpu, pKernelFifo);
+}
+
+static inline NV_STATUS kfifoStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 flags) {
+    return pKernelFifo->__kfifoStatePostLoad__(pGpu, pKernelFifo, flags);
+}
+
+static inline NV_STATUS kfifoStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 flags) {
+    return pKernelFifo->__kfifoStatePreUnload__(pGpu, pKernelFifo, flags);
+}
+
+static inline NV_STATUS kfifoCheckChannelAllocAddrSpaces_DISPATCH(struct KernelFifo *pKernelFifo, NV_ADDRESS_SPACE userdAddrSpace, NV_ADDRESS_SPACE pushBuffAddrSpace, NV_ADDRESS_SPACE gpFifoAddrSpace) {
+    return pKernelFifo->__kfifoCheckChannelAllocAddrSpaces__(pKernelFifo, userdAddrSpace, pushBuffAddrSpace, gpFifoAddrSpace);
+}
+
+static inline NV_STATUS kfifoConstructUsermodeMemdescs_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo) {
+    return pKernelFifo->__kfifoConstructUsermodeMemdescs__(pGpu, pKernelFifo);
+}
+
+static inline NvU32 kfifoChannelGroupGetLocalMaxSubcontext_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannelGroup *arg3, NvBool arg4) {
+    return pKernelFifo->__kfifoChannelGroupGetLocalMaxSubcontext__(pGpu, pKernelFifo, arg3, arg4);
+}
+
+static inline void kfifoGetCtxBufferMapFlags_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 engine, NvU32 *pFlags) {
+    pKernelFifo->__kfifoGetCtxBufferMapFlags__(pGpu, pKernelFifo, engine, pFlags);
+}
+
+static inline NV_STATUS kfifoEngineInfoXlate_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, ENGINE_INFO_TYPE inType, NvU32 inVal, ENGINE_INFO_TYPE outType, NvU32 *pOutVal) {
+    return pKernelFifo->__kfifoEngineInfoXlate__(pGpu, pKernelFifo, inType, inVal, outType, pOutVal);
+}
+
+static inline NV_STATUS kfifoGenerateWorkSubmitToken_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *arg_this, struct KernelChannel *arg3, NvU32 *pGeneratedToken, NvBool bUsedForHost) {
+    return arg_this->__kfifoGenerateWorkSubmitToken__(pGpu, arg_this, arg3, pGeneratedToken, bUsedForHost);
+}
+
+static inline NV_STATUS kfifoUpdateUsermodeDoorbell_DISPATCH(struct OBJGPU *arg1, struct KernelFifo *arg_this, NvU32 workSubmitToken, NvU32 runlisId) {
+    return arg_this->__kfifoUpdateUsermodeDoorbell__(arg1, arg_this, workSubmitToken, runlisId);
+}
+
+static inline NvU32 kfifoRunlistGetBaseShift_DISPATCH(struct KernelFifo *pKernelFifo) {
+    return pKernelFifo->__kfifoRunlistGetBaseShift__(pKernelFifo);
+}
+
+static inline NvU64 kfifoGetUserdBar1MapStartOffset_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo) {
+    return pKernelFifo->__kfifoGetUserdBar1MapStartOffset__(pGpu, pKernelFifo);
+}
+
+static inline NvU32 kfifoGetMaxCeChannelGroups_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo) {
+    return pKernelFifo->__kfifoGetMaxCeChannelGroups__(pGpu, pKernelFifo);
+}
+
+static inline NV_STATUS kfifoGetVChIdForSChId_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 chId, NvU32 gfid, NvU32 engineId, NvU32 *pVChid) {
+    return pKernelFifo->__kfifoGetVChIdForSChId__(pGpu, pKernelFifo, chId, gfid, engineId, pVChid);
+}
+
+static inline NV_STATUS kfifoProgramChIdTable_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvU32 offset, NvU32 numChannels, NvU32 gfid, struct Device *pMigDevice, NvU32 engineFifoListNumEntries, FIFO_ENGINE_LIST *pEngineFifoList) {
+    return pKernelFifo->__kfifoProgramChIdTable__(pGpu, pKernelFifo, pChidMgr, offset, numChannels, gfid, pMigDevice, engineFifoListNumEntries, pEngineFifoList);
+}
+
+static inline NV_STATUS kfifoRecoverAllChannels_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 gfid) {
+    return pKernelFifo->__kfifoRecoverAllChannels__(pGpu, pKernelFifo, gfid);
+}
+
+static inline NV_STATUS kfifoGetEnginePbdmaFaultIds_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, ENGINE_INFO_TYPE arg3, NvU32 arg4, NvU32 **arg5, NvU32 *arg6) {
+    return pKernelFifo->__kfifoGetEnginePbdmaFaultIds__(pGpu, pKernelFifo, arg3, arg4, arg5, arg6);
+}
+
+static inline NvU32 kfifoGetNumPBDMAs_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo) {
+    return pKernelFifo->__kfifoGetNumPBDMAs__(pGpu, pKernelFifo);
+}
+
+static inline const char * kfifoPrintPbdmaId_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 pbdmaId) {
+    return pKernelFifo->__kfifoPrintPbdmaId__(pGpu, pKernelFifo, pbdmaId);
+}
+
+static inline const char * kfifoPrintInternalEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3) {
+    return pKernelFifo->__kfifoPrintInternalEngine__(pGpu, pKernelFifo, arg3);
+}
+
+static inline const char * kfifoPrintInternalEngineCheck_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3) {
+    return pKernelFifo->__kfifoPrintInternalEngineCheck__(pGpu, pKernelFifo, arg3);
+}
+
+static inline const char * kfifoGetClientIdStringCommon_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, FIFO_MMU_EXCEPTION_DATA *arg3) {
+    return pKernelFifo->__kfifoGetClientIdStringCommon__(pGpu, pKernelFifo, arg3);
+}
+
+static inline const char * kfifoGetClientIdString_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, FIFO_MMU_EXCEPTION_DATA *arg3) {
+    return pKernelFifo->__kfifoGetClientIdString__(pGpu, pKernelFifo, arg3);
+}
+
+static inline const char * kfifoGetClientIdStringCheck_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3) {
+    return pKernelFifo->__kfifoGetClientIdStringCheck__(pGpu, pKernelFifo, arg3);
+}
+
+static inline void kfifoInitMissing_DISPATCH(POBJGPU pGpu, struct KernelFifo *pEngstate) {
+    pEngstate->__kfifoInitMissing__(pGpu, pEngstate);
+}
+
+static inline NV_STATUS kfifoStatePreInitLocked_DISPATCH(POBJGPU pGpu, struct KernelFifo *pEngstate) {
+    return pEngstate->__kfifoStatePreInitLocked__(pGpu, pEngstate);
+}
+
+static inline NV_STATUS kfifoStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct KernelFifo *pEngstate) {
+    return pEngstate->__kfifoStatePreInitUnlocked__(pGpu, pEngstate);
+}
+
+static inline NV_STATUS kfifoStateInitUnlocked_DISPATCH(POBJGPU pGpu, struct KernelFifo *pEngstate) {
+    return pEngstate->__kfifoStateInitUnlocked__(pGpu, pEngstate);
+}
+
+static inline NV_STATUS kfifoStatePreLoad_DISPATCH(POBJGPU pGpu, struct KernelFifo *pEngstate, NvU32 arg3) {
+    return pEngstate->__kfifoStatePreLoad__(pGpu, pEngstate, arg3);
+}
+
+static inline NV_STATUS kfifoStatePostUnload_DISPATCH(POBJGPU pGpu, struct KernelFifo *pEngstate, NvU32 arg3) {
+    return pEngstate->__kfifoStatePostUnload__(pGpu, pEngstate, arg3);
+}
+
+static inline NvBool kfifoIsPresent_DISPATCH(POBJGPU pGpu, struct KernelFifo *pEngstate) {
+    return pEngstate->__kfifoIsPresent__(pGpu, pEngstate);
+}
+
 NV_STATUS kfifoConstructHal_GM107(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo);
 
 
@@ -758,47 +962,47 @@ static inline NV_STATUS kfifoChannelGetFifoContextMemDesc(struct OBJGPU *pGpu, s
 
 #define kfifoChannelGetFifoContextMemDesc_HAL(pGpu, pKernelFifo, pKernelChannel, engState, ppMemdesc) kfifoChannelGetFifoContextMemDesc(pGpu, pKernelFifo, pKernelChannel, engState, ppMemdesc)
 
-NV_STATUS kfifoConvertInstToKernelChannel_GM107(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, INST_BLOCK_DESC *arg0, struct KernelChannel **arg1);
+NV_STATUS kfifoConvertInstToKernelChannel_GM107(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, INST_BLOCK_DESC *arg3, struct KernelChannel **arg4);
 
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NV_STATUS kfifoConvertInstToKernelChannel(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, INST_BLOCK_DESC *arg0, struct KernelChannel **arg1) {
+static inline NV_STATUS kfifoConvertInstToKernelChannel(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, INST_BLOCK_DESC *arg3, struct KernelChannel **arg4) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoConvertInstToKernelChannel(pGpu, pKernelFifo, arg0, arg1) kfifoConvertInstToKernelChannel_GM107(pGpu, pKernelFifo, arg0, arg1)
+#define kfifoConvertInstToKernelChannel(pGpu, pKernelFifo, arg3, arg4) kfifoConvertInstToKernelChannel_GM107(pGpu, pKernelFifo, arg3, arg4)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-#define kfifoConvertInstToKernelChannel_HAL(pGpu, pKernelFifo, arg0, arg1) kfifoConvertInstToKernelChannel(pGpu, pKernelFifo, arg0, arg1)
+#define kfifoConvertInstToKernelChannel_HAL(pGpu, pKernelFifo, arg3, arg4) kfifoConvertInstToKernelChannel(pGpu, pKernelFifo, arg3, arg4)
 
-NV_STATUS kfifoGetUsermodeMapInfo_GV100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU64 *arg0, NvU32 *arg1);
+NV_STATUS kfifoGetUsermodeMapInfo_GV100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU64 *arg3, NvU32 *arg4);
 
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NV_STATUS kfifoGetUsermodeMapInfo(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU64 *arg0, NvU32 *arg1) {
+static inline NV_STATUS kfifoGetUsermodeMapInfo(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU64 *arg3, NvU32 *arg4) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoGetUsermodeMapInfo(pGpu, pKernelFifo, arg0, arg1) kfifoGetUsermodeMapInfo_GV100(pGpu, pKernelFifo, arg0, arg1)
+#define kfifoGetUsermodeMapInfo(pGpu, pKernelFifo, arg3, arg4) kfifoGetUsermodeMapInfo_GV100(pGpu, pKernelFifo, arg3, arg4)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-#define kfifoGetUsermodeMapInfo_HAL(pGpu, pKernelFifo, arg0, arg1) kfifoGetUsermodeMapInfo(pGpu, pKernelFifo, arg0, arg1)
+#define kfifoGetUsermodeMapInfo_HAL(pGpu, pKernelFifo, arg3, arg4) kfifoGetUsermodeMapInfo(pGpu, pKernelFifo, arg3, arg4)
 
-NvU32 kfifoGetMaxSubcontext_GV100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvBool arg0);
+NvU32 kfifoGetMaxSubcontext_GV100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvBool arg3);
 
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NvU32 kfifoGetMaxSubcontext(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvBool arg0) {
+static inline NvU32 kfifoGetMaxSubcontext(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvBool arg3) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return 0;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoGetMaxSubcontext(pGpu, pKernelFifo, arg0) kfifoGetMaxSubcontext_GV100(pGpu, pKernelFifo, arg0)
+#define kfifoGetMaxSubcontext(pGpu, pKernelFifo, arg3) kfifoGetMaxSubcontext_GV100(pGpu, pKernelFifo, arg3)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-#define kfifoGetMaxSubcontext_HAL(pGpu, pKernelFifo, arg0) kfifoGetMaxSubcontext(pGpu, pKernelFifo, arg0)
+#define kfifoGetMaxSubcontext_HAL(pGpu, pKernelFifo, arg3) kfifoGetMaxSubcontext(pGpu, pKernelFifo, arg3)
 
 NvU32 kfifoGetMaxSubcontextFromGr_KERNEL(struct OBJGPU *pGpu, struct KernelFifo *pKernel);
 
@@ -904,62 +1108,62 @@ static inline NV_STATUS kfifoGetHostDeviceInfoTable(struct OBJGPU *pGpu, struct 
 
 #define kfifoGetHostDeviceInfoTable_HAL(pGpu, pKernelFifo, pEngineInfo, pMigDevice) kfifoGetHostDeviceInfoTable(pGpu, pKernelFifo, pEngineInfo, pMigDevice)
 
-void kfifoGetSubctxType_GV100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *arg0, NvU32 *arg1);
+void kfifoGetSubctxType_GV100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *arg3, NvU32 *arg4);
 
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline void kfifoGetSubctxType(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *arg0, NvU32 *arg1) {
+static inline void kfifoGetSubctxType(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *arg3, NvU32 *arg4) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoGetSubctxType(pGpu, pKernelFifo, arg0, arg1) kfifoGetSubctxType_GV100(pGpu, pKernelFifo, arg0, arg1)
+#define kfifoGetSubctxType(pGpu, pKernelFifo, arg3, arg4) kfifoGetSubctxType_GV100(pGpu, pKernelFifo, arg3, arg4)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-#define kfifoGetSubctxType_HAL(pGpu, pKernelFifo, arg0, arg1) kfifoGetSubctxType(pGpu, pKernelFifo, arg0, arg1)
+#define kfifoGetSubctxType_HAL(pGpu, pKernelFifo, arg3, arg4) kfifoGetSubctxType(pGpu, pKernelFifo, arg3, arg4)
 
-static inline NV_STATUS kfifoGenerateInternalWorkSubmitToken_c04480(struct OBJGPU *pGpu, struct KernelFifo *arg0, struct KernelChannel *arg1) {
+static inline NV_STATUS kfifoGenerateInternalWorkSubmitToken_c04480(struct OBJGPU *pGpu, struct KernelFifo *arg2, struct KernelChannel *arg3, NvU32 *pGeneratedToken) {
     NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
 }
 
-NV_STATUS kfifoGenerateInternalWorkSubmitToken_GA100(struct OBJGPU *pGpu, struct KernelFifo *arg0, struct KernelChannel *arg1);
+NV_STATUS kfifoGenerateInternalWorkSubmitToken_GA100(struct OBJGPU *pGpu, struct KernelFifo *arg2, struct KernelChannel *arg3, NvU32 *pGeneratedToken);
 
-static inline NV_STATUS kfifoGenerateInternalWorkSubmitToken_5baef9(struct OBJGPU *pGpu, struct KernelFifo *arg0, struct KernelChannel *arg1) {
+static inline NV_STATUS kfifoGenerateInternalWorkSubmitToken_5baef9(struct OBJGPU *pGpu, struct KernelFifo *arg2, struct KernelChannel *arg3, NvU32 *pGeneratedToken) {
     NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
 }
 
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NV_STATUS kfifoGenerateInternalWorkSubmitToken(struct OBJGPU *pGpu, struct KernelFifo *arg0, struct KernelChannel *arg1) {
-    NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_fifo_h_disabled
-#define kfifoGenerateInternalWorkSubmitToken(pGpu, arg0, arg1) kfifoGenerateInternalWorkSubmitToken_c04480(pGpu, arg0, arg1)
-#endif //__nvoc_kernel_fifo_h_disabled
-
-#define kfifoGenerateInternalWorkSubmitToken_HAL(pGpu, arg0, arg1) kfifoGenerateInternalWorkSubmitToken(pGpu, arg0, arg1)
-
-static inline NV_STATUS kfifoUpdateInternalDoorbellForUsermode_c04480(struct OBJGPU *arg0, struct KernelFifo *arg1, NvU32 workSubmitToken, NvU32 runlisId) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
-
-NV_STATUS kfifoUpdateInternalDoorbellForUsermode_GA100(struct OBJGPU *arg0, struct KernelFifo *arg1, NvU32 workSubmitToken, NvU32 runlisId);
-
-static inline NV_STATUS kfifoUpdateInternalDoorbellForUsermode_5baef9(struct OBJGPU *arg0, struct KernelFifo *arg1, NvU32 workSubmitToken, NvU32 runlisId) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
-
-
-#ifdef __nvoc_kernel_fifo_h_disabled
-static inline NV_STATUS kfifoUpdateInternalDoorbellForUsermode(struct OBJGPU *arg0, struct KernelFifo *arg1, NvU32 workSubmitToken, NvU32 runlisId) {
+static inline NV_STATUS kfifoGenerateInternalWorkSubmitToken(struct OBJGPU *pGpu, struct KernelFifo *arg2, struct KernelChannel *arg3, NvU32 *pGeneratedToken) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoUpdateInternalDoorbellForUsermode(arg0, arg1, workSubmitToken, runlisId) kfifoUpdateInternalDoorbellForUsermode_c04480(arg0, arg1, workSubmitToken, runlisId)
+#define kfifoGenerateInternalWorkSubmitToken(pGpu, arg2, arg3, pGeneratedToken) kfifoGenerateInternalWorkSubmitToken_c04480(pGpu, arg2, arg3, pGeneratedToken)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-#define kfifoUpdateInternalDoorbellForUsermode_HAL(arg0, arg1, workSubmitToken, runlisId) kfifoUpdateInternalDoorbellForUsermode(arg0, arg1, workSubmitToken, runlisId)
+#define kfifoGenerateInternalWorkSubmitToken_HAL(pGpu, arg2, arg3, pGeneratedToken) kfifoGenerateInternalWorkSubmitToken(pGpu, arg2, arg3, pGeneratedToken)
+
+static inline NV_STATUS kfifoUpdateInternalDoorbellForUsermode_c04480(struct OBJGPU *arg1, struct KernelFifo *arg2, NvU32 workSubmitToken, NvU32 runlisId) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+NV_STATUS kfifoUpdateInternalDoorbellForUsermode_GA100(struct OBJGPU *arg1, struct KernelFifo *arg2, NvU32 workSubmitToken, NvU32 runlisId);
+
+static inline NV_STATUS kfifoUpdateInternalDoorbellForUsermode_5baef9(struct OBJGPU *arg1, struct KernelFifo *arg2, NvU32 workSubmitToken, NvU32 runlisId) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+
+#ifdef __nvoc_kernel_fifo_h_disabled
+static inline NV_STATUS kfifoUpdateInternalDoorbellForUsermode(struct OBJGPU *arg1, struct KernelFifo *arg2, NvU32 workSubmitToken, NvU32 runlisId) {
+    NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kernel_fifo_h_disabled
+#define kfifoUpdateInternalDoorbellForUsermode(arg1, arg2, workSubmitToken, runlisId) kfifoUpdateInternalDoorbellForUsermode_c04480(arg1, arg2, workSubmitToken, runlisId)
+#endif //__nvoc_kernel_fifo_h_disabled
+
+#define kfifoUpdateInternalDoorbellForUsermode_HAL(arg1, arg2, workSubmitToken, runlisId) kfifoUpdateInternalDoorbellForUsermode(arg1, arg2, workSubmitToken, runlisId)
 
 static inline NvBool kfifoIsLiteModeEnabled_491d52(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo) {
     return ((NvBool)(0 != 0));
@@ -1033,21 +1237,21 @@ static inline NV_STATUS kfifoGetEnginePbdmaIds(struct OBJGPU *pGpu, struct Kerne
 
 #define kfifoGetEnginePbdmaIds_HAL(pGpu, pKernelFifo, type, val, ppPbdmaIds, pNumPbdmas) kfifoGetEnginePbdmaIds(pGpu, pKernelFifo, type, val, ppPbdmaIds, pNumPbdmas)
 
-static inline NV_STATUS kfifoReservePbdmaFaultIds_56cd7a(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, FIFO_ENGINE_LIST *arg0, NvU32 arg1) {
+static inline NV_STATUS kfifoReservePbdmaFaultIds_56cd7a(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, FIFO_ENGINE_LIST *arg3, NvU32 arg4) {
     return NV_OK;
 }
 
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NV_STATUS kfifoReservePbdmaFaultIds(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, FIFO_ENGINE_LIST *arg0, NvU32 arg1) {
+static inline NV_STATUS kfifoReservePbdmaFaultIds(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, FIFO_ENGINE_LIST *arg3, NvU32 arg4) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoReservePbdmaFaultIds(pGpu, pKernelFifo, arg0, arg1) kfifoReservePbdmaFaultIds_56cd7a(pGpu, pKernelFifo, arg0, arg1)
+#define kfifoReservePbdmaFaultIds(pGpu, pKernelFifo, arg3, arg4) kfifoReservePbdmaFaultIds_56cd7a(pGpu, pKernelFifo, arg3, arg4)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-#define kfifoReservePbdmaFaultIds_HAL(pGpu, pKernelFifo, arg0, arg1) kfifoReservePbdmaFaultIds(pGpu, pKernelFifo, arg0, arg1)
+#define kfifoReservePbdmaFaultIds_HAL(pGpu, pKernelFifo, arg3, arg4) kfifoReservePbdmaFaultIds(pGpu, pKernelFifo, arg3, arg4)
 
 NV_STATUS kfifoGetEnginePartnerList_GM107(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NV2080_CTRL_GPU_GET_ENGINE_PARTNERLIST_PARAMS *pParams);
 
@@ -1063,35 +1267,35 @@ static inline NV_STATUS kfifoGetEnginePartnerList(struct OBJGPU *pGpu, struct Ke
 
 #define kfifoGetEnginePartnerList_HAL(pGpu, pKernelFifo, pParams) kfifoGetEnginePartnerList(pGpu, pKernelFifo, pParams)
 
-static inline NvBool kfifoRunlistIsTsgHeaderSupported_cbe027(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0) {
+static inline NvBool kfifoRunlistIsTsgHeaderSupported_cbe027(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3) {
     return ((NvBool)(0 == 0));
 }
 
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NvBool kfifoRunlistIsTsgHeaderSupported(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0) {
+static inline NvBool kfifoRunlistIsTsgHeaderSupported(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_FALSE;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoRunlistIsTsgHeaderSupported(pGpu, pKernelFifo, arg0) kfifoRunlistIsTsgHeaderSupported_cbe027(pGpu, pKernelFifo, arg0)
+#define kfifoRunlistIsTsgHeaderSupported(pGpu, pKernelFifo, arg3) kfifoRunlistIsTsgHeaderSupported_cbe027(pGpu, pKernelFifo, arg3)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-#define kfifoRunlistIsTsgHeaderSupported_HAL(pGpu, pKernelFifo, arg0) kfifoRunlistIsTsgHeaderSupported(pGpu, pKernelFifo, arg0)
+#define kfifoRunlistIsTsgHeaderSupported_HAL(pGpu, pKernelFifo, arg3) kfifoRunlistIsTsgHeaderSupported(pGpu, pKernelFifo, arg3)
 
-NvU32 kfifoRunlistGetEntrySize_GV100(struct KernelFifo *arg0);
+NvU32 kfifoRunlistGetEntrySize_GV100(struct KernelFifo *arg1);
 
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NvU32 kfifoRunlistGetEntrySize(struct KernelFifo *arg0) {
+static inline NvU32 kfifoRunlistGetEntrySize(struct KernelFifo *arg1) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return 0;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoRunlistGetEntrySize(arg0) kfifoRunlistGetEntrySize_GV100(arg0)
+#define kfifoRunlistGetEntrySize(arg1) kfifoRunlistGetEntrySize_GV100(arg1)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-#define kfifoRunlistGetEntrySize_HAL(arg0) kfifoRunlistGetEntrySize(arg0)
+#define kfifoRunlistGetEntrySize_HAL(arg1) kfifoRunlistGetEntrySize(arg1)
 
 static inline void kfifoSetupBar1UserdSnoop_b3696a(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvBool bEnable, NvU64 offset) {
     return;
@@ -1234,33 +1438,33 @@ static inline NV_STATUS kfifoGetMaxSecureChannels(struct OBJGPU *pGpu, struct Ke
 
 #define kfifoGetMaxSecureChannels_HAL(pGpu, pKernelFifo) kfifoGetMaxSecureChannels(pGpu, pKernelFifo)
 
-NV_STATUS kfifoRunlistSetId_GM107(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *arg0, NvU32 runlistId);
+NV_STATUS kfifoRunlistSetId_GM107(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *arg3, NvU32 runlistId);
 
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NV_STATUS kfifoRunlistSetId(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *arg0, NvU32 runlistId) {
+static inline NV_STATUS kfifoRunlistSetId(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *arg3, NvU32 runlistId) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoRunlistSetId(pGpu, pKernelFifo, arg0, runlistId) kfifoRunlistSetId_GM107(pGpu, pKernelFifo, arg0, runlistId)
+#define kfifoRunlistSetId(pGpu, pKernelFifo, arg3, runlistId) kfifoRunlistSetId_GM107(pGpu, pKernelFifo, arg3, runlistId)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-#define kfifoRunlistSetId_HAL(pGpu, pKernelFifo, arg0, runlistId) kfifoRunlistSetId(pGpu, pKernelFifo, arg0, runlistId)
+#define kfifoRunlistSetId_HAL(pGpu, pKernelFifo, arg3, runlistId) kfifoRunlistSetId(pGpu, pKernelFifo, arg3, runlistId)
 
-NV_STATUS kfifoRunlistSetIdByEngine_GM107(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *arg0, NvU32 engDesc);
+NV_STATUS kfifoRunlistSetIdByEngine_GM107(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *arg3, NvU32 engDesc);
 
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NV_STATUS kfifoRunlistSetIdByEngine(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *arg0, NvU32 engDesc) {
+static inline NV_STATUS kfifoRunlistSetIdByEngine(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *arg3, NvU32 engDesc) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoRunlistSetIdByEngine(pGpu, pKernelFifo, arg0, engDesc) kfifoRunlistSetIdByEngine_GM107(pGpu, pKernelFifo, arg0, engDesc)
+#define kfifoRunlistSetIdByEngine(pGpu, pKernelFifo, arg3, engDesc) kfifoRunlistSetIdByEngine_GM107(pGpu, pKernelFifo, arg3, engDesc)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-#define kfifoRunlistSetIdByEngine_HAL(pGpu, pKernelFifo, arg0, engDesc) kfifoRunlistSetIdByEngine(pGpu, pKernelFifo, arg0, engDesc)
+#define kfifoRunlistSetIdByEngine_HAL(pGpu, pKernelFifo, arg3, engDesc) kfifoRunlistSetIdByEngine(pGpu, pKernelFifo, arg3, engDesc)
 
 void kfifoSetupUserD_GM107(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, MEMORY_DESCRIPTOR *pMemDesc);
 
@@ -1275,69 +1479,33 @@ static inline void kfifoSetupUserD(struct OBJGPU *pGpu, struct KernelFifo *pKern
 
 #define kfifoSetupUserD_HAL(pGpu, pKernelFifo, pMemDesc) kfifoSetupUserD(pGpu, pKernelFifo, pMemDesc)
 
-const char *kfifoGetFaultAccessTypeString_GV100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0);
+const char *kfifoGetFaultAccessTypeString_GV100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3);
 
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline const char *kfifoGetFaultAccessTypeString(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0) {
+static inline const char *kfifoGetFaultAccessTypeString(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NULL;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoGetFaultAccessTypeString(pGpu, pKernelFifo, arg0) kfifoGetFaultAccessTypeString_GV100(pGpu, pKernelFifo, arg0)
+#define kfifoGetFaultAccessTypeString(pGpu, pKernelFifo, arg3) kfifoGetFaultAccessTypeString_GV100(pGpu, pKernelFifo, arg3)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-#define kfifoGetFaultAccessTypeString_HAL(pGpu, pKernelFifo, arg0) kfifoGetFaultAccessTypeString(pGpu, pKernelFifo, arg0)
+#define kfifoGetFaultAccessTypeString_HAL(pGpu, pKernelFifo, arg3) kfifoGetFaultAccessTypeString(pGpu, pKernelFifo, arg3)
 
 NV_STATUS kfifoConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, ENGDESCRIPTOR engDesc);
 
-static inline NV_STATUS kfifoConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, ENGDESCRIPTOR engDesc) {
-    return pKernelFifo->__kfifoConstructEngine__(pGpu, pKernelFifo, engDesc);
-}
-
 NV_STATUS kfifoStateLoad_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 flags);
-
-static inline NV_STATUS kfifoStateLoad_56cd7a(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 flags) {
-    return NV_OK;
-}
-
-static inline NV_STATUS kfifoStateLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 flags) {
-    return pKernelFifo->__kfifoStateLoad__(pGpu, pKernelFifo, flags);
-}
 
 NV_STATUS kfifoStateUnload_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 flags);
 
-static inline NV_STATUS kfifoStateUnload_56cd7a(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 flags) {
-    return NV_OK;
-}
-
-static inline NV_STATUS kfifoStateUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 flags) {
-    return pKernelFifo->__kfifoStateUnload__(pGpu, pKernelFifo, flags);
-}
-
 NV_STATUS kfifoStateInitLocked_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo);
-
-static inline NV_STATUS kfifoStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo) {
-    return pKernelFifo->__kfifoStateInitLocked__(pGpu, pKernelFifo);
-}
 
 void kfifoStateDestroy_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo);
 
-static inline void kfifoStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo) {
-    pKernelFifo->__kfifoStateDestroy__(pGpu, pKernelFifo);
-}
-
 NV_STATUS kfifoStatePostLoad_GM107(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 flags);
 
-static inline NV_STATUS kfifoStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 flags) {
-    return pKernelFifo->__kfifoStatePostLoad__(pGpu, pKernelFifo, flags);
-}
-
 NV_STATUS kfifoStatePreUnload_GM107(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 flags);
-
-static inline NV_STATUS kfifoStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 flags) {
-    return pKernelFifo->__kfifoStatePreUnload__(pGpu, pKernelFifo, flags);
-}
 
 NV_STATUS kfifoCheckChannelAllocAddrSpaces_GH100(struct KernelFifo *pKernelFifo, NV_ADDRESS_SPACE userdAddrSpace, NV_ADDRESS_SPACE pushBuffAddrSpace, NV_ADDRESS_SPACE gpFifoAddrSpace);
 
@@ -1345,25 +1513,13 @@ static inline NV_STATUS kfifoCheckChannelAllocAddrSpaces_56cd7a(struct KernelFif
     return NV_OK;
 }
 
-static inline NV_STATUS kfifoCheckChannelAllocAddrSpaces_DISPATCH(struct KernelFifo *pKernelFifo, NV_ADDRESS_SPACE userdAddrSpace, NV_ADDRESS_SPACE pushBuffAddrSpace, NV_ADDRESS_SPACE gpFifoAddrSpace) {
-    return pKernelFifo->__kfifoCheckChannelAllocAddrSpaces__(pKernelFifo, userdAddrSpace, pushBuffAddrSpace, gpFifoAddrSpace);
-}
-
 NV_STATUS kfifoConstructUsermodeMemdescs_GH100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo);
 
 NV_STATUS kfifoConstructUsermodeMemdescs_GV100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo);
 
-static inline NV_STATUS kfifoConstructUsermodeMemdescs_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo) {
-    return pKernelFifo->__kfifoConstructUsermodeMemdescs__(pGpu, pKernelFifo);
-}
+NvU32 kfifoChannelGroupGetLocalMaxSubcontext_GM107(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannelGroup *arg3, NvBool arg4);
 
-NvU32 kfifoChannelGroupGetLocalMaxSubcontext_GM107(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannelGroup *arg0, NvBool arg1);
-
-NvU32 kfifoChannelGroupGetLocalMaxSubcontext_GA100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannelGroup *arg0, NvBool arg1);
-
-static inline NvU32 kfifoChannelGroupGetLocalMaxSubcontext_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannelGroup *arg0, NvBool arg1) {
-    return pKernelFifo->__kfifoChannelGroupGetLocalMaxSubcontext__(pGpu, pKernelFifo, arg0, arg1);
-}
+NvU32 kfifoChannelGroupGetLocalMaxSubcontext_GA100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannelGroup *arg3, NvBool arg4);
 
 void kfifoGetCtxBufferMapFlags_GH100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 engine, NvU32 *pFlags);
 
@@ -1371,33 +1527,17 @@ static inline void kfifoGetCtxBufferMapFlags_b3696a(struct OBJGPU *pGpu, struct 
     return;
 }
 
-static inline void kfifoGetCtxBufferMapFlags_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 engine, NvU32 *pFlags) {
-    pKernelFifo->__kfifoGetCtxBufferMapFlags__(pGpu, pKernelFifo, engine, pFlags);
-}
-
 NV_STATUS kfifoEngineInfoXlate_GV100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, ENGINE_INFO_TYPE inType, NvU32 inVal, ENGINE_INFO_TYPE outType, NvU32 *pOutVal);
 
 NV_STATUS kfifoEngineInfoXlate_GA100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, ENGINE_INFO_TYPE inType, NvU32 inVal, ENGINE_INFO_TYPE outType, NvU32 *pOutVal);
 
-static inline NV_STATUS kfifoEngineInfoXlate_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, ENGINE_INFO_TYPE inType, NvU32 inVal, ENGINE_INFO_TYPE outType, NvU32 *pOutVal) {
-    return pKernelFifo->__kfifoEngineInfoXlate__(pGpu, pKernelFifo, inType, inVal, outType, pOutVal);
-}
+NV_STATUS kfifoGenerateWorkSubmitToken_TU102(struct OBJGPU *pGpu, struct KernelFifo *arg2, struct KernelChannel *arg3, NvU32 *pGeneratedToken, NvBool bUsedForHost);
 
-NV_STATUS kfifoGenerateWorkSubmitToken_TU102(struct OBJGPU *pGpu, struct KernelFifo *arg0, struct KernelChannel *arg1, NvU32 *pGeneratedToken, NvBool bUsedForHost);
+NV_STATUS kfifoGenerateWorkSubmitToken_GA100(struct OBJGPU *pGpu, struct KernelFifo *arg2, struct KernelChannel *arg3, NvU32 *pGeneratedToken, NvBool bUsedForHost);
 
-NV_STATUS kfifoGenerateWorkSubmitToken_GA100(struct OBJGPU *pGpu, struct KernelFifo *arg0, struct KernelChannel *arg1, NvU32 *pGeneratedToken, NvBool bUsedForHost);
+NV_STATUS kfifoUpdateUsermodeDoorbell_TU102(struct OBJGPU *arg1, struct KernelFifo *arg2, NvU32 workSubmitToken, NvU32 runlisId);
 
-static inline NV_STATUS kfifoGenerateWorkSubmitToken_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *arg0, struct KernelChannel *arg1, NvU32 *pGeneratedToken, NvBool bUsedForHost) {
-    return arg0->__kfifoGenerateWorkSubmitToken__(pGpu, arg0, arg1, pGeneratedToken, bUsedForHost);
-}
-
-NV_STATUS kfifoUpdateUsermodeDoorbell_TU102(struct OBJGPU *arg0, struct KernelFifo *arg1, NvU32 workSubmitToken, NvU32 runlisId);
-
-NV_STATUS kfifoUpdateUsermodeDoorbell_GA100(struct OBJGPU *arg0, struct KernelFifo *arg1, NvU32 workSubmitToken, NvU32 runlisId);
-
-static inline NV_STATUS kfifoUpdateUsermodeDoorbell_DISPATCH(struct OBJGPU *arg0, struct KernelFifo *arg1, NvU32 workSubmitToken, NvU32 runlisId) {
-    return arg1->__kfifoUpdateUsermodeDoorbell__(arg0, arg1, workSubmitToken, runlisId);
-}
+NV_STATUS kfifoUpdateUsermodeDoorbell_GA100(struct OBJGPU *arg1, struct KernelFifo *arg2, NvU32 workSubmitToken, NvU32 runlisId);
 
 NvU32 kfifoRunlistGetBaseShift_GM107(struct KernelFifo *pKernelFifo);
 
@@ -1405,27 +1545,15 @@ NvU32 kfifoRunlistGetBaseShift_GA100(struct KernelFifo *pKernelFifo);
 
 NvU32 kfifoRunlistGetBaseShift_GA102(struct KernelFifo *pKernelFifo);
 
-static inline NvU32 kfifoRunlistGetBaseShift_DISPATCH(struct KernelFifo *pKernelFifo) {
-    return pKernelFifo->__kfifoRunlistGetBaseShift__(pKernelFifo);
-}
-
 NvU64 kfifoGetUserdBar1MapStartOffset_VF(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo);
 
 static inline NvU64 kfifoGetUserdBar1MapStartOffset_4a4dee(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo) {
     return 0;
 }
 
-static inline NvU64 kfifoGetUserdBar1MapStartOffset_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo) {
-    return pKernelFifo->__kfifoGetUserdBar1MapStartOffset__(pGpu, pKernelFifo);
-}
-
 NvU32 kfifoGetMaxCeChannelGroups_GV100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo);
 
 NvU32 kfifoGetMaxCeChannelGroups_GA100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo);
-
-static inline NvU32 kfifoGetMaxCeChannelGroups_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo) {
-    return pKernelFifo->__kfifoGetMaxCeChannelGroups__(pGpu, pKernelFifo);
-}
 
 static inline NV_STATUS kfifoGetVChIdForSChId_c04480(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 chId, NvU32 gfid, NvU32 engineId, NvU32 *pVChid) {
     NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
@@ -1433,20 +1561,12 @@ static inline NV_STATUS kfifoGetVChIdForSChId_c04480(struct OBJGPU *pGpu, struct
 
 NV_STATUS kfifoGetVChIdForSChId_FWCLIENT(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 chId, NvU32 gfid, NvU32 engineId, NvU32 *pVChid);
 
-static inline NV_STATUS kfifoGetVChIdForSChId_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 chId, NvU32 gfid, NvU32 engineId, NvU32 *pVChid) {
-    return pKernelFifo->__kfifoGetVChIdForSChId__(pGpu, pKernelFifo, chId, gfid, engineId, pVChid);
-}
-
 static inline NV_STATUS kfifoProgramChIdTable_c04480(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvU32 offset, NvU32 numChannels, NvU32 gfid, struct Device *pMigDevice, NvU32 engineFifoListNumEntries, FIFO_ENGINE_LIST *pEngineFifoList) {
     NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
 }
 
 static inline NV_STATUS kfifoProgramChIdTable_56cd7a(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvU32 offset, NvU32 numChannels, NvU32 gfid, struct Device *pMigDevice, NvU32 engineFifoListNumEntries, FIFO_ENGINE_LIST *pEngineFifoList) {
     return NV_OK;
-}
-
-static inline NV_STATUS kfifoProgramChIdTable_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvU32 offset, NvU32 numChannels, NvU32 gfid, struct Device *pMigDevice, NvU32 engineFifoListNumEntries, FIFO_ENGINE_LIST *pEngineFifoList) {
-    return pKernelFifo->__kfifoProgramChIdTable__(pGpu, pKernelFifo, pChidMgr, offset, numChannels, gfid, pMigDevice, engineFifoListNumEntries, pEngineFifoList);
 }
 
 static inline NV_STATUS kfifoRecoverAllChannels_56cd7a(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 gfid) {
@@ -1458,116 +1578,52 @@ static inline NV_STATUS kfifoRecoverAllChannels_92bfc3(struct OBJGPU *pGpu, stru
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static inline NV_STATUS kfifoRecoverAllChannels_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 gfid) {
-    return pKernelFifo->__kfifoRecoverAllChannels__(pGpu, pKernelFifo, gfid);
-}
+NV_STATUS kfifoGetEnginePbdmaFaultIds_GA100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, ENGINE_INFO_TYPE arg3, NvU32 arg4, NvU32 **arg5, NvU32 *arg6);
 
-NV_STATUS kfifoGetEnginePbdmaFaultIds_GA100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, ENGINE_INFO_TYPE arg0, NvU32 arg1, NvU32 **arg2, NvU32 *arg3);
-
-static inline NV_STATUS kfifoGetEnginePbdmaFaultIds_5baef9(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, ENGINE_INFO_TYPE arg0, NvU32 arg1, NvU32 **arg2, NvU32 *arg3) {
+static inline NV_STATUS kfifoGetEnginePbdmaFaultIds_5baef9(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, ENGINE_INFO_TYPE arg3, NvU32 arg4, NvU32 **arg5, NvU32 *arg6) {
     NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
-
-static inline NV_STATUS kfifoGetEnginePbdmaFaultIds_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, ENGINE_INFO_TYPE arg0, NvU32 arg1, NvU32 **arg2, NvU32 *arg3) {
-    return pKernelFifo->__kfifoGetEnginePbdmaFaultIds__(pGpu, pKernelFifo, arg0, arg1, arg2, arg3);
 }
 
 NvU32 kfifoGetNumPBDMAs_GM200(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo);
 
 NvU32 kfifoGetNumPBDMAs_GA100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo);
 
-static inline NvU32 kfifoGetNumPBDMAs_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo) {
-    return pKernelFifo->__kfifoGetNumPBDMAs__(pGpu, pKernelFifo);
-}
-
 const char *kfifoPrintPbdmaId_TU102(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 pbdmaId);
 
 const char *kfifoPrintPbdmaId_GA100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 pbdmaId);
 
-static inline const char *kfifoPrintPbdmaId_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 pbdmaId) {
-    return pKernelFifo->__kfifoPrintPbdmaId__(pGpu, pKernelFifo, pbdmaId);
-}
+const char *kfifoPrintInternalEngine_TU102(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3);
 
-const char *kfifoPrintInternalEngine_TU102(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0);
+const char *kfifoPrintInternalEngine_GA100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3);
 
-const char *kfifoPrintInternalEngine_GA100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0);
+const char *kfifoPrintInternalEngine_AD102(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3);
 
-const char *kfifoPrintInternalEngine_AD102(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0);
+const char *kfifoPrintInternalEngine_GH100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3);
 
-const char *kfifoPrintInternalEngine_GH100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0);
+const char *kfifoPrintInternalEngineCheck_GA100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3);
 
-static inline const char *kfifoPrintInternalEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0) {
-    return pKernelFifo->__kfifoPrintInternalEngine__(pGpu, pKernelFifo, arg0);
-}
-
-const char *kfifoPrintInternalEngineCheck_GA100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0);
-
-static inline const char *kfifoPrintInternalEngineCheck_fa6e19(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0) {
+static inline const char *kfifoPrintInternalEngineCheck_fa6e19(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3) {
     return ((void *)0);
 }
 
-static inline const char *kfifoPrintInternalEngineCheck_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0) {
-    return pKernelFifo->__kfifoPrintInternalEngineCheck__(pGpu, pKernelFifo, arg0);
-}
+const char *kfifoGetClientIdStringCommon_GH100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, FIFO_MMU_EXCEPTION_DATA *arg3);
 
-const char *kfifoGetClientIdStringCommon_GH100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, FIFO_MMU_EXCEPTION_DATA *arg0);
-
-static inline const char *kfifoGetClientIdStringCommon_95626c(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, FIFO_MMU_EXCEPTION_DATA *arg0) {
+static inline const char *kfifoGetClientIdStringCommon_95626c(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, FIFO_MMU_EXCEPTION_DATA *arg3) {
     NV_ASSERT_OR_RETURN_PRECOMP(0, "UNKNOWN");
 }
 
-static inline const char *kfifoGetClientIdStringCommon_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, FIFO_MMU_EXCEPTION_DATA *arg0) {
-    return pKernelFifo->__kfifoGetClientIdStringCommon__(pGpu, pKernelFifo, arg0);
-}
+const char *kfifoGetClientIdString_TU102(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, FIFO_MMU_EXCEPTION_DATA *arg3);
 
-const char *kfifoGetClientIdString_TU102(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, FIFO_MMU_EXCEPTION_DATA *arg0);
+const char *kfifoGetClientIdString_GA100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, FIFO_MMU_EXCEPTION_DATA *arg3);
 
-const char *kfifoGetClientIdString_GA100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, FIFO_MMU_EXCEPTION_DATA *arg0);
+const char *kfifoGetClientIdString_AD102(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, FIFO_MMU_EXCEPTION_DATA *arg3);
 
-const char *kfifoGetClientIdString_AD102(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, FIFO_MMU_EXCEPTION_DATA *arg0);
+const char *kfifoGetClientIdString_GH100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, FIFO_MMU_EXCEPTION_DATA *arg3);
 
-const char *kfifoGetClientIdString_GH100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, FIFO_MMU_EXCEPTION_DATA *arg0);
+const char *kfifoGetClientIdStringCheck_GA100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3);
 
-static inline const char *kfifoGetClientIdString_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, FIFO_MMU_EXCEPTION_DATA *arg0) {
-    return pKernelFifo->__kfifoGetClientIdString__(pGpu, pKernelFifo, arg0);
-}
-
-const char *kfifoGetClientIdStringCheck_GA100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0);
-
-static inline const char *kfifoGetClientIdStringCheck_da47da(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0) {
+static inline const char *kfifoGetClientIdStringCheck_da47da(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3) {
     return "UNKNOWN";
-}
-
-static inline const char *kfifoGetClientIdStringCheck_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0) {
-    return pKernelFifo->__kfifoGetClientIdStringCheck__(pGpu, pKernelFifo, arg0);
-}
-
-static inline NV_STATUS kfifoStatePreLoad_DISPATCH(POBJGPU pGpu, struct KernelFifo *pEngstate, NvU32 arg0) {
-    return pEngstate->__kfifoStatePreLoad__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS kfifoStatePostUnload_DISPATCH(POBJGPU pGpu, struct KernelFifo *pEngstate, NvU32 arg0) {
-    return pEngstate->__kfifoStatePostUnload__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS kfifoStateInitUnlocked_DISPATCH(POBJGPU pGpu, struct KernelFifo *pEngstate) {
-    return pEngstate->__kfifoStateInitUnlocked__(pGpu, pEngstate);
-}
-
-static inline void kfifoInitMissing_DISPATCH(POBJGPU pGpu, struct KernelFifo *pEngstate) {
-    pEngstate->__kfifoInitMissing__(pGpu, pEngstate);
-}
-
-static inline NV_STATUS kfifoStatePreInitLocked_DISPATCH(POBJGPU pGpu, struct KernelFifo *pEngstate) {
-    return pEngstate->__kfifoStatePreInitLocked__(pGpu, pEngstate);
-}
-
-static inline NV_STATUS kfifoStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct KernelFifo *pEngstate) {
-    return pEngstate->__kfifoStatePreInitUnlocked__(pGpu, pEngstate);
-}
-
-static inline NvBool kfifoIsPresent_DISPATCH(POBJGPU pGpu, struct KernelFifo *pEngstate) {
-    return pEngstate->__kfifoIsPresent__(pGpu, pEngstate);
 }
 
 static inline const ENGINE_INFO *kfifoGetEngineInfo(struct KernelFifo *pKernelFifo) {
@@ -1660,15 +1716,15 @@ static inline void kfifoChidMgrDestruct(struct KernelFifo *pKernelFifo) {
 #define kfifoChidMgrDestruct(pKernelFifo) kfifoChidMgrDestruct_IMPL(pKernelFifo)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-NV_STATUS kfifoChidMgrAllocChid_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvHandle hClient, CHANNEL_HW_ID_ALLOC_MODE arg0, NvBool bForceInternalIdx, NvU32 internalIdx, NvBool bForceUserdPage, NvU32 userdPageIdx, NvU32 ChID, struct KernelChannel *arg1);
+NV_STATUS kfifoChidMgrAllocChid_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvHandle hClient, CHANNEL_HW_ID_ALLOC_MODE arg5, NvBool bForceInternalIdx, NvU32 internalIdx, NvBool bForceUserdPage, NvU32 userdPageIdx, NvU32 ChID, struct KernelChannel *arg11);
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NV_STATUS kfifoChidMgrAllocChid(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvHandle hClient, CHANNEL_HW_ID_ALLOC_MODE arg0, NvBool bForceInternalIdx, NvU32 internalIdx, NvBool bForceUserdPage, NvU32 userdPageIdx, NvU32 ChID, struct KernelChannel *arg1) {
+static inline NV_STATUS kfifoChidMgrAllocChid(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvHandle hClient, CHANNEL_HW_ID_ALLOC_MODE arg5, NvBool bForceInternalIdx, NvU32 internalIdx, NvBool bForceUserdPage, NvU32 userdPageIdx, NvU32 ChID, struct KernelChannel *arg11) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoChidMgrAllocChid(pGpu, pKernelFifo, pChidMgr, hClient, arg0, bForceInternalIdx, internalIdx, bForceUserdPage, userdPageIdx, ChID, arg1) kfifoChidMgrAllocChid_IMPL(pGpu, pKernelFifo, pChidMgr, hClient, arg0, bForceInternalIdx, internalIdx, bForceUserdPage, userdPageIdx, ChID, arg1)
+#define kfifoChidMgrAllocChid(pGpu, pKernelFifo, pChidMgr, hClient, arg5, bForceInternalIdx, internalIdx, bForceUserdPage, userdPageIdx, ChID, arg11) kfifoChidMgrAllocChid_IMPL(pGpu, pKernelFifo, pChidMgr, hClient, arg5, bForceInternalIdx, internalIdx, bForceUserdPage, userdPageIdx, ChID, arg11)
 #endif //__nvoc_kernel_fifo_h_disabled
 
 NV_STATUS kfifoChidMgrRetainChid_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvU32 ChID);
@@ -1803,15 +1859,15 @@ static inline CHID_MGR *kfifoGetChidMgr(struct OBJGPU *pGpu, struct KernelFifo *
 #define kfifoGetChidMgr(pGpu, pKernelFifo, runlistId) kfifoGetChidMgr_IMPL(pGpu, pKernelFifo, runlistId)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-NV_STATUS kfifoGetChidMgrFromType_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 engineInfoType, NvU32 value, CHID_MGR **arg0);
+NV_STATUS kfifoGetChidMgrFromType_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 engineInfoType, NvU32 value, CHID_MGR **arg5);
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NV_STATUS kfifoGetChidMgrFromType(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 engineInfoType, NvU32 value, CHID_MGR **arg0) {
+static inline NV_STATUS kfifoGetChidMgrFromType(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 engineInfoType, NvU32 value, CHID_MGR **arg5) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoGetChidMgrFromType(pGpu, pKernelFifo, engineInfoType, value, arg0) kfifoGetChidMgrFromType_IMPL(pGpu, pKernelFifo, engineInfoType, value, arg0)
+#define kfifoGetChidMgrFromType(pGpu, pKernelFifo, engineInfoType, value, arg5) kfifoGetChidMgrFromType_IMPL(pGpu, pKernelFifo, engineInfoType, value, arg5)
 #endif //__nvoc_kernel_fifo_h_disabled
 
 struct KernelChannelGroup *kfifoGetChannelGroup_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 grpID, NvU32 runlistID);
@@ -1889,59 +1945,59 @@ static inline NvU32 kfifoGetAllocatedChannelMask(struct OBJGPU *pGpu, struct Ker
 #define kfifoGetAllocatedChannelMask(pGpu, pKernelFifo, runlistId, pBitMask, bitMaskSize) kfifoGetAllocatedChannelMask_IMPL(pGpu, pKernelFifo, runlistId, pBitMask, bitMaskSize)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-NV_STATUS kfifoChannelListCreate_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHANNEL_LIST **arg0);
+NV_STATUS kfifoChannelListCreate_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHANNEL_LIST **arg3);
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NV_STATUS kfifoChannelListCreate(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHANNEL_LIST **arg0) {
+static inline NV_STATUS kfifoChannelListCreate(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHANNEL_LIST **arg3) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoChannelListCreate(pGpu, pKernelFifo, arg0) kfifoChannelListCreate_IMPL(pGpu, pKernelFifo, arg0)
+#define kfifoChannelListCreate(pGpu, pKernelFifo, arg3) kfifoChannelListCreate_IMPL(pGpu, pKernelFifo, arg3)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-NV_STATUS kfifoChannelListDestroy_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHANNEL_LIST *arg0);
+NV_STATUS kfifoChannelListDestroy_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHANNEL_LIST *arg3);
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NV_STATUS kfifoChannelListDestroy(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHANNEL_LIST *arg0) {
+static inline NV_STATUS kfifoChannelListDestroy(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHANNEL_LIST *arg3) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoChannelListDestroy(pGpu, pKernelFifo, arg0) kfifoChannelListDestroy_IMPL(pGpu, pKernelFifo, arg0)
+#define kfifoChannelListDestroy(pGpu, pKernelFifo, arg3) kfifoChannelListDestroy_IMPL(pGpu, pKernelFifo, arg3)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-NV_STATUS kfifoChannelListAppend_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *arg0, CHANNEL_LIST *arg1);
+NV_STATUS kfifoChannelListAppend_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *arg3, CHANNEL_LIST *arg4);
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NV_STATUS kfifoChannelListAppend(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *arg0, CHANNEL_LIST *arg1) {
+static inline NV_STATUS kfifoChannelListAppend(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *arg3, CHANNEL_LIST *arg4) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoChannelListAppend(pGpu, pKernelFifo, arg0, arg1) kfifoChannelListAppend_IMPL(pGpu, pKernelFifo, arg0, arg1)
+#define kfifoChannelListAppend(pGpu, pKernelFifo, arg3, arg4) kfifoChannelListAppend_IMPL(pGpu, pKernelFifo, arg3, arg4)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-NV_STATUS kfifoChannelListRemove_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *arg0, CHANNEL_LIST *arg1);
+NV_STATUS kfifoChannelListRemove_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *arg3, CHANNEL_LIST *arg4);
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NV_STATUS kfifoChannelListRemove(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *arg0, CHANNEL_LIST *arg1) {
+static inline NV_STATUS kfifoChannelListRemove(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *arg3, CHANNEL_LIST *arg4) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoChannelListRemove(pGpu, pKernelFifo, arg0, arg1) kfifoChannelListRemove_IMPL(pGpu, pKernelFifo, arg0, arg1)
+#define kfifoChannelListRemove(pGpu, pKernelFifo, arg3, arg4) kfifoChannelListRemove_IMPL(pGpu, pKernelFifo, arg3, arg4)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-NvBool kfifoEngineListHasChannel_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, RM_ENGINE_TYPE *arg0, NvU32 arg1);
+NvBool kfifoEngineListHasChannel_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, RM_ENGINE_TYPE *arg3, NvU32 arg4);
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NvBool kfifoEngineListHasChannel(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, RM_ENGINE_TYPE *arg0, NvU32 arg1) {
+static inline NvBool kfifoEngineListHasChannel(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, RM_ENGINE_TYPE *arg3, NvU32 arg4) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_FALSE;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoEngineListHasChannel(pGpu, pKernelFifo, arg0, arg1) kfifoEngineListHasChannel_IMPL(pGpu, pKernelFifo, arg0, arg1)
+#define kfifoEngineListHasChannel(pGpu, pKernelFifo, arg3, arg4) kfifoEngineListHasChannel_IMPL(pGpu, pKernelFifo, arg3, arg4)
 #endif //__nvoc_kernel_fifo_h_disabled
 
 CTX_BUF_POOL_INFO *kfifoGetRunlistBufPool_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, RM_ENGINE_TYPE rmEngineType);
@@ -1955,15 +2011,15 @@ static inline CTX_BUF_POOL_INFO *kfifoGetRunlistBufPool(struct OBJGPU *pGpu, str
 #define kfifoGetRunlistBufPool(pGpu, pKernelFifo, rmEngineType) kfifoGetRunlistBufPool_IMPL(pGpu, pKernelFifo, rmEngineType)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-NV_STATUS kfifoGetRunlistBufInfo_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0, NvBool arg1, NvU32 arg2, NvU64 *arg3, NvU64 *arg4);
+NV_STATUS kfifoGetRunlistBufInfo_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3, NvBool arg4, NvU32 arg5, NvU64 *arg6, NvU64 *arg7);
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NV_STATUS kfifoGetRunlistBufInfo(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0, NvBool arg1, NvU32 arg2, NvU64 *arg3, NvU64 *arg4) {
+static inline NV_STATUS kfifoGetRunlistBufInfo(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3, NvBool arg4, NvU32 arg5, NvU64 *arg6, NvU64 *arg7) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoGetRunlistBufInfo(pGpu, pKernelFifo, arg0, arg1, arg2, arg3, arg4) kfifoGetRunlistBufInfo_IMPL(pGpu, pKernelFifo, arg0, arg1, arg2, arg3, arg4)
+#define kfifoGetRunlistBufInfo(pGpu, pKernelFifo, arg3, arg4, arg5, arg6, arg7) kfifoGetRunlistBufInfo_IMPL(pGpu, pKernelFifo, arg3, arg4, arg5, arg6, arg7)
 #endif //__nvoc_kernel_fifo_h_disabled
 
 NV_STATUS kfifoAddSchedulingHandler_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, PFifoSchedulingHandler pPostSchedulingEnableHandler, void *pPostSchedulingEnableHandlerData, PFifoSchedulingHandler pPreSchedulingDisableHandler, void *pPreSchedulingDisableHandlerData);
@@ -2088,37 +2144,37 @@ static inline NvU32 kfifoGetChannelClassId(struct OBJGPU *pGpu, struct KernelFif
 #define kfifoGetChannelClassId(pGpu, pKernelFifo) kfifoGetChannelClassId_IMPL(pGpu, pKernelFifo)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-NvBool kfifoIsMmuFaultEngineIdPbdma_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0);
+NvBool kfifoIsMmuFaultEngineIdPbdma_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3);
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NvBool kfifoIsMmuFaultEngineIdPbdma(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0) {
+static inline NvBool kfifoIsMmuFaultEngineIdPbdma(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_FALSE;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoIsMmuFaultEngineIdPbdma(pGpu, pKernelFifo, arg0) kfifoIsMmuFaultEngineIdPbdma_IMPL(pGpu, pKernelFifo, arg0)
+#define kfifoIsMmuFaultEngineIdPbdma(pGpu, pKernelFifo, arg3) kfifoIsMmuFaultEngineIdPbdma_IMPL(pGpu, pKernelFifo, arg3)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-NV_STATUS kfifoGetPbdmaIdFromMmuFaultId_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0, NvU32 *arg1);
+NV_STATUS kfifoGetPbdmaIdFromMmuFaultId_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3, NvU32 *arg4);
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NV_STATUS kfifoGetPbdmaIdFromMmuFaultId(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0, NvU32 *arg1) {
+static inline NV_STATUS kfifoGetPbdmaIdFromMmuFaultId(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3, NvU32 *arg4) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoGetPbdmaIdFromMmuFaultId(pGpu, pKernelFifo, arg0, arg1) kfifoGetPbdmaIdFromMmuFaultId_IMPL(pGpu, pKernelFifo, arg0, arg1)
+#define kfifoGetPbdmaIdFromMmuFaultId(pGpu, pKernelFifo, arg3, arg4) kfifoGetPbdmaIdFromMmuFaultId_IMPL(pGpu, pKernelFifo, arg3, arg4)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-NV_STATUS kfifoGetEngineTypeFromPbdmaFaultId_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0, RM_ENGINE_TYPE *arg1);
+NV_STATUS kfifoGetEngineTypeFromPbdmaFaultId_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3, RM_ENGINE_TYPE *arg4);
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NV_STATUS kfifoGetEngineTypeFromPbdmaFaultId(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg0, RM_ENGINE_TYPE *arg1) {
+static inline NV_STATUS kfifoGetEngineTypeFromPbdmaFaultId(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvU32 arg3, RM_ENGINE_TYPE *arg4) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoGetEngineTypeFromPbdmaFaultId(pGpu, pKernelFifo, arg0, arg1) kfifoGetEngineTypeFromPbdmaFaultId_IMPL(pGpu, pKernelFifo, arg0, arg1)
+#define kfifoGetEngineTypeFromPbdmaFaultId(pGpu, pKernelFifo, arg3, arg4) kfifoGetEngineTypeFromPbdmaFaultId_IMPL(pGpu, pKernelFifo, arg3, arg4)
 #endif //__nvoc_kernel_fifo_h_disabled
 
 NV_STATUS kfifoChannelGroupSetTimeslice_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannelGroup *pKernelChannelGroup, NvU64 timesliceUs, NvBool bSkipSubmit);

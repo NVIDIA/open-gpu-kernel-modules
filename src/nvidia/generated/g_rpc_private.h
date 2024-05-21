@@ -211,6 +211,7 @@ RpcCtrlSetTimeslice                rpcCtrlSetTimeslice_STUB;  // TU10X, GA100, G
 
                                                // RPC:CTRL_GPU_QUERY_ECC_STATUS
 RpcCtrlGpuQueryEccStatus           rpcCtrlGpuQueryEccStatus_v24_06;
+RpcCtrlGpuQueryEccStatus           rpcCtrlGpuQueryEccStatus_v26_02;
 RpcCtrlGpuQueryEccStatus           rpcCtrlGpuQueryEccStatus_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
                                                // RPC:CTRL_DBG_GET_MODE_MMU_DEBUG
@@ -260,10 +261,6 @@ RpcCtrlNvlinkGetInbandReceivedData   rpcCtrlNvlinkGetInbandReceivedData_STUB;  /
                                                // RPC:CTRL_GET_CE_PCE_MASK
 RpcCtrlGetCePceMask                rpcCtrlGetCePceMask_v1A_0E;
 RpcCtrlGetCePceMask                rpcCtrlGetCePceMask_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
-
-                                               // RPC:CTRL_GET_NVLINK_PEER_ID_MASK
-RpcCtrlGetNvlinkPeerIdMask         rpcCtrlGetNvlinkPeerIdMask_v1A_0E;
-RpcCtrlGetNvlinkPeerIdMask         rpcCtrlGetNvlinkPeerIdMask_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
                                                // RPC:CTRL_GPU_EVICT_CTX
 RpcCtrlGpuEvictCtx                 rpcCtrlGpuEvictCtx_v1A_1C;
@@ -370,6 +367,7 @@ RpcPerfGetLevelInfo                rpcPerfGetLevelInfo_STUB;  // TU10X, GA100, G
 
                                                // RPC:ALLOC_OBJECT
 RpcAllocObject                     rpcAllocObject_v25_08;
+RpcAllocObject                     rpcAllocObject_v26_00;
 RpcAllocObject                     rpcAllocObject_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
                                                // RPC:CTRL_GPU_HANDLE_VF_PRI_FAULT
@@ -392,6 +390,10 @@ RpcRmApiControl                    rpcRmApiControl_STUB;     // TU10X, GA100, GA
                                                // RPC:CTRL_FABRIC_MEM_STATS
 RpcCtrlFabricMemStats              rpcCtrlFabricMemStats_v1E_0C;
 RpcCtrlFabricMemStats              rpcCtrlFabricMemStats_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_CMD_NVLINK_INBAND_SEND_DATA
+RpcCtrlCmdNvlinkInbandSendData     rpcCtrlCmdNvlinkInbandSendData_v26_05;
+RpcCtrlCmdNvlinkInbandSendData     rpcCtrlCmdNvlinkInbandSendData_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
                                                // RPC:CTRL_GR_CTXSW_ZCULL_BIND
 RpcCtrlGrCtxswZcullBind            rpcCtrlGrCtxswZcullBind_v1A_0E;
@@ -439,6 +441,7 @@ RpcCtrlInternalSriovPromotePmaStream   rpcCtrlInternalSriovPromotePmaStream_STUB
 
                                                // RPC:CTRL_FB_GET_FS_INFO
 RpcCtrlFbGetFsInfo                 rpcCtrlFbGetFsInfo_v24_00;
+RpcCtrlFbGetFsInfo                 rpcCtrlFbGetFsInfo_v26_04;
 RpcCtrlFbGetFsInfo                 rpcCtrlFbGetFsInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
                                                // RPC:CTRL_SET_CHANNEL_INTERLEAVE_LEVEL
@@ -2165,6 +2168,74 @@ static void rpc_iGrp_ipVersions_Install_v25_1B(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 #endif // 
 }
 
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v26_00(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v26_02(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v26_04(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v26_05(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
 
 
 
@@ -2279,8 +2350,10 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
        pRpcHal->rpcCleanupSurface = rpcCleanupSurface_v03_00;
     if (IsIPVersionInRange(pRpc, 0x1A0A0000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlSetTimeslice = rpcCtrlSetTimeslice_v1A_0A;
-    if (IsIPVersionInRange(pRpc, 0x24060000, 0xFFFFFFFF))
+    if (IsIPVersionInRange(pRpc, 0x24060000, 0x2601FFFF))
        pRpcHal->rpcCtrlGpuQueryEccStatus = rpcCtrlGpuQueryEccStatus_v24_06;
+    if (IsIPVersionInRange(pRpc, 0x26020000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGpuQueryEccStatus = rpcCtrlGpuQueryEccStatus_v26_02;
     if (IsIPVersionInRange(pRpc, 0x25040000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlDbgGetModeMmuDebug = rpcCtrlDbgGetModeMmuDebug_v25_04;
     if (IsIPVersionInRange(pRpc, 0x1A0C0000, 0xFFFFFFFF))
@@ -2301,8 +2374,6 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
        pRpcHal->rpcCtrlNvlinkGetInbandReceivedData = rpcCtrlNvlinkGetInbandReceivedData_v25_0C;
     if (IsIPVersionInRange(pRpc, 0x1A0E0000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlGetCePceMask = rpcCtrlGetCePceMask_v1A_0E;
-    if (IsIPVersionInRange(pRpc, 0x1A0E0000, 0xFFFFFFFF))
-       pRpcHal->rpcCtrlGetNvlinkPeerIdMask = rpcCtrlGetNvlinkPeerIdMask_v1A_0E;
     if (IsIPVersionInRange(pRpc, 0x1A1C0000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlGpuEvictCtx = rpcCtrlGpuEvictCtx_v1A_1C;
     if (IsIPVersionInRange(pRpc, 0x1E060000, 0xFFFFFFFF))
@@ -2353,8 +2424,10 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
        pRpcHal->rpcCtrlGetP2pCaps = rpcCtrlGetP2pCaps_v1F_0D;
     if (IsIPVersionInRange(pRpc, 0x03000000, 0xFFFFFFFF))
        pRpcHal->rpcPerfGetLevelInfo = rpcPerfGetLevelInfo_v03_00;
-    if (IsIPVersionInRange(pRpc, 0x25080000, 0xFFFFFFFF))
+    if (IsIPVersionInRange(pRpc, 0x25080000, 0x25FFFFFF))
        pRpcHal->rpcAllocObject = rpcAllocObject_v25_08;
+    if (IsIPVersionInRange(pRpc, 0x26000000, 0xFFFFFFFF))
+       pRpcHal->rpcAllocObject = rpcAllocObject_v26_00;
     if (IsIPVersionInRange(pRpc, 0x1A090000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlGpuHandleVfPriFault = rpcCtrlGpuHandleVfPriFault_v1A_09;
     if (IsIPVersionInRange(pRpc, 0x250D0000, 0x250EFFFF))
@@ -2379,6 +2452,8 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
        pRpcHal->rpcRmApiControl = rpcRmApiControl_v25_1A;
     if (IsIPVersionInRange(pRpc, 0x1E0C0000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlFabricMemStats = rpcCtrlFabricMemStats_v1E_0C;
+    if (IsIPVersionInRange(pRpc, 0x26050000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlCmdNvlinkInbandSendData = rpcCtrlCmdNvlinkInbandSendData_v26_05;
     if (IsIPVersionInRange(pRpc, 0x1A0E0000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlGrCtxswZcullBind = rpcCtrlGrCtxswZcullBind_v1A_0E;
     if (IsIPVersionInRange(pRpc, 0x1F050000, 0xFFFFFFFF))
@@ -2401,8 +2476,10 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
        pRpcHal->rpcCtrlFlaSetupInstanceMemBlock = rpcCtrlFlaSetupInstanceMemBlock_v21_05;
     if (IsIPVersionInRange(pRpc, 0x1C0C0000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlInternalSriovPromotePmaStream = rpcCtrlInternalSriovPromotePmaStream_v1C_0C;
-    if (IsIPVersionInRange(pRpc, 0x24000000, 0xFFFFFFFF))
+    if (IsIPVersionInRange(pRpc, 0x24000000, 0x2603FFFF))
        pRpcHal->rpcCtrlFbGetFsInfo = rpcCtrlFbGetFsInfo_v24_00;
+    if (IsIPVersionInRange(pRpc, 0x26040000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlFbGetFsInfo = rpcCtrlFbGetFsInfo_v26_04;
     if (IsIPVersionInRange(pRpc, 0x1A0A0000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlSetChannelInterleaveLevel = rpcCtrlSetChannelInterleaveLevel_v1A_0A;
     if (IsIPVersionInRange(pRpc, 0x1A100000, 0xFFFFFFFF))
@@ -2523,7 +2600,6 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGetP2pCapsV2);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlNvlinkGetInbandReceivedData);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGetCePceMask);
-    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGetNvlinkPeerIdMask);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGpuEvictCtx);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGetMmuDebugMode);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcInvalidateTlb);
@@ -2553,6 +2629,7 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGpuHandleVfPriFault);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcRmApiControl);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlFabricMemStats);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlCmdNvlinkInbandSendData);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGrCtxswZcullBind);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlInternalMemsysSetZbcReferenced);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlPerfRatedTdpSetControl);
@@ -2882,6 +2959,18 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v25_1B[] = {
         { 0x251B0000, 0xFFFFFFFF, },          // 
     };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v26_00[] = {
+        { 0x26000000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v26_02[] = {
+        { 0x26020000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v26_04[] = {
+        { 0x26040000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v26_05[] = {
+        { 0x26050000, 0xFFFFFFFF, },          // 
+    };
 
 #define _RPC_HAL_IGRP_ENTRY_INIT(v) \
     { RPC_IGRP_IP_VERSIONS_RANGES_##v, NV_ARRAY_ELEMENTS(RPC_IGRP_IP_VERSIONS_RANGES_##v), rpc_iGrp_ipVersions_Install_##v, }
@@ -2981,6 +3070,10 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
         _RPC_HAL_IGRP_ENTRY_INIT(v25_19),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v25_1A),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v25_1B),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v26_00),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v26_02),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v26_04),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v26_05),               // 
     };
 
 #undef _RPC_HAL_IGRP_ENTRY_INIT
@@ -3067,7 +3160,6 @@ static void rpcHalIfacesSetup_TU102(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlGetP2pCapsV2_STUB,                // rpcCtrlGetP2pCapsV2
         rpcCtrlNvlinkGetInbandReceivedData_STUB,   // rpcCtrlNvlinkGetInbandReceivedData
         rpcCtrlGetCePceMask_STUB,                // rpcCtrlGetCePceMask
-        rpcCtrlGetNvlinkPeerIdMask_STUB,         // rpcCtrlGetNvlinkPeerIdMask
         rpcCtrlGpuEvictCtx_STUB,                 // rpcCtrlGpuEvictCtx
         rpcCtrlGetMmuDebugMode_STUB,             // rpcCtrlGetMmuDebugMode
         rpcInvalidateTlb_STUB,                   // rpcInvalidateTlb
@@ -3098,6 +3190,7 @@ static void rpcHalIfacesSetup_TU102(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlGpuHandleVfPriFault_STUB,         // rpcCtrlGpuHandleVfPriFault
         rpcRmApiControl_STUB,                    // rpcRmApiControl
         rpcCtrlFabricMemStats_STUB,              // rpcCtrlFabricMemStats
+        rpcCtrlCmdNvlinkInbandSendData_STUB,     // rpcCtrlCmdNvlinkInbandSendData
         rpcCtrlGrCtxswZcullBind_STUB,            // rpcCtrlGrCtxswZcullBind
         rpcCtrlInternalMemsysSetZbcReferenced_STUB,   // rpcCtrlInternalMemsysSetZbcReferenced
         rpcCtrlPerfRatedTdpSetControl_STUB,      // rpcCtrlPerfRatedTdpSetControl
@@ -3252,7 +3345,6 @@ static void rpcHalIfacesSetup_GA100(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlGetP2pCapsV2_STUB,                // rpcCtrlGetP2pCapsV2
         rpcCtrlNvlinkGetInbandReceivedData_STUB,   // rpcCtrlNvlinkGetInbandReceivedData
         rpcCtrlGetCePceMask_STUB,                // rpcCtrlGetCePceMask
-        rpcCtrlGetNvlinkPeerIdMask_STUB,         // rpcCtrlGetNvlinkPeerIdMask
         rpcCtrlGpuEvictCtx_STUB,                 // rpcCtrlGpuEvictCtx
         rpcCtrlGetMmuDebugMode_STUB,             // rpcCtrlGetMmuDebugMode
         rpcInvalidateTlb_STUB,                   // rpcInvalidateTlb
@@ -3283,6 +3375,7 @@ static void rpcHalIfacesSetup_GA100(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlGpuHandleVfPriFault_STUB,         // rpcCtrlGpuHandleVfPriFault
         rpcRmApiControl_STUB,                    // rpcRmApiControl
         rpcCtrlFabricMemStats_STUB,              // rpcCtrlFabricMemStats
+        rpcCtrlCmdNvlinkInbandSendData_STUB,     // rpcCtrlCmdNvlinkInbandSendData
         rpcCtrlGrCtxswZcullBind_STUB,            // rpcCtrlGrCtxswZcullBind
         rpcCtrlInternalMemsysSetZbcReferenced_STUB,   // rpcCtrlInternalMemsysSetZbcReferenced
         rpcCtrlPerfRatedTdpSetControl_STUB,      // rpcCtrlPerfRatedTdpSetControl
@@ -3449,7 +3542,6 @@ static void rpcHalIfacesSetup_AD102(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlGetP2pCapsV2_STUB,                // rpcCtrlGetP2pCapsV2
         rpcCtrlNvlinkGetInbandReceivedData_STUB,   // rpcCtrlNvlinkGetInbandReceivedData
         rpcCtrlGetCePceMask_STUB,                // rpcCtrlGetCePceMask
-        rpcCtrlGetNvlinkPeerIdMask_STUB,         // rpcCtrlGetNvlinkPeerIdMask
         rpcCtrlGpuEvictCtx_STUB,                 // rpcCtrlGpuEvictCtx
         rpcCtrlGetMmuDebugMode_STUB,             // rpcCtrlGetMmuDebugMode
         rpcInvalidateTlb_STUB,                   // rpcInvalidateTlb
@@ -3480,6 +3572,7 @@ static void rpcHalIfacesSetup_AD102(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlGpuHandleVfPriFault_STUB,         // rpcCtrlGpuHandleVfPriFault
         rpcRmApiControl_STUB,                    // rpcRmApiControl
         rpcCtrlFabricMemStats_STUB,              // rpcCtrlFabricMemStats
+        rpcCtrlCmdNvlinkInbandSendData_STUB,     // rpcCtrlCmdNvlinkInbandSendData
         rpcCtrlGrCtxswZcullBind_STUB,            // rpcCtrlGrCtxswZcullBind
         rpcCtrlInternalMemsysSetZbcReferenced_STUB,   // rpcCtrlInternalMemsysSetZbcReferenced
         rpcCtrlPerfRatedTdpSetControl_STUB,      // rpcCtrlPerfRatedTdpSetControl
@@ -3634,7 +3727,6 @@ static void rpcHalIfacesSetup_GH100(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlGetP2pCapsV2_STUB,                // rpcCtrlGetP2pCapsV2
         rpcCtrlNvlinkGetInbandReceivedData_STUB,   // rpcCtrlNvlinkGetInbandReceivedData
         rpcCtrlGetCePceMask_STUB,                // rpcCtrlGetCePceMask
-        rpcCtrlGetNvlinkPeerIdMask_STUB,         // rpcCtrlGetNvlinkPeerIdMask
         rpcCtrlGpuEvictCtx_STUB,                 // rpcCtrlGpuEvictCtx
         rpcCtrlGetMmuDebugMode_STUB,             // rpcCtrlGetMmuDebugMode
         rpcInvalidateTlb_STUB,                   // rpcInvalidateTlb
@@ -3665,6 +3757,7 @@ static void rpcHalIfacesSetup_GH100(RPC_HAL_IFACES *pRpcHal)
         rpcCtrlGpuHandleVfPriFault_STUB,         // rpcCtrlGpuHandleVfPriFault
         rpcRmApiControl_STUB,                    // rpcRmApiControl
         rpcCtrlFabricMemStats_STUB,              // rpcCtrlFabricMemStats
+        rpcCtrlCmdNvlinkInbandSendData_STUB,     // rpcCtrlCmdNvlinkInbandSendData
         rpcCtrlGrCtxswZcullBind_STUB,            // rpcCtrlGrCtxswZcullBind
         rpcCtrlInternalMemsysSetZbcReferenced_STUB,   // rpcCtrlInternalMemsysSetZbcReferenced
         rpcCtrlPerfRatedTdpSetControl_STUB,      // rpcCtrlPerfRatedTdpSetControl

@@ -98,6 +98,7 @@ __nvoc_ctor_CrashCatQueue_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_CrashCatQueue_1(CrashCatQueue *pThis, CrashCatWayfinder *pCrashcatWayfinder) {
     CrashCatWayfinderHal *wayfinderHal = &pCrashcatWayfinder->wayfinderHal;
     const unsigned long wayfinderHal_HalVarIdx = (unsigned long)wayfinderHal->__nvoc_HalVarIdx;
@@ -105,8 +106,10 @@ static void __nvoc_init_funcTable_CrashCatQueue_1(CrashCatQueue *pThis, CrashCat
     PORT_UNREFERENCED_VARIABLE(pCrashcatWayfinder);
     PORT_UNREFERENCED_VARIABLE(wayfinderHal);
     PORT_UNREFERENCED_VARIABLE(wayfinderHal_HalVarIdx);
-}
+} // End __nvoc_init_funcTable_CrashCatQueue_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_CrashCatQueue(CrashCatQueue *pThis, CrashCatWayfinder *pCrashcatWayfinder) {
     __nvoc_init_funcTable_CrashCatQueue_1(pThis, pCrashcatWayfinder);
 }

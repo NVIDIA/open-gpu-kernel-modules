@@ -59,7 +59,6 @@ bool libspdm_ec_get_public_key_from_der(const uint8_t *der_data,
     return false;
 }
 
-
 bool libspdm_rsa_get_public_key_from_der(const uint8_t *der_data,
                                          size_t der_size,
                                          void **rsa_context)

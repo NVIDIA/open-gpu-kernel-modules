@@ -1152,7 +1152,7 @@ gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity_IMPL
         NvU64 GPUInstancePseudoMask;
         NvU32 availableSpanCount;
         NvU32 totalSpanCount;
-        NvU32 veidStepSize;
+        NvU32 veidSizePerSpan;
         NvU32 veidSlotCount;
         NvU32 count;
         NvU32 i;
@@ -1160,7 +1160,7 @@ gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity_IMPL
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             kmigmgrGetComputeProfileFromSize(pGpu, pKernelMIGManager, pParams->computeSize, &profile));
         NV_ASSERT_OK_OR_RETURN(
-            kgrmgrGetVeidStepSize(pGpu, pKernelGraphicsManager, &veidStepSize));
+            kgrmgrGetVeidSizePerSpan(pGpu, pKernelGraphicsManager, &veidSizePerSpan));
 
         // Create a mask for VEIDs associated with this GPU instance
         veidMask = DRF_SHIFTMASK64(profile.veidCount - 1:0);
@@ -1172,13 +1172,13 @@ gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity_IMPL
         availableSpanCount = 0;
         totalSpanCount = 0;
         count = 0;
-        for (i = pKernelMIGGpuInstance->resourceAllocation.veidOffset; i < GPUInstanceVeidEnd; i += veidStepSize)
+        for (i = pKernelMIGGpuInstance->resourceAllocation.veidOffset; i < GPUInstanceVeidEnd; i += veidSizePerSpan)
         {
             // Determine max correctly sized VEID segments
             if (((GPUInstanceFreeVeidMask >> i) & veidMask) == veidMask)
             {
                 pParams->availableSpans[availableSpanCount].lo = count;
-                pParams->availableSpans[availableSpanCount].hi = count + (profile.veidCount / veidStepSize) - 1;
+                pParams->availableSpans[availableSpanCount].hi = count + (profile.veidCount / veidSizePerSpan) - 1;
                 availableSpanCount++;
             }
 
@@ -1186,7 +1186,7 @@ gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity_IMPL
             if (((GPUInstanceVeidMask >> i) & veidMask) == veidMask)
             {
                 pParams->totalSpans[totalSpanCount].lo = count;
-                pParams->totalSpans[totalSpanCount].hi = count + (profile.veidCount / veidStepSize) - 1;
+                pParams->totalSpans[totalSpanCount].hi = count + (profile.veidCount / veidSizePerSpan) - 1;
                 totalSpanCount++;
             }
 

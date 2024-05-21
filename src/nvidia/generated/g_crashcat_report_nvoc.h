@@ -1,6 +1,13 @@
+
 #ifndef _G_CRASHCAT_REPORT_NVOC_H_
 #define _G_CRASHCAT_REPORT_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,6 +36,7 @@ extern "C" {
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_crashcat_report_nvoc.h"
 
 #ifndef CRASHCAT_REPORT_H
@@ -36,6 +44,7 @@ extern "C" {
 
 #include "nv-crashcat.h"
 #include "nvoc/object.h"
+
 
 struct CrashCatEngine;
 
@@ -82,13 +91,24 @@ struct __nvoc_inner_struc_CrashCatReport_1__ {
 };
 
 
+
 struct CrashCatReport {
+
+    // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+
+    // Parent (i.e. superclass or base class) object pointers
     struct Object __nvoc_base_Object;
-    struct Object *__nvoc_pbase_Object;
-    struct CrashCatReport *__nvoc_pbase_CrashCatReport;
-    void (*__crashcatReportLogReporter__)(struct CrashCatReport *);
-    void (*__crashcatReportLogSource__)(struct CrashCatReport *);
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super
+    struct CrashCatReport *__nvoc_pbase_CrashCatReport;    // crashcatReport
+
+    // Vtable with 2 per-object function pointers
+    void (*__crashcatReportLogReporter__)(struct CrashCatReport * /*this*/);  // halified (3 hals)
+    void (*__crashcatReportLogSource__)(struct CrashCatReport * /*this*/);  // halified (3 hals)
+
+    // Data members
     struct CrashCatReportHal reportHal;
     struct CrashCatEngine *PRIVATE_FIELD(pEngine);
     NvU32 PRIVATE_FIELD(validTags);
@@ -104,6 +124,7 @@ typedef struct CrashCatReport CrashCatReport;
 #define __nvoc_class_id_CrashCatReport 0xde4777
 #endif /* __nvoc_class_id_CrashCatReport */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_CrashCatReport;
 
 #define __staticCast_CrashCatReport(pThis) \
@@ -116,7 +137,6 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_CrashCatReport;
     ((CrashCatReport*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(CrashCatReport)))
 #endif //__nvoc_crashcat_report_h_disabled
 
-
 NV_STATUS __nvoc_objCreateDynamic_CrashCatReport(CrashCatReport**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_CrashCatReport(CrashCatReport**, Dynamic*, NvU32,
@@ -124,246 +144,252 @@ NV_STATUS __nvoc_objCreate_CrashCatReport(CrashCatReport**, Dynamic*, NvU32,
 #define __objCreate_CrashCatReport(ppNewObj, pParent, createFlags, CrashCatReportHal_version, CrashCatReportHal_implementer, arg_ppReportBytes, arg_bytesRemaining) \
     __nvoc_objCreate_CrashCatReport((ppNewObj), staticCast((pParent), Dynamic), (createFlags), CrashCatReportHal_version, CrashCatReportHal_implementer, arg_ppReportBytes, arg_bytesRemaining)
 
-#define crashcatReportLogReporter(arg0) crashcatReportLogReporter_DISPATCH(arg0)
-#define crashcatReportLogReporter_HAL(arg0) crashcatReportLogReporter_DISPATCH(arg0)
-#define crashcatReportLogSource(arg0) crashcatReportLogSource_DISPATCH(arg0)
-#define crashcatReportLogSource_HAL(arg0) crashcatReportLogSource_DISPATCH(arg0)
-void crashcatReportDestruct_V1(struct CrashCatReport *arg0);
+
+// Wrapper macros
+#define crashcatReportLogReporter_FNPTR(arg_this) arg_this->__crashcatReportLogReporter__
+#define crashcatReportLogReporter(arg_this) crashcatReportLogReporter_DISPATCH(arg_this)
+#define crashcatReportLogReporter_HAL(arg_this) crashcatReportLogReporter_DISPATCH(arg_this)
+#define crashcatReportLogSource_FNPTR(arg_this) arg_this->__crashcatReportLogSource__
+#define crashcatReportLogSource(arg_this) crashcatReportLogSource_DISPATCH(arg_this)
+#define crashcatReportLogSource_HAL(arg_this) crashcatReportLogSource_DISPATCH(arg_this)
+
+// Dispatch functions
+static inline void crashcatReportLogReporter_DISPATCH(struct CrashCatReport *arg_this) {
+    arg_this->__crashcatReportLogReporter__(arg_this);
+}
+
+static inline void crashcatReportLogSource_DISPATCH(struct CrashCatReport *arg_this) {
+    arg_this->__crashcatReportLogSource__(arg_this);
+}
+
+void crashcatReportDestruct_V1(struct CrashCatReport *arg1);
 
 
-#define __nvoc_crashcatReportDestruct(arg0) crashcatReportDestruct_V1(arg0)
-void *crashcatReportExtract_V1(struct CrashCatReport *arg0, void *pReportBytes, NvLength bytesRemaining);
+#define __nvoc_crashcatReportDestruct(arg1) crashcatReportDestruct_V1(arg1)
+void *crashcatReportExtract_V1(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining);
 
 
 #ifdef __nvoc_crashcat_report_h_disabled
-static inline void *crashcatReportExtract(struct CrashCatReport *arg0, void *pReportBytes, NvLength bytesRemaining) {
+static inline void *crashcatReportExtract(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining) {
     NV_ASSERT_FAILED_PRECOMP("CrashCatReport was disabled!");
     return NULL;
 }
 #else //__nvoc_crashcat_report_h_disabled
-#define crashcatReportExtract(arg0, pReportBytes, bytesRemaining) crashcatReportExtract_V1(arg0, pReportBytes, bytesRemaining)
+#define crashcatReportExtract(arg1, pReportBytes, bytesRemaining) crashcatReportExtract_V1(arg1, pReportBytes, bytesRemaining)
 #endif //__nvoc_crashcat_report_h_disabled
 
-#define crashcatReportExtract_HAL(arg0, pReportBytes, bytesRemaining) crashcatReportExtract(arg0, pReportBytes, bytesRemaining)
+#define crashcatReportExtract_HAL(arg1, pReportBytes, bytesRemaining) crashcatReportExtract(arg1, pReportBytes, bytesRemaining)
 
-void *crashcatReportExtractReport_V1(struct CrashCatReport *arg0, void *pReportBytes, NvLength bytesRemaining);
+void *crashcatReportExtractReport_V1(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining);
 
 
 #ifdef __nvoc_crashcat_report_h_disabled
-static inline void *crashcatReportExtractReport(struct CrashCatReport *arg0, void *pReportBytes, NvLength bytesRemaining) {
+static inline void *crashcatReportExtractReport(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining) {
     NV_ASSERT_FAILED_PRECOMP("CrashCatReport was disabled!");
     return NULL;
 }
 #else //__nvoc_crashcat_report_h_disabled
-#define crashcatReportExtractReport(arg0, pReportBytes, bytesRemaining) crashcatReportExtractReport_V1(arg0, pReportBytes, bytesRemaining)
+#define crashcatReportExtractReport(arg1, pReportBytes, bytesRemaining) crashcatReportExtractReport_V1(arg1, pReportBytes, bytesRemaining)
 #endif //__nvoc_crashcat_report_h_disabled
 
-#define crashcatReportExtractReport_HAL(arg0, pReportBytes, bytesRemaining) crashcatReportExtractReport(arg0, pReportBytes, bytesRemaining)
+#define crashcatReportExtractReport_HAL(arg1, pReportBytes, bytesRemaining) crashcatReportExtractReport(arg1, pReportBytes, bytesRemaining)
 
-void *crashcatReportExtractRiscv64CsrState_V1(struct CrashCatReport *arg0, void *pReportBytes, NvLength bytesRemaining);
+void *crashcatReportExtractRiscv64CsrState_V1(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining);
 
 
 #ifdef __nvoc_crashcat_report_h_disabled
-static inline void *crashcatReportExtractRiscv64CsrState(struct CrashCatReport *arg0, void *pReportBytes, NvLength bytesRemaining) {
+static inline void *crashcatReportExtractRiscv64CsrState(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining) {
     NV_ASSERT_FAILED_PRECOMP("CrashCatReport was disabled!");
     return NULL;
 }
 #else //__nvoc_crashcat_report_h_disabled
-#define crashcatReportExtractRiscv64CsrState(arg0, pReportBytes, bytesRemaining) crashcatReportExtractRiscv64CsrState_V1(arg0, pReportBytes, bytesRemaining)
+#define crashcatReportExtractRiscv64CsrState(arg1, pReportBytes, bytesRemaining) crashcatReportExtractRiscv64CsrState_V1(arg1, pReportBytes, bytesRemaining)
 #endif //__nvoc_crashcat_report_h_disabled
 
-#define crashcatReportExtractRiscv64CsrState_HAL(arg0, pReportBytes, bytesRemaining) crashcatReportExtractRiscv64CsrState(arg0, pReportBytes, bytesRemaining)
+#define crashcatReportExtractRiscv64CsrState_HAL(arg1, pReportBytes, bytesRemaining) crashcatReportExtractRiscv64CsrState(arg1, pReportBytes, bytesRemaining)
 
-void *crashcatReportExtractRiscv64GprState_V1(struct CrashCatReport *arg0, void *pReportBytes, NvLength bytesRemaining);
+void *crashcatReportExtractRiscv64GprState_V1(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining);
 
 
 #ifdef __nvoc_crashcat_report_h_disabled
-static inline void *crashcatReportExtractRiscv64GprState(struct CrashCatReport *arg0, void *pReportBytes, NvLength bytesRemaining) {
+static inline void *crashcatReportExtractRiscv64GprState(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining) {
     NV_ASSERT_FAILED_PRECOMP("CrashCatReport was disabled!");
     return NULL;
 }
 #else //__nvoc_crashcat_report_h_disabled
-#define crashcatReportExtractRiscv64GprState(arg0, pReportBytes, bytesRemaining) crashcatReportExtractRiscv64GprState_V1(arg0, pReportBytes, bytesRemaining)
+#define crashcatReportExtractRiscv64GprState(arg1, pReportBytes, bytesRemaining) crashcatReportExtractRiscv64GprState_V1(arg1, pReportBytes, bytesRemaining)
 #endif //__nvoc_crashcat_report_h_disabled
 
-#define crashcatReportExtractRiscv64GprState_HAL(arg0, pReportBytes, bytesRemaining) crashcatReportExtractRiscv64GprState(arg0, pReportBytes, bytesRemaining)
+#define crashcatReportExtractRiscv64GprState_HAL(arg1, pReportBytes, bytesRemaining) crashcatReportExtractRiscv64GprState(arg1, pReportBytes, bytesRemaining)
 
-void *crashcatReportExtractRiscv64Trace_V1(struct CrashCatReport *arg0, void *pReportBytes, NvLength bytesRemaining);
+void *crashcatReportExtractRiscv64Trace_V1(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining);
 
 
 #ifdef __nvoc_crashcat_report_h_disabled
-static inline void *crashcatReportExtractRiscv64Trace(struct CrashCatReport *arg0, void *pReportBytes, NvLength bytesRemaining) {
+static inline void *crashcatReportExtractRiscv64Trace(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining) {
     NV_ASSERT_FAILED_PRECOMP("CrashCatReport was disabled!");
     return NULL;
 }
 #else //__nvoc_crashcat_report_h_disabled
-#define crashcatReportExtractRiscv64Trace(arg0, pReportBytes, bytesRemaining) crashcatReportExtractRiscv64Trace_V1(arg0, pReportBytes, bytesRemaining)
+#define crashcatReportExtractRiscv64Trace(arg1, pReportBytes, bytesRemaining) crashcatReportExtractRiscv64Trace_V1(arg1, pReportBytes, bytesRemaining)
 #endif //__nvoc_crashcat_report_h_disabled
 
-#define crashcatReportExtractRiscv64Trace_HAL(arg0, pReportBytes, bytesRemaining) crashcatReportExtractRiscv64Trace(arg0, pReportBytes, bytesRemaining)
+#define crashcatReportExtractRiscv64Trace_HAL(arg1, pReportBytes, bytesRemaining) crashcatReportExtractRiscv64Trace(arg1, pReportBytes, bytesRemaining)
 
-void *crashcatReportExtractIo32State_V1(struct CrashCatReport *arg0, void *pReportBytes, NvLength bytesRemaining);
+void *crashcatReportExtractIo32State_V1(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining);
 
 
 #ifdef __nvoc_crashcat_report_h_disabled
-static inline void *crashcatReportExtractIo32State(struct CrashCatReport *arg0, void *pReportBytes, NvLength bytesRemaining) {
+static inline void *crashcatReportExtractIo32State(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining) {
     NV_ASSERT_FAILED_PRECOMP("CrashCatReport was disabled!");
     return NULL;
 }
 #else //__nvoc_crashcat_report_h_disabled
-#define crashcatReportExtractIo32State(arg0, pReportBytes, bytesRemaining) crashcatReportExtractIo32State_V1(arg0, pReportBytes, bytesRemaining)
+#define crashcatReportExtractIo32State(arg1, pReportBytes, bytesRemaining) crashcatReportExtractIo32State_V1(arg1, pReportBytes, bytesRemaining)
 #endif //__nvoc_crashcat_report_h_disabled
 
-#define crashcatReportExtractIo32State_HAL(arg0, pReportBytes, bytesRemaining) crashcatReportExtractIo32State(arg0, pReportBytes, bytesRemaining)
+#define crashcatReportExtractIo32State_HAL(arg1, pReportBytes, bytesRemaining) crashcatReportExtractIo32State(arg1, pReportBytes, bytesRemaining)
 
-void crashcatReportLogRiscv64CsrState_V1(struct CrashCatReport *arg0);
+void crashcatReportLogRiscv64CsrState_V1(struct CrashCatReport *arg1);
 
 
 #ifdef __nvoc_crashcat_report_h_disabled
-static inline void crashcatReportLogRiscv64CsrState(struct CrashCatReport *arg0) {
+static inline void crashcatReportLogRiscv64CsrState(struct CrashCatReport *arg1) {
     NV_ASSERT_FAILED_PRECOMP("CrashCatReport was disabled!");
 }
 #else //__nvoc_crashcat_report_h_disabled
-#define crashcatReportLogRiscv64CsrState(arg0) crashcatReportLogRiscv64CsrState_V1(arg0)
+#define crashcatReportLogRiscv64CsrState(arg1) crashcatReportLogRiscv64CsrState_V1(arg1)
 #endif //__nvoc_crashcat_report_h_disabled
 
-#define crashcatReportLogRiscv64CsrState_HAL(arg0) crashcatReportLogRiscv64CsrState(arg0)
+#define crashcatReportLogRiscv64CsrState_HAL(arg1) crashcatReportLogRiscv64CsrState(arg1)
 
-void crashcatReportLogRiscv64GprState_V1(struct CrashCatReport *arg0);
+void crashcatReportLogRiscv64GprState_V1(struct CrashCatReport *arg1);
 
 
 #ifdef __nvoc_crashcat_report_h_disabled
-static inline void crashcatReportLogRiscv64GprState(struct CrashCatReport *arg0) {
+static inline void crashcatReportLogRiscv64GprState(struct CrashCatReport *arg1) {
     NV_ASSERT_FAILED_PRECOMP("CrashCatReport was disabled!");
 }
 #else //__nvoc_crashcat_report_h_disabled
-#define crashcatReportLogRiscv64GprState(arg0) crashcatReportLogRiscv64GprState_V1(arg0)
+#define crashcatReportLogRiscv64GprState(arg1) crashcatReportLogRiscv64GprState_V1(arg1)
 #endif //__nvoc_crashcat_report_h_disabled
 
-#define crashcatReportLogRiscv64GprState_HAL(arg0) crashcatReportLogRiscv64GprState(arg0)
+#define crashcatReportLogRiscv64GprState_HAL(arg1) crashcatReportLogRiscv64GprState(arg1)
 
-void crashcatReportLogRiscv64Traces_V1(struct CrashCatReport *arg0);
+void crashcatReportLogRiscv64Traces_V1(struct CrashCatReport *arg1);
 
 
 #ifdef __nvoc_crashcat_report_h_disabled
-static inline void crashcatReportLogRiscv64Traces(struct CrashCatReport *arg0) {
+static inline void crashcatReportLogRiscv64Traces(struct CrashCatReport *arg1) {
     NV_ASSERT_FAILED_PRECOMP("CrashCatReport was disabled!");
 }
 #else //__nvoc_crashcat_report_h_disabled
-#define crashcatReportLogRiscv64Traces(arg0) crashcatReportLogRiscv64Traces_V1(arg0)
+#define crashcatReportLogRiscv64Traces(arg1) crashcatReportLogRiscv64Traces_V1(arg1)
 #endif //__nvoc_crashcat_report_h_disabled
 
-#define crashcatReportLogRiscv64Traces_HAL(arg0) crashcatReportLogRiscv64Traces(arg0)
+#define crashcatReportLogRiscv64Traces_HAL(arg1) crashcatReportLogRiscv64Traces(arg1)
 
-void crashcatReportLogIo32State_V1(struct CrashCatReport *arg0);
+void crashcatReportLogIo32State_V1(struct CrashCatReport *arg1);
 
 
 #ifdef __nvoc_crashcat_report_h_disabled
-static inline void crashcatReportLogIo32State(struct CrashCatReport *arg0) {
+static inline void crashcatReportLogIo32State(struct CrashCatReport *arg1) {
     NV_ASSERT_FAILED_PRECOMP("CrashCatReport was disabled!");
 }
 #else //__nvoc_crashcat_report_h_disabled
-#define crashcatReportLogIo32State(arg0) crashcatReportLogIo32State_V1(arg0)
+#define crashcatReportLogIo32State(arg1) crashcatReportLogIo32State_V1(arg1)
 #endif //__nvoc_crashcat_report_h_disabled
 
-#define crashcatReportLogIo32State_HAL(arg0) crashcatReportLogIo32State(arg0)
+#define crashcatReportLogIo32State_HAL(arg1) crashcatReportLogIo32State(arg1)
 
-void crashcatReportLogReporter_V1_GENERIC(struct CrashCatReport *arg0);
+void crashcatReportLogReporter_V1_GENERIC(struct CrashCatReport *arg1);
 
-void crashcatReportLogReporter_V1_LIBOS2(struct CrashCatReport *arg0);
+void crashcatReportLogReporter_V1_LIBOS2(struct CrashCatReport *arg1);
 
-void crashcatReportLogReporter_V1_LIBOS3(struct CrashCatReport *arg0);
+void crashcatReportLogReporter_V1_LIBOS3(struct CrashCatReport *arg1);
 
-static inline void crashcatReportLogReporter_DISPATCH(struct CrashCatReport *arg0) {
-    arg0->__crashcatReportLogReporter__(arg0);
-}
+void crashcatReportLogSource_V1_GENERIC(struct CrashCatReport *arg1);
 
-void crashcatReportLogSource_V1_GENERIC(struct CrashCatReport *arg0);
+void crashcatReportLogSource_V1_LIBOS2(struct CrashCatReport *arg1);
 
-void crashcatReportLogSource_V1_LIBOS2(struct CrashCatReport *arg0);
-
-void crashcatReportLogSource_V1_LIBOS3(struct CrashCatReport *arg0);
-
-static inline void crashcatReportLogSource_DISPATCH(struct CrashCatReport *arg0) {
-    arg0->__crashcatReportLogSource__(arg0);
-}
+void crashcatReportLogSource_V1_LIBOS3(struct CrashCatReport *arg1);
 
 NV_STATUS crashcatReportConstruct_IMPL(struct CrashCatReport *arg_, void **arg_ppReportBytes, NvLength arg_bytesRemaining);
 
 #define __nvoc_crashcatReportConstruct(arg_, arg_ppReportBytes, arg_bytesRemaining) crashcatReportConstruct_IMPL(arg_, arg_ppReportBytes, arg_bytesRemaining)
-void crashcatReportLog_IMPL(struct CrashCatReport *arg0);
+void crashcatReportLog_IMPL(struct CrashCatReport *arg1);
 
 #ifdef __nvoc_crashcat_report_h_disabled
-static inline void crashcatReportLog(struct CrashCatReport *arg0) {
+static inline void crashcatReportLog(struct CrashCatReport *arg1) {
     NV_ASSERT_FAILED_PRECOMP("CrashCatReport was disabled!");
 }
 #else //__nvoc_crashcat_report_h_disabled
-#define crashcatReportLog(arg0) crashcatReportLog_IMPL(arg0)
+#define crashcatReportLog(arg1) crashcatReportLog_IMPL(arg1)
 #endif //__nvoc_crashcat_report_h_disabled
 
 #undef PRIVATE_FIELD
 
 #ifndef NVOC_CRASHCAT_REPORT_H_PRIVATE_ACCESS_ALLOWED
 #undef crashcatReportLogReporter
-void NVOC_PRIVATE_FUNCTION(crashcatReportLogReporter)(struct CrashCatReport *arg0);
+void NVOC_PRIVATE_FUNCTION(crashcatReportLogReporter)(struct CrashCatReport *arg1);
 
 #undef crashcatReportLogReporter_HAL
-void NVOC_PRIVATE_FUNCTION(crashcatReportLogReporter_HAL)(struct CrashCatReport *arg0);
+void NVOC_PRIVATE_FUNCTION(crashcatReportLogReporter_HAL)(struct CrashCatReport *arg1);
 
 #undef crashcatReportLogSource
-void NVOC_PRIVATE_FUNCTION(crashcatReportLogSource)(struct CrashCatReport *arg0);
+void NVOC_PRIVATE_FUNCTION(crashcatReportLogSource)(struct CrashCatReport *arg1);
 
 #undef crashcatReportLogSource_HAL
-void NVOC_PRIVATE_FUNCTION(crashcatReportLogSource_HAL)(struct CrashCatReport *arg0);
+void NVOC_PRIVATE_FUNCTION(crashcatReportLogSource_HAL)(struct CrashCatReport *arg1);
 
 #ifndef __nvoc_crashcat_report_h_disabled
 #undef crashcatReportExtract
-void *NVOC_PRIVATE_FUNCTION(crashcatReportExtract)(struct CrashCatReport *arg0, void *pReportBytes, NvLength bytesRemaining);
+void *NVOC_PRIVATE_FUNCTION(crashcatReportExtract)(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining);
 #endif //__nvoc_crashcat_report_h_disabled
 
 #ifndef __nvoc_crashcat_report_h_disabled
 #undef crashcatReportExtractReport
-void *NVOC_PRIVATE_FUNCTION(crashcatReportExtractReport)(struct CrashCatReport *arg0, void *pReportBytes, NvLength bytesRemaining);
+void *NVOC_PRIVATE_FUNCTION(crashcatReportExtractReport)(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining);
 #endif //__nvoc_crashcat_report_h_disabled
 
 #ifndef __nvoc_crashcat_report_h_disabled
 #undef crashcatReportExtractRiscv64CsrState
-void *NVOC_PRIVATE_FUNCTION(crashcatReportExtractRiscv64CsrState)(struct CrashCatReport *arg0, void *pReportBytes, NvLength bytesRemaining);
+void *NVOC_PRIVATE_FUNCTION(crashcatReportExtractRiscv64CsrState)(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining);
 #endif //__nvoc_crashcat_report_h_disabled
 
 #ifndef __nvoc_crashcat_report_h_disabled
 #undef crashcatReportExtractRiscv64GprState
-void *NVOC_PRIVATE_FUNCTION(crashcatReportExtractRiscv64GprState)(struct CrashCatReport *arg0, void *pReportBytes, NvLength bytesRemaining);
+void *NVOC_PRIVATE_FUNCTION(crashcatReportExtractRiscv64GprState)(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining);
 #endif //__nvoc_crashcat_report_h_disabled
 
 #ifndef __nvoc_crashcat_report_h_disabled
 #undef crashcatReportExtractRiscv64Trace
-void *NVOC_PRIVATE_FUNCTION(crashcatReportExtractRiscv64Trace)(struct CrashCatReport *arg0, void *pReportBytes, NvLength bytesRemaining);
+void *NVOC_PRIVATE_FUNCTION(crashcatReportExtractRiscv64Trace)(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining);
 #endif //__nvoc_crashcat_report_h_disabled
 
 #ifndef __nvoc_crashcat_report_h_disabled
 #undef crashcatReportExtractIo32State
-void *NVOC_PRIVATE_FUNCTION(crashcatReportExtractIo32State)(struct CrashCatReport *arg0, void *pReportBytes, NvLength bytesRemaining);
+void *NVOC_PRIVATE_FUNCTION(crashcatReportExtractIo32State)(struct CrashCatReport *arg1, void *pReportBytes, NvLength bytesRemaining);
 #endif //__nvoc_crashcat_report_h_disabled
 
 #ifndef __nvoc_crashcat_report_h_disabled
 #undef crashcatReportLogRiscv64CsrState
-void NVOC_PRIVATE_FUNCTION(crashcatReportLogRiscv64CsrState)(struct CrashCatReport *arg0);
+void NVOC_PRIVATE_FUNCTION(crashcatReportLogRiscv64CsrState)(struct CrashCatReport *arg1);
 #endif //__nvoc_crashcat_report_h_disabled
 
 #ifndef __nvoc_crashcat_report_h_disabled
 #undef crashcatReportLogRiscv64GprState
-void NVOC_PRIVATE_FUNCTION(crashcatReportLogRiscv64GprState)(struct CrashCatReport *arg0);
+void NVOC_PRIVATE_FUNCTION(crashcatReportLogRiscv64GprState)(struct CrashCatReport *arg1);
 #endif //__nvoc_crashcat_report_h_disabled
 
 #ifndef __nvoc_crashcat_report_h_disabled
 #undef crashcatReportLogRiscv64Traces
-void NVOC_PRIVATE_FUNCTION(crashcatReportLogRiscv64Traces)(struct CrashCatReport *arg0);
+void NVOC_PRIVATE_FUNCTION(crashcatReportLogRiscv64Traces)(struct CrashCatReport *arg1);
 #endif //__nvoc_crashcat_report_h_disabled
 
 #ifndef __nvoc_crashcat_report_h_disabled
 #undef crashcatReportLogIo32State
-void NVOC_PRIVATE_FUNCTION(crashcatReportLogIo32State)(struct CrashCatReport *arg0);
+void NVOC_PRIVATE_FUNCTION(crashcatReportLogIo32State)(struct CrashCatReport *arg1);
 #endif //__nvoc_crashcat_report_h_disabled
 
 #endif // NVOC_CRASHCAT_REPORT_H_PRIVATE_ACCESS_ALLOWED

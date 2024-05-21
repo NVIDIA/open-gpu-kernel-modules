@@ -93,10 +93,13 @@ __nvoc_ctor_OBJGPUBOOSTMGR_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_OBJGPUBOOSTMGR_1(OBJGPUBOOSTMGR *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-}
+} // End __nvoc_init_funcTable_OBJGPUBOOSTMGR_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_OBJGPUBOOSTMGR(OBJGPUBOOSTMGR *pThis) {
     __nvoc_init_funcTable_OBJGPUBOOSTMGR_1(pThis);
 }

@@ -99,17 +99,11 @@ initMiscOSFunctionPointers(OBJOS *pOS)
 static void
 initCommonMiscOSFunctionPointers(OBJOS *pOS)
 {
-    // Common OS function pointers.
 }
 
 static void
 initStubMiscOSFunctionPointers(OBJOS *pOS)
 {
-    // Stubbed OS function pointers.
-    pOS->osPageArrayGetPhysAddr         = stubOsPageArrayGetPhysAddr;
-
-    pOS->osInternalReserveAllocCallback = stubOsInternalReserveAllocCallback;
-    pOS->osInternalReserveFreeCallback  = stubOsInternalReserveFreeCallback;
 }
 
 static void
@@ -123,14 +117,11 @@ initMacOSCoreOSFunctionPointers(OBJOS *pOS)
     pOS->osNv_rdcr4                      = stubOsnv_rdcr4;
     pOS->osNv_rdxcr0                     = stubOsnv_rdxcr0;
     pOS->osNv_cpuid                      = stubOsnv_cpuid;
-    pOS->osNv_rdmsr                      = stubOsnv_rdmsr;
-    pOS->osNv_wrmsr                      = stubOsnv_wrmsr;
 }
 
 static void
 initAPIOSFunctionPointers(OBJOS *pOS)
 {
-    pOS->osRmInitRm                      = osRmInitRm;
 }
 
 //

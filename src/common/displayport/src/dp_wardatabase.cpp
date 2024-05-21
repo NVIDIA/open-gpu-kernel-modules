@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,7 @@
 #include "dp_wardatabase.h"
 #include "dp_edid.h"
 #include "dp_connectorimpl.h"
+#include "dp_printf.h"
 
 using namespace DisplayPort;
 
@@ -116,8 +117,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             if (0x9227 == ProductID)
             {
                 this->WARFlags.powerOnBeforeLt = true;
-                DP_LOG(("DP-WAR> WAR for Apple thunderbolt J29 panel"));
-                DP_LOG(("DP-WAR>     - Monitor needs to be powered up before LT. Bug 933051"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> WAR for Apple thunderbolt J29 panel");
+                DP_PRINTF(DP_NOTICE, "DP-WAR>     - Monitor needs to be powered up before LT. Bug 933051");
             }
             break;
 
@@ -130,8 +131,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                 buffer.data[0x7E] = 0;
                 this->WARFlags.extensionCountDisabled = true;
                 this->WARFlags.dataForced = true;
-                DP_LOG(("DP-WAR> Edid override on Acer AL1512"));
-                DP_LOG(("DP-WAR>     - Disabling extension count.Bug 451868"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Edid override on Acer AL1512");
+                DP_PRINTF(DP_NOTICE, "DP-WAR>     - Disabling extension count.Bug 451868");
             }
             break;
 
@@ -155,8 +156,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                     buffer.data[0x7E] = 0;
                     this->WARFlags.extensionCountDisabled = true;
                     this->WARFlags.dataForced = true;
-                    DP_LOG(("DP-WAR> Edid overrid on Westinghouse AL1512 LVM- <37/42> w <2/3>"));
-                    DP_LOG(("DP-WAR>     - Disabling extension count."));
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> Edid overrid on Westinghouse AL1512 LVM- <37/42> w <2/3>");
+                    DP_PRINTF(DP_NOTICE, "DP-WAR>     - Disabling extension count.");
                 }
             }
             break;
@@ -176,8 +177,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                     buffer.data[0x36] = 0x32;
                     buffer.data[0x37] = 0x3E;
                     this->WARFlags.dataForced = true;
-                    DP_LOG(("DP-WAR> Edid overrid on IBM T210"));
-                    DP_LOG(("DP-WAR>    2048x1536x60Hz(misreported) -> 2048x1536x40Hz. Bug 76347"));
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> Edid overrid on IBM T210");
+                    DP_PRINTF(DP_NOTICE, "DP-WAR>    2048x1536x60Hz(misreported) -> 2048x1536x40Hz. Bug 76347");
                 }
             }
             break;
@@ -197,8 +198,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                     buffer.data[0x36] = 0x9E;
                     buffer.data[0x37] = 0x29;
                     this->WARFlags.dataForced = true;
-                    DP_LOG(("DP-WAR> Edid overrid on GWY/EMA"));
-                    DP_LOG(("DP-WAR>   106.50MHz(misreported) -> 106.50MHz.Bug 343870"));
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> Edid overrid on GWY/EMA");
+                    DP_PRINTF(DP_NOTICE, "DP-WAR>   106.50MHz(misreported) -> 106.50MHz.Bug 343870");
                 }
             }
             break;
@@ -213,8 +214,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                 buffer.data[0x6d] = 0x0;
                 buffer.data[0x6e] = 0x0;
                 this->WARFlags.dataForced = true;
-                DP_LOG(("DP-WAR> Edid overrid on INX L15CX"));
-                DP_LOG(("DP-WAR>   Removing invalid detailed timing 10x311 @ 78Hz"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Edid overrid on INX L15CX");
+                DP_PRINTF(DP_NOTICE, "DP-WAR>   Removing invalid detailed timing 10x311 @ 78Hz");
             }
             break;
 
@@ -229,19 +230,19 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                 buffer.data[0x39] = 0x4B; // new hblank width: 75
                 buffer.data[0x3F] = 0x1B; // new hsync pulse width: 27
                 this->WARFlags.dataForced = true;
-                DP_LOG(("DP-WAR> Edid overrid on AUO eDP panel"));
-                DP_LOG(("DP-WAR> Modifying HBlank and HSync pulse width."));
-                DP_LOG(("DP-WAR> Bugs 907998, 1001160"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Edid overrid on AUO eDP panel");
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Modifying HBlank and HSync pulse width.");
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Bugs 907998, 1001160");
             }
             else if (ProductID == 0x109B || ProductID == 0x119B)
             {
                 this->WARFlags.useLegacyAddress = true;
-                DP_LOG(("DP-WAR> AUO eDP"));
-                DP_LOG(("implements only Legacy interrupt address range"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> AUO eDP");
+                DP_PRINTF(DP_NOTICE, "implements only Legacy interrupt address range");
 
                 // Bug 1792962 - Panel got glitch on D3 write, apply this WAR.
                 this->WARFlags.disableDpcdPowerOff = true;
-                DP_LOG(("DP-WAR> Disable DPCD Power Off"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Disable DPCD Power Off");
             }
             break;
 
@@ -280,8 +281,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                     //
                     buffer.data[0x36] = 0x9F;
                     this->WARFlags.dataForced = true;
-                    DP_LOG(("DP-WAR> Edid overrid on Quanta - Toshiba LG 1440x900"));
-                    DP_LOG(("DP-WAR>   Correcting pclk. Bug 201428"));
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> Edid overrid on Quanta - Toshiba LG 1440x900");
+                    DP_PRINTF(DP_NOTICE, "DP-WAR>   Correcting pclk. Bug 201428");
                 }
             }
             else
@@ -318,8 +319,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                     //
                     buffer.data[0x36] = 0xC7;
                     this->WARFlags.dataForced = true;
-                    DP_LOG(("DP-WAR> Edid overrid on  MSI - LG LPL 1280x800"));
-                    DP_LOG(("DP-WAR>   Correcting pclk. Bug 359313"));
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> Edid overrid on  MSI - LG LPL 1280x800");
+                    DP_PRINTF(DP_NOTICE, "DP-WAR>   Correcting pclk. Bug 359313");
                 }
             }
             break;
@@ -353,8 +354,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                 buffer.data[0x47] = 0x1E;
 
                 this->WARFlags.dataForced = true;
-                DP_LOG(("DP-WAR> Edid overrid on  Haier TV."));
-                DP_LOG(("DP-WAR>   Removing 1366x768. bug 351680 & 327891"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Edid overrid on  Haier TV.");
+                DP_PRINTF(DP_NOTICE, "DP-WAR>   Removing 1366x768. bug 351680 & 327891");
 
             }
             break;
@@ -369,8 +370,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                     // Bug 1559465 will address the right power down sequence. We need to revisit this WAR once Bug 1559465 is fixed.
                     //
                     this->WARFlags.disableDpcdPowerOff = true;
-                    DP_LOG(("DP-WAR> Disable DPCD Power Off"));
-                    DP_LOG(("DP-WAR> HP Z1 G2 (Zeus) AIO Bug 1643712"));
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> Disable DPCD Power Off");
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> HP Z1 G2 (Zeus) AIO Bug 1643712");
                     break;
             }
             break;
@@ -385,8 +386,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                     // after D3 to avoid black screen issues.
                     //
                     this->WARFlags.delayAfterD3 = true;
-                    DP_LOG(("DP-WAR> HP Valor QHD+ N15P-Q3 Sharp EDP needs 50 ms after D3"));
-                    DP_LOG(("DP-WAR> bug 1520011"));
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> HP Valor QHD+ N15P-Q3 Sharp EDP needs 50 ms after D3");
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> bug 1520011");
                     break;
 
                 //Sharp EDPs that declares DP1.2 but doesn't implement ESI address space
@@ -402,7 +403,7 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                     // Use Legacy address space for DP1.2 panel
                     //
                     this->WARFlags.useLegacyAddress = true;
-                    DP_LOG(("DP-WAR> Sharp EDP implements only Legacy interrupt address range"));
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> Sharp EDP implements only Legacy interrupt address range");
                     break;
 
                 case 0x143B:
@@ -427,7 +428,7 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                         (buffer.data[0x7D] == 0x20))
                     {
                         this->WARFlags.useLegacyAddress = true;
-                        DP_LOG(("DP-WAR> Sharp EDP implements only Legacy interrupt address range"));
+                        DP_PRINTF(DP_NOTICE, "DP-WAR> Sharp EDP implements only Legacy interrupt address range");
                     }
                     break;
             }
@@ -444,8 +445,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                 // loop.
                 //
                 this->WARFlags.ignoreRedundantHotplug = true;
-                DP_LOG(("DP-WAR> EIZO FlexScan SX2762W generates redundant"));
-                DP_LOG(("DP-WAR> hotplugs (bug 1048796)"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> EIZO FlexScan SX2762W generates redundant");
+                DP_PRINTF(DP_NOTICE, "DP-WAR> hotplugs (bug 1048796)");
                 break;
             }
             break;
@@ -475,8 +476,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                     (buffer.data[0x7D] == 0x0A))
                 {
                     this->WARFlags.useLegacyAddress = true;
-                    DP_LOG(("DP-WAR> MEI-Panasonic EDP"));
-                    DP_LOG(("implements only Legacy interrupt address range"));
+                    DP_PRINTF(DP_NOTICE, "DP-WAR> MEI-Panasonic EDP");
+                    DP_PRINTF(DP_NOTICE, "implements only Legacy interrupt address range");
                 }
             }
             break;
@@ -490,8 +491,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                 // Force max link config
                 //
                 this->WARFlags.forceMaxLinkConfig = true;
-                DP_LOG(("DP-WAR> Force maximum link config WAR required on LG panel."));
-                DP_LOG(("DP-WAR>   bug 1649626"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Force maximum link config WAR required on LG panel.");
+                DP_PRINTF(DP_NOTICE, "DP-WAR>   bug 1649626");
                 break;
             }
             break;
@@ -499,7 +500,7 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             if (ProductID == 0xAA55)
             {
                 this->WARFlags.forceMaxLinkConfig = true;
-                DP_LOG(("DP-WAR> Force maximum link config WAR required on Sharp-CerebrEx panel."));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Force maximum link config WAR required on Sharp-CerebrEx panel.");
             }
             break;
 
@@ -517,8 +518,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             if (ProductID == 0x1747)
             {
                 this->WARFlags.useLegacyAddress = true;
-                DP_LOG(("DP-WAR> CMN eDP"));
-                DP_LOG(("implements only Legacy interrupt address range"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> CMN eDP");
+                DP_PRINTF(DP_NOTICE, "implements only Legacy interrupt address range");
             }
             break;
 
@@ -527,7 +528,7 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             if ((ProductID == 0x7F2B) || (ProductID == 0x7F2F))
             {
                 this->WARFlags.ignoreRedundantHotplug = true;
-                DP_LOG(("DP-WAR> BenQ GSync power on/off redundant hotplug"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> BenQ GSync power on/off redundant hotplug");
             }
             break;
 
@@ -536,8 +537,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             if (ProductID == 0x4C48)
             {
                 this->WARFlags.useLegacyAddress = true;
-                DP_LOG(("DP-WAR> MSI eDP\n"));
-                DP_LOG(("implements only Legacy interrupt address range\n"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> MSI eDP\n");
+                DP_PRINTF(DP_NOTICE, "implements only Legacy interrupt address range\n");
             }
             break;
 
@@ -545,7 +546,7 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
         case 0xC754:
         case 0x1863:
             {
-                DP_LOG(("DP-WAR> Unigraf device, keep link alive during detection\n"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Unigraf device, keep link alive during detection\n");
                 this->WARFlags.keepLinkAlive = true;
             }
             break;
@@ -555,7 +556,7 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             if ((ProductID == 0x977) || (ProductID == 0x974) || (ProductID == 0x9D9))
             {
                 this->WARFlags.bIgnoreDscCap = true;
-                DP_LOG(("DP-WAR> BOE panels incorrectly exposing DSC capability. Ignoring it."));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> BOE panels incorrectly exposing DSC capability. Ignoring it.");
             }
             break;
 
@@ -564,7 +565,7 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             if (ProductID == 0x005F)
             {
                 this->WARFlags.bIgnoreDscCap = true;
-                DP_LOG(("DP-WAR> NCP panels incorrectly exposing DSC capability. Ignoring it."));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> NCP panels incorrectly exposing DSC capability. Ignoring it.");
             }
             break;
 
@@ -576,8 +577,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             if (ProductID == 0x1609)
             {
                 this->WARFlags.bIgnoreDscCap = true;
-                DP_LOG(("DP-WAR> Ignoring DSC capability on Lenovo CSOT 1609 Panel."));
-                DP_LOG(("DP-WAR> Bug 3444252"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Ignoring DSC capability on Lenovo CSOT 1609 Panel.");
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Bug 3444252");
             }
             break;
 
@@ -586,8 +587,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             if(ProductID == 0x7707)
             {
                 this->WARFlags.bIgnoreDscCap = true;
-                DP_LOG(("DP-WAR> Panel incorrectly exposing DSC capability. Ignoring it."));
-                DP_LOG(("DP-WAR> Bug 3543158"));
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Panel incorrectly exposing DSC capability. Ignoring it.");
+                DP_PRINTF(DP_NOTICE, "DP-WAR> Bug 3543158");
             }
             break;
 
@@ -614,7 +615,7 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
         {
             // all HP monitors need to be powered up before link training
             this->WARFlags.powerOnBeforeLt = true;
-            DP_LOG(("DP-WAR> HP monitors need to be powered up before LT"));
+            DP_PRINTF(DP_NOTICE, "DP-WAR> HP monitors need to be powered up before LT");
         }
 
         if (warFlag & DP_MONITOR_CAPABILITY_DP_OVERRIDE_OPTIMAL_LINK_CONFIG)
@@ -629,8 +630,8 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             this->WARFlags.forceMaxLinkConfig = true;
             this->WARData.optimalLinkRate = pDenylistData->dpOverrideOptimalLinkConfig.linkRate;
             this->WARData.optimalLaneCount = pDenylistData->dpOverrideOptimalLinkConfig.laneCount;
-            DP_LOG(("DP-WAR> Overriding optimal link config on Dell U2410."));
-            DP_LOG(("DP-WAR>   bug 632801"));
+            DP_PRINTF(DP_NOTICE, "DP-WAR> Overriding optimal link config on Dell U2410.");
+            DP_PRINTF(DP_NOTICE, "DP-WAR>   bug 632801");
         }
 
         if (warFlag & DP_MONITOR_CAPABILITY_DP_OVERRIDE_MAX_LANE_COUNT)
@@ -642,14 +643,14 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             //
             this->WARFlags.overrideMaxLaneCount = true;
             this->WARData.maxLaneCount = pDenylistData->dpMaxLaneCountOverride;
-            DP_LOG(("DP-WAR> Overriding max lane count on Lenovo L2440x."));
-            DP_LOG(("DP-WAR>   bug 687952"));
+            DP_PRINTF(DP_NOTICE, "DP-WAR> Overriding max lane count on Lenovo L2440x.");
+            DP_PRINTF(DP_NOTICE, "DP-WAR>   bug 687952");
         }
     }
 
     if (this->WARFlags.dataForced)
     {
-        DP_LOG(("DP-WAR> EDID was overridden for some data. Patching CRC."));
+        DP_PRINTF(DP_NOTICE, "DP-WAR> EDID was overridden for some data. Patching CRC.");
         this->patchCrc();
     }
 }

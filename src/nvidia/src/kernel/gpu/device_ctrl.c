@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,6 +40,9 @@
 #include "kernel/virtualization/kernel_vgpu_mgr.h"
 #include "vgpu/rpc.h"
 
+#if defined(NV_UNIX)
+#include "os-interface.h"
+#endif
 
 
 //
@@ -203,6 +206,10 @@ deviceCtrlCmdGpuGetVirtualizationMode_IMPL
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
+
+#if defined(NV_UNIX)
+    pParams->isGridBuild = os_is_grid_supported();
+#endif
 
     if (IS_VIRTUAL(pGpu))
     {
@@ -508,25 +515,47 @@ deviceCtrlCmdGpuGetVgxCaps_IMPL
     return NV_OK;
 }
 
-/*
- * @brief Request per-VF BAR1 resizing and, subsequently, the number
- *        of VFs that can be created. The request will take a per-VF
- *        BAR1 size in MB and calculate the number of possible VFs
+/*!
+ * @brief Get the GPU's branding information.
  *
- * @param[in] pParams  NV0080_CTRL_GPU_SET_VGPU_VF_BAR1_SIZE_PARAMS
- *                     pointer detailing the per-VF BAR1 size and
- *                     number of VFs
+ * @returns NV_STATUS
+ *          NV_OK                   Success
  */
-
 NV_STATUS
-deviceCtrlCmdGpuSetVgpuVfBar1Size_IMPL
+deviceCtrlCmdGpuGetBrandCaps_VF
 (
     Device *pDevice,
-    NV0080_CTRL_GPU_SET_VGPU_VF_BAR1_SIZE_PARAMS *pParams
+    NV0080_CTRL_GPU_GET_BRAND_CAPS_PARAMS *pParams
 )
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
-    return gpuSetVFBarSizes_HAL(pGpu, pParams);
+    if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+    {
+        NV_STATUS     status        = NV_OK;
+        CALL_CONTEXT *pCallContext  = resservGetTlsCallContext();
+        RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
+        NvU32         gpuMask       = 0;
+
+        NV_ASSERT_OK_OR_RETURN(
+            rmGpuGroupLockAcquire(pGpu->gpuInstance,
+                                  GPU_LOCK_GRP_DEVICE,
+                                  GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE,
+                                  RM_LOCK_MODULES_GPU,
+                                  &gpuMask));
+
+        NV_RM_RPC_CONTROL(pGpu,
+                          pRmCtrlParams->hClient,
+                          pRmCtrlParams->hObject,
+                          pRmCtrlParams->cmd,
+                          pRmCtrlParams->pParams,
+                          pRmCtrlParams->paramsSize,
+                          status);
+
+        rmGpuGroupLockRelease(gpuMask, GPUS_LOCK_FLAGS_NONE);
+
+        return status;
+    }
+
+    return NV_ERR_NOT_SUPPORTED;
 }

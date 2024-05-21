@@ -130,12 +130,6 @@ typedef struct
     NV_ADDRESS_SPACE srcAddressSpace;
     NvU32 dstCpuCacheAttrib;
     NvU32 srcCpuCacheAttrib;
-
-    NvBool bSecureCopy; // The copy encrypts/decrypts protected memory
-    NvBool bEncrypt; // encrypt/decrypt
-    NvU64 authTagAddr;
-    NvU64 encryptIvAddr;
-
 } CHANNEL_PB_INFO;
 
 NV_STATUS channelSetupIDs(OBJCHANNEL *pChannel, OBJGPU *pGpu, NvBool bUseVasForCeCopy, NvBool bMIGInUse);

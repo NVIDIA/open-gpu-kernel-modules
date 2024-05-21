@@ -344,32 +344,6 @@ uvmInitAccessCntrBuffer_GV100
 }
 
 NV_STATUS
-uvmResetAccessCntrBuffer_GV100
-(
-    OBJGPU *pGpu,
-    OBJUVM *pUvm,
-    NvU32   accessCounterIndex,
-    NvU32   counterType
-)
-{
-    switch(counterType)
-    {
-        case NVC365_CTRL_ACCESS_COUNTER_TYPE_ALL:
-            GPU_FLD_WR_DRF_DEF(pGpu, _PFB_NISO, _ACCESS_COUNTER_NOTIFY_BUFFER_CLR, _ALL_COUNTERS, _CLR);
-            break;
-        case NVC365_CTRL_ACCESS_COUNTER_TYPE_MIMC:
-            GPU_FLD_WR_DRF_DEF(pGpu, _PFB_NISO, _ACCESS_COUNTER_NOTIFY_BUFFER_CLR, _MIMC, _CLR);
-            break;
-        case NVC365_CTRL_ACCESS_COUNTER_TYPE_MOMC:
-            GPU_FLD_WR_DRF_DEF(pGpu, _PFB_NISO, _ACCESS_COUNTER_NOTIFY_BUFFER_CLR, _MOMC, _CLR);
-            break;
-        default:
-            return NV_ERR_INVALID_ARGUMENT;
-    }
-    return NV_OK;
-}
-
-NV_STATUS
 uvmAccessCntrSetCounterLimit_GV100
 (
     OBJGPU *pGpu,

@@ -84,90 +84,6 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_MemoryFabricImportedRef =
     /*pExportInfo=*/        &__nvoc_export_info_MemoryFabricImportedRef
 };
 
-static NvBool __nvoc_thunk_MemoryFabricImportedRef_resCanCopy(struct RsResource *pMemoryFabricImportedRef) {
-    return memoryfabricimportedrefCanCopy((struct MemoryFabricImportedRef *)(((unsigned char *)pMemoryFabricImportedRef) - __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset));
-}
-
-static NvBool __nvoc_thunk_RmResource_memoryfabricimportedrefShareCallback(struct MemoryFabricImportedRef *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return rmresShareCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryFabricImportedRef_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_memoryfabricimportedrefCheckMemInterUnmap(struct MemoryFabricImportedRef *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_MemoryFabricImportedRef_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_memoryfabricimportedrefControl(struct MemoryFabricImportedRef *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControl((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_memoryfabricimportedrefGetMemInterMapParams(struct MemoryFabricImportedRef *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_MemoryFabricImportedRef_RmResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_memoryfabricimportedrefGetMemoryMappingDescriptor(struct MemoryFabricImportedRef *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_MemoryFabricImportedRef_RmResource.offset), ppMemDesc);
-}
-
-static NvU32 __nvoc_thunk_RsResource_memoryfabricimportedrefGetRefCount(struct MemoryFabricImportedRef *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_memoryfabricimportedrefControlFilter(struct MemoryFabricImportedRef *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset), pCallContext, pParams);
-}
-
-static void __nvoc_thunk_RsResource_memoryfabricimportedrefAddAdditionalDependants(struct RsClient *pClient, struct MemoryFabricImportedRef *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset), pReference);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_memoryfabricimportedrefControlSerialization_Prologue(struct MemoryFabricImportedRef *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryFabricImportedRef_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_memoryfabricimportedrefControl_Prologue(struct MemoryFabricImportedRef *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryFabricImportedRef_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_memoryfabricimportedrefUnmap(struct MemoryFabricImportedRef *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return resUnmap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset), pCallContext, pCpuMapping);
-}
-
-static NvBool __nvoc_thunk_RsResource_memoryfabricimportedrefIsPartialUnmapSupported(struct MemoryFabricImportedRef *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_memoryfabricimportedrefPreDestruct(struct MemoryFabricImportedRef *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_memoryfabricimportedrefMapTo(struct MemoryFabricImportedRef *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_memoryfabricimportedrefIsDuplicate(struct MemoryFabricImportedRef *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset), hMemory, pDuplicate);
-}
-
-static void __nvoc_thunk_RmResource_memoryfabricimportedrefControlSerialization_Epilogue(struct MemoryFabricImportedRef *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryFabricImportedRef_RmResource.offset), pCallContext, pParams);
-}
-
-static void __nvoc_thunk_RmResource_memoryfabricimportedrefControl_Epilogue(struct MemoryFabricImportedRef *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryFabricImportedRef_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_memoryfabricimportedrefUnmapFrom(struct MemoryFabricImportedRef *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_memoryfabricimportedrefMap(struct MemoryFabricImportedRef *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return resMap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset), pCallContext, pParams, pCpuMapping);
-}
-
-static NvBool __nvoc_thunk_RmResource_memoryfabricimportedrefAccessCallback(struct MemoryFabricImportedRef *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryFabricImportedRef_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
-}
-
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
@@ -175,12 +91,12 @@ static NvBool __nvoc_thunk_RmResource_memoryfabricimportedrefAccessCallback(stru
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_MemoryFabricImportedRef[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x813u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) memoryfabricimportedrefCtrlValidate_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x813u)
-        /*flags=*/      0x813u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
+        /*flags=*/      0x10bu,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xfb0101u,
         /*paramSize=*/  sizeof(NV00FB_CTRL_VALIDATE_PARAMS),
@@ -191,6 +107,117 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_MemoryFa
     },
 
 };
+
+// 1 down-thunk(s) defined to bridge methods in MemoryFabricImportedRef from superclasses
+
+// memoryfabricimportedrefCanCopy: virtual override (res) base (rmres)
+static NvBool __nvoc_down_thunk_MemoryFabricImportedRef_resCanCopy(struct RsResource *pMemoryFabricImportedRef) {
+    return memoryfabricimportedrefCanCopy((struct MemoryFabricImportedRef *)(((unsigned char *) pMemoryFabricImportedRef) - __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset));
+}
+
+
+// 20 up-thunk(s) defined to bridge methods in MemoryFabricImportedRef to superclasses
+
+// memoryfabricimportedrefAccessCallback: virtual inherited (rmres) base (rmres)
+static NvBool __nvoc_up_thunk_RmResource_memoryfabricimportedrefAccessCallback(struct MemoryFabricImportedRef *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryFabricImportedRef_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+}
+
+// memoryfabricimportedrefShareCallback: virtual inherited (rmres) base (rmres)
+static NvBool __nvoc_up_thunk_RmResource_memoryfabricimportedrefShareCallback(struct MemoryFabricImportedRef *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryFabricImportedRef_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+}
+
+// memoryfabricimportedrefGetMemInterMapParams: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_memoryfabricimportedrefGetMemInterMapParams(struct MemoryFabricImportedRef *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_MemoryFabricImportedRef_RmResource.offset), pParams);
+}
+
+// memoryfabricimportedrefCheckMemInterUnmap: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_memoryfabricimportedrefCheckMemInterUnmap(struct MemoryFabricImportedRef *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_MemoryFabricImportedRef_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+// memoryfabricimportedrefGetMemoryMappingDescriptor: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_memoryfabricimportedrefGetMemoryMappingDescriptor(struct MemoryFabricImportedRef *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_MemoryFabricImportedRef_RmResource.offset), ppMemDesc);
+}
+
+// memoryfabricimportedrefControlSerialization_Prologue: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_memoryfabricimportedrefControlSerialization_Prologue(struct MemoryFabricImportedRef *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryFabricImportedRef_RmResource.offset), pCallContext, pParams);
+}
+
+// memoryfabricimportedrefControlSerialization_Epilogue: virtual inherited (rmres) base (rmres)
+static void __nvoc_up_thunk_RmResource_memoryfabricimportedrefControlSerialization_Epilogue(struct MemoryFabricImportedRef *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryFabricImportedRef_RmResource.offset), pCallContext, pParams);
+}
+
+// memoryfabricimportedrefControl_Prologue: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_memoryfabricimportedrefControl_Prologue(struct MemoryFabricImportedRef *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryFabricImportedRef_RmResource.offset), pCallContext, pParams);
+}
+
+// memoryfabricimportedrefControl_Epilogue: virtual inherited (rmres) base (rmres)
+static void __nvoc_up_thunk_RmResource_memoryfabricimportedrefControl_Epilogue(struct MemoryFabricImportedRef *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryFabricImportedRef_RmResource.offset), pCallContext, pParams);
+}
+
+// memoryfabricimportedrefIsDuplicate: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_memoryfabricimportedrefIsDuplicate(struct MemoryFabricImportedRef *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset), hMemory, pDuplicate);
+}
+
+// memoryfabricimportedrefPreDestruct: virtual inherited (res) base (rmres)
+static void __nvoc_up_thunk_RsResource_memoryfabricimportedrefPreDestruct(struct MemoryFabricImportedRef *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset));
+}
+
+// memoryfabricimportedrefControl: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_memoryfabricimportedrefControl(struct MemoryFabricImportedRef *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControl((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset), pCallContext, pParams);
+}
+
+// memoryfabricimportedrefControlFilter: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_memoryfabricimportedrefControlFilter(struct MemoryFabricImportedRef *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset), pCallContext, pParams);
+}
+
+// memoryfabricimportedrefMap: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_memoryfabricimportedrefMap(struct MemoryFabricImportedRef *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+    return resMap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset), pCallContext, pParams, pCpuMapping);
+}
+
+// memoryfabricimportedrefUnmap: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_memoryfabricimportedrefUnmap(struct MemoryFabricImportedRef *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return resUnmap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset), pCallContext, pCpuMapping);
+}
+
+// memoryfabricimportedrefIsPartialUnmapSupported: inline virtual inherited (res) base (rmres) body
+static NvBool __nvoc_up_thunk_RsResource_memoryfabricimportedrefIsPartialUnmapSupported(struct MemoryFabricImportedRef *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset));
+}
+
+// memoryfabricimportedrefMapTo: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_memoryfabricimportedrefMapTo(struct MemoryFabricImportedRef *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset), pParams);
+}
+
+// memoryfabricimportedrefUnmapFrom: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_memoryfabricimportedrefUnmapFrom(struct MemoryFabricImportedRef *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset), pParams);
+}
+
+// memoryfabricimportedrefGetRefCount: virtual inherited (res) base (rmres)
+static NvU32 __nvoc_up_thunk_RsResource_memoryfabricimportedrefGetRefCount(struct MemoryFabricImportedRef *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset));
+}
+
+// memoryfabricimportedrefAddAdditionalDependants: virtual inherited (res) base (rmres)
+static void __nvoc_up_thunk_RsResource_memoryfabricimportedrefAddAdditionalDependants(struct RsClient *pClient, struct MemoryFabricImportedRef *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MemoryFabricImportedRef_RsResource.offset), pReference);
+}
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_MemoryFabricImportedRef = 
 {
@@ -228,59 +255,85 @@ __nvoc_ctor_MemoryFabricImportedRef_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_MemoryFabricImportedRef_1(MemoryFabricImportedRef *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // memoryfabricimportedrefCanCopy -- virtual override (res) base (rmres)
     pThis->__memoryfabricimportedrefCanCopy__ = &memoryfabricimportedrefCanCopy_IMPL;
+    pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__ = &__nvoc_down_thunk_MemoryFabricImportedRef_resCanCopy;
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x813u)
+    // memoryfabricimportedrefCtrlValidate -- exported (id=0xfb0101)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
     pThis->__memoryfabricimportedrefCtrlValidate__ = &memoryfabricimportedrefCtrlValidate_IMPL;
 #endif
 
-    pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__ = &__nvoc_thunk_MemoryFabricImportedRef_resCanCopy;
+    // memoryfabricimportedrefAccessCallback -- virtual inherited (rmres) base (rmres)
+    pThis->__memoryfabricimportedrefAccessCallback__ = &__nvoc_up_thunk_RmResource_memoryfabricimportedrefAccessCallback;
 
-    pThis->__memoryfabricimportedrefShareCallback__ = &__nvoc_thunk_RmResource_memoryfabricimportedrefShareCallback;
+    // memoryfabricimportedrefShareCallback -- virtual inherited (rmres) base (rmres)
+    pThis->__memoryfabricimportedrefShareCallback__ = &__nvoc_up_thunk_RmResource_memoryfabricimportedrefShareCallback;
 
-    pThis->__memoryfabricimportedrefCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_memoryfabricimportedrefCheckMemInterUnmap;
+    // memoryfabricimportedrefGetMemInterMapParams -- virtual inherited (rmres) base (rmres)
+    pThis->__memoryfabricimportedrefGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_memoryfabricimportedrefGetMemInterMapParams;
 
-    pThis->__memoryfabricimportedrefControl__ = &__nvoc_thunk_RsResource_memoryfabricimportedrefControl;
+    // memoryfabricimportedrefCheckMemInterUnmap -- virtual inherited (rmres) base (rmres)
+    pThis->__memoryfabricimportedrefCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_memoryfabricimportedrefCheckMemInterUnmap;
 
-    pThis->__memoryfabricimportedrefGetMemInterMapParams__ = &__nvoc_thunk_RmResource_memoryfabricimportedrefGetMemInterMapParams;
+    // memoryfabricimportedrefGetMemoryMappingDescriptor -- virtual inherited (rmres) base (rmres)
+    pThis->__memoryfabricimportedrefGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_memoryfabricimportedrefGetMemoryMappingDescriptor;
 
-    pThis->__memoryfabricimportedrefGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_memoryfabricimportedrefGetMemoryMappingDescriptor;
+    // memoryfabricimportedrefControlSerialization_Prologue -- virtual inherited (rmres) base (rmres)
+    pThis->__memoryfabricimportedrefControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_memoryfabricimportedrefControlSerialization_Prologue;
 
-    pThis->__memoryfabricimportedrefGetRefCount__ = &__nvoc_thunk_RsResource_memoryfabricimportedrefGetRefCount;
+    // memoryfabricimportedrefControlSerialization_Epilogue -- virtual inherited (rmres) base (rmres)
+    pThis->__memoryfabricimportedrefControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_memoryfabricimportedrefControlSerialization_Epilogue;
 
-    pThis->__memoryfabricimportedrefControlFilter__ = &__nvoc_thunk_RsResource_memoryfabricimportedrefControlFilter;
+    // memoryfabricimportedrefControl_Prologue -- virtual inherited (rmres) base (rmres)
+    pThis->__memoryfabricimportedrefControl_Prologue__ = &__nvoc_up_thunk_RmResource_memoryfabricimportedrefControl_Prologue;
 
-    pThis->__memoryfabricimportedrefAddAdditionalDependants__ = &__nvoc_thunk_RsResource_memoryfabricimportedrefAddAdditionalDependants;
+    // memoryfabricimportedrefControl_Epilogue -- virtual inherited (rmres) base (rmres)
+    pThis->__memoryfabricimportedrefControl_Epilogue__ = &__nvoc_up_thunk_RmResource_memoryfabricimportedrefControl_Epilogue;
 
-    pThis->__memoryfabricimportedrefControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_memoryfabricimportedrefControlSerialization_Prologue;
+    // memoryfabricimportedrefIsDuplicate -- virtual inherited (res) base (rmres)
+    pThis->__memoryfabricimportedrefIsDuplicate__ = &__nvoc_up_thunk_RsResource_memoryfabricimportedrefIsDuplicate;
 
-    pThis->__memoryfabricimportedrefControl_Prologue__ = &__nvoc_thunk_RmResource_memoryfabricimportedrefControl_Prologue;
+    // memoryfabricimportedrefPreDestruct -- virtual inherited (res) base (rmres)
+    pThis->__memoryfabricimportedrefPreDestruct__ = &__nvoc_up_thunk_RsResource_memoryfabricimportedrefPreDestruct;
 
-    pThis->__memoryfabricimportedrefUnmap__ = &__nvoc_thunk_RsResource_memoryfabricimportedrefUnmap;
+    // memoryfabricimportedrefControl -- virtual inherited (res) base (rmres)
+    pThis->__memoryfabricimportedrefControl__ = &__nvoc_up_thunk_RsResource_memoryfabricimportedrefControl;
 
-    pThis->__memoryfabricimportedrefIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_memoryfabricimportedrefIsPartialUnmapSupported;
+    // memoryfabricimportedrefControlFilter -- virtual inherited (res) base (rmres)
+    pThis->__memoryfabricimportedrefControlFilter__ = &__nvoc_up_thunk_RsResource_memoryfabricimportedrefControlFilter;
 
-    pThis->__memoryfabricimportedrefPreDestruct__ = &__nvoc_thunk_RsResource_memoryfabricimportedrefPreDestruct;
+    // memoryfabricimportedrefMap -- virtual inherited (res) base (rmres)
+    pThis->__memoryfabricimportedrefMap__ = &__nvoc_up_thunk_RsResource_memoryfabricimportedrefMap;
 
-    pThis->__memoryfabricimportedrefMapTo__ = &__nvoc_thunk_RsResource_memoryfabricimportedrefMapTo;
+    // memoryfabricimportedrefUnmap -- virtual inherited (res) base (rmres)
+    pThis->__memoryfabricimportedrefUnmap__ = &__nvoc_up_thunk_RsResource_memoryfabricimportedrefUnmap;
 
-    pThis->__memoryfabricimportedrefIsDuplicate__ = &__nvoc_thunk_RsResource_memoryfabricimportedrefIsDuplicate;
+    // memoryfabricimportedrefIsPartialUnmapSupported -- inline virtual inherited (res) base (rmres) body
+    pThis->__memoryfabricimportedrefIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_memoryfabricimportedrefIsPartialUnmapSupported;
 
-    pThis->__memoryfabricimportedrefControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_memoryfabricimportedrefControlSerialization_Epilogue;
+    // memoryfabricimportedrefMapTo -- virtual inherited (res) base (rmres)
+    pThis->__memoryfabricimportedrefMapTo__ = &__nvoc_up_thunk_RsResource_memoryfabricimportedrefMapTo;
 
-    pThis->__memoryfabricimportedrefControl_Epilogue__ = &__nvoc_thunk_RmResource_memoryfabricimportedrefControl_Epilogue;
+    // memoryfabricimportedrefUnmapFrom -- virtual inherited (res) base (rmres)
+    pThis->__memoryfabricimportedrefUnmapFrom__ = &__nvoc_up_thunk_RsResource_memoryfabricimportedrefUnmapFrom;
 
-    pThis->__memoryfabricimportedrefUnmapFrom__ = &__nvoc_thunk_RsResource_memoryfabricimportedrefUnmapFrom;
+    // memoryfabricimportedrefGetRefCount -- virtual inherited (res) base (rmres)
+    pThis->__memoryfabricimportedrefGetRefCount__ = &__nvoc_up_thunk_RsResource_memoryfabricimportedrefGetRefCount;
 
-    pThis->__memoryfabricimportedrefMap__ = &__nvoc_thunk_RsResource_memoryfabricimportedrefMap;
+    // memoryfabricimportedrefAddAdditionalDependants -- virtual inherited (res) base (rmres)
+    pThis->__memoryfabricimportedrefAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_memoryfabricimportedrefAddAdditionalDependants;
+} // End __nvoc_init_funcTable_MemoryFabricImportedRef_1 with approximately 23 basic block(s).
 
-    pThis->__memoryfabricimportedrefAccessCallback__ = &__nvoc_thunk_RmResource_memoryfabricimportedrefAccessCallback;
-}
 
+// Initialize vtable(s) for 22 virtual method(s).
 void __nvoc_init_funcTable_MemoryFabricImportedRef(MemoryFabricImportedRef *pThis) {
+
+    // Initialize vtable(s) with 22 per-object function pointer(s).
     __nvoc_init_funcTable_MemoryFabricImportedRef_1(pThis);
 }
 

@@ -84,89 +84,113 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_MIGMonitorSession =
     /*pExportInfo=*/        &__nvoc_export_info_MIGMonitorSession
 };
 
-static NvBool __nvoc_thunk_RmResource_migmonitorsessionShareCallback(struct MIGMonitorSession *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return rmresShareCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+// 21 up-thunk(s) defined to bridge methods in MIGMonitorSession to superclasses
+
+// migmonitorsessionAccessCallback: virtual inherited (rmres) base (rmres)
+static NvBool __nvoc_up_thunk_RmResource_migmonitorsessionAccessCallback(struct MIGMonitorSession *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MIGMonitorSession_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_migmonitorsessionCheckMemInterUnmap(struct MIGMonitorSession *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_MIGMonitorSession_RmResource.offset), bSubdeviceHandleProvided);
+// migmonitorsessionShareCallback: virtual inherited (rmres) base (rmres)
+static NvBool __nvoc_up_thunk_RmResource_migmonitorsessionShareCallback(struct MIGMonitorSession *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MIGMonitorSession_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_migmonitorsessionControl(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControl((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), pCallContext, pParams);
+// migmonitorsessionGetMemInterMapParams: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_migmonitorsessionGetMemInterMapParams(struct MIGMonitorSession *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_MIGMonitorSession_RmResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_migmonitorsessionGetMemInterMapParams(struct MIGMonitorSession *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_MIGMonitorSession_RmResource.offset), pParams);
+// migmonitorsessionCheckMemInterUnmap: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_migmonitorsessionCheckMemInterUnmap(struct MIGMonitorSession *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_MIGMonitorSession_RmResource.offset), bSubdeviceHandleProvided);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_migmonitorsessionGetMemoryMappingDescriptor(struct MIGMonitorSession *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_MIGMonitorSession_RmResource.offset), ppMemDesc);
+// migmonitorsessionGetMemoryMappingDescriptor: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_migmonitorsessionGetMemoryMappingDescriptor(struct MIGMonitorSession *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_MIGMonitorSession_RmResource.offset), ppMemDesc);
 }
 
-static NvU32 __nvoc_thunk_RsResource_migmonitorsessionGetRefCount(struct MIGMonitorSession *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset));
+// migmonitorsessionControlSerialization_Prologue: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_migmonitorsessionControlSerialization_Prologue(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MIGMonitorSession_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_migmonitorsessionControlFilter(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), pCallContext, pParams);
+// migmonitorsessionControlSerialization_Epilogue: virtual inherited (rmres) base (rmres)
+static void __nvoc_up_thunk_RmResource_migmonitorsessionControlSerialization_Epilogue(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MIGMonitorSession_RmResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_migmonitorsessionAddAdditionalDependants(struct RsClient *pClient, struct MIGMonitorSession *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), pReference);
+// migmonitorsessionControl_Prologue: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_migmonitorsessionControl_Prologue(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MIGMonitorSession_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_migmonitorsessionControlSerialization_Prologue(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RmResource.offset), pCallContext, pParams);
+// migmonitorsessionControl_Epilogue: virtual inherited (rmres) base (rmres)
+static void __nvoc_up_thunk_RmResource_migmonitorsessionControl_Epilogue(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MIGMonitorSession_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_migmonitorsessionControl_Prologue(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RmResource.offset), pCallContext, pParams);
+// migmonitorsessionCanCopy: virtual inherited (res) base (rmres)
+static NvBool __nvoc_up_thunk_RsResource_migmonitorsessionCanCopy(struct MIGMonitorSession *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RsResource_migmonitorsessionCanCopy(struct MIGMonitorSession *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset));
+// migmonitorsessionIsDuplicate: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_migmonitorsessionIsDuplicate(struct MIGMonitorSession *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), hMemory, pDuplicate);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_migmonitorsessionUnmap(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return resUnmap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), pCallContext, pCpuMapping);
+// migmonitorsessionPreDestruct: virtual inherited (res) base (rmres)
+static void __nvoc_up_thunk_RsResource_migmonitorsessionPreDestruct(struct MIGMonitorSession *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RsResource_migmonitorsessionIsPartialUnmapSupported(struct MIGMonitorSession *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset));
+// migmonitorsessionControl: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_migmonitorsessionControl(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControl((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_migmonitorsessionPreDestruct(struct MIGMonitorSession *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset));
+// migmonitorsessionControlFilter: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_migmonitorsessionControlFilter(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_migmonitorsessionMapTo(struct MIGMonitorSession *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), pParams);
+// migmonitorsessionMap: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_migmonitorsessionMap(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+    return resMap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), pCallContext, pParams, pCpuMapping);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_migmonitorsessionIsDuplicate(struct MIGMonitorSession *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), hMemory, pDuplicate);
+// migmonitorsessionUnmap: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_migmonitorsessionUnmap(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return resUnmap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), pCallContext, pCpuMapping);
 }
 
-static void __nvoc_thunk_RmResource_migmonitorsessionControlSerialization_Epilogue(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RmResource.offset), pCallContext, pParams);
+// migmonitorsessionIsPartialUnmapSupported: inline virtual inherited (res) base (rmres) body
+static NvBool __nvoc_up_thunk_RsResource_migmonitorsessionIsPartialUnmapSupported(struct MIGMonitorSession *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset));
 }
 
-static void __nvoc_thunk_RmResource_migmonitorsessionControl_Epilogue(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RmResource.offset), pCallContext, pParams);
+// migmonitorsessionMapTo: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_migmonitorsessionMapTo(struct MIGMonitorSession *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_migmonitorsessionUnmapFrom(struct MIGMonitorSession *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), pParams);
+// migmonitorsessionUnmapFrom: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_migmonitorsessionUnmapFrom(struct MIGMonitorSession *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_migmonitorsessionMap(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return resMap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), pCallContext, pParams, pCpuMapping);
+// migmonitorsessionGetRefCount: virtual inherited (res) base (rmres)
+static NvU32 __nvoc_up_thunk_RsResource_migmonitorsessionGetRefCount(struct MIGMonitorSession *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RmResource_migmonitorsessionAccessCallback(struct MIGMonitorSession *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+// migmonitorsessionAddAdditionalDependants: virtual inherited (res) base (rmres)
+static void __nvoc_up_thunk_RsResource_migmonitorsessionAddAdditionalDependants(struct RsClient *pClient, struct MIGMonitorSession *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), pReference);
 }
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_MIGMonitorSession = 
 {
@@ -204,53 +228,79 @@ __nvoc_ctor_MIGMonitorSession_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_MIGMonitorSession_1(MIGMonitorSession *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
-    pThis->__migmonitorsessionShareCallback__ = &__nvoc_thunk_RmResource_migmonitorsessionShareCallback;
+    // migmonitorsessionAccessCallback -- virtual inherited (rmres) base (rmres)
+    pThis->__migmonitorsessionAccessCallback__ = &__nvoc_up_thunk_RmResource_migmonitorsessionAccessCallback;
 
-    pThis->__migmonitorsessionCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_migmonitorsessionCheckMemInterUnmap;
+    // migmonitorsessionShareCallback -- virtual inherited (rmres) base (rmres)
+    pThis->__migmonitorsessionShareCallback__ = &__nvoc_up_thunk_RmResource_migmonitorsessionShareCallback;
 
-    pThis->__migmonitorsessionControl__ = &__nvoc_thunk_RsResource_migmonitorsessionControl;
+    // migmonitorsessionGetMemInterMapParams -- virtual inherited (rmres) base (rmres)
+    pThis->__migmonitorsessionGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_migmonitorsessionGetMemInterMapParams;
 
-    pThis->__migmonitorsessionGetMemInterMapParams__ = &__nvoc_thunk_RmResource_migmonitorsessionGetMemInterMapParams;
+    // migmonitorsessionCheckMemInterUnmap -- virtual inherited (rmres) base (rmres)
+    pThis->__migmonitorsessionCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_migmonitorsessionCheckMemInterUnmap;
 
-    pThis->__migmonitorsessionGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_migmonitorsessionGetMemoryMappingDescriptor;
+    // migmonitorsessionGetMemoryMappingDescriptor -- virtual inherited (rmres) base (rmres)
+    pThis->__migmonitorsessionGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_migmonitorsessionGetMemoryMappingDescriptor;
 
-    pThis->__migmonitorsessionGetRefCount__ = &__nvoc_thunk_RsResource_migmonitorsessionGetRefCount;
+    // migmonitorsessionControlSerialization_Prologue -- virtual inherited (rmres) base (rmres)
+    pThis->__migmonitorsessionControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_migmonitorsessionControlSerialization_Prologue;
 
-    pThis->__migmonitorsessionControlFilter__ = &__nvoc_thunk_RsResource_migmonitorsessionControlFilter;
+    // migmonitorsessionControlSerialization_Epilogue -- virtual inherited (rmres) base (rmres)
+    pThis->__migmonitorsessionControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_migmonitorsessionControlSerialization_Epilogue;
 
-    pThis->__migmonitorsessionAddAdditionalDependants__ = &__nvoc_thunk_RsResource_migmonitorsessionAddAdditionalDependants;
+    // migmonitorsessionControl_Prologue -- virtual inherited (rmres) base (rmres)
+    pThis->__migmonitorsessionControl_Prologue__ = &__nvoc_up_thunk_RmResource_migmonitorsessionControl_Prologue;
 
-    pThis->__migmonitorsessionControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_migmonitorsessionControlSerialization_Prologue;
+    // migmonitorsessionControl_Epilogue -- virtual inherited (rmres) base (rmres)
+    pThis->__migmonitorsessionControl_Epilogue__ = &__nvoc_up_thunk_RmResource_migmonitorsessionControl_Epilogue;
 
-    pThis->__migmonitorsessionControl_Prologue__ = &__nvoc_thunk_RmResource_migmonitorsessionControl_Prologue;
+    // migmonitorsessionCanCopy -- virtual inherited (res) base (rmres)
+    pThis->__migmonitorsessionCanCopy__ = &__nvoc_up_thunk_RsResource_migmonitorsessionCanCopy;
 
-    pThis->__migmonitorsessionCanCopy__ = &__nvoc_thunk_RsResource_migmonitorsessionCanCopy;
+    // migmonitorsessionIsDuplicate -- virtual inherited (res) base (rmres)
+    pThis->__migmonitorsessionIsDuplicate__ = &__nvoc_up_thunk_RsResource_migmonitorsessionIsDuplicate;
 
-    pThis->__migmonitorsessionUnmap__ = &__nvoc_thunk_RsResource_migmonitorsessionUnmap;
+    // migmonitorsessionPreDestruct -- virtual inherited (res) base (rmres)
+    pThis->__migmonitorsessionPreDestruct__ = &__nvoc_up_thunk_RsResource_migmonitorsessionPreDestruct;
 
-    pThis->__migmonitorsessionIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_migmonitorsessionIsPartialUnmapSupported;
+    // migmonitorsessionControl -- virtual inherited (res) base (rmres)
+    pThis->__migmonitorsessionControl__ = &__nvoc_up_thunk_RsResource_migmonitorsessionControl;
 
-    pThis->__migmonitorsessionPreDestruct__ = &__nvoc_thunk_RsResource_migmonitorsessionPreDestruct;
+    // migmonitorsessionControlFilter -- virtual inherited (res) base (rmres)
+    pThis->__migmonitorsessionControlFilter__ = &__nvoc_up_thunk_RsResource_migmonitorsessionControlFilter;
 
-    pThis->__migmonitorsessionMapTo__ = &__nvoc_thunk_RsResource_migmonitorsessionMapTo;
+    // migmonitorsessionMap -- virtual inherited (res) base (rmres)
+    pThis->__migmonitorsessionMap__ = &__nvoc_up_thunk_RsResource_migmonitorsessionMap;
 
-    pThis->__migmonitorsessionIsDuplicate__ = &__nvoc_thunk_RsResource_migmonitorsessionIsDuplicate;
+    // migmonitorsessionUnmap -- virtual inherited (res) base (rmres)
+    pThis->__migmonitorsessionUnmap__ = &__nvoc_up_thunk_RsResource_migmonitorsessionUnmap;
 
-    pThis->__migmonitorsessionControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_migmonitorsessionControlSerialization_Epilogue;
+    // migmonitorsessionIsPartialUnmapSupported -- inline virtual inherited (res) base (rmres) body
+    pThis->__migmonitorsessionIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_migmonitorsessionIsPartialUnmapSupported;
 
-    pThis->__migmonitorsessionControl_Epilogue__ = &__nvoc_thunk_RmResource_migmonitorsessionControl_Epilogue;
+    // migmonitorsessionMapTo -- virtual inherited (res) base (rmres)
+    pThis->__migmonitorsessionMapTo__ = &__nvoc_up_thunk_RsResource_migmonitorsessionMapTo;
 
-    pThis->__migmonitorsessionUnmapFrom__ = &__nvoc_thunk_RsResource_migmonitorsessionUnmapFrom;
+    // migmonitorsessionUnmapFrom -- virtual inherited (res) base (rmres)
+    pThis->__migmonitorsessionUnmapFrom__ = &__nvoc_up_thunk_RsResource_migmonitorsessionUnmapFrom;
 
-    pThis->__migmonitorsessionMap__ = &__nvoc_thunk_RsResource_migmonitorsessionMap;
+    // migmonitorsessionGetRefCount -- virtual inherited (res) base (rmres)
+    pThis->__migmonitorsessionGetRefCount__ = &__nvoc_up_thunk_RsResource_migmonitorsessionGetRefCount;
 
-    pThis->__migmonitorsessionAccessCallback__ = &__nvoc_thunk_RmResource_migmonitorsessionAccessCallback;
-}
+    // migmonitorsessionAddAdditionalDependants -- virtual inherited (res) base (rmres)
+    pThis->__migmonitorsessionAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_migmonitorsessionAddAdditionalDependants;
+} // End __nvoc_init_funcTable_MIGMonitorSession_1 with approximately 21 basic block(s).
 
+
+// Initialize vtable(s) for 21 virtual method(s).
 void __nvoc_init_funcTable_MIGMonitorSession(MIGMonitorSession *pThis) {
+
+    // Initialize vtable(s) with 21 per-object function pointer(s).
     __nvoc_init_funcTable_MIGMonitorSession_1(pThis);
 }
 

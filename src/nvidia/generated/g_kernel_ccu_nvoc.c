@@ -66,61 +66,81 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelCcu =
     /*pExportInfo=*/        &__nvoc_export_info_KernelCcu
 };
 
-static NV_STATUS __nvoc_thunk_KernelCcu_engstateConstructEngine(OBJGPU *pGpu, struct OBJENGSTATE *pKernelCcu, ENGDESCRIPTOR engDesc) {
-    return kccuConstructEngine(pGpu, (struct KernelCcu *)(((unsigned char *)pKernelCcu) - __nvoc_rtti_KernelCcu_OBJENGSTATE.offset), engDesc);
+// 3 down-thunk(s) defined to bridge methods in KernelCcu from superclasses
+
+// kccuConstructEngine: virtual override (engstate) base (engstate)
+static NV_STATUS __nvoc_down_thunk_KernelCcu_engstateConstructEngine(OBJGPU *pGpu, struct OBJENGSTATE *pKernelCcu, ENGDESCRIPTOR engDesc) {
+    return kccuConstructEngine(pGpu, (struct KernelCcu *)(((unsigned char *) pKernelCcu) - __nvoc_rtti_KernelCcu_OBJENGSTATE.offset), engDesc);
 }
 
-static NV_STATUS __nvoc_thunk_KernelCcu_engstateStateLoad(OBJGPU *arg0, struct OBJENGSTATE *arg1, NvU32 flags) {
-    return kccuStateLoad(arg0, (struct KernelCcu *)(((unsigned char *)arg1) - __nvoc_rtti_KernelCcu_OBJENGSTATE.offset), flags);
+// kccuStateLoad: virtual override (engstate) base (engstate)
+static NV_STATUS __nvoc_down_thunk_KernelCcu_engstateStateLoad(OBJGPU *arg1, struct OBJENGSTATE *arg_this, NvU32 flags) {
+    return kccuStateLoad(arg1, (struct KernelCcu *)(((unsigned char *) arg_this) - __nvoc_rtti_KernelCcu_OBJENGSTATE.offset), flags);
 }
 
-static NV_STATUS __nvoc_thunk_KernelCcu_engstateStateUnload(OBJGPU *arg0, struct OBJENGSTATE *arg1, NvU32 flags) {
-    return kccuStateUnload(arg0, (struct KernelCcu *)(((unsigned char *)arg1) - __nvoc_rtti_KernelCcu_OBJENGSTATE.offset), flags);
+// kccuStateUnload: virtual override (engstate) base (engstate)
+static NV_STATUS __nvoc_down_thunk_KernelCcu_engstateStateUnload(OBJGPU *arg1, struct OBJENGSTATE *arg_this, NvU32 flags) {
+    return kccuStateUnload(arg1, (struct KernelCcu *)(((unsigned char *) arg_this) - __nvoc_rtti_KernelCcu_OBJENGSTATE.offset), flags);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kccuStateInitLocked(POBJGPU pGpu, struct KernelCcu *pEngstate) {
-    return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelCcu_OBJENGSTATE.offset));
+
+// 11 up-thunk(s) defined to bridge methods in KernelCcu to superclasses
+
+// kccuInitMissing: virtual inherited (engstate) base (engstate)
+static void __nvoc_up_thunk_OBJENGSTATE_kccuInitMissing(POBJGPU pGpu, struct KernelCcu *pEngstate) {
+    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelCcu_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kccuStatePreLoad(POBJGPU pGpu, struct KernelCcu *pEngstate, NvU32 arg0) {
-    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelCcu_OBJENGSTATE.offset), arg0);
+// kccuStatePreInitLocked: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kccuStatePreInitLocked(POBJGPU pGpu, struct KernelCcu *pEngstate) {
+    return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelCcu_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kccuStatePostUnload(POBJGPU pGpu, struct KernelCcu *pEngstate, NvU32 arg0) {
-    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelCcu_OBJENGSTATE.offset), arg0);
+// kccuStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kccuStatePreInitUnlocked(POBJGPU pGpu, struct KernelCcu *pEngstate) {
+    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelCcu_OBJENGSTATE.offset));
 }
 
-static void __nvoc_thunk_OBJENGSTATE_kccuStateDestroy(POBJGPU pGpu, struct KernelCcu *pEngstate) {
-    engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelCcu_OBJENGSTATE.offset));
+// kccuStateInitLocked: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kccuStateInitLocked(POBJGPU pGpu, struct KernelCcu *pEngstate) {
+    return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelCcu_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kccuStatePreUnload(POBJGPU pGpu, struct KernelCcu *pEngstate, NvU32 arg0) {
-    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelCcu_OBJENGSTATE.offset), arg0);
+// kccuStateInitUnlocked: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kccuStateInitUnlocked(POBJGPU pGpu, struct KernelCcu *pEngstate) {
+    return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelCcu_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kccuStateInitUnlocked(POBJGPU pGpu, struct KernelCcu *pEngstate) {
-    return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelCcu_OBJENGSTATE.offset));
+// kccuStatePreLoad: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kccuStatePreLoad(POBJGPU pGpu, struct KernelCcu *pEngstate, NvU32 arg3) {
+    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelCcu_OBJENGSTATE.offset), arg3);
 }
 
-static void __nvoc_thunk_OBJENGSTATE_kccuInitMissing(POBJGPU pGpu, struct KernelCcu *pEngstate) {
-    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelCcu_OBJENGSTATE.offset));
+// kccuStatePostLoad: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kccuStatePostLoad(POBJGPU pGpu, struct KernelCcu *pEngstate, NvU32 arg3) {
+    return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelCcu_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kccuStatePreInitLocked(POBJGPU pGpu, struct KernelCcu *pEngstate) {
-    return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelCcu_OBJENGSTATE.offset));
+// kccuStatePreUnload: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kccuStatePreUnload(POBJGPU pGpu, struct KernelCcu *pEngstate, NvU32 arg3) {
+    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelCcu_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kccuStatePreInitUnlocked(POBJGPU pGpu, struct KernelCcu *pEngstate) {
-    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelCcu_OBJENGSTATE.offset));
+// kccuStatePostUnload: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kccuStatePostUnload(POBJGPU pGpu, struct KernelCcu *pEngstate, NvU32 arg3) {
+    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelCcu_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kccuStatePostLoad(POBJGPU pGpu, struct KernelCcu *pEngstate, NvU32 arg0) {
-    return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelCcu_OBJENGSTATE.offset), arg0);
+// kccuStateDestroy: virtual inherited (engstate) base (engstate)
+static void __nvoc_up_thunk_OBJENGSTATE_kccuStateDestroy(POBJGPU pGpu, struct KernelCcu *pEngstate) {
+    engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelCcu_OBJENGSTATE.offset));
 }
 
-static NvBool __nvoc_thunk_OBJENGSTATE_kccuIsPresent(POBJGPU pGpu, struct KernelCcu *pEngstate) {
-    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelCcu_OBJENGSTATE.offset));
+// kccuIsPresent: virtual inherited (engstate) base (engstate)
+static NvBool __nvoc_up_thunk_OBJENGSTATE_kccuIsPresent(POBJGPU pGpu, struct KernelCcu *pEngstate) {
+    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelCcu_OBJENGSTATE.offset));
 }
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelCcu = 
 {
@@ -171,6 +191,7 @@ __nvoc_ctor_KernelCcu_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_KernelCcu_1(KernelCcu *pThis, RmHalspecOwner *pRmhalspecowner) {
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
@@ -183,13 +204,19 @@ static void __nvoc_init_funcTable_KernelCcu_1(KernelCcu *pThis, RmHalspecOwner *
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 
+    // kccuConstructEngine -- virtual override (engstate) base (engstate)
     pThis->__kccuConstructEngine__ = &kccuConstructEngine_IMPL;
+    pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_down_thunk_KernelCcu_engstateConstructEngine;
 
+    // kccuStateLoad -- virtual override (engstate) base (engstate)
     pThis->__kccuStateLoad__ = &kccuStateLoad_IMPL;
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStateLoad__ = &__nvoc_down_thunk_KernelCcu_engstateStateLoad;
 
+    // kccuStateUnload -- virtual override (engstate) base (engstate)
     pThis->__kccuStateUnload__ = &kccuStateUnload_IMPL;
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStateUnload__ = &__nvoc_down_thunk_KernelCcu_engstateStateUnload;
 
-    // Hal function -- kccuMigShrBufHandler
+    // kccuMigShrBufHandler -- halified (2 hals)
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kccuMigShrBufHandler__ = &kccuMigShrBufHandler_GH100;
@@ -200,36 +227,56 @@ static void __nvoc_init_funcTable_KernelCcu_1(KernelCcu *pThis, RmHalspecOwner *
         pThis->__kccuMigShrBufHandler__ = &kccuMigShrBufHandler_46f6a7;
     }
 
-    pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_thunk_KernelCcu_engstateConstructEngine;
+    // kccuGetBufSize -- halified (2 hals)
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__kccuGetBufSize__ = &kccuGetBufSize_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__kccuGetBufSize__ = &kccuGetBufSize_46f6a7;
+    }
 
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStateLoad__ = &__nvoc_thunk_KernelCcu_engstateStateLoad;
+    // kccuInitMissing -- virtual inherited (engstate) base (engstate)
+    pThis->__kccuInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_kccuInitMissing;
 
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStateUnload__ = &__nvoc_thunk_KernelCcu_engstateStateUnload;
+    // kccuStatePreInitLocked -- virtual inherited (engstate) base (engstate)
+    pThis->__kccuStatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_kccuStatePreInitLocked;
 
-    pThis->__kccuStateInitLocked__ = &__nvoc_thunk_OBJENGSTATE_kccuStateInitLocked;
+    // kccuStatePreInitUnlocked -- virtual inherited (engstate) base (engstate)
+    pThis->__kccuStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kccuStatePreInitUnlocked;
 
-    pThis->__kccuStatePreLoad__ = &__nvoc_thunk_OBJENGSTATE_kccuStatePreLoad;
+    // kccuStateInitLocked -- virtual inherited (engstate) base (engstate)
+    pThis->__kccuStateInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_kccuStateInitLocked;
 
-    pThis->__kccuStatePostUnload__ = &__nvoc_thunk_OBJENGSTATE_kccuStatePostUnload;
+    // kccuStateInitUnlocked -- virtual inherited (engstate) base (engstate)
+    pThis->__kccuStateInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kccuStateInitUnlocked;
 
-    pThis->__kccuStateDestroy__ = &__nvoc_thunk_OBJENGSTATE_kccuStateDestroy;
+    // kccuStatePreLoad -- virtual inherited (engstate) base (engstate)
+    pThis->__kccuStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kccuStatePreLoad;
 
-    pThis->__kccuStatePreUnload__ = &__nvoc_thunk_OBJENGSTATE_kccuStatePreUnload;
+    // kccuStatePostLoad -- virtual inherited (engstate) base (engstate)
+    pThis->__kccuStatePostLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kccuStatePostLoad;
 
-    pThis->__kccuStateInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_kccuStateInitUnlocked;
+    // kccuStatePreUnload -- virtual inherited (engstate) base (engstate)
+    pThis->__kccuStatePreUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kccuStatePreUnload;
 
-    pThis->__kccuInitMissing__ = &__nvoc_thunk_OBJENGSTATE_kccuInitMissing;
+    // kccuStatePostUnload -- virtual inherited (engstate) base (engstate)
+    pThis->__kccuStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kccuStatePostUnload;
 
-    pThis->__kccuStatePreInitLocked__ = &__nvoc_thunk_OBJENGSTATE_kccuStatePreInitLocked;
+    // kccuStateDestroy -- virtual inherited (engstate) base (engstate)
+    pThis->__kccuStateDestroy__ = &__nvoc_up_thunk_OBJENGSTATE_kccuStateDestroy;
 
-    pThis->__kccuStatePreInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_kccuStatePreInitUnlocked;
+    // kccuIsPresent -- virtual inherited (engstate) base (engstate)
+    pThis->__kccuIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_kccuIsPresent;
+} // End __nvoc_init_funcTable_KernelCcu_1 with approximately 21 basic block(s).
 
-    pThis->__kccuStatePostLoad__ = &__nvoc_thunk_OBJENGSTATE_kccuStatePostLoad;
 
-    pThis->__kccuIsPresent__ = &__nvoc_thunk_OBJENGSTATE_kccuIsPresent;
-}
-
+// Initialize vtable(s) for 16 virtual method(s).
 void __nvoc_init_funcTable_KernelCcu(KernelCcu *pThis, RmHalspecOwner *pRmhalspecowner) {
+
+    // Initialize vtable(s) with 16 per-object function pointer(s).
     __nvoc_init_funcTable_KernelCcu_1(pThis, pRmhalspecowner);
 }
 

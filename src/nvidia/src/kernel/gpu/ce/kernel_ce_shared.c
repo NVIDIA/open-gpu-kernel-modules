@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,6 +32,7 @@
 #include "gpu/bus/kern_bus.h"
 #include "gpu/ce/kernel_ce.h"
 #include "gpu/ce/kernel_ce_private.h"
+#include "nvmisc.h"
 
 NvBool ceIsCeGrce(OBJGPU *pGpu, RM_ENGINE_TYPE rmCeEngineType)
 {
@@ -181,7 +182,7 @@ subdeviceCtrlCmdCeGetAllCaps_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
     Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
 
-    ct_assert(NV2080_CTRL_MAX_CES  <= sizeof(pCeCapsParams->capsTbl) / sizeof(pCeCapsParams->capsTbl[0]));
+    ct_assert(NV2080_CTRL_MAX_CES  <= NV_ARRAY_ELEMENTS(pCeCapsParams->capsTbl));
 
     if (!RMCFG_FEATURE_PLATFORM_GSP)
     {

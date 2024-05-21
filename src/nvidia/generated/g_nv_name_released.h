@@ -1003,6 +1003,7 @@ static const CHIPS_RELEASED sChipsReleased[] = {
     { 0x25FB, 0x0000, 0x0000, "NVIDIA RTX A500 Embedded GPU" },
     { 0x2684, 0x0000, 0x0000, "NVIDIA GeForce RTX 4090" },
     { 0x2685, 0x0000, 0x0000, "NVIDIA GeForce RTX 4090 D" },
+    { 0x2689, 0x0000, 0x0000, "NVIDIA GeForce RTX 4070 Ti SUPER" },
     { 0x26B1, 0x16a1, 0x1028, "NVIDIA RTX 6000 Ada Generation" },
     { 0x26B1, 0x16a1, 0x103c, "NVIDIA RTX 6000 Ada Generation" },
     { 0x26B1, 0x16a1, 0x10de, "NVIDIA RTX 6000 Ada Generation" },

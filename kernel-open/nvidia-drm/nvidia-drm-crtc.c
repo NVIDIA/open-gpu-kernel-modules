@@ -176,12 +176,10 @@ cursor_plane_req_config_update(struct drm_plane *plane,
         return;
     }
 
-    *req_config = (struct NvKmsKapiCursorRequestedConfig) {
-        .surface = to_nv_framebuffer(plane_state->fb)->pSurface,
-
-        .dstX = plane_state->crtc_x,
-        .dstY = plane_state->crtc_y,
-    };
+    memset(req_config, 0, sizeof(*req_config));
+    req_config->surface = to_nv_framebuffer(plane_state->fb)->pSurface;
+    req_config->dstX = plane_state->crtc_x;
+    req_config->dstY = plane_state->crtc_y;
 
 #if defined(NV_DRM_ALPHA_BLENDING_AVAILABLE)
     if (plane->blend_mode_property != NULL && plane->alpha_property != NULL) {
@@ -275,24 +273,22 @@ plane_req_config_update(struct drm_plane *plane,
         return 0;
     }
 
-    *req_config = (struct NvKmsKapiLayerRequestedConfig) {
-        .config = {
-            .surface = to_nv_framebuffer(plane_state->fb)->pSurface,
+    memset(req_config, 0, sizeof(*req_config));
 
-            /* Source values are 16.16 fixed point */
-            .srcX = plane_state->src_x >> 16,
-            .srcY = plane_state->src_y >> 16,
-            .srcWidth  = plane_state->src_w >> 16,
-            .srcHeight = plane_state->src_h >> 16,
+    req_config->config.surface = to_nv_framebuffer(plane_state->fb)->pSurface;
 
-            .dstX = plane_state->crtc_x,
-            .dstY = plane_state->crtc_y,
-            .dstWidth  = plane_state->crtc_w,
-            .dstHeight = plane_state->crtc_h,
+    /* Source values are 16.16 fixed point */
+    req_config->config.srcX = plane_state->src_x >> 16;
+    req_config->config.srcY = plane_state->src_y >> 16;
+    req_config->config.srcWidth  = plane_state->src_w >> 16;
+    req_config->config.srcHeight = plane_state->src_h >> 16;
 
-            .csc = old_config.csc
-        },
-    };
+    req_config->config.dstX = plane_state->crtc_x;
+    req_config->config.dstY = plane_state->crtc_y;
+    req_config->config.dstWidth  = plane_state->crtc_w;
+    req_config->config.dstHeight = plane_state->crtc_h;
+
+    req_config->config.csc = old_config.csc;
 
 #if defined(NV_DRM_ROTATION_AVAILABLE)
     /*
@@ -688,9 +684,7 @@ static int nv_drm_plane_atomic_set_property(
         to_nv_drm_plane_state(state);
 
     if (property == nv_dev->nv_out_fence_property) {
-#if defined(NV_LINUX_NVHOST_H_PRESENT) && defined(CONFIG_TEGRA_GRHOST)
-        nv_drm_plane_state->fd_user_ptr = u64_to_user_ptr(val);
-#endif
+        nv_drm_plane_state->fd_user_ptr = (void __user *)(uintptr_t)(val);
         return 0;
     } else if (property == nv_dev->nv_input_colorspace_property) {
         nv_drm_plane_state->input_colorspace = val;
@@ -875,14 +869,12 @@ static inline void nv_drm_crtc_duplicate_req_head_modeset_config(
      * there is no change in new configuration yet with respect
      * to older one!
      */
-    *new = (struct NvKmsKapiHeadRequestedConfig) {
-        .modeSetConfig = old->modeSetConfig,
-    };
+    memset(new, 0, sizeof(*new));
+    new->modeSetConfig = old->modeSetConfig;
 
     for (i = 0; i < ARRAY_SIZE(old->layerRequestedConfig); i++) {
-        new->layerRequestedConfig[i] = (struct NvKmsKapiLayerRequestedConfig) {
-            .config = old->layerRequestedConfig[i].config,
-        };
+        new->layerRequestedConfig[i].config =
+            old->layerRequestedConfig[i].config;
     }
 }
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,6 +22,8 @@
  */
 
 #include "deprecated/rmapi_deprecated.h"
+
+#include "nvmisc.h"
 
 
 #include "class/cl003e.h" // NV01_MEMORY_SYSTEM
@@ -88,7 +90,7 @@ static const RmAllocMemoryEntry rmAllocMemoryTable[] =
     { NV01_MEMORY_FLA,                      _rmAllocMemoryFromFlaObject },
 };
 
-static NvU32 rmAllocMemoryTableSize = sizeof(rmAllocMemoryTable) / sizeof(rmAllocMemoryTable[0]);
+static NvU32 rmAllocMemoryTableSize = NV_ARRAY_ELEMENTS(rmAllocMemoryTable);
 
 void
 RmDeprecatedAllocMemory

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,23 +29,39 @@
   */
 #include "gpu/gpu.h"
 #include "gpu/fsp/kern_fsp.h"
+#include "os/os.h"
 #include "nvrm_registry.h"
+#include "gpu_mgr/gpu_mgr.h"
 
 #if RMCFG_MODULE_ENABLED (GSP)
 #include "gpu/gsp/gsp.h"
 #include "objflcnable.h"
 #endif
 
+#define ASYNC_FSP_POLL_PERIOD_MS 50
+
 /*!
 * Local object related functions
 */
 static void kfspInitRegistryOverrides(OBJGPU *, KernelFsp *);
-
+static NV_STATUS kfspWaitForResponse(OBJGPU *pGpu, KernelFsp *pKernelFsp);
+static NV_INLINE void kfspSetResponseTimeout(OBJGPU *pGpu, KernelFsp *pKernelFsp);
+static NV_INLINE NV_STATUS kfspCheckResponseTimeout(OBJGPU *pGpu, KernelFsp *pKernelFsp);
+static NV_STATUS kfspSendMessage(OBJGPU *pGpu, KernelFsp *pKernelFsp, NvU8 *pPayload, NvU32 size, NvU32 nvdmType);
 static NV_STATUS kfspReadMessage(OBJGPU *pGpu, KernelFsp *pKernelFsp, NvU8 *pPayloadBuffer, NvU32 payloadBufferSize);
+static NV_STATUS kfspPollForAsyncResponse(OBJGPU *pGpu, OBJTMR *pTmr, TMR_EVENT *pEvent);
+static void kfspProcessAsyncResponseCallback(NvU32 gpuInstance, void *pCallbackArgs);
+static void kfspProcessAsyncResponse(OBJGPU *pGpu,KernelFsp *pKernelFsp);
+static void kfspExecuteAsyncRpcCallback(KernelFsp *pKernelFsp, NV_STATUS status);
+static NV_STATUS kfspScheduleAsyncResponseCheck(OBJGPU *pGpu, KernelFsp *pKernelFsp,
+                                                AsyncRpcCallback callback, void  *pCallbackArgs,
+                                                NvU8 *pBuffer, NvU32  bufferSize);
+static void kfspClearAsyncResponseState(KernelFsp *pKernelFsp);
 
 NV_STATUS
 kfspConstructEngine_IMPL(OBJGPU *pGpu, KernelFsp *pKernelFsp, ENGDESCRIPTOR engDesc)
 {
+    NV_STATUS status;
 
     // Initialize based on registry keys
     kfspInitRegistryOverrides(pGpu, pKernelFsp);
@@ -54,7 +70,15 @@ kfspConstructEngine_IMPL(OBJGPU *pGpu, KernelFsp *pKernelFsp, ENGDESCRIPTOR engD
         NV_PRINTF(LEVEL_WARNING, "KernelFsp is disabled\n");
         return NV_ERR_OBJECT_NOT_FOUND;
     }
-    return NV_OK;
+
+    kfspClearAsyncResponseState(pKernelFsp);
+
+    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
+    status = tmrEventCreate(pTmr, &(pKernelFsp->pPollEvent),
+                            kfspPollForAsyncResponse, NULL,
+                            TMR_FLAGS_NONE);
+
+    return status;
 }
 
 /*!
@@ -114,28 +138,6 @@ kfspInitRegistryOverrides
 
 
 /*!
- * @brief FSP State Initialization.
- *
- * Initializes all software states including allocating the dbg memory surface
- * and the initialization of FSP HAL layer.
- *
- * @param[in]  pGpu       GPU object pointer
- * @param[in]  pKernelFsp FSP object pointer
- *
- * @return 'NV_OK' if state-initialization was successful.
- * @return other   bubbles up errors from @ref kfspStateInitHal_HAL on failure
- */
-NV_STATUS
-kfspStateInitUnlocked_IMPL
-(
-    OBJGPU    *pGpu,
-    KernelFsp *pKernelFsp
-)
-{
-    return NV_OK;
-}
-
-/*!
  * @brief Clean up objects used when sending GSP-FMC and FRTS info to FSP
  *
  * @param[in]  pGpu        GPU object pointer
@@ -148,6 +150,9 @@ kfspCleanupBootState_IMPL
     KernelFsp *pKernelFsp
 )
 {
+    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
+    tmrEventDestroy(pTmr, pKernelFsp->pPollEvent);
+
     portMemFree(pKernelFsp->pCotPayload);
     pKernelFsp->pCotPayload = NULL;
 
@@ -200,26 +205,6 @@ kfspStateDestroy_IMPL
         pKernelFsp->pVidmemFrtsMemdesc = NULL;
     }
 }
-
-/*!
- * @brief Override default behaviour of reset
- *
- * @param[in]  pGpu       GPU object pointer
- * @param[in]  pKernelFsp FSP object pointer
- */
-void
-kfspSecureReset_IMPL
-(
-    OBJGPU    *pGpu,
-    KernelFsp *pKernelFsp
-)
-{
-    // Should not reset FSP
-    NV_PRINTF(LEVEL_ERROR, "FSP cannot be reset by CPU.\n");
-    NV_ASSERT(0);
-    return;
-}
-
 
 /*!
  * @brief Check if FSP RM command queue is empty
@@ -341,21 +326,183 @@ kfspPollForResponse_IMPL
     KernelFsp *pKernelFsp
 )
 {
-    RMTIMEOUT timeout;
+    kfspSetResponseTimeout(pGpu, pKernelFsp);
+    return kfspWaitForResponse(pGpu, pKernelFsp);
+}
+
+/*!
+ * @brief Wait for response from FSP via RM message queue
+ *
+ * @param[in] pGpu       OBJGPU pointer
+ * @param[in] pKernelFsp KernelFsp pointer
+ *
+ * @return NV_OK, or NV_ERR_TIMEOUT
+ */
+static NV_STATUS
+kfspWaitForResponse
+(
+    OBJGPU *pGpu,
+    KernelFsp *pKernelFsp
+)
+{
     NV_STATUS status = NV_OK;
 
     // Poll for message queue to wait for FSP's reply
-    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, GPU_TIMEOUT_FLAGS_OSTIMER | GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
     while (kfspIsMsgQueueEmpty(pGpu, pKernelFsp))
     {
-        if (gpuCheckTimeout(pGpu, &timeout) == NV_ERR_TIMEOUT)
+        osSpinLoop();
+
+        status = kfspCheckResponseTimeout(pGpu, pKernelFsp);
+        if (status != NV_OK)
         {
-            NV_PRINTF(LEVEL_ERROR, "FSP command timed out\n");
-            return NV_ERR_TIMEOUT;
+            if ((status == NV_ERR_TIMEOUT) &&
+                !kfspIsMsgQueueEmpty(pGpu, pKernelFsp))
+            {
+                status = NV_OK;
+            }
+            else
+            {
+                NV_PRINTF(LEVEL_ERROR, "FSP command timed out\n");
+            }
+            break;
+        }
+    }
+
+    return status;
+}
+
+/*!
+ * @brief Set a timeout for response from FSP
+ *
+ * @param[in] pGpu       OBJGPU pointer
+ * @param[in] pKernelFsp KernelFsp pointer
+ */
+static NV_INLINE void
+kfspSetResponseTimeout
+(
+    OBJGPU *pGpu,
+    KernelFsp *pKernelFsp
+)
+{
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &(pKernelFsp->rpcTimeout),
+                  GPU_TIMEOUT_FLAGS_OSTIMER | GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
+}
+
+/*!
+ * @brief Check for timeout for response from FSP
+ *
+ * @param[in] pGpu       OBJGPU pointer
+ * @param[in] pKernelFsp KernelFsp pointer
+ *
+ * @return NV_OK, or NV_ERR_TIMEOUT
+ */
+static NV_INLINE NV_STATUS
+kfspCheckResponseTimeout
+(
+    OBJGPU *pGpu,
+    KernelFsp *pKernelFsp
+)
+{
+    return gpuCheckTimeout(pGpu, &(pKernelFsp->rpcTimeout));
+}
+
+/*!
+ * @brief Send a MCTP message to FSP via EMEM
+ *
+ * @param[in] pGpu               OBJGPU pointer
+ * @param[in] pKernelFsp         KernelFsp pointer
+ * @param[in] pPayload           Pointer to message payload
+ * @param[in] size               Message payload size
+ * @param[in] nvdmType           NVDM type of message being sent
+ *
+ * @return NV_OK, or NV_ERR_*
+ */
+static NV_STATUS
+kfspSendMessage
+(
+    OBJGPU    *pGpu,
+    KernelFsp *pKernelFsp,
+    NvU8      *pPayload,
+    NvU32      size,
+    NvU32      nvdmType
+)
+{
+    NvU32 dataSent, dataRemaining;
+    NvU32 packetPayloadCapacity;
+    NvU32 curPayloadSize;
+    NvU32 headerSize;
+    NvU32 fspEmemRmChannelSize;
+    NvBool bSinglePacket;
+    NV_STATUS status;
+    NvU8 *pBuffer = NULL;
+    NvU8  seq = 0;
+    NvU8  seid = 0;
+
+    // Allocate buffer of same size as channel
+    fspEmemRmChannelSize = kfspGetRmChannelSize_HAL(pGpu, pKernelFsp);
+    pBuffer = portMemAllocNonPaged(fspEmemRmChannelSize);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pBuffer != NULL, NV_ERR_NO_MEMORY);
+    portMemSet(pBuffer, 0, fspEmemRmChannelSize);
+
+    //
+    // Check if message will fit in single packet
+    // We lose 2 DWORDS to MCTP and NVDM headers
+    //
+    headerSize = 2 * sizeof(NvU32);
+    packetPayloadCapacity = fspEmemRmChannelSize - headerSize;
+    bSinglePacket = (size <= packetPayloadCapacity);
+
+    // First packet
+    seid = kfspNvdmToSeid_HAL(pGpu, pKernelFsp, nvdmType);
+    // SOM=1,EOM=?,SEID,SEQ=0
+    ((NvU32 *)pBuffer)[0] = kfspCreateMctpHeader_HAL(pGpu, pKernelFsp, 1,
+                                                     (NvU8)bSinglePacket, seid, seq);
+    ((NvU32 *)pBuffer)[1] = kfspCreateNvdmHeader_HAL(pGpu, pKernelFsp, nvdmType);
+
+    curPayloadSize = NV_MIN(size, packetPayloadCapacity);
+    portMemCopy(pBuffer + headerSize, packetPayloadCapacity, pPayload, curPayloadSize);
+
+    status = kfspSendPacket(pGpu, pKernelFsp, pBuffer, curPayloadSize + headerSize);
+    if (status != NV_OK)
+    {
+        goto failed;
+    }
+
+    if (!bSinglePacket)
+    {
+        // Multi packet case
+        dataSent = curPayloadSize;
+        dataRemaining = size - dataSent;
+        headerSize = sizeof(NvU32); // No longer need NVDM header
+        packetPayloadCapacity = fspEmemRmChannelSize - headerSize;
+
+        while (dataRemaining > 0)
+        {
+            NvBool bLastPacket = (dataRemaining <= packetPayloadCapacity);
+            curPayloadSize = (bLastPacket) ? dataRemaining : packetPayloadCapacity;
+
+            portMemSet(pBuffer, 0, fspEmemRmChannelSize);
+            ((NvU32 *)pBuffer)[0] = kfspCreateMctpHeader_HAL(pGpu, pKernelFsp, 0,
+                                                             (NvU8)bLastPacket, seid,
+                                                             (++seq) % 4);
+
+            portMemCopy(pBuffer + headerSize, packetPayloadCapacity,
+                        pPayload + dataSent, curPayloadSize);
+
+            status = kfspSendPacket(pGpu, pKernelFsp, pBuffer, curPayloadSize + headerSize);
+            if (status != NV_OK)
+            {
+                goto failed;
+            }
+
+            dataSent += curPayloadSize;
+            dataRemaining -= curPayloadSize;
         }
 
-        osSpinLoop();
     }
+
+failed:
+    portMemFree(pBuffer);
 
     return status;
 }
@@ -558,85 +705,280 @@ kfspSendAndReadMessage_IMPL
     NvU32      responseBufferSize
 )
 {
-    NvU32 dataSent, dataRemaining;
-    NvU32 packetPayloadCapacity;
-    NvU32 curPayloadSize;
-    NvU32 headerSize;
-    NvU32 fspEmemRmChannelSize;
-    NvBool bSinglePacket;
     NV_STATUS status;
-    NvU8 *pBuffer = NULL;
-    NvU8  seq = 0;
-    NvU8  seid = 0;
 
-    // Allocate buffer of same size as channel
-    fspEmemRmChannelSize = kfspGetRmChannelSize_HAL(pGpu, pKernelFsp);
-    pBuffer = portMemAllocNonPaged(fspEmemRmChannelSize);
-    NV_CHECK_OR_RETURN(LEVEL_ERROR, pBuffer != NULL, NV_ERR_NO_MEMORY);
-    portMemSet(pBuffer, 0, fspEmemRmChannelSize);
-
-    //
-    // Check if message will fit in single packet
-    // We lose 2 DWORDS to MCTP and NVDM headers
-    //
-    headerSize = 2 * sizeof(NvU32);
-    packetPayloadCapacity = fspEmemRmChannelSize - headerSize;
-    bSinglePacket = (size <= packetPayloadCapacity);
-
-    // First packet
-    seid = kfspNvdmToSeid_HAL(pGpu, pKernelFsp, nvdmType);
-    ((NvU32 *)pBuffer)[0] = kfspCreateMctpHeader_HAL(pGpu, pKernelFsp, 1, (NvU8)bSinglePacket, seid, seq); // SOM=1,EOM=?,SEID,SEQ=0
-    ((NvU32 *)pBuffer)[1] = kfspCreateNvdmHeader_HAL(pGpu, pKernelFsp, nvdmType);
-
-    curPayloadSize = NV_MIN(size, packetPayloadCapacity);
-    portMemCopy(pBuffer + headerSize, packetPayloadCapacity, pPayload, curPayloadSize);
-
-    status = kfspSendPacket(pGpu, pKernelFsp, pBuffer, curPayloadSize + headerSize);
-    if (status != NV_OK)
+    // If we are waiting for an async response, handle that first.
+    if (pKernelFsp->bBusy)
     {
-        goto failed;
+        status = kfspWaitForResponse(pGpu, pKernelFsp);
+        if (status != NV_OK)
+        {
+            kfspExecuteAsyncRpcCallback(pKernelFsp, status);
+        }
+        else
+        {
+            kfspProcessAsyncResponse(pGpu, pKernelFsp);
+        }
     }
 
-    if (!bSinglePacket)
+    status = kfspSendMessage(pGpu, pKernelFsp, pPayload, size, nvdmType);
+    if (status != NV_OK)
     {
-        // Multi packet case
-        dataSent = curPayloadSize;
-        dataRemaining = size - dataSent;
-        headerSize = sizeof(NvU32); // No longer need NVDM header
-        packetPayloadCapacity = fspEmemRmChannelSize - headerSize;
-
-        while (dataRemaining > 0)
-        {
-            NvBool bLastPacket = (dataRemaining <= packetPayloadCapacity);
-            curPayloadSize = (bLastPacket) ? dataRemaining : packetPayloadCapacity;
-
-            portMemSet(pBuffer, 0, fspEmemRmChannelSize);
-            ((NvU32 *)pBuffer)[0] = kfspCreateMctpHeader_HAL(pGpu, pKernelFsp, 0, (NvU8)bLastPacket, seid, (++seq) % 4);
-
-            portMemCopy(pBuffer + headerSize, packetPayloadCapacity,
-                        pPayload + dataSent, curPayloadSize);
-
-            status = kfspSendPacket(pGpu, pKernelFsp, pBuffer, curPayloadSize + headerSize);
-            if (status != NV_OK)
-            {
-                goto failed;
-            }
-
-            dataSent += curPayloadSize;
-            dataRemaining -= curPayloadSize;
-        }
-
+        return status;
     }
 
     status = kfspPollForResponse(pGpu, pKernelFsp);
     if (status != NV_OK)
     {
-        goto failed;
+        return status;
     }
-    status = kfspReadMessage(pGpu, pKernelFsp, pResponsePayload, responseBufferSize);
 
-failed:
-    portMemFree(pBuffer);
+    return kfspReadMessage(pGpu, pKernelFsp, pResponsePayload, responseBufferSize);;
+}
+
+/*!
+ * @brief Send a MCTP message to FSP via EMEM, and read response asynchronously
+ *        afterwards
+ *
+ *
+ * Response payload buffer is optional if response fits in a single packet.
+ *
+ * @param[in] pGpu               OBJGPU pointer
+ * @param[in] pKernelFsp         KernelFsp pointer
+ * @param[in] pPayload           Pointer to message payload
+ * @param[in] size               Message payload size
+ * @param[in] nvdmType           NVDM type of message being sent
+ * @param[in] pResponsePayload   Buffer in which to return response payload
+ * @param[in] responseBufferSize Response payload buffer size
+ * @param[in] callback           Callback to call for this response
+ * @param[in] pCallbackArgs      Args to be passed to the callback
+ *
+ * @return NV_OK, or NV_ERR_*
+ */
+NV_STATUS
+kfspSendAndReadMessageAsync_IMPL
+(
+    OBJGPU           *pGpu,
+    KernelFsp        *pKernelFsp,
+    NvU8             *pPayload,
+    NvU32             size,
+    NvU32             nvdmType,
+    NvU8             *pResponsePayload,
+    NvU32             responseBufferSize,
+    AsyncRpcCallback  callback,
+    void             *pCallbackArgs
+)
+{
+    NV_STATUS status;
+
+    if (pKernelFsp->bBusy)
+    {
+        return NV_ERR_BUSY_RETRY;
+    }
+
+    status = kfspSendMessage(pGpu, pKernelFsp, pPayload, size, nvdmType);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    status = kfspScheduleAsyncResponseCheck(pGpu, pKernelFsp, callback, pCallbackArgs,
+                                            pResponsePayload, responseBufferSize);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "FSP queuing failed, status=%x\n", status);
+    }
 
     return status;
+}
+
+/*!
+ * @brief Polls for a response from the FSP and takes the appropriate
+ *        action. This is called repeatedly by a timer when we are
+ *        expecting an async response from the FSP.
+ *
+ * @param[in] pGpu               OBJGPU pointer
+ * @param[in] pTmr               Timer object pointer
+ * @param[in] pEvent             Timer event pointer
+ *
+ * @return NV_OK, or NV_ERR_*
+ */
+static NV_STATUS
+kfspPollForAsyncResponse
+(
+    OBJGPU *pGpu,
+    OBJTMR *pTmr,
+    TMR_EVENT *pEvent
+)
+{
+    NV_STATUS status = NV_OK;
+    KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
+
+    if (!pKernelFsp->bBusy)
+    {
+        return status;
+    }
+
+    status = kfspCheckResponseTimeout(pGpu, pKernelFsp);
+
+    if (!kfspIsMsgQueueEmpty(pGpu, pKernelFsp))
+    {
+        status = osQueueWorkItemWithFlags(pGpu, kfspProcessAsyncResponseCallback, NULL,
+                                          OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
+                                          OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE_RW);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to schedule work item, status=%x\n", status);
+            kfspExecuteAsyncRpcCallback(pKernelFsp, status);
+            return status;
+        }
+
+        return NV_OK;
+    }
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "FSP async command timed out\n");
+        kfspExecuteAsyncRpcCallback(pKernelFsp, status);
+        return status;
+    }
+
+    status = tmrEventScheduleRel(pTmr, pEvent, ASYNC_FSP_POLL_PERIOD_MS * 1000 * 1000);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to reschedule callback, status=%x\n", status);
+        kfspExecuteAsyncRpcCallback(pKernelFsp, status);
+    }
+
+    return status;
+}
+
+/*!
+ * @brief Deferred work item callback that processes an asyc
+ *        response from the FSP
+ *
+ * @param[in] gpuInstance   GPU instance number
+ * @param[in] pCallbackArgs Unused
+ */
+static void
+kfspProcessAsyncResponseCallback
+(
+    NvU32 gpuInstance,
+    void *pCallbackArgs
+)
+{
+    OBJGPU    *pGpu = gpumgrGetGpu(gpuInstance);
+    KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
+    kfspProcessAsyncResponse(pGpu, pKernelFsp);
+}
+
+/*!
+ * @brief Handle the async response from the FSP
+ *
+ * @param[in] pGpu          OBJGPU pointer
+ * @param[in] pKernelFsp    KernelFsp pointer
+ */
+static void
+kfspProcessAsyncResponse
+(
+    OBJGPU    *pGpu,
+    KernelFsp *pKernelFsp
+)
+{
+    NV_STATUS status = kfspReadMessage(pGpu, pKernelFsp, pKernelFsp->rpcState.pResponseBuffer,
+                                       pKernelFsp->rpcState.responseBufferSize);
+    kfspExecuteAsyncRpcCallback(pKernelFsp, status);
+}
+
+/*!
+ * @brief Execute the callback for the async FSP response.
+ *
+ * @param[in] pKernelFsp    KernelFsp pointer
+ * @param[in] status        Status of the FSP RPC
+ */
+static void
+kfspExecuteAsyncRpcCallback
+(
+    KernelFsp *pKernelFsp,
+    NV_STATUS status
+)
+{
+    if (!pKernelFsp->bBusy)
+    {
+        return;
+    }
+
+    if (pKernelFsp->rpcState.callback)
+    {
+        pKernelFsp->rpcState.callback(status, pKernelFsp->rpcState.pCallbackArgs);
+    }
+
+    kfspClearAsyncResponseState(pKernelFsp);
+}
+
+/*!
+ * @brief Set the state to service an FSP response and schedule
+ *        a timer event to periodically poll the FSP.
+ *
+ * @param[in] pGpu          OBJGPU pointer
+ * @param[in] pKernelFsp    KernelFsp pointer
+ * @param[in] callback      Callback to call for this response
+ * @param[in] pCallbackArgs Args to be passed to the callback
+ * @param[in] pBuffer       Buffer in which to return response payload
+ * @param[in] bufferSize    Response payload buffer size
+ *
+ * @return NV_OK, or NV_ERR_*
+ */
+static NV_STATUS
+kfspScheduleAsyncResponseCheck
+(
+    OBJGPU           *pGpu,
+    KernelFsp        *pKernelFsp,
+    AsyncRpcCallback  callback,
+    void             *pCallbackArgs,
+    NvU8             *pBuffer,
+    NvU32             bufferSize
+)
+{
+    if (pKernelFsp->bBusy)
+    {
+        return NV_ERR_IN_USE;
+    }
+
+    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
+    NV_STATUS status = tmrEventScheduleRel(pTmr, pKernelFsp->pPollEvent,
+                                           ASYNC_FSP_POLL_PERIOD_MS * 1000 * 1000);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    pKernelFsp->rpcState.callback = callback;
+    pKernelFsp->rpcState.pCallbackArgs = pCallbackArgs;
+    pKernelFsp->rpcState.pResponseBuffer = pBuffer;
+    pKernelFsp->rpcState.responseBufferSize = bufferSize;
+
+    kfspSetResponseTimeout(pGpu, pKernelFsp);
+    pKernelFsp->bBusy = NV_TRUE;
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Clear the state associated with async FSP response
+ *
+ * @param[in] pKernelFsp    KernelFsp pointer
+ */
+static void
+kfspClearAsyncResponseState
+(
+    KernelFsp *pKernelFsp
+)
+{
+    pKernelFsp->bBusy = NV_FALSE;
+
+    pKernelFsp->rpcState.callback = NULL;
+    pKernelFsp->rpcState.pCallbackArgs = NULL;
+    pKernelFsp->rpcState.pResponseBuffer = NULL;
+    pKernelFsp->rpcState.responseBufferSize = 0;
 }

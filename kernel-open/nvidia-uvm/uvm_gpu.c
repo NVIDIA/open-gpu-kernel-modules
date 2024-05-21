@@ -218,8 +218,9 @@ static NV_STATUS alloc_and_init_address_space(uvm_gpu_t *gpu)
     if (status != NV_OK)
         return status;
 
-    gpu->big_page.internal_size = gpu_address_space_info.bigPageSize;
+    UVM_ASSERT(gpu_address_space_info.bigPageSize <= NV_U32_MAX);
 
+    gpu->big_page.internal_size = gpu_address_space_info.bigPageSize;
     gpu->time.time0_register = gpu_address_space_info.time0Offset;
     gpu->time.time1_register = gpu_address_space_info.time1Offset;
 
@@ -458,6 +459,7 @@ static const char *uvm_gpu_virt_type_string(UVM_VIRT_MODE virtMode)
 
 static const char *uvm_gpu_link_type_string(uvm_gpu_link_type_t link_type)
 {
+
     BUILD_BUG_ON(UVM_GPU_LINK_MAX != 7);
 
     switch (link_type) {
@@ -1081,9 +1083,6 @@ static NV_STATUS configure_address_space(uvm_gpu_t *gpu)
                    "va_size 0x%llx va_per_entry 0x%llx\n",
                    gpu->parent->rm_va_size,
                    va_per_entry);
-
-    UVM_ASSERT(uvm_mmu_page_size_supported(&gpu->address_space_tree, gpu->big_page.internal_size));
-    UVM_ASSERT(uvm_mmu_page_size_supported(&gpu->address_space_tree, gpu->mem_info.max_vidmem_page_size));
 
     tree_alloc = uvm_page_tree_pdb(&gpu->address_space_tree);
     status = uvm_rm_locked_call(nvUvmInterfaceSetPageDirectory(gpu->rm_address_space,
@@ -2364,9 +2363,7 @@ static NV_STATUS init_peer_access(uvm_gpu_t *gpu0,
 
     // check for peer-to-peer compatibility (PCI-E or NvLink).
     peer_caps->link_type = get_gpu_link_type(p2p_caps_params->p2pLink);
-    if (peer_caps->link_type == UVM_GPU_LINK_INVALID
-        || peer_caps->link_type == UVM_GPU_LINK_C2C
-        )
+    if (peer_caps->link_type == UVM_GPU_LINK_INVALID || peer_caps->link_type == UVM_GPU_LINK_C2C)
         return NV_ERR_NOT_SUPPORTED;
 
     peer_caps->total_link_line_rate_mbyte_per_s = p2p_caps_params->totalLinkLineRateMBps;
@@ -3296,7 +3293,10 @@ void uvm_parent_gpu_dma_free_page(uvm_parent_gpu_t *parent_gpu, void *va, NvU64 
     atomic64_sub(PAGE_SIZE, &parent_gpu->mapped_cpu_pages_size);
 }
 
-NV_STATUS uvm_parent_gpu_map_cpu_pages(uvm_parent_gpu_t *parent_gpu, struct page *page, size_t size, NvU64 *dma_address_out)
+NV_STATUS uvm_parent_gpu_map_cpu_pages(uvm_parent_gpu_t *parent_gpu,
+                                       struct page *page,
+                                       size_t size,
+                                       NvU64 *dma_address_out)
 {
     NvU64 dma_addr;
 

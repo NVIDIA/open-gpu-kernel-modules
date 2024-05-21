@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,7 @@
 #include "rmapi/rmapi_utils.h"
 
 #include "g_finn_rm_api.h"
+#include "core/thread_state.h"
 
 /*!
  * Some clients are still making these legacy GSS controls. We no longer support these in RM,
@@ -47,6 +48,7 @@ NV_STATUS RmGssLegacyRpcCmd
     GPU_MASK   gpuMaskRelease = 0;
     void      *pKernelParams  = NULL;
     NvBool     bApiLockTaken  = NV_FALSE;
+    THREAD_STATE_NODE   threadState;
 
     NV_ASSERT_OR_RETURN((pArgs->cmd & RM_GSS_LEGACY_MASK),
                         NV_ERR_INVALID_STATE);
@@ -56,6 +58,8 @@ NV_STATUS RmGssLegacyRpcCmd
     {
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
     }
+
+    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
     if (pSecInfo->paramLocation == PARAM_LOCATION_USER)
     {
@@ -146,6 +150,8 @@ done:
         }
         portMemFree(pKernelParams);
     }
+
+    threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 
     return status;
 }

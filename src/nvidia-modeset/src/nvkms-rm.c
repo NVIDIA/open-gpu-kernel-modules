@@ -199,8 +199,17 @@ static NvBool QueryGpuCapabilities(NVDevEvoPtr pDevEvo)
     /* TODO: This cap bit should be queried from RM */
     pDevEvo->requiresAllAllocationsInSysmem = pDevEvo->isSOCDisplay;
 
+    /*
+     * Prohibit vblank_sem_control if:
+     * - on tegra, or
+     * - the kernel interface layer says so, or
+     * - (RM-based) SLI mosaic is enabled (WAR for bug 4552673, until RM-based
+     *   SLI is dropped)
+     */
     pDevEvo->supportsVblankSemControl =
-        !pDevEvo->isSOCDisplay && nvkms_vblank_sem_control();
+        !pDevEvo->isSOCDisplay &&
+        nvkms_vblank_sem_control() &&
+        !pDevEvo->sli.mosaic;
 
     /* ctxDma{,Non}CoherentAllowed */
 
@@ -904,6 +913,15 @@ static NvBool ProbeHeadCountAndWindowAssignment(NVDevEvoPtr pDevEvo)
         if (numHeadsParams.numHeads == 0) {
             nvEvoLogDev(pDevEvo, EVO_LOG_ERROR, "No heads found on board!");
             return FALSE;
+        }
+
+        if (numHeadsParams.numHeads > NV_MAX_HEADS)
+        {
+            nvEvoLog(EVO_LOG_WARN,
+                     "HW supports %d heads. Limiting to %d heads",
+                     numHeadsParams.numHeads, NV_MAX_HEADS);
+
+            numHeadsParams.numHeads = NV_MAX_HEADS;
         }
 
         if (numHeads == 0) {

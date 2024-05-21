@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1329,9 +1329,13 @@ kfifoPreAllocUserD_GM107
         if (bCoherentCpuMapping &&
             (memdescGetAddressSpace(pUserdInfo->userdPhysDesc[currentGpuInst]) == ADDR_FBMEM))
         {
-            pUserdInfo->userdBar1CpuPtr = kbusMapCoherentCpuMapping_HAL(pGpu, pKernelBus,
-                                             pUserdInfo->userdPhysDesc[currentGpuInst]);
-            status = pUserdInfo->userdBar1CpuPtr == NULL ? NV_ERR_GENERIC : NV_OK;
+            status = kbusMapCoherentCpuMapping_HAL(pGpu, pKernelBus,
+                                                   pUserdInfo->userdPhysDesc[currentGpuInst],
+                                                   0,
+                                                   pUserdInfo->userdBar1MapSize,
+                                                   NV_PROTECT_READ_WRITE,
+                                                   (void**)&pUserdInfo->userdBar1CpuPtr,
+                                                   (void**)&pUserdInfo->userdBar1Priv);
         }
         else if ((bCoherentCpuMapping &&
                  memdescGetAddressSpace(pUserdInfo->userdPhysDesc[currentGpuInst]) == ADDR_SYSMEM &&
@@ -1343,7 +1347,7 @@ kfifoPreAllocUserD_GM107
                                              pUserdInfo->userdBar1MapSize,
                                              NV_PROTECT_READ_WRITE,
                                              (void**)&pUserdInfo->userdBar1CpuPtr,
-                                             NV_MEMORY_UNCACHED);
+                                             NV_MEMORY_CACHED);
         }
         else
         {
@@ -1423,7 +1427,9 @@ kfifoFreePreAllocUserD_GM107
         if (bCoherentCpuMapping)
         {
             kbusUnmapCoherentCpuMapping_HAL(pGpu, pKernelBus,
-                pUserdInfo->userdPhysDesc[currentGpuInst]);
+                pUserdInfo->userdPhysDesc[currentGpuInst],
+                pUserdInfo->userdBar1CpuPtr,
+                pUserdInfo->userdBar1Priv);
         }
         else
         {

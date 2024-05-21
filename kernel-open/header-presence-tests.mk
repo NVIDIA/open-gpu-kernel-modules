@@ -52,6 +52,7 @@ NV_HEADER_PRESENCE_TESTS = \
   linux/dma-resv.h \
   soc/tegra/chip-id.h \
   soc/tegra/fuse.h \
+  soc/tegra/fuse-helper.h \
   soc/tegra/tegra_bpmp.h \
   video/nv_internal.h \
   linux/platform/tegra/dce/dce-client-ipc.h \

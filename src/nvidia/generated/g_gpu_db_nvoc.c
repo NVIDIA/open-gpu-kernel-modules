@@ -93,10 +93,13 @@ __nvoc_ctor_GpuDb_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_GpuDb_1(GpuDb *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-}
+} // End __nvoc_init_funcTable_GpuDb_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_GpuDb(GpuDb *pThis) {
     __nvoc_init_funcTable_GpuDb_1(pThis);
 }

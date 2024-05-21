@@ -279,12 +279,15 @@ NV_STATUS nvGpuOpsFlushReplayableFaultBuffer(gpuFaultInfo *pFaultInfo,
 NV_STATUS nvGpuOpsTogglePrefetchFaults(gpuFaultInfo *pFaultInfo,
                                        NvBool bEnable);
 
-// Interface used for CCSL
+NV_STATUS nvGpuOpsKeyRotationChannelDisable(struct gpuChannel *channelList[],
+                                            NvU32 channelListCount);
 
+// Interface used for CCSL
 NV_STATUS nvGpuOpsCcslContextInit(struct ccslContext_t **ctx,
                                   gpuChannelHandle channel);
 NV_STATUS nvGpuOpsCcslContextClear(struct ccslContext_t *ctx);
-NV_STATUS nvGpuOpsCcslContextUpdate(struct ccslContext_t *ctx);
+NV_STATUS nvGpuOpsCcslContextUpdate(UvmCslContext *contextList[],
+                                    NvU32 contextListCount);
 NV_STATUS nvGpuOpsCcslRotateIv(struct ccslContext_t *ctx,
                                NvU8 direction);
 NV_STATUS nvGpuOpsCcslEncrypt(struct ccslContext_t *ctx,

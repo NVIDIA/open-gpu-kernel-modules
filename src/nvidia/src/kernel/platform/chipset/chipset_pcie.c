@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2000-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2000-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -47,6 +47,7 @@
 #include "core/thread_state.h"
 #include "Nvcm.h"
 #include "nvdevid.h"
+#include "nvmisc.h"
 
 #include "published/maxwell/gm107/dev_nv_xve.h" // NV_XVE_VCCAP_CTRL0*
 #include "published/pcie_switch/pcie_switch_ref.h"
@@ -871,7 +872,7 @@ gpuDevIdIsMultiGpuBoard
     NvU32 i, j;
     NvBool bFound = NV_FALSE, bInvalidSubIds = NV_FALSE;
 
-    for (i = 0; i < sizeof(multiGpuBoards) / sizeof(NV_MULTI_GPU_BOARD_CONFIGS);
+    for (i = 0; i < NV_ARRAY_ELEMENTS(multiGpuBoards);
          i++)
     {
         bInvalidSubIds = NV_FALSE;

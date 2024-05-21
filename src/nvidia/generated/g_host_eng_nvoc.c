@@ -73,13 +73,19 @@ __nvoc_ctor_OBJHOSTENG_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_OBJHOSTENG_1(OBJHOSTENG *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // hostengHaltAndReset -- virtual
     pThis->__hostengHaltAndReset__ = &hostengHaltAndReset_IMPL;
-}
+} // End __nvoc_init_funcTable_OBJHOSTENG_1 with approximately 1 basic block(s).
 
+
+// Initialize vtable(s) for 1 virtual method(s).
 void __nvoc_init_funcTable_OBJHOSTENG(OBJHOSTENG *pThis) {
+
+    // Initialize vtable(s) with 1 per-object function pointer(s).
     __nvoc_init_funcTable_OBJHOSTENG_1(pThis);
 }
 

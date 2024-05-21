@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2010-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2010-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,6 +34,7 @@
 #include "dp_merger.h"
 #include "dp_list.h"
 #include "dp_tracing.h"
+#include "dp_printf.h"
 
 using namespace DisplayPort;
 namespace DisplayPort
@@ -77,8 +78,8 @@ bool MessageManager::send(MessageManager::Message * message, NakData & nakData)
         hal->updateDPCDOffline();
         if (hal->isDpcdOffline())
         {
-            DP_LOG(("DP-MM> Device went offline while waiting for reply and so ignoring message %p (ID = %02X, target = %s)",
-                    message, message->requestIdentifier, ((message->state).target).toString(sb)));
+            DP_PRINTF(DP_WARNING, "DP-MM> Device went offline while waiting for reply and so ignoring message %p (ID = %02X, target = %s)",
+                      message, message->requestIdentifier, ((message->state).target).toString(sb));
             completion.nakData.reason = NakDpcdFail;
             nakData = completion.nakData;
             completion.failed = true;
@@ -197,8 +198,8 @@ void  MessageManager::Message::expired(const void * tag)
     Address::StringBuffer sb;
     DP_USED(sb);
 
-    DP_LOG(("DP-MM> Message transmit time expired on message %p (ID = %02X, target = %s)",
-        (Message*)this, ((Message*)this)->requestIdentifier, (((Message*)this)->state.target).toString(sb)));
+    DP_PRINTF(DP_WARNING, "DP-MM> Message transmit time expired on message %p (ID = %02X, target = %s)",
+          (Message*)this, ((Message*)this)->requestIdentifier, (((Message*)this)->state.target).toString(sb));
 
     Address::NvU32Buffer addrBuffer;
     dpMemZero(addrBuffer, sizeof(addrBuffer));
@@ -444,7 +445,7 @@ void MessageManager::onDownReplyReceived(bool status, EncodedMessage * message)
         }
     }
 
-    DP_LOG(("DPMM> Warning: Unmatched reply message"));
+    DP_PRINTF(DP_WARNING, "DPMM> Warning: Unmatched reply message");
 nextMessage:
     transmitAwaitingUpReplies();
     transmitAwaitingDownRequests();
@@ -475,7 +476,7 @@ MessageManager::~MessageManager()
         for (ListElement * i = notYetSentDownRequest.begin(); i!=notYetSentDownRequest.end(); )
         {
             ListElement * next = i->next;
-            DP_LOG(("Down request message type 0x%x client is not cleaning up.", ((Message *)i)->requestIdentifier));
+            DP_PRINTF(DP_WARNING, "Down request message type 0x%x client is not cleaning up.", ((Message *)i)->requestIdentifier);
             i = next;
         }
     }
@@ -493,7 +494,7 @@ MessageManager::~MessageManager()
         for (ListElement * i = notYetSentUpReply.begin(); i!=notYetSentUpReply.end(); )
         {
             ListElement * next = i->next;
-            DP_LOG(("Up reply message type 0x%x client is not cleaning up.", ((Message *)i)->requestIdentifier));
+            DP_PRINTF(DP_WARNING, "Up reply message type 0x%x client is not cleaning up.", ((Message *)i)->requestIdentifier);
             i = next;
         }
     }
@@ -511,7 +512,7 @@ MessageManager::~MessageManager()
         for (ListElement * i = awaitingReplyDownRequest.begin(); i!=awaitingReplyDownRequest.end(); )
         {
             ListElement * next = i->next;
-            DP_LOG(("Down request message type 0x%x client is not cleaning up.", ((Message *)i)->requestIdentifier));
+            DP_PRINTF(DP_WARNING, "Down request message type 0x%x client is not cleaning up.", ((Message *)i)->requestIdentifier);
             i = next;
         }
     }
@@ -532,7 +533,7 @@ ParseResponseStatus MessageManager::Message::parseResponse(EncodedMessage * mess
     unsigned requestId = reader.readOrDefault(7, 0);
     if (requestId != requestIdentifier)
     {
-        DP_LOG(("DP-MM> Requested = %x Received = %x", requestId, requestIdentifier));
+        DP_PRINTF(DP_NOTICE, "DP-MM> Requested = %x Received = %x", requestId, requestIdentifier);
         DP_ASSERT(0 && "Reply type doesn't match");
         return ParseResponseWrong;
     }

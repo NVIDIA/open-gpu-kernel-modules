@@ -140,7 +140,7 @@ static NvBool UpdateProposedFlipStateOneApiHead(
 
     if (pParams->colorimetry.specified) {
         pProposedApiHead->dirty.hdr = TRUE;
-        pProposedApiHead->hdr.colorimetry = pParams->colorimetry.val;
+        pProposedApiHead->hdr.dpyColor.colorimetry = pParams->colorimetry.val;
     }
 
     if (pParams->hdrInfoFrame.specified) {
@@ -172,7 +172,7 @@ static NvBool UpdateProposedFlipStateOneApiHead(
             }
 
             /* NVKMS_OUTPUT_TF_PQ requires the RGB color space */
-            if (pProposedApiHead->hdr.colorSpace !=
+            if (pProposedApiHead->hdr.dpyColor.format !=
                     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB) {
                 return FALSE;
             }
@@ -182,7 +182,8 @@ static NvBool UpdateProposedFlipStateOneApiHead(
         // XXX HDR TODO: Handle other colorimetries
         if (pProposedApiHead->hdr.infoFrameOverride ||
             (pProposedApiHead->hdr.staticMetadataLayerMask != 0) ||
-            (pProposedApiHead->hdr.colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100)) {
+            (pProposedApiHead->hdr.dpyColor.colorimetry ==
+                NVKMS_OUTPUT_COLORIMETRY_BT2100)) {
             const NVDpyEvoRec *pDpyEvoIter;
 
             // All dpys on apiHead must support HDR.
@@ -195,11 +196,11 @@ static NvBool UpdateProposedFlipStateOneApiHead(
             }
         }
 
-        if (!nvChooseColorRangeEvo(pProposedApiHead->hdr.colorimetry,
+        if (!nvChooseColorRangeEvo(pProposedApiHead->hdr.dpyColor.colorimetry,
                                    pDpyEvo->requestedColorRange,
-                                   pProposedApiHead->hdr.colorSpace,
-                                   pProposedApiHead->hdr.colorBpc,
-                                   &pProposedApiHead->hdr.colorRange)) {
+                                   pProposedApiHead->hdr.dpyColor.format,
+                                   pProposedApiHead->hdr.dpyColor.bpc,
+                                   &pProposedApiHead->hdr.dpyColor.range)) {
             return FALSE;
         }
     }
@@ -336,17 +337,11 @@ static void InitNvKmsFlipWorkArea(const NVDevEvoRec *pDevEvo,
                 &pDispEvo->apiHeadState[apiHead];
 
             pProposedApiHead->hdr.tf = pApiHeadState->tf;
-            pProposedApiHead->hdr.colorimetry = pApiHeadState->colorimetry;
+            pProposedApiHead->hdr.dpyColor = pApiHeadState->attributes.color;
             pProposedApiHead->hdr.infoFrameOverride =
                 pApiHeadState->hdrInfoFrameOverride;
             pProposedApiHead->hdr.staticMetadataLayerMask =
                 pApiHeadState->hdrStaticMetadataLayerMask;
-            pProposedApiHead->hdr.colorSpace =
-                pApiHeadState->attributes.colorSpace;
-            pProposedApiHead->hdr.colorBpc =
-                pApiHeadState->attributes.colorBpc;
-            pProposedApiHead->hdr.colorRange =
-                pApiHeadState->attributes.colorRange;
 
             pProposedApiHead->viewPortPointIn =
                 pApiHeadState->viewPortPointIn;
@@ -399,9 +394,7 @@ static void FlipEvoOneApiHead(NVDispEvoRec *pDispEvo,
             nvUpdateCurrentHardwareColorSpaceAndRangeEvo(
                 pDispEvo,
                 head,
-                pProposedApiHead->hdr.colorimetry,
-                pProposedApiHead->hdr.colorSpace,
-                pProposedApiHead->hdr.colorRange,
+                &pProposedApiHead->hdr.dpyColor,
                 pUpdateState);
         }
 
@@ -413,16 +406,8 @@ static void FlipEvoOneApiHead(NVDispEvoRec *pDispEvo,
     }
 
     if (pProposedApiHead->dirty.hdr) {
-        pApiHeadState->attributes.colorSpace =
-            pProposedApiHead->hdr.colorSpace;
-        pApiHeadState->attributes.colorBpc =
-            pProposedApiHead->hdr.colorBpc;
-        pApiHeadState->attributes.colorRange =
-            pProposedApiHead->hdr.colorRange;
-
+        pApiHeadState->attributes.color = pProposedApiHead->hdr.dpyColor;
         pApiHeadState->tf = pProposedApiHead->hdr.tf;
-
-        pApiHeadState->colorimetry = pProposedApiHead->hdr.colorimetry;
 
         pApiHeadState->hdrInfoFrameOverride =
             pProposedApiHead->hdr.infoFrameOverride;

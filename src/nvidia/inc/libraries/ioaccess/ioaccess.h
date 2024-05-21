@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #if (defined(NVRM) || defined(RMCFG_FEATURE_PLATFORM_GSP)) && !defined(NVWATCH)
+#pragma once
 #include "g_ioaccess_nvoc.h"
 #endif
 

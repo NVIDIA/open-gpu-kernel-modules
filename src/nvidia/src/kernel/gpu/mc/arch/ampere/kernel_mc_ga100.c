@@ -24,6 +24,7 @@
 #include "core/core.h"
 #include "kernel/gpu/mc/kernel_mc.h"
 #include "gpu/gpu.h"
+#include "os/os.h"
 
 #include "published/ampere/ga100/dev_boot.h"
 
@@ -56,11 +57,9 @@ kmcWritePmcEnableReg_GA100
     //
     // If hardware increases the size of this register in future chips, we would
     // need to catch this and fork another HAL.
+    // Already obsoleted by GH100, but keeping the check
     //
-    if ((sizeof(NvU32) * NV_PMC_DEVICE_ENABLE__SIZE_1) > sizeof(NvU32))
-    {
-        NV_ASSERT_FAILED("Assert for Mcheck to catch increase in register size. Fork this HAL");
-    }
+    ct_assert(NV_PMC_DEVICE_ENABLE__SIZE_1 <= 1);
 
     if (bIsPmcDeviceEngine)
     {
@@ -85,12 +84,8 @@ kmcWritePmcEnableReg_GA100
 
     GPU_REG_WR32(pGpu, regAddr, newPmc);
 
-    //
-    // Read from NV_PMC_ENABLE to create enough delay for engines reset to complete.
-    //
-    newPmc = GPU_REG_RD32(pGpu, regAddr);
-    newPmc = GPU_REG_RD32(pGpu, regAddr);
-    newPmc = GPU_REG_RD32(pGpu, regAddr);
+    // Delay for engines reset to complete.
+    osDelayUs(NV_PMC_RESET_DELAY_US);
 
     return NV_OK;
 }

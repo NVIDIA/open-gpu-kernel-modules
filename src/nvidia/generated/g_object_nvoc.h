@@ -1,6 +1,13 @@
+
 #ifndef _G_OBJECT_NVOC_H_
 #define _G_OBJECT_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,6 +40,7 @@ extern "C" {
  * This file is part of the NVOC runtime.
  */
 
+#pragma once
 #include "g_object_nvoc.h"
 
 #ifndef _NVOC_OBJECT_H_
@@ -42,6 +50,7 @@ extern "C" {
 #include "nvstatus.h"
 
 #include "nvoc/prelude.h"
+
 
 struct Object;
 
@@ -78,9 +87,16 @@ struct NVOC_CHILD_TREE
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 
+
 struct Object {
+
+    // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
-    struct Object *__nvoc_pbase_Object;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj
+
+    // Data members
     struct Object *pParent;
     struct NVOC_CHILD_TREE childTree;
     NvU32 ipVersion;
@@ -96,6 +112,7 @@ typedef struct Object Object;
 #define __nvoc_class_id_Object 0x497031
 #endif /* __nvoc_class_id_Object */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 
 #define __staticCast_Object(pThis) \
@@ -108,13 +125,16 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
     ((Object*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(Object)))
 #endif //__nvoc_object_h_disabled
 
-
 NV_STATUS __nvoc_objCreateDynamic_Object(Object**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_Object(Object**, Dynamic*, NvU32);
 #define __objCreate_Object(ppNewObj, pParent, createFlags) \
     __nvoc_objCreate_Object((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
+
+// Wrapper macros
+
+// Dispatch functions
 void objAddChild_IMPL(struct Object *pObj, struct Object *pChild);
 
 #ifdef __nvoc_object_h_disabled

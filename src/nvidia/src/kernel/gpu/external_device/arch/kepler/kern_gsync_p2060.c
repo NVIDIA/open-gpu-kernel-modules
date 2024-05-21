@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,6 +32,7 @@
 #include "class/cl402c.h" // NV40_I2C
 #include "kernel/gpu/i2c/i2c_api.h"
 #include "platform/sli/sli.h"
+#include "nvmisc.h"
 /*
  * statics
  */
@@ -5420,7 +5421,7 @@ isBoardWithNvlinkQsyncContention
     NvU16 thisDevId = (NvU16)(((pGpu->idInfo.PCIDeviceID) >> 16) & 0x0000FFFF);
     NvU32 i;
 
-    for (i=0; i < (sizeof(devIds)/sizeof(devIds[0])); i++)
+    for (i=0; i < (NV_ARRAY_ELEMENTS(devIds)); i++)
     {
         if (thisDevId == devIds[i])
         {

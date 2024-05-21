@@ -1,11 +1,19 @@
+
 #ifndef _G_CHIPS2HALSPEC_NVOC_H_
 #define _G_CHIPS2HALSPEC_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#pragma once
 #include "g_chips2halspec_nvoc.h"
 
 #ifndef _CHIPS_2_HALSPEC_H_

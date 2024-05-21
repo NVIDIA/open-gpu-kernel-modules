@@ -30,7 +30,7 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "vgpu/vgpu_events.h"
 
-#include "vgpuapi.h"
+#include "vgpu/vgpuapi.h"
 
 NV_STATUS
 vgpuapiCtrlCmdVgpuDisplaySetSurfaceProperties_IMPL

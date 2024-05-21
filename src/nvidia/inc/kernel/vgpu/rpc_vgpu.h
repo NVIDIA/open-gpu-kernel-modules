@@ -39,7 +39,6 @@ static NV_INLINE void NV_RM_RPC_ALLOC_VIDMEM(OBJGPU *pGpu, ...) { }
 static NV_INLINE void NV_RM_RPC_ALLOC_VIRTMEM(OBJGPU *pGpu, ...) { }
 static NV_INLINE void NV_RM_RPC_MAP_MEMORY(OBJGPU *pGpu, ...) { }
 static NV_INLINE void NV_RM_RPC_UNMAP_MEMORY(OBJGPU *pGpu, ...) { }
-static NV_INLINE void NV_RM_RPC_READ_EDID(OBJGPU *pGpu, ...) { }
 static NV_INLINE void NV_RM_RPC_DMA_FILL_PTE_MEM(OBJGPU *pGpu, ...) { }
 static NV_INLINE void NV_RM_RPC_CREATE_FB_SEGMENT(OBJGPU *pGpu, ...) { }
 static NV_INLINE void NV_RM_RPC_DESTROY_FB_SEGMENT(OBJGPU *pGpu, ...) { }
@@ -48,9 +47,7 @@ static NV_INLINE void NV_RM_RPC_REMOVE_DEFERRED_API(OBJGPU *pGpu, ...) { }
 static NV_INLINE void NV_RM_RPC_FREE_VIDMEM_VIRT(OBJGPU *pGpu, ...) { }
 static NV_INLINE void NV_RM_RPC_MAP_SEMA_MEMORY(OBJGPU *pGpu, ...) { }
 static NV_INLINE void NV_RM_RPC_UNMAP_SEMA_MEMORY(OBJGPU *pGpu, ...) { }
-static NV_INLINE void NV_RM_RPC_TDR_SET_TIMEOUT_STATE(OBJGPU *pGpu, ...) { }
 static NV_INLINE void NV_RM_RPC_GET_CONSOLIDATED_STATIC_INFO(OBJGPU *pGpu, ...) { }
-static NV_INLINE void NV_RM_RPC_GET_STATIC_PSTATE_INFO(OBJGPU *pGpu, ...) { }
 static NV_INLINE void NV_RM_RPC_UPDATE_PDE_2(OBJGPU *pGpu, ...) { }
 static NV_INLINE void NV_RM_RPC_TRANSLATE_GUEST_GPU_PTES(OBJGPU *pGpu, ...) { }
 static NV_INLINE void NV_RM_RPC_SET_SEMA_MEM_VALIDATION_STATE(OBJGPU *pGpu, ...) { }
@@ -170,5 +167,18 @@ static NV_INLINE void NV_RM_RPC_UPDATE_GPU_PDES(OBJGPU *pGpu, ...) { }
             status = rpcGetEngineUtilizationWrapper_HAL(pGpu, pRpc, hClient, hObject, cmd,                  \
                                                         pParamStructPtr, paramSize);                        \
     } while(0)                                                                                              \
+
+#define NV_RM_RPC_API_CONTROL(pGpu, hClient, hObject, cmd, pParams, paramSize, status)  \
+    do                                                                                  \
+    {                                                                                   \
+        OBJRPC *pRpc = GPU_GET_RPC(pGpu);                                               \
+        NV_ASSERT(pRpc != NULL);                                                        \
+        if ((status == NV_OK) && (pRpc != NULL))                                        \
+        {                                                                               \
+            status = rpcRmApiControl_HAL(pGpu, pRpc, hClient, hObject,                  \
+                                         cmd, pParams, paramSize);                      \
+        } else if (pRpc == NULL)                                                        \
+            status = NV_ERR_INSUFFICIENT_RESOURCES;                                     \
+    } while (0)
 
 #endif // __vgpu_dev_nv_rpc_vgpu_h__

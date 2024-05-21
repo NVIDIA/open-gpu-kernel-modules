@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2013-2023 NVidia Corporation
+    Copyright (c) 2013-2024 NVidia Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -494,7 +494,7 @@ typedef struct
     NvU64                   base                            NV_ALIGN_BYTES(8); // IN
     NvU64                   length                          NV_ALIGN_BYTES(8); // IN
     NvU64                   offset                          NV_ALIGN_BYTES(8); // IN
-    UvmGpuMappingAttributes perGpuAttributes[UVM_MAX_GPUS_V2];                 // IN
+    UvmGpuMappingAttributes perGpuAttributes[UVM_MAX_GPUS];                    // IN
     NvU64                   gpuAttributesCount              NV_ALIGN_BYTES(8); // IN
     NvS32                   rmCtrlFd;                                          // IN
     NvU32                   hClient;                                           // IN
@@ -952,7 +952,6 @@ typedef struct
     NvU32     version;                                    // OUT
 } UVM_TOOLS_GET_PROCESSOR_UUID_TABLE_PARAMS;
 
-
 //
 // UvmMapDynamicParallelismRegion
 //
@@ -995,7 +994,7 @@ typedef struct
 {
     NvU64                   base                            NV_ALIGN_BYTES(8); // IN
     NvU64                   length                          NV_ALIGN_BYTES(8); // IN
-    UvmGpuMappingAttributes perGpuAttributes[UVM_MAX_GPUS_V2];                 // IN
+    UvmGpuMappingAttributes perGpuAttributes[UVM_MAX_GPUS];                    // IN
     NvU64                   gpuAttributesCount              NV_ALIGN_BYTES(8); // IN
     NV_STATUS               rmStatus;                                          // OUT
 } UVM_ALLOC_SEMAPHORE_POOL_PARAMS;

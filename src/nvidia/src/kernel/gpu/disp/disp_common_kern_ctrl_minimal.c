@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,6 +38,8 @@
 #include "rmapi/rs_utils.h"
 #include "rmapi/rmapi.h"
 #include "gpu/disp/head/kernel_head.h"
+#include "mem_mgr/mem.h"
+#include "platform/sli/sli.h"
 
 NV_STATUS
 dispcmnCtrlCmdSystemGetHotplugUnplugState_IMPL
@@ -219,7 +221,7 @@ NV_STATUS dispcmnCtrlCmdVRRSetRgLineActive_IMPL
 )
 {
     OBJGPU   *pGpu   = DISPAPI_GET_GPU(pDispCommon);
-    NvHandle  hClient = RES_GET_CLIENT_HANDLE(pDispCommon);
+    RsClient *pClient = RES_GET_CLIENT(pDispCommon);
     NvHandle  hParent = RES_GET_PARENT_HANDLE(pDispCommon);
     RM_API   *pRmApi = GPU_GET_PHYSICAL_RMAPI(DISPAPI_GET_GPU(pDispCommon));
     NV_STATUS status = NV_OK;
@@ -239,31 +241,27 @@ NV_STATUS dispcmnCtrlCmdVRRSetRgLineActive_IMPL
 
     if (pParams->bEnable)
     {
-        status = memdescRegisterToGSP(pGpu, hClient, hParent, pParams->hMemory);
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR, "memdescRegisterToGSP failed %d\n", status);
-            return status;
-        }
+        //
+        // Note: memRegisterWithGsp() is a noop when either (a) we're not
+        // operating as a GSP client, or (b) the hMemory is already registered
+        // with GSP.
+        //
+        // Also, note that we don't explicitly unregister here in the
+        // !pParams->bEnable case: that could unregister the memory out from
+        // under other uses of this hMemory on GSP.
+        // Instead, we rely on the hMemory getting unregistered when the
+        // 'struct Memory' is freed.
+        //
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                              memRegisterWithGsp(pGpu, pClient, hParent, pParams->hMemory));
     }
 
-    status = pRmApi->Control(pRmApi,
-                             hClient,
-                             RES_GET_HANDLE(pDispCommon),
-                             NV0073_CTRL_CMD_INTERNAL_VRR_SET_RGLINE_ACTIVE,
-                             pParams,
-                             sizeof(*pParams));
-
-    if (!pParams->bEnable)
-    {
-        status = memdescDeregisterFromGSP(pGpu, hClient, hParent, pParams->hMemory);
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR, "memdescDeRegisterFromGSP failed %d\n", status);
-        }
-    }
-
-    return status;
+    return pRmApi->Control(pRmApi,
+                           pClient->hClient,
+                           RES_GET_HANDLE(pDispCommon),
+                           NV0073_CTRL_CMD_INTERNAL_VRR_SET_RGLINE_ACTIVE,
+                           pParams,
+                           sizeof(*pParams));
 }
 
 static NV_STATUS _kheadCheckVblankCountCallback
@@ -341,13 +339,13 @@ dispcmnCtrlCmdSystemGetVblankCounter_IMPL
     return NV_OK;
 }
 
-NV_STATUS dispcmnCtrlCmdVblankSemControl_IMPL(
+NV_STATUS dispcmnCtrlCmdVblankSemControlEnable_IMPL(
     DispCommon *pDispCommon,
-    NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_PARAMS *pParams
+    NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_ENABLE_PARAMS *pParams
 )
 {
     OBJGPU   *pGpu   = DISPAPI_GET_GPU(pDispCommon);
-    NvHandle  hClient = RES_GET_CLIENT_HANDLE(pDispCommon);
+    RsClient *pClient = RES_GET_CLIENT(pDispCommon);
     NvHandle  hParent = RES_GET_PARENT_HANDLE(pDispCommon);
     RM_API   *pRmApi = GPU_GET_PHYSICAL_RMAPI(DISPAPI_GET_GPU(pDispCommon));
     NV_STATUS status = NV_OK;
@@ -365,32 +363,130 @@ NV_STATUS dispcmnCtrlCmdVblankSemControl_IMPL(
         return status;
     }
 
-    if (pParams->bEnable)
-    {
-        // Note: memdescRegisterToGSP() is a noop when either (a) we're not
-        // operating as a GSP client, or (b) the hMemory is already registered
-        // with GSP.
-        //
-        // Also, note that we don't explicitly unregister here in the
-        // !pParams->bEnable case: that could unregister the memory out from
-        // under other uses of this hMemory on GSP (e.g., other vblank semaphore
-        // controls).  Instead, we rely on the hMemory getting unregistered when
-        // the memdesc is freed.
-        status = memdescRegisterToGSP(pGpu, hClient, hParent, pParams->hMemory);
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR, "memdescRegisterToGSP failed %d\n", status);
-            return status;
-        }
-    }
+    //
+    // Note: memRegisterWithGsp() is a noop when either (a) we're not
+    // operating as a GSP client, or (b) the hMemory is already registered
+    // with GSP.
+    //
+    // Also, note that we don't explicitly unregister here in the
+    // !pParams->bEnable case: that could unregister the memory out from
+    // under other uses of this hMemory on GSP (e.g., other vblank semaphore
+    // controls).  Instead, we rely on the hMemory getting unregistered when
+    // the 'struct Memory' is freed.
+    //
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                          memRegisterWithGsp(pGpu, pClient, hParent, pParams->hMemory));
 
-    // NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_PARAMS and
-    // NV0073_CTRL_CMD_INTERNAL_VBLANK_SEM_CONTROL_PARAMS are
+    //
+    // NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_ENABLE_PARAMS and
+    // NV0073_CTRL_CMD_INTERNAL_VBLANK_SEM_CONTROL_ENABLE_PARAMS are
     // equivalent, so just pass pParams through.
+    //
     return pRmApi->Control(pRmApi,
-                           hClient,
+                           pClient->hClient,
                            RES_GET_HANDLE(pDispCommon),
-                           NV0073_CTRL_CMD_INTERNAL_VBLANK_SEM_CONTROL,
+                           NV0073_CTRL_CMD_INTERNAL_VBLANK_SEM_CONTROL_ENABLE,
                            pParams,
                            sizeof(*pParams));
 }
+
+NV_STATUS dispcmnCtrlCmdVblankSemControlDisable_IMPL(
+    DispCommon *pDispCommon,
+    NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DISABLE_PARAMS *pParams
+)
+{
+    OBJGPU   *pGpu   = DISPAPI_GET_GPU(pDispCommon);
+    RsClient *pClient = RES_GET_CLIENT(pDispCommon);
+    RM_API   *pRmApi = GPU_GET_PHYSICAL_RMAPI(DISPAPI_GET_GPU(pDispCommon));
+    NV_STATUS status = NV_OK;
+
+    // Get the right pGpu from subdevice instance given by client
+    status = dispapiSetUnicastAndSynchronize_HAL(
+                               staticCast(pDispCommon, DisplayApi),
+                               DISPAPI_GET_GPUGRP(pDispCommon),
+                               &pGpu,
+                               NULL,
+                               pParams->subDeviceInstance);
+
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    //
+    // Note that we don't explicitly unregister here to complement the
+    // memRegisterWithGsp() done in dispcmnCtrlCmdVblankSemControlEnable_IMPL():
+    // that could unregister the memory out from under other uses of this
+    // hMemory on GSP (e.g., other vblank semaphore controls).  Instead, we rely
+    // on the hMemory getting unregistered when the 'struct Memory' is freed.
+    //
+
+    //
+    // NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DISABLE_PARAMS and
+    // NV0073_CTRL_CMD_INTERNAL_VBLANK_SEM_CONTROL_DISABLE_PARAMS are
+    // equivalent, so just pass pParams through.
+    //
+    return pRmApi->Control(pRmApi,
+                           pClient->hClient,
+                           RES_GET_HANDLE(pDispCommon),
+                           NV0073_CTRL_CMD_INTERNAL_VBLANK_SEM_CONTROL_DISABLE,
+                           pParams,
+                           sizeof(*pParams));
+}
+
+/*
+ * @brief This call engages the WAR for VR where the Pstate
+ *        switching can cause delay in serving Vblank interrupts
+ *        by servicing disp interrupts inline.
+ *
+ * @return
+ *   NV_OK
+ *     The request successfully completed.
+ *   NV_ERR_INVALID_ARGUMENT
+ *     Invalid argument is passed.
+ */
+NV_STATUS
+dispcmnCtrlCmdInlineDispIntrServiceWarForVr_IMPL
+(
+    DispCommon *pDispCommon,
+    NV0073_CTRL_SYSTEM_INLINE_DISP_INTR_SERVICE_WAR_FOR_VR_PARAMS *pParams
+)
+{
+    POBJGPU  pGpu  = NULL;
+    RM_API   *pRmApi;
+    NV_STATUS status;
+    KernelDisplay *pKernelDisplay = NULL;
+
+    // Get the right pGpu from subdevice instance given by client
+    status = dispapiSetUnicastAndSynchronize_HAL(
+                               staticCast(pDispCommon, DisplayApi),
+                               DISPAPI_GET_GPUGRP(pDispCommon),
+                               &pGpu,
+                               NULL,
+                               pParams->subDeviceInstance);
+
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
+
+    pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+    if (pKernelDisplay == NULL)
+        SLI_LOOP_RETURN(NV_ERR_INVALID_STATE);
+
+    pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+    status = pRmApi->Control(pRmApi,
+                           RES_GET_CLIENT_HANDLE(pDispCommon),
+                           RES_GET_HANDLE(pDispCommon),
+                           NV0073_CTRL_CMD_INTERNAL_INLINE_DISP_INTR_SERVICE_WAR_FOR_VR,
+                           pParams,
+                           sizeof(*pParams));
+
+    SLI_LOOP_END
+
+    return NV_OK;
+}
+

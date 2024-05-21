@@ -65,10 +65,8 @@ _getMsgQueueParams
     MESSAGE_QUEUE_COLLECTION *pMQCollection
 )
 {
-    KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
     NvLength queueSize;
     MESSAGE_QUEUE_INFO *pRmQueueInfo = &pMQCollection->rpcQueues[RPC_TASK_RM_QUEUE_IDX];
-    MESSAGE_QUEUE_INFO *pTaskIsrQueueInfo = &pMQCollection->rpcQueues[RPC_TASK_ISR_QUEUE_IDX];
     NvU32 numPtes;
     const NvLength defaultCommandQueueSize = 0x40000; // 256 KB
     const NvLength defaultStatusQueueSize  = 0x40000; // 256 KB
@@ -101,24 +99,11 @@ _getMsgQueueParams
         pRmQueueInfo->statusQueueSize = defaultStatusQueueSize;
     }
 
-    // TaskIsrQueue sizes
-    if (pKernelGsp->bIsTaskIsrQueueRequired)
-    {
-        pTaskIsrQueueInfo->commandQueueSize = defaultCommandQueueSize;
-        pTaskIsrQueueInfo->statusQueueSize = defaultStatusQueueSize;
-    }
-    else
-    {
-        pTaskIsrQueueInfo->commandQueueSize = 0;
-        pTaskIsrQueueInfo->statusQueueSize = 0;
-    }
-
     //
     // Calculate the number of entries required to map both queues in addition
     // to the page table itself.
     //
-    queueSize = pRmQueueInfo->commandQueueSize      + pRmQueueInfo->statusQueueSize +
-                pTaskIsrQueueInfo->commandQueueSize + pTaskIsrQueueInfo->statusQueueSize;
+    queueSize = pRmQueueInfo->commandQueueSize + pRmQueueInfo->statusQueueSize;
     NV_ASSERT((queueSize & RM_PAGE_MASK) == 0);
     numPtes = (queueSize >> RM_PAGE_SHIFT);
 
@@ -204,10 +189,8 @@ GspMsgQueuesInit
     MESSAGE_QUEUE_COLLECTION **ppMQCollection
 )
 {
-    KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
     MESSAGE_QUEUE_COLLECTION *pMQCollection = NULL;
     MESSAGE_QUEUE_INFO  *pRmQueueInfo = NULL;
-    MESSAGE_QUEUE_INFO  *pTaskIsrQueueInfo = NULL;
     RmPhysAddr  *pPageTbl;
     NvP64        pVaKernel;
     NvP64        pPrivKernel;
@@ -235,13 +218,10 @@ GspMsgQueuesInit
     _getMsgQueueParams(pGpu, pMQCollection);
 
     pRmQueueInfo      = &pMQCollection->rpcQueues[RPC_TASK_RM_QUEUE_IDX];
-    pTaskIsrQueueInfo = &pMQCollection->rpcQueues[RPC_TASK_ISR_QUEUE_IDX];
 
     sharedBufSize = pMQCollection->pageTableSize +
                     pRmQueueInfo->commandQueueSize +
-                    pRmQueueInfo->statusQueueSize +
-                    pTaskIsrQueueInfo->commandQueueSize +
-                    pTaskIsrQueueInfo->statusQueueSize;
+                    pRmQueueInfo->statusQueueSize;
 
     flags |= MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY;
 
@@ -289,10 +269,6 @@ GspMsgQueuesInit
     //   RM Command queue entries
     //   RM Status queue header
     //   RM Status queue entries
-    //   TASKISR Command queue header
-    //   TASKISR Command queue entries
-    //   TASKISR Status queue header
-    //   TASKISR Status queue entries
     memdescGetPhysAddrs(pMQCollection->pSharedMemDesc,
                     AT_GPU,                     // addressTranslation
                     0,                          // offset
@@ -309,30 +285,12 @@ GspMsgQueuesInit
     lastQueueVa   = NV_PTR_TO_NvP64(pRmQueueInfo->pStatusQueue);
     lastQueueSize = pRmQueueInfo->statusQueueSize;
 
-    if (pKernelGsp->bIsTaskIsrQueueRequired)
-    {
-        pTaskIsrQueueInfo->pCommandQueue = NvP64_VALUE(
-            NvP64_PLUS_OFFSET(NV_PTR_TO_NvP64(pRmQueueInfo->pStatusQueue), pRmQueueInfo->statusQueueSize));
-
-        pTaskIsrQueueInfo->pStatusQueue  = NvP64_VALUE(
-            NvP64_PLUS_OFFSET(NV_PTR_TO_NvP64(pTaskIsrQueueInfo->pCommandQueue), pTaskIsrQueueInfo->commandQueueSize));
-
-        lastQueueVa   = NV_PTR_TO_NvP64(pTaskIsrQueueInfo->pStatusQueue);
-        lastQueueSize = pTaskIsrQueueInfo->statusQueueSize;
-    }
-
     // Assert that the last queue offset + size fits into the shared memory.
     NV_ASSERT(NvP64_PLUS_OFFSET(pVaKernel, sharedBufSize) ==
               NvP64_PLUS_OFFSET(lastQueueVa, lastQueueSize));
 
     NV_ASSERT_OK_OR_GOTO(nvStatus, _gspMsgQueueInit(pRmQueueInfo), error_ret);
     pRmQueueInfo->queueIdx = RPC_TASK_RM_QUEUE_IDX;
-
-    if (pKernelGsp->bIsTaskIsrQueueRequired)
-    {
-        NV_ASSERT_OK_OR_GOTO(nvStatus, _gspMsgQueueInit(pTaskIsrQueueInfo), error_ret);
-        pTaskIsrQueueInfo->queueIdx = RPC_TASK_ISR_QUEUE_IDX;
-    }
 
     *ppMQCollection             = pMQCollection;
     pMQCollection->sharedMemPA  = pPageTbl[0];
@@ -442,17 +400,14 @@ void GspMsgQueuesCleanup(MESSAGE_QUEUE_COLLECTION **ppMQCollection)
 {
     MESSAGE_QUEUE_COLLECTION *pMQCollection = NULL;
     MESSAGE_QUEUE_INFO       *pRmQueueInfo  = NULL;
-    MESSAGE_QUEUE_INFO       *pTaskIsrQueueInfo = NULL;
 
     if ((ppMQCollection == NULL) || (*ppMQCollection == NULL))
         return;
 
     pMQCollection     = *ppMQCollection;
     pRmQueueInfo      = &pMQCollection->rpcQueues[RPC_TASK_RM_QUEUE_IDX];
-    pTaskIsrQueueInfo = &pMQCollection->rpcQueues[RPC_TASK_ISR_QUEUE_IDX];
 
     _gspMsgQueueCleanup(pRmQueueInfo);
-    _gspMsgQueueCleanup(pTaskIsrQueueInfo);
 
     if (pMQCollection->pSharedMemDesc != NULL)
     {
@@ -496,24 +451,24 @@ NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
     NvU32      i;
     RMTIMEOUT  timeout;
     NV_STATUS  nvStatus         = NV_OK;
-    NvU32      uElementSize     = GSP_MSG_QUEUE_ELEMENT_HDR_SIZE +
+    NvU32      msgLen           = GSP_MSG_QUEUE_ELEMENT_HDR_SIZE +
                                   pMQI->pCmdQueueElement->rpc.length;
 
-    if ((uElementSize < sizeof(GSP_MSG_QUEUE_ELEMENT)) ||
-        (uElementSize > GSP_MSG_QUEUE_ELEMENT_SIZE_MAX))
+    if ((msgLen < sizeof(GSP_MSG_QUEUE_ELEMENT)) ||
+        (msgLen > GSP_MSG_QUEUE_ELEMENT_SIZE_MAX))
     {
-        NV_PRINTF(LEVEL_ERROR, "Incorrect length %u\n",
+        NV_PRINTF(LEVEL_ERROR, "Incorrect message length %u\n",
             pMQI->pCmdQueueElement->rpc.length);
         nvStatus = NV_ERR_INVALID_PARAM_STRUCT;
         goto done;
     }
 
     // Make sure the queue element in our working space is zero padded for checksum.
-    if ((uElementSize & 7) != 0)
-        portMemSet(pSrc + uElementSize, 0, 8 - (uElementSize & 7));
+    if ((msgLen & 7) != 0)
+        portMemSet(pSrc + msgLen, 0, 8 - (msgLen & 7));
 
     pCQE->seqNum    = pMQI->txSeqNum;
-    pCQE->elemCount = GSP_MSG_QUEUE_BYTES_TO_ELEMENTS(uElementSize);
+    pCQE->elemCount = GSP_MSG_QUEUE_BYTES_TO_ELEMENTS(msgLen);
     pCQE->checkSum  = 0; // The checkSum field is included in the checksum calculation, so zero it.
 
     if (gpuIsCCFeatureEnabled(pGpu))
@@ -550,7 +505,7 @@ NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
     }
     else
     {
-        pCQE->checkSum = _checkSum32(pSrc, uElementSize);
+        pCQE->checkSum = _checkSum32(pSrc, msgLen);
     }
 
     for (i = 0; i < pCQE->elemCount; i++)
@@ -648,7 +603,7 @@ NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
     NvU32       nRetries;
     NvU32       nMaxRetries  = 3;
     NvU32       nElements    = 1;  // Assume record fits in one queue element for now.
-    NvU32       uElementSize;
+    NvU32       msgLen;
     NvU32       checkSum;
     NvU32       seqMismatchDiff = NV_U32_MAX;
     NV_STATUS   nvStatus     = NV_OK;
@@ -791,14 +746,14 @@ NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
     }
 
     // Sanity check for the given RPC length
-    uElementSize = GSP_MSG_QUEUE_ELEMENT_HDR_SIZE + pMQI->pCmdQueueElement->rpc.length;
+    msgLen = GSP_MSG_QUEUE_ELEMENT_HDR_SIZE + pMQI->pCmdQueueElement->rpc.length;
 
-    if ((uElementSize < sizeof(GSP_MSG_QUEUE_ELEMENT)) ||
-        (uElementSize > GSP_MSG_QUEUE_ELEMENT_SIZE_MAX))
+    if ((msgLen < sizeof(GSP_MSG_QUEUE_ELEMENT)) ||
+        (msgLen > GSP_MSG_QUEUE_ELEMENT_SIZE_MAX))
     {
         // The length is not valid.  If we are running without a fence,
         // this could mean that the data is still in flight from the CPU.
-        NV_PRINTF(LEVEL_ERROR, "Incorrect length %u\n",
+        NV_PRINTF(LEVEL_ERROR, "Incorrect message length %u\n",
             pMQI->pCmdQueueElement->rpc.length);
         nvStatus = NV_ERR_INVALID_PARAM_STRUCT;
     }

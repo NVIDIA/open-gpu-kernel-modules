@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,7 +31,9 @@
 #include "class/cl0080.h"
 #include "class/cl2080.h"
 
+#include "ctrl/ctrl0080.h"
 #include "ctrl/ctrl2080.h"
+#include "ctrl/ctrl90cc.h"
 
 NV_STATUS
 rmapiutilAllocClientAndDeviceHandles
@@ -204,6 +206,18 @@ NvBool rmapiutilSkipErrorMessageForUnsupportedVgpuGuestControl(NvU32 cmd)
         case NV2080_CTRL_CMD_FB_GET_REMAPPED_ROWS:
         case NV2080_CTRL_CMD_ECC_GET_VOLATILE_COUNTS:
         case NV2080_CTRL_CMD_GPU_QUERY_INFOROM_ECC_SUPPORT:
+        case NV0080_CTRL_CMD_FB_GET_COMPBIT_STORE_INFO:
+        case NV2080_CTRL_CMD_BUS_CLEAR_PEX_COUNTERS:
+        case NV2080_CTRL_CMD_HSHUB_GET_AVAILABLE_MASK:
+        case NV2080_CTRL_CMD_I2C_WRITE_REG:
+        case NV2080_CTRL_CMD_I2C_READ_BUFFER:
+        case NV2080_CTRL_CMD_I2C_READ_REG:
+        case NV2080_CTRL_CMD_FB_SETUP_VPR_REGION:
+        case NV2080_CTRL_CMD_I2C_ACCESS:
+        case NV90CC_CTRL_CMD_POWER_REQUEST_FEATURES:
+        case NV90CC_CTRL_CMD_POWER_RELEASE_FEATURES:
+        case NV2080_CTRL_CMD_FLCN_USTREAMER_QUEUE_INFO:
+        case NV2080_CTRL_CMD_INTERNAL_NVLINK_ENABLE_COMPUTE_PEER_ADDR:
             return NV_TRUE;
 
         default:

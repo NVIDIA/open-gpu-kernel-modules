@@ -29,7 +29,7 @@
 NvU64 NV_API_CALL nv_get_kern_phys_address(NvU64 address)
 {
     /* direct-mapped kernel address */
-    if (virt_addr_valid(address))
+    if (virt_addr_valid((void *)address))
         return __pa(address);
 
     nv_printf(NV_DBG_ERRORS,

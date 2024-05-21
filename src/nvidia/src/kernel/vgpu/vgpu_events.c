@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -95,6 +95,9 @@ NV_STATUS _setupGspEventInfrastructure(OBJGPU *pGpu, OBJVGPU *pVGpu)
     NV_ADDRESS_SPACE addressSpace = ADDR_FBMEM;
     NvU32 memFlags = 0;
     KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+
+    if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus))
+        memFlags = MEMDESC_FLAGS_CPU_ONLY;
 
     if (IsGH100orBetter(pGpu) && (!kbusIsBar2Initialized(pKernelBus)))
         addressSpace = ADDR_SYSMEM;
@@ -382,10 +385,16 @@ void vgpuServiceEventInbandResponse(OBJGPU *pGpu, OBJVGPU *pVGpu)
         }
         if (FLD_TEST_DRF(_VGPU_SHARED_MEMORY_POINTER, _NVLINK_INBAND_RESPONSE, _MC_SETUP, _PENDING, inband_resp_state))
         {
-            /*TODO: add multicast support here.*/
-            break;
+            status = rpcCtrlNvlinkGetInbandReceivedData_HAL(pGpu, pRpc, pData,
+                                                            NVLINK_INBAND_MSG_TYPE_MC_TEAM_SETUP_RSP, &more);
+            if (status != NV_OK)
+                goto cleanup;
+
+            status = knvlinkInbandMsgCallbackDispatcher(pGpu, GPU_GET_KERNEL_NVLINK(pGpu),
+                                                        sizeof(*pData), (void*)pData);
+            if (status != NV_OK)
+                goto cleanup;
         }
-        break;
     }
 cleanup:
     if (pData != NULL)

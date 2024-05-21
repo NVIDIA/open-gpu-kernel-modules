@@ -1599,6 +1599,12 @@ struct NvKmsValidateModeIndexReply {
      * NvKmsSetModeOneHeadReply.
      */
     struct NvKmsUsageBounds modeUsage;
+
+    /*
+     * Whether this mode supports stereo mode hdmi3D, but wasn't
+     * requested.
+     */
+    NvBool hdmi3DAvailable;
 };
 
 struct NvKmsValidateModeIndexParams {
@@ -4092,7 +4098,7 @@ struct NvKmsSetFlipLockGroupParams {
  * NVKMS_IOCTL_DISABLE_VBLANK_SEM_CONTROL
  * NVKMS_IOCTL_ACCEL_VBLANK_SEM_CONTROLS
  *
- * Enable or disable vblank semaphore control for the given head using the
+ * Enable or disable vblank semaphore control for the given heads using the
  * specified surface and surface offset.  The memory at that location is
  * interpreted as an NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DATA.  See the
  * RMAPI documentation for NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DATA for
@@ -4118,7 +4124,7 @@ struct NvKmsSetFlipLockGroupParams {
 struct NvKmsEnableVblankSemControlRequest {
     NvKmsDeviceHandle deviceHandle;
     NvKmsDispHandle dispHandle;
-    NvU32 head;
+    NvU32 headMask;
     NvKmsSurfaceHandle surfaceHandle;
     NvU64 surfaceOffset NV_ALIGN_BYTES(8);
 };

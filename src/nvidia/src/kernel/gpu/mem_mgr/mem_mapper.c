@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -147,8 +147,31 @@ memmapperExecuteSemaphoreSignal
                         pMemoryMapper->hInternalSemaphoreSurface,
                         NV_SEMAPHORE_SURFACE_CTRL_CMD_SET_VALUE,
                         &params,
-                        sizeof params));
+                        sizeof(params)));
     return NV_OK;
+}
+
+static void
+memmapperSetError
+(
+    MemoryMapper *pMemoryMapper,
+    NV_STATUS     errorStatus
+)
+{
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(GPU_RES_GET_GPU(pMemoryMapper));
+
+    NV_ASSERT_OR_RETURN_VOID(errorStatus != NV_OK);
+
+    NV_PRINTF(LEVEL_ERROR, "MemoryMapper encountered an error, not processing more commands.\n");
+
+    pMemoryMapper->bError = NV_TRUE;
+
+    NV_MEMORY_MAPPER_NOTIFICATION notification = {0};
+    notification.status = errorStatus;
+    TRANSFER_SURFACE dstSurf = {0};
+    dstSurf.pMemDesc = pMemoryMapper->pNotificationMemory->pMemDesc;
+    dstSurf.offset   = pMemoryMapper->notificationOffset;
+    NV_CHECK(LEVEL_ERROR, memmgrMemWrite(pMemoryManager, &dstSurf, &notification, sizeof(notification), 0) == NV_OK);
 }
 
 static void
@@ -197,7 +220,9 @@ memmapperProcessWork
         if (status != NV_OK)
         {
             if (status != NV_ERR_BUSY_RETRY)
-                pMemoryMapper->bError = NV_TRUE;
+            {
+                memmapperSetError(pMemoryMapper, status);
+            }
             break;
         }
 
@@ -243,7 +268,7 @@ memoryMapperQueueWork
                                           OS_QUEUE_WORKITEM_FLAGS_DONT_FREE_PARAMS
                                           | OS_QUEUE_WORKITEM_FLAGS_FALLBACK_TO_DPC
                                           | OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW
-                                          | OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS_RW));
+                                          | OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS));
 }
 
 static void
@@ -281,6 +306,15 @@ memmapperConstruct_IMPL
     pMemoryMapper->pSubdevice = dynamicCast(pParentRef->pResource, Subdevice);
     NV_ASSERT_OR_RETURN(pMemoryMapper->pSubdevice != NULL, NV_ERR_INVALID_ARGUMENT);
 
+    RsResourceRef *pNotificationMemoryRef;
+    NV_ASSERT_OK_OR_GOTO(status,
+        clientGetResourceRef(pCallContext->pClient, pAllocParams->hNotificationMemory, &pNotificationMemoryRef),
+        failed);
+    pMemoryMapper->pNotificationMemory = dynamicCast(pNotificationMemoryRef->pResource, Memory);
+    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR,
+        pMemoryMapper->pNotificationMemory != NULL, NV_ERR_INVALID_ARGUMENT, failed);
+    pMemoryMapper->notificationOffset = pAllocParams->notificationOffset;
+
     NV_ASSERT_OR_RETURN(pAllocParams->maxQueueSize != 0, NV_ERR_INVALID_ARGUMENT);
     pMemoryMapper->operationQueueLen = pAllocParams->maxQueueSize;
     pMemoryMapper->pOperationQueue =
@@ -315,6 +349,8 @@ memmapperConstruct_IMPL
     pMemoryMapper->semaphoreCallback.func = memmapperSemaphoreEventCallback;
     pMemoryMapper->semaphoreCallback.arg  = pMemoryMapper;
 
+    NV_ASSERT_OK_OR_GOTO(status, refAddDependant(pNotificationMemoryRef, RES_GET_REF(pMemoryMapper)), failed);
+
 failed:
     if (status != NV_OK)
     {
@@ -339,6 +375,7 @@ memmapperDestruct_IMPL
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(GPU_RES_GET_GPU(pMemoryMapper));
     RM_API        *pRmApi         = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
 
+    refRemoveDependant(RES_GET_REF(pMemoryMapper->pNotificationMemory), RES_GET_REF(pMemoryMapper));
     pRmApi->Free(pRmApi, pMemoryManager->hClient, pMemoryMapper->hInternalSemaphoreSurface);
     portMemFree(pMemoryMapper->pOperationQueue);
 
@@ -365,15 +402,15 @@ memmapperSubmitSemaphoreWait
     params.waitValue          = pSemaphoreWait->value;
     params.notificationHandle = (NvU64)&pMemoryMapper->semaphoreCallback;
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        pRmApi->Control(pRmApi,
-                        pMemoryManager->hClient,
-                        pMemoryMapper->hInternalSemaphoreSurface,
-                        NV_SEMAPHORE_SURFACE_CTRL_CMD_REGISTER_WAITER,
-                       &params,
-                        sizeof params));
+    NV_STATUS status = pRmApi->Control(pRmApi,
+                                       pMemoryManager->hClient,
+                                       pMemoryMapper->hInternalSemaphoreSurface,
+                                       NV_SEMAPHORE_SURFACE_CTRL_CMD_REGISTER_WAITER,
+                                       &params,
+                                      sizeof params);
 
-    return NV_OK;
+    NV_CHECK(LEVEL_ERROR, status == NV_OK || status == NV_ERR_ALREADY_SIGNALLED);
+    return status;
 }
 
 NV_STATUS
@@ -386,6 +423,8 @@ memmapperCtrlCmdSubmitOperations_IMPL
     NV00FE_CTRL_OPERATION        *pOperataionsParams = pParams->pOperations;
     NV_STATUS                     status             = NV_OK;
     NvU32                         i;
+    // If the queue is not empty, worker from previous commands will do the job
+    NvBool bQueueWorker = (pMemoryMapper->operationQueuePut == pMemoryMapper->operationQueueGet);
 
     for (i = 0; i < pParams->operationsCount; i++)
     {
@@ -410,9 +449,19 @@ memmapperCtrlCmdSubmitOperations_IMPL
                 NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR,
                     semsurfValidateIndex(pMemoryMapper->pSemSurf, pOperation->data.semaphore.index),
                     NV_ERR_INVALID_ARGUMENT, op_failed);
-                NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-                    memmapperSubmitSemaphoreWait(pMemoryMapper, &pOperation->data.semaphore),
-                    op_failed);
+                status = memmapperSubmitSemaphoreWait(pMemoryMapper, &pOperation->data.semaphore);
+                if (status == NV_ERR_ALREADY_SIGNALLED)
+                {
+                    status = NV_OK;
+                    // semaphore is already signalled, so skip the operation completely
+                    continue;
+                }
+                else if (status == NV_OK && pMemoryMapper->operationQueuePut == pMemoryMapper->operationQueueGet)
+                {
+                    // worker will be called by semaphore surface callback
+                    bQueueWorker = NV_FALSE;
+                }
+                NV_CHECK_OR_GOTO(LEVEL_ERROR, status == NV_OK, op_failed);
                 break;
             case NV00FE_CTRL_OPERATION_TYPE_SEMAPHORE_SIGNAL:
                 NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR,
@@ -431,8 +480,7 @@ memmapperCtrlCmdSubmitOperations_IMPL
 op_failed:
         if (status != NV_OK)
         {
-            NV_PRINTF(LEVEL_ERROR, "MemoryMapper encountered an error, not processing more commands.\n");
-            pMemoryMapper->bError = NV_TRUE;
+            memmapperSetError(pMemoryMapper, status);
             break;
         }
 
@@ -441,7 +489,49 @@ op_failed:
 
     pParams->operationsProcessedCount = i;
 
-    memoryMapperQueueWork(pMemoryMapper);
+    if (bQueueWorker && pMemoryMapper->operationQueuePut != pMemoryMapper->operationQueueGet)
+    {
+        // only queue worker when the queue is not empty
+        memoryMapperQueueWork(pMemoryMapper);
+    }
 
     return status;
+}
+
+NV_STATUS
+memmapperCtrlCmdResizeQueue_IMPL
+(
+    MemoryMapper                         *pMemoryMapper,
+    NV00FE_CTRL_RESIZE_QUEUE_PARAMS      *pParams
+)
+{
+    if ((pMemoryMapper->operationQueuePut - pMemoryMapper->operationQueueGet + pMemoryMapper->operationQueueLen)
+        % pMemoryMapper->operationQueueLen + 1 > pParams->maxQueueSize)
+    {
+        // All queued operations need to fit in the queue
+        NV_CHECK_FAILED(LEVEL_ERROR, "Queue size too small");
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    NV00FE_CTRL_OPERATION *pNewOperationQueue =
+        portMemAllocNonPaged(pParams->maxQueueSize * sizeof(*pMemoryMapper->pOperationQueue));
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pNewOperationQueue != NULL, NV_ERR_NO_MEMORY);
+
+    NvU32 newQueuePut = 0;
+    while (pMemoryMapper->operationQueueGet != pMemoryMapper->operationQueuePut)
+    {
+        pNewOperationQueue[newQueuePut] = pMemoryMapper->pOperationQueue[pMemoryMapper->operationQueueGet];
+        pMemoryMapper->operationQueueGet = (pMemoryMapper->operationQueueGet + 1) % pMemoryMapper->operationQueueLen;
+        newQueuePut++;
+        NV_ASSERT_OR_RETURN(newQueuePut < pParams->maxQueueSize, NV_ERR_INVALID_STATE);
+    }
+
+    portMemFree(pMemoryMapper->pOperationQueue);
+
+    pMemoryMapper->pOperationQueue   = pNewOperationQueue;
+    pMemoryMapper->operationQueueLen = pParams->maxQueueSize;
+    pMemoryMapper->operationQueuePut = newQueuePut;
+    pMemoryMapper->operationQueueGet = 0;
+
+    return NV_OK;
 }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -140,6 +140,9 @@ namespace DisplayPort
 
         // Return if Internal panel is Dynamic Mux capable
         virtual bool isInternalPanelDynamicMuxCapable() = 0;
+
+        // Return if MDM is enabled on internal panel
+        virtual bool isMDMEnabled() = 0;
 
         // Check if we should skip power down eDP when head detached.
         virtual bool skipPowerdownEdpPanelWhenHeadDetach() = 0;

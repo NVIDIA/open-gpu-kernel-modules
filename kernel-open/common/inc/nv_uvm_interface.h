@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1463,6 +1463,29 @@ NV_STATUS nvUvmInterfacePagingChannelPushStream(UvmGpuPagingChannelHandle channe
                                                 NvU32 methodStreamSize);
 
 /*******************************************************************************
+    nvUvmInterfaceKeyRotationChannelDisable
+
+    This function notifies RM that the given channels are idle.
+
+    This function is called after RM has notified UVM that keys need to be rotated.
+    When called RM will disable the channels, rotate their keys, and then re-enable
+    the channels.
+
+    Locking: This function acquires an API and GPU lock.
+    Memory : This function dynamically allocates memory.
+
+    Arguments:
+        channelList[IN]      - An array of channel handles whose channels are idle.
+        channelListCount[IN] - Number of channels in channelList. Its value must be
+                               greater than 0.
+
+    Error codes:
+      NV_ERR_INVALID_ARGUMENT - channelList is NULL or channeListCount is 0.
+*/
+NV_STATUS nvUvmInterfaceKeyRotationChannelDisable(uvmGpuChannelHandle channelList[],
+                                                  NvU32 channeListCount);
+
+/*******************************************************************************
     Cryptography Services Library (CSL) Interface
 */
 
@@ -1507,7 +1530,7 @@ void nvUvmInterfaceDeinitCslContext(UvmCslContext *uvmCslContext);
 /*******************************************************************************
     nvUvmInterfaceCslUpdateContext
 
-    Updates a context after a key rotation event and can only be called once per
+    Updates contexts after a key rotation event and can only be called once per
     key rotation event. Following a key rotation event, and before
     nvUvmInterfaceCslUpdateContext is called, data encrypted by the GPU with the
     previous key can be decrypted with nvUvmInterfaceCslDecrypt.
@@ -1516,12 +1539,14 @@ void nvUvmInterfaceDeinitCslContext(UvmCslContext *uvmCslContext);
     Memory : This function does not dynamically allocate memory.
 
     Arguments:
-        uvmCslContext[IN] - The CSL context associated with a channel.
-
+        contextList[IN/OUT]  - An array of pointers to CSL contexts.
+        contextListCount[IN] - Number of CSL contexts in contextList. Its value
+                               must be greater than 0.
     Error codes:
-        NV_ERR_INVALID_ARGUMENT - The CSL context is not associated with a channel.
+        NV_ERR_INVALID_ARGUMENT - contextList is NULL or contextListCount is 0.
 */
-NV_STATUS nvUvmInterfaceCslUpdateContext(UvmCslContext *uvmCslContext);
+NV_STATUS nvUvmInterfaceCslUpdateContext(UvmCslContext *contextList[],
+                                         NvU32 contextListCount);
 
 /*******************************************************************************
     nvUvmInterfaceCslRotateIv
@@ -1739,7 +1764,14 @@ NV_STATUS nvUvmInterfaceCslIncrementIv(UvmCslContext *uvmCslContext,
     Checks and logs information about non-CSL encryptions, such as those that
     originate from the GPU.
 
-    This function does not modify elements of the UvmCslContext.
+    For contexts associated with channels, this function does not modify elements of
+    the UvmCslContext and must be called for each external encryption invocation.
+
+    For the context associated with fault buffers, bufferSize can encompass multiple
+    encryption invocations, and the UvmCslContext will be updated following a key
+    rotation event.
+
+    In either case the IV remains unmodified after this function is called.
 
     Locking: This function does not acquire an API or GPU lock.
     Memory : This function does not dynamically allocate memory.
@@ -1748,7 +1780,7 @@ NV_STATUS nvUvmInterfaceCslIncrementIv(UvmCslContext *uvmCslContext,
 
     Arguments:
         uvmCslContext[IN/OUT] - The CSL context.
-        bufferSize[OUT]       - The size of the buffer encrypted by the
+        bufferSize[OUT]       - The size of the buffer(s) encrypted by the
                                 external entity in units of bytes.
 
     Error codes:

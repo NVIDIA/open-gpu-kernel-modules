@@ -153,7 +153,7 @@ static NV_STATUS check_accessible_from_gpu(uvm_gpu_t *gpu, uvm_mem_t *mem)
 
     for (i = 0; i < verif_size / sizeof(*sys_verif); ++i) {
         if (sys_verif[i] != mem->size + i) {
-            UVM_TEST_PRINT("Verif failed for %zd = 0x%llx instead of 0x%llx, verif_size=0x%llx mem(size=0x%llx, page_size=%u, processor=%u)\n",
+            UVM_TEST_PRINT("Verif failed for %zd = 0x%llx instead of 0x%llx, verif_size=0x%llx mem(size=0x%llx, page_size=%llu, processor=%u)\n",
                            i,
                            sys_verif[i],
                            (NvU64)(verif_size + i),
@@ -241,7 +241,7 @@ static NV_STATUS test_map_cpu(uvm_mem_t *mem)
     return NV_OK;
 }
 
-static NV_STATUS test_alloc_sysmem(uvm_va_space_t *va_space, NvU32 page_size, size_t size, uvm_mem_t **mem_out)
+static NV_STATUS test_alloc_sysmem(uvm_va_space_t *va_space, NvU64 page_size, size_t size, uvm_mem_t **mem_out)
 {
     NV_STATUS status;
     uvm_mem_t *mem;
@@ -299,7 +299,7 @@ error:
     return status;
 }
 
-static NV_STATUS test_alloc_vidmem(uvm_gpu_t *gpu, NvU32 page_size, size_t size, uvm_mem_t **mem_out)
+static NV_STATUS test_alloc_vidmem(uvm_gpu_t *gpu, NvU64 page_size, size_t size, uvm_mem_t **mem_out)
 {
     NV_STATUS status;
     uvm_mem_t *mem;
@@ -334,7 +334,7 @@ error:
     return status;
 }
 
-static bool should_test_page_size(size_t alloc_size, NvU32 page_size)
+static bool should_test_page_size(size_t alloc_size, NvU64 page_size)
 {
     if (g_uvm_global.num_simulated_devices == 0)
         return true;
@@ -359,7 +359,7 @@ static NV_STATUS test_all(uvm_va_space_t *va_space)
     // size on pre-Pascal GPUs with 128K big page size.
     // Ampere+ also supports 512M PTEs, but since UVM's maximum chunk size is
     // 2M, we don't test for this page size.
-    static const NvU32 cpu_chunk_sizes = PAGE_SIZE | UVM_PAGE_SIZE_64K | UVM_PAGE_SIZE_128K | UVM_PAGE_SIZE_2M;
+    static const NvU64 cpu_chunk_sizes = PAGE_SIZE | UVM_PAGE_SIZE_64K | UVM_PAGE_SIZE_128K | UVM_PAGE_SIZE_2M;
 
     // All supported page sizes will be tested, CPU has the most with 4 and +1
     // for the default.
@@ -494,41 +494,6 @@ done:
     return status;
 }
 
-static NV_STATUS test_basic_vidmem_unprotected(uvm_gpu_t *gpu)
-{
-    NV_STATUS status = NV_OK;
-    uvm_mem_t *mem = NULL;
-
-    uvm_mem_alloc_params_t params = { 0 };
-    params.size = UVM_PAGE_SIZE_4K;
-    params.backing_gpu = gpu;
-    params.page_size = UVM_PAGE_SIZE_4K;
-
-    // If CC is enabled, the protection flag is observed. Because currently all
-    // vidmem is in the protected region, the allocation should succeed.
-    //
-    // If CC is disabled, the protection flag is ignored.
-    params.is_unprotected = false;
-    TEST_NV_CHECK_RET(uvm_mem_alloc(&params, &mem));
-
-    uvm_mem_free(mem);
-    mem = NULL;
-
-    // If CC is enabled, the allocation should fail because currently the
-    // unprotected region is empty.
-    //
-    // If CC is disabled, the behavior should be identical to that of a
-    // protected allocation.
-    params.is_unprotected = true;
-    if (g_uvm_global.conf_computing_enabled)
-        TEST_CHECK_RET(uvm_mem_alloc(&params, &mem) == NV_ERR_NO_MEMORY);
-    else
-        TEST_NV_CHECK_RET(uvm_mem_alloc(&params, &mem));
-
-    uvm_mem_free(mem);
-    return status;
-}
-
 static NV_STATUS test_basic_sysmem(void)
 {
     NV_STATUS status = NV_OK;
@@ -613,7 +578,6 @@ static NV_STATUS test_basic(uvm_va_space_t *va_space)
     for_each_va_space_gpu(gpu, va_space) {
         TEST_NV_CHECK_RET(test_basic_vidmem(gpu));
         TEST_NV_CHECK_RET(test_basic_sysmem_dma(gpu));
-        TEST_NV_CHECK_RET(test_basic_vidmem_unprotected(gpu));
         TEST_NV_CHECK_RET(test_basic_dma_pool(gpu));
     }
 

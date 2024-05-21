@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -108,13 +108,6 @@ template <class T> void dp_used(const T & /*x*/) {}
 //
 
 #if NV_DP_ASSERT_ENABLED
-#define DP_LOG(x)                                                           \
-    do                                                                      \
-    {                                                                       \
-        dpPrint x;                                                          \
-        addDpLogRecord x;                                                   \
-    }while (false)
-
 #define DP_ASSERT(x)                                                        \
     if (!(x))                                                               \
     {                                                                       \
@@ -123,9 +116,6 @@ template <class T> void dp_used(const T & /*x*/) {}
         dpDebugBreakpoint();                                                \
     }
 #else
-
-#define DP_LOG(x)
-
 #define DP_ASSERT(x)                                                        \
     {                                                                       \
         DP_USED(x);                                                         \

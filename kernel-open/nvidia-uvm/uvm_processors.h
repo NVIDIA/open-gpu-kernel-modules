@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2023 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -277,8 +277,6 @@ typedef uvm_processor_id_t uvm_gpu_id_t;
 #define UVM_PARENT_ID_MAX_GPUS       NV_MAX_DEVICES
 #define UVM_PARENT_ID_MAX_PROCESSORS (UVM_PARENT_ID_MAX_GPUS + 1)
 
-#define UVM_PARENT_ID_MAX_SUB_PROCESSORS 8
-
 #define UVM_ID_MAX_GPUS       (UVM_PARENT_ID_MAX_GPUS * UVM_PARENT_ID_MAX_SUB_PROCESSORS)
 #define UVM_ID_MAX_PROCESSORS (UVM_ID_MAX_GPUS + 1)
 #define UVM_MAX_UNIQUE_GPU_PAIRS SUM_FROM_0_TO_N(UVM_ID_MAX_GPUS - 1)
@@ -291,6 +289,9 @@ typedef uvm_processor_id_t uvm_gpu_id_t;
 #define UVM_PARENT_ID_CHECK_BOUNDS(id) UVM_ASSERT_MSG(id.val <= UVM_PARENT_ID_MAX_PROCESSORS, "id %u\n", id.val)
 
 #define UVM_ID_CHECK_BOUNDS(id) UVM_ASSERT_MSG(id.val <= UVM_ID_MAX_PROCESSORS, "id %u\n", id.val)
+
+#define UVM_SUB_PROCESSOR_INDEX_CHECK_BOUNDS(sub_index) \
+    UVM_ASSERT_MSG((sub_index) < UVM_PARENT_ID_MAX_SUB_PROCESSORS, "sub_index %u\n", (sub_index))
 
 static int uvm_parent_id_cmp(uvm_parent_processor_id_t id1, uvm_parent_processor_id_t id2)
 {
@@ -493,9 +494,14 @@ static uvm_gpu_id_t uvm_gpu_id_from_parent_gpu_id(const uvm_parent_gpu_id_t id)
 static uvm_gpu_id_t uvm_gpu_id_from_sub_processor_index(NvU32 index, NvU32 sub_index)
 {
     UVM_ASSERT(index < UVM_PARENT_ID_MAX_GPUS);
-    UVM_ASSERT(sub_index < UVM_PARENT_ID_MAX_SUB_PROCESSORS);
+    UVM_SUB_PROCESSOR_INDEX_CHECK_BOUNDS(sub_index);
 
     return uvm_gpu_id_from_index(index * UVM_PARENT_ID_MAX_SUB_PROCESSORS + sub_index);
+}
+
+static uvm_gpu_id_t uvm_gpu_id_from_sub_processor(uvm_parent_gpu_id_t id, NvU32 sub_index)
+{
+    return uvm_gpu_id_from_sub_processor_index(uvm_parent_id_gpu_index(id), sub_index);
 }
 
 static uvm_parent_gpu_id_t uvm_parent_gpu_id_from_gpu_id(const uvm_gpu_id_t id)
@@ -524,6 +530,71 @@ UVM_PROCESSOR_MASK(uvm_processor_mask_t,              \
 
 extern const uvm_processor_mask_t g_uvm_processor_mask_cpu;
 extern const uvm_processor_mask_t g_uvm_processor_mask_empty;
+
+// This is similar to uvm_parent_processor_mask_t and uvm_processor_mask_t
+// but defined as a NvU8 in order to save memory since DECLARE_BITMAP() uses
+// unsigned long. It also means we need to define our own bitops.
+// Note that these are not atomic operations.
+typedef struct
+{
+    NvU8 bitmap;
+} uvm_sub_processor_mask_t;
+
+static bool uvm_sub_processor_mask_test(const uvm_sub_processor_mask_t *mask, NvU32 sub_index)
+{
+    UVM_SUB_PROCESSOR_INDEX_CHECK_BOUNDS(sub_index);
+
+    return mask->bitmap & (1 << sub_index);
+}
+
+static void uvm_sub_processor_mask_set(uvm_sub_processor_mask_t *mask, NvU32 sub_index)
+{
+    UVM_SUB_PROCESSOR_INDEX_CHECK_BOUNDS(sub_index);
+
+    mask->bitmap |= 1 << sub_index;
+}
+
+static void uvm_sub_processor_mask_clear(uvm_sub_processor_mask_t *mask, NvU32 sub_index)
+{
+    UVM_SUB_PROCESSOR_INDEX_CHECK_BOUNDS(sub_index);
+
+    mask->bitmap &= ~(1 << sub_index);
+}
+
+static bool uvm_sub_processor_mask_test_and_set(uvm_sub_processor_mask_t *mask, NvU32 sub_index)
+{
+    bool result = uvm_sub_processor_mask_test(mask, sub_index);
+
+    if (!result)
+        uvm_sub_processor_mask_set(mask, sub_index);
+
+    return result;
+}
+
+static bool uvm_sub_processor_mask_test_and_clear(uvm_sub_processor_mask_t *mask, NvU32 sub_index)
+{
+    bool result = uvm_sub_processor_mask_test(mask, sub_index);
+
+    if (result)
+        uvm_sub_processor_mask_clear(mask, sub_index);
+
+    return result;
+}
+
+static void uvm_sub_processor_mask_zero(uvm_sub_processor_mask_t *mask)
+{
+    mask->bitmap = 0;
+}
+
+static bool uvm_sub_processor_mask_empty(const uvm_sub_processor_mask_t *mask)
+{
+    return mask->bitmap == 0;
+}
+
+static NvU32 uvm_sub_processor_mask_get_count(const uvm_sub_processor_mask_t *mask)
+{
+    return hweight8(mask->bitmap);
+}
 
 // Like uvm_processor_mask_subset() but ignores the CPU in the subset mask.
 // Returns whether the GPUs in subset are a subset of the GPUs in mask.
@@ -571,8 +642,28 @@ void uvm_parent_gpus_from_processor_mask(uvm_parent_processor_mask_t *parent_mas
          i = uvm_gpu_id_next(i))
 
 // Helper to iterate over all sub processor indexes.
-#define for_each_sub_processor_index(i) \
-    for (i = 0; i < UVM_PARENT_ID_MAX_SUB_PROCESSORS; i++)
+#define for_each_sub_processor_index(sub_index) \
+    for ((sub_index) = 0; (sub_index) < UVM_PARENT_ID_MAX_SUB_PROCESSORS; (sub_index)++)
+
+static NvU32 uvm_sub_processor_mask_find_first_index(const uvm_sub_processor_mask_t *mask)
+{
+    unsigned long bitmap = mask->bitmap;
+
+    return find_first_bit(&bitmap, UVM_PARENT_ID_MAX_SUB_PROCESSORS);
+}
+
+static NvU32 uvm_sub_processor_mask_find_next_index(const uvm_sub_processor_mask_t *mask, NvU32 min_index)
+{
+    unsigned long bitmap = mask->bitmap;
+
+    return find_next_bit(&bitmap, UVM_PARENT_ID_MAX_SUB_PROCESSORS, min_index);
+}
+
+// Helper to iterate over all sub processor indexes in a given mask.
+#define for_each_sub_processor_index_in_mask(sub_index, sub_mask)                           \
+    for ((sub_index) = uvm_sub_processor_mask_find_first_index((sub_mask));                 \
+         (sub_index) < UVM_PARENT_ID_MAX_SUB_PROCESSORS;                                    \
+         (sub_index) = uvm_sub_processor_mask_find_next_index((sub_mask), (sub_index) + 1))
 
 // Helper to iterate over all valid processor ids.
 #define for_each_id(i) for (i = UVM_ID_CPU; UVM_ID_IS_VALID(i); i = uvm_id_next(i))

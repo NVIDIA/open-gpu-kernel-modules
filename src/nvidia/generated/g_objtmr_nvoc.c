@@ -75,77 +75,101 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJTMR =
     /*pExportInfo=*/        &__nvoc_export_info_OBJTMR
 };
 
-static void __nvoc_thunk_OBJTMR_intrservRegisterIntrService(OBJGPU *pGpu, struct IntrService *pTmr, IntrServiceRecord pRecords[171]) {
-    tmrRegisterIntrService(pGpu, (struct OBJTMR *)(((unsigned char *)pTmr) - __nvoc_rtti_OBJTMR_IntrService.offset), pRecords);
+// 9 down-thunk(s) defined to bridge methods in OBJTMR from superclasses
+
+// tmrRegisterIntrService: virtual override (intrserv) base (intrserv)
+static void __nvoc_down_thunk_OBJTMR_intrservRegisterIntrService(OBJGPU *pGpu, struct IntrService *pTmr, IntrServiceRecord pRecords[175]) {
+    tmrRegisterIntrService(pGpu, (struct OBJTMR *)(((unsigned char *) pTmr) - __nvoc_rtti_OBJTMR_IntrService.offset), pRecords);
 }
 
-static NvBool __nvoc_thunk_OBJTMR_intrservClearInterrupt(OBJGPU *pGpu, struct IntrService *pTmr, IntrServiceClearInterruptArguments *pParams) {
-    return tmrClearInterrupt(pGpu, (struct OBJTMR *)(((unsigned char *)pTmr) - __nvoc_rtti_OBJTMR_IntrService.offset), pParams);
+// tmrClearInterrupt: virtual override (intrserv) base (intrserv)
+static NvBool __nvoc_down_thunk_OBJTMR_intrservClearInterrupt(OBJGPU *pGpu, struct IntrService *pTmr, IntrServiceClearInterruptArguments *pParams) {
+    return tmrClearInterrupt(pGpu, (struct OBJTMR *)(((unsigned char *) pTmr) - __nvoc_rtti_OBJTMR_IntrService.offset), pParams);
 }
 
-static NvU32 __nvoc_thunk_OBJTMR_intrservServiceInterrupt(OBJGPU *pGpu, struct IntrService *pTmr, IntrServiceServiceInterruptArguments *pParams) {
-    return tmrServiceInterrupt(pGpu, (struct OBJTMR *)(((unsigned char *)pTmr) - __nvoc_rtti_OBJTMR_IntrService.offset), pParams);
+// tmrServiceInterrupt: virtual halified (3 hals) override (intrserv) base (intrserv) body
+static NvU32 __nvoc_down_thunk_OBJTMR_intrservServiceInterrupt(OBJGPU *pGpu, struct IntrService *pTmr, IntrServiceServiceInterruptArguments *pParams) {
+    return tmrServiceInterrupt(pGpu, (struct OBJTMR *)(((unsigned char *) pTmr) - __nvoc_rtti_OBJTMR_IntrService.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_OBJTMR_engstateConstructEngine(OBJGPU *pGpu, struct OBJENGSTATE *pTmr, ENGDESCRIPTOR arg0) {
-    return tmrConstructEngine(pGpu, (struct OBJTMR *)(((unsigned char *)pTmr) - __nvoc_rtti_OBJTMR_OBJENGSTATE.offset), arg0);
+// tmrConstructEngine: virtual override (engstate) base (engstate)
+static NV_STATUS __nvoc_down_thunk_OBJTMR_engstateConstructEngine(OBJGPU *pGpu, struct OBJENGSTATE *pTmr, ENGDESCRIPTOR arg3) {
+    return tmrConstructEngine(pGpu, (struct OBJTMR *)(((unsigned char *) pTmr) - __nvoc_rtti_OBJTMR_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJTMR_engstateStateInitLocked(OBJGPU *pGpu, struct OBJENGSTATE *pTmr) {
-    return tmrStateInitLocked(pGpu, (struct OBJTMR *)(((unsigned char *)pTmr) - __nvoc_rtti_OBJTMR_OBJENGSTATE.offset));
+// tmrStatePreInitLocked: virtual override (engstate) base (engstate)
+static NV_STATUS __nvoc_down_thunk_OBJTMR_engstateStatePreInitLocked(OBJGPU *pGpu, struct OBJENGSTATE *pTmr) {
+    return tmrStatePreInitLocked(pGpu, (struct OBJTMR *)(((unsigned char *) pTmr) - __nvoc_rtti_OBJTMR_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJTMR_engstateStateInitUnlocked(OBJGPU *pGpu, struct OBJENGSTATE *pTmr) {
-    return tmrStateInitUnlocked(pGpu, (struct OBJTMR *)(((unsigned char *)pTmr) - __nvoc_rtti_OBJTMR_OBJENGSTATE.offset));
+// tmrStateInitUnlocked: virtual override (engstate) base (engstate)
+static NV_STATUS __nvoc_down_thunk_OBJTMR_engstateStateInitUnlocked(OBJGPU *pGpu, struct OBJENGSTATE *pTmr) {
+    return tmrStateInitUnlocked(pGpu, (struct OBJTMR *)(((unsigned char *) pTmr) - __nvoc_rtti_OBJTMR_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJTMR_engstateStateLoad(OBJGPU *pGpu, struct OBJENGSTATE *pTmr, NvU32 arg0) {
-    return tmrStateLoad(pGpu, (struct OBJTMR *)(((unsigned char *)pTmr) - __nvoc_rtti_OBJTMR_OBJENGSTATE.offset), arg0);
+// tmrStateLoad: virtual override (engstate) base (engstate)
+static NV_STATUS __nvoc_down_thunk_OBJTMR_engstateStateLoad(OBJGPU *pGpu, struct OBJENGSTATE *pTmr, NvU32 arg3) {
+    return tmrStateLoad(pGpu, (struct OBJTMR *)(((unsigned char *) pTmr) - __nvoc_rtti_OBJTMR_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJTMR_engstateStateUnload(OBJGPU *pGpu, struct OBJENGSTATE *pTmr, NvU32 arg0) {
-    return tmrStateUnload(pGpu, (struct OBJTMR *)(((unsigned char *)pTmr) - __nvoc_rtti_OBJTMR_OBJENGSTATE.offset), arg0);
+// tmrStateUnload: virtual override (engstate) base (engstate)
+static NV_STATUS __nvoc_down_thunk_OBJTMR_engstateStateUnload(OBJGPU *pGpu, struct OBJENGSTATE *pTmr, NvU32 arg3) {
+    return tmrStateUnload(pGpu, (struct OBJTMR *)(((unsigned char *) pTmr) - __nvoc_rtti_OBJTMR_OBJENGSTATE.offset), arg3);
 }
 
-static void __nvoc_thunk_OBJTMR_engstateStateDestroy(OBJGPU *pGpu, struct OBJENGSTATE *pTmr) {
-    tmrStateDestroy(pGpu, (struct OBJTMR *)(((unsigned char *)pTmr) - __nvoc_rtti_OBJTMR_OBJENGSTATE.offset));
+// tmrStateDestroy: virtual override (engstate) base (engstate)
+static void __nvoc_down_thunk_OBJTMR_engstateStateDestroy(OBJGPU *pGpu, struct OBJENGSTATE *pTmr) {
+    tmrStateDestroy(pGpu, (struct OBJTMR *)(((unsigned char *) pTmr) - __nvoc_rtti_OBJTMR_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_IntrService_tmrServiceNotificationInterrupt(OBJGPU *pGpu, struct OBJTMR *pIntrService, IntrServiceServiceNotificationInterruptArguments *pParams) {
-    return intrservServiceNotificationInterrupt(pGpu, (struct IntrService *)(((unsigned char *)pIntrService) + __nvoc_rtti_OBJTMR_IntrService.offset), pParams);
+
+// 9 up-thunk(s) defined to bridge methods in OBJTMR to superclasses
+
+// tmrInitMissing: virtual inherited (engstate) base (engstate)
+static void __nvoc_up_thunk_OBJENGSTATE_tmrInitMissing(POBJGPU pGpu, struct OBJTMR *pEngstate) {
+    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJTMR_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_tmrStatePreLoad(POBJGPU pGpu, struct OBJTMR *pEngstate, NvU32 arg0) {
-    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJTMR_OBJENGSTATE.offset), arg0);
+// tmrStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_tmrStatePreInitUnlocked(POBJGPU pGpu, struct OBJTMR *pEngstate) {
+    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJTMR_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_tmrStatePostUnload(POBJGPU pGpu, struct OBJTMR *pEngstate, NvU32 arg0) {
-    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJTMR_OBJENGSTATE.offset), arg0);
+// tmrStateInitLocked: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_tmrStateInitLocked(POBJGPU pGpu, struct OBJTMR *pEngstate) {
+    return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJTMR_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_tmrStatePreUnload(POBJGPU pGpu, struct OBJTMR *pEngstate, NvU32 arg0) {
-    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJTMR_OBJENGSTATE.offset), arg0);
+// tmrStatePreLoad: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_tmrStatePreLoad(POBJGPU pGpu, struct OBJTMR *pEngstate, NvU32 arg3) {
+    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJTMR_OBJENGSTATE.offset), arg3);
 }
 
-static void __nvoc_thunk_OBJENGSTATE_tmrInitMissing(POBJGPU pGpu, struct OBJTMR *pEngstate) {
-    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJTMR_OBJENGSTATE.offset));
+// tmrStatePostLoad: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_tmrStatePostLoad(POBJGPU pGpu, struct OBJTMR *pEngstate, NvU32 arg3) {
+    return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJTMR_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_tmrStatePreInitLocked(POBJGPU pGpu, struct OBJTMR *pEngstate) {
-    return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJTMR_OBJENGSTATE.offset));
+// tmrStatePreUnload: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_tmrStatePreUnload(POBJGPU pGpu, struct OBJTMR *pEngstate, NvU32 arg3) {
+    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJTMR_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_tmrStatePreInitUnlocked(POBJGPU pGpu, struct OBJTMR *pEngstate) {
-    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJTMR_OBJENGSTATE.offset));
+// tmrStatePostUnload: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_tmrStatePostUnload(POBJGPU pGpu, struct OBJTMR *pEngstate, NvU32 arg3) {
+    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJTMR_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_tmrStatePostLoad(POBJGPU pGpu, struct OBJTMR *pEngstate, NvU32 arg0) {
-    return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJTMR_OBJENGSTATE.offset), arg0);
+// tmrIsPresent: virtual inherited (engstate) base (engstate)
+static NvBool __nvoc_up_thunk_OBJENGSTATE_tmrIsPresent(POBJGPU pGpu, struct OBJTMR *pEngstate) {
+    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJTMR_OBJENGSTATE.offset));
 }
 
-static NvBool __nvoc_thunk_OBJENGSTATE_tmrIsPresent(POBJGPU pGpu, struct OBJTMR *pEngstate) {
-    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJTMR_OBJENGSTATE.offset));
+// tmrServiceNotificationInterrupt: virtual inherited (intrserv) base (intrserv)
+static NV_STATUS __nvoc_up_thunk_IntrService_tmrServiceNotificationInterrupt(OBJGPU *pGpu, struct OBJTMR *pIntrService, IntrServiceServiceNotificationInterruptArguments *pParams) {
+    return intrservServiceNotificationInterrupt(pGpu, (struct IntrService *)(((unsigned char *) pIntrService) + __nvoc_rtti_OBJTMR_IntrService.offset), pParams);
 }
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJTMR = 
 {
@@ -237,6 +261,7 @@ __nvoc_ctor_OBJTMR_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_OBJTMR_1(OBJTMR *pThis, RmHalspecOwner *pRmhalspecowner) {
     ChipHal *chipHal = &pRmhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
@@ -249,7 +274,7 @@ static void __nvoc_init_funcTable_OBJTMR_1(OBJTMR *pThis, RmHalspecOwner *pRmhal
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
-    // Hal function -- tmrDelay
+    // tmrDelay -- halified (2 hals)
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__tmrDelay__ = &tmrDelay_PTIMER;
@@ -259,11 +284,15 @@ static void __nvoc_init_funcTable_OBJTMR_1(OBJTMR *pThis, RmHalspecOwner *pRmhal
         pThis->__tmrDelay__ = &tmrDelay_OSTIMER;
     }
 
+    // tmrRegisterIntrService -- virtual override (intrserv) base (intrserv)
     pThis->__tmrRegisterIntrService__ = &tmrRegisterIntrService_IMPL;
+    pThis->__nvoc_base_IntrService.__intrservRegisterIntrService__ = &__nvoc_down_thunk_OBJTMR_intrservRegisterIntrService;
 
+    // tmrClearInterrupt -- virtual override (intrserv) base (intrserv)
     pThis->__tmrClearInterrupt__ = &tmrClearInterrupt_IMPL;
+    pThis->__nvoc_base_IntrService.__intrservClearInterrupt__ = &__nvoc_down_thunk_OBJTMR_intrservClearInterrupt;
 
-    // Hal function -- tmrServiceInterrupt
+    // tmrServiceInterrupt -- virtual halified (3 hals) override (intrserv) base (intrserv) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
@@ -279,20 +308,33 @@ static void __nvoc_init_funcTable_OBJTMR_1(OBJTMR *pThis, RmHalspecOwner *pRmhal
     {
         pThis->__tmrServiceInterrupt__ = &tmrServiceInterrupt_56cd7a;
     }
+    pThis->__nvoc_base_IntrService.__intrservServiceInterrupt__ = &__nvoc_down_thunk_OBJTMR_intrservServiceInterrupt;
 
+    // tmrConstructEngine -- virtual override (engstate) base (engstate)
     pThis->__tmrConstructEngine__ = &tmrConstructEngine_IMPL;
+    pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_down_thunk_OBJTMR_engstateConstructEngine;
 
-    pThis->__tmrStateInitLocked__ = &tmrStateInitLocked_IMPL;
+    // tmrStatePreInitLocked -- virtual override (engstate) base (engstate)
+    pThis->__tmrStatePreInitLocked__ = &tmrStatePreInitLocked_IMPL;
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStatePreInitLocked__ = &__nvoc_down_thunk_OBJTMR_engstateStatePreInitLocked;
 
+    // tmrStateInitUnlocked -- virtual override (engstate) base (engstate)
     pThis->__tmrStateInitUnlocked__ = &tmrStateInitUnlocked_IMPL;
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStateInitUnlocked__ = &__nvoc_down_thunk_OBJTMR_engstateStateInitUnlocked;
 
+    // tmrStateLoad -- virtual override (engstate) base (engstate)
     pThis->__tmrStateLoad__ = &tmrStateLoad_IMPL;
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStateLoad__ = &__nvoc_down_thunk_OBJTMR_engstateStateLoad;
 
+    // tmrStateUnload -- virtual override (engstate) base (engstate)
     pThis->__tmrStateUnload__ = &tmrStateUnload_IMPL;
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStateUnload__ = &__nvoc_down_thunk_OBJTMR_engstateStateUnload;
 
+    // tmrStateDestroy -- virtual override (engstate) base (engstate)
     pThis->__tmrStateDestroy__ = &tmrStateDestroy_IMPL;
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStateDestroy__ = &__nvoc_down_thunk_OBJTMR_engstateStateDestroy;
 
-    // Hal function -- tmrSetCurrentTime
+    // tmrSetCurrentTime -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__tmrSetCurrentTime__ = &tmrSetCurrentTime_56cd7a;
@@ -309,7 +351,7 @@ static void __nvoc_init_funcTable_OBJTMR_1(OBJTMR *pThis, RmHalspecOwner *pRmhal
         }
     }
 
-    // Hal function -- tmrGetTimeLo
+    // tmrGetTimeLo -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__tmrGetTimeLo__ = &tmrGetTimeLo_GM107;
@@ -319,7 +361,7 @@ static void __nvoc_init_funcTable_OBJTMR_1(OBJTMR *pThis, RmHalspecOwner *pRmhal
         pThis->__tmrGetTimeLo__ = &tmrGetTimeLo_cf0499;
     }
 
-    // Hal function -- tmrGetTime
+    // tmrGetTime -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__tmrGetTime__ = &tmrGetTime_GM107;
@@ -329,7 +371,7 @@ static void __nvoc_init_funcTable_OBJTMR_1(OBJTMR *pThis, RmHalspecOwner *pRmhal
         pThis->__tmrGetTime__ = &tmrGetTime_fa6bbe;
     }
 
-    // Hal function -- tmrGetTimeEx
+    // tmrGetTimeEx -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__tmrGetTimeEx__ = &tmrGetTimeEx_GH100;
@@ -339,7 +381,7 @@ static void __nvoc_init_funcTable_OBJTMR_1(OBJTMR *pThis, RmHalspecOwner *pRmhal
         pThis->__tmrGetTimeEx__ = &tmrGetTimeEx_GM107;
     }
 
-    // Hal function -- tmrSetCountdownIntrDisable
+    // tmrSetCountdownIntrDisable -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__tmrSetCountdownIntrDisable__ = &tmrSetCountdownIntrDisable_56cd7a;
@@ -349,7 +391,7 @@ static void __nvoc_init_funcTable_OBJTMR_1(OBJTMR *pThis, RmHalspecOwner *pRmhal
         pThis->__tmrSetCountdownIntrDisable__ = &tmrSetCountdownIntrDisable_GM200;
     }
 
-    // Hal function -- tmrSetCountdown
+    // tmrSetCountdown -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__tmrSetCountdown__ = &tmrSetCountdown_GH100;
@@ -359,7 +401,7 @@ static void __nvoc_init_funcTable_OBJTMR_1(OBJTMR *pThis, RmHalspecOwner *pRmhal
         pThis->__tmrSetCountdown__ = &tmrSetCountdown_TU102;
     }
 
-    // Hal function -- tmrGrTickFreqChange
+    // tmrGrTickFreqChange -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__tmrGrTickFreqChange__ = &tmrGrTickFreqChange_46f6a7;
@@ -369,7 +411,7 @@ static void __nvoc_init_funcTable_OBJTMR_1(OBJTMR *pThis, RmHalspecOwner *pRmhal
         pThis->__tmrGrTickFreqChange__ = &tmrGrTickFreqChange_GM107;
     }
 
-    // Hal function -- tmrGetGpuPtimerOffset
+    // tmrGetGpuPtimerOffset -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
     {
         pThis->__tmrGetGpuPtimerOffset__ = &tmrGetGpuPtimerOffset_TU102;
@@ -379,44 +421,39 @@ static void __nvoc_init_funcTable_OBJTMR_1(OBJTMR *pThis, RmHalspecOwner *pRmhal
         pThis->__tmrGetGpuPtimerOffset__ = &tmrGetGpuPtimerOffset_GA100;
     }
 
-    pThis->__nvoc_base_IntrService.__intrservRegisterIntrService__ = &__nvoc_thunk_OBJTMR_intrservRegisterIntrService;
+    // tmrInitMissing -- virtual inherited (engstate) base (engstate)
+    pThis->__tmrInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_tmrInitMissing;
 
-    pThis->__nvoc_base_IntrService.__intrservClearInterrupt__ = &__nvoc_thunk_OBJTMR_intrservClearInterrupt;
+    // tmrStatePreInitUnlocked -- virtual inherited (engstate) base (engstate)
+    pThis->__tmrStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_tmrStatePreInitUnlocked;
 
-    pThis->__nvoc_base_IntrService.__intrservServiceInterrupt__ = &__nvoc_thunk_OBJTMR_intrservServiceInterrupt;
+    // tmrStateInitLocked -- virtual inherited (engstate) base (engstate)
+    pThis->__tmrStateInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_tmrStateInitLocked;
 
-    pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_thunk_OBJTMR_engstateConstructEngine;
+    // tmrStatePreLoad -- virtual inherited (engstate) base (engstate)
+    pThis->__tmrStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_tmrStatePreLoad;
 
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__ = &__nvoc_thunk_OBJTMR_engstateStateInitLocked;
+    // tmrStatePostLoad -- virtual inherited (engstate) base (engstate)
+    pThis->__tmrStatePostLoad__ = &__nvoc_up_thunk_OBJENGSTATE_tmrStatePostLoad;
 
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStateInitUnlocked__ = &__nvoc_thunk_OBJTMR_engstateStateInitUnlocked;
+    // tmrStatePreUnload -- virtual inherited (engstate) base (engstate)
+    pThis->__tmrStatePreUnload__ = &__nvoc_up_thunk_OBJENGSTATE_tmrStatePreUnload;
 
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStateLoad__ = &__nvoc_thunk_OBJTMR_engstateStateLoad;
+    // tmrStatePostUnload -- virtual inherited (engstate) base (engstate)
+    pThis->__tmrStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_tmrStatePostUnload;
 
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStateUnload__ = &__nvoc_thunk_OBJTMR_engstateStateUnload;
+    // tmrIsPresent -- virtual inherited (engstate) base (engstate)
+    pThis->__tmrIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_tmrIsPresent;
 
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStateDestroy__ = &__nvoc_thunk_OBJTMR_engstateStateDestroy;
+    // tmrServiceNotificationInterrupt -- virtual inherited (intrserv) base (intrserv)
+    pThis->__tmrServiceNotificationInterrupt__ = &__nvoc_up_thunk_IntrService_tmrServiceNotificationInterrupt;
+} // End __nvoc_init_funcTable_OBJTMR_1 with approximately 48 basic block(s).
 
-    pThis->__tmrServiceNotificationInterrupt__ = &__nvoc_thunk_IntrService_tmrServiceNotificationInterrupt;
 
-    pThis->__tmrStatePreLoad__ = &__nvoc_thunk_OBJENGSTATE_tmrStatePreLoad;
-
-    pThis->__tmrStatePostUnload__ = &__nvoc_thunk_OBJENGSTATE_tmrStatePostUnload;
-
-    pThis->__tmrStatePreUnload__ = &__nvoc_thunk_OBJENGSTATE_tmrStatePreUnload;
-
-    pThis->__tmrInitMissing__ = &__nvoc_thunk_OBJENGSTATE_tmrInitMissing;
-
-    pThis->__tmrStatePreInitLocked__ = &__nvoc_thunk_OBJENGSTATE_tmrStatePreInitLocked;
-
-    pThis->__tmrStatePreInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_tmrStatePreInitUnlocked;
-
-    pThis->__tmrStatePostLoad__ = &__nvoc_thunk_OBJENGSTATE_tmrStatePostLoad;
-
-    pThis->__tmrIsPresent__ = &__nvoc_thunk_OBJENGSTATE_tmrIsPresent;
-}
-
+// Initialize vtable(s) for 27 virtual method(s).
 void __nvoc_init_funcTable_OBJTMR(OBJTMR *pThis, RmHalspecOwner *pRmhalspecowner) {
+
+    // Initialize vtable(s) with 27 per-object function pointer(s).
     __nvoc_init_funcTable_OBJTMR_1(pThis, pRmhalspecowner);
 }
 

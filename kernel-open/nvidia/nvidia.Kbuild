@@ -195,6 +195,7 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += devm_clk_bulk_get_all
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += get_task_ioprio
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += mdev_set_iommu_device
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += offline_and_remove_memory
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += stack_trace
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += crypto_tfm_ctx_aligned
 
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_of_node_to_nid
@@ -227,6 +228,8 @@ NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_tsec_comms_clear_in
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_tsec_comms_alloc_mem_from_gscco
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_tsec_comms_free_gscco_mem
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_memory_block_size_bytes
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_tegra_platform_is_fpga
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_tegra_platform_is_sim
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += crypto
 
 NV_CONFTEST_TYPE_COMPILE_TESTS += dma_ops
@@ -251,6 +254,7 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += pci_driver_has_driver_managed_dma
 NV_CONFTEST_TYPE_COMPILE_TESTS += vm_area_struct_has_const_vm_flags
 NV_CONFTEST_TYPE_COMPILE_TESTS += memory_failure_has_trapno_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += foll_longterm_present
+NV_CONFTEST_TYPE_COMPILE_TESTS += bus_type_has_iommu_ops
 
 NV_CONFTEST_GENERIC_COMPILE_TESTS += dom0_kernel_present
 NV_CONFTEST_GENERIC_COMPILE_TESTS += nvidia_vgpu_kvm_build

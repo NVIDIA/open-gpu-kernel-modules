@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -834,10 +834,12 @@ _kgmmuCopyFaultPktInShadowBuf_GV100
                 // Non-Replayable copies always need to succeed.
                 //
                 NV_ASSERT_OR_RETURN(type == REPLAYABLE_FAULT_BUFFER, NV_ERR_INVALID_STATE);
+
                 if (shadowBufPutIndex != origShadowBufPutIndex)
                 {
                     goto update_client_put;
                 }
+
 
                 // Signal the caller that no copies have taken place.
                 return NV_WARN_NOTHING_TO_DO;

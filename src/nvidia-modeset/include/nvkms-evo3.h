@@ -29,6 +29,8 @@
 #include "nvkms-softfloat.h"
 #include <class/clc57d.h> // NVC57D_CORE_CHANNEL_DMA
 
+#include <ctrl/ctrlc372/ctrlc372chnc.h>
+
 #define NV_EVO3_X_EMULATED_SURFACE_MEMORY_FORMATS_C6        \
     (NVBIT64(NvKmsSurfaceMemoryFormatRF16GF16BF16XF16) |    \
      NVBIT64(NvKmsSurfaceMemoryFormatX2B10G10R10))
@@ -105,6 +107,15 @@ NvBool nvEvoSetUsageBoundsC5(NVDevEvoPtr pDevEvo, NvU32 sd, NvU32 head,
 void nvEvoUpdateC3(NVDevEvoPtr pDevEvo,
                         const NVEvoUpdateState *updateState,
                         NvBool releaseElv);
+
+NvBool
+nvEvoSetCtrlIsModePossibleParams3(NVDispEvoPtr pDispEvo,
+                                  const NVEvoIsModePossibleDispInput *pInput,
+                                  NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS *pImp);
+void
+nvEvoSetIsModePossibleDispOutput3(const NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS *pImp,
+                                  const NvBool result,
+                                  NVEvoIsModePossibleDispOutput *pOutput);
 
 void
 nvEvoIsModePossibleC3(NVDispEvoPtr pDispEvo,

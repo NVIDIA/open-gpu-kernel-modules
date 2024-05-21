@@ -110,10 +110,13 @@ __nvoc_ctor_OBJRCDB_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_OBJRCDB_1(OBJRCDB *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-}
+} // End __nvoc_init_funcTable_OBJRCDB_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_OBJRCDB(OBJRCDB *pThis) {
     __nvoc_init_funcTable_OBJRCDB_1(pThis);
 }

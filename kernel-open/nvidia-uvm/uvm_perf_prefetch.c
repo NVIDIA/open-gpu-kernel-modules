@@ -162,7 +162,7 @@ static void grow_fault_granularity_if_no_thrashing(uvm_perf_prefetch_bitmap_tree
 }
 
 static void grow_fault_granularity(uvm_perf_prefetch_bitmap_tree_t *bitmap_tree,
-                                   NvU32 big_page_size,
+                                   NvU64 big_page_size,
                                    uvm_va_block_region_t big_pages_region,
                                    uvm_va_block_region_t max_prefetch_region,
                                    const uvm_page_mask_t *faulted_pages,
@@ -245,7 +245,7 @@ static void update_bitmap_tree_from_va_block(uvm_perf_prefetch_bitmap_tree_t *bi
                                              uvm_va_block_region_t max_prefetch_region)
 
 {
-    NvU32 big_page_size;
+    NvU64 big_page_size;
     uvm_va_block_region_t big_pages_region;
     uvm_va_space_t *va_space;
     const uvm_page_mask_t *thrashing_pages;

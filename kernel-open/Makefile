@@ -28,7 +28,7 @@ else
   else
     KERNEL_UNAME ?= $(shell uname -r)
     KERNEL_MODLIB := /lib/modules/$(KERNEL_UNAME)
-    KERNEL_SOURCES := $(shell test -d $(KERNEL_MODLIB)/source && echo $(KERNEL_MODLIB)/source || echo $(KERNEL_MODLIB)/build)
+    KERNEL_SOURCES := $(shell ((test -d $(KERNEL_MODLIB)/source && echo $(KERNEL_MODLIB)/source) || (test -d $(KERNEL_MODLIB)/build/source && echo $(KERNEL_MODLIB)/build/source)) || echo $(KERNEL_MODLIB)/build)
   endif
 
   KERNEL_OUTPUT := $(KERNEL_SOURCES)
@@ -42,7 +42,11 @@ else
   else
     KERNEL_UNAME ?= $(shell uname -r)
     KERNEL_MODLIB := /lib/modules/$(KERNEL_UNAME)
-    ifeq ($(KERNEL_SOURCES), $(KERNEL_MODLIB)/source)
+    # $(filter patter...,text) - Returns all whitespace-separated words in text that
+    # do match any of the pattern words, removing any words that do not match.
+    # Set the KERNEL_OUTPUT only if either $(KERNEL_MODLIB)/source or
+    # $(KERNEL_MODLIB)/build/source path matches the KERNEL_SOURCES.
+    ifneq ($(filter $(KERNEL_SOURCES),$(KERNEL_MODLIB)/source $(KERNEL_MODLIB)/build/source),)
       KERNEL_OUTPUT := $(KERNEL_MODLIB)/build
       KBUILD_PARAMS := KBUILD_OUTPUT=$(KERNEL_OUTPUT)
     endif

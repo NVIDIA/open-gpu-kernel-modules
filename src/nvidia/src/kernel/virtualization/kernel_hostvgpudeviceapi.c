@@ -115,6 +115,7 @@ kernelhostvgpudeviceapiConstruct_IMPL
                                    pAllocParams->vgpuDeviceInstanceId,
                                    pAllocParams->bDisableDefaultSmcExecPartRestore,
                                    pAllocParams->placementId,
+                                   pAllocParams->vgpuDevName,
                                    &pKernelHostVgpuDevice);
     if (status != NV_OK)
     {
@@ -371,9 +372,8 @@ kernelhostvgpudeviceapiCopyConstruct_IMPL
 void
 destroyKernelHostVgpuDeviceShare(OBJGPU *pGpu, KernelHostVgpuDeviceShr* pShare)
 {
-
     NV_CHECK_OR_RETURN_VOID(LEVEL_NOTICE, pShare != NULL);
-    
+
     KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice = pShare->pDevice;
     RsShared *pShared = staticCast(pShare, RsShared);
     NvS32 refCount;

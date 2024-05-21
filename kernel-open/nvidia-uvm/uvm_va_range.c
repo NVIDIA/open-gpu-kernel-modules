@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -1853,7 +1853,7 @@ NV_STATUS uvm_api_alloc_semaphore_pool(UVM_ALLOC_SEMAPHORE_POOL_PARAMS *params, 
 
     if (uvm_api_range_invalid(params->base, params->length))
         return NV_ERR_INVALID_ADDRESS;
-    if (params->gpuAttributesCount > UVM_MAX_GPUS_V2)
+    if (params->gpuAttributesCount > UVM_MAX_GPUS)
         return NV_ERR_INVALID_ARGUMENT;
 
     if (g_uvm_global.conf_computing_enabled && params->gpuAttributesCount == 0)

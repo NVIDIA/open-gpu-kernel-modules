@@ -373,18 +373,14 @@ static int nv_drm_create_properties(struct nv_drm_device *nv_dev)
         len++;
     }
 
-#if defined(NV_LINUX_NVHOST_H_PRESENT) && defined(CONFIG_TEGRA_GRHOST)
-    if (!nv_dev->supportsSyncpts) {
-        return 0;
+    if (nv_dev->supportsSyncpts) {
+        nv_dev->nv_out_fence_property =
+            drm_property_create_range(nv_dev->dev, DRM_MODE_PROP_ATOMIC,
+                    "NV_DRM_OUT_FENCE_PTR", 0, U64_MAX);
+        if (nv_dev->nv_out_fence_property == NULL) {
+            return -ENOMEM;
+        }
     }
-
-    nv_dev->nv_out_fence_property =
-        drm_property_create_range(nv_dev->dev, DRM_MODE_PROP_ATOMIC,
-            "NV_DRM_OUT_FENCE_PTR", 0, U64_MAX);
-    if (nv_dev->nv_out_fence_property == NULL) {
-        return -ENOMEM;
-    }
-#endif
 
     nv_dev->nv_input_colorspace_property =
         drm_property_create_enum(nv_dev->dev, 0, "NV_INPUT_COLORSPACE",
@@ -479,6 +475,22 @@ static int nv_drm_load(struct drm_device *dev, unsigned long flags)
             "Failed to query NvKmsKapiDevice resources info");
         return -ENODEV;
     }
+
+#if defined(NV_DRM_FBDEV_GENERIC_AVAILABLE)
+    /*
+     * If fbdev is enabled, take modeset ownership now before other DRM clients
+     * can take master (and thus NVKMS ownership).
+     */
+    if (nv_drm_fbdev_module_param) {
+        if (!nvKms->grabOwnership(pDevice)) {
+            nvKms->freeDevice(pDevice);
+            NV_DRM_DEV_LOG_ERR(nv_dev, "Failed to grab NVKMS modeset ownership");
+            return -EBUSY;
+        }
+
+        nv_dev->hasFramebufferConsole = NV_TRUE;
+    }
+#endif
 
     mutex_lock(&nv_dev->lock);
 
@@ -589,6 +601,15 @@ static void __nv_drm_unload(struct drm_device *dev)
     if (!drm_core_check_feature(dev, DRIVER_MODESET)) {
         return;
     }
+
+    /* Release modeset ownership if fbdev is enabled */
+
+#if defined(NV_DRM_FBDEV_GENERIC_AVAILABLE)
+    if (nv_dev->hasFramebufferConsole) {
+        drm_atomic_helper_shutdown(dev);
+        nvKms->releaseOwnership(nv_dev->pDevice);
+    }
+#endif
 
     cancel_delayed_work_sync(&nv_dev->hotplug_event_work);
     mutex_lock(&nv_dev->lock);
@@ -778,6 +799,14 @@ static int nv_drm_get_dev_info_ioctl(struct drm_device *dev,
     }
 #endif /* defined(NV_DRM_ATOMIC_MODESET_AVAILABLE) */
 
+    return 0;
+}
+
+static int nv_drm_get_drm_file_unique_id_ioctl(struct drm_device *dev,
+                                               void *data, struct drm_file *filep)
+{
+    struct drm_nvidia_get_drm_file_unique_id_params *params = data;
+    params->id = (u64)(filep->driver_priv);
     return 0;
 }
 
@@ -1279,6 +1308,17 @@ static void nv_drm_postclose(struct drm_device *dev, struct drm_file *filep)
 }
 #endif /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
 
+static int nv_drm_open(struct drm_device *dev, struct drm_file *filep)
+{
+    _Static_assert(sizeof(filep->driver_priv) >= sizeof(u64),
+                   "filep->driver_priv can not hold an u64");
+    static atomic64_t id = ATOMIC_INIT(0);
+
+    filep->driver_priv = (void *)atomic64_inc_return(&id);
+
+    return 0;
+}
+
 #if defined(NV_DRM_MASTER_HAS_LEASES)
 static struct drm_master *nv_drm_find_lessee(struct drm_master *master,
                                              int lessee_id)
@@ -1522,6 +1562,9 @@ static const struct drm_ioctl_desc nv_drm_ioctls[] = {
     DRM_IOCTL_DEF_DRV(NVIDIA_GET_DEV_INFO,
                       nv_drm_get_dev_info_ioctl,
                       DRM_RENDER_ALLOW|DRM_UNLOCKED),
+    DRM_IOCTL_DEF_DRV(NVIDIA_GET_DRM_FILE_UNIQUE_ID,
+                      nv_drm_get_drm_file_unique_id_ioctl,
+                      DRM_RENDER_ALLOW|DRM_UNLOCKED),
 
 #if defined(NV_DRM_FENCE_AVAILABLE)
     DRM_IOCTL_DEF_DRV(NVIDIA_FENCE_SUPPORTED,
@@ -1605,6 +1648,9 @@ static struct drm_driver nv_drm_driver = {
 #if defined(NV_DRM_DRIVER_PRIME_FLAG_PRESENT)
                                DRIVER_PRIME |
 #endif
+#if defined(NV_DRM_SYNCOBJ_FEATURES_PRESENT)
+                               DRIVER_SYNCOBJ | DRIVER_SYNCOBJ_TIMELINE |
+#endif
                                DRIVER_GEM  | DRIVER_RENDER,
 
 #if defined(NV_DRM_DRIVER_HAS_GEM_FREE_OBJECT)
@@ -1615,14 +1661,14 @@ static struct drm_driver nv_drm_driver = {
     .num_ioctls             = ARRAY_SIZE(nv_drm_ioctls),
 
 /*
- * linux-next commit 71a7974ac701 ("drm/prime: Unexport helpers for fd/handle
- * conversion") unexports drm_gem_prime_handle_to_fd() and
+ * Linux kernel v6.6 commit 71a7974ac701 ("drm/prime: Unexport helpers
+ * for fd/handle conversion") unexports drm_gem_prime_handle_to_fd() and
  * drm_gem_prime_fd_to_handle().
  *
- * Prior linux-next commit 6b85aa68d9d5 ("drm: Enable PRIME import/export for
- * all drivers") made these helpers the default when .prime_handle_to_fd /
- * .prime_fd_to_handle are unspecified, so it's fine to just skip specifying
- * them if the helpers aren't present.
+ * Prior Linux kernel v6.6 commit 6b85aa68d9d5 ("drm: Enable PRIME
+ * import/export for all drivers") made these helpers the default when
+ * .prime_handle_to_fd / .prime_fd_to_handle are unspecified, so it's fine
+ * to just skip specifying them if the helpers aren't present.
  */
 #if NV_IS_EXPORT_SYMBOL_PRESENT_drm_gem_prime_handle_to_fd
     .prime_handle_to_fd     = drm_gem_prime_handle_to_fd,
@@ -1656,6 +1702,7 @@ static struct drm_driver nv_drm_driver = {
 #if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
     .postclose              = nv_drm_postclose,
 #endif
+    .open                   = nv_drm_open,
 
     .fops                   = &nv_drm_fops,
 
@@ -1714,6 +1761,7 @@ void nv_drm_register_drm_device(const nv_gpu_info_t *gpu_info)
     struct nv_drm_device *nv_dev = NULL;
     struct drm_device *dev = NULL;
     struct device *device = gpu_info->os_device_ptr;
+    bool bus_is_pci;
 
     DRM_DEBUG(
         "Registering device for NVIDIA GPU ID 0x08%x",
@@ -1747,7 +1795,7 @@ void nv_drm_register_drm_device(const nv_gpu_info_t *gpu_info)
     dev->dev_private = nv_dev;
     nv_dev->dev = dev;
 
-    bool bus_is_pci =
+    bus_is_pci =
 #if defined(NV_LINUX)
         device->bus == &pci_bus_type;
 #elif defined(NV_BSD)
@@ -1771,11 +1819,6 @@ void nv_drm_register_drm_device(const nv_gpu_info_t *gpu_info)
     if (nv_drm_fbdev_module_param &&
         drm_core_check_feature(dev, DRIVER_MODESET)) {
 
-        if (!nvKms->grabOwnership(nv_dev->pDevice)) {
-            NV_DRM_DEV_LOG_ERR(nv_dev, "Failed to grab NVKMS modeset ownership");
-            goto failed_grab_ownership;
-        }
-
         if (bus_is_pci) {
             struct pci_dev *pdev = to_pci_dev(device);
 
@@ -1786,8 +1829,6 @@ void nv_drm_register_drm_device(const nv_gpu_info_t *gpu_info)
 #endif
         }
         drm_fbdev_generic_setup(dev, 32);
-
-        nv_dev->hasFramebufferConsole = NV_TRUE;
     }
 #endif /* defined(NV_DRM_FBDEV_GENERIC_AVAILABLE) */
 
@@ -1797,12 +1838,6 @@ void nv_drm_register_drm_device(const nv_gpu_info_t *gpu_info)
     dev_list = nv_dev;
 
     return; /* Success */
-
-#if defined(NV_DRM_FBDEV_GENERIC_AVAILABLE)
-failed_grab_ownership:
-
-    drm_dev_unregister(dev);
-#endif
 
 failed_drm_register:
 
@@ -1870,12 +1905,6 @@ void nv_drm_remove_devices(void)
         struct nv_drm_device *next = dev_list->next;
         struct drm_device *dev = dev_list->dev;
 
-#if defined(NV_DRM_FBDEV_GENERIC_AVAILABLE)
-        if (dev_list->hasFramebufferConsole) {
-            drm_atomic_helper_shutdown(dev);
-            nvKms->releaseOwnership(dev_list->pDevice);
-        }
-#endif
         drm_dev_unregister(dev);
         nv_drm_dev_free(dev);
 

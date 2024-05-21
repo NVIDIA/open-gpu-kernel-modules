@@ -377,8 +377,6 @@ static NVT_STATUS parseDisplayIdColorChar(NvU8 * block, NVT_DISPLAYID_INFO *pInf
 
     if ((prim_num + wp_num) * sizeof(DISPLAYID_COLOR_POINT) + 1 != blk->header.data_bytes)
     {
-        // Assert since this error is ignored
-        nvt_assert(0);
         return NVT_STATUS_ERR;
     }
 
@@ -416,8 +414,6 @@ static NVT_STATUS parseDisplayIdProdIdentityBlock(NvU8 * block, NVT_DISPLAYID_IN
     DISPLAYID_PROD_IDENTIFICATION_BLOCK * blk = (DISPLAYID_PROD_IDENTIFICATION_BLOCK *)block;
     if (blk->header.data_bytes - blk->productid_string_size != NVT_DISPLAYID_PRODUCT_IDENTITY_MIN_LEN)
     {
-        // Assert since this error is ignored
-        nvt_assert(0);
         return NVT_STATUS_ERR;
     }
 
@@ -442,8 +438,6 @@ static NVT_STATUS parseDisplayIdParam(NvU8 * block, NVT_DISPLAYID_INFO *pInfo)
     DISPLAYID_DISPLAY_PARAM_BLOCK * blk = (DISPLAYID_DISPLAY_PARAM_BLOCK *)block;
     if (blk->header.data_bytes != NVT_DISPLAYID_DISPLAY_PARAM_BLOCK_LEN)
     {
-        // Assert since this error is ignored
-        nvt_assert(0);
         return NVT_STATUS_ERR;
     }
 
@@ -479,8 +473,6 @@ static NVT_STATUS parseDisplayIdTiming1(NvU8 * block, NVT_EDID_INFO *pEdidInfo)
     DISPLAYID_TIMING_1_BLOCK * blk = (DISPLAYID_TIMING_1_BLOCK *)block;
     if (blk->header.data_bytes % sizeof(DISPLAYID_TIMING_1_DESCRIPTOR) != 0)
     {
-        // Assert since this error is ignored
-        nvt_assert(0);
         return NVT_STATUS_ERR;
     }
 
@@ -607,8 +599,6 @@ static NVT_STATUS parseDisplayIdTiming2(NvU8 * block, NVT_EDID_INFO *pEdidInfo)
 
     if (blk->header.data_bytes % sizeof(DISPLAYID_TIMING_2_DESCRIPTOR) != 0)
     {
-        // Assert since this error is ignored
-        nvt_assert(0);
         return NVT_STATUS_ERR;
     }
 
@@ -766,8 +756,6 @@ static NVT_STATUS parseDisplayIdTiming3(NvU8 * block, NVT_EDID_INFO *pEdidInfo)
 
     if (blk->header.data_bytes % sizeof(DISPLAYID_TIMING_3_DESCRIPTOR) != 0)
     {
-        // Assert since this error is ignored
-        nvt_assert(0);
         return NVT_STATUS_ERR;
     }
 
@@ -801,8 +789,6 @@ static NVT_STATUS parseDisplayIdTiming4(NvU8 * block, NVT_EDID_INFO *pEdidInfo)
     DISPLAYID_TIMING_4_BLOCK * blk = (DISPLAYID_TIMING_4_BLOCK *)block;
     if (blk->header.data_bytes < 1 || blk->header.data_bytes > NVT_DISPLAYID_DATABLOCK_MAX_PAYLOAD_LEN)
     {
-        // Assert since this error is ignored
-        nvt_assert(0);
         return NVT_STATUS_ERR;
     }
 
@@ -857,8 +843,6 @@ static NVT_STATUS parseDisplayIdTiming5(NvU8 * block, NVT_EDID_INFO *pEdidInfo)
     DISPLAYID_TIMING_5_BLOCK * blk = (DISPLAYID_TIMING_5_BLOCK *)block;
     if (blk->header.data_bytes < 1 || blk->header.data_bytes > NVT_DISPLAYID_DATABLOCK_MAX_PAYLOAD_LEN)
     {
-        // Assert since this error is ignored
-        nvt_assert(0);
         return NVT_STATUS_ERR;
     }
     for (i = 0; i * sizeof(DISPLAYID_TIMING_5_DESCRIPTOR) < blk->header.data_bytes; i++)
@@ -890,8 +874,6 @@ static NVT_STATUS parseDisplayIdTimingVesa(NvU8 * block, NVT_EDID_INFO *pEdidInf
     DISPLAYID_TIMING_MODE_BLOCK * blk = (DISPLAYID_TIMING_MODE_BLOCK *)block;
     if (blk->header.data_bytes != DISPLAYID_TIMING_VESA_BLOCK_SIZE)
     {
-        // Assert since this error is ignored
-        nvt_assert(0);
         return NVT_STATUS_ERR;
     }
 
@@ -931,8 +913,6 @@ static NVT_STATUS parseDisplayIdTimingEIA(NvU8 * block, NVT_EDID_INFO *pEdidInfo
     DISPLAYID_TIMING_MODE_BLOCK * blk = (DISPLAYID_TIMING_MODE_BLOCK *)block;
     if (blk->header.data_bytes != DISPLAYID_TIMING_CEA_BLOCK_SIZE)
     {
-        // Assert since this error is ignored
-        nvt_assert(0);
         return NVT_STATUS_ERR;
     }
 
@@ -975,8 +955,6 @@ static NVT_STATUS parseDisplayIdRangeLimits(NvU8 * block, NVT_DISPLAYID_INFO *pI
 
     if (blk->header.data_bytes != DISPLAYID_RANGE_LIMITS_BLOCK_LEN)
     {
-        // Assert since this error is ignored
-        nvt_assert(0);
         return NVT_STATUS_ERR;
     }
 
@@ -987,7 +965,7 @@ static NVT_STATUS parseDisplayIdRangeLimits(NvU8 * block, NVT_DISPLAYID_INFO *pI
         blk->vertical_refresh_rate_min > blk->vertical_refresh_rate_max ||
         minPclk > maxPclk)
     {
-        nvt_assert(0 && "wrong range limit");
+        // wrong range limit
         status = NVT_STATUS_ERR;
     }
 
@@ -995,8 +973,6 @@ static NVT_STATUS parseDisplayIdRangeLimits(NvU8 * block, NVT_DISPLAYID_INFO *pI
 
     if (pInfo->rl_num >= NVT_DISPLAYID_RANGE_LIMITS_MAX_COUNT)
     {
-        // Assert since this error is ignored
-        nvt_assert(0);
         return NVT_STATUS_ERR;
     }
 
@@ -1027,8 +1003,6 @@ static NVT_STATUS parseDisplayIdSerialNumber(NvU8 * block, NVT_DISPLAYID_INFO *p
     DISPLAYID_ASCII_STRING_BLOCK * blk = (DISPLAYID_ASCII_STRING_BLOCK *)block;
     if (blk->header.data_bytes > NVT_DISPLAYID_DATABLOCK_MAX_PAYLOAD_LEN)
     {
-        // Assert since this error is ignored
-        nvt_assert(0);
         return NVT_STATUS_ERR;
     }
 
@@ -1046,8 +1020,6 @@ static NVT_STATUS parseDisplayIdAsciiString(NvU8 * block, NVT_DISPLAYID_INFO *pI
     DISPLAYID_ASCII_STRING_BLOCK * blk = (DISPLAYID_ASCII_STRING_BLOCK *)block;
     if (blk->header.data_bytes > NVT_DISPLAYID_DATABLOCK_MAX_PAYLOAD_LEN)
     {
-        // Assert since this error is ignored
-        nvt_assert(0);
         return NVT_STATUS_ERR;
     }
 
@@ -1065,8 +1037,6 @@ static NVT_STATUS parseDisplayIdDeviceData(NvU8 * block, NVT_DISPLAYID_INFO *pIn
     DISPLAYID_DEVICE_DATA_BLOCK * blk = (DISPLAYID_DEVICE_DATA_BLOCK *)block;
     if (blk->header.data_bytes != DISPLAYID_DEVICE_DATA_BLOCK_LEN)
     {
-        // Assert since this error is ignored
-        nvt_assert(0);
         return NVT_STATUS_ERR;
     }
 
@@ -1103,8 +1073,6 @@ static NVT_STATUS parseDisplayIdInterfacePower(NvU8 * block, NVT_DISPLAYID_INFO 
     DISPLAYID_INTERFACE_POWER_BLOCK * blk = (DISPLAYID_INTERFACE_POWER_BLOCK *)block;
     if (blk->header.data_bytes != DISPLAYID_INTERFACE_POWER_BLOCK_LEN)
     {
-        // Assert since this error is ignored
-        nvt_assert(0);
         return NVT_STATUS_ERR;
     }
 
@@ -1141,8 +1109,6 @@ static NVT_STATUS parseDisplayIdDisplayInterface(NvU8 * block, NVT_DISPLAYID_INF
     DISPLAYID_INTERFACE_DATA_BLOCK * blk = (DISPLAYID_INTERFACE_DATA_BLOCK *)block;
     if (blk->header.data_bytes != DISPLAYID_INTERFACE_DATA_BLOCK_LEN)
     {
-        // Assert since this error is ignored
-        nvt_assert(0);
         return NVT_STATUS_ERR;
     }
 
@@ -1177,7 +1143,7 @@ static NVT_STATUS parseDisplayIdDisplayInterface(NvU8 * block, NVT_DISPLAYID_INF
     // Content Protection
     pInfo->u4.display_interface.content_protection = DRF_VAL(T_DISPLAYID, _INTERFACE, _CONTENT, blk->content_protection);
     pInfo->u4.display_interface.content_protection_version = blk->content_protection_version;
-    
+
     // Spread
     pInfo->u4.display_interface.spread_spectrum = DRF_VAL(T_DISPLAYID, _INTERFACE, _SPREAD_TYPE, blk->spread);
     pInfo->u4.display_interface.spread_percent = DRF_VAL(T_DISPLAYID, _INTERFACE, _SPREAD_PER, blk->spread);
@@ -1214,8 +1180,6 @@ static NVT_STATUS parseDisplayIdStereo(NvU8 * block, NVT_DISPLAYID_INFO *pInfo)
     DISPLAYID_STEREO_INTERFACE_METHOD_BLOCK * blk = (DISPLAYID_STEREO_INTERFACE_METHOD_BLOCK *)block;
     if (blk->header.data_bytes > NVT_DISPLAYID_DATABLOCK_MAX_PAYLOAD_LEN)
     {
-        // Assert since this error is ignored
-        nvt_assert(0);
         return NVT_STATUS_ERR;
     }
 
@@ -1246,8 +1210,6 @@ static NVT_STATUS parseDisplayIdStereo(NvU8 * block, NVT_DISPLAYID_INFO *pInfo)
         case NVT_DISPLAYID_STEREO_PROPRIETARY:
             break;
         default:
-            // Assert since this error is ignored
-            nvt_assert(0);
             return NVT_STATUS_ERR;
     }
 
@@ -1260,8 +1222,6 @@ static NVT_STATUS parseDisplayIdTiledDisplay(NvU8 * block, NVT_DISPLAYID_INFO *p
     DISPLAYID_TILED_DISPLAY_BLOCK * blk = (DISPLAYID_TILED_DISPLAY_BLOCK *)block;
     if (blk->header.data_bytes > NVT_DISPLAYID_DATABLOCK_MAX_PAYLOAD_LEN)
     {
-        // Assert since this error is ignored
-        nvt_assert(0);
         return NVT_STATUS_ERR;
     }
 
@@ -1314,8 +1274,6 @@ static NVT_STATUS parseDisplayIdCtaData(NvU8 * block, NVT_EDID_INFO *pInfo)
     NVT_EDID_CEA861_INFO *p861info;
     if (blk->data_bytes > NVT_DISPLAYID_DATABLOCK_MAX_PAYLOAD_LEN)
     {
-        // Assert since this error is ignored
-        nvt_assert(0);
         return NVT_STATUS_ERR;
     }
 
@@ -1337,7 +1295,10 @@ static NVT_STATUS parseDisplayIdCtaData(NvU8 * block, NVT_EDID_INFO *pInfo)
     parseCta861HfScdb(p861info, pInfo, FROM_DISPLAYID_13_DATA_BLOCK);
 
     //parse HDR related information from the HDR static metadata data block
-    parseCea861HdrStaticMetadataDataBlock(p861info, pInfo, FROM_DISPLAYID_13_DATA_BLOCK);
+    if (p861info->valid.hdr_static_metadata != 0)
+    {
+        parseCta861HdrStaticMetadataDataBlock(p861info, pInfo, FROM_DISPLAYID_13_DATA_BLOCK);
+    }
 
     // base video
     parse861bShortTiming(p861info, pInfo, FROM_DISPLAYID_13_DATA_BLOCK);
@@ -1359,8 +1320,7 @@ static NVT_STATUS parseDisplayIdDisplayInterfaceFeatures(NvU8 * block, NVT_DISPL
     DISPLAYID_INTERFACE_FEATURES_DATA_BLOCK * blk = (DISPLAYID_INTERFACE_FEATURES_DATA_BLOCK *)block;
     if (blk->header.data_bytes > DISPLAYID_INTERFACE_FEATURES_DATA_BLOCK_MAX_LEN)
     {
-        // Assert since this error is ignored
-        nvt_assert(0);
+
         return NVT_STATUS_ERR;
     }
 

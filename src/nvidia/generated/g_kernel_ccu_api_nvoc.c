@@ -93,106 +93,6 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelCcuApi =
     /*pExportInfo=*/        &__nvoc_export_info_KernelCcuApi
 };
 
-static NV_STATUS __nvoc_thunk_KernelCcuApi_gpuresMap(struct GpuResource *pKernelCcuApi, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return kccuapiMap((struct KernelCcuApi *)(((unsigned char *)pKernelCcuApi) - __nvoc_rtti_KernelCcuApi_GpuResource.offset), pCallContext, pParams, pCpuMapping);
-}
-
-static NV_STATUS __nvoc_thunk_KernelCcuApi_gpuresUnmap(struct GpuResource *pKernelCcuApi, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return kccuapiUnmap((struct KernelCcuApi *)(((unsigned char *)pKernelCcuApi) - __nvoc_rtti_KernelCcuApi_GpuResource.offset), pCallContext, pCpuMapping);
-}
-
-static NV_STATUS __nvoc_thunk_KernelCcuApi_gpuresGetMapAddrSpace(struct GpuResource *pKernelCcuApi, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return kccuapiGetMapAddrSpace((struct KernelCcuApi *)(((unsigned char *)pKernelCcuApi) - __nvoc_rtti_KernelCcuApi_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static NV_STATUS __nvoc_thunk_KernelCcuApi_rmresGetMemoryMappingDescriptor(struct RmResource *pKernelCcuApi, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return kccuapiGetMemoryMappingDescriptor((struct KernelCcuApi *)(((unsigned char *)pKernelCcuApi) - __nvoc_rtti_KernelCcuApi_RmResource.offset), ppMemDesc);
-}
-
-static NvBool __nvoc_thunk_GpuResource_kccuapiShareCallback(struct KernelCcuApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelCcuApi_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_kccuapiCheckMemInterUnmap(struct KernelCcuApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_KernelCcuApi_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_kccuapiMapTo(struct KernelCcuApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset), pParams);
-}
-
-static NvU32 __nvoc_thunk_RsResource_kccuapiGetRefCount(struct KernelCcuApi *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_kccuapiAddAdditionalDependants(struct RsClient *pClient, struct KernelCcuApi *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset), pReference);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_kccuapiControl_Prologue(struct KernelCcuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_kccuapiGetRegBaseOffsetAndSize(struct KernelCcuApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelCcuApi_GpuResource.offset), pGpu, pOffset, pSize);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_kccuapiInternalControlForward(struct KernelCcuApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelCcuApi_GpuResource.offset), command, pParams, size);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_kccuapiUnmapFrom(struct KernelCcuApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset), pParams);
-}
-
-static void __nvoc_thunk_RmResource_kccuapiControl_Epilogue(struct KernelCcuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_kccuapiGetInternalObjectHandle(struct KernelCcuApi *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelCcuApi_GpuResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_kccuapiControl(struct KernelCcuApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelCcuApi_GpuResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_kccuapiGetMemInterMapParams(struct KernelCcuApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_KernelCcuApi_RmResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_kccuapiControlFilter(struct KernelCcuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_kccuapiControlSerialization_Prologue(struct KernelCcuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NvBool __nvoc_thunk_RsResource_kccuapiCanCopy(struct KernelCcuApi *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset));
-}
-
-static NvBool __nvoc_thunk_RsResource_kccuapiIsPartialUnmapSupported(struct KernelCcuApi *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_kccuapiPreDestruct(struct KernelCcuApi *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_kccuapiIsDuplicate(struct KernelCcuApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset), hMemory, pDuplicate);
-}
-
-static void __nvoc_thunk_RmResource_kccuapiControlSerialization_Epilogue(struct KernelCcuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NvBool __nvoc_thunk_RmResource_kccuapiAccessCallback(struct KernelCcuApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
-}
-
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
@@ -200,12 +100,12 @@ static NvBool __nvoc_thunk_RmResource_kccuapiAccessCallback(struct KernelCcuApi 
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCcuApi[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) kccuapiCtrlCmdSubscribe_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xcbca0101u,
         /*paramSize=*/  sizeof(NV_COUNTER_COLLECTION_UNIT_SUBSCRIBE_PARAMS),
@@ -215,12 +115,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCc
 #endif
     },
     {               /*  [1] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) kccuapiCtrlCmdUnsubscribe_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xcbca0102u,
         /*paramSize=*/  0,
@@ -230,12 +130,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCc
 #endif
     },
     {               /*  [2] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) kccuapiCtrlCmdSetStreamState_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xcbca0103u,
         /*paramSize=*/  sizeof(NV_COUNTER_COLLECTION_UNIT_STREAM_STATE_PARAMS),
@@ -245,12 +145,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCc
 #endif
     },
     {               /*  [3] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) kccuapiCtrlCmdGetStreamState_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xcbca0104u,
         /*paramSize=*/  sizeof(NV_COUNTER_COLLECTION_UNIT_STREAM_STATE_PARAMS),
@@ -261,6 +161,137 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCc
     },
 
 };
+
+// 4 down-thunk(s) defined to bridge methods in KernelCcuApi from superclasses
+
+// kccuapiMap: virtual override (res) base (gpures)
+static NV_STATUS __nvoc_down_thunk_KernelCcuApi_gpuresMap(struct GpuResource *pKernelCcuApi, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+    return kccuapiMap((struct KernelCcuApi *)(((unsigned char *) pKernelCcuApi) - __nvoc_rtti_KernelCcuApi_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+}
+
+// kccuapiUnmap: virtual override (res) base (gpures)
+static NV_STATUS __nvoc_down_thunk_KernelCcuApi_gpuresUnmap(struct GpuResource *pKernelCcuApi, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return kccuapiUnmap((struct KernelCcuApi *)(((unsigned char *) pKernelCcuApi) - __nvoc_rtti_KernelCcuApi_GpuResource.offset), pCallContext, pCpuMapping);
+}
+
+// kccuapiGetMapAddrSpace: virtual override (gpures) base (gpures)
+static NV_STATUS __nvoc_down_thunk_KernelCcuApi_gpuresGetMapAddrSpace(struct GpuResource *pKernelCcuApi, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return kccuapiGetMapAddrSpace((struct KernelCcuApi *)(((unsigned char *) pKernelCcuApi) - __nvoc_rtti_KernelCcuApi_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+// kccuapiGetMemoryMappingDescriptor: virtual override (rmres) base (gpures)
+static NV_STATUS __nvoc_down_thunk_KernelCcuApi_rmresGetMemoryMappingDescriptor(struct RmResource *pKernelCcuApi, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return kccuapiGetMemoryMappingDescriptor((struct KernelCcuApi *)(((unsigned char *) pKernelCcuApi) - __nvoc_rtti_KernelCcuApi_RmResource.offset), ppMemDesc);
+}
+
+
+// 21 up-thunk(s) defined to bridge methods in KernelCcuApi to superclasses
+
+// kccuapiControl: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_kccuapiControl(struct KernelCcuApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelCcuApi_GpuResource.offset), pCallContext, pParams);
+}
+
+// kccuapiShareCallback: virtual inherited (gpures) base (gpures)
+static NvBool __nvoc_up_thunk_GpuResource_kccuapiShareCallback(struct KernelCcuApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelCcuApi_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+}
+
+// kccuapiGetRegBaseOffsetAndSize: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_kccuapiGetRegBaseOffsetAndSize(struct KernelCcuApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelCcuApi_GpuResource.offset), pGpu, pOffset, pSize);
+}
+
+// kccuapiInternalControlForward: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_kccuapiInternalControlForward(struct KernelCcuApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelCcuApi_GpuResource.offset), command, pParams, size);
+}
+
+// kccuapiGetInternalObjectHandle: virtual inherited (gpures) base (gpures)
+static NvHandle __nvoc_up_thunk_GpuResource_kccuapiGetInternalObjectHandle(struct KernelCcuApi *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelCcuApi_GpuResource.offset));
+}
+
+// kccuapiAccessCallback: virtual inherited (rmres) base (gpures)
+static NvBool __nvoc_up_thunk_RmResource_kccuapiAccessCallback(struct KernelCcuApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCcuApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+}
+
+// kccuapiGetMemInterMapParams: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_kccuapiGetMemInterMapParams(struct KernelCcuApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_KernelCcuApi_RmResource.offset), pParams);
+}
+
+// kccuapiCheckMemInterUnmap: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_kccuapiCheckMemInterUnmap(struct KernelCcuApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_KernelCcuApi_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+// kccuapiControlSerialization_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_kccuapiControlSerialization_Prologue(struct KernelCcuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCcuApi_RmResource.offset), pCallContext, pParams);
+}
+
+// kccuapiControlSerialization_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_kccuapiControlSerialization_Epilogue(struct KernelCcuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCcuApi_RmResource.offset), pCallContext, pParams);
+}
+
+// kccuapiControl_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_kccuapiControl_Prologue(struct KernelCcuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCcuApi_RmResource.offset), pCallContext, pParams);
+}
+
+// kccuapiControl_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_kccuapiControl_Epilogue(struct KernelCcuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCcuApi_RmResource.offset), pCallContext, pParams);
+}
+
+// kccuapiCanCopy: virtual inherited (res) base (gpures)
+static NvBool __nvoc_up_thunk_RsResource_kccuapiCanCopy(struct KernelCcuApi *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset));
+}
+
+// kccuapiIsDuplicate: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_kccuapiIsDuplicate(struct KernelCcuApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset), hMemory, pDuplicate);
+}
+
+// kccuapiPreDestruct: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_kccuapiPreDestruct(struct KernelCcuApi *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset));
+}
+
+// kccuapiControlFilter: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_kccuapiControlFilter(struct KernelCcuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset), pCallContext, pParams);
+}
+
+// kccuapiIsPartialUnmapSupported: inline virtual inherited (res) base (gpures) body
+static NvBool __nvoc_up_thunk_RsResource_kccuapiIsPartialUnmapSupported(struct KernelCcuApi *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset));
+}
+
+// kccuapiMapTo: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_kccuapiMapTo(struct KernelCcuApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset), pParams);
+}
+
+// kccuapiUnmapFrom: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_kccuapiUnmapFrom(struct KernelCcuApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset), pParams);
+}
+
+// kccuapiGetRefCount: virtual inherited (res) base (gpures)
+static NvU32 __nvoc_up_thunk_RsResource_kccuapiGetRefCount(struct KernelCcuApi *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset));
+}
+
+// kccuapiAddAdditionalDependants: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_kccuapiAddAdditionalDependants(struct RsClient *pClient, struct KernelCcuApi *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset), pReference);
+}
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelCcuApi = 
 {
@@ -298,85 +329,115 @@ __nvoc_ctor_KernelCcuApi_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_KernelCcuApi_1(KernelCcuApi *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // kccuapiMap -- virtual override (res) base (gpures)
     pThis->__kccuapiMap__ = &kccuapiMap_IMPL;
+    pThis->__nvoc_base_GpuResource.__gpuresMap__ = &__nvoc_down_thunk_KernelCcuApi_gpuresMap;
 
+    // kccuapiUnmap -- virtual override (res) base (gpures)
     pThis->__kccuapiUnmap__ = &kccuapiUnmap_IMPL;
+    pThis->__nvoc_base_GpuResource.__gpuresUnmap__ = &__nvoc_down_thunk_KernelCcuApi_gpuresUnmap;
 
+    // kccuapiGetMapAddrSpace -- virtual override (gpures) base (gpures)
     pThis->__kccuapiGetMapAddrSpace__ = &kccuapiGetMapAddrSpace_IMPL;
+    pThis->__nvoc_base_GpuResource.__gpuresGetMapAddrSpace__ = &__nvoc_down_thunk_KernelCcuApi_gpuresGetMapAddrSpace;
 
+    // kccuapiGetMemoryMappingDescriptor -- virtual override (rmres) base (gpures)
     pThis->__kccuapiGetMemoryMappingDescriptor__ = &kccuapiGetMemoryMappingDescriptor_IMPL;
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemoryMappingDescriptor__ = &__nvoc_down_thunk_KernelCcuApi_rmresGetMemoryMappingDescriptor;
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // kccuapiCtrlCmdSubscribe -- exported (id=0xcbca0101)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__kccuapiCtrlCmdSubscribe__ = &kccuapiCtrlCmdSubscribe_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // kccuapiCtrlCmdUnsubscribe -- exported (id=0xcbca0102)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__kccuapiCtrlCmdUnsubscribe__ = &kccuapiCtrlCmdUnsubscribe_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // kccuapiCtrlCmdSetStreamState -- exported (id=0xcbca0103)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__kccuapiCtrlCmdSetStreamState__ = &kccuapiCtrlCmdSetStreamState_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // kccuapiCtrlCmdGetStreamState -- exported (id=0xcbca0104)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__kccuapiCtrlCmdGetStreamState__ = &kccuapiCtrlCmdGetStreamState_IMPL;
 #endif
 
-    pThis->__nvoc_base_GpuResource.__gpuresMap__ = &__nvoc_thunk_KernelCcuApi_gpuresMap;
+    // kccuapiControl -- virtual inherited (gpures) base (gpures)
+    pThis->__kccuapiControl__ = &__nvoc_up_thunk_GpuResource_kccuapiControl;
 
-    pThis->__nvoc_base_GpuResource.__gpuresUnmap__ = &__nvoc_thunk_KernelCcuApi_gpuresUnmap;
+    // kccuapiShareCallback -- virtual inherited (gpures) base (gpures)
+    pThis->__kccuapiShareCallback__ = &__nvoc_up_thunk_GpuResource_kccuapiShareCallback;
 
-    pThis->__nvoc_base_GpuResource.__gpuresGetMapAddrSpace__ = &__nvoc_thunk_KernelCcuApi_gpuresGetMapAddrSpace;
+    // kccuapiGetRegBaseOffsetAndSize -- virtual inherited (gpures) base (gpures)
+    pThis->__kccuapiGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_kccuapiGetRegBaseOffsetAndSize;
 
-    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemoryMappingDescriptor__ = &__nvoc_thunk_KernelCcuApi_rmresGetMemoryMappingDescriptor;
+    // kccuapiInternalControlForward -- virtual inherited (gpures) base (gpures)
+    pThis->__kccuapiInternalControlForward__ = &__nvoc_up_thunk_GpuResource_kccuapiInternalControlForward;
 
-    pThis->__kccuapiShareCallback__ = &__nvoc_thunk_GpuResource_kccuapiShareCallback;
+    // kccuapiGetInternalObjectHandle -- virtual inherited (gpures) base (gpures)
+    pThis->__kccuapiGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_kccuapiGetInternalObjectHandle;
 
-    pThis->__kccuapiCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_kccuapiCheckMemInterUnmap;
+    // kccuapiAccessCallback -- virtual inherited (rmres) base (gpures)
+    pThis->__kccuapiAccessCallback__ = &__nvoc_up_thunk_RmResource_kccuapiAccessCallback;
 
-    pThis->__kccuapiMapTo__ = &__nvoc_thunk_RsResource_kccuapiMapTo;
+    // kccuapiGetMemInterMapParams -- virtual inherited (rmres) base (gpures)
+    pThis->__kccuapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_kccuapiGetMemInterMapParams;
 
-    pThis->__kccuapiGetRefCount__ = &__nvoc_thunk_RsResource_kccuapiGetRefCount;
+    // kccuapiCheckMemInterUnmap -- virtual inherited (rmres) base (gpures)
+    pThis->__kccuapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_kccuapiCheckMemInterUnmap;
 
-    pThis->__kccuapiAddAdditionalDependants__ = &__nvoc_thunk_RsResource_kccuapiAddAdditionalDependants;
+    // kccuapiControlSerialization_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__kccuapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_kccuapiControlSerialization_Prologue;
 
-    pThis->__kccuapiControl_Prologue__ = &__nvoc_thunk_RmResource_kccuapiControl_Prologue;
+    // kccuapiControlSerialization_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__kccuapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_kccuapiControlSerialization_Epilogue;
 
-    pThis->__kccuapiGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_kccuapiGetRegBaseOffsetAndSize;
+    // kccuapiControl_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__kccuapiControl_Prologue__ = &__nvoc_up_thunk_RmResource_kccuapiControl_Prologue;
 
-    pThis->__kccuapiInternalControlForward__ = &__nvoc_thunk_GpuResource_kccuapiInternalControlForward;
+    // kccuapiControl_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__kccuapiControl_Epilogue__ = &__nvoc_up_thunk_RmResource_kccuapiControl_Epilogue;
 
-    pThis->__kccuapiUnmapFrom__ = &__nvoc_thunk_RsResource_kccuapiUnmapFrom;
+    // kccuapiCanCopy -- virtual inherited (res) base (gpures)
+    pThis->__kccuapiCanCopy__ = &__nvoc_up_thunk_RsResource_kccuapiCanCopy;
 
-    pThis->__kccuapiControl_Epilogue__ = &__nvoc_thunk_RmResource_kccuapiControl_Epilogue;
+    // kccuapiIsDuplicate -- virtual inherited (res) base (gpures)
+    pThis->__kccuapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_kccuapiIsDuplicate;
 
-    pThis->__kccuapiGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_kccuapiGetInternalObjectHandle;
+    // kccuapiPreDestruct -- virtual inherited (res) base (gpures)
+    pThis->__kccuapiPreDestruct__ = &__nvoc_up_thunk_RsResource_kccuapiPreDestruct;
 
-    pThis->__kccuapiControl__ = &__nvoc_thunk_GpuResource_kccuapiControl;
+    // kccuapiControlFilter -- virtual inherited (res) base (gpures)
+    pThis->__kccuapiControlFilter__ = &__nvoc_up_thunk_RsResource_kccuapiControlFilter;
 
-    pThis->__kccuapiGetMemInterMapParams__ = &__nvoc_thunk_RmResource_kccuapiGetMemInterMapParams;
+    // kccuapiIsPartialUnmapSupported -- inline virtual inherited (res) base (gpures) body
+    pThis->__kccuapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_kccuapiIsPartialUnmapSupported;
 
-    pThis->__kccuapiControlFilter__ = &__nvoc_thunk_RsResource_kccuapiControlFilter;
+    // kccuapiMapTo -- virtual inherited (res) base (gpures)
+    pThis->__kccuapiMapTo__ = &__nvoc_up_thunk_RsResource_kccuapiMapTo;
 
-    pThis->__kccuapiControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_kccuapiControlSerialization_Prologue;
+    // kccuapiUnmapFrom -- virtual inherited (res) base (gpures)
+    pThis->__kccuapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_kccuapiUnmapFrom;
 
-    pThis->__kccuapiCanCopy__ = &__nvoc_thunk_RsResource_kccuapiCanCopy;
+    // kccuapiGetRefCount -- virtual inherited (res) base (gpures)
+    pThis->__kccuapiGetRefCount__ = &__nvoc_up_thunk_RsResource_kccuapiGetRefCount;
 
-    pThis->__kccuapiIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_kccuapiIsPartialUnmapSupported;
+    // kccuapiAddAdditionalDependants -- virtual inherited (res) base (gpures)
+    pThis->__kccuapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_kccuapiAddAdditionalDependants;
+} // End __nvoc_init_funcTable_KernelCcuApi_1 with approximately 33 basic block(s).
 
-    pThis->__kccuapiPreDestruct__ = &__nvoc_thunk_RsResource_kccuapiPreDestruct;
 
-    pThis->__kccuapiIsDuplicate__ = &__nvoc_thunk_RsResource_kccuapiIsDuplicate;
-
-    pThis->__kccuapiControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_kccuapiControlSerialization_Epilogue;
-
-    pThis->__kccuapiAccessCallback__ = &__nvoc_thunk_RmResource_kccuapiAccessCallback;
-}
-
+// Initialize vtable(s) for 29 virtual method(s).
 void __nvoc_init_funcTable_KernelCcuApi(KernelCcuApi *pThis) {
+
+    // Initialize vtable(s) with 29 per-object function pointer(s).
     __nvoc_init_funcTable_KernelCcuApi_1(pThis);
 }
 

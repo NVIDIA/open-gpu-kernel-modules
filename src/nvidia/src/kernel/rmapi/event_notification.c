@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,6 +40,7 @@
 #include "mem_mgr/mem.h"
 #include "kernel/gpu/gpu_engine_type.h"
 #include "platform/sli/sli.h"
+#include "objtmr.h"
 
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 
@@ -743,6 +744,10 @@ static NV_STATUS _insertEventNotification
     EventNotify->NotifyTriggerCount = 0;
     EventNotify->bUserOsEventHandle = bUserOsEventHandle;
 
+    // These fields are set by NV0004_CTRL_CMD_TMR_SET_ALARM_NOTIFY for graceful TMR_EVENT teardown
+    EventNotify->pGpu = NULL;
+    EventNotify->pTmrEvent = NULL;
+
     //
     // Now insert the event into the event chain of this object.
     // Order doesn't really matter.
@@ -904,6 +909,15 @@ static NV_STATUS _removeEventNotification
     // delete the event if it was found
     if (found)
     {
+        if (nextEvent->pTmrEvent != NULL)
+        {
+            NV_ASSERT_OR_RETURN((nextEvent->pGpu != NULL), NV_ERR_INVALID_STATE);
+
+            tmrEventDestroy(GPU_GET_TIMER(nextEvent->pGpu), nextEvent->pTmrEvent);
+            nextEvent->pGpu = NULL;
+            nextEvent->pTmrEvent = NULL;
+        }
+
         if (nextEvent->bUserOsEventHandle)
             osDereferenceObjectCount(NvP64_VALUE(nextEvent->Data));
 

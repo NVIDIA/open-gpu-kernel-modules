@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2002-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2002-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -223,7 +223,8 @@ _nvDbgPrepareString
 // Temporary helper to map LEVEL_xxx constants to a platform specific level.
 //
 #if PORT_IS_FUNC_SUPPORTED(portDbgExPrintfLevel)
-static NvU32 _nvDbgLevelToPlatformLevel(NvBool bForce,  NvU32 level)
+
+static NvU32 _nvDbgForceLevel(NvBool bForce, NvU32 level)
 {
     return bForce ? LEVEL_FATAL : level;
 }
@@ -249,12 +250,12 @@ void nvDbg_vPrintf
     if (nvDbg_PrintMsg(filename, linenumber, function, debuglevel, printf_format, &force, &prefix))
     {
         portSyncSpinlockAcquire(_nv_dbg_lock);
-          _nvDbgPrepareString(filename, linenumber, function, printf_format, prefix, arglist);
+        _nvDbgPrepareString(filename, linenumber, function, printf_format, prefix, arglist);
 #if PORT_IS_FUNC_SUPPORTED(portDbgExPrintfLevel)
-          portDbgExPrintfLevel(_nvDbgLevelToPlatformLevel(force, debuglevel),
-                               "%.*s", MAX_ERROR_STRING, _nv_dbg_string);
+        portDbgExPrintfLevel(_nvDbgForceLevel(force, debuglevel),
+                             "%.*s", MAX_ERROR_STRING, _nv_dbg_string);
 #else
-          portDbgPrintString(_nv_dbg_string, MAX_ERROR_STRING);
+        portDbgPrintString(_nv_dbg_string, MAX_ERROR_STRING);
 #endif
         portSyncSpinlockRelease(_nv_dbg_lock);
     }

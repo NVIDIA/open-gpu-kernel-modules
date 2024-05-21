@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2000-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2000-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -57,9 +57,6 @@ gpuPowerManagementEnter(OBJGPU *pGpu, NvU32 newLevel, NvU32 flags)
     NV_STATUS  status = NV_OK;
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
-    NV_ASSERT_OR_RETURN(!IS_VIRTUAL(pGpu) || !IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu),
-        NV_ERR_NOT_SUPPORTED);
-
     // This is a no-op in CPU-RM
     NV_ASSERT_OK_OR_GOTO(status, gpuPowerManagementEnterPreUnloadPhysical(pGpu), done);
 
@@ -75,12 +72,6 @@ gpuPowerManagementEnter(OBJGPU *pGpu, NvU32 newLevel, NvU32 flags)
 
     if (IS_GSP_CLIENT(pGpu))
     {
-        // FB remains alive for GC6 cycle
-        if (!IS_GPU_GC6_STATE_ENTERING(pGpu))
-        {
-            NV_ASSERT_OK_OR_GOTO(status, memmgrSavePowerMgmtState(pGpu, pMemoryManager), done);
-        }
-
         KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
         KernelGspPreparedFwsecCmd preparedCmd;
 

@@ -1354,7 +1354,6 @@ nvswitch_process_discovery_ls10
             NVSWITCH_PRINT(device, SETUP,
                 "%s: Disable link #%d\n",
                 __FUNCTION__, i);
-            nvswitch_link_disable_interrupts_ls10(device, i);
             device->link[i].valid                  = NV_FALSE;
             chip_device->engNPORT[i].valid         = NV_FALSE;
             chip_device->engNPORT_PERFMON[i].valid = NV_FALSE;

@@ -36,10 +36,8 @@ static void getKeyPairForKeySpace(NvU32 keySpace, NvBool bKernel, NvU32 *pGlobal
 static NV_STATUS triggerKeyRotationByKeyPair(OBJGPU *pGpu, ConfidentialCompute *pConfCompute, NvU32 h2dKey, NvU32 d2hKey);
 static NV_STATUS calculateEncryptionStatsByKeyPair(OBJGPU *pGpu, ConfidentialCompute *pConfCompute, NvU32 h2dKey, NvU32 d2hKey);
 static NV_STATUS notifyKeyRotationByKeyPair(OBJGPU *pGpu, ConfidentialCompute *pConfCompute, NvU32 h2dKey);
-static NvBool isLowerThresholdCrossed(ConfidentialCompute *pConfCompute, KEY_ROTATION_STATS_INFO *pH2DInfo,
-                                      KEY_ROTATION_STATS_INFO *pD2HInfo);
-static NvBool isUpperThresholdCrossed(ConfidentialCompute *pConfCompute, KEY_ROTATION_STATS_INFO *pH2DInfo,
-                                      KEY_ROTATION_STATS_INFO *pD2HInfo);
+static NvBool isLowerThresholdCrossed(ConfidentialCompute *pConfCompute, NvU32 h2dKey, NvU32 d2hKey);
+static NvBool isUpperThresholdCrossed(ConfidentialCompute *pConfCompute, NvU32 h2dKey, NvU32 d2hKey);
 static NV_STATUS keyRotationTimeoutCallback(OBJGPU *pGpu, OBJTMR *pTmr, TMR_EVENT *pTmrEvent);
 
 /*!
@@ -60,15 +58,6 @@ confComputeEnableKeyRotationSupport_GH100
         pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
     {
         pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED, NV_TRUE);
-
-        //
-        // TODO: sbellock default values need to be defined and set separately
-        // for prod flow based on attacker advantage table.
-        //
-        pConfCompute->lowerThreshold.totalBytesEncrypted = NV_U64_MAX;
-        pConfCompute->lowerThreshold.totalEncryptOps = 500;
-        pConfCompute->upperThreshold.totalBytesEncrypted = NV_U64_MAX;
-        pConfCompute->upperThreshold.totalEncryptOps = 1000;
         initKeyRotationRegistryOverrides(pGpu, pConfCompute);
     }
     return NV_OK;
@@ -122,27 +111,19 @@ confComputeTriggerKeyRotation_GH100
     NV_STATUS tempStatus, status = NV_OK;
     NvU32 globalD2HKey, globalH2DKey, keySpace;
 
-    if ((pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_DUMMY_KEY_ROTATION_ENABLED)) &&
-        (pConfCompute->keyRotationChannelRefCount > 0))
-    {
-        pConfCompute->keyRotationCallbackCount++;
-        NV_PRINTF(LEVEL_ERROR, "DUMMY KR: COUNT = %d\n", pConfCompute->keyRotationCallbackCount);
-    }
     for (keySpace = 0; keySpace < CC_KEYSPACE_SIZE; keySpace++)
     {
         if (keySpace == CC_KEYSPACE_GSP)
             continue;
 
-        if ((pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_DUMMY_KEY_ROTATION_ENABLED)) &&
-            !(pConfCompute->keyRotationEnableMask & NVBIT(keySpace)))
+        if (!(pConfCompute->keyRotationEnableMask & NVBIT(keySpace)))
         {
             NV_PRINTF(LEVEL_INFO, "Skipping keyspace = %d since mask = 0x%x\n", keySpace, pConfCompute->keyRotationEnableMask);
             continue;
         }
 
         // calculate kernel channels stats for keyspace
-        if ((!pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_DUMMY_KEY_ROTATION_ENABLED)) ||
-            (FLD_TEST_DRF(_REG_STR, _RM_CONF_COMPUTE_DUMMY_KEY_ROTATION, _KERNEL_KEYS, _YES, pConfCompute->keyRotationEnableMask)))
+        if (FLD_TEST_DRF(_REG_STR, _RM_CONF_COMPUTE_DUMMY_KEY_ROTATION, _KERNEL_KEYS, _YES, pConfCompute->keyRotationEnableMask))
         {
             getKeyPairForKeySpace(keySpace, NV_TRUE, &globalH2DKey, &globalD2HKey);
             tempStatus = triggerKeyRotationByKeyPair(pGpu, pConfCompute, globalH2DKey, globalD2HKey);
@@ -155,8 +136,7 @@ confComputeTriggerKeyRotation_GH100
         }
 
         // calculate user channels stats for keyspace
-        if ((!pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_DUMMY_KEY_ROTATION_ENABLED)) ||
-            (FLD_TEST_DRF(_REG_STR, _RM_CONF_COMPUTE_DUMMY_KEY_ROTATION, _USER_KEYS, _YES, pConfCompute->keyRotationEnableMask)))
+        if (FLD_TEST_DRF(_REG_STR, _RM_CONF_COMPUTE_DUMMY_KEY_ROTATION, _USER_KEYS, _YES, pConfCompute->keyRotationEnableMask))
         {
             getKeyPairForKeySpace(keySpace, NV_FALSE, &globalH2DKey, &globalD2HKey);
             tempStatus = triggerKeyRotationByKeyPair(pGpu, pConfCompute, globalH2DKey, globalD2HKey);
@@ -182,26 +162,32 @@ triggerKeyRotationByKeyPair
 {
     KEY_ROTATION_STATUS state;
     NV_ASSERT_OK_OR_RETURN(confComputeGetKeyRotationStatus(pConfCompute, h2dKey, &state));
-    CHANNEL_ITERATOR iter = {0};
-    KernelChannel *pKernelChannel = NULL;
     NvU32 h2dIndex, d2hIndex;
+
+    NV_ASSERT_OK_OR_RETURN(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, h2dKey, &h2dIndex));
+    NV_ASSERT_OK_OR_RETURN(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, d2hKey, &d2hIndex));
 
     // we won't need this once we have encryption statistics since unused keys will have stats = 0
     if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_DUMMY_KEY_ROTATION_ENABLED))
     {
+        CHANNEL_ITERATOR iter = {0};
+        KernelChannel *pKernelChannel = NULL;
         NV_ASSERT_OK_OR_RETURN(confComputeInitChannelIterForKey(pGpu, pConfCompute, h2dKey, &iter));
+        //
+        // If there are no channels alive on a key then reset its dummy KR counter and bail out.
+        // Else increment its dummy KR counter and continue.
+        //
         if (confComputeGetNextChannelForKey(pGpu, pConfCompute, &iter, h2dKey, &pKernelChannel) != NV_OK)
         {
-            //
-            // If this is the last key and we haven't done KR yet even after crossing upper threshold then
-            // it means there are no channels alive and we need to manually reset our counter
-            //
-            if ((h2dKey == CC_GKEYID_GEN(CC_KEYSPACE_LCE7, CC_LKEYID_LCE_H2D_USER)) &&
-                (pConfCompute->keyRotationCallbackCount > pConfCompute->upperThreshold.totalEncryptOps))
-            {
-                pConfCompute->keyRotationCallbackCount = 1;
-            }
+            pConfCompute->keyRotationCallbackCount[h2dIndex] = 1;
+            pConfCompute->keyRotationCallbackCount[d2hIndex] = 1;
             return NV_OK;
+        }
+        else
+        {
+            pConfCompute->keyRotationCallbackCount[h2dIndex]++;
+            pConfCompute->keyRotationCallbackCount[d2hIndex]++;
+            NV_PRINTF(LEVEL_ERROR, "DUMMY KR: COUNT = %d for key 0x%x\n", pConfCompute->keyRotationCallbackCount[h2dIndex], h2dKey);
         }
     }
 
@@ -224,18 +210,13 @@ triggerKeyRotationByKeyPair
 
     NV_ASSERT_OK_OR_RETURN(calculateEncryptionStatsByKeyPair(pGpu, pConfCompute, h2dKey, d2hKey));
 
-    NV_ASSERT_OK_OR_RETURN(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, h2dKey, &h2dIndex));
-    NV_ASSERT_OK_OR_RETURN(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, d2hKey, &d2hIndex));
-
-    if (isUpperThresholdCrossed(pConfCompute, &pConfCompute->aggregateStats[h2dIndex],
-                                &pConfCompute->aggregateStats[d2hIndex]))
+    if (isUpperThresholdCrossed(pConfCompute, h2dKey, d2hKey))
     {
         NV_PRINTF(LEVEL_ERROR, "Crossed UPPER threshold for key = 0x%x\n", h2dKey);
         NV_ASSERT_OK_OR_RETURN(confComputeSetKeyRotationStatus(pConfCompute, h2dKey, KEY_ROTATION_STATUS_FAILED_THRESHOLD));
-        NV_ASSERT_OK_OR_RETURN(confComputeScheduleKeyRotationWorkItem(pGpu, pConfCompute, h2dKey, d2hKey));
+        NV_ASSERT_OK_OR_RETURN(confComputePerformKeyRotation(pGpu, pConfCompute, h2dKey, d2hKey, NV_TRUE));
     }
-    else if (isLowerThresholdCrossed(pConfCompute, &pConfCompute->aggregateStats[h2dIndex],
-                                     &pConfCompute->aggregateStats[d2hIndex]))
+    else if (isLowerThresholdCrossed(pConfCompute, h2dKey, d2hKey))
     {
         NV_PRINTF(LEVEL_INFO, "Crossed LOWER threshold for key = 0x%x\n", h2dKey);
         if (state == KEY_ROTATION_STATUS_IDLE)
@@ -258,11 +239,13 @@ triggerKeyRotationByKeyPair
                                                       keyRotationTimeoutCallback, (void*)pH2DKey, TMR_FLAGS_NONE));
             }
 
-            //
-            // Schedule first callback.
-            // TODO sbellock: don't use hardcoded 12.5 sec vaule
-            //
-            NV_ASSERT_OK_OR_RETURN(tmrEventScheduleRelSec(pTmr, pConfCompute->ppKeyRotationTimer[h2dIndex], 12.5));
+            // Schedule first callback. Timeouts are not enforced on kernel channels (UVM).
+            if (!confComputeGlobalKeyIsKernelPriv_HAL(pConfCompute, h2dKey))
+            {
+                NV_ASSERT_OK_OR_RETURN(tmrEventScheduleRelSec(pTmr,
+                                                              pConfCompute->ppKeyRotationTimer[h2dIndex],
+                                                              pConfCompute->keyRotationTimeout));
+            }
 
             //
             // Notify clients of pending KR
@@ -270,6 +253,19 @@ triggerKeyRotationByKeyPair
             // we might have already crossed the upper threshold by then.
             //
             NV_ASSERT_OK_OR_RETURN(notifyKeyRotationByKeyPair(pGpu, pConfCompute, h2dKey));
+        }
+
+        //
+        // There can be a scenario where last channel on key gets freed without lower threshold being
+        // crossed but when encrypt stats are computed in the next callback lower threshold is crossed here.
+        // In this case, schedule key rotation.
+        //
+        CHANNEL_ITERATOR iter = {0};
+        KernelChannel *pKernelChannel = NULL;
+        NV_ASSERT_OK_OR_RETURN(confComputeInitChannelIterForKey(pGpu, pConfCompute, h2dKey, &iter));
+        if (confComputeGetNextChannelForKey(pGpu, pConfCompute, &iter, h2dKey, &pKernelChannel) != NV_OK)
+        {
+            NV_ASSERT_OK_OR_RETURN(confComputePerformKeyRotation(pGpu, pConfCompute, h2dKey, d2hKey, NV_TRUE));
         }
     }
     return NV_OK;
@@ -288,7 +284,7 @@ keyRotationTimeoutCallback
     NvU32 key = *(NvU32*)pEvent->pUserData;
     confComputeGetKeyPairByKey(pConfCompute, key, &h2dKey, &d2hKey);
     NV_ASSERT_OK_OR_RETURN(confComputeSetKeyRotationStatus(pConfCompute, h2dKey, KEY_ROTATION_STATUS_FAILED_TIMEOUT));
-    return confComputeScheduleKeyRotationWorkItem(pGpu, pConfCompute, h2dKey, d2hKey);
+    return confComputePerformKeyRotation(pGpu, pConfCompute, h2dKey, d2hKey, NV_TRUE);
 }
 
 static NV_STATUS
@@ -355,8 +351,8 @@ calculateEncryptionStatsByKeyPair
     {
         NV_PRINTF(LEVEL_INFO, "Aggregate stats for h2dKey 0x%x and d2hKey 0x%x\n", h2dKey, d2hKey);
         NV_PRINTF(LEVEL_INFO, "Total h2d bytes encrypted  = 0x%llx\n", pConfCompute->aggregateStats[h2dIndex].totalBytesEncrypted);
-        NV_PRINTF(LEVEL_INFO, "Total d2h bytes encrypted  = 0x%llx\n", pConfCompute->aggregateStats[h2dIndex].totalEncryptOps);
-        NV_PRINTF(LEVEL_INFO, "Total h2d encrypt ops  = 0x%llx\n", pConfCompute->aggregateStats[d2hIndex].totalBytesEncrypted);
+        NV_PRINTF(LEVEL_INFO, "Total d2h bytes encrypted  = 0x%llx\n", pConfCompute->aggregateStats[d2hIndex].totalBytesEncrypted);
+        NV_PRINTF(LEVEL_INFO, "Total h2d encrypt ops  = 0x%llx\n", pConfCompute->aggregateStats[h2dIndex].totalEncryptOps);
         NV_PRINTF(LEVEL_INFO, "Total d2h encrypt ops  = 0x%llx\n", pConfCompute->aggregateStats[d2hIndex].totalEncryptOps);
     }
     return NV_OK;
@@ -366,18 +362,21 @@ static NvBool
 isUpperThresholdCrossed
 (
     ConfidentialCompute *pConfCompute,
-    KEY_ROTATION_STATS_INFO *pH2DInfo,
-    KEY_ROTATION_STATS_INFO *pD2HInfo
+    NvU32 h2dKey,
+    NvU32 d2hKey
 )
 {
+    NvU32 h2dIndex, d2hIndex;
+    NV_ASSERT_OK_OR_RETURN(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, h2dKey, &h2dIndex));
+    NV_ASSERT_OK_OR_RETURN(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, d2hKey, &d2hIndex));
     if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_DUMMY_KEY_ROTATION_ENABLED))
     {
-        return (pConfCompute->keyRotationCallbackCount > pConfCompute->upperThreshold.totalEncryptOps);
+        return (pConfCompute->keyRotationCallbackCount[h2dIndex] > pConfCompute->upperThreshold.totalEncryptOps);
     }
     else
     {
-        return (confComputeIsUpperThresholdCrossed(pConfCompute, pH2DInfo) ||
-                confComputeIsUpperThresholdCrossed(pConfCompute, pD2HInfo));
+        return (confComputeIsUpperThresholdCrossed(pConfCompute, &pConfCompute->aggregateStats[h2dIndex]) ||
+                confComputeIsUpperThresholdCrossed(pConfCompute, &pConfCompute->aggregateStats[d2hIndex]));
     }
 }
 
@@ -385,18 +384,21 @@ static NvBool
 isLowerThresholdCrossed
 (
     ConfidentialCompute *pConfCompute,
-    KEY_ROTATION_STATS_INFO *pH2DInfo,
-    KEY_ROTATION_STATS_INFO *pD2HInfo
+    NvU32 h2dKey,
+    NvU32 d2hKey
 )
 {
+    NvU32 h2dIndex, d2hIndex;
+    NV_ASSERT_OK_OR_RETURN(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, h2dKey, &h2dIndex));
+    NV_ASSERT_OK_OR_RETURN(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, d2hKey, &d2hIndex));
     if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_DUMMY_KEY_ROTATION_ENABLED))
     {
-        return (pConfCompute->keyRotationCallbackCount > pConfCompute->lowerThreshold.totalEncryptOps);
+        return (pConfCompute->keyRotationCallbackCount[h2dIndex] > pConfCompute->lowerThreshold.totalEncryptOps);
     }
     else
     {
-        return (confComputeIsLowerThresholdCrossed(pConfCompute, pH2DInfo) ||
-                confComputeIsLowerThresholdCrossed(pConfCompute, pD2HInfo));
+        return (confComputeIsLowerThresholdCrossed(pConfCompute, &pConfCompute->aggregateStats[h2dIndex]) ||
+                confComputeIsLowerThresholdCrossed(pConfCompute, &pConfCompute->aggregateStats[d2hIndex]));
     }
 }
 
@@ -445,7 +447,6 @@ notifyKeyRotationByKeyPair
     KEY_ROTATION_STATUS status;
     CHANNEL_ITERATOR iter = {0};
     KernelChannel *pKernelChannel = NULL;
-    NvU32 notifyStatus = 0;
     NV_ASSERT_OK_OR_RETURN(confComputeGetKeyRotationStatus(pConfCompute, h2dKey, &status));
     //
     // We expect this work item to be called soon after RM detects lower threshold is
@@ -457,16 +458,10 @@ notifyKeyRotationByKeyPair
 	NV_ASSERT_OK_OR_RETURN(confComputeInitChannelIterForKey(pGpu, pConfCompute, h2dKey, &iter));
 	while(confComputeGetNextChannelForKey(pGpu, pConfCompute, &iter, h2dKey, &pKernelChannel) == NV_OK)
 	{
-		// update notifier memory
-		notifyStatus =
-			FLD_SET_DRF(_CHANNELGPFIFO, _NOTIFICATION_STATUS, _IN_PROGRESS, _TRUE, notifyStatus);
-
-		notifyStatus =
-			FLD_SET_DRF_NUM(_CHANNELGPFIFO, _NOTIFICATION_STATUS, _VALUE, status, notifyStatus);
-
 		NV_ASSERT_OK_OR_RETURN(kchannelUpdateNotifierMem(pKernelChannel, NV_CHANNELGPFIFO_NOTIFICATION_TYPE_KEY_ROTATION_STATUS,
-											             0, 0, notifyStatus));
-		NV_PRINTF(LEVEL_INFO, "chid 0x%x has pending key rotation, writing notifier with val 0x%x\n", kchannelGetDebugTag(pKernelChannel), (NvU32)notifyStatus);
+											             0, 0, (NvU32)status));
+		NV_PRINTF(LEVEL_INFO, "chid 0x%x has pending key rotation, writing notifier with val 0x%x\n",
+			kchannelGetDebugTag(pKernelChannel), (NvU32)status);
 
 		// send events to clients if registered
 		kchannelNotifyEvent(pKernelChannel, NVC86F_NOTIFIERS_KEY_ROTATION, 0, status, NULL, 0);
@@ -481,33 +476,91 @@ initKeyRotationRegistryOverrides
     ConfidentialCompute *pConfCompute
 )
 {
-    //
-    // Temp CONFCOMP-984: This will be removed once all RM clients support
-    // key rotation by default.
-    //
     if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED))
     {
         NvU32 data;
-        if (osReadRegistryDword(pGpu, NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION, &data) == NV_OK)
+
+        if (osReadRegistryDword(pGpu, NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_THRESHOLD_DELTA, &data) == NV_OK)
+        {
+            if (data == 0)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Illegal value for RmKeyRotationThresholdDelta.\n");
+                NV_PRINTF(LEVEL_ERROR, "Cancelling override of threshold delta.\n");
+            }
+            else
+            {
+                NV_PRINTF(LEVEL_INFO, "Setting key rotation threshold delta to %u.\n", data);
+                pConfCompute->keyRotationLimitDelta = data;
+                NV_ASSERT_OK(confComputeSetKeyRotationThreshold(pConfCompute, pConfCompute->attackerAdvantage));
+            }
+        }
+        else if (osReadRegistryDword(pGpu, NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LOWER_THRESHOLD, &data) == NV_OK)
+        {
+            const NvU32 lowerThreshold = data;
+
+            if (osReadRegistryDword(pGpu, NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_UPPER_THRESHOLD, &data) == NV_OK)
+            {
+                const NvU32 upperThreshold = data;
+
+                if (upperThreshold > lowerThreshold)
+                {
+                    NV_PRINTF(LEVEL_INFO, "Setting key rotation lower threshold to %u and upper threshold to %u.\n",
+                              lowerThreshold, upperThreshold);
+                    pConfCompute->keyRotationUpperLimit = upperThreshold;
+                    pConfCompute->keyRotationLowerLimit = lowerThreshold;
+                }
+                else
+                {
+                    NV_PRINTF(LEVEL_ERROR, "RmKeyRotationUpperThreshold must be greater than RmKeyRotationLowerThreshold.\n");
+                    NV_PRINTF(LEVEL_ERROR, "Cancelling override of upper and lower key rotation thresholds.\n");
+                }
+            }
+            else
+            {
+                NV_PRINTF(LEVEL_ERROR, "RmKeyRotationUpperThreshold must be set if RmKeyRotationLowerThreshold is set.\n");
+                NV_PRINTF(LEVEL_ERROR, "Cancelling override of upper and lower key rotation thresholds.\n");
+            }
+        }
+
+        if (osReadRegistryDword(pGpu, NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_TIMEOUT_IN_SEC, &data) == NV_OK)
+        {
+            const NvU32 minTimeout = 2;
+
+            if (data >= minTimeout)
+            {
+                NV_PRINTF(LEVEL_INFO, "Setting key rotation user-mode timeout to %u seconds.\n", data);
+                pConfCompute->keyRotationTimeout = data;
+            }
+            else
+            {
+                NV_PRINTF(LEVEL_ERROR, "Key rotation user-mode timeout must be greater than or equal to %u.\n", minTimeout);
+                NV_PRINTF(LEVEL_ERROR, "Cancelling override of user-mode timeout.\n");
+            }
+        }
+
+        if (osReadRegistryDword(pGpu, NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION, &data) == NV_OK)
+        {
+            if (FLD_TEST_DRF(_REG_STR, _RM_CONF_COMPUTE_KEY_ROTATION, _ENABLED, _YES, data))
+            {
+                NV_PRINTF(LEVEL_INFO, "Confidential Compute key rotation enabled via regkey override.\n");
+                pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_ENABLED, NV_TRUE);
+                pConfCompute->keyRotationEnableMask = data;
+            }
+            else
+            {
+                NV_PRINTF(LEVEL_INFO, "Confidential Compute key rotation disabled via regkey override.\n");
+                pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_ENABLED, NV_FALSE);
+                pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED, NV_FALSE);
+            }
+        }
+        else if (osReadRegistryDword(pGpu, NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION, &data) == NV_OK)
         {
             if (FLD_TEST_DRF(_REG_STR, _RM_CONF_COMPUTE_DUMMY_KEY_ROTATION, _ENABLED, _YES, data))
             {
                 NV_PRINTF(LEVEL_INFO, "Confidential Compute dummy key rotation enabled via regkey override.\n");
                 pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_DUMMY_KEY_ROTATION_ENABLED, NV_TRUE);
-            }
-            else if (FLD_TEST_DRF(_REG_STR, _RM_CONF_COMPUTE_DUMMY_KEY_ROTATION, _ENABLED, _NO, data))
-            {
-                NV_PRINTF(LEVEL_INFO, "Confidential Compute dummy key rotation disabled via regkey override.\n");
-                pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_DUMMY_KEY_ROTATION_ENABLED, NV_FALSE);
-            }
-            if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_DUMMY_KEY_ROTATION_ENABLED))
-            {
                 pConfCompute->keyRotationEnableMask = data;
 
-                //
-                // Set lower and upper thresholds to default values
-                // this will go away once we stop supporting dummy KR
-                //
                 pConfCompute->lowerThreshold.totalBytesEncrypted = NV_U64_MAX;
                 pConfCompute->lowerThreshold.totalEncryptOps = KEY_ROTATION_LOWER_THRESHOLD;
                 pConfCompute->upperThreshold.totalBytesEncrypted = NV_U64_MAX;
@@ -523,6 +576,19 @@ initKeyRotationRegistryOverrides
                     pConfCompute->upperThreshold.totalEncryptOps = data;
                 }
             }
+            else
+            {
+                NV_PRINTF(LEVEL_INFO, "Confidential Compute dummy key rotation disabled via regkey override.\n");
+                pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_DUMMY_KEY_ROTATION_ENABLED, NV_FALSE);
+                pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED, NV_FALSE);
+            }
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_INFO, "Confidential Compute key rotation (dummy and production) are disabled.\n");
+            pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_ENABLED, NV_FALSE);
+            pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_DUMMY_KEY_ROTATION_ENABLED, NV_FALSE);
+            pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED, NV_FALSE);
         }
     }
 }

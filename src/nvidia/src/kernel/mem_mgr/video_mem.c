@@ -127,7 +127,7 @@ _vidmemPmaAllocate
     MemoryManager               *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     PMA                         *pPma           = &pHeap->pmaObject;
     NvU64                        size           = 0;
-     NvU32                        pageCount;
+    NvU32                        pageCount;
     NvU32                        pmaInfoSize;
     NvU64                        pageSize;
     NV_STATUS                    status;
@@ -264,7 +264,6 @@ _vidmemPmaAllocate
     // Pass along client requested alignment
     allocOptions.flags |= PMA_ALLOCATE_FORCE_ALIGNMENT;
     allocOptions.alignment = NV_MAX(sizeAlign, pageSize);
-
 
     // Get the number of pages to be allocated by PMA
     pageCount = (NvU32) NV_DIV_AND_CEIL(size, pageSize);
@@ -1426,12 +1425,16 @@ vidmemCheckCopyPermissions_IMPL
 {
     Memory           *pMemory               = staticCast(pVideoMemory, Memory);
     OBJGPU           *pSrcGpu               = pMemory->pGpu;
-    NvHandle          hSrcClient            = RES_GET_CLIENT_HANDLE(pVideoMemory);
-    NvHandle          hDstClient            = RES_GET_CLIENT_HANDLE(pDstDevice);
+    RsClient         *pSrcClient            = RES_GET_CLIENT(pVideoMemory);
+    RsClient         *pDstClient            = RES_GET_CLIENT(pDstDevice);
     KernelMIGManager *pSrcKernelMIGManager  = GPU_GET_KERNEL_MIG_MANAGER(pSrcGpu);
     KernelMIGManager *pDstKernelMIGManager  = GPU_GET_KERNEL_MIG_MANAGER(pDstGpu);
-    NvBool            bSrcClientKernel      = (rmclientGetCachedPrivilegeByHandle(hSrcClient) >= RS_PRIV_LEVEL_KERNEL);
-    NvBool            bDstClientKernel      = (rmclientGetCachedPrivilegeByHandle(hDstClient) >= RS_PRIV_LEVEL_KERNEL);
+    NvBool            bSrcClientKernel      =
+        (rmclientGetCachedPrivilege(dynamicCast(pSrcClient, RmClient)) >=
+         RS_PRIV_LEVEL_KERNEL);
+    NvBool            bDstClientKernel      =
+        (rmclientGetCachedPrivilege(dynamicCast(pDstClient, RmClient)) >=
+         RS_PRIV_LEVEL_KERNEL);
 
     //
     // XXX: In case of MIG memory, duping across GPU instances is not allowed

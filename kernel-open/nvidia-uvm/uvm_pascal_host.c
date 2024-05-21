@@ -92,7 +92,13 @@ void uvm_hal_pascal_host_tlb_invalidate_all(uvm_push_t *push, uvm_gpu_phys_addre
     uvm_hal_tlb_invalidate_membar(push, membar);
 }
 
-void uvm_hal_pascal_host_tlb_invalidate_va(uvm_push_t *push, uvm_gpu_phys_address_t pdb, NvU32 depth, NvU64 base, NvU64 size, NvU32 page_size, uvm_membar_t membar)
+void uvm_hal_pascal_host_tlb_invalidate_va(uvm_push_t *push,
+                                           uvm_gpu_phys_address_t pdb,
+                                           NvU32 depth,
+                                           NvU64 base,
+                                           NvU64 size,
+                                           NvU64 page_size,
+                                           uvm_membar_t membar)
 {
     NvU32 aperture_value;
     NvU32 page_table_level;
@@ -127,9 +133,9 @@ void uvm_hal_pascal_host_tlb_invalidate_va(uvm_push_t *push, uvm_gpu_phys_addres
         ack_value = HWCONST(C06F, MEM_OP_C, TLB_INVALIDATE_ACK_TYPE, GLOBALLY);
     }
 
-    UVM_ASSERT_MSG(IS_ALIGNED(page_size, 1 << 12), "page_size 0x%x\n", page_size);
-    UVM_ASSERT_MSG(IS_ALIGNED(base, page_size), "base 0x%llx page_size 0x%x\n", base, page_size);
-    UVM_ASSERT_MSG(IS_ALIGNED(size, page_size), "size 0x%llx page_size 0x%x\n", size, page_size);
+    UVM_ASSERT_MSG(IS_ALIGNED(page_size, 1 << 12), "page_size 0x%llx\n", page_size);
+    UVM_ASSERT_MSG(IS_ALIGNED(base, page_size), "base 0x%llx page_size 0x%llx\n", base, page_size);
+    UVM_ASSERT_MSG(IS_ALIGNED(size, page_size), "size 0x%llx page_size 0x%llx\n", size, page_size);
     UVM_ASSERT_MSG(size > 0, "size 0x%llx\n", size);
 
     base >>= 12;

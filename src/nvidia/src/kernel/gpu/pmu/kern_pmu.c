@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +29,7 @@
 ****************************************************************************/
 
 #include "gpu/pmu/kern_pmu.h"
+#include "gpu/fsp/kern_fsp.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 
 NV_STATUS
@@ -45,12 +46,6 @@ kpmuStateDestroy_IMPL
     KernelPmu *pKernelPmu
 )
 {
-    if (pKernelPmu->pPmuRsvdMemdesc != NULL)
-    {
-        memdescFree(pKernelPmu->pPmuRsvdMemdesc);
-        memdescDestroy(pKernelPmu->pPmuRsvdMemdesc);
-        pKernelPmu->pPmuRsvdMemdesc = NULL;
-    }
 }
 
 void
@@ -61,11 +56,46 @@ kpmuDestruct_IMPL(KernelPmu *pKernelPmu)
     kpmuFreeLibosLoggingStructures(pGpu, pKernelPmu);
 }
 
-NvU32 kpmuReservedMemorySizeGet_IMPL
+NvU32
+kpmuReservedMemorySizeGet_IMPL
 (
     KernelPmu *pKernelPmu
 )
 {
+    return NV_ALIGN_UP64(
+            kpmuReservedMemoryBackingStoreSizeGet(pKernelPmu) +
+                kpmuReservedMemorySurfacesSizeGet(pKernelPmu) +
+                kpmuReservedMemoryMiscSizeGet(pKernelPmu),
+            KPMU_RESERVED_MEMORY_ALIGNMENT);
+}
+
+NvU32
+kpmuReservedMemoryBackingStoreSizeGet_IMPL
+(
+    KernelPmu *pKernelPmu
+)
+{
+
+    return 0U;
+}
+
+NvU32
+kpmuReservedMemorySurfacesSizeGet_IMPL
+(
+    KernelPmu *pKernelPmu
+)
+{
+
+    return 0U;
+}
+
+NvU32
+kpmuReservedMemoryMiscSizeGet_IMPL
+(
+    KernelPmu *pKernelPmu
+)
+{
+
     return 0U;
 }
 

@@ -34,7 +34,6 @@
 #include "dp_auxdefs.h"
 
 // Regkey Names
-#define NV_DP_REGKEY_ENABLE_AUDIO_BEYOND_48K          "ENABLE_AUDIO_BEYOND48K"
 #define NV_DP_REGKEY_OVERRIDE_DPCD_REV                "OVERRIDE_DPCD_REV"
 #define NV_DP_REGKEY_DISABLE_SSC                      "DISABLE_SSC"
 #define NV_DP_REGKEY_ENABLE_FAST_LINK_TRAINING        "ENABLE_FAST_LINK_TRAINING"
@@ -84,6 +83,7 @@
 //
 #define NV_DP_REGKEY_FORCE_DSC_ON_SINK                 "DP_FORCE_DSC_ON_SINK"
 #define NV_DP_REGKEY_ENABLE_SKIP_DPCD_READS_WAR        "DP_BUG_4478047_WAR"
+#define NV_DP_REGKEY_DISABLE_TUNNEL_BW_ALLOCATION      "DP_DISABLE_TUNNEL_BW_ALLOCATION"
 
 //
 // Data Base used to store all the regkey values.
@@ -96,7 +96,6 @@ struct DP_REGKEY_DATABASE
 {
     bool  bInitialized; // set to true after the first EvoMainLink instance is constructed
     // Below are regkey values
-    bool  bAudioBeyond48kEnabled;
     NvU32 dpcdRevOveride;
     bool  bSscDisabled;
     bool  bFastLinkTrainingEnabled;
@@ -121,7 +120,10 @@ struct DP_REGKEY_DATABASE
     bool  bMSTPCONCapsReadDisabled;
     bool  bForceDscOnSink;
     bool  bSkipFakeDeviceDpcdAccess;
+    bool  bForceDisableTunnelBwAllocation;
 };
+
+extern struct DP_REGKEY_DATABASE dpRegkeyDatabase;
 
 #endif //INCLUDED_DP_REGKEYDATABASE_H
 

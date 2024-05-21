@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,12 +39,12 @@
 // are multiple BIG page sizes in RM. These defines are used as flags to "0"
 // should be OK when user is not sure which pagesize allocation it wants
 //
-#define UVM_PAGE_SIZE_DEFAULT    0x0
-#define UVM_PAGE_SIZE_4K         0x1000
-#define UVM_PAGE_SIZE_64K        0x10000
-#define UVM_PAGE_SIZE_128K       0x20000
-#define UVM_PAGE_SIZE_2M         0x200000
-#define UVM_PAGE_SIZE_512M       0x20000000
+#define UVM_PAGE_SIZE_DEFAULT    0x0ULL
+#define UVM_PAGE_SIZE_4K         0x1000ULL
+#define UVM_PAGE_SIZE_64K        0x10000ULL
+#define UVM_PAGE_SIZE_128K       0x20000ULL
+#define UVM_PAGE_SIZE_2M         0x200000ULL
+#define UVM_PAGE_SIZE_512M       0x20000000ULL
 
 //
 // When modifying flags, make sure they are compatible with the mirrored
@@ -267,6 +267,7 @@ typedef struct UvmGpuChannelInfo_tag
 
     // The errorNotifier is filled out when the channel hits an RC error.
     NvNotification    *errorNotifier;
+    NvNotification    *keyRotationNotifier;
 
     NvU32              hwRunlistId;
     NvU32              hwChannelId;
@@ -292,13 +293,13 @@ typedef struct UvmGpuChannelInfo_tag
 
     // GPU VAs of both GPFIFO and GPPUT are needed in Confidential Computing
     // so a channel can be controlled via another channel (SEC2 or WLC/LCIC)
-    NvU64             gpFifoGpuVa;
-    NvU64             gpPutGpuVa;
-    NvU64             gpGetGpuVa;
+    NvU64              gpFifoGpuVa;
+    NvU64              gpPutGpuVa;
+    NvU64              gpGetGpuVa;
     // GPU VA of work submission offset is needed in Confidential Computing
     // so CE channels can ring doorbell of other channels as required for
     // WLC/LCIC work submission
-    NvU64             workSubmissionOffsetGpuVa;
+    NvU64              workSubmissionOffsetGpuVa;
 } UvmGpuChannelInfo;
 
 typedef enum
@@ -1056,5 +1057,22 @@ typedef enum UvmCslOperation
     UVM_CSL_OPERATION_ENCRYPT,
     UVM_CSL_OPERATION_DECRYPT
 } UvmCslOperation;
+
+typedef enum UVM_KEY_ROTATION_STATUS {
+    // Key rotation complete/not in progress
+    UVM_KEY_ROTATION_STATUS_IDLE = 0,
+    // RM is waiting for clients to report their channels are idle for key rotation
+    UVM_KEY_ROTATION_STATUS_PENDING = 1,
+    // Key rotation is in progress
+    UVM_KEY_ROTATION_STATUS_IN_PROGRESS = 2,
+    // Key rotation timeout failure, RM will RC non-idle channels.
+    // UVM should never see this status value.
+    UVM_KEY_ROTATION_STATUS_FAILED_TIMEOUT = 3,
+    // Key rotation failed because upper threshold was crossed, RM will RC non-idle channels
+    UVM_KEY_ROTATION_STATUS_FAILED_THRESHOLD = 4,
+    // Internal RM failure while rotating keys for a certain channel, RM will RC the channel.
+    UVM_KEY_ROTATION_STATUS_FAILED_ROTATION = 5,
+    UVM_KEY_ROTATION_STATUS_MAX_COUNT = 6,
+} UVM_KEY_ROTATION_STATUS;
 
 #endif // _NV_UVM_TYPES_H_

@@ -67,8 +67,7 @@ static inline const NVT_EDID_CEA861_INFO *GetExt861(const NVParsedEdidEvoRec *pP
  * colorimetry and colorrange for video infoframe.
  */
 static void CalculateVideoInfoFrameColorFormat(
-    const NVAttributesSetEvoRec *pAttributesSet,
-    enum NvKmsOutputColorimetry colorimetry,
+    const NVDpyAttributeColor *pDpyColor,
     const NvU32 hdTimings,
     NVT_VIDEO_INFOFRAME_CTRL *pCtrl)
 {
@@ -77,12 +76,12 @@ static void CalculateVideoInfoFrameColorFormat(
      * is RGB. This is enforced when the colorSpace is selected.
      * XXX HDR TODO: Support YUV
      */
-    nvAssert((colorimetry != NVKMS_OUTPUT_COLORIMETRY_BT2100) ||
-             (pAttributesSet->colorSpace ==
+    nvAssert((pDpyColor->colorimetry != NVKMS_OUTPUT_COLORIMETRY_BT2100) ||
+             (pDpyColor->format ==
                 NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB));
 
     // sets video infoframe colorspace (RGB/YUV).
-    switch (pAttributesSet->colorSpace) {
+    switch (pDpyColor->format) {
     case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB:
         pCtrl->color_space = NVT_VIDEO_INFOFRAME_BYTE1_Y1Y0_RGB;
         break;
@@ -101,9 +100,9 @@ static void CalculateVideoInfoFrameColorFormat(
     }
 
     // sets video infoframe colorimetry.
-    switch (pAttributesSet->colorSpace) {
+    switch (pDpyColor->format) {
     case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB:
-        if (colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100) {
+        if (pDpyColor->colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100) {
             pCtrl->colorimetry = NVT_COLORIMETRY_BT2020RGB;
         } else {
             pCtrl->colorimetry = NVT_COLORIMETRY_RGB;
@@ -126,7 +125,7 @@ static void CalculateVideoInfoFrameColorFormat(
     }
 
     // sets video infoframe colorrange.
-    switch (pAttributesSet->colorRange) {
+    switch (pDpyColor->range) {
     case NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_FULL:
         pCtrl->rgb_quantization_range =
             NVT_VIDEO_INFOFRAME_BYTE3_Q1Q0_FULL_RANGE;
@@ -524,7 +523,7 @@ static void SendInfoFrame(const NVDispEvoRec *pDispEvo,
  */
 static void SendVideoInfoFrame(const NVDispEvoRec *pDispEvo,
                                const NvU32 head,
-                               const NVAttributesSetEvoRec *pAttributesSet,
+                               const NVDpyAttributeColor *pDpyColor,
                                const NVDispHeadInfoFrameStateEvoRec *pInfoFrameState,
                                NVT_EDID_INFO *pEdidInfo)
 {
@@ -534,11 +533,7 @@ static void SendVideoInfoFrame(const NVDispEvoRec *pDispEvo,
     NVT_STATUS status;
 
 
-    CalculateVideoInfoFrameColorFormat(
-        pAttributesSet,
-        pDispEvo->headState[head].colorimetry,
-        hdTimings,
-        &videoCtrl);
+    CalculateVideoInfoFrameColorFormat(pDpyColor, hdTimings, &videoCtrl);
 
     status = NvTiming_ConstructVideoInfoframe(pEdidInfo,
                                               &videoCtrl,
@@ -675,7 +670,7 @@ SendHDRInfoFrame(const NVDispEvoRec *pDispEvo, const NvU32 head,
  */
 void nvUpdateHdmiInfoFrames(const NVDispEvoRec *pDispEvo,
                             const NvU32 head,
-                            const NVAttributesSetEvoRec *pAttributesSet,
+                            const NVDpyAttributeColor *pDpyColor,
                             const NVDispHeadInfoFrameStateEvoRec *pInfoFrameState,
                             NVDpyEvoRec *pDpyEvo)
 {
@@ -692,7 +687,7 @@ void nvUpdateHdmiInfoFrames(const NVDispEvoRec *pDispEvo,
 
     SendVideoInfoFrame(pDispEvo,
                        head,
-                       pAttributesSet,
+                       pDpyColor,
                        pInfoFrameState,
                        &pDpyEvo->parsedEdid.info);
 
@@ -844,9 +839,11 @@ static void EnableHdmiAudio(const NVDispEvoRec *pDispEvo,
 }
 
 static const NVT_EDID_CEA861_INFO *GetMaxSampleRateExtBlock(
+    const NVDpyEvoRec *pDpyEvo,
     const NVParsedEdidEvoRec *pParsedEdid,
     NvU32 *pMaxFreqSupported)
 {
+    const NVDevEvoRec *pDevEvo = pDpyEvo->pDispEvo->pDevEvo;
     const NVT_EDID_CEA861_INFO *pExt861 = NULL;
     int extIndex;
     int i;
@@ -903,6 +900,15 @@ static const NVT_EDID_CEA861_INFO *GetMaxSampleRateExtBlock(
                 NV0073_CTRL_DFP_ELD_AUDIO_CAPS_MAX_FREQ_SUPPORTED_0480KHZ;
         }
 
+        /* Cap DP audio to 48 KHz unless device supports 192 KHz */
+        if (nvConnectorUsesDPLib(pDpyEvo->pConnectorEvo) &&
+            !pDevEvo->hal->caps.supportsDPAudio192KHz &&
+            (maxFreqSupported >
+             NV0073_CTRL_DFP_ELD_AUDIO_CAPS_MAX_FREQ_SUPPORTED_0480KHZ)) {
+            maxFreqSupported =
+                NV0073_CTRL_DFP_ELD_AUDIO_CAPS_MAX_FREQ_SUPPORTED_0480KHZ;
+        }
+
         if (maxFreqSupported > *pMaxFreqSupported) {
             *pMaxFreqSupported = maxFreqSupported;
             pExt861 = pTmpExt861;
@@ -932,8 +938,8 @@ static const VSDB_DATA *GetVsdb(const NVT_EDID_CEA861_INFO *pExt861)
     return pVsdb;
 }
 
-static NvBool FillELDBuffer(const NvU32 displayId,
-                            const NvBool isDisplayPort,
+static NvBool FillELDBuffer(const NVDpyEvoRec *pDpyEvo,
+                            const NvU32 displayId,
                             const NVParsedEdidEvoRec *pParsedEdid,
                             NVEldEvoRec *pEld,
                             NvU32 *pMaxFreqSupported)
@@ -946,8 +952,9 @@ static NvBool FillELDBuffer(const NvU32 displayId,
     NvU8 EldSAI = 0;
     NvU8 EldAudSynchDelay = 0;
     const VSDB_DATA *pVsdb;
+    NvBool isDisplayPort = nvConnectorUsesDPLib(pDpyEvo->pConnectorEvo);
 
-    pExt861 = GetMaxSampleRateExtBlock(pParsedEdid, pMaxFreqSupported);
+    pExt861 = GetMaxSampleRateExtBlock(pDpyEvo, pParsedEdid, pMaxFreqSupported);
 
     if (pExt861 == NULL) {
         return FALSE;
@@ -1110,8 +1117,8 @@ void nvHdmiDpConstructHeadAudioState(const NvU32 displayId,
 
     pAudioState->isAudioOverHdmi = nvDpyIsHdmiEvo(pDpyEvo);
 
-    if (FillELDBuffer(displayId,
-                      nvConnectorUsesDPLib(pDpyEvo->pConnectorEvo),
+    if (FillELDBuffer(pDpyEvo,
+                      displayId,
                       &pDpyEvo->parsedEdid,
                       &pAudioState->eld,
                       &pAudioState->maxFreqSupported)) {
@@ -2142,30 +2149,30 @@ NvBool nvHdmiDpySupportsFrl(const NVDpyEvoRec *pDpyEvo)
     return TRUE;
 }
 
-/*
- * Determine if HDMI FRL is needed to drive timings with the given pixel clock
- * on the given dpy.
- *
- * Returns TRUE if FRL is needed, or FALSE otherwise.
- * */
-NvBool nvHdmiTimingsNeedFrl(const NVDpyEvoRec *pDpyEvo,
-                            const NVHwModeTimingsEvo *pHwTimings,
-                            NvU8 bpc)
+NvU32 nvHdmiGetEffectivePixelClockKHz(const NVDpyEvoRec *pDpyEvo,
+                                       const NVHwModeTimingsEvo *pHwTimings,
+                                       const NVDpyAttributeColor *pDpyColor)
 {
     const NvU32 pixelClock = (pHwTimings->yuv420Mode == NV_YUV420_MODE_HW) ?
         (pHwTimings->pixelClock / 2) : pHwTimings->pixelClock;
 
+    nvAssert((pHwTimings->yuv420Mode == NV_YUV420_MODE_NONE) ||
+                (pDpyColor->format ==
+                 NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420));
     nvAssert(nvDpyIsHdmiEvo(pDpyEvo));
-    nvAssert(bpc >= 8);
+    nvAssert(pDpyColor->bpc >= NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8);
+
+    /* YCbCr422 does not change the effective pixel clock. */
+    if (pDpyColor->format ==
+            NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr422) {
+        return pixelClock;
+    }
 
     /*
-     * For HDMI, maxSingleLinkPixelClockKHz is the maximum non-FRL rate.
-     * If the rate is higher than that, try to use FRL for the mode.
-     *
      * For > 8 BPC, the effective pixel clock is adjusted upwards according to
      * the ratio of the given BPC and 8 BPC.
      */
-    return ((pixelClock * bpc) / 8) > pDpyEvo->maxSingleLinkPixelClockKHz;
+    return ((pixelClock * pDpyColor->bpc) / 8ULL);
 }
 
 static NvU64 GetHdmiFrlLinkRate(HDMI_FRL_DATA_RATE frlRate)
@@ -2205,11 +2212,10 @@ static NvBool nvHdmiFrlQueryConfigOneBpc(
     const NVDpyEvoRec *pDpyEvo,
     const NvModeTimings *pModeTimings,
     const NVHwModeTimingsEvo *pHwTimings,
+    const NVDpyAttributeColor *pDpyColor,
     const NvBool b2Heads1Or,
     const struct NvKmsModeValidationParams *pValidationParams,
-    NvU8 bpc,
     HDMI_FRL_CONFIG *pConfig,
-    NvU8 *pHdmiFrlBpc,
     NVDscInfoEvoRec *pDscInfo)
 {
     const NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
@@ -2220,17 +2226,16 @@ static NvBool nvHdmiFrlQueryConfigOneBpc(
     NVT_TIMING nvtTiming = { };
     NVHDMIPKT_RESULT ret;
 
-    *pHdmiFrlBpc = 0;
-
     if (pHwTimings->protocol != NVKMS_PROTOCOL_SOR_HDMI_FRL) {
         nvkms_memset(pDscInfo, 0, sizeof(*pDscInfo));
         nvkms_memset(pConfig, 0, sizeof(*pConfig));
         return TRUE;
     }
 
-    nvAssert(nvDpyIsHdmiEvo(pDpyEvo) &&
-                nvHdmiDpySupportsFrl(pDpyEvo) &&
-                nvHdmiTimingsNeedFrl(pDpyEvo, pHwTimings, bpc));
+    nvAssert(nvDpyIsHdmiEvo(pDpyEvo));
+    nvAssert(nvHdmiDpySupportsFrl(pDpyEvo));
+    nvAssert(nvHdmiGetEffectivePixelClockKHz(pDpyEvo, pHwTimings, pDpyColor) >
+                pDpyEvo->maxSingleLinkPixelClockKHz);
 
     /* See if we can find an NVT_TIMING for this mode from the EDID. */
     pNvtTiming = nvFindEdidNVT_TIMING(pDpyEvo, pModeTimings, pValidationParams);
@@ -2273,7 +2278,17 @@ static NvBool nvHdmiFrlQueryConfigOneBpc(
      * This matches the non-DP default assigned later in
      * nvConstructHwModeTimingsEvo().
      */
-    videoTransportInfo.bpc = bpc;
+    switch(pDpyColor->bpc) {
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10:
+            videoTransportInfo.bpc = HDMI_BPC10;
+            break;
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8:
+            videoTransportInfo.bpc = HDMI_BPC8;
+            break;
+        default:
+            return FALSE;
+    }
+
     /* TODO: support YUV/YCbCr 444 and 422 packing modes. */
     switch (pModeTimings->yuv420Mode) {
         case NV_YUV420_MODE_NONE:
@@ -2331,8 +2346,6 @@ static NvBool nvHdmiFrlQueryConfigOneBpc(
     }
 
     if (ret == NVHDMIPKT_SUCCESS) {
-        *pHdmiFrlBpc = bpc;
-
         if (pDscInfo != NULL) {
             const NvU64 hdmiLinkRate = GetHdmiFrlLinkRate(pConfig->frlRate);
 
@@ -2391,37 +2404,28 @@ NvBool nvHdmiFrlQueryConfig(
     const NVDpyEvoRec *pDpyEvo,
     const NvModeTimings *pModeTimings,
     const NVHwModeTimingsEvo *pHwTimings,
+    NVDpyAttributeColor *pDpyColor,
     const NvBool b2Heads1Or,
     const struct NvKmsModeValidationParams *pValidationParams,
     HDMI_FRL_CONFIG *pConfig,
-    NvU8 *pHdmiFrlBpc,
     NVDscInfoEvoRec *pDscInfo)
 {
-    if (nvDpyIsHdmiDepth30Evo(pDpyEvo)) {
-        // Try first with 10 BPC
+    NVDpyAttributeColor dpyColor = *pDpyColor;
+    do {
         if (nvHdmiFrlQueryConfigOneBpc(pDpyEvo,
                                        pModeTimings,
                                        pHwTimings,
+                                       &dpyColor,
                                        b2Heads1Or,
                                        pValidationParams,
-                                       HDMI_BPC10,
                                        pConfig,
-                                       pHdmiFrlBpc,
                                        pDscInfo)) {
+            *pDpyColor = dpyColor;
             return TRUE;
         }
-    }
-
-    // Try again with 8 BPC
-    return nvHdmiFrlQueryConfigOneBpc(pDpyEvo,
-                                      pModeTimings,
-                                      pHwTimings,
-                                      b2Heads1Or,
-                                      pValidationParams,
-                                      HDMI_BPC8,
-                                      pConfig,
-                                      pHdmiFrlBpc,
-                                      pDscInfo);
+    } while(nvDowngradeColorBpc(&dpyColor) &&
+                (dpyColor.bpc >= NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8));
+    return FALSE;
 }
 
 void nvHdmiFrlSetConfig(NVDispEvoRec *pDispEvo, NvU32 head)

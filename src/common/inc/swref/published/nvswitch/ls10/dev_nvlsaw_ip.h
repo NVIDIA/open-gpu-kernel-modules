@@ -96,5 +96,8 @@
 #define NV_NVLSAW_SECURE_SCRATCH_WARM_GROUP_1__SIZE_1      4               /*       */
 #define NV_NVLSAW_SECURE_SCRATCH_WARM_GROUP_1_VALUE        31:0            /* RWEVF */
 #define NV_NVLSAW_SECURE_SCRATCH_WARM_GROUP_1_VALUE_INIT   0x00000000      /* RWE-V */
-#define NV_NVLSAW_SECURE_SCRATCH_WARM_GROUP_3(i)           (0x00000c50+(i)*0x4) /* RW-4A */ 
+#define NV_NVLSAW_SECURE_SCRATCH_WARM_GROUP_3(i)           (0x00000c50+(i)*0x4) /* RW-4A */
+#define NV_NVLSAW_SECURE_SCRATCH_WARM_GROUP_3__SIZE_1      4               /*       */
+#define NV_NVLSAW_SECURE_SCRATCH_WARM_GROUP_3_VALUE        31:0            /* RWEVF */
+#define NV_NVLSAW_SECURE_SCRATCH_WARM_GROUP_3_VALUE_INIT   0x00000000      /* RWE-V */
 #endif // __ls10_dev_nvlsaw_ip_h__

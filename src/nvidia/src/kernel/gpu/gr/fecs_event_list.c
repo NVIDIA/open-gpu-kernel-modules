@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -906,10 +906,44 @@ _fecsTimerDestroy
     {
         OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
 
-        tmrEventCancel(pTmr, pFecsGlobalTraceInfo->pFecsTimerEvent);
         tmrEventDestroy(pTmr, pFecsGlobalTraceInfo->pFecsTimerEvent);
         pFecsGlobalTraceInfo->pFecsTimerEvent = NULL;
     }
+}
+
+NV_STATUS
+fecsHandleFecsLoggingError
+(
+    OBJGPU *pGpu,
+    NvU32 grIdx,
+    FECS_ERROR_EVENT_TYPE errorType
+)
+{
+    KernelGraphics *pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, grIdx);
+    NV_STATUS status = NV_OK;
+
+    switch (errorType)
+    {
+        case FECS_ERROR_EVENT_TYPE_BUFFER_RESET_REQUIRED:
+        {
+            fecsBufferDisableHw(pGpu, pKernelGraphics);
+            kgraphicsSetCtxswLoggingEnabled(pGpu, pKernelGraphics, NV_FALSE);
+            fecsBufferReset(pGpu, pKernelGraphics);
+            break;
+        }
+        case FECS_ERROR_EVENT_TYPE_BUFFER_FULL:
+        {
+            nvEventBufferFecsCallback(pGpu, pKernelGraphics);
+            break;
+        }
+        default:
+        {
+            status = NV_ERR_INVALID_ARGUMENT;
+            break;
+        }
+    }
+
+    return status;
 }
 
 /**
@@ -1383,6 +1417,33 @@ fecsRemoveBindpoint
         if (!bIntrDriven)
         {
             _fecsTimerDestroy(pGpu);
+        }
+    }
+}
+
+void
+fecsRemoveAllBindpointsForGpu
+(
+    OBJGPU *pGpu
+)
+{
+    KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
+    KGRMGR_FECS_GLOBAL_TRACE_INFO *pFecsGlobalTraceInfo = kgrmgrGetFecsGlobalTraceInfo(pGpu, pKernelGraphicsManager);
+    FecsEventBufferBindMultiMapSupermapIter iter;
+
+    NV_CHECK_OR_RETURN_VOID(LEVEL_SILENT, pFecsGlobalTraceInfo != NULL);
+
+    iter = multimapSubmapIterAll(&pFecsGlobalTraceInfo->fecsEventBufferBindingsUid);
+    while (multimapSubmapIterNext(&iter))
+    {
+        FecsEventBufferBindMultiMapSubmap *pSubmap = iter.pValue;
+        FecsEventBufferBindMultiMapIter subIter = multimapSubmapIterItems(&pFecsGlobalTraceInfo->fecsEventBufferBindingsUid, pSubmap);
+        NvU64 uid = mapKey_IMPL(iter.iter.pMap, pSubmap);
+
+        while (multimapItemIterNext(&subIter))
+        {
+            NV_EVENT_BUFFER_BIND_POINT_FECS *pBind = subIter.pValue;
+            fecsRemoveBindpoint(pGpu, uid, pBind);
         }
     }
 }

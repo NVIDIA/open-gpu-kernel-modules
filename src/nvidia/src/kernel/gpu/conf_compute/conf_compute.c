@@ -43,6 +43,7 @@
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "gpu/conf_compute/conf_compute_api.h"
 #include "class/clcb33.h"
+#include "spdm/rmspdmvendordef.h"
 
 /*!
  * Local object related functions
@@ -51,6 +52,7 @@ static NV_STATUS _confComputeInitRegistryOverrides(OBJGPU *, ConfidentialCompute
 static NvU32 _confComputeGetKeyspaceSize(NvU16 keyspace);
 
 #define KEY_ROTATION_THRESHOLD_DELTA 20000000ull
+#define KEY_ROTATION_TIMEOUT         10
 
 NV_STATUS
 confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
@@ -64,7 +66,6 @@ confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
 
     pConfCompute->pSpdm              = NULL;
     pConfCompute->pGspHeartbeatTimer = NULL;
-    pConfCompute->heartbeatPeriodSec = 0;
 
     portMemSet(&pConfCompute->ccStaticInfo, 0, sizeof(pConfCompute->ccStaticInfo));
     pConfCompute->gspProxyRegkeys = 0;
@@ -148,6 +149,12 @@ confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
         if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_CC_MULTI_GPU_MODE, &data) == NV_OK) &&
             (data == NV_REG_STR_RM_CC_MULTI_GPU_MODE_PROTECTED_PCIE))
         {
+            if (!pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_DEVTOOLS_MODE_ENABLED))
+            {
+                NV_PRINTF(LEVEL_ERROR, "Protected PCIe mode needs devtools mode to be enabled!\n");
+                NV_ASSERT(0);
+                return NV_ERR_INVALID_STATE;
+            }
             NV_PRINTF(LEVEL_INFO, "Enabling protected PCIe\n");
             pConfCompute->setProperty(pConfCompute,
                  PDB_PROP_CONFCOMPUTE_MULTI_GPU_PROTECTED_PCIE_MODE_ENABLED, NV_TRUE);
@@ -158,6 +165,7 @@ confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
     // init key rotation state
     pConfCompute->attackerAdvantage = SECURITY_POLICY_ATTACKER_ADVANTAGE_DEFAULT;
     pConfCompute->keyRotationLimitDelta = KEY_ROTATION_THRESHOLD_DELTA;
+    pConfCompute->keyRotationTimeout = KEY_ROTATION_TIMEOUT;
     NV_ASSERT_OK_OR_RETURN(confComputeSetKeyRotationThreshold(pConfCompute,
                                                               pConfCompute->attackerAdvantage));
 
@@ -165,11 +173,10 @@ confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
     {
         pConfCompute->keyRotationState[i] = KEY_ROTATION_STATUS_IDLE;
         pConfCompute->ppKeyRotationTimer[i] = NULL;
+        pConfCompute->keyRotationCallbackCount[i] = 0;
     }
     portMemSet(pConfCompute->aggregateStats, 0, sizeof(pConfCompute->aggregateStats));
     portMemSet(pConfCompute->freedChannelAggregateStats, 0, sizeof(pConfCompute->freedChannelAggregateStats));
-    pConfCompute->keyRotationCallbackCount = 0;
-    pConfCompute->keyRotationChannelRefCount = 0;
     pConfCompute->keyRotationEnableMask = 0;
     NV_ASSERT_OK_OR_RETURN(confComputeEnableKeyRotationSupport_HAL(pGpu, pConfCompute));
 
@@ -201,14 +208,6 @@ _confComputeInitRegistryOverrides
         if (FLD_TEST_DRF(_REG_STR, _RM_CONFIDENTIAL_COMPUTE, _GPUS_READY_CHECK, _DISABLED, data))
         {
             pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_GPUS_READY_CHECK_ENABLED, NV_FALSE);
-        }
-
-        if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_CONF_COMPUTE_EARLY_INIT, &data)
-            == NV_OK) && (data == NV_REG_STR_RM_CONF_COMPUTE_EARLY_INIT_ENABLED))
-        {
-            NV_PRINTF(LEVEL_INFO, "Confidential Compute early init enabled via regkey override.\n");
-            pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENABLE_EARLY_INIT, NV_TRUE);
-            pConfCompute->gspProxyRegkeys |= DRF_DEF(GSP, _PROXY_REG, _CONF_COMPUTE_EARLY_INIT, _ENABLE);
         }
 
         if (FLD_TEST_DRF(_REG_STR, _RM_CONFIDENTIAL_COMPUTE, _DEV_MODE_ENABLED, _YES, data))
@@ -257,6 +256,32 @@ _confComputeInitRegistryOverrides
             {
                 NV_PRINTF(LEVEL_ERROR, "SPDM child object creation failed! Status:0x%x\n", status);
                 return status;
+            }
+            if (osReadRegistryDword(pGpu, NV_REG_STR_RM_CONF_COMPUTE_HEARTBEAT, &data) == NV_OK)
+            {
+                pConfCompute->heartbeatPeriodSec =
+                    DRF_VAL(_REG_STR, _RM_CONF_COMPUTE_HEARTBEAT_PERIOD, _SECONDS, data);
+                if (FLD_TEST_DRF(_REG_STR, _RM_CONF_COMPUTE_HEARTBEAT_PERIOD, _SECONDS, _DISABLE, data))
+                {
+                    NV_PRINTF(LEVEL_ERROR, "SPDM heartbeat disabled via regkey!\n");
+                }
+                else if (pConfCompute->heartbeatPeriodSec < NV_REG_STR_RM_CONF_COMPUTE_HEARTBEAT_PERIOD_SECONDS_MIN ||
+                         pConfCompute->heartbeatPeriodSec > NV_REG_STR_RM_CONF_COMPUTE_HEARTBEAT_PERIOD_SECONDS_MAX)
+                {
+                    // Check for overflow or underflow.
+                    NV_PRINTF(LEVEL_ERROR, "Suggested heartbeat period is invalid. Falling back to default 4 sec.\n");
+                    pConfCompute->heartbeatPeriodSec = SPDM_DEFAULT_HEARTBEAT_PERIOD_IN_SEC;
+                }
+                else
+                {
+                    NV_PRINTF(LEVEL_ERROR, "Overriding default heartbeat period to 0x%x sec\n",
+                            pConfCompute->heartbeatPeriodSec);
+                }
+            }
+            else
+            {
+                // Heartbeat is disabled by default.
+                pConfCompute->heartbeatPeriodSec = 0;
             }
         }
     }
@@ -476,7 +501,9 @@ confComputeStatePostLoad_IMPL
         }
     }
 
-    if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED))
+    if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED) &&
+        (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_ENABLED) ||
+         pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_DUMMY_KEY_ROTATION_ENABLED)))
     {
         status = confComputeEnableKeyRotationCallback_HAL(pGpu, pConfCompute, NV_TRUE);
         if (status != NV_OK)
@@ -506,7 +533,9 @@ confComputeStatePreUnload_KERNEL
 {
     NV_STATUS status = NV_OK;
     NV_STATUS tempStatus = NV_OK;
-    if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED))
+    if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED) &&
+        (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_ENABLED) ||
+         pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_DUMMY_KEY_ROTATION_ENABLED)))
     {
         OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
         for (NvU32 i = 0; i < CC_KEYSPACE_TOTAL_SIZE; i++)
@@ -525,6 +554,7 @@ confComputeStatePreUnload_KERNEL
             status = tempStatus;
         }
     }
+
     if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_SPDM_ENABLED))
     {
         if (IS_GSP_CLIENT(pGpu) && (pConfCompute->heartbeatPeriodSec != 0))
@@ -586,53 +616,6 @@ confComputeStateInitLocked_IMPL
               pConfCompute->ccStaticInfo.bIsBar1Trusted, pConfCompute->ccStaticInfo.bIsPcieTrusted);
 
     return NV_OK;
-}
-
-/*!
- * Sets fatal error state in ConfCompute session by setting GPU ready
- * state to false and invalidating the SPDM session.
- *
- * @param[in] pGpu                     : OBJGPU Pointer
- * @param[in] pConfCompute             : ConfidentialCompute pointer
- */
-void
-confComputeSetErrorState_KERNEL
-(
-    OBJGPU              *pGpu,
-    ConfidentialCompute *pConfCompute
-)
-{
-    OBJSYS                                                     *pSys    = SYS_GET_INSTANCE();
-    OBJGPUMGR                                                  *pGpuMgr = SYS_GET_GPUMGR(pSys);
-    NV_STATUS                                                   status  = NV_OK;
-    RM_API                                                     *pRmApi  = NULL;
-    NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_GPU_STATE_PARAMS  params  = {0};
-
-    NV_PRINTF(LEVEL_ERROR, "ConfCompute: Fatal error hit!\n");
-
-    // Set ready state to false
-    pConfCompute->bAcceptClientRequest   = NV_FALSE;
-    pGpuMgr->ccCaps.bAcceptClientRequest = NV_FALSE;
-    pGpuMgr->ccCaps.bFatalFailure        = NV_TRUE;
-    pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-    status = pRmApi->Control(pRmApi,
-                             pGpu->hInternalClient,
-                             pGpu->hInternalSubdevice,
-                             NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_GPU_STATE,
-                             &params,
-                             sizeof(params));
-
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "ConfCompute: Failed setting GPU state to not ready!\n");
-    }
-
-    // Invalidate SPDM session and all keys
-    status = _confComputeDeinitSpdmSessionAndKeys(pGpu, pConfCompute);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "ConfCompute: Failed tearing down SPDM!: 0x%x!\n", status);
-    }
 }
 
 /*!
@@ -705,6 +688,53 @@ confComputeGetNextChannelForKey_IMPL
 }
 
 /*!
+ * Sets fatal error state in ConfCompute session by setting GPU ready
+ * state to false and invalidating the SPDM session.
+ *
+ * @param[in] pGpu                     : OBJGPU Pointer
+ * @param[in] pConfCompute             : ConfidentialCompute pointer
+ */
+void
+confComputeSetErrorState_KERNEL
+(
+    OBJGPU              *pGpu,
+    ConfidentialCompute *pConfCompute
+)
+{
+    OBJSYS                                                     *pSys    = SYS_GET_INSTANCE();
+    OBJGPUMGR                                                  *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NV_STATUS                                                   status  = NV_OK;
+    RM_API                                                     *pRmApi  = NULL;
+    NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_GPU_STATE_PARAMS  params  = {0};
+
+    NV_PRINTF(LEVEL_ERROR, "ConfCompute: Fatal error hit!\n");
+
+    // Set ready state to false
+    pConfCompute->bAcceptClientRequest   = NV_FALSE;
+    pGpuMgr->ccCaps.bAcceptClientRequest = NV_FALSE;
+    pGpuMgr->ccCaps.bFatalFailure        = NV_TRUE;
+    pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    status = pRmApi->Control(pRmApi,
+                             pGpu->hInternalClient,
+                             pGpu->hInternalSubdevice,
+                             NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_GPU_STATE,
+                             &params,
+                             sizeof(params));
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "ConfCompute: Failed setting GPU state to not ready!\n");
+    }
+
+    // Invalidate SPDM session and all keys
+    status = _confComputeDeinitSpdmSessionAndKeys(pGpu, pConfCompute);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "ConfCompute: Failed tearing down SPDM!: 0x%x!\n", status);
+    }
+}
+
+/*!
  * Deinitialize all keys required for the Confidential Compute session.
  *
  * Note: Must occur in destructor, rather than confComputeStateDestroy
@@ -733,7 +763,7 @@ confComputeDestruct_KERNEL
 }
 
 /*!
- * Get key slot from global key 
+ * Get key slot from global key
  *
  * @param[in]  pConfCompute             : ConfidentialCompute pointer
  * @param[in]  globalKeyId              : globalKeyId

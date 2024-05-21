@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -53,6 +53,9 @@ struct ccslContext_t
     NvU64 keyHandleOut;
 
     void *openrmCtx;
+
+    MEMORY_DESCRIPTOR *pMemDesc;
+    volatile CC_CRYPTOBUNDLE_STATS *pEncStatsBuffer;
 };
 
 typedef struct ccslContext_t *pCcslContext;

@@ -117,6 +117,7 @@ __nvoc_ctor_CrashCatReport_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_CrashCatReport_1(CrashCatReport *pThis) {
     CrashCatReportHal *reportHal = &pThis->reportHal;
     const unsigned long reportHal_HalVarIdx = (unsigned long)reportHal->__nvoc_HalVarIdx;
@@ -124,7 +125,7 @@ static void __nvoc_init_funcTable_CrashCatReport_1(CrashCatReport *pThis) {
     PORT_UNREFERENCED_VARIABLE(reportHal);
     PORT_UNREFERENCED_VARIABLE(reportHal_HalVarIdx);
 
-    // Hal function -- crashcatReportLogReporter
+    // crashcatReportLogReporter -- halified (3 hals)
     if (( ((reportHal_HalVarIdx >> 5) == 0UL) && ((1UL << (reportHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* CrashCatReportHal: V1_LIBOS2 */ 
     {
         pThis->__crashcatReportLogReporter__ = &crashcatReportLogReporter_V1_LIBOS2;
@@ -138,7 +139,7 @@ static void __nvoc_init_funcTable_CrashCatReport_1(CrashCatReport *pThis) {
         pThis->__crashcatReportLogReporter__ = &crashcatReportLogReporter_V1_GENERIC;
     }
 
-    // Hal function -- crashcatReportLogSource
+    // crashcatReportLogSource -- halified (3 hals)
     if (( ((reportHal_HalVarIdx >> 5) == 0UL) && ((1UL << (reportHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* CrashCatReportHal: V1_LIBOS2 */ 
     {
         pThis->__crashcatReportLogSource__ = &crashcatReportLogSource_V1_LIBOS2;
@@ -151,9 +152,13 @@ static void __nvoc_init_funcTable_CrashCatReport_1(CrashCatReport *pThis) {
     {
         pThis->__crashcatReportLogSource__ = &crashcatReportLogSource_V1_GENERIC;
     }
-}
+} // End __nvoc_init_funcTable_CrashCatReport_1 with approximately 6 basic block(s).
 
+
+// Initialize vtable(s) for 2 virtual method(s).
 void __nvoc_init_funcTable_CrashCatReport(CrashCatReport *pThis) {
+
+    // Initialize vtable(s) with 2 per-object function pointer(s).
     __nvoc_init_funcTable_CrashCatReport_1(pThis);
 }
 

@@ -4183,7 +4183,7 @@ typedef struct tagNVT_HDMI_LLC_DATA
 
 typedef struct tagNVT_NVDA_VSDB_PAYLOAD
 {
-    NvU8    opcode;                     // Nvidia specific opcode - please refer to VRR monitor spec v5
+    NvU8    opcode;                     // Nvidia specific opcode - please refer to VRR monitor spec v17
     NvU8    vrrMinRefreshRate;          // Minimum refresh rate supported by this monitor 
 } NVT_NVDA_VSDB_PAYLOAD;
 

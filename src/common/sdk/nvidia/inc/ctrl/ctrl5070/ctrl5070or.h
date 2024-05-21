@@ -33,8 +33,6 @@
 #include "ctrl5070common.h"
 #include "ctrl/ctrl5070/ctrl5070base.h"
 
-
-
 /*
  * NV5070_CTRL_CMD_SET_DAC_PWR
  *
@@ -151,8 +149,6 @@ typedef struct NV5070_CTRL_CMD_SET_DAC_PWR_PARAMS {
     NvU32                       flags;
 } NV5070_CTRL_CMD_SET_DAC_PWR_PARAMS;
 
-
-
 /*
  * NV5070_CTRL_CMD_GET_SOR_PWM
  *
@@ -193,7 +189,7 @@ typedef struct NV5070_CTRL_CMD_SET_DAC_PWR_PARAMS {
  *      NV_ERR_INVALID_ARGUMENT
  *      NV_ERR_GENERIC
  */
-#define NV5070_CTRL_CMD_GET_SOR_PWM                                (0x50700420) /* finn: Evaluated from "(FINN_NV50_DISPLAY_OR_INTERFACE_ID << 8) | NV5070_CTRL_CMD_GET_SOR_PWM_PARAMS_MESSAGE_ID" */
+#define NV5070_CTRL_CMD_GET_SOR_PWM (0x50700420) /* finn: Evaluated from "(FINN_NV50_DISPLAY_OR_INTERFACE_ID << 8) | NV5070_CTRL_CMD_GET_SOR_PWM_PARAMS_MESSAGE_ID" */
 
 #define NV5070_CTRL_CMD_GET_SOR_PWM_PARAMS_MESSAGE_ID (0x20U)
 

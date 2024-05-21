@@ -1,13 +1,20 @@
+
 #ifndef _G_RS_CLIENT_NVOC_H_
 #define _G_RS_CLIENT_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +36,7 @@ extern "C" {
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_rs_client_nvoc.h"
 
 #ifndef _RS_CLIENT_H_
@@ -79,22 +87,34 @@ MAKE_LIST(AccessBackRefList, AccessBackRef);
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 
+
 struct RsClient {
+
+    // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+
+    // Parent (i.e. superclass or base class) object pointers
     struct Object __nvoc_base_Object;
-    struct Object *__nvoc_pbase_Object;
-    struct RsClient *__nvoc_pbase_RsClient;
-    NV_STATUS (*__clientValidate__)(struct RsClient *, const API_SECURITY_INFO *);
-    RS_PRIV_LEVEL (*__clientGetCachedPrivilege__)(struct RsClient *);
-    NvBool (*__clientIsAdmin__)(struct RsClient *, RS_PRIV_LEVEL);
-    NV_STATUS (*__clientFreeResource__)(struct RsClient *, RsServer *, struct RS_RES_FREE_PARAMS_INTERNAL *);
-    NV_STATUS (*__clientDestructResourceRef__)(struct RsClient *, RsServer *, struct RsResourceRef *);
-    NV_STATUS (*__clientUnmapMemory__)(struct RsClient *, struct RsResourceRef *, struct RS_LOCK_INFO *, struct RsCpuMapping **, API_SECURITY_INFO *);
-    NV_STATUS (*__clientInterMap__)(struct RsClient *, struct RsResourceRef *, struct RsResourceRef *, struct RS_INTER_MAP_PARAMS *);
-    NV_STATUS (*__clientInterUnmap__)(struct RsClient *, struct RsResourceRef *, struct RS_INTER_UNMAP_PARAMS *);
-    NV_STATUS (*__clientValidateNewResourceHandle__)(struct RsClient *, NvHandle, NvBool);
-    NV_STATUS (*__clientPostProcessPendingFreeList__)(struct RsClient *, struct RsResourceRef **);
-    NV_STATUS (*__clientShareResource__)(struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *, struct CALL_CONTEXT *);
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super
+    struct RsClient *__nvoc_pbase_RsClient;    // client
+
+    // Vtable with 12 per-object function pointers
+    NV_STATUS (*__clientValidate__)(struct RsClient * /*this*/, const API_SECURITY_INFO *);  // virtual
+    NV_STATUS (*__clientValidateLocks__)(struct RsClient * /*this*/, RsServer *, const CLIENT_ENTRY *);  // virtual
+    RS_PRIV_LEVEL (*__clientGetCachedPrivilege__)(struct RsClient * /*this*/);  // virtual
+    NvBool (*__clientIsAdmin__)(struct RsClient * /*this*/, RS_PRIV_LEVEL);  // virtual
+    NV_STATUS (*__clientFreeResource__)(struct RsClient * /*this*/, RsServer *, struct RS_RES_FREE_PARAMS_INTERNAL *);  // virtual
+    NV_STATUS (*__clientDestructResourceRef__)(struct RsClient * /*this*/, RsServer *, struct RsResourceRef *);  // virtual
+    NV_STATUS (*__clientUnmapMemory__)(struct RsClient * /*this*/, struct RsResourceRef *, struct RS_LOCK_INFO *, struct RsCpuMapping **, API_SECURITY_INFO *);  // virtual
+    NV_STATUS (*__clientInterMap__)(struct RsClient * /*this*/, struct RsResourceRef *, struct RsResourceRef *, struct RS_INTER_MAP_PARAMS *);  // virtual
+    NV_STATUS (*__clientInterUnmap__)(struct RsClient * /*this*/, struct RsResourceRef *, struct RS_INTER_UNMAP_PARAMS *);  // virtual
+    NV_STATUS (*__clientValidateNewResourceHandle__)(struct RsClient * /*this*/, NvHandle, NvBool);  // virtual
+    NV_STATUS (*__clientPostProcessPendingFreeList__)(struct RsClient * /*this*/, struct RsResourceRef **);  // virtual
+    NV_STATUS (*__clientShareResource__)(struct RsClient * /*this*/, struct RsResourceRef *, RS_SHARE_POLICY *, struct CALL_CONTEXT *);  // virtual
+
+    // Data members
     NvHandle hClient;
     CLIENT_TYPE type;
     NvBool bActive;
@@ -121,6 +141,7 @@ typedef struct RsClient RsClient;
 #define __nvoc_class_id_RsClient 0x8f87e5
 #endif /* __nvoc_class_id_RsClient */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsClient;
 
 #define __staticCast_RsClient(pThis) \
@@ -133,89 +154,111 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsClient;
     ((RsClient*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(RsClient)))
 #endif //__nvoc_rs_client_h_disabled
 
-
 NV_STATUS __nvoc_objCreateDynamic_RsClient(RsClient**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_RsClient(RsClient**, Dynamic*, NvU32, struct PORT_MEM_ALLOCATOR * arg_pAllocator, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
 #define __objCreate_RsClient(ppNewObj, pParent, createFlags, arg_pAllocator, arg_pParams) \
     __nvoc_objCreate_RsClient((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pAllocator, arg_pParams)
 
-#define clientValidate(pClient, pSecInfo) clientValidate_DISPATCH(pClient, pSecInfo)
-#define clientGetCachedPrivilege(pClient) clientGetCachedPrivilege_DISPATCH(pClient)
-#define clientIsAdmin(pClient, privLevel) clientIsAdmin_DISPATCH(pClient, privLevel)
-#define clientFreeResource(pClient, pServer, pParams) clientFreeResource_DISPATCH(pClient, pServer, pParams)
-#define clientDestructResourceRef(pClient, pServer, pResourceRef) clientDestructResourceRef_DISPATCH(pClient, pServer, pResourceRef)
-#define clientUnmapMemory(pClient, pResourceRef, pLockInfo, ppCpuMapping, pSecInfo) clientUnmapMemory_DISPATCH(pClient, pResourceRef, pLockInfo, ppCpuMapping, pSecInfo)
-#define clientInterMap(pClient, pMapperRef, pMappableRef, pParams) clientInterMap_DISPATCH(pClient, pMapperRef, pMappableRef, pParams)
-#define clientInterUnmap(pClient, pMapperRef, pParams) clientInterUnmap_DISPATCH(pClient, pMapperRef, pParams)
-#define clientValidateNewResourceHandle(pClient, hResource, bRestrict) clientValidateNewResourceHandle_DISPATCH(pClient, hResource, bRestrict)
-#define clientPostProcessPendingFreeList(pClient, ppFirstLowPriRef) clientPostProcessPendingFreeList_DISPATCH(pClient, ppFirstLowPriRef)
-#define clientShareResource(pClient, pResourceRef, pSharePolicy, pCallContext) clientShareResource_DISPATCH(pClient, pResourceRef, pSharePolicy, pCallContext)
-NV_STATUS clientValidate_IMPL(struct RsClient *pClient, const API_SECURITY_INFO *pSecInfo);
 
+// Wrapper macros
+#define clientValidate_FNPTR(pClient) pClient->__clientValidate__
+#define clientValidate(pClient, pSecInfo) clientValidate_DISPATCH(pClient, pSecInfo)
+#define clientValidateLocks_FNPTR(pClient) pClient->__clientValidateLocks__
+#define clientValidateLocks(pClient, pServer, pClientEntry) clientValidateLocks_DISPATCH(pClient, pServer, pClientEntry)
+#define clientGetCachedPrivilege_FNPTR(pClient) pClient->__clientGetCachedPrivilege__
+#define clientGetCachedPrivilege(pClient) clientGetCachedPrivilege_DISPATCH(pClient)
+#define clientIsAdmin_FNPTR(pClient) pClient->__clientIsAdmin__
+#define clientIsAdmin(pClient, privLevel) clientIsAdmin_DISPATCH(pClient, privLevel)
+#define clientFreeResource_FNPTR(pClient) pClient->__clientFreeResource__
+#define clientFreeResource(pClient, pServer, pParams) clientFreeResource_DISPATCH(pClient, pServer, pParams)
+#define clientDestructResourceRef_FNPTR(pClient) pClient->__clientDestructResourceRef__
+#define clientDestructResourceRef(pClient, pServer, pResourceRef) clientDestructResourceRef_DISPATCH(pClient, pServer, pResourceRef)
+#define clientUnmapMemory_FNPTR(pClient) pClient->__clientUnmapMemory__
+#define clientUnmapMemory(pClient, pResourceRef, pLockInfo, ppCpuMapping, pSecInfo) clientUnmapMemory_DISPATCH(pClient, pResourceRef, pLockInfo, ppCpuMapping, pSecInfo)
+#define clientInterMap_FNPTR(pClient) pClient->__clientInterMap__
+#define clientInterMap(pClient, pMapperRef, pMappableRef, pParams) clientInterMap_DISPATCH(pClient, pMapperRef, pMappableRef, pParams)
+#define clientInterUnmap_FNPTR(pClient) pClient->__clientInterUnmap__
+#define clientInterUnmap(pClient, pMapperRef, pParams) clientInterUnmap_DISPATCH(pClient, pMapperRef, pParams)
+#define clientValidateNewResourceHandle_FNPTR(pClient) pClient->__clientValidateNewResourceHandle__
+#define clientValidateNewResourceHandle(pClient, hResource, bRestrict) clientValidateNewResourceHandle_DISPATCH(pClient, hResource, bRestrict)
+#define clientPostProcessPendingFreeList_FNPTR(pClient) pClient->__clientPostProcessPendingFreeList__
+#define clientPostProcessPendingFreeList(pClient, ppFirstLowPriRef) clientPostProcessPendingFreeList_DISPATCH(pClient, ppFirstLowPriRef)
+#define clientShareResource_FNPTR(pClient) pClient->__clientShareResource__
+#define clientShareResource(pClient, pResourceRef, pSharePolicy, pCallContext) clientShareResource_DISPATCH(pClient, pResourceRef, pSharePolicy, pCallContext)
+
+// Dispatch functions
 static inline NV_STATUS clientValidate_DISPATCH(struct RsClient *pClient, const API_SECURITY_INFO *pSecInfo) {
     return pClient->__clientValidate__(pClient, pSecInfo);
 }
 
-RS_PRIV_LEVEL clientGetCachedPrivilege_IMPL(struct RsClient *pClient);
+static inline NV_STATUS clientValidateLocks_DISPATCH(struct RsClient *pClient, RsServer *pServer, const CLIENT_ENTRY *pClientEntry) {
+    return pClient->__clientValidateLocks__(pClient, pServer, pClientEntry);
+}
 
 static inline RS_PRIV_LEVEL clientGetCachedPrivilege_DISPATCH(struct RsClient *pClient) {
     return pClient->__clientGetCachedPrivilege__(pClient);
 }
 
-NvBool clientIsAdmin_IMPL(struct RsClient *pClient, RS_PRIV_LEVEL privLevel);
-
 static inline NvBool clientIsAdmin_DISPATCH(struct RsClient *pClient, RS_PRIV_LEVEL privLevel) {
     return pClient->__clientIsAdmin__(pClient, privLevel);
 }
-
-NV_STATUS clientFreeResource_IMPL(struct RsClient *pClient, RsServer *pServer, struct RS_RES_FREE_PARAMS_INTERNAL *pParams);
 
 static inline NV_STATUS clientFreeResource_DISPATCH(struct RsClient *pClient, RsServer *pServer, struct RS_RES_FREE_PARAMS_INTERNAL *pParams) {
     return pClient->__clientFreeResource__(pClient, pServer, pParams);
 }
 
-NV_STATUS clientDestructResourceRef_IMPL(struct RsClient *pClient, RsServer *pServer, struct RsResourceRef *pResourceRef);
-
 static inline NV_STATUS clientDestructResourceRef_DISPATCH(struct RsClient *pClient, RsServer *pServer, struct RsResourceRef *pResourceRef) {
     return pClient->__clientDestructResourceRef__(pClient, pServer, pResourceRef);
 }
-
-NV_STATUS clientUnmapMemory_IMPL(struct RsClient *pClient, struct RsResourceRef *pResourceRef, struct RS_LOCK_INFO *pLockInfo, struct RsCpuMapping **ppCpuMapping, API_SECURITY_INFO *pSecInfo);
 
 static inline NV_STATUS clientUnmapMemory_DISPATCH(struct RsClient *pClient, struct RsResourceRef *pResourceRef, struct RS_LOCK_INFO *pLockInfo, struct RsCpuMapping **ppCpuMapping, API_SECURITY_INFO *pSecInfo) {
     return pClient->__clientUnmapMemory__(pClient, pResourceRef, pLockInfo, ppCpuMapping, pSecInfo);
 }
 
-NV_STATUS clientInterMap_IMPL(struct RsClient *pClient, struct RsResourceRef *pMapperRef, struct RsResourceRef *pMappableRef, struct RS_INTER_MAP_PARAMS *pParams);
-
 static inline NV_STATUS clientInterMap_DISPATCH(struct RsClient *pClient, struct RsResourceRef *pMapperRef, struct RsResourceRef *pMappableRef, struct RS_INTER_MAP_PARAMS *pParams) {
     return pClient->__clientInterMap__(pClient, pMapperRef, pMappableRef, pParams);
 }
-
-NV_STATUS clientInterUnmap_IMPL(struct RsClient *pClient, struct RsResourceRef *pMapperRef, struct RS_INTER_UNMAP_PARAMS *pParams);
 
 static inline NV_STATUS clientInterUnmap_DISPATCH(struct RsClient *pClient, struct RsResourceRef *pMapperRef, struct RS_INTER_UNMAP_PARAMS *pParams) {
     return pClient->__clientInterUnmap__(pClient, pMapperRef, pParams);
 }
 
-NV_STATUS clientValidateNewResourceHandle_IMPL(struct RsClient *pClient, NvHandle hResource, NvBool bRestrict);
-
 static inline NV_STATUS clientValidateNewResourceHandle_DISPATCH(struct RsClient *pClient, NvHandle hResource, NvBool bRestrict) {
     return pClient->__clientValidateNewResourceHandle__(pClient, hResource, bRestrict);
 }
-
-NV_STATUS clientPostProcessPendingFreeList_IMPL(struct RsClient *pClient, struct RsResourceRef **ppFirstLowPriRef);
 
 static inline NV_STATUS clientPostProcessPendingFreeList_DISPATCH(struct RsClient *pClient, struct RsResourceRef **ppFirstLowPriRef) {
     return pClient->__clientPostProcessPendingFreeList__(pClient, ppFirstLowPriRef);
 }
 
-NV_STATUS clientShareResource_IMPL(struct RsClient *pClient, struct RsResourceRef *pResourceRef, RS_SHARE_POLICY *pSharePolicy, struct CALL_CONTEXT *pCallContext);
-
 static inline NV_STATUS clientShareResource_DISPATCH(struct RsClient *pClient, struct RsResourceRef *pResourceRef, RS_SHARE_POLICY *pSharePolicy, struct CALL_CONTEXT *pCallContext) {
     return pClient->__clientShareResource__(pClient, pResourceRef, pSharePolicy, pCallContext);
 }
+
+NV_STATUS clientValidate_IMPL(struct RsClient *pClient, const API_SECURITY_INFO *pSecInfo);
+
+NV_STATUS clientValidateLocks_IMPL(struct RsClient *pClient, RsServer *pServer, const CLIENT_ENTRY *pClientEntry);
+
+RS_PRIV_LEVEL clientGetCachedPrivilege_IMPL(struct RsClient *pClient);
+
+NvBool clientIsAdmin_IMPL(struct RsClient *pClient, RS_PRIV_LEVEL privLevel);
+
+NV_STATUS clientFreeResource_IMPL(struct RsClient *pClient, RsServer *pServer, struct RS_RES_FREE_PARAMS_INTERNAL *pParams);
+
+NV_STATUS clientDestructResourceRef_IMPL(struct RsClient *pClient, RsServer *pServer, struct RsResourceRef *pResourceRef);
+
+NV_STATUS clientUnmapMemory_IMPL(struct RsClient *pClient, struct RsResourceRef *pResourceRef, struct RS_LOCK_INFO *pLockInfo, struct RsCpuMapping **ppCpuMapping, API_SECURITY_INFO *pSecInfo);
+
+NV_STATUS clientInterMap_IMPL(struct RsClient *pClient, struct RsResourceRef *pMapperRef, struct RsResourceRef *pMappableRef, struct RS_INTER_MAP_PARAMS *pParams);
+
+NV_STATUS clientInterUnmap_IMPL(struct RsClient *pClient, struct RsResourceRef *pMapperRef, struct RS_INTER_UNMAP_PARAMS *pParams);
+
+NV_STATUS clientValidateNewResourceHandle_IMPL(struct RsClient *pClient, NvHandle hResource, NvBool bRestrict);
+
+NV_STATUS clientPostProcessPendingFreeList_IMPL(struct RsClient *pClient, struct RsResourceRef **ppFirstLowPriRef);
+
+NV_STATUS clientShareResource_IMPL(struct RsClient *pClient, struct RsResourceRef *pResourceRef, RS_SHARE_POLICY *pSharePolicy, struct CALL_CONTEXT *pCallContext);
 
 NV_STATUS clientConstruct_IMPL(struct RsClient *arg_pClient, struct PORT_MEM_ALLOCATOR *arg_pAllocator, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 
@@ -476,30 +519,41 @@ NV_STATUS clientUnmapResourceRefMappings(struct RsClient *pClient, CALL_CONTEXT 
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 
+
 struct RsClientResource {
+
+    // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+
+    // Parent (i.e. superclass or base class) object pointers
     struct RsResource __nvoc_base_RsResource;
-    struct Object *__nvoc_pbase_Object;
-    struct RsResource *__nvoc_pbase_RsResource;
-    struct RsClientResource *__nvoc_pbase_RsClientResource;
-    NvBool (*__clientresShareCallback__)(struct RsClientResource *, struct RsClient *, RsResourceRef *, RS_SHARE_POLICY *);
-    NV_STATUS (*__clientresControl__)(struct RsClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__clientresUnmap__)(struct RsClientResource *, struct CALL_CONTEXT *, RsCpuMapping *);
-    NV_STATUS (*__clientresMapTo__)(struct RsClientResource *, RS_RES_MAP_TO_PARAMS *);
-    NvU32 (*__clientresGetRefCount__)(struct RsClientResource *);
-    NV_STATUS (*__clientresControlFilter__)(struct RsClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    void (*__clientresAddAdditionalDependants__)(struct RsClient *, struct RsClientResource *, RsResourceRef *);
-    NV_STATUS (*__clientresControlSerialization_Prologue__)(struct RsClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NvBool (*__clientresCanCopy__)(struct RsClientResource *);
-    NV_STATUS (*__clientresControl_Prologue__)(struct RsClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NvBool (*__clientresIsPartialUnmapSupported__)(struct RsClientResource *);
-    void (*__clientresPreDestruct__)(struct RsClientResource *);
-    NV_STATUS (*__clientresUnmapFrom__)(struct RsClientResource *, RS_RES_UNMAP_FROM_PARAMS *);
-    NV_STATUS (*__clientresIsDuplicate__)(struct RsClientResource *, NvHandle, NvBool *);
-    void (*__clientresControlSerialization_Epilogue__)(struct RsClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    void (*__clientresControl_Epilogue__)(struct RsClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__clientresMap__)(struct RsClientResource *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
-    NvBool (*__clientresAccessCallback__)(struct RsClientResource *, struct RsClient *, void *, RsAccessRight);
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^2
+    struct RsResource *__nvoc_pbase_RsResource;    // res super
+    struct RsClientResource *__nvoc_pbase_RsClientResource;    // clientres
+
+    // Vtable with 18 per-object function pointers
+    NvBool (*__clientresCanCopy__)(struct RsClientResource * /*this*/);  // virtual inherited (res) base (res)
+    NV_STATUS (*__clientresIsDuplicate__)(struct RsClientResource * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (res)
+    void (*__clientresPreDestruct__)(struct RsClientResource * /*this*/);  // virtual inherited (res) base (res)
+    NV_STATUS (*__clientresControl__)(struct RsClientResource * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (res)
+    NV_STATUS (*__clientresControlFilter__)(struct RsClientResource * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (res)
+    NV_STATUS (*__clientresControlSerialization_Prologue__)(struct RsClientResource * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (res)
+    void (*__clientresControlSerialization_Epilogue__)(struct RsClientResource * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (res)
+    NV_STATUS (*__clientresControl_Prologue__)(struct RsClientResource * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (res)
+    void (*__clientresControl_Epilogue__)(struct RsClientResource * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (res)
+    NV_STATUS (*__clientresMap__)(struct RsClientResource * /*this*/, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);  // virtual inherited (res) base (res)
+    NV_STATUS (*__clientresUnmap__)(struct RsClientResource * /*this*/, struct CALL_CONTEXT *, RsCpuMapping *);  // virtual inherited (res) base (res)
+    NvBool (*__clientresIsPartialUnmapSupported__)(struct RsClientResource * /*this*/);  // inline virtual inherited (res) base (res) body
+    NV_STATUS (*__clientresMapTo__)(struct RsClientResource * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (res)
+    NV_STATUS (*__clientresUnmapFrom__)(struct RsClientResource * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (res)
+    NvU32 (*__clientresGetRefCount__)(struct RsClientResource * /*this*/);  // virtual inherited (res) base (res)
+    NvBool (*__clientresAccessCallback__)(struct RsClientResource * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (res) base (res)
+    NvBool (*__clientresShareCallback__)(struct RsClientResource * /*this*/, struct RsClient *, RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (res) base (res)
+    void (*__clientresAddAdditionalDependants__)(struct RsClient *, struct RsClientResource * /*this*/, RsResourceRef *);  // virtual inherited (res) base (res)
+
+    // Data members
     struct RsClient *pClient;
 };
 
@@ -512,6 +566,7 @@ typedef struct RsClientResource RsClientResource;
 #define __nvoc_class_id_RsClientResource 0x083442
 #endif /* __nvoc_class_id_RsClientResource */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsClientResource;
 
 #define __staticCast_RsClientResource(pThis) \
@@ -524,89 +579,82 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsClientResource;
     ((RsClientResource*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(RsClientResource)))
 #endif //__nvoc_rs_client_h_disabled
 
-
 NV_STATUS __nvoc_objCreateDynamic_RsClientResource(RsClientResource**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_RsClientResource(RsClientResource**, Dynamic*, NvU32, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
 #define __objCreate_RsClientResource(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_RsClientResource((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
-#define clientresShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) clientresShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
-#define clientresControl(pResource, pCallContext, pParams) clientresControl_DISPATCH(pResource, pCallContext, pParams)
-#define clientresUnmap(pResource, pCallContext, pCpuMapping) clientresUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
-#define clientresMapTo(pResource, pParams) clientresMapTo_DISPATCH(pResource, pParams)
-#define clientresGetRefCount(pResource) clientresGetRefCount_DISPATCH(pResource)
-#define clientresControlFilter(pResource, pCallContext, pParams) clientresControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define clientresAddAdditionalDependants(pClient, pResource, pReference) clientresAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define clientresControlSerialization_Prologue(pResource, pCallContext, pParams) clientresControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
+
+// Wrapper macros
+#define clientresCanCopy_FNPTR(pResource) pResource->__nvoc_base_RsResource.__resCanCopy__
 #define clientresCanCopy(pResource) clientresCanCopy_DISPATCH(pResource)
-#define clientresControl_Prologue(pResource, pCallContext, pParams) clientresControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define clientresIsPartialUnmapSupported(pResource) clientresIsPartialUnmapSupported_DISPATCH(pResource)
-#define clientresPreDestruct(pResource) clientresPreDestruct_DISPATCH(pResource)
-#define clientresUnmapFrom(pResource, pParams) clientresUnmapFrom_DISPATCH(pResource, pParams)
+#define clientresIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RsResource.__resIsDuplicate__
 #define clientresIsDuplicate(pResource, hMemory, pDuplicate) clientresIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define clientresPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RsResource.__resPreDestruct__
+#define clientresPreDestruct(pResource) clientresPreDestruct_DISPATCH(pResource)
+#define clientresControl_FNPTR(pResource) pResource->__nvoc_base_RsResource.__resControl__
+#define clientresControl(pResource, pCallContext, pParams) clientresControl_DISPATCH(pResource, pCallContext, pParams)
+#define clientresControlFilter_FNPTR(pResource) pResource->__nvoc_base_RsResource.__resControlFilter__
+#define clientresControlFilter(pResource, pCallContext, pParams) clientresControlFilter_DISPATCH(pResource, pCallContext, pParams)
+#define clientresControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RsResource.__resControlSerialization_Prologue__
+#define clientresControlSerialization_Prologue(pResource, pCallContext, pParams) clientresControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define clientresControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RsResource.__resControlSerialization_Epilogue__
 #define clientresControlSerialization_Epilogue(pResource, pCallContext, pParams) clientresControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
+#define clientresControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RsResource.__resControl_Prologue__
+#define clientresControl_Prologue(pResource, pCallContext, pParams) clientresControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define clientresControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RsResource.__resControl_Epilogue__
 #define clientresControl_Epilogue(pResource, pCallContext, pParams) clientresControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
+#define clientresMap_FNPTR(pResource) pResource->__nvoc_base_RsResource.__resMap__
 #define clientresMap(pResource, pCallContext, pParams, pCpuMapping) clientresMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
+#define clientresUnmap_FNPTR(pResource) pResource->__nvoc_base_RsResource.__resUnmap__
+#define clientresUnmap(pResource, pCallContext, pCpuMapping) clientresUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
+#define clientresIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RsResource.__resIsPartialUnmapSupported__
+#define clientresIsPartialUnmapSupported(pResource) clientresIsPartialUnmapSupported_DISPATCH(pResource)
+#define clientresMapTo_FNPTR(pResource) pResource->__nvoc_base_RsResource.__resMapTo__
+#define clientresMapTo(pResource, pParams) clientresMapTo_DISPATCH(pResource, pParams)
+#define clientresUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RsResource.__resUnmapFrom__
+#define clientresUnmapFrom(pResource, pParams) clientresUnmapFrom_DISPATCH(pResource, pParams)
+#define clientresGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RsResource.__resGetRefCount__
+#define clientresGetRefCount(pResource) clientresGetRefCount_DISPATCH(pResource)
+#define clientresAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RsResource.__resAccessCallback__
 #define clientresAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) clientresAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-static inline NvBool clientresShareCallback_DISPATCH(struct RsClientResource *pResource, struct RsClient *pInvokingClient, RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__clientresShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
-}
+#define clientresShareCallback_FNPTR(pResource) pResource->__nvoc_base_RsResource.__resShareCallback__
+#define clientresShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) clientresShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
+#define clientresAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RsResource.__resAddAdditionalDependants__
+#define clientresAddAdditionalDependants(pClient, pResource, pReference) clientresAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
-static inline NV_STATUS clientresControl_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__clientresControl__(pResource, pCallContext, pParams);
-}
-
-static inline NV_STATUS clientresUnmap_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__clientresUnmap__(pResource, pCallContext, pCpuMapping);
-}
-
-static inline NV_STATUS clientresMapTo_DISPATCH(struct RsClientResource *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__clientresMapTo__(pResource, pParams);
-}
-
-static inline NvU32 clientresGetRefCount_DISPATCH(struct RsClientResource *pResource) {
-    return pResource->__clientresGetRefCount__(pResource);
-}
-
-static inline NV_STATUS clientresControlFilter_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__clientresControlFilter__(pResource, pCallContext, pParams);
-}
-
-static inline void clientresAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct RsClientResource *pResource, RsResourceRef *pReference) {
-    pResource->__clientresAddAdditionalDependants__(pClient, pResource, pReference);
-}
-
-static inline NV_STATUS clientresControlSerialization_Prologue_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__clientresControlSerialization_Prologue__(pResource, pCallContext, pParams);
-}
-
+// Dispatch functions
 static inline NvBool clientresCanCopy_DISPATCH(struct RsClientResource *pResource) {
     return pResource->__clientresCanCopy__(pResource);
-}
-
-static inline NV_STATUS clientresControl_Prologue_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__clientresControl_Prologue__(pResource, pCallContext, pParams);
-}
-
-static inline NvBool clientresIsPartialUnmapSupported_DISPATCH(struct RsClientResource *pResource) {
-    return pResource->__clientresIsPartialUnmapSupported__(pResource);
-}
-
-static inline void clientresPreDestruct_DISPATCH(struct RsClientResource *pResource) {
-    pResource->__clientresPreDestruct__(pResource);
-}
-
-static inline NV_STATUS clientresUnmapFrom_DISPATCH(struct RsClientResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__clientresUnmapFrom__(pResource, pParams);
 }
 
 static inline NV_STATUS clientresIsDuplicate_DISPATCH(struct RsClientResource *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__clientresIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
+static inline void clientresPreDestruct_DISPATCH(struct RsClientResource *pResource) {
+    pResource->__clientresPreDestruct__(pResource);
+}
+
+static inline NV_STATUS clientresControl_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__clientresControl__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS clientresControlFilter_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__clientresControlFilter__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS clientresControlSerialization_Prologue_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__clientresControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
 static inline void clientresControlSerialization_Epilogue_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__clientresControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS clientresControl_Prologue_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__clientresControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void clientresControl_Epilogue_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -617,8 +665,36 @@ static inline NV_STATUS clientresMap_DISPATCH(struct RsClientResource *pResource
     return pResource->__clientresMap__(pResource, pCallContext, pParams, pCpuMapping);
 }
 
+static inline NV_STATUS clientresUnmap_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return pResource->__clientresUnmap__(pResource, pCallContext, pCpuMapping);
+}
+
+static inline NvBool clientresIsPartialUnmapSupported_DISPATCH(struct RsClientResource *pResource) {
+    return pResource->__clientresIsPartialUnmapSupported__(pResource);
+}
+
+static inline NV_STATUS clientresMapTo_DISPATCH(struct RsClientResource *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__clientresMapTo__(pResource, pParams);
+}
+
+static inline NV_STATUS clientresUnmapFrom_DISPATCH(struct RsClientResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pResource->__clientresUnmapFrom__(pResource, pParams);
+}
+
+static inline NvU32 clientresGetRefCount_DISPATCH(struct RsClientResource *pResource) {
+    return pResource->__clientresGetRefCount__(pResource);
+}
+
 static inline NvBool clientresAccessCallback_DISPATCH(struct RsClientResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return pResource->__clientresAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+}
+
+static inline NvBool clientresShareCallback_DISPATCH(struct RsClientResource *pResource, struct RsClient *pInvokingClient, RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return pResource->__clientresShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+}
+
+static inline void clientresAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct RsClientResource *pResource, RsResourceRef *pReference) {
+    pResource->__clientresAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NV_STATUS clientresConstruct_IMPL(struct RsClientResource *arg_pClientRes, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1026,7 +1026,6 @@ _virtmemAllocKernelMapping
     if (bCoherentCpuMapping)
     {
         // Use a temp pointer to prevent overwriting the previous pointer by accident
-        NvP64              tempCpuPtr    = NvP64_NULL;
         MEMORY_DESCRIPTOR *pMemDesc      = memdescGetMemDescFromGpu(pDmaMappingInfo->pMemDesc, pGpu);
         KernelBus         *pKernelBus    = GPU_GET_KERNEL_BUS(pGpu);
 
@@ -1035,20 +1034,11 @@ _virtmemAllocKernelMapping
                   size, pDmaMappingInfo->pMemDesc->Size);
 
         NV_ASSERT(pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED));
-        NV_ASSERT(pDmaMappingInfo->pMemDesc->_flags & MEMDESC_FLAGS_PHYSICALLY_CONTIGUOUS);
 
-        tempCpuPtr = kbusMapCoherentCpuMapping_HAL(pGpu, pKernelBus, pMemDesc);
-        if (tempCpuPtr == NULL)
-        {
-            status = NV_ERR_GENERIC;
-        }
-        else
-        {
-            status = NV_OK;
-            tempCpuPtr =  NvP64_PLUS_OFFSET(tempCpuPtr, offset);
-        }
-
-        pDmaMappingInfo->KernelVAddr[gpuSubDevInst] = NvP64_VALUE(tempCpuPtr);
+        status = kbusMapCoherentCpuMapping_HAL(pGpu, pKernelBus, pMemDesc, offset, size,
+                                               NV_PROTECT_READ_WRITE,
+                                               &pDmaMappingInfo->KernelVAddr[gpuSubDevInst],
+                                               &pDmaMappingInfo->KernelPriv);
     }
     else
     {
@@ -1152,7 +1142,8 @@ _virtmemFreeKernelMapping
         {
             KernelBus         *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
             MEMORY_DESCRIPTOR *pMemDesc   = memdescGetMemDescFromGpu(pDmaMappingInfo->pMemDesc, pGpu);
-            kbusUnmapCoherentCpuMapping_HAL(pGpu, pKernelBus, pMemDesc);
+            kbusUnmapCoherentCpuMapping_HAL(pGpu, pKernelBus, pMemDesc, pDmaMappingInfo->KernelVAddr[gpuSubDevInst],
+                                            pDmaMappingInfo->KernelPriv);
         }
         else
         {
@@ -1304,8 +1295,7 @@ virtmemMapTo_IMPL
     }
 
     // Different cases for vidmem & system memory/fabric memory.
-    bIsSysmem = (tgtAddressSpace == ADDR_SYSMEM);
-    bIsSysmem = bIsSysmem || (tgtAddressSpace == ADDR_EGM);
+    bIsSysmem = (tgtAddressSpace == ADDR_SYSMEM) || (tgtAddressSpace == ADDR_EGM);
 
     //
     // Create a MEMORY_DESCRIPTOR describing this region of the memory

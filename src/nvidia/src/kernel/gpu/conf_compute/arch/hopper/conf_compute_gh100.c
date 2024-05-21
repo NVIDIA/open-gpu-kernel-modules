@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -71,8 +71,8 @@ confComputeIsGpuCcCapable_GH100
 
     if (confComputeIsDebugModeEnabled_HAL(pGpu, pConfCompute))
     {
-        NV_PRINTF(LEVEL_ERROR, "Cannot boot Confidential Compute as debug board is not supported!\n");
-        return NV_FALSE;
+        NV_PRINTF(LEVEL_ERROR, "Not checking if GPU is capable of accepting conf compute workloads\n");
+        return NV_TRUE;
     }
 
     reg = GPU_REG_RD32(pGpu, NV_FUSE_SPARE_BIT_0);
@@ -560,11 +560,10 @@ NV_STATUS confComputeUpdateSecrets_GH100(ConfidentialCompute *pConfCompute,
 {
     OBJGPU *pGpu   = ENG_GET_GPU(pConfCompute);
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-
     NvU32   h2dKey, d2hKey;
     NV2080_CTRL_INTERNAL_CONF_COMPUTE_ROTATE_KEYS_PARAMS params = {0};
 
-    // GSP keys are currently not supported.
+    // GSP keys are not supported. They are updated without an RPC to GSP-RM.
     NV_ASSERT(CC_GKEYID_GET_KEYSPACE(globalKeyId) != CC_KEYSPACE_GSP);
 
     confComputeGetKeyPairByKey(pConfCompute, globalKeyId, &h2dKey, &d2hKey);
@@ -578,12 +577,25 @@ NV_STATUS confComputeUpdateSecrets_GH100(ConfidentialCompute *pConfCompute,
                            &params,
                            sizeof(NV2080_CTRL_INTERNAL_CONF_COMPUTE_ROTATE_KEYS_PARAMS)));
 
+    NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreUpdateKey_HAL(pConfCompute, h2dKey));
+    NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreUpdateKey_HAL(pConfCompute, d2hKey));
+
+    // Both SEC2 and LCEs have an encrypt IV mask.
+    confComputeKeyStoreDepositIvMask_HAL(pConfCompute, h2dKey, &params.updatedEncryptIVMask);
+
+    // Only LCEs have a decrypt IV mask.
+    if ((CC_GKEYID_GET_KEYSPACE(d2hKey) >= CC_KEYSPACE_LCE0) &&
+        (CC_GKEYID_GET_KEYSPACE(d2hKey) <= CC_KEYSPACE_LCE7))
+    {
+        confComputeKeyStoreDepositIvMask_HAL(pConfCompute, d2hKey, &params.updatedDecryptIVMask);
+    }
+
     CHANNEL_ITERATOR iterator;
     KernelChannel *pKernelChannel;
 
-    NV_ASSERT_OK_OR_RETURN(confComputeInitChannelIterForKey(pGpu, pConfCompute, globalKeyId, &iterator));
+    NV_ASSERT_OK_OR_RETURN(confComputeInitChannelIterForKey(pGpu, pConfCompute, h2dKey, &iterator));
 
-    while (confComputeGetNextChannelForKey(pGpu, pConfCompute, &iterator, globalKeyId, &pKernelChannel) == NV_OK)
+    while (confComputeGetNextChannelForKey(pGpu, pConfCompute, &iterator, h2dKey, &pKernelChannel) == NV_OK)
     {
         NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreRetrieveViaChannel(
             pConfCompute, pKernelChannel, ROTATE_IV_ALL_VALID, NV_FALSE, &pKernelChannel->clientKmb));
@@ -591,8 +603,8 @@ NV_STATUS confComputeUpdateSecrets_GH100(ConfidentialCompute *pConfCompute,
         // After key rotation channel counter stays the same but message counter is cleared.
         pKernelChannel->clientKmb.encryptBundle.iv[0] = 0x00000000;
 
-        if ((CC_GKEYID_GET_KEYSPACE(globalKeyId) >= CC_KEYSPACE_LCE0) &&
-            (CC_GKEYID_GET_KEYSPACE(globalKeyId) <= CC_KEYSPACE_LCE7))
+        if ((CC_GKEYID_GET_KEYSPACE(d2hKey) >= CC_KEYSPACE_LCE0) &&
+            (CC_GKEYID_GET_KEYSPACE(d2hKey) <= CC_KEYSPACE_LCE7))
         {
             pKernelChannel->clientKmb.decryptBundle.iv[0] = 0x00000000;
         }

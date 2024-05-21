@@ -85,6 +85,8 @@
 //
 // One for every debug level, needed for compile time filtering.
 //
+#include "nvstatus.h"
+
 typedef NV_STATUS NVLOG_PRINTF_PROTO(NvU32, NvU32, ...);
 NVLOG_PRINTF_PROTO nvlogPrint_printf0;
 NVLOG_PRINTF_PROTO nvlogPrint_printf1;

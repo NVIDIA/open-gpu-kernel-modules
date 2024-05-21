@@ -246,7 +246,6 @@ struct gpuDevice
     NvBool             isTccMode;
     NvBool             isWddmMode;
     struct gpuSession  *session;
-    NvU8               gpuUUID[NV_GPU_UUID_LEN];
     gpuFbInfo          fbInfo;
     gpuInfo            info;
 
@@ -466,7 +465,7 @@ typedef struct nvGpuOpsLockSet
     NvBool isRmLockAcquired;
     NvBool isRmSemaAcquired;
     GPU_MASK gpuMask;
-    RsClient *pClientLocked;
+    CLIENT_ENTRY *pClientEntryLocked;
 } nvGpuOpsLockSet;
 
 static void _nvGpuOpsLocksRelease(nvGpuOpsLockSet *acquiredLocks)
@@ -480,10 +479,11 @@ static void _nvGpuOpsLocksRelease(nvGpuOpsLockSet *acquiredLocks)
         acquiredLocks->gpuMask = 0;
     }
 
-    if (acquiredLocks->pClientLocked != NULL)
+    if (acquiredLocks->pClientEntryLocked != NULL)
     {
-        serverReleaseClient(&g_resServ, LOCK_ACCESS_WRITE, acquiredLocks->pClientLocked);
-        acquiredLocks->pClientLocked = NULL;
+        serverReleaseClient(&g_resServ, LOCK_ACCESS_WRITE,
+            acquiredLocks->pClientEntryLocked);
+        acquiredLocks->pClientEntryLocked = NULL;
     }
 
     if (acquiredLocks->isRmLockAcquired == NV_TRUE)
@@ -515,7 +515,7 @@ static NV_STATUS _nvGpuOpsLocksAcquire(NvU32 rmApiLockFlags,
     acquiredLocks->isRmSemaAcquired = NV_FALSE;
     acquiredLocks->isRmLockAcquired = NV_FALSE;
     acquiredLocks->gpuMask = 0;
-    acquiredLocks->pClientLocked = NULL;
+    acquiredLocks->pClientEntryLocked = NULL;
 
     pSys = SYS_GET_INSTANCE();
     if (pSys == NULL)
@@ -540,7 +540,7 @@ static NV_STATUS _nvGpuOpsLocksAcquire(NvU32 rmApiLockFlags,
 
     if (hClient != NV01_NULL_OBJECT)
     {
-        status = serverAcquireClient(&g_resServ, hClient, LOCK_ACCESS_WRITE, &acquiredLocks->pClientLocked);
+        status = serverAcquireClient(&g_resServ, hClient, LOCK_ACCESS_WRITE, &acquiredLocks->pClientEntryLocked);
 
         if (status != NV_OK)
         {
@@ -549,7 +549,7 @@ static NV_STATUS _nvGpuOpsLocksAcquire(NvU32 rmApiLockFlags,
         }
 
         if (ppClient != NULL)
-            *ppClient = acquiredLocks->pClientLocked;
+            *ppClient = acquiredLocks->pClientEntryLocked->pClient;
     }
 
     //
@@ -1559,7 +1559,6 @@ static UVM_LINK_TYPE rmControlToUvmNvlinkVersion(NvU32 nvlinkVersion)
         return UVM_LINK_TYPE_NVLINK_3;
     else if (nvlinkVersion == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_4_0)
         return UVM_LINK_TYPE_NVLINK_4;
-
     NV_ASSERT(0);
     return (NvU32)-1;
 }
@@ -1652,21 +1651,19 @@ static NV_STATUS getPCIELinkRateMBps(NvHandle hClient, NvHandle hSubDevice, NvU3
     const NvU32 PCIE_6_ENCODING_RATIO_EFFECTIVE = 242;
 
     RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
-    NV2080_CTRL_BUS_INFO busInfo = {0};
-    NV2080_CTRL_BUS_GET_INFO_PARAMS busInfoParams = {0};
+    NV2080_CTRL_BUS_GET_INFO_V2_PARAMS busInfoV2Params = {0};
     NvU32 linkRate = 0;
     NvU32 lanes;
 
-    busInfo.index = NV2080_CTRL_BUS_INFO_INDEX_PCIE_GPU_LINK_CAPS;
-    busInfoParams.busInfoListSize = 1;
-    busInfoParams.busInfoList = NV_PTR_TO_NvP64(&busInfo);
+    busInfoV2Params.busInfoList[0].index = NV2080_CTRL_BUS_INFO_INDEX_PCIE_GPU_LINK_CAPS;
+    busInfoV2Params.busInfoListSize = 1;
 
     NV_STATUS status = pRmApi->Control(pRmApi,
                                        hClient,
                                        hSubDevice,
-                                       NV2080_CTRL_CMD_BUS_GET_INFO,
-                                       &busInfoParams,
-                                       sizeof(busInfoParams));
+                                       NV2080_CTRL_CMD_BUS_GET_INFO_V2,
+                                       &busInfoV2Params,
+                                       sizeof(busInfoV2Params));
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "%s:%d: %s\n", __FUNCTION__,
@@ -1674,10 +1671,10 @@ static NV_STATUS getPCIELinkRateMBps(NvHandle hClient, NvHandle hSubDevice, NvU3
         return status;
     }
 
-    lanes = DRF_VAL(2080, _CTRL_BUS_INFO, _PCIE_LINK_CAP_MAX_WIDTH, busInfo.data);
+    lanes = DRF_VAL(2080, _CTRL_BUS_INFO, _PCIE_LINK_CAP_MAX_WIDTH, busInfoV2Params.busInfoList[0].data);
 
     // Bug 2606540: RM reports PCIe transfer rate in GT/s but labels it as Gbps
-    switch (DRF_VAL(2080, _CTRL_BUS_INFO, _PCIE_LINK_CAP_MAX_SPEED, busInfo.data))
+    switch (DRF_VAL(2080, _CTRL_BUS_INFO, _PCIE_LINK_CAP_MAX_SPEED, busInfoV2Params.busInfoList[0].data))
     {
         case NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_2500MBPS:
             linkRate = ((2500 * lanes * PCIE_1_ENCODING_RATIO_EFFECTIVE)
@@ -2639,13 +2636,11 @@ static NV_STATUS getNvlinkP2PCaps(struct gpuDevice *device1,
         return NV_OK;
     }
 
-    // NVLink1 devices cannot be mixed with other versions. NVLink3 supports
-    // mixing NVLink2 and NVLink3 devices. NVLink4 devices cannot be mixed with
-    // prior NVLink versions.
     if (nvlinkVersion1 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_1_0 ||
         nvlinkVersion2 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_1_0 ||
         nvlinkVersion1 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_4_0 ||
-        nvlinkVersion2 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_4_0)
+        nvlinkVersion2 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_4_0
+       )
     {
         NV_ASSERT(nvlinkVersion1 == nvlinkVersion2);
         NV_ASSERT(linkBandwidthMBps1 == linkBandwidthMBps2);
@@ -3293,14 +3288,7 @@ nvGpuOpsBuildExternalAllocPtes
             }
             else
             {
-                if (memdescIsEgm(pMemDesc))
-                {
-                    fabricBaseAddress = knvlinkGetUniqueFabricEgmBaseAddress(pMemDesc->pGpu, pKernelNvlink);
-                }
-                else
-                {
-                    fabricBaseAddress = knvlinkGetUniqueFabricBaseAddress(pMemDesc->pGpu, pKernelNvlink);
-                }
+                fabricBaseAddress = knvlinkGetUniqueFabricBaseAddress(pMemDesc->pGpu, pKernelNvlink);
             }
         }
     }
@@ -3325,8 +3313,8 @@ nvGpuOpsBuildExternalAllocPtes
     //
     memdescGetPhysAddrsForGpu(pMemDesc, pMappingGpu, AT_GPU, offset, mappingPageSize,
                               pteCount, physicalAddresses);
-
     kgmmuEncodePhysAddrs(pKernelGmmu, aperture, physicalAddresses, fabricBaseAddress, pteCount);
+
 
     //
     // Get information whether given physical address needs PLCable kind
@@ -5095,6 +5083,8 @@ static NV_STATUS engineAllocate(struct gpuChannel *channel, gpuChannelInfo *chan
             channelInfo->workSubmissionOffsetGpuVa = channel->clientRegionGpuAddr +
                                                      NVC361_NOTIFY_CHANNEL_PENDING;
         }
+        channelInfo->keyRotationNotifier = channelInfo->errorNotifier +
+            NV_CHANNELGPFIFO_NOTIFICATION_TYPE_KEY_ROTATION_STATUS;
     }
 
     // Schedule the channel
@@ -10048,6 +10038,79 @@ static NV_STATUS nvGpuOpsGetMemoryByHandle(NvHandle hClient, NvHandle hMemory, M
                           ppMemory);
 }
 
+// Enure that's UVM's enum values match RM's.
+ct_assert((NvU32)KEY_ROTATION_STATUS_IDLE == (NvU32)UVM_KEY_ROTATION_STATUS_IDLE);
+ct_assert((NvU32)KEY_ROTATION_STATUS_PENDING == (NvU32)UVM_KEY_ROTATION_STATUS_PENDING);
+ct_assert((NvU32)KEY_ROTATION_STATUS_IN_PROGRESS == (NvU32)UVM_KEY_ROTATION_STATUS_IN_PROGRESS);
+ct_assert((NvU32)KEY_ROTATION_STATUS_FAILED_TIMEOUT == (NvU32)UVM_KEY_ROTATION_STATUS_FAILED_TIMEOUT);
+ct_assert((NvU32)KEY_ROTATION_STATUS_FAILED_THRESHOLD == (NvU32)KEY_ROTATION_STATUS_FAILED_THRESHOLD);
+ct_assert((NvU32)KEY_ROTATION_STATUS_FAILED_ROTATION == (NvU32)KEY_ROTATION_STATUS_FAILED_ROTATION);
+ct_assert((NvU32)KEY_ROTATION_STATUS_MAX_COUNT == (NvU32)KEY_ROTATION_STATUS_MAX_COUNT);
+
+NV_STATUS nvGpuOpsKeyRotationChannelDisable(struct gpuChannel *channelList[],
+                                            NvU32 channelListCount)
+{
+    NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_PARAMS *pParams;
+    NvU32 startIndex;
+    const NvU32 maxCtrlCallChannels = NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_MAX_ENTRIES;
+
+    if ((channelList == NULL) || (channelListCount == 0) )
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    // CC_TODO: Pre-allocate control call buffers.
+    pParams = portMemAllocNonPaged(sizeof(*pParams));
+
+    if (pParams == NULL)
+    {
+        return NV_ERR_NO_MEMORY;
+    }
+
+    //
+    // Break into multiple control calls if number of channels is larger than
+    // NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_MAX_ENTRIES
+    //
+    for (startIndex = 0; startIndex < channelListCount; startIndex +=  maxCtrlCallChannels)
+    {
+        NV_STATUS status;
+        RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
+
+        const NvU32 numChannels = (channelListCount - startIndex) > maxCtrlCallChannels ?
+          maxCtrlCallChannels : (channelListCount - startIndex);
+        NvU32 index;
+
+        portMemSet(pParams, 0, sizeof(*pParams));
+
+        pParams->numChannels = numChannels;
+        pParams->bEnableAfterKeyRotation = NV_TRUE;
+
+        for (index = startIndex; index < startIndex + numChannels; index++)
+        {
+            pParams->hClientList[index] = channelList[index]->tsg->vaSpace->device->session->handle;
+            pParams->hChannelList[index] = channelList[index]->channelHandle;
+        }
+
+        // While there is a list of channels they all share the same Client.
+        status = pRmApi->Control(pRmApi,
+                                 channelList[0]->tsg->vaSpace->device->session->handle,
+                                 channelList[0]->tsg->vaSpace->device->subhandle,
+                                 NV2080_CTRL_CMD_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION,
+                                 pParams,
+                                 sizeof(*pParams));
+        if (status != NV_OK)
+        {
+            portMemFree(pParams);
+
+            return status;
+        }
+    }
+
+    portMemFree(pParams);
+
+    return NV_OK;
+}
+
 NV_STATUS nvGpuOpsCcslContextInit(struct ccslContext_t **ctx,
                                   struct gpuChannel *channel)
 {
@@ -10070,14 +10133,28 @@ NV_STATUS nvGpuOpsCcslContextClear(struct ccslContext_t *ctx)
     return NV_OK;
 }
 
-NV_STATUS nvGpuOpsCcslContextUpdate(struct ccslContext_t *ctx)
+NV_STATUS nvGpuOpsCcslContextUpdate(UvmCslContext *contextList[], NvU32 contextListCount)
 {
-    if (ctx == NULL)
+    NvU32 index;
+
+    if ((contextList == NULL) || (contextListCount == 0))
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    return ccslContextUpdate(ctx);
+    for (index = 0; index < contextListCount; index++)
+    {
+        NV_STATUS status;
+
+        status = ccslContextUpdate(contextList[index]->ctx);
+
+        if (status != NV_OK)
+        {
+            return status;
+        }
+    }
+
+    return NV_OK;
 }
 
 NV_STATUS nvGpuOpsCcslRotateIv(struct ccslContext_t *ctx, NvU8 direction)

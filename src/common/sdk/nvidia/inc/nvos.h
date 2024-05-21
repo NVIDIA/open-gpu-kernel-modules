@@ -258,6 +258,14 @@ typedef struct
 #define NVOS02_FLAGS_MEMORY_PROTECTION_UNPROTECTED                 (0x00000002)
 
 //
+// When allocating memory, register the memory descriptor to GSP-RM
+// so that GSP-RM is aware of and can access it
+//
+#define NVOS02_FLAGS_REGISTER_MEMDESC_TO_PHYS_RM                   27:27
+#define NVOS02_FLAGS_REGISTER_MEMDESC_TO_PHYS_RM_FALSE             (0x00000000)
+#define NVOS02_FLAGS_REGISTER_MEMDESC_TO_PHYS_RM_TRUE              (0x00000001)
+
+//
 // If _NO_MAP is requested, the RM in supported platforms will not map the
 // allocated system or IO memory into user space. The client can later map
 // memory through the RmMapMemory() interface.
@@ -2053,6 +2061,7 @@ typedef struct
 #define NVOS46_FLAGS_PAGE_SIZE_BIG                                 (0x00000002)
 #define NVOS46_FLAGS_PAGE_SIZE_BOTH                                (0x00000003)
 #define NVOS46_FLAGS_PAGE_SIZE_HUGE                                (0x00000004)
+#define NVOS46_FLAGS_PAGE_SIZE_512M                                (0x00000005)
 
 // Some systems allow the device to use the system L3 cache when accessing the
 // system memory. For example, the iGPU on T19X can allocate from the system L3
@@ -2292,6 +2301,8 @@ typedef struct
     NvU8  forceMonitorState;
     NvU8  bForcePerfBiosLevel;
     NvU8  bIsD3HotTransition;    // [OUT] To tell client if it's a D3Hot transition
+    NvU8  bForcePowerStateFail;
+    NvU32 errorStatus;           // [OUT] To tell client if there is bubble up errors
     NvU32 fastBootPowerState;
 } NVPOWERSTATE_PARAMETERS, *PNVPOWERSTATE_PARAMETERS;
 

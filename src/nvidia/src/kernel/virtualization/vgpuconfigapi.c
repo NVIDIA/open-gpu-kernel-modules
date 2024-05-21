@@ -688,54 +688,6 @@ vgpuconfigapiCtrlCmdVgpuConfigEventSetNotification_IMPL
 }
 
 NV_STATUS
-vgpuconfigapiCtrlCmdVgpuConfigNotifyStart_IMPL
-(
-    VgpuConfigApi *pVgpuConfigApi,
-    NVA081_CTRL_VGPU_CONFIG_NOTIFY_START_PARAMS *pNotifyParams
-)
-{
-    OBJSYS *pSys = SYS_GET_INSTANCE();
-    KernelVgpuMgr *pKernelVgpuMgr = SYS_GET_KERNEL_VGPUMGR(pSys);
-    REQUEST_VGPU_INFO_NODE *pRequestVgpu = NULL;
-    KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice;
-
-    NV_PRINTF(LEVEL_INFO, "%s\n", __FUNCTION__);
-
-    for (pRequestVgpu = listHead(&pKernelVgpuMgr->listRequestVgpuHead);
-         pRequestVgpu != NULL;
-         pRequestVgpu = listNext(&pKernelVgpuMgr->listRequestVgpuHead, pRequestVgpu))
-    {
-        if (portMemCmp(pNotifyParams->mdevUuid, pRequestVgpu->mdevUuid, VGPU_UUID_SIZE) == 0)
-        {
-             if (pRequestVgpu->returnStatus && pRequestVgpu->waitQueue)
-             {
-                 *pRequestVgpu->returnStatus = pNotifyParams->returnStatus;
-                 portStringCopy((char *)pRequestVgpu->vmName, NVA081_VM_NAME_SIZE,
-                                (const char *)pNotifyParams->vmName, NVA081_VM_NAME_SIZE);
-                 if (pNotifyParams->returnStatus == NV_OK)
-                 {
-                     pKernelHostVgpuDevice = pRequestVgpu->pKernelHostVgpuDevice;
-
-                     if (pKernelHostVgpuDevice == NULL)
-                     {
-                         *pRequestVgpu->returnStatus = NV_ERR_INVALID_STATE;
-                         return NV_ERR_INVALID_STATE;
-                     }
-                     portStringCopy((char *)pKernelHostVgpuDevice->vgpuGuest->guestVmInfo.vmName,
-                                    sizeof(pKernelHostVgpuDevice->vgpuGuest->guestVmInfo.vmName),
-                                    (const char *)pNotifyParams->vmName,
-                                    sizeof(pNotifyParams->vmName));
-                 }
-                 osVgpuVfioWake(pRequestVgpu->waitQueue);
-                 return NV_OK;
-             }
-             return NV_ERR_INVALID_STATE;
-        }
-    }
-    return NV_ERR_OBJECT_NOT_FOUND;
-}
-
-NV_STATUS
 vgpuconfigapiCtrlCmdVgpuConfigGetCreatablePlacements_IMPL
 (
     VgpuConfigApi *pVgpuConfigApi,
@@ -888,10 +840,6 @@ vgpuconfigapiCtrlCmdVgpuConfigUpdatePgpuInfo_IMPL
         rmStatus = kvgpumgrSetSupportedPlacementIds(pGpu);
         if (rmStatus != NV_OK)
             return rmStatus;
-
-        rmStatus = osVgpuRegisterMdev(pGpu->pOsGpuInfo);
-        if (rmStatus == NV_ERR_NOT_SUPPORTED)
-           return NV_OK;
     }
     else
         rmStatus = NV_ERR_INVALID_STATE;
@@ -1132,8 +1080,8 @@ vgpuconfigapiCtrlCmdVgpuConfigGetFreeSwizzId_IMPL
              pRequestVgpu != NULL;
              pRequestVgpu = listNext(&pKernelVgpuMgr->listRequestVgpuHead, pRequestVgpu))
         {
-            if (pRequestVgpu->deviceState == NV_VGPU_DEV_OPENED &&
-                pRequestVgpu->gpuPciId == pParams->gpuPciId)
+            /* Check for VF's bdf */
+            if (pRequestVgpu->gpuPciBdf == pParams->gpuPciId)
                 break;
         }
         if (pRequestVgpu == NULL)
@@ -1291,3 +1239,27 @@ vgpuconfigapiCtrlCmdVgpuConfigUpdateHeterogeneousInfo_IMPL
 
    return NV_OK;
 }
+
+NV_STATUS
+vgpuconfigapiCtrlCmdVgpuSetVmName_IMPL
+(
+    VgpuConfigApi *pVgpuConfigApi,
+    NVA081_CTRL_VGPU_SET_VM_NAME_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pVgpuConfigApi);
+    KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice = NULL;
+    NV_STATUS status;
+
+    status = kvgpumgrGetHostVgpuDeviceFromMdevUuid(pGpu->gpuId,
+                                                  pParams->vgpuName,
+                                                  &pKernelHostVgpuDevice);
+    if (status != NV_OK)
+        return status;
+
+    portStringCopy((char *)pKernelHostVgpuDevice->vgpuGuest->guestVmInfo.vmName,
+                   NVA081_VM_NAME_SIZE, (const char *)pParams->vmName, NVA081_VM_NAME_SIZE);
+
+    return NV_OK;
+}
+

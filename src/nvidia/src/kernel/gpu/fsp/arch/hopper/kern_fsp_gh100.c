@@ -32,6 +32,7 @@
 #include "gpu/gsp/kernel_gsp.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/pmu/kern_pmu.h"
+#include "fsp/nvdm_payload_cmd_response.h"
 
 #include "published/hopper/gh100/dev_fsp_pri.h"
 #include "published/hopper/gh100/dev_fsp_addendum.h"

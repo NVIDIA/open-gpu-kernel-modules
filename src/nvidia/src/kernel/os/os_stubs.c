@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -77,18 +77,6 @@ int stubOsnv_cpuid(OBJOS *pOS, int arg1, int arg2, NvU32 *arg3,
                    NvU32 *arg4, NvU32 *arg5, NvU32 *arg6)
 {
     STUB_CHECK(77);
-    return 0;
-}
-
-NvU32 stubOsnv_rdmsr(OBJOS *pOS, NvU32 arg1, NvU32 *arg2, NvU32 *arg3)
-{
-    STUB_CHECK(122);
-    return 0;
-}
-
-NvU32 stubOsnv_wrmsr(OBJOS *pOS, NvU32 arg1, NvU32 arg2, NvU32 arg3)
-{
-    STUB_CHECK(123);
     return 0;
 }
 
@@ -230,20 +218,18 @@ NV_STATUS stubOsObjectEventNotification(NvHandle hClient, NvHandle hObject, NvU3
 }
 
 RmPhysAddr
-stubOsPageArrayGetPhysAddr(OS_GPU_INFO *pOsGpuInfo, void* pPageData, NvU32 pageIndex)
+osPageArrayGetPhysAddr(OS_GPU_INFO *pOsGpuInfo, void* pPageData, NvU32 pageIndex)
 {
     NV_ASSERT(0);
     return 0;
 }
 
-void stubOsInternalReserveAllocCallback(NvU64 offset, NvU64 size, NvU32 gpuId)
+void osInternalReserveAllocCallback(NvU64 offset, NvU64 size, NvU32 gpuId)
 {
-    return;
 }
 
-void stubOsInternalReserveFreeCallback(NvU64 offset, NvU32 gpuId)
+void osInternalReserveFreeCallback(NvU64 offset, NvU32 gpuId)
 {
-    return;
 }
 
 NV_STATUS osGetCurrentProcessGfid(NvU32 *pGfid)
@@ -420,15 +406,6 @@ osTegraSocGetHdcpEnabled(OS_GPU_INFO *pOsGpuInfo)
     return NV_TRUE;
 }
 
-NvBool
-osTegraSocIsSimNetlistNet07
-(
-    OS_GPU_INFO *pOsGpuInfo
-)
-{
-    return NV_FALSE;
-}
-
 void
 osTegraGetDispSMMUStreamIds
 (
@@ -450,6 +427,17 @@ osTegraSocParseFixedModeTimings
     NvU32 dcbIndex,
     NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS *pTimingsPerStream,
     NvU8 *pNumTimings
+)
+{
+    return NV_OK;
+}
+
+NV_STATUS
+osTegraSocPowerManagement
+(
+    OS_GPU_INFO *pOsGpuInfo,
+    NvBool bInPMTransition,
+    NvU32 newPMLevel
 )
 {
     return NV_OK;
@@ -634,6 +622,21 @@ NvBool osDbgBreakpointEnabled(void)
     return NV_TRUE;
 }
 
+NV_STATUS
+osGetSysmemInfo
+(
+    OBJGPU *pGpu,
+    NvU64  *pSysmemBaseAddr,
+    NvU64  *pSysmemTotalSize
+)
+{
+    // Bug 4377373 - TODO: Need to add proper implementation for non MODS platform.
+    *pSysmemBaseAddr = 0;
+    *pSysmemTotalSize = (1ULL << 32);
+
+    return NV_OK;
+}
+
 NV_STATUS osNvifMethod(
     OBJGPU       *pGpu,
     NvU32         func,
@@ -776,6 +779,8 @@ osTegraSocDeviceReset
     return NV_ERR_NOT_SUPPORTED;
 }
 
+#if (RMCFG_FEATURE_PLATFORM_WINDOWS && !RMCFG_FEATURE_TEGRA_BPMP) || \
+    (!RMCFG_FEATURE_PLATFORM_WINDOWS && !RMCFG_FEATURE_TEGRA_SOC_NVDISPLAY)
 NV_STATUS
 osTegraSocPmPowergate
 (
@@ -793,6 +798,7 @@ osTegraSocPmUnpowergate
 {
     return NV_ERR_NOT_SUPPORTED;
 }
+#endif
 
 NvU32
 osTegraSocFuseRegRead(NvU32 addr)

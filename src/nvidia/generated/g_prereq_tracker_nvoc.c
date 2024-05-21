@@ -93,10 +93,13 @@ __nvoc_ctor_PrereqTracker_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_PrereqTracker_1(PrereqTracker *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-}
+} // End __nvoc_init_funcTable_PrereqTracker_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_PrereqTracker(PrereqTracker *pThis) {
     __nvoc_init_funcTable_PrereqTracker_1(pThis);
 }

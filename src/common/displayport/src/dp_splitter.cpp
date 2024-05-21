@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,6 +34,7 @@
 #include "dp_auxdefs.h"
 #include "dp_crc.h"
 #include "dp_configcaps.h"
+#include "dp_printf.h"
 
 using namespace DisplayPort;
 
@@ -210,7 +211,7 @@ void OutgoingTransactionManager::writeToWindow( bool firstAttempt)
             }
 
             retriesLeft--;
-            DP_LOG(("DP-MM> Messagebox write defer-ed. Q-ing retry."));
+            DP_PRINTF(DP_WARNING, "DP-MM> Messagebox write defer-ed. Q-ing retry.");
             this->timer->queueCallback(this, "SPDE", DOWNSTREAM_RETRY_ON_DEFER_PERIOD);
 
             return;

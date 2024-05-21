@@ -107,14 +107,17 @@ __nvoc_ctor_CrashCatWayfinder_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_CrashCatWayfinder_1(CrashCatWayfinder *pThis) {
     CrashCatWayfinderHal *wayfinderHal = &pThis->wayfinderHal;
     const unsigned long wayfinderHal_HalVarIdx = (unsigned long)wayfinderHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
     PORT_UNREFERENCED_VARIABLE(wayfinderHal);
     PORT_UNREFERENCED_VARIABLE(wayfinderHal_HalVarIdx);
-}
+} // End __nvoc_init_funcTable_CrashCatWayfinder_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_CrashCatWayfinder(CrashCatWayfinder *pThis) {
     __nvoc_init_funcTable_CrashCatWayfinder_1(pThis);
 }

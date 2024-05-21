@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -226,6 +226,7 @@ _gpumgrGetP2PCapsStatusOverNvLink
                 {
                     NV_PRINTF(LEVEL_ERROR,
                             "Links failed to train for the given gpu pairs!\n");
+                    knvlinkLogAliDebugMessages(pFirstGpu, pKernelNvlink, NV_TRUE);
                     return status;
                 }
             }
@@ -790,132 +791,6 @@ p2pGetCapsStatus
 }
 
 static NV_STATUS
-_removeP2PPeerGpuCapsByGpuId
-(
-    OBJGPU *pGpu,
-    NvU32 peerGpuId
-)
-{
-    GPU_P2P_PEER_GPU_CAPS *pLocalPeerCaps = NULL;
-
-    pLocalPeerCaps = gpuFindP2PPeerGpuCapsByGpuId(pGpu, peerGpuId);
-    NV_CHECK_OR_RETURN(LEVEL_WARNING, pLocalPeerCaps != NULL, NV_ERR_OBJECT_NOT_FOUND);
-
-    // Swap the target element with the last element and remove the last.
-    // pLocalPeerCaps points to an item in the pGpu->P2PPeerGpuCaps array.
-    NV_ASSERT(pGpu->P2PPeerGpuCount != 0);
-    pGpu->P2PPeerGpuCount--;
-
-    portMemMove(pLocalPeerCaps,
-                sizeof(GPU_P2P_PEER_GPU_CAPS),
-                &pGpu->P2PPeerGpuCaps[pGpu->P2PPeerGpuCount],
-                sizeof(GPU_P2P_PEER_GPU_CAPS));
-
-    return NV_OK;
-}
-
-NV_STATUS
-subdeviceCtrlCmdInternalSetP2pCaps_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_INTERNAL_SET_P2P_CAPS_PARAMS *pParams
-)
-{
-    NV_STATUS status = NV_OK;
-    NvU32 i;
-    NvU32 failingIndex;
-    OBJGPU *pGpu = gpumgrGetGpuFromSubDeviceInst(pSubdevice->deviceInst,
-                                                 pSubdevice->subDeviceInst);
-
-    // TODO: GPUSWSEC-1433 remove this check to enable this control for baremetal
-    if (!IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
-        return NV_ERR_NOT_SUPPORTED;
-
-    NV_CHECK_OR_RETURN(LEVEL_ERROR,
-                       pParams->peerGpuCount <= NV_ARRAY_ELEMENTS(pGpu->P2PPeerGpuCaps),
-                       NV_ERR_INVALID_ARGUMENT);
-
-    for (i = 0; i < pParams->peerGpuCount; i++)
-    {
-        NV2080_CTRL_INTERNAL_SET_P2P_CAPS_PEER_INFO *pParamsPeerInfo = &pParams->peerGpuInfos[i];
-        GPU_P2P_PEER_GPU_CAPS *pLocalPeerCaps = NULL;
-
-        // Try to find the existing entry
-        pLocalPeerCaps = gpuFindP2PPeerGpuCapsByGpuId(pGpu, pParamsPeerInfo->gpuId);
-
-        // If no entry has been found, add a new one instead
-        if (pLocalPeerCaps == NULL)
-        {
-            NV_CHECK_OR_ELSE(LEVEL_ERROR,
-                             pGpu->P2PPeerGpuCount < NV_ARRAY_ELEMENTS(pGpu->P2PPeerGpuCaps),
-                             status = NV_ERR_INSUFFICIENT_RESOURCES; goto fail);
-
-            pLocalPeerCaps = &pGpu->P2PPeerGpuCaps[pGpu->P2PPeerGpuCount];
-            pLocalPeerCaps->peerGpuId = pParamsPeerInfo->gpuId;
-
-            pGpu->P2PPeerGpuCount++;
-        }
-
-        pLocalPeerCaps->peerGpuInstance = pParamsPeerInfo->gpuInstance;
-        pLocalPeerCaps->p2pCaps = pParamsPeerInfo->p2pCaps;
-        pLocalPeerCaps->p2pOptimalReadCEs = pParamsPeerInfo->p2pOptimalReadCEs;
-        pLocalPeerCaps->p2pOptimalWriteCEs = pParamsPeerInfo->p2pOptimalWriteCEs;
-        pLocalPeerCaps->busPeerId = pParamsPeerInfo->busPeerId;
-
-        portMemCopy(pLocalPeerCaps->p2pCapsStatus,
-                    sizeof(pLocalPeerCaps->p2pCapsStatus),
-                    pParamsPeerInfo->p2pCapsStatus,
-                    sizeof(pParamsPeerInfo->p2pCapsStatus));
-    }
-
-    goto done;
-
-fail:
-    // Remove the successfully set caps
-    failingIndex = i;
-    for (i = 0; i < failingIndex; i++)
-    {
-        NV_STATUS ignoredStatus;
-        NV_CHECK_OK(ignoredStatus, LEVEL_ERROR,
-                    _removeP2PPeerGpuCapsByGpuId(pGpu, pParams->peerGpuInfos[i].gpuId));
-    }
-
-done:
-    return status;
-}
-
-NV_STATUS
-subdeviceCtrlCmdInternalRemoveP2pCaps_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_INTERNAL_REMOVE_P2P_CAPS_PARAMS *pParams
-)
-{
-    NV_STATUS status = NV_OK;
-    NvU32 i;
-    OBJGPU *pGpu = gpumgrGetGpuFromSubDeviceInst(pSubdevice->deviceInst,
-                                                 pSubdevice->subDeviceInst);
-
-    // TODO: GPUSWSEC-1433 remove this check to enable this control for baremetal
-    if (!IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
-        return NV_ERR_NOT_SUPPORTED;
-
-    NV_CHECK_OR_RETURN(LEVEL_ERROR,
-                       pParams->peerGpuIdCount <= NV_ARRAY_ELEMENTS(pGpu->P2PPeerGpuCaps),
-                       NV_ERR_INVALID_ARGUMENT);
-
-    for (i = 0; i < pParams->peerGpuIdCount; i++)
-    {
-        // Capture only the first error here, as trying to remove all caps
-        // is the best effort here.
-        NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(status, LEVEL_ERROR,
-                  _removeP2PPeerGpuCapsByGpuId(pGpu, pParams->peerGpuIds[i]));
-    }
-
-    return status;
-}
-
-static NV_STATUS
 subdeviceGetP2pCaps_VIRTUAL
 (
     OBJGPU *pGpu,
@@ -1065,6 +940,7 @@ subdeviceCtrlCmdGetP2pCaps_IMPL
             pParamsPeerInfo->p2pOptimalReadCEs = 0;
             pParamsPeerInfo->p2pOptimalWriteCEs = 0;
             pParamsPeerInfo->busPeerId = NV0000_CTRL_SYSTEM_GET_P2P_CAPS_INVALID_PEER;
+            pParamsPeerInfo->busEgmPeerId = NV0000_CTRL_SYSTEM_GET_P2P_CAPS_INVALID_PEER;
 
             portMemSet(pParamsPeerInfo->p2pCapsStatus,
                        NV0000_P2P_CAPS_STATUS_NOT_SUPPORTED,
@@ -1076,6 +952,7 @@ subdeviceCtrlCmdGetP2pCaps_IMPL
             pParamsPeerInfo->p2pOptimalReadCEs = pLocalPeerCaps->p2pOptimalReadCEs;
             pParamsPeerInfo->p2pOptimalWriteCEs = pLocalPeerCaps->p2pOptimalWriteCEs;
             pParamsPeerInfo->busPeerId = pLocalPeerCaps->busPeerId;
+            pParamsPeerInfo->busEgmPeerId = pLocalPeerCaps->busEgmPeerId;
 
             portMemCopy(pParamsPeerInfo->p2pCapsStatus,
                         sizeof(pParamsPeerInfo->p2pCapsStatus),

@@ -120,133 +120,168 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelCeContext =
     /*pExportInfo=*/        &__nvoc_export_info_KernelCeContext
 };
 
-static NV_STATUS __nvoc_thunk_ChannelDescendant_kcectxCheckMemInterUnmap(struct KernelCeContext *pChannelDescendant, NvBool bSubdeviceHandleProvided) {
-    return chandesCheckMemInterUnmap((struct ChannelDescendant *)(((unsigned char *)pChannelDescendant) + __nvoc_rtti_KernelCeContext_ChannelDescendant.offset), bSubdeviceHandleProvided);
+// 32 up-thunk(s) defined to bridge methods in KernelCeContext to superclasses
+
+// kcectxGetSwMethods: virtual inherited (chandes) base (chandes)
+static NV_STATUS __nvoc_up_thunk_ChannelDescendant_kcectxGetSwMethods(struct KernelCeContext *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
+    return chandesGetSwMethods((struct ChannelDescendant *)(((unsigned char *) pChannelDescendant) + __nvoc_rtti_KernelCeContext_ChannelDescendant.offset), ppMethods, pNumMethods);
 }
 
-static NvBool __nvoc_thunk_GpuResource_kcectxShareCallback(struct KernelCeContext *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelCeContext_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+// kcectxIsSwMethodStalling: virtual inherited (chandes) base (chandes)
+static NvBool __nvoc_up_thunk_ChannelDescendant_kcectxIsSwMethodStalling(struct KernelCeContext *pChannelDescendant, NvU32 hHandle) {
+    return chandesIsSwMethodStalling((struct ChannelDescendant *)(((unsigned char *) pChannelDescendant) + __nvoc_rtti_KernelCeContext_ChannelDescendant.offset), hHandle);
 }
 
-static NvBool __nvoc_thunk_RmResource_kcectxAccessCallback(struct KernelCeContext *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCeContext_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+// kcectxCheckMemInterUnmap: virtual inherited (chandes) base (chandes)
+static NV_STATUS __nvoc_up_thunk_ChannelDescendant_kcectxCheckMemInterUnmap(struct KernelCeContext *pChannelDescendant, NvBool bSubdeviceHandleProvided) {
+    return chandesCheckMemInterUnmap((struct ChannelDescendant *)(((unsigned char *) pChannelDescendant) + __nvoc_rtti_KernelCeContext_ChannelDescendant.offset), bSubdeviceHandleProvided);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_kcectxMapTo(struct KernelCeContext *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset), pParams);
+// kcectxControl: virtual inherited (gpures) base (chandes)
+static NV_STATUS __nvoc_up_thunk_GpuResource_kcectxControl(struct KernelCeContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelCeContext_GpuResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_kcectxGetMapAddrSpace(struct KernelCeContext *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelCeContext_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+// kcectxMap: virtual inherited (gpures) base (chandes)
+static NV_STATUS __nvoc_up_thunk_GpuResource_kcectxMap(struct KernelCeContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelCeContext_GpuResource.offset), pCallContext, pParams, pCpuMapping);
 }
 
-static void __nvoc_thunk_Notifier_kcectxSetNotificationShare(struct KernelCeContext *pNotifier, struct NotifShare *pNotifShare) {
-    notifySetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_KernelCeContext_Notifier.offset), pNotifShare);
+// kcectxUnmap: virtual inherited (gpures) base (chandes)
+static NV_STATUS __nvoc_up_thunk_GpuResource_kcectxUnmap(struct KernelCeContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelCeContext_GpuResource.offset), pCallContext, pCpuMapping);
 }
 
-static NvU32 __nvoc_thunk_RsResource_kcectxGetRefCount(struct KernelCeContext *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset));
+// kcectxShareCallback: virtual inherited (gpures) base (chandes)
+static NvBool __nvoc_up_thunk_GpuResource_kcectxShareCallback(struct KernelCeContext *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelCeContext_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static void __nvoc_thunk_RsResource_kcectxAddAdditionalDependants(struct RsClient *pClient, struct KernelCeContext *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset), pReference);
+// kcectxGetRegBaseOffsetAndSize: virtual inherited (gpures) base (chandes)
+static NV_STATUS __nvoc_up_thunk_GpuResource_kcectxGetRegBaseOffsetAndSize(struct KernelCeContext *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelCeContext_GpuResource.offset), pGpu, pOffset, pSize);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_kcectxControl_Prologue(struct KernelCeContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCeContext_RmResource.offset), pCallContext, pParams);
+// kcectxGetMapAddrSpace: virtual inherited (gpures) base (chandes)
+static NV_STATUS __nvoc_up_thunk_GpuResource_kcectxGetMapAddrSpace(struct KernelCeContext *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelCeContext_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_kcectxGetRegBaseOffsetAndSize(struct KernelCeContext *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelCeContext_GpuResource.offset), pGpu, pOffset, pSize);
+// kcectxInternalControlForward: virtual inherited (gpures) base (chandes)
+static NV_STATUS __nvoc_up_thunk_GpuResource_kcectxInternalControlForward(struct KernelCeContext *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelCeContext_GpuResource.offset), command, pParams, size);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_kcectxInternalControlForward(struct KernelCeContext *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelCeContext_GpuResource.offset), command, pParams, size);
+// kcectxGetInternalObjectHandle: virtual inherited (gpures) base (chandes)
+static NvHandle __nvoc_up_thunk_GpuResource_kcectxGetInternalObjectHandle(struct KernelCeContext *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelCeContext_GpuResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_kcectxUnmapFrom(struct KernelCeContext *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset), pParams);
+// kcectxAccessCallback: virtual inherited (rmres) base (chandes)
+static NvBool __nvoc_up_thunk_RmResource_kcectxAccessCallback(struct KernelCeContext *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCeContext_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
-static void __nvoc_thunk_RmResource_kcectxControl_Epilogue(struct KernelCeContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCeContext_RmResource.offset), pCallContext, pParams);
+// kcectxGetMemInterMapParams: virtual inherited (rmres) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RmResource_kcectxGetMemInterMapParams(struct KernelCeContext *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_KernelCeContext_RmResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_ChannelDescendant_kcectxGetSwMethods(struct KernelCeContext *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
-    return chandesGetSwMethods((struct ChannelDescendant *)(((unsigned char *)pChannelDescendant) + __nvoc_rtti_KernelCeContext_ChannelDescendant.offset), ppMethods, pNumMethods);
+// kcectxGetMemoryMappingDescriptor: virtual inherited (rmres) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RmResource_kcectxGetMemoryMappingDescriptor(struct KernelCeContext *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_KernelCeContext_RmResource.offset), ppMemDesc);
 }
 
-static NvHandle __nvoc_thunk_GpuResource_kcectxGetInternalObjectHandle(struct KernelCeContext *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelCeContext_GpuResource.offset));
+// kcectxControlSerialization_Prologue: virtual inherited (rmres) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RmResource_kcectxControlSerialization_Prologue(struct KernelCeContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCeContext_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_kcectxControl(struct KernelCeContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelCeContext_GpuResource.offset), pCallContext, pParams);
+// kcectxControlSerialization_Epilogue: virtual inherited (rmres) base (chandes)
+static void __nvoc_up_thunk_RmResource_kcectxControlSerialization_Epilogue(struct KernelCeContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCeContext_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_kcectxUnmap(struct KernelCeContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelCeContext_GpuResource.offset), pCallContext, pCpuMapping);
+// kcectxControl_Prologue: virtual inherited (rmres) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RmResource_kcectxControl_Prologue(struct KernelCeContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCeContext_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_kcectxGetMemInterMapParams(struct KernelCeContext *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_KernelCeContext_RmResource.offset), pParams);
+// kcectxControl_Epilogue: virtual inherited (rmres) base (chandes)
+static void __nvoc_up_thunk_RmResource_kcectxControl_Epilogue(struct KernelCeContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCeContext_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_kcectxGetMemoryMappingDescriptor(struct KernelCeContext *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_KernelCeContext_RmResource.offset), ppMemDesc);
+// kcectxCanCopy: virtual inherited (res) base (chandes)
+static NvBool __nvoc_up_thunk_RsResource_kcectxCanCopy(struct KernelCeContext *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_ChannelDescendant_kcectxIsSwMethodStalling(struct KernelCeContext *pChannelDescendant, NvU32 hHandle) {
-    return chandesIsSwMethodStalling((struct ChannelDescendant *)(((unsigned char *)pChannelDescendant) + __nvoc_rtti_KernelCeContext_ChannelDescendant.offset), hHandle);
+// kcectxIsDuplicate: virtual inherited (res) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RsResource_kcectxIsDuplicate(struct KernelCeContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset), hMemory, pDuplicate);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_kcectxControlFilter(struct KernelCeContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset), pCallContext, pParams);
+// kcectxPreDestruct: virtual inherited (res) base (chandes)
+static void __nvoc_up_thunk_RsResource_kcectxPreDestruct(struct KernelCeContext *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Notifier_kcectxUnregisterEvent(struct KernelCeContext *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_KernelCeContext_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
+// kcectxControlFilter: virtual inherited (res) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RsResource_kcectxControlFilter(struct KernelCeContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_kcectxControlSerialization_Prologue(struct KernelCeContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCeContext_RmResource.offset), pCallContext, pParams);
+// kcectxIsPartialUnmapSupported: inline virtual inherited (res) base (chandes) body
+static NvBool __nvoc_up_thunk_RsResource_kcectxIsPartialUnmapSupported(struct KernelCeContext *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RsResource_kcectxCanCopy(struct KernelCeContext *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset));
+// kcectxMapTo: virtual inherited (res) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RsResource_kcectxMapTo(struct KernelCeContext *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset), pParams);
 }
 
-static NvBool __nvoc_thunk_RsResource_kcectxIsPartialUnmapSupported(struct KernelCeContext *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset));
+// kcectxUnmapFrom: virtual inherited (res) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RsResource_kcectxUnmapFrom(struct KernelCeContext *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset), pParams);
 }
 
-static void __nvoc_thunk_RsResource_kcectxPreDestruct(struct KernelCeContext *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset));
+// kcectxGetRefCount: virtual inherited (res) base (chandes)
+static NvU32 __nvoc_up_thunk_RsResource_kcectxGetRefCount(struct KernelCeContext *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_kcectxIsDuplicate(struct KernelCeContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset), hMemory, pDuplicate);
+// kcectxAddAdditionalDependants: virtual inherited (res) base (chandes)
+static void __nvoc_up_thunk_RsResource_kcectxAddAdditionalDependants(struct RsClient *pClient, struct KernelCeContext *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset), pReference);
 }
 
-static void __nvoc_thunk_RmResource_kcectxControlSerialization_Epilogue(struct KernelCeContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCeContext_RmResource.offset), pCallContext, pParams);
+// kcectxGetNotificationListPtr: virtual inherited (notify) base (chandes)
+static PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_kcectxGetNotificationListPtr(struct KernelCeContext *pNotifier) {
+    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_KernelCeContext_Notifier.offset));
 }
 
-static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_kcectxGetNotificationListPtr(struct KernelCeContext *pNotifier) {
-    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_KernelCeContext_Notifier.offset));
+// kcectxGetNotificationShare: virtual inherited (notify) base (chandes)
+static struct NotifShare * __nvoc_up_thunk_Notifier_kcectxGetNotificationShare(struct KernelCeContext *pNotifier) {
+    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_KernelCeContext_Notifier.offset));
 }
 
-static struct NotifShare *__nvoc_thunk_Notifier_kcectxGetNotificationShare(struct KernelCeContext *pNotifier) {
-    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_KernelCeContext_Notifier.offset));
+// kcectxSetNotificationShare: virtual inherited (notify) base (chandes)
+static void __nvoc_up_thunk_Notifier_kcectxSetNotificationShare(struct KernelCeContext *pNotifier, struct NotifShare *pNotifShare) {
+    notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_KernelCeContext_Notifier.offset), pNotifShare);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_kcectxMap(struct KernelCeContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return gpuresMap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelCeContext_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+// kcectxUnregisterEvent: virtual inherited (notify) base (chandes)
+static NV_STATUS __nvoc_up_thunk_Notifier_kcectxUnregisterEvent(struct KernelCeContext *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
+    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_KernelCeContext_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
-static NV_STATUS __nvoc_thunk_Notifier_kcectxGetOrAllocNotifShare(struct KernelCeContext *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_KernelCeContext_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
+// kcectxGetOrAllocNotifShare: virtual inherited (notify) base (chandes)
+static NV_STATUS __nvoc_up_thunk_Notifier_kcectxGetOrAllocNotifShare(struct KernelCeContext *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
+    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_KernelCeContext_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelCeContext = 
 {
@@ -284,75 +319,112 @@ __nvoc_ctor_KernelCeContext_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_KernelCeContext_1(KernelCeContext *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
-    pThis->__kcectxCheckMemInterUnmap__ = &__nvoc_thunk_ChannelDescendant_kcectxCheckMemInterUnmap;
+    // kcectxGetSwMethods -- virtual inherited (chandes) base (chandes)
+    pThis->__kcectxGetSwMethods__ = &__nvoc_up_thunk_ChannelDescendant_kcectxGetSwMethods;
 
-    pThis->__kcectxShareCallback__ = &__nvoc_thunk_GpuResource_kcectxShareCallback;
+    // kcectxIsSwMethodStalling -- virtual inherited (chandes) base (chandes)
+    pThis->__kcectxIsSwMethodStalling__ = &__nvoc_up_thunk_ChannelDescendant_kcectxIsSwMethodStalling;
 
-    pThis->__kcectxAccessCallback__ = &__nvoc_thunk_RmResource_kcectxAccessCallback;
+    // kcectxCheckMemInterUnmap -- virtual inherited (chandes) base (chandes)
+    pThis->__kcectxCheckMemInterUnmap__ = &__nvoc_up_thunk_ChannelDescendant_kcectxCheckMemInterUnmap;
 
-    pThis->__kcectxMapTo__ = &__nvoc_thunk_RsResource_kcectxMapTo;
+    // kcectxControl -- virtual inherited (gpures) base (chandes)
+    pThis->__kcectxControl__ = &__nvoc_up_thunk_GpuResource_kcectxControl;
 
-    pThis->__kcectxGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_kcectxGetMapAddrSpace;
+    // kcectxMap -- virtual inherited (gpures) base (chandes)
+    pThis->__kcectxMap__ = &__nvoc_up_thunk_GpuResource_kcectxMap;
 
-    pThis->__kcectxSetNotificationShare__ = &__nvoc_thunk_Notifier_kcectxSetNotificationShare;
+    // kcectxUnmap -- virtual inherited (gpures) base (chandes)
+    pThis->__kcectxUnmap__ = &__nvoc_up_thunk_GpuResource_kcectxUnmap;
 
-    pThis->__kcectxGetRefCount__ = &__nvoc_thunk_RsResource_kcectxGetRefCount;
+    // kcectxShareCallback -- virtual inherited (gpures) base (chandes)
+    pThis->__kcectxShareCallback__ = &__nvoc_up_thunk_GpuResource_kcectxShareCallback;
 
-    pThis->__kcectxAddAdditionalDependants__ = &__nvoc_thunk_RsResource_kcectxAddAdditionalDependants;
+    // kcectxGetRegBaseOffsetAndSize -- virtual inherited (gpures) base (chandes)
+    pThis->__kcectxGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_kcectxGetRegBaseOffsetAndSize;
 
-    pThis->__kcectxControl_Prologue__ = &__nvoc_thunk_RmResource_kcectxControl_Prologue;
+    // kcectxGetMapAddrSpace -- virtual inherited (gpures) base (chandes)
+    pThis->__kcectxGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_kcectxGetMapAddrSpace;
 
-    pThis->__kcectxGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_kcectxGetRegBaseOffsetAndSize;
+    // kcectxInternalControlForward -- virtual inherited (gpures) base (chandes)
+    pThis->__kcectxInternalControlForward__ = &__nvoc_up_thunk_GpuResource_kcectxInternalControlForward;
 
-    pThis->__kcectxInternalControlForward__ = &__nvoc_thunk_GpuResource_kcectxInternalControlForward;
+    // kcectxGetInternalObjectHandle -- virtual inherited (gpures) base (chandes)
+    pThis->__kcectxGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_kcectxGetInternalObjectHandle;
 
-    pThis->__kcectxUnmapFrom__ = &__nvoc_thunk_RsResource_kcectxUnmapFrom;
+    // kcectxAccessCallback -- virtual inherited (rmres) base (chandes)
+    pThis->__kcectxAccessCallback__ = &__nvoc_up_thunk_RmResource_kcectxAccessCallback;
 
-    pThis->__kcectxControl_Epilogue__ = &__nvoc_thunk_RmResource_kcectxControl_Epilogue;
+    // kcectxGetMemInterMapParams -- virtual inherited (rmres) base (chandes)
+    pThis->__kcectxGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_kcectxGetMemInterMapParams;
 
-    pThis->__kcectxGetSwMethods__ = &__nvoc_thunk_ChannelDescendant_kcectxGetSwMethods;
+    // kcectxGetMemoryMappingDescriptor -- virtual inherited (rmres) base (chandes)
+    pThis->__kcectxGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_kcectxGetMemoryMappingDescriptor;
 
-    pThis->__kcectxGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_kcectxGetInternalObjectHandle;
+    // kcectxControlSerialization_Prologue -- virtual inherited (rmres) base (chandes)
+    pThis->__kcectxControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_kcectxControlSerialization_Prologue;
 
-    pThis->__kcectxControl__ = &__nvoc_thunk_GpuResource_kcectxControl;
+    // kcectxControlSerialization_Epilogue -- virtual inherited (rmres) base (chandes)
+    pThis->__kcectxControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_kcectxControlSerialization_Epilogue;
 
-    pThis->__kcectxUnmap__ = &__nvoc_thunk_GpuResource_kcectxUnmap;
+    // kcectxControl_Prologue -- virtual inherited (rmres) base (chandes)
+    pThis->__kcectxControl_Prologue__ = &__nvoc_up_thunk_RmResource_kcectxControl_Prologue;
 
-    pThis->__kcectxGetMemInterMapParams__ = &__nvoc_thunk_RmResource_kcectxGetMemInterMapParams;
+    // kcectxControl_Epilogue -- virtual inherited (rmres) base (chandes)
+    pThis->__kcectxControl_Epilogue__ = &__nvoc_up_thunk_RmResource_kcectxControl_Epilogue;
 
-    pThis->__kcectxGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_kcectxGetMemoryMappingDescriptor;
+    // kcectxCanCopy -- virtual inherited (res) base (chandes)
+    pThis->__kcectxCanCopy__ = &__nvoc_up_thunk_RsResource_kcectxCanCopy;
 
-    pThis->__kcectxIsSwMethodStalling__ = &__nvoc_thunk_ChannelDescendant_kcectxIsSwMethodStalling;
+    // kcectxIsDuplicate -- virtual inherited (res) base (chandes)
+    pThis->__kcectxIsDuplicate__ = &__nvoc_up_thunk_RsResource_kcectxIsDuplicate;
 
-    pThis->__kcectxControlFilter__ = &__nvoc_thunk_RsResource_kcectxControlFilter;
+    // kcectxPreDestruct -- virtual inherited (res) base (chandes)
+    pThis->__kcectxPreDestruct__ = &__nvoc_up_thunk_RsResource_kcectxPreDestruct;
 
-    pThis->__kcectxUnregisterEvent__ = &__nvoc_thunk_Notifier_kcectxUnregisterEvent;
+    // kcectxControlFilter -- virtual inherited (res) base (chandes)
+    pThis->__kcectxControlFilter__ = &__nvoc_up_thunk_RsResource_kcectxControlFilter;
 
-    pThis->__kcectxControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_kcectxControlSerialization_Prologue;
+    // kcectxIsPartialUnmapSupported -- inline virtual inherited (res) base (chandes) body
+    pThis->__kcectxIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_kcectxIsPartialUnmapSupported;
 
-    pThis->__kcectxCanCopy__ = &__nvoc_thunk_RsResource_kcectxCanCopy;
+    // kcectxMapTo -- virtual inherited (res) base (chandes)
+    pThis->__kcectxMapTo__ = &__nvoc_up_thunk_RsResource_kcectxMapTo;
 
-    pThis->__kcectxIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_kcectxIsPartialUnmapSupported;
+    // kcectxUnmapFrom -- virtual inherited (res) base (chandes)
+    pThis->__kcectxUnmapFrom__ = &__nvoc_up_thunk_RsResource_kcectxUnmapFrom;
 
-    pThis->__kcectxPreDestruct__ = &__nvoc_thunk_RsResource_kcectxPreDestruct;
+    // kcectxGetRefCount -- virtual inherited (res) base (chandes)
+    pThis->__kcectxGetRefCount__ = &__nvoc_up_thunk_RsResource_kcectxGetRefCount;
 
-    pThis->__kcectxIsDuplicate__ = &__nvoc_thunk_RsResource_kcectxIsDuplicate;
+    // kcectxAddAdditionalDependants -- virtual inherited (res) base (chandes)
+    pThis->__kcectxAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_kcectxAddAdditionalDependants;
 
-    pThis->__kcectxControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_kcectxControlSerialization_Epilogue;
+    // kcectxGetNotificationListPtr -- virtual inherited (notify) base (chandes)
+    pThis->__kcectxGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_kcectxGetNotificationListPtr;
 
-    pThis->__kcectxGetNotificationListPtr__ = &__nvoc_thunk_Notifier_kcectxGetNotificationListPtr;
+    // kcectxGetNotificationShare -- virtual inherited (notify) base (chandes)
+    pThis->__kcectxGetNotificationShare__ = &__nvoc_up_thunk_Notifier_kcectxGetNotificationShare;
 
-    pThis->__kcectxGetNotificationShare__ = &__nvoc_thunk_Notifier_kcectxGetNotificationShare;
+    // kcectxSetNotificationShare -- virtual inherited (notify) base (chandes)
+    pThis->__kcectxSetNotificationShare__ = &__nvoc_up_thunk_Notifier_kcectxSetNotificationShare;
 
-    pThis->__kcectxMap__ = &__nvoc_thunk_GpuResource_kcectxMap;
+    // kcectxUnregisterEvent -- virtual inherited (notify) base (chandes)
+    pThis->__kcectxUnregisterEvent__ = &__nvoc_up_thunk_Notifier_kcectxUnregisterEvent;
 
-    pThis->__kcectxGetOrAllocNotifShare__ = &__nvoc_thunk_Notifier_kcectxGetOrAllocNotifShare;
-}
+    // kcectxGetOrAllocNotifShare -- virtual inherited (notify) base (chandes)
+    pThis->__kcectxGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_kcectxGetOrAllocNotifShare;
+} // End __nvoc_init_funcTable_KernelCeContext_1 with approximately 32 basic block(s).
 
+
+// Initialize vtable(s) for 32 virtual method(s).
 void __nvoc_init_funcTable_KernelCeContext(KernelCeContext *pThis) {
+
+    // Initialize vtable(s) with 32 per-object function pointer(s).
     __nvoc_init_funcTable_KernelCeContext_1(pThis);
 }
 

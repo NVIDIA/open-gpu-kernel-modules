@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -408,11 +408,11 @@ void bindataMarkReferenced(const BINDATA_STORAGE *pBinStorage)
 
 void* bindataGetNextUnreferencedStorage(const BINDATA_STORAGE **iter, NvU32 *pDataSize)
 {
-    extern BINDATA_STORAGE_PVT g_bindata_pvt;
+    extern struct BINDATA_STORAGE_PVT_ALL g_bindata_pvt;
     extern const NvU32 g_bindata_pvt_count;
 
     const BINDATA_STORAGE_PVT *iterPvt  = *(const BINDATA_STORAGE_PVT **)iter;
-    const BINDATA_STORAGE_PVT *firstPvt = &g_bindata_pvt;
+    const BINDATA_STORAGE_PVT *firstPvt = (BINDATA_STORAGE_PVT*)&g_bindata_pvt;
     const BINDATA_STORAGE_PVT *lastPvt  = firstPvt + g_bindata_pvt_count - 1;
 
     // This API makes no sense if the data is const, so just bail out early.

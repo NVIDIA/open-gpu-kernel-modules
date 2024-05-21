@@ -208,6 +208,13 @@ nvswitch_minion_send_command_ls10
                 NVSWITCH_GET_LINK_ENG_INST(device, linkNumber, MINION), _MINION, _MISC_0, data);
             break;
         case NV_MINION_NVLINK_DL_CMD_COMMAND_INITPHASE1:
+            if (nvswitch_is_tnvl_mode_locked(device))
+            {
+                NVSWITCH_PRINT(device, ERROR,
+                    "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+                return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+            }
+
             //
             // WAR bug 2708497
             // Before INITPHASE1, we must clear these values, then set back to

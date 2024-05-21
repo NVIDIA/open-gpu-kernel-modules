@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -148,9 +148,9 @@ nvswitch_init_lpwr_regs_ls10
     if (status != NVL_SUCCESS)
     {
         NVSWITCH_PRINT(device, ERROR, "%s: Failed to set L1 Threshold\n",
-                        __FUNCTION__);
+                       __FUNCTION__);
     }
-        }
+}
 
 void
 nvswitch_corelib_training_complete_ls10
@@ -708,8 +708,16 @@ nvswitch_init_buffer_ready_ls10
         FLD_TEST_DRF(_SWITCH_REGKEY, _SKIP_BUFFER_READY, _NPORT, _NO,
                      device->regkeys.skip_buffer_ready))
     {
-        val = DRF_NUM(_NPORT, _CTRL_BUFFER_READY, _BUFFERRDY, 0x1);
-        NVSWITCH_LINK_WR32_LS10(device, linkNum, NPORT, _NPORT, _CTRL_BUFFER_READY, val);
+        if (nvswitch_is_tnvl_mode_locked(device))
+        {
+            NVSWITCH_PRINT(device, ERROR,
+                "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        }
+        else
+        {
+            val = DRF_NUM(_NPORT, _CTRL_BUFFER_READY, _BUFFERRDY, 0x1);
+            NVSWITCH_LINK_WR32_LS10(device, linkNum, NPORT, _NPORT, _CTRL_BUFFER_READY, val);
+        }
     }
 }
 
@@ -1438,7 +1446,7 @@ nvswitch_load_link_disable_settings_ls10
     nvswitch_device *device,
     nvlink_link *link
 )
-{
+{   
     NvU32 regVal;
 
     // Read state from NVLIPT HW
@@ -1447,8 +1455,15 @@ nvswitch_load_link_disable_settings_ls10
 
     if (FLD_TEST_DRF(_NVLIPT_LNK, _CTRL_LINK_STATE_STATUS, _CURRENTLINKSTATE, _DISABLE, regVal))
     {
-        NVSWITCH_ASSERT(!cciIsLinkManaged(device, link->linkNumber));
 
+        if(cciIsLinkManaged(device, link->linkNumber))
+        {
+            NVSWITCH_PRINT(device, ERROR,
+            "%s: link #%d is cci managed and should not be disabled.\n",
+            __FUNCTION__, link->linkNumber);
+            return;
+        }
+        
         // Set link to invalid and unregister from corelib
         device->link[link->linkNumber].valid = NV_FALSE;
         nvlink_lib_unregister_link(link);
@@ -1594,7 +1609,7 @@ nvswitch_reset_and_train_link_ls10
                 link_intr_subcode = DRF_VAL(_NVLSTAT, _MN00, _LINK_INTR_SUBCODE, stat_data);
 
                 if ((link_state == NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_STATUS_MINION_REQUEST_FAIL) &&
-                    (link_intr_subcode == MINION_ALARM_BUSY))
+                (link_intr_subcode == MINION_ALARM_BUSY))
                 {
 
                     status = nvswitch_request_tl_link_state_ls10(link,
@@ -1785,8 +1800,8 @@ nvswitch_request_tl_link_state_ls10
         {
             keepPolling = (nvswitch_timeout_check(&timeout)) ? NV_FALSE : NV_TRUE;
 
-        // Check for state requested
-        linkStatus  = NVSWITCH_LINK_RD32_LS10(device, link->linkNumber,
+            // Check for state requested
+            linkStatus  = NVSWITCH_LINK_RD32_LS10(device, link->linkNumber,
                 NVLIPT_LNK , _NVLIPT_LNK , _CTRL_LINK_STATE_STATUS);
 
             if (DRF_VAL(_NVLIPT_LNK, _CTRL_LINK_STATE_STATUS, _CURRENTLINKSTATE, linkStatus) ==
@@ -1807,16 +1822,15 @@ nvswitch_request_tl_link_state_ls10
             linkStatus  = NVSWITCH_LINK_RD32_LS10(device, link->linkNumber,
                     NVLIPT_LNK , _NVLIPT_LNK , _CTRL_LINK_STATE_STATUS);
 
-        if (DRF_VAL(_NVLIPT_LNK, _CTRL_LINK_STATE_STATUS, _CURRENTLINKSTATE, linkStatus) !=
-                    tlLinkState)
-        {
-            NVSWITCH_PRINT(device, ERROR,
-                "%s: TL link state request to state 0x%x for link #%d did not complete!\n",
-                __FUNCTION__, tlLinkState, link->linkNumber);
-            return -NVL_ERR_GENERIC;
+            if (DRF_VAL(_NVLIPT_LNK, _CTRL_LINK_STATE_STATUS, _CURRENTLINKSTATE, linkStatus) !=
+                        tlLinkState)
+            {
+                NVSWITCH_PRINT(device, ERROR,
+                    "%s: TL link state request to state 0x%x for link #%d did not complete!\n",
+                    __FUNCTION__, tlLinkState, link->linkNumber);
+                return -NVL_ERR_GENERIC;
+            }
         }
-    }
-
     }
 
     return status;

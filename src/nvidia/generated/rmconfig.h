@@ -146,6 +146,7 @@
 #define RMCFG_CHIP_ALL_CHIPS 1
 #define RMCFG_CHIP_ALL_CHIPS_CLASSIC_GPUS 1
 #define RMCFG_CHIP_DISPLAYLESS 1
+#define RMCFG_CHIP_DISPLAYLESS_CLASSIC_GPUS 1
 #define RMCFG_CHIP_dKEPLER   0
 #define RMCFG_CHIP_DKEPLER   0
 #define RMCFG_CHIP_KEPLER    0
@@ -197,10 +198,10 @@
 #define RMCFG_CHIP_tPASCAL   0
 #define RMCFG_CHIP_TPASCAL   0
 #define RMCFG_CHIP_PASCAL_TEGRA_BIG_GPUS 0
+#define RMCFG_CHIP_DISPLAYLESS_TEGRA_BIG_GPUS 0
 #define RMCFG_CHIP_tVOLTA    0
 #define RMCFG_CHIP_TVOLTA    0
 #define RMCFG_CHIP_VOLTA_TEGRA_BIG_GPUS 0
-#define RMCFG_CHIP_TEGRA_DISP_TEGRA_BIG_GPUS 0
 #define RMCFG_CHIP_TURING_TEGRA_BIG_GPUS 0
 #define RMCFG_CHIP_T23X      0
 #define RMCFG_CHIP_T23X_TEGRA_BIG_GPUS 0
@@ -246,7 +247,7 @@
 #define RMCFG_FEATURE_RMCORE_BASE                 1  // RMCORE Base
 #define RMCFG_FEATURE_KERNEL_RM                   1  // Kernel layer of RM
 #define RMCFG_FEATURE_ORIN_PHYSICAL_RM            1  // Physical layer of RM, disabled only on Orin
-#define RMCFG_FEATURE_VGPU_GSP_PLUGIN_OFFLOAD     1  // vGPU GSP plugin offload
+#define RMCFG_FEATURE_GSP_MNOC_STOPGAP            1  // Stopgap for MNOC support using the baremetal driver
 #define RMCFG_FEATURE_SLINEXT                     1
 #define RMCFG_FEATURE_NOTEBOOK                    1  // Notebook support
 #define RMCFG_FEATURE_EXTDEV                      1  // Daughter boards connected to Quadro GPUs
@@ -261,8 +262,7 @@
 #define RMCFG_FEATURE_HOTPLUG_POLLING             0  // HotPlug polling
 #define RMCFG_FEATURE_MULTI_GPU                   1  // Multiple GPUs managed by same RM instance
 #define RMCFG_FEATURE_RM_BASIC_LOCK_MODEL         1  // Support for Basic Lock Model in RM
-#define RMCFG_FEATURE_VIRTUALIZATION              0  // Detection and Guest RM Implementation within a Virtualization environment
-#define RMCFG_FEATURE_VIRTUALIZATION_LEGACY       0  // aka VIRTUALIZATION
+#define RMCFG_FEATURE_VIRTUALIZATION_LEGACY       0  // Virtualization legacy feature (pre-vGPU-GSP)
 #define RMCFG_FEATURE_PRESILICON                  0  // For builds that can run on simulated or emulated GPU
 #define RMCFG_FEATURE_GSP_CLIENT_RM               1  // GSP client RM
 #define RMCFG_FEATURE_DCE_CLIENT_RM               0  // DCE client RM
@@ -284,7 +284,6 @@
 #define RMCFG_FEATURE_HWBC                        1  // Enables support bridge chip devices
 #define RMCFG_FEATURE_SPARSE_TEXTURE              1  // Enables optimization and defaults for sparse texture
 #define RMCFG_FEATURE_CFGEX_PERF_MODE             1  // legacy support for performance modes
-#define RMCFG_FEATURE_TILED_RESOURCE_COMPR        1
 #define RMCFG_FEATURE_SYNC_GPU_BOOST              1  // Synchronized GPU Boost
 #define RMCFG_FEATURE_NVSR_ON_NVDISPLAY           1  // NVSR on Nvdisplay 
 #define RMCFG_FEATURE_MODS_FEATURES               0  // Flag for enabling MODS required features in RM
@@ -300,6 +299,8 @@
 #define RMCFG_FEATURE_NVLINK_ERROR_THRESHOLD      1  // Support for NVLINK_ERROR_THRESHOLD
 #define RMCFG_FEATURE_GSP_SEC2_ENC_CHNLMGMT_RC_WAR  1  // WAR required for RC handling. See comment #36 of bug 4406277
 #define RMCFG_FEATURE_FABRIC_LINEAR_ADDRESSING    1  // Unicast fabric memory management
+#define RMCFG_FEATURE_GSP_RM_TRACE_RATS           1
+#define RMCFG_FEATURE_TEGRA_BPMP                  0  // Tegra BPMP integration
 
 
 
@@ -371,6 +372,7 @@
 #define RMCFG_CLASS_NV01_TIMER                    1
 #define RMCFG_CLASS_NV1_TIMER                     1  // aka NV01_TIMER
 #define RMCFG_CLASS_KERNEL_GRAPHICS_CONTEXT       1  // Graphics Context in Kernel side
+#define RMCFG_CLASS_LOCK_STRESS_OBJECT            1  // Lock Stress Testing Object
 #define RMCFG_CLASS_NV50_CHANNEL_GPFIFO           1
 #define RMCFG_CLASS_GF100_CHANNEL_GPFIFO          1
 #define RMCFG_CLASS_KEPLER_CHANNEL_GPFIFO_A       1
@@ -661,7 +663,6 @@
 #define RMCFG_MODULE_GPUMGR                       1  // GPU Manager object
 #define RMCFG_MODULE_HEAP                         1  // Heap Engine Object
 #define RMCFG_MODULE_BRIGHTC                      1  // Backlight brightness control module
-#define RMCFG_MODULE_GSYNCMGR                     0  // GSYNC Manager
 #define RMCFG_MODULE_OD                           0  // Display component: Output Device
 #define RMCFG_MODULE_DFP                          0  // Display component: Display Flat Panel
 #define RMCFG_MODULE_CRT                          0  // Display component: Cathode ray tube

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -146,6 +146,7 @@ typedef struct vmiopd_SM_info {
 #define NV2080_CTRL_MIGRATABLE_OPS_ARRAY_MAX_v21_07                             50
 #define NV2080_CTRL_MAX_PCES_v21_0A                                             32
 #define NV2080_CTRL_CE_CAPS_TBL_SIZE_v21_0A                                     2
+#define NV2080_CTRL_NVLINK_INBAND_MAX_DATA_SIZE_v26_05                          1024
 
 // Host USM type
 #define NV_VGPU_CONFIG_USM_TYPE_DEFAULT                  0x00000000 /* R-XVF */
@@ -153,6 +154,8 @@ typedef struct vmiopd_SM_info {
 #define NV_VGPU_CONFIG_USM_TYPE_QUADRO                   0x00000002 /* R-XVF */
 #define NV_VGPU_CONFIG_USM_TYPE_GEFORCE                  0x00000003 /* R-XVF */
 #define NV_VGPU_CONFIG_USM_TYPE_COMPUTE                  0x00000004 /* R-XVF */
+
+#define NV_ALLOC_STRUCTURE_SIZE_v26_00                   56
 
 // Defined this intermediate RM-RPC structure for making RPC call from Guest as
 // we have the restriction of passing max 4kb of data to plugin and the
@@ -196,6 +199,7 @@ typedef struct VGPU_BSP_CAPS
 #define NV2080_CTRL_GPU_ECC_UNIT_COUNT_v1C_09 (0x00000016)
 #define NV2080_CTRL_GPU_ECC_UNIT_COUNT_v20_03 (0x00000018)
 #define NV2080_CTRL_GPU_ECC_UNIT_COUNT_v24_06 (0x00000019)
+#define NV2080_CTRL_GPU_ECC_UNIT_COUNT_v26_02 (0x0000001E)
 
 #define NV2080_ENGINE_TYPE_LAST_v18_01      (0x0000002a)
 #define NV2080_ENGINE_TYPE_LAST_v1C_09      (0x00000034)
@@ -261,6 +265,8 @@ typedef struct VGPU_BSP_CAPS
 
 #define NV2080_CTRL_GPU_INFO_MAX_LIST_SIZE_v25_11 0x00000041
 
+#define NV2080_CTRL_BOARDOBJGRP_E255_MAX_OBJECTS_v06_01 (255U)
+
 typedef struct _GPU_PARTITION_INFO
 {
     NvU32      swizzId;
@@ -311,6 +317,7 @@ typedef struct _VGPU_STATIC_PROPERTIES
     NvBool bDebuggingEnabled;
     NvU32 channelCount;
     NvBool bPblObjNotPresent;       //Valid only in case of GA100 SRIOV Heavy
+    NvU64 vmmuSegmentSize;
 } VGPU_STATIC_PROPERTIES;
 
 struct _vgpu_static_info
@@ -340,7 +347,7 @@ struct _vgpu_static_info
     NvBool bPerRunlistChannelRamEnabled;
     NvU32 subProcessIsolation;
     VGPU_STATIC_PROPERTIES vgpuStaticProperties;
-    NvU64 maxSupportedPageSize;
+    NvU64 maxSupportedPageSize; // Only used pre-SRIOV/SRIOV-heavy
     GPU_PARTITION_INFO gpuPartitionInfo; // Default (Admin created) EXEC-I PARTITION INFO
     NvBool bC2CLinkUp;
     NvBool bSelfHostedMode;
@@ -392,6 +399,7 @@ struct _vgpu_static_info
     NV9096_CTRL_GET_ZBC_CLEAR_TABLE_SIZE_PARAMS zbcTableSizes[NV9096_CTRL_ZBC_CLEAR_TABLE_TYPE_COUNT];
     NV2080_CTRL_CMD_BUS_GET_PCIE_REQ_ATOMICS_CAPS_PARAMS busGetPcieReqAtomicsCaps;
     NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS masterGetVfErrCntIntMsk;
+    GPU_EXEC_SYSPIPE_INFO execSyspipeInfo;
 };
 
 typedef struct _vgpu_static_info VGPU_STATIC_INFO, VGPU_STATIC_INFO2;
@@ -406,7 +414,7 @@ typedef NV2080_CTRL_CE_GET_CAPS_V2_PARAMS VGPU_CE_GET_CAPS_V2[NV2080_ENGINE_TYPE
 
 typedef struct GSP_FIRMWARE GSP_FIRMWARE;
 
-ct_assert(NV2080_CTRL_GPU_ECC_UNIT_COUNT == NV2080_CTRL_GPU_ECC_UNIT_COUNT_v24_06);
+ct_assert(NV2080_CTRL_GPU_ECC_UNIT_COUNT == NV2080_CTRL_GPU_ECC_UNIT_COUNT_v26_02);
 ct_assert(NV2080_ENGINE_TYPE_LAST == 0x40);
 ct_assert(NV2080_CTRL_BUS_INFO_MAX_LIST_SIZE == NV2080_CTRL_BUS_INFO_MAX_LIST_SIZE_v1C_09);
 ct_assert(NV2080_CTRL_FB_FS_INFO_MAX_QUERIES == NV2080_CTRL_FB_FS_INFO_MAX_QUERIES_v24_00);
@@ -457,7 +465,7 @@ ct_assert(NV0080_CTRL_GR_CAPS_TBL_SIZE_v25_0E == NV0080_CTRL_GR_CAPS_TBL_SIZE);
 ct_assert(NV2080_CTRL_CMD_GR_CTXSW_PREEMPTION_BIND_BUFFERS_CONTEXT_POOL_v25_0E == NV2080_CTRL_CMD_GR_CTXSW_PREEMPTION_BIND_BUFFERS_CONTEXT_POOL);
 ct_assert(RPC_GR_BUFFER_TYPE_GRAPHICS_MAX_v25_0E == RPC_GR_BUFFER_TYPE_GRAPHICS_MAX);
 ct_assert(NV9096_CTRL_ZBC_CLEAR_TABLE_TYPE_COUNT_v1A_07 == NV9096_CTRL_ZBC_CLEAR_TABLE_TYPE_COUNT);
+ct_assert(NVC637_CTRL_MAX_EXEC_PARTITIONS_v18_05 == NVC637_CTRL_MAX_EXEC_PARTITIONS);
 ct_assert(NV2080_CTRL_GPU_INFO_MAX_LIST_SIZE_v25_11 == NV2080_CTRL_GPU_INFO_MAX_LIST_SIZE);
 
 #endif /*_RPC_SDK_STRUCTURES_H_*/
-

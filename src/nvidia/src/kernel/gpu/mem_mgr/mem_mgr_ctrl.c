@@ -647,19 +647,6 @@ free_mem:
 }
 #endif // defined(DEBUG) || defined(DEVELOP) || defined(NV_VERIF_FEATURES) || defined(NV_MODS)
 
-/*!
- *  @brief Get heap reservation size needed by different module
- */
-NV_STATUS
-subdeviceCtrlCmdFbGetHeapReservationSize_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_INTERNAL_FB_GET_HEAP_RESERVATION_SIZE_PARAMS *pParams
-)
-{
-    NV_ASSERT_OR_RETURN(0, NV_ERR_NOT_SUPPORTED);
-}
-
 //
 // subdeviceCtrlCmdFbGetFBRegionInfo
 //
@@ -760,77 +747,6 @@ subdeviceCtrlCmdFbGetFBRegionInfo_IMPL
     }
 
     return status;
-}
-
-NV_STATUS
-subdeviceCtrlCmdInternalMemmgrGetVgpuHostRmReservedFb_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_INTERNAL_MEMMGR_GET_VGPU_CONFIG_HOST_RESERVED_FB_PARAMS *pParams
-)
-{
-    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
-    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-
-    pParams->hostReservedFb = memmgrGetVgpuHostRmReservedFb_HAL(pGpu, pMemoryManager, pParams->vgpuTypeId);
-
-    return NV_OK;
-}
-
-/*!
- * @brief   This command gets the offset into FB that ECC asynchronous scrubber
- *          has completed up to. As well as if the scrubber has finished its job.
- *
- * @param[in]       pDiagApi
- * @param[in,out]   pParams
- *                  attribute:  The attribute whose support is to be determined.
- *                  value:      The new value of the specified attribute to be applied.
- * @return  Returns NV_STATUS
- *          NV_OK                     Success
- *
- */
-NV_STATUS
-diagapiCtrlCmdFbEccScrubDiag_IMPL
-(
-    DiagApi *pDiagApi,
-    NV208F_CTRL_CMD_FB_ECC_SCRUB_DIAG_PARAMS *pConfig
-)
-{
-    OBJGPU *pGpu = GPU_RES_GET_GPU(pDiagApi);
-    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-
-    memmgrGetScrubState_HAL(pGpu, pMemoryManager, &(pConfig->fbOffsetCompleted),
-                            &(pConfig->fbEndOffset), &(pConfig->bAsyncScrubDisabled));
-
-    return NV_OK;
-}
-
-/*!
- * @brief   This command launches the asynchronous scrubber on the region specified
- *          by beginBlock and endBlock. beginBlock is the lesser block index
- *          of the region to be scrubbed.
- *
- * @param[in]       pDiagApi
- * @param[in,out]   pParams
- *                  attribute:  The attribute whose support is to be determined.
- *                  value:      The new value of the specified attribute to be applied.
- * @return  Returns NV_STATUS
- *          NV_OK                     Success
- *
- */
-NV_STATUS
-diagapiCtrlCmdFbEccAsyncScrubRegion_IMPL
-(
-    DiagApi *pDiagApi,
-    NV208F_CTRL_CMD_FB_ECC_ASYNC_SCRUB_REGION_PARAMS *pConfig
-)
-{
-    OBJGPU *pGpu = GPU_RES_GET_GPU(pDiagApi);
-    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-
-    memmgrAsyncScrubRegion_HAL(pGpu, pMemoryManager, pConfig->startBlock, pConfig->endBlock);
-
-    return NV_OK;
 }
 
 NV_STATUS

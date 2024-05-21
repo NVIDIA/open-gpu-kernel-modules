@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -88,4 +88,19 @@ typedef struct NV00FE_CTRL_SUBMIT_OPERATIONS_PARAMS {
     NV_DECLARE_ALIGNED(NV00FE_CTRL_OPERATION pOperations[NV00FE_MAX_OPERATIONS_COUNT], 8);
     NvU32 operationsProcessedCount;
 } NV00FE_CTRL_SUBMIT_OPERATIONS_PARAMS;
+
+/*
+ * NV00FE_CTRL_CMD_RESIZE_QUEUE
+ *
+ * Resize the MemoryMapper command queue
+ * All pending commands remain in queue
+ *
+ */
+#define NV00FE_CTRL_CMD_RESIZE_QUEUE (0xfe0102U) /* finn: Evaluated from "(FINN_NV_MEMORY_MAPPER_INTERFACE_ID << 8) | NV00FE_CTRL_RESIZE_QUEUE_PARAMS_MESSAGE_ID" */
+
+#define NV00FE_CTRL_RESIZE_QUEUE_PARAMS_MESSAGE_ID (0x2U)
+
+typedef struct NV00FE_CTRL_RESIZE_QUEUE_PARAMS {
+    NvU32 maxQueueSize;
+} NV00FE_CTRL_RESIZE_QUEUE_PARAMS;
 

@@ -4188,6 +4188,8 @@ _rcdbNocatReportAssert
     RM_NOCAT_JOURNAL_ENTRY *pNocatEntry = NULL;
     NvU32                   gpuCnt= 0;
     OBJGPU                  *pTmpGpu = gpumgrGetGpu(0);
+    NvBool                  recordPosted = NV_FALSE;
+
 
     // validate inputs.
     if ((pRcdb == NULL) || (pAssertRec == NULL))
@@ -4257,18 +4259,14 @@ _rcdbNocatReportAssert
                     // increment the count
                     pDiagData = (RM_NOCAT_ASSERT_DIAG_BUFFER*)&pNocatEntry->nocatJournalEntry.diagBuffer;
                     pDiagData->count++;
+                    recordPosted = NV_TRUE;
                 }
                 _rcdbReleaseNocatJournalRecord(pNocatEntry);
-
             }
-        }
-        else
-        {
-            pRcdb->nocatJournalDescriptor.nocatEventCounters[NV2080_NOCAT_JOURNAL_REPORT_ACTIVITY_BUSY_IDX]++;
         }
         portAtomicDecrementS32(&concurrentRingBufferAccess);
     }
-    else
+    if (!recordPosted)
     {
         // we are logging this assert, save off the stack so we can use it to
         // compare against future asserts.

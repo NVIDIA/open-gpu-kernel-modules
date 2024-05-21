@@ -93,10 +93,13 @@ __nvoc_ctor_KernelVgpuMgr_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_KernelVgpuMgr_1(KernelVgpuMgr *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-}
+} // End __nvoc_init_funcTable_KernelVgpuMgr_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_KernelVgpuMgr(KernelVgpuMgr *pThis) {
     __nvoc_init_funcTable_KernelVgpuMgr_1(pThis);
 }

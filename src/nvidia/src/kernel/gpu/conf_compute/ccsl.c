@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -185,6 +185,32 @@ static OBJGPU *getGpuViaChannelHandle(NvHandle hClient, NvHandle hChannel)
     return GPU_RES_GET_GPU(pKernelChannel);
 }
 
+static KernelChannel *getKernelChannelViaChannelHandle(NvHandle hClient, NvHandle hChannel)
+{
+    RsClient      *pChannelClient;
+    KernelChannel *pKernelChannel;
+
+    if (serverGetClientUnderLock(&g_resServ, hClient, &pChannelClient) != NV_OK)
+    {
+        return NULL;
+    }
+
+    if (CliGetKernelChannel(pChannelClient, hChannel, &pKernelChannel) != NV_OK)
+    {
+        return NULL;
+    }
+
+    return pKernelChannel;
+}
+
+static void openrmCtxFree(void *openrmCtx)
+{
+    if (openrmCtx != NULL)
+    {
+        libspdm_aead_free(openrmCtx);
+    }
+}
+
 NV_STATUS
 ccslContextInitViaChannel_IMPL
 (
@@ -193,12 +219,13 @@ ccslContextInitViaChannel_IMPL
     NvHandle      hChannel
 )
 {
-    CC_KMB    *kmb;
-    OBJSYS    *pSys    = SYS_GET_INSTANCE();
-    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
-    OBJGPU    *pGpu;
-    RM_API    *pRmApi  = NULL;
-    NV_STATUS  status;
+    OBJSYS            *pSys     = SYS_GET_INSTANCE();
+    OBJGPUMGR         *pGpuMgr  = SYS_GET_GPUMGR(pSys);
+    OBJGPU            *pGpu;
+    RM_API            *pRmApi   = NULL;
+    KernelChannel     *pKernelChannel;
+    NV_STATUS          status;
+    MEMORY_DESCRIPTOR *pMemDesc = NULL;
 
     NVC56F_CTRL_CMD_GET_KMB_PARAMS getKmbParams;
 
@@ -208,7 +235,6 @@ ccslContextInitViaChannel_IMPL
     {
         return NV_ERR_NOT_SUPPORTED;
     }
-
     if (ppCtx == NULL)
     {
         return NV_ERR_INVALID_ARGUMENT;
@@ -220,17 +246,25 @@ ccslContextInitViaChannel_IMPL
         return NV_ERR_INVALID_CHANNEL;
     }
 
+    pKernelChannel = getKernelChannelViaChannelHandle(hClient, hChannel);
+    if (pKernelChannel == NULL)
+    {
+        return NV_ERR_INVALID_CHANNEL;
+    }
+
     pCcslContext pCtx = portMemAllocNonPaged(sizeof(*pCtx));
     if (pCtx == NULL)
     {
-        return NV_ERR_NO_MEMORY;
+        status = NV_ERR_NO_MEMORY;
+        goto ccslContextInitViaChannelCleanup;
     }
     *ppCtx = pCtx;
 
+    pCtx->openrmCtx = NULL;
     if (!libspdm_aead_gcm_prealloc(&pCtx->openrmCtx))
     {
-        portMemFree(pCtx);
-        return NV_ERR_NO_MEMORY;
+        status = NV_ERR_NO_MEMORY;
+        goto ccslContextInitViaChannelCleanup;
     }
 
     pCtx->hClient = hClient;
@@ -256,20 +290,36 @@ ccslContextInitViaChannel_IMPL
     status = pRmApi->Control(pRmApi, hClient, hChannel,
                              NVC56F_CTRL_CMD_GET_KMB, &getKmbParams,
                              sizeof(getKmbParams));
-    if (status != NV_OK)
-    {
-        libspdm_aead_free(pCtx->openrmCtx);
-        portMemFree(pCtx);
-        return status;
-    }
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, status, ccslContextInitViaChannelCleanup);
+    writeKmbToContext(pCtx, &getKmbParams.kmb);
 
+    status = memdescCreate(&pMemDesc, pGpu, sizeof(CC_CRYPTOBUNDLE_STATS), sizeof(NvU64), NV_TRUE,
+                           ADDR_SYSMEM, NV_MEMORY_UNCACHED, MEMDESC_FLAGS_NONE);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, status, ccslContextInitViaChannelCleanup);
+
+    status = memdescAlloc(pMemDesc);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, status, ccslContextInitViaChannelmemdescDestroy);
+
+    status = kchannelSetEncryptionStatsBuffer(pGpu, pKernelChannel, pMemDesc, NV_TRUE);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, status, ccslContextInitViaChannelmemdescFree);
+
+    pCtx->pEncStatsBuffer = pKernelChannel->pEncStatsBuf;
+    pCtx->pMemDesc = pMemDesc;
     pCtx->msgCounterSize = CSL_MSG_CTR_32;
 
-    kmb = &getKmbParams.kmb;
-
-    writeKmbToContext(pCtx, kmb);
-
     return NV_OK;
+
+ccslContextInitViaChannelmemdescFree:
+    memdescFree(pMemDesc);
+
+ccslContextInitViaChannelmemdescDestroy:
+    memdescDestroy(pMemDesc);
+
+ccslContextInitViaChannelCleanup:
+    openrmCtxFree(pCtx->openrmCtx);
+    portMemFree(pCtx);
+
+    return status;
 }
 
 NV_STATUS
@@ -285,7 +335,7 @@ ccslContextInitViaKeyId_KERNEL
     OBJSYS    *pSys    = SYS_GET_INSTANCE();
     OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
 
-    NV_PRINTF(LEVEL_INFO, "Initializing CCSL context via globak key ID.\n");
+    NV_PRINTF(LEVEL_INFO, "Initializing CCSL context via global key ID.\n");
 
     // This function must be redesigned for multi-gpu
     if(!pGpuMgr->ccCaps.bHccFeatureCapable)
@@ -317,13 +367,15 @@ ccslContextInitViaKeyId_KERNEL
                                                      &kmb);
     if (status != NV_OK)
     {
-    libspdm_aead_free(pCtx->openrmCtx);
+        openrmCtxFree(pCtx->openrmCtx);
         portMemFree(pCtx);
         return status;
     }
 
     // For now assume any call to this function uses a 64-bit message counter.
     pCtx->msgCounterSize = CSL_MSG_CTR_64;
+    pCtx->pEncStatsBuffer = NULL;
+    pCtx->pMemDesc = NULL;
     writeKmbToContext(pCtx, &kmb);
 
     return NV_OK;
@@ -342,14 +394,71 @@ ccslContextClear_IMPL
         return;
     }
 
-    libspdm_aead_free(pCtx->openrmCtx);
+    openrmCtxFree(pCtx->openrmCtx);
+    memdescFree(pCtx->pMemDesc);
+    memdescDestroy(pCtx->pMemDesc);
     portMemFree(pCtx);
 }
 
 NV_STATUS
 ccslContextUpdate_KERNEL(pCcslContext pCtx)
 {
-    return NV_ERR_NOT_SUPPORTED;
+    OBJGPU    *pGpu;
+    RM_API    *pRmApi = NULL;
+    NV_STATUS  status = NV_OK;
+
+    NVC56F_CTRL_CMD_GET_KMB_PARAMS getKmbParams;
+
+    NV_PRINTF(LEVEL_INFO, "Updating the CCSL context.\n");
+
+    if (pCtx == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    if (!isChannel(pCtx))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    pGpu = getGpuViaChannelHandle(pCtx->hClient, pCtx->hChannel);
+
+    if (pGpu == NULL)
+    {
+        return NV_ERR_INVALID_CHANNEL;
+    }
+
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        if (rmGpuLockIsOwner())
+        {
+            pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+        }
+        else
+        {
+            pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
+        }
+    }
+    else
+    {
+        pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    }
+
+    portMemSet(&getKmbParams, 0, sizeof(getKmbParams));
+    status = pRmApi->Control(pRmApi, pCtx->hClient, pCtx->hChannel,
+                             NVC56F_CTRL_CMD_GET_KMB, &getKmbParams,
+                             sizeof(getKmbParams));
+    if (status != NV_OK)
+    {
+        portMemSet(&getKmbParams, 0, sizeof(getKmbParams));
+
+        return status;
+    }
+
+    writeKmbToContext(pCtx, &getKmbParams.kmb);
+    portMemSet(&getKmbParams, 0, sizeof(getKmbParams));
+
+    return NV_OK;
 }
 
 NV_STATUS
@@ -525,6 +634,12 @@ ccslEncryptWithIv_IMPL
         return NV_ERR_GENERIC;
     }
 
+    if (isChannel(pCtx))
+    {
+        pCtx->pEncStatsBuffer->numEncryptionsH2D++;
+        pCtx->pEncStatsBuffer->bytesEncryptedH2D += bufferSize;
+    }
+
     return NV_OK;
 }
 
@@ -570,6 +685,12 @@ ccslEncrypt_KERNEL
         outputBuffer, &outputBufferSize))
     {
         return NV_ERR_GENERIC;
+    }
+
+    if (isChannel(pCtx))
+    {
+        pCtx->pEncStatsBuffer->numEncryptionsH2D++;
+        pCtx->pEncStatsBuffer->bytesEncryptedH2D += bufferSize;
     }
 
     return NV_OK;
@@ -841,5 +962,24 @@ ccslLogDeviceEncryption_IMPL
     NvU32        bufferSize
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    NV_STATUS status;
+    NvU64 messageNum;
+
+    status = ccslQueryMessagePool(pCtx, CCSL_DIR_DEVICE_TO_HOST, &messageNum);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+    else if (messageNum == 0)
+    {
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+    }
+
+    if (isChannel(pCtx))
+    {
+        pCtx->pEncStatsBuffer->numEncryptionsD2H++;
+        pCtx->pEncStatsBuffer->bytesEncryptedD2H += bufferSize;
+    }
+
+    return NV_OK;
 }

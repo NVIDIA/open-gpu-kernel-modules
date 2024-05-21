@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,6 +33,8 @@
 
 #include "ctrl/ctrl0041.h" // NV04_MEMORY
 #include "ctrl/ctrl2080/ctrl2080fb.h" // NV2080_CTRL_FB_INFO
+
+#include "nvmisc.h"
 
 typedef NV_STATUS RmVidHeapControlFunc(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
 
@@ -70,7 +72,7 @@ static const RmVidHeapControlEntry rmVidHeapControlTable[] = {
     { NVOS32_FUNCTION_ALLOC_OS_DESCRIPTOR,       _nvos32FunctionAllocOsDesc },
 };
 
-static NvU32 rmVidHeapControlTableSize = sizeof(rmVidHeapControlTable) / sizeof(rmVidHeapControlTable[0]);
+static NvU32 rmVidHeapControlTableSize = NV_ARRAY_ELEMENTS(rmVidHeapControlTable);
 
 void
 RmDeprecatedVidHeapControl

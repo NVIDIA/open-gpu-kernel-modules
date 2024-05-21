@@ -120,133 +120,168 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_NvdecContext =
     /*pExportInfo=*/        &__nvoc_export_info_NvdecContext
 };
 
-static NV_STATUS __nvoc_thunk_ChannelDescendant_nvdecctxCheckMemInterUnmap(struct NvdecContext *pChannelDescendant, NvBool bSubdeviceHandleProvided) {
-    return chandesCheckMemInterUnmap((struct ChannelDescendant *)(((unsigned char *)pChannelDescendant) + __nvoc_rtti_NvdecContext_ChannelDescendant.offset), bSubdeviceHandleProvided);
+// 32 up-thunk(s) defined to bridge methods in NvdecContext to superclasses
+
+// nvdecctxGetSwMethods: virtual inherited (chandes) base (chandes)
+static NV_STATUS __nvoc_up_thunk_ChannelDescendant_nvdecctxGetSwMethods(struct NvdecContext *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
+    return chandesGetSwMethods((struct ChannelDescendant *)(((unsigned char *) pChannelDescendant) + __nvoc_rtti_NvdecContext_ChannelDescendant.offset), ppMethods, pNumMethods);
 }
 
-static NvBool __nvoc_thunk_GpuResource_nvdecctxShareCallback(struct NvdecContext *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_NvdecContext_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+// nvdecctxIsSwMethodStalling: virtual inherited (chandes) base (chandes)
+static NvBool __nvoc_up_thunk_ChannelDescendant_nvdecctxIsSwMethodStalling(struct NvdecContext *pChannelDescendant, NvU32 hHandle) {
+    return chandesIsSwMethodStalling((struct ChannelDescendant *)(((unsigned char *) pChannelDescendant) + __nvoc_rtti_NvdecContext_ChannelDescendant.offset), hHandle);
 }
 
-static NvBool __nvoc_thunk_RmResource_nvdecctxAccessCallback(struct NvdecContext *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvdecContext_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+// nvdecctxCheckMemInterUnmap: virtual inherited (chandes) base (chandes)
+static NV_STATUS __nvoc_up_thunk_ChannelDescendant_nvdecctxCheckMemInterUnmap(struct NvdecContext *pChannelDescendant, NvBool bSubdeviceHandleProvided) {
+    return chandesCheckMemInterUnmap((struct ChannelDescendant *)(((unsigned char *) pChannelDescendant) + __nvoc_rtti_NvdecContext_ChannelDescendant.offset), bSubdeviceHandleProvided);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_nvdecctxMapTo(struct NvdecContext *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvdecContext_RsResource.offset), pParams);
+// nvdecctxControl: virtual inherited (gpures) base (chandes)
+static NV_STATUS __nvoc_up_thunk_GpuResource_nvdecctxControl(struct NvdecContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvdecContext_GpuResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_nvdecctxGetMapAddrSpace(struct NvdecContext *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_NvdecContext_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+// nvdecctxMap: virtual inherited (gpures) base (chandes)
+static NV_STATUS __nvoc_up_thunk_GpuResource_nvdecctxMap(struct NvdecContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvdecContext_GpuResource.offset), pCallContext, pParams, pCpuMapping);
 }
 
-static void __nvoc_thunk_Notifier_nvdecctxSetNotificationShare(struct NvdecContext *pNotifier, struct NotifShare *pNotifShare) {
-    notifySetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_NvdecContext_Notifier.offset), pNotifShare);
+// nvdecctxUnmap: virtual inherited (gpures) base (chandes)
+static NV_STATUS __nvoc_up_thunk_GpuResource_nvdecctxUnmap(struct NvdecContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvdecContext_GpuResource.offset), pCallContext, pCpuMapping);
 }
 
-static NvU32 __nvoc_thunk_RsResource_nvdecctxGetRefCount(struct NvdecContext *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvdecContext_RsResource.offset));
+// nvdecctxShareCallback: virtual inherited (gpures) base (chandes)
+static NvBool __nvoc_up_thunk_GpuResource_nvdecctxShareCallback(struct NvdecContext *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvdecContext_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static void __nvoc_thunk_RsResource_nvdecctxAddAdditionalDependants(struct RsClient *pClient, struct NvdecContext *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvdecContext_RsResource.offset), pReference);
+// nvdecctxGetRegBaseOffsetAndSize: virtual inherited (gpures) base (chandes)
+static NV_STATUS __nvoc_up_thunk_GpuResource_nvdecctxGetRegBaseOffsetAndSize(struct NvdecContext *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvdecContext_GpuResource.offset), pGpu, pOffset, pSize);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_nvdecctxControl_Prologue(struct NvdecContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvdecContext_RmResource.offset), pCallContext, pParams);
+// nvdecctxGetMapAddrSpace: virtual inherited (gpures) base (chandes)
+static NV_STATUS __nvoc_up_thunk_GpuResource_nvdecctxGetMapAddrSpace(struct NvdecContext *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvdecContext_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_nvdecctxGetRegBaseOffsetAndSize(struct NvdecContext *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_NvdecContext_GpuResource.offset), pGpu, pOffset, pSize);
+// nvdecctxInternalControlForward: virtual inherited (gpures) base (chandes)
+static NV_STATUS __nvoc_up_thunk_GpuResource_nvdecctxInternalControlForward(struct NvdecContext *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvdecContext_GpuResource.offset), command, pParams, size);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_nvdecctxInternalControlForward(struct NvdecContext *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_NvdecContext_GpuResource.offset), command, pParams, size);
+// nvdecctxGetInternalObjectHandle: virtual inherited (gpures) base (chandes)
+static NvHandle __nvoc_up_thunk_GpuResource_nvdecctxGetInternalObjectHandle(struct NvdecContext *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvdecContext_GpuResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_nvdecctxUnmapFrom(struct NvdecContext *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvdecContext_RsResource.offset), pParams);
+// nvdecctxAccessCallback: virtual inherited (rmres) base (chandes)
+static NvBool __nvoc_up_thunk_RmResource_nvdecctxAccessCallback(struct NvdecContext *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvdecContext_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
-static void __nvoc_thunk_RmResource_nvdecctxControl_Epilogue(struct NvdecContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvdecContext_RmResource.offset), pCallContext, pParams);
+// nvdecctxGetMemInterMapParams: virtual inherited (rmres) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RmResource_nvdecctxGetMemInterMapParams(struct NvdecContext *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_NvdecContext_RmResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_ChannelDescendant_nvdecctxGetSwMethods(struct NvdecContext *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
-    return chandesGetSwMethods((struct ChannelDescendant *)(((unsigned char *)pChannelDescendant) + __nvoc_rtti_NvdecContext_ChannelDescendant.offset), ppMethods, pNumMethods);
+// nvdecctxGetMemoryMappingDescriptor: virtual inherited (rmres) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RmResource_nvdecctxGetMemoryMappingDescriptor(struct NvdecContext *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_NvdecContext_RmResource.offset), ppMemDesc);
 }
 
-static NvHandle __nvoc_thunk_GpuResource_nvdecctxGetInternalObjectHandle(struct NvdecContext *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_NvdecContext_GpuResource.offset));
+// nvdecctxControlSerialization_Prologue: virtual inherited (rmres) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RmResource_nvdecctxControlSerialization_Prologue(struct NvdecContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvdecContext_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_nvdecctxControl(struct NvdecContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_NvdecContext_GpuResource.offset), pCallContext, pParams);
+// nvdecctxControlSerialization_Epilogue: virtual inherited (rmres) base (chandes)
+static void __nvoc_up_thunk_RmResource_nvdecctxControlSerialization_Epilogue(struct NvdecContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvdecContext_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_nvdecctxUnmap(struct NvdecContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_NvdecContext_GpuResource.offset), pCallContext, pCpuMapping);
+// nvdecctxControl_Prologue: virtual inherited (rmres) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RmResource_nvdecctxControl_Prologue(struct NvdecContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvdecContext_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_nvdecctxGetMemInterMapParams(struct NvdecContext *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_NvdecContext_RmResource.offset), pParams);
+// nvdecctxControl_Epilogue: virtual inherited (rmres) base (chandes)
+static void __nvoc_up_thunk_RmResource_nvdecctxControl_Epilogue(struct NvdecContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvdecContext_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_nvdecctxGetMemoryMappingDescriptor(struct NvdecContext *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_NvdecContext_RmResource.offset), ppMemDesc);
+// nvdecctxCanCopy: virtual inherited (res) base (chandes)
+static NvBool __nvoc_up_thunk_RsResource_nvdecctxCanCopy(struct NvdecContext *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvdecContext_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_ChannelDescendant_nvdecctxIsSwMethodStalling(struct NvdecContext *pChannelDescendant, NvU32 hHandle) {
-    return chandesIsSwMethodStalling((struct ChannelDescendant *)(((unsigned char *)pChannelDescendant) + __nvoc_rtti_NvdecContext_ChannelDescendant.offset), hHandle);
+// nvdecctxIsDuplicate: virtual inherited (res) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RsResource_nvdecctxIsDuplicate(struct NvdecContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvdecContext_RsResource.offset), hMemory, pDuplicate);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_nvdecctxControlFilter(struct NvdecContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvdecContext_RsResource.offset), pCallContext, pParams);
+// nvdecctxPreDestruct: virtual inherited (res) base (chandes)
+static void __nvoc_up_thunk_RsResource_nvdecctxPreDestruct(struct NvdecContext *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvdecContext_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Notifier_nvdecctxUnregisterEvent(struct NvdecContext *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_NvdecContext_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
+// nvdecctxControlFilter: virtual inherited (res) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RsResource_nvdecctxControlFilter(struct NvdecContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvdecContext_RsResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_nvdecctxControlSerialization_Prologue(struct NvdecContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvdecContext_RmResource.offset), pCallContext, pParams);
+// nvdecctxIsPartialUnmapSupported: inline virtual inherited (res) base (chandes) body
+static NvBool __nvoc_up_thunk_RsResource_nvdecctxIsPartialUnmapSupported(struct NvdecContext *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvdecContext_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RsResource_nvdecctxCanCopy(struct NvdecContext *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvdecContext_RsResource.offset));
+// nvdecctxMapTo: virtual inherited (res) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RsResource_nvdecctxMapTo(struct NvdecContext *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvdecContext_RsResource.offset), pParams);
 }
 
-static NvBool __nvoc_thunk_RsResource_nvdecctxIsPartialUnmapSupported(struct NvdecContext *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvdecContext_RsResource.offset));
+// nvdecctxUnmapFrom: virtual inherited (res) base (chandes)
+static NV_STATUS __nvoc_up_thunk_RsResource_nvdecctxUnmapFrom(struct NvdecContext *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvdecContext_RsResource.offset), pParams);
 }
 
-static void __nvoc_thunk_RsResource_nvdecctxPreDestruct(struct NvdecContext *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvdecContext_RsResource.offset));
+// nvdecctxGetRefCount: virtual inherited (res) base (chandes)
+static NvU32 __nvoc_up_thunk_RsResource_nvdecctxGetRefCount(struct NvdecContext *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvdecContext_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_nvdecctxIsDuplicate(struct NvdecContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvdecContext_RsResource.offset), hMemory, pDuplicate);
+// nvdecctxAddAdditionalDependants: virtual inherited (res) base (chandes)
+static void __nvoc_up_thunk_RsResource_nvdecctxAddAdditionalDependants(struct RsClient *pClient, struct NvdecContext *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvdecContext_RsResource.offset), pReference);
 }
 
-static void __nvoc_thunk_RmResource_nvdecctxControlSerialization_Epilogue(struct NvdecContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvdecContext_RmResource.offset), pCallContext, pParams);
+// nvdecctxGetNotificationListPtr: virtual inherited (notify) base (chandes)
+static PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_nvdecctxGetNotificationListPtr(struct NvdecContext *pNotifier) {
+    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_NvdecContext_Notifier.offset));
 }
 
-static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_nvdecctxGetNotificationListPtr(struct NvdecContext *pNotifier) {
-    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_NvdecContext_Notifier.offset));
+// nvdecctxGetNotificationShare: virtual inherited (notify) base (chandes)
+static struct NotifShare * __nvoc_up_thunk_Notifier_nvdecctxGetNotificationShare(struct NvdecContext *pNotifier) {
+    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_NvdecContext_Notifier.offset));
 }
 
-static struct NotifShare *__nvoc_thunk_Notifier_nvdecctxGetNotificationShare(struct NvdecContext *pNotifier) {
-    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_NvdecContext_Notifier.offset));
+// nvdecctxSetNotificationShare: virtual inherited (notify) base (chandes)
+static void __nvoc_up_thunk_Notifier_nvdecctxSetNotificationShare(struct NvdecContext *pNotifier, struct NotifShare *pNotifShare) {
+    notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_NvdecContext_Notifier.offset), pNotifShare);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_nvdecctxMap(struct NvdecContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return gpuresMap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_NvdecContext_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+// nvdecctxUnregisterEvent: virtual inherited (notify) base (chandes)
+static NV_STATUS __nvoc_up_thunk_Notifier_nvdecctxUnregisterEvent(struct NvdecContext *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
+    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_NvdecContext_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
-static NV_STATUS __nvoc_thunk_Notifier_nvdecctxGetOrAllocNotifShare(struct NvdecContext *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_NvdecContext_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
+// nvdecctxGetOrAllocNotifShare: virtual inherited (notify) base (chandes)
+static NV_STATUS __nvoc_up_thunk_Notifier_nvdecctxGetOrAllocNotifShare(struct NvdecContext *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
+    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_NvdecContext_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_NvdecContext = 
 {
@@ -289,6 +324,7 @@ __nvoc_ctor_NvdecContext_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_NvdecContext_1(NvdecContext *pThis, RmHalspecOwner *pRmhalspecowner) {
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
@@ -297,72 +333,108 @@ static void __nvoc_init_funcTable_NvdecContext_1(NvdecContext *pThis, RmHalspecO
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
-    pThis->__nvdecctxCheckMemInterUnmap__ = &__nvoc_thunk_ChannelDescendant_nvdecctxCheckMemInterUnmap;
+    // nvdecctxGetSwMethods -- virtual inherited (chandes) base (chandes)
+    pThis->__nvdecctxGetSwMethods__ = &__nvoc_up_thunk_ChannelDescendant_nvdecctxGetSwMethods;
 
-    pThis->__nvdecctxShareCallback__ = &__nvoc_thunk_GpuResource_nvdecctxShareCallback;
+    // nvdecctxIsSwMethodStalling -- virtual inherited (chandes) base (chandes)
+    pThis->__nvdecctxIsSwMethodStalling__ = &__nvoc_up_thunk_ChannelDescendant_nvdecctxIsSwMethodStalling;
 
-    pThis->__nvdecctxAccessCallback__ = &__nvoc_thunk_RmResource_nvdecctxAccessCallback;
+    // nvdecctxCheckMemInterUnmap -- virtual inherited (chandes) base (chandes)
+    pThis->__nvdecctxCheckMemInterUnmap__ = &__nvoc_up_thunk_ChannelDescendant_nvdecctxCheckMemInterUnmap;
 
-    pThis->__nvdecctxMapTo__ = &__nvoc_thunk_RsResource_nvdecctxMapTo;
+    // nvdecctxControl -- virtual inherited (gpures) base (chandes)
+    pThis->__nvdecctxControl__ = &__nvoc_up_thunk_GpuResource_nvdecctxControl;
 
-    pThis->__nvdecctxGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_nvdecctxGetMapAddrSpace;
+    // nvdecctxMap -- virtual inherited (gpures) base (chandes)
+    pThis->__nvdecctxMap__ = &__nvoc_up_thunk_GpuResource_nvdecctxMap;
 
-    pThis->__nvdecctxSetNotificationShare__ = &__nvoc_thunk_Notifier_nvdecctxSetNotificationShare;
+    // nvdecctxUnmap -- virtual inherited (gpures) base (chandes)
+    pThis->__nvdecctxUnmap__ = &__nvoc_up_thunk_GpuResource_nvdecctxUnmap;
 
-    pThis->__nvdecctxGetRefCount__ = &__nvoc_thunk_RsResource_nvdecctxGetRefCount;
+    // nvdecctxShareCallback -- virtual inherited (gpures) base (chandes)
+    pThis->__nvdecctxShareCallback__ = &__nvoc_up_thunk_GpuResource_nvdecctxShareCallback;
 
-    pThis->__nvdecctxAddAdditionalDependants__ = &__nvoc_thunk_RsResource_nvdecctxAddAdditionalDependants;
+    // nvdecctxGetRegBaseOffsetAndSize -- virtual inherited (gpures) base (chandes)
+    pThis->__nvdecctxGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_nvdecctxGetRegBaseOffsetAndSize;
 
-    pThis->__nvdecctxControl_Prologue__ = &__nvoc_thunk_RmResource_nvdecctxControl_Prologue;
+    // nvdecctxGetMapAddrSpace -- virtual inherited (gpures) base (chandes)
+    pThis->__nvdecctxGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_nvdecctxGetMapAddrSpace;
 
-    pThis->__nvdecctxGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_nvdecctxGetRegBaseOffsetAndSize;
+    // nvdecctxInternalControlForward -- virtual inherited (gpures) base (chandes)
+    pThis->__nvdecctxInternalControlForward__ = &__nvoc_up_thunk_GpuResource_nvdecctxInternalControlForward;
 
-    pThis->__nvdecctxInternalControlForward__ = &__nvoc_thunk_GpuResource_nvdecctxInternalControlForward;
+    // nvdecctxGetInternalObjectHandle -- virtual inherited (gpures) base (chandes)
+    pThis->__nvdecctxGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_nvdecctxGetInternalObjectHandle;
 
-    pThis->__nvdecctxUnmapFrom__ = &__nvoc_thunk_RsResource_nvdecctxUnmapFrom;
+    // nvdecctxAccessCallback -- virtual inherited (rmres) base (chandes)
+    pThis->__nvdecctxAccessCallback__ = &__nvoc_up_thunk_RmResource_nvdecctxAccessCallback;
 
-    pThis->__nvdecctxControl_Epilogue__ = &__nvoc_thunk_RmResource_nvdecctxControl_Epilogue;
+    // nvdecctxGetMemInterMapParams -- virtual inherited (rmres) base (chandes)
+    pThis->__nvdecctxGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_nvdecctxGetMemInterMapParams;
 
-    pThis->__nvdecctxGetSwMethods__ = &__nvoc_thunk_ChannelDescendant_nvdecctxGetSwMethods;
+    // nvdecctxGetMemoryMappingDescriptor -- virtual inherited (rmres) base (chandes)
+    pThis->__nvdecctxGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_nvdecctxGetMemoryMappingDescriptor;
 
-    pThis->__nvdecctxGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_nvdecctxGetInternalObjectHandle;
+    // nvdecctxControlSerialization_Prologue -- virtual inherited (rmres) base (chandes)
+    pThis->__nvdecctxControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_nvdecctxControlSerialization_Prologue;
 
-    pThis->__nvdecctxControl__ = &__nvoc_thunk_GpuResource_nvdecctxControl;
+    // nvdecctxControlSerialization_Epilogue -- virtual inherited (rmres) base (chandes)
+    pThis->__nvdecctxControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_nvdecctxControlSerialization_Epilogue;
 
-    pThis->__nvdecctxUnmap__ = &__nvoc_thunk_GpuResource_nvdecctxUnmap;
+    // nvdecctxControl_Prologue -- virtual inherited (rmres) base (chandes)
+    pThis->__nvdecctxControl_Prologue__ = &__nvoc_up_thunk_RmResource_nvdecctxControl_Prologue;
 
-    pThis->__nvdecctxGetMemInterMapParams__ = &__nvoc_thunk_RmResource_nvdecctxGetMemInterMapParams;
+    // nvdecctxControl_Epilogue -- virtual inherited (rmres) base (chandes)
+    pThis->__nvdecctxControl_Epilogue__ = &__nvoc_up_thunk_RmResource_nvdecctxControl_Epilogue;
 
-    pThis->__nvdecctxGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_nvdecctxGetMemoryMappingDescriptor;
+    // nvdecctxCanCopy -- virtual inherited (res) base (chandes)
+    pThis->__nvdecctxCanCopy__ = &__nvoc_up_thunk_RsResource_nvdecctxCanCopy;
 
-    pThis->__nvdecctxIsSwMethodStalling__ = &__nvoc_thunk_ChannelDescendant_nvdecctxIsSwMethodStalling;
+    // nvdecctxIsDuplicate -- virtual inherited (res) base (chandes)
+    pThis->__nvdecctxIsDuplicate__ = &__nvoc_up_thunk_RsResource_nvdecctxIsDuplicate;
 
-    pThis->__nvdecctxControlFilter__ = &__nvoc_thunk_RsResource_nvdecctxControlFilter;
+    // nvdecctxPreDestruct -- virtual inherited (res) base (chandes)
+    pThis->__nvdecctxPreDestruct__ = &__nvoc_up_thunk_RsResource_nvdecctxPreDestruct;
 
-    pThis->__nvdecctxUnregisterEvent__ = &__nvoc_thunk_Notifier_nvdecctxUnregisterEvent;
+    // nvdecctxControlFilter -- virtual inherited (res) base (chandes)
+    pThis->__nvdecctxControlFilter__ = &__nvoc_up_thunk_RsResource_nvdecctxControlFilter;
 
-    pThis->__nvdecctxControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_nvdecctxControlSerialization_Prologue;
+    // nvdecctxIsPartialUnmapSupported -- inline virtual inherited (res) base (chandes) body
+    pThis->__nvdecctxIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_nvdecctxIsPartialUnmapSupported;
 
-    pThis->__nvdecctxCanCopy__ = &__nvoc_thunk_RsResource_nvdecctxCanCopy;
+    // nvdecctxMapTo -- virtual inherited (res) base (chandes)
+    pThis->__nvdecctxMapTo__ = &__nvoc_up_thunk_RsResource_nvdecctxMapTo;
 
-    pThis->__nvdecctxIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_nvdecctxIsPartialUnmapSupported;
+    // nvdecctxUnmapFrom -- virtual inherited (res) base (chandes)
+    pThis->__nvdecctxUnmapFrom__ = &__nvoc_up_thunk_RsResource_nvdecctxUnmapFrom;
 
-    pThis->__nvdecctxPreDestruct__ = &__nvoc_thunk_RsResource_nvdecctxPreDestruct;
+    // nvdecctxGetRefCount -- virtual inherited (res) base (chandes)
+    pThis->__nvdecctxGetRefCount__ = &__nvoc_up_thunk_RsResource_nvdecctxGetRefCount;
 
-    pThis->__nvdecctxIsDuplicate__ = &__nvoc_thunk_RsResource_nvdecctxIsDuplicate;
+    // nvdecctxAddAdditionalDependants -- virtual inherited (res) base (chandes)
+    pThis->__nvdecctxAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_nvdecctxAddAdditionalDependants;
 
-    pThis->__nvdecctxControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_nvdecctxControlSerialization_Epilogue;
+    // nvdecctxGetNotificationListPtr -- virtual inherited (notify) base (chandes)
+    pThis->__nvdecctxGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_nvdecctxGetNotificationListPtr;
 
-    pThis->__nvdecctxGetNotificationListPtr__ = &__nvoc_thunk_Notifier_nvdecctxGetNotificationListPtr;
+    // nvdecctxGetNotificationShare -- virtual inherited (notify) base (chandes)
+    pThis->__nvdecctxGetNotificationShare__ = &__nvoc_up_thunk_Notifier_nvdecctxGetNotificationShare;
 
-    pThis->__nvdecctxGetNotificationShare__ = &__nvoc_thunk_Notifier_nvdecctxGetNotificationShare;
+    // nvdecctxSetNotificationShare -- virtual inherited (notify) base (chandes)
+    pThis->__nvdecctxSetNotificationShare__ = &__nvoc_up_thunk_Notifier_nvdecctxSetNotificationShare;
 
-    pThis->__nvdecctxMap__ = &__nvoc_thunk_GpuResource_nvdecctxMap;
+    // nvdecctxUnregisterEvent -- virtual inherited (notify) base (chandes)
+    pThis->__nvdecctxUnregisterEvent__ = &__nvoc_up_thunk_Notifier_nvdecctxUnregisterEvent;
 
-    pThis->__nvdecctxGetOrAllocNotifShare__ = &__nvoc_thunk_Notifier_nvdecctxGetOrAllocNotifShare;
-}
+    // nvdecctxGetOrAllocNotifShare -- virtual inherited (notify) base (chandes)
+    pThis->__nvdecctxGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_nvdecctxGetOrAllocNotifShare;
+} // End __nvoc_init_funcTable_NvdecContext_1 with approximately 32 basic block(s).
 
+
+// Initialize vtable(s) for 32 virtual method(s).
 void __nvoc_init_funcTable_NvdecContext(NvdecContext *pThis, RmHalspecOwner *pRmhalspecowner) {
+
+    // Initialize vtable(s) with 32 per-object function pointer(s).
     __nvoc_init_funcTable_NvdecContext_1(pThis, pRmhalspecowner);
 }
 

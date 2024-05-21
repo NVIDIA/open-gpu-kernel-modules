@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -56,6 +56,8 @@
 #include "gpu/mem_mgr/vaspace_api.h"
 #include "platform/sli/sli.h"
 
+#include "nvmisc.h"
+
 
 
 #define GMMU_PD1_VADDR_BIT_LO                        29
@@ -67,7 +69,7 @@ static const NvU64 pageSizes[] = {
     RM_PAGE_SIZE_512M
 };
 
-static const NvU32 pageSizeCount = sizeof (pageSizes) / sizeof (*pageSizes);
+static const NvU32 pageSizeCount = NV_ARRAY_ELEMENTS(pageSizes);
 
 static NV_STATUS
 _gvaspaceGpuStateConstruct
@@ -250,9 +252,7 @@ _gvaspaceBar1VaSpaceConstructClient
 
     if (!RMCFG_FEATURE_PLATFORM_GSP)
     {
-        gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx);
-        NV_ASSERT_OR_RETURN(NULL != userCtx.pGpuState, NV_ERR_INVALID_STATE);
-
+        NV_ASSERT_OK_OR_RETURN(gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx));
         status = mmuWalkSparsify(userCtx.pGpuState->pWalk, vaspaceGetVaStart(pVAS),
                                  vaspaceGetVaLimit(pVAS), NV_FALSE);
 
@@ -365,11 +365,9 @@ _gvaspaceReserveVaForClientRm
     FOR_EACH_GPU_IN_MASK_UC(32, pSys, pGpu, pVAS->gpuMask)
     {
         MMU_WALK_USER_CTX userCtx  = {0};
-        gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx);
-
-        if (NULL == userCtx.pGpuState)
+        status = gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx);
+        if (status != NV_OK)
         {
-            status = NV_ERR_INVALID_STATE;
             break;
         }
         else
@@ -843,8 +841,7 @@ _gvaspaceBar1VaSpaceDestructClient
     if (!RMCFG_FEATURE_PLATFORM_GSP)
     {
 
-        gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx);
-        NV_ASSERT_OR_RETURN(NULL != userCtx.pGpuState, NV_ERR_INVALID_STATE);
+        NV_ASSERT_OK_OR_RETURN(gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx));
 
         status = mmuWalkUnmap(userCtx.pGpuState->pWalk, vaspaceGetVaStart(pVAS), vaspaceGetVaLimit(pVAS));
 
@@ -885,13 +882,16 @@ _gvaspaceFlaVaspaceDestruct
 
     gvaspaceUnpinRootPageDir(pGVAS, pGpu);
 
-    gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx);
-    NV_ASSERT_OR_RETURN(NULL != userCtx.pGpuState, NV_OK);
-
-    status = mmuWalkUnmap(userCtx.pGpuState->pWalk, vaspaceGetVaStart(pVAS), vaspaceGetVaLimit(pVAS));
-    NV_ASSERT_OR_RETURN(NV_OK == status, status);
-
-    gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
+    if (gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx) == NV_OK)
+    {
+        NV_ASSERT_OK_OR_RETURN(mmuWalkUnmap(userCtx.pGpuState->pWalk, vaspaceGetVaStart(pVAS), vaspaceGetVaLimit(pVAS)));
+        gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
+    }
+    else
+    {
+        NV_PRINTF(LEVEL_WARNING,
+            "Failed to acquire walk user context\n");
+    }
 
     NV_PRINTF(LEVEL_INFO, "Releasing legacy FLA VASPACE, gpu: %x \n",
             pGpu->gpuInstance);
@@ -911,22 +911,15 @@ _gvaspaceReleaseVaForServerRm
 {
     NV_STATUS         status   = NV_OK;
     MMU_WALK_USER_CTX userCtx  = {0};
-    gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx);
+    NV_ASSERT_OK_OR_RETURN(gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx));
 
-    if (NULL == userCtx.pGpuState)
-    {
-        status = NV_ERR_INVALID_STATE;
-        NV_ASSERT(0);
-    }
-    else
-    {
-        const MMU_FMT_LEVEL *pLevelFmt =
-               mmuFmtFindLevelWithPageShift(userCtx.pGpuState->pFmt->pRoot, GMMU_PD1_VADDR_BIT_LO);
-        status = mmuWalkReleaseEntries(userCtx.pGpuState->pWalk,
-                                       pLevelFmt,
-                                       pGVAS->vaStartServerRMOwned,
-                                       pGVAS->vaLimitServerRMOwned);
-    }
+    const MMU_FMT_LEVEL *pLevelFmt =
+           mmuFmtFindLevelWithPageShift(userCtx.pGpuState->pFmt->pRoot, GMMU_PD1_VADDR_BIT_LO);
+    status = mmuWalkReleaseEntries(userCtx.pGpuState->pWalk,
+                                   pLevelFmt,
+                                   pGVAS->vaStartServerRMOwned,
+                                   pGVAS->vaLimitServerRMOwned);
+
     gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
 
     return status;
@@ -1142,7 +1135,7 @@ _gvaspaceGpuStateConstruct
     else
     {
         // Otherwise ensure requested limit does not exeed max HW limit.
-        NV_ASSERT_OR_RETURN(vaLimit <= vaLimitMax, NV_ERR_INVALID_ARGUMENT);
+        NV_CHECK_OR_RETURN(LEVEL_INFO, vaLimit <= vaLimitMax, NV_ERR_INVALID_ARGUMENT);
 
         vaLimitExt = vaLimit;
     }
@@ -1593,19 +1586,15 @@ gvaspaceAlloc_IMPL
             MMU_WALK_USER_CTX userCtx = {0};
 
             // Sparsify the VA range.
-            gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, pVASBlock, &userCtx);
+            status = gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, pVASBlock, &userCtx);
+            NV_ASSERT(status == NV_OK);
 
-            if (NULL == userCtx.pGpuState)
-            {
-                status = NV_ERR_INVALID_STATE;
-                NV_ASSERT(0);
-            }
-            else
+            if (status == NV_OK)
             {
                 status = mmuWalkSparsify(userCtx.pGpuState->pWalk, *pAddr,
                                          *pAddr + size - 1, NV_FALSE);
+                gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
             }
-            gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
             if (NV_OK != status)
             {
                 DBG_BREAKPOINT();
@@ -1626,19 +1615,16 @@ gvaspaceAlloc_IMPL
                 MMU_WALK_USER_CTX userCtx = {0};
 
                 // Unsparsify the VA range.
-                gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, pVASBlock, &userCtx);
-                if (NULL == userCtx.pGpuState)
-                {
-                    // Intentionally not clobbering status
-                    NV_ASSERT(0);
-                }
-                else
+                NV_STATUS acquireStatus = gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, pVASBlock, &userCtx);
+                NV_ASSERT(acquireStatus == NV_OK);
+                if (acquireStatus == NV_OK)
                 {
                     // Not checking the returns status
                     mmuWalkUnmap(userCtx.pGpuState->pWalk,
                               pMemBlock->begin, pMemBlock->end);
+                    gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
                 }
-                gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
+
                 // Invalidate TLB to apply new sparse state.
                 kbusFlush_HAL(pGpu, pKernelBus, BUS_FLUSH_VIDEO_MEMORY  |
                                          BUS_FLUSH_SYSTEM_MEMORY);
@@ -1659,39 +1645,34 @@ gvaspaceAlloc_IMPL
             NvU32             pageShift;
             MMU_WALK_USER_CTX userCtx = {0};
 
-            gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, pVASBlock, &userCtx);
+            status = gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, pVASBlock, &userCtx);
+            NV_ASSERT_OR_ELSE(status == NV_OK, break);
 
-            if (NULL == userCtx.pGpuState)
-            {
-                status = NV_ERR_INVALID_STATE;
-                NV_ASSERT(0);
-            }
-            else
-            {
-                if (pGVAS->flags & VASPACE_FLAGS_FLA)
-                {
-                    // currently FLA VASpace is associated with only GPU.
-                    NV_ASSERT(ONEBITSET(pVAS->gpuMask));
-                    status = _gvaspaceAllocateFlaDummyPagesForFlaRange(pGVAS, pGpu, userCtx.pGpuState);
-                }
-                // Loop over each page size requested by client.
-                FOR_EACH_INDEX_IN_MASK(64, pageShift, pVASBlock->pageSizeLockMask)
-                {
-                    // Pre-reserve page level instances in the VA range.
-                    const MMU_FMT_LEVEL *pLevelFmt =
-                        mmuFmtFindLevelWithPageShift(userCtx.pGpuState->pFmt->pRoot, pageShift);
-                    status = mmuWalkReserveEntries(userCtx.pGpuState->pWalk, pLevelFmt,
-                                                   *pAddr, *pAddr + size - 1, NV_TRUE);
-                    if (NV_OK != status)
-                    {
-                        DBG_BREAKPOINT();
-                        break;
-                    }
-                }
-                FOR_EACH_INDEX_IN_MASK_END
-            }
 
+            if (pGVAS->flags & VASPACE_FLAGS_FLA)
+            {
+                // currently FLA VASpace is associated with only GPU.
+                NV_ASSERT(ONEBITSET(pVAS->gpuMask));
+                status = _gvaspaceAllocateFlaDummyPagesForFlaRange(pGVAS, pGpu, userCtx.pGpuState);
+            }
+            // Loop over each page size requested by client.
+            FOR_EACH_INDEX_IN_MASK(64, pageShift, pVASBlock->pageSizeLockMask)
+            {
+                // Pre-reserve page level instances in the VA range.
+                const MMU_FMT_LEVEL *pLevelFmt =
+                    mmuFmtFindLevelWithPageShift(userCtx.pGpuState->pFmt->pRoot, pageShift);
+                status = mmuWalkReserveEntries(userCtx.pGpuState->pWalk, pLevelFmt,
+                                               *pAddr, *pAddr + size - 1, NV_TRUE);
+                if (NV_OK != status)
+                {
+                    DBG_BREAKPOINT();
+                    break;
+                }
+            }
+            FOR_EACH_INDEX_IN_MASK_END
             gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
+
+
             if (NV_OK != status)
             {
                 break;
@@ -1705,33 +1686,24 @@ gvaspaceAlloc_IMPL
             {
                 NvU32             pageShift;
                 MMU_WALK_USER_CTX userCtx = {0};
+                NV_STATUS acquireStatus = gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, pVASBlock, &userCtx);
+                NV_ASSERT_OR_ELSE(acquireStatus == NV_OK, continue);
 
-                gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, pVASBlock, &userCtx);
-
-                if (NULL == userCtx.pGpuState)
+                if (pGVAS->flags & VASPACE_FLAGS_FLA)
                 {
-                    // Intentionally not clobbering status
-                    NV_ASSERT(0);
+                    _gvaspaceCleanupFlaDummyPagesForFlaRange(pGVAS, pGpu, userCtx.pGpuState);
                 }
-                else
+                // Loop over each page size requested by client during VA reservation.
+                FOR_EACH_INDEX_IN_MASK(64, pageShift, pVASBlock->pageSizeLockMask)
                 {
-                    if (pGVAS->flags & VASPACE_FLAGS_FLA)
-                    {
-                        _gvaspaceCleanupFlaDummyPagesForFlaRange(pGVAS, pGpu, userCtx.pGpuState);
-                    }
-                    // Loop over each page size requested by client during VA reservation.
-                    FOR_EACH_INDEX_IN_MASK(64, pageShift, pVASBlock->pageSizeLockMask)
-                    {
-                        // Release page level instances in the VA range.
-                        const MMU_FMT_LEVEL *pLevelFmt =
-                            mmuFmtFindLevelWithPageShift(userCtx.pGpuState->pFmt->pRoot, pageShift);
-                       // Not checking the returns status
-                       mmuWalkReleaseEntries(userCtx.pGpuState->pWalk, pLevelFmt,
-                                             pMemBlock->begin, pMemBlock->end);
-                    }
-                    FOR_EACH_INDEX_IN_MASK_END
+                    // Release page level instances in the VA range.
+                    const MMU_FMT_LEVEL *pLevelFmt =
+                        mmuFmtFindLevelWithPageShift(userCtx.pGpuState->pFmt->pRoot, pageShift);
+                   // Not checking the returns status
+                   mmuWalkReleaseEntries(userCtx.pGpuState->pWalk, pLevelFmt,
+                                         pMemBlock->begin, pMemBlock->end);
                 }
-
+                FOR_EACH_INDEX_IN_MASK_END
                 gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
             }
             FOR_EACH_GPU_IN_MASK_UC_END
@@ -2153,13 +2125,7 @@ gvaspacePinRootPageDir_IMPL(OBJGVASPACE *pGVAS, OBJGPU *pGpu)
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx);
-
-    if (NULL == userCtx.pGpuState)
-    {
-        status = NV_ERR_INVALID_STATE;
-        NV_ASSERT_OR_GOTO(0, done);
-    }
+    NV_ASSERT_OK_OR_RETURN(gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx));
 
     // Determine aligned range to pin.
     pLevelFmt = userCtx.pGpuState->pFmt->pRoot;
@@ -2170,9 +2136,8 @@ gvaspacePinRootPageDir_IMPL(OBJGVASPACE *pGVAS, OBJGPU *pGpu)
     // Alloc and bind root level instance.
     status = mmuWalkReserveEntries(userCtx.pGpuState->pWalk,
                                    pLevelFmt, vaLo, vaHi, NV_TRUE);
-    NV_ASSERT_OR_GOTO(NV_OK == status, done);
+    NV_ASSERT(NV_OK == status);
 
-done:
     gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
     return status;
 }
@@ -2193,11 +2158,11 @@ gvaspaceUnpinRootPageDir_IMPL(OBJGVASPACE *pGVAS, OBJGPU *pGpu)
         return;
     }
 
-    gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx);
-
-    if (NULL == userCtx.pGpuState)
+    if (gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx) != NV_OK)
     {
-        NV_ASSERT_OR_GOTO(0, done);
+        NV_PRINTF(LEVEL_WARNING,
+            "Failed to acquire walk user context\n");
+        return;
     }
 
     // Determine aligned range to unpin.
@@ -2209,9 +2174,7 @@ gvaspaceUnpinRootPageDir_IMPL(OBJGVASPACE *pGVAS, OBJGPU *pGpu)
     // Unreserve root level instance (won't free it if there are still mappings).
     status = mmuWalkReleaseEntries(userCtx.pGpuState->pWalk,
                                    pLevelFmt, vaLo, vaHi);
-    NV_ASSERT_OR_GOTO(NV_OK == status, done);
-
-done:
+    NV_ASSERT_OK(status);
     gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
 }
 
@@ -2256,18 +2219,14 @@ gvaspaceMap_IMPL
         NV_ASSERT_OR_RETURN(vaHi <= pMemBlock->end, NV_ERR_INVALID_ARGUMENT);
 
         // Insert range into VAS block mapping tree.
-        status = _gvaspaceMappingInsert(pGVAS, pGpu, pVASBlock, vaLo, vaHi, flags);
-        NV_ASSERT_OR_RETURN(NV_OK == status, status);
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, _gvaspaceMappingInsert(pGVAS,
+                              pGpu, pVASBlock, vaLo, vaHi, flags));
     }
 
     // Call MMU walker to map.
-    gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, pVASBlock, &userCtx);
-
-    if (NULL == userCtx.pGpuState)
-    {
-        status = NV_ERR_INVALID_STATE;
-        NV_ASSERT_OR_GOTO(0, catch);
-    }
+    NV_ASSERT_OK_OR_GOTO(status,
+        gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, pVASBlock, &userCtx),
+        catch);
 
     status = mmuWalkMap(userCtx.pGpuState->pWalk, vaLo, vaHi, pTarget);
     gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
@@ -2307,30 +2266,20 @@ gvaspaceUnmap_IMPL
     status = _gvaspaceMappingRemove(pGVAS, pGpu, pVASBlock, vaLo, vaHi);
     NV_ASSERT_OR_RETURN_VOID(NV_OK == status);
 
-    gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, pVASBlock, &userCtx);
+    NV_ASSERT_OR_RETURN_VOID(gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, pVASBlock, &userCtx) == NV_OK);
 
-    if (NULL == userCtx.pGpuState)
+    if (pVASBlock->flags.bSparse || (pGVAS->flags & VASPACE_FLAGS_BAR_BAR1)
+        ||((pMemBlock->refCount >1) && (pGVAS->flags & VASPACE_FLAGS_FLA))
+       )
     {
-        NV_ASSERT(0);
+        // Return back to Sparse if that was the original state of this allocation.
+        NV_ASSERT_OK(mmuWalkSparsify(userCtx.pGpuState->pWalk, vaLo, vaHi, NV_FALSE));
     }
     else
     {
-        if (pVASBlock->flags.bSparse || (pGVAS->flags & VASPACE_FLAGS_BAR_BAR1)
-            ||((pMemBlock->refCount >1) && (pGVAS->flags & VASPACE_FLAGS_FLA))
-           )
-        {
-            // Return back to Sparse if that was the original state of this allocation.
-            status = mmuWalkSparsify(userCtx.pGpuState->pWalk, vaLo, vaHi, NV_FALSE);
-            NV_ASSERT(NV_OK == status);
-        }
-        else
-        {
-            // Plain old unmap
-            status = mmuWalkUnmap(userCtx.pGpuState->pWalk, vaLo, vaHi);
-            NV_ASSERT(NV_OK == status);
-        }
+        // Plain old unmap
+        NV_ASSERT_OK(mmuWalkUnmap(userCtx.pGpuState->pWalk, vaLo, vaHi));
     }
-
     gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
 }
 
@@ -3202,7 +3151,9 @@ gvaspaceExternalRootDirCommit_IMPL
     }
 
     // Acquire MMU walker user context (always released below in catch label).
-    gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx);
+    NV_ASSERT_OK_OR_GOTO(status,
+        gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx),
+        catch);
     if (!bAllChannels)
     {
         // Specify single channel ID for which to update PDB if required by caller.
@@ -3291,8 +3242,11 @@ catch:
         memdescDestroy(pRootMemNew);
         pRootMemNew = NULL;
     }
-    // Release MMU walker user context.
-    gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
+    if (userCtx.pGpuState != NULL)
+    {
+        // Release MMU walker user context.
+        gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
+    }
 
     return status;
 }
@@ -3343,7 +3297,7 @@ gvaspaceExternalRootDirRevoke_IMPL
     gvaspaceInvalidateTlb(pGVAS, pGpu, PTE_DOWNGRADE);
 
     // Acquire walker user context.
-    gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx);
+    NV_ASSERT_OK_OR_RETURN(gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx));
 
     //
     // Override callbacks for migration.
@@ -3453,7 +3407,9 @@ gvaspaceResize_IMPL
         }
 
         // Acquire walker context.
-        gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx);
+        NV_ASSERT_OK_OR_GOTO(status,
+            gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx),
+            doneGpu);
 
         status = mmuWalkGetPageLevelInfo(pGpuState->pWalk, pRootFmt, 0,
                                          (const MMU_WALK_MEMDESC**)&pRootMem, &rootSize);
@@ -3553,7 +3509,7 @@ _gmmuWalkCBMapSingleEntry
 
     surf.pMemDesc = pMemDesc;
     surf.offset = entryIndexLo * pTarget->pLevelFmt->entrySize;
-    
+
     NV_ASSERT_OR_RETURN_VOID(memmgrMemWrite(pMemoryManager, &surf,
                                             pIter->entry.v8,
                                             pTarget->pLevelFmt->entrySize,
@@ -3744,18 +3700,11 @@ gvaspaceUpdatePde2_IMPL
         NV_ASSERT_OR_RETURN(vaHi <= pGVAS->vaLimitInternal, NV_ERR_INVALID_ARGUMENT);
 
         // Call walker to map the PDE.
-        gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx);
+        NV_ASSERT_OK_OR_RETURN(gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx));
 
-        if (NULL == userCtx.pGpuState)
-        {
-            status = NV_ERR_INVALID_STATE;
-            NV_ASSERT(0);
-        }
-        else
-        {
-            status = mmuWalkMap(userCtx.pGpuState->pWalk, vaLo, vaHi, &mapTarget);
-        }
+        status = mmuWalkMap(userCtx.pGpuState->pWalk, vaLo, vaHi, &mapTarget);
         gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
+
         NV_ASSERT_OR_RETURN(NV_OK == status, status);
 
         // Flush TLB if requested.
@@ -3769,7 +3718,7 @@ gvaspaceUpdatePde2_IMPL
     return NV_OK;
 }
 
-void
+NV_STATUS
 gvaspaceWalkUserCtxAcquire_IMPL
 (
     OBJGVASPACE       *pGVAS,
@@ -3778,21 +3727,26 @@ gvaspaceWalkUserCtxAcquire_IMPL
     MMU_WALK_USER_CTX *pUserCtx
 )
 {
+    GVAS_GPU_STATE *pGpuState = gvaspaceGetGpuState(pGVAS, pGpu);
+
+    if(pGpuState == NULL || pGpuState->pWalk == NULL)
+    {
+        return NV_ERR_INVALID_STATE;
+    }
+
     // Must be UC.
     NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
 
+    // If current context is non-NULL, a previous release was missed.
+    NV_ASSERT_OR_RETURN(NULL == mmuWalkGetUserCtx(pGpuState->pWalk), NV_ERR_INVALID_STATE);
+
     pUserCtx->pGVAS     = pGVAS;
     pUserCtx->pGpu      = pGpu;
-    pUserCtx->pGpuState = gvaspaceGetGpuState(pGVAS, pGpu);
+    pUserCtx->pGpuState = pGpuState;
     pUserCtx->pBlock    = pVASBlock;
 
-    // The following two asserts were added for a rare issue hit during eGPU surprise disconnect on Mac
-    NV_ASSERT_OR_RETURN_VOID(pUserCtx->pGpuState != NULL);
-    NV_ASSERT_OR_RETURN_VOID(pUserCtx->pGpuState->pWalk != NULL);
-
-    // If current context is non-NULL, a previous release was missed.
-    NV_ASSERT(NULL == mmuWalkGetUserCtx(pUserCtx->pGpuState->pWalk));
-    NV_ASSERT_OK(mmuWalkSetUserCtx(pUserCtx->pGpuState->pWalk, pUserCtx));
+    NV_ASSERT_OK_OR_RETURN(mmuWalkSetUserCtx(pUserCtx->pGpuState->pWalk, pUserCtx));
+    return NV_OK;
 }
 
 void
@@ -4475,7 +4429,7 @@ gvaspaceCopyServerReservedPdes_IMPL
     gvaspaceInvalidateTlb(pGVAS, pGpu, PTE_DOWNGRADE);
 
     // Acquire walker context.
-    gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx);
+    NV_ASSERT_OK_OR_RETURN(gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx));
 
     for (i = pCopyServerReservedPdesParams->numLevelsToCopy - 1; i >= 0; i--)
     {
@@ -4656,31 +4610,23 @@ _gvaspacePinLazyPageTables
         vaLo = NV_MAX(vaLo, pMemBlock->begin);
         vaHi = NV_MIN(vaHi, pMemBlock->end);
 
-        gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, pVASBlock, &userCtx);
+        NV_ASSERT_OK_OR_RETURN(gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, pVASBlock, &userCtx));
 
-        if (NULL == userCtx.pGpuState)
+        // Loop over each page size requested by client.
+        FOR_EACH_INDEX_IN_MASK(64, pageShift, pVASBlock->pageSizeLockMask)
         {
-            status = NV_ERR_INVALID_STATE;
-            NV_ASSERT(0);
-        }
-        else
-        {
-            // Loop over each page size requested by client.
-            FOR_EACH_INDEX_IN_MASK(64, pageShift, pVASBlock->pageSizeLockMask)
+            // Pre-reserve page level instances in the VA range.
+            const MMU_FMT_LEVEL *pLevelFmt =
+                mmuFmtFindLevelWithPageShift(userCtx.pGpuState->pFmt->pRoot, pageShift);
+            status = mmuWalkReserveEntries(userCtx.pGpuState->pWalk, pLevelFmt,
+                                           vaLo, vaHi, NV_TRUE);
+            if (NV_OK != status)
             {
-                // Pre-reserve page level instances in the VA range.
-                const MMU_FMT_LEVEL *pLevelFmt =
-                    mmuFmtFindLevelWithPageShift(userCtx.pGpuState->pFmt->pRoot, pageShift);
-                status = mmuWalkReserveEntries(userCtx.pGpuState->pWalk, pLevelFmt,
-                                               vaLo, vaHi, NV_TRUE);
-                if (NV_OK != status)
-                {
-                    DBG_BREAKPOINT();
-                    break;
-                }
+                DBG_BREAKPOINT();
+                break;
             }
-            FOR_EACH_INDEX_IN_MASK_END
         }
+        FOR_EACH_INDEX_IN_MASK_END
 
         gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
     }
@@ -4754,8 +4700,8 @@ _gvaspaceMappingInsert
     if (NV_OK == status)
     {
         // If it already exists, check for consistency.
-        NV_ASSERT_OR_RETURN(0 == (pMapNode->gpuMask & gpuMask),
-                          NV_ERR_INVALID_ARGUMENT);
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, 0 == (pMapNode->gpuMask & gpuMask),
+                           NV_ERR_INVALID_ARGUMENT);
         NV_ASSERT_OR_RETURN(pMapNode->node.keyStart == vaLo, NV_ERR_INVALID_ARGUMENT);
         NV_ASSERT_OR_RETURN(pMapNode->node.keyEnd   == vaHi, NV_ERR_INVALID_ARGUMENT);
 
@@ -5009,7 +4955,7 @@ _gvaspaceReservePageTableEntries
     NvU32             pageShift;
     MMU_WALK_USER_CTX userCtx = {0};
 
-    gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx);
+    NV_ASSERT_OK_OR_RETURN(gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx));
 
     // Loop over each page size requested by client.
     FOR_EACH_INDEX_IN_MASK(64, pageShift, pageSizeMask)
@@ -5097,9 +5043,7 @@ _gvaspaceReleaseUnreservedPTEs
     NV_ASSERT_OR_RETURN(NULL != pGpuState, NV_ERR_GENERIC);
     pIter = listHead(&pGpuState->reservedPageTableEntries);
 
-    gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx);
-
-    NV_ASSERT(NULL != userCtx.pGpuState);
+    NV_ASSERT_OK_OR_RETURN(gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx));
 
     piecewiseStart = vaLo;
     while (piecewiseStart <= vaHi)
@@ -5207,9 +5151,11 @@ _gvaspaceForceFreePageLevelInstances
         pIter = pNext;
     }
 
-    gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx);
-    mmuWalkLevelInstancesForceFree(pGpuState->pWalk);
-    gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
+    if (gvaspaceWalkUserCtxAcquire(pGVAS, pGpu, NULL, &userCtx) == NV_OK)
+    {
+        mmuWalkLevelInstancesForceFree(pGpuState->pWalk);
+        gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
+    }
 }
 
 static NV_STATUS

@@ -91,6 +91,22 @@ kfifoStateLoad_IMPL
         }
     }
 
+    // Send RPC to GSP-RM to resume scheduling
+    if (IS_GSP_CLIENT(pGpu) && (flags & GPU_STATE_FLAGS_PM_TRANSITION))
+    {
+        RM_API    *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+        NV2080_CTRL_CMD_INTERNAL_FIFO_TOGGLE_ACTIVE_CHANNEL_SCHEDULING_PARAMS  fifoToggleActiveChannelSchedulingParam;
+        fifoToggleActiveChannelSchedulingParam.bDisableActiveChannels = NV_FALSE;
+
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                            pRmApi->Control(pRmApi,
+                                            pGpu->hInternalClient,
+                                            pGpu->hInternalSubdevice,
+                                            NV2080_CTRL_CMD_INTERNAL_FIFO_TOGGLE_ACTIVE_CHANNEL_SCHEDULING,
+                                            &fifoToggleActiveChannelSchedulingParam,
+                                            sizeof(fifoToggleActiveChannelSchedulingParam)));
+    }
+
     return NV_OK;
 }
 
@@ -114,6 +130,22 @@ kfifoStateUnload_IMPL
             DBG_BREAKPOINT();
             return rmStatus;
         }
+    }
+
+    // Send RPC to GSP-RM to disable active channels
+    if (IS_GSP_CLIENT(pGpu) && (flags & GPU_STATE_FLAGS_PM_TRANSITION))
+    {
+        RM_API    *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+        NV2080_CTRL_CMD_INTERNAL_FIFO_TOGGLE_ACTIVE_CHANNEL_SCHEDULING_PARAMS  fifoToggleActiveChannelSchedulingParam;
+        fifoToggleActiveChannelSchedulingParam.bDisableActiveChannels = NV_TRUE;
+
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                            pRmApi->Control(pRmApi,
+                                            pGpu->hInternalClient,
+                                            pGpu->hInternalSubdevice,
+                                            NV2080_CTRL_CMD_INTERNAL_FIFO_TOGGLE_ACTIVE_CHANNEL_SCHEDULING,
+                                            &fifoToggleActiveChannelSchedulingParam,
+                                            sizeof(fifoToggleActiveChannelSchedulingParam)));
     }
 
     return NV_OK;

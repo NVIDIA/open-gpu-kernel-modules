@@ -126,12 +126,7 @@ typedef struct
     //
     // CPU mappings will always use PAGE_SIZE, so the physical allocation chunk
     // has to be aligned to PAGE_SIZE.
-    NvU32 page_size;
-
-    // The protection flag is only observed for vidmem allocations when CC is
-    // enabled. If set to true, the allocation returns unprotected vidmem;
-    // otherwise, the allocation returns protected vidmem.
-    bool is_unprotected;
+    NvU64 page_size;
 
     // If true, the allocation is zeroed (scrubbed).
     bool zero;
@@ -199,7 +194,7 @@ struct uvm_mem_struct
     size_t chunks_count;
 
     // Size of each physical chunk (vidmem) or CPU page (sysmem)
-    NvU32 chunk_size;
+    NvU64 chunk_size;
 
     // Size of the allocation
     NvU64 size;

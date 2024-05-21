@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_rs_resource_nvoc.h"
 
 #ifndef _RS_RESOURCE_H_

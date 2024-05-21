@@ -1541,14 +1541,14 @@ static uvm_gpfifo_entry_t *uvm_channel_get_first_pending_entry(uvm_channel_t *ch
 NV_STATUS uvm_channel_get_status(uvm_channel_t *channel)
 {
     uvm_gpu_t *gpu;
-    NvNotification *errorNotifier;
+    NvNotification *error_notifier;
 
     if (uvm_channel_is_proxy(channel))
-        errorNotifier = channel->proxy.channel_info.shadowErrorNotifier;
+        error_notifier = channel->proxy.channel_info.shadowErrorNotifier;
     else
-        errorNotifier = channel->channel_info.errorNotifier;
+        error_notifier = channel->channel_info.errorNotifier;
 
-    if (errorNotifier->status == 0)
+    if (error_notifier->status == 0)
         return NV_OK;
 
     // In case we hit a channel error, check the ECC error notifier as well so
@@ -2584,16 +2584,18 @@ out:
 
 // Return the pool corresponding to the given CE index
 //
-// This function cannot be used to access the proxy pool in SR-IOV heavy.
+// Used to retrieve pools of type UVM_CHANNEL_POOL_TYPE_CE only.
 static uvm_channel_pool_t *channel_manager_ce_pool(uvm_channel_manager_t *manager, NvU32 ce)
 {
-    uvm_channel_pool_t *pool;
+    uvm_channel_pool_t *pool = uvm_channel_pool_first(manager, UVM_CHANNEL_POOL_TYPE_CE);
 
+    UVM_ASSERT(pool != NULL);
     UVM_ASSERT(test_bit(ce, manager->ce_mask));
 
-    // The index of the pool associated with 'ce' is the number of usable CEs
-    // in [0, ce)
-    pool = manager->channel_pools + bitmap_weight(manager->ce_mask, ce);
+    // Pools of type UVM_CHANNEL_POOL_TYPE_CE are stored contiguously. The
+    // offset of the pool associated with 'ce' is the number of usable CEs in
+    // [0, ce).
+    pool += bitmap_weight(manager->ce_mask, ce);
 
     UVM_ASSERT(pool->pool_type == UVM_CHANNEL_POOL_TYPE_CE);
     UVM_ASSERT(pool->engine_index == ce);
@@ -2811,6 +2813,7 @@ static unsigned channel_manager_get_max_pools(uvm_channel_manager_t *manager)
 static NV_STATUS channel_manager_create_ce_pools(uvm_channel_manager_t *manager, unsigned *preferred_ce)
 {
     unsigned ce;
+    unsigned type;
 
     // A pool is created for each usable CE, even if it has not been selected as
     // the preferred CE for any type, because as more information is discovered
@@ -2818,18 +2821,20 @@ static NV_STATUS channel_manager_create_ce_pools(uvm_channel_manager_t *manager,
     // previously idle pools.
     for_each_set_bit(ce, manager->ce_mask, UVM_COPY_ENGINE_COUNT_MAX) {
         NV_STATUS status;
-        unsigned type;
         uvm_channel_pool_t *pool = NULL;
 
         status = channel_pool_add(manager, UVM_CHANNEL_POOL_TYPE_CE, ce, &pool);
         if (status != NV_OK)
             return status;
+    }
 
-        for (type = 0; type < UVM_CHANNEL_TYPE_CE_COUNT; type++) {
-            // Set pool type if it hasn't been set before.
-            if (preferred_ce[type] == ce && manager->pool_to_use.default_for_type[type] == NULL)
-                manager->pool_to_use.default_for_type[type] = pool;
-        }
+    for (type = 0; type < UVM_CHANNEL_TYPE_CE_COUNT; type++) {
+        // Avoid overwriting previously set defaults.
+        if (manager->pool_to_use.default_for_type[type] != NULL)
+            continue;
+
+        ce = preferred_ce[type];
+        manager->pool_to_use.default_for_type[type] = channel_manager_ce_pool(manager, ce);
     }
 
     return NV_OK;

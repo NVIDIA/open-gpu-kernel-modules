@@ -87,10 +87,13 @@ __nvoc_ctor_OBJVMM_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_OBJVMM_1(OBJVMM *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-}
+} // End __nvoc_init_funcTable_OBJVMM_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_OBJVMM(OBJVMM *pThis) {
     __nvoc_init_funcTable_OBJVMM_1(pThis);
 }

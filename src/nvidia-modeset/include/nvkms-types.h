@@ -178,7 +178,9 @@ typedef struct _NVEvoApiHandlesRec {
 typedef struct _NVSurfaceDescriptor
 {
     NvU32 ctxDmaHandle;
-    NvU64 iovaAddress;
+    NvU32 memAperture;
+    NvU64 memOffset;
+    NvBool bValid;
 } NVSurfaceDescriptor;
 
 typedef struct _NVEvoDma
@@ -705,8 +707,6 @@ typedef struct {
         struct NvKmsHDRStaticMetadata staticMetadata;
     } hdrInfoFrame;
 
-    enum NvKmsOutputColorimetry colorimetry;
-
     NvBool skipLayerPendingFlips[NVKMS_MAX_LAYERS_PER_HEAD];
 
     struct {
@@ -715,7 +715,6 @@ typedef struct {
         NvBool cursorPosition    : 1;
         NvBool tf                : 1;
         NvBool hdrStaticMetadata : 1;
-        NvBool colorimetry       : 1;
 
         NvBool layerPosition[NVKMS_MAX_LAYERS_PER_HEAD];
         NvBool layerSyncObjects[NVKMS_MAX_LAYERS_PER_HEAD];
@@ -1661,14 +1660,7 @@ typedef struct _NVDpyAttributeCurrentDitheringConfigRec {
     enum NvKmsDpyAttributeCurrentDitheringModeValue mode;
 } NVDpyAttributeCurrentDitheringConfig;
 
-typedef struct __NVAttributesSetEvoRec {
-
-#define NV_EVO_DVC_MIN (-1024)
-#define NV_EVO_DVC_MAX 1023
-#define NV_EVO_DVC_DEFAULT 0
-
-    NvS32 dvc;
-
+typedef struct __NVDpyAttributeColorRec {
     /*
      * For both colorSpace and colorRange, the value for
      * NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_{SPACE,RANGE} sent by the client is
@@ -1685,10 +1677,26 @@ typedef struct __NVAttributesSetEvoRec {
      *
      * For SW YUV420 mode, these values are ignored in
      * HEAD_SET_PROCAMP and applied in the headSurface composite shader.
+     *
+     * XXX Rename NvKmsDpyAttributeCurrentColorSpaceValue to
+     * NvKmsDpyAttributeCurrentFormatValue.
      */
-    enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace;
-    enum NvKmsDpyAttributeColorBpcValue colorBpc;
-    enum NvKmsDpyAttributeColorRangeValue colorRange;
+    enum NvKmsDpyAttributeCurrentColorSpaceValue format;
+    enum NvKmsDpyAttributeColorBpcValue bpc;
+    enum NvKmsDpyAttributeColorRangeValue range;
+
+    enum NvKmsOutputColorimetry colorimetry;
+} NVDpyAttributeColor;
+
+typedef struct __NVAttributesSetEvoRec {
+
+#define NV_EVO_DVC_MIN (-1024)
+#define NV_EVO_DVC_MAX 1023
+#define NV_EVO_DVC_DEFAULT 0
+
+    NvS32 dvc;
+
+    NVDpyAttributeColor color;
 
     NVDpyAttributeCurrentDitheringConfig dithering;
 
@@ -1709,8 +1717,10 @@ typedef struct __NVAttributesSetEvoRec {
 #define NV_EVO_DEFAULT_ATTRIBUTES_SET                                     \
     (NVAttributesSetEvoRec) {                                             \
         .dvc =        NV_EVO_DVC_DEFAULT,                                 \
-        .colorSpace = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB,       \
-        .colorRange = NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_FULL,              \
+        .color = {                                                        \
+            .format = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB,       \
+            .range = NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_FULL,               \
+        },                                                                \
         .dithering = {                                                    \
             .enabled = FALSE,                                             \
             .mode    = NV_KMS_DPY_ATTRIBUTE_CURRENT_DITHERING_MODE_NONE,  \
@@ -1801,7 +1811,6 @@ typedef struct _NVDispHeadStateEvoRec {
     NVConnectorEvoRec *pConnectorEvo; /* NULL if the head is not active */
 
     HDMI_FRL_CONFIG hdmiFrlConfig;
-    NvU8 hdmiFrlBpc;
 
     NVDscInfoEvoRec dscInfo;
 
@@ -1810,8 +1819,6 @@ typedef struct _NVDispHeadStateEvoRec {
     NVDispHeadAudioStateEvoRec audio;
 
     enum NvKmsOutputTf tf;
-
-    enum NvKmsOutputColorimetry colorimetry;
 
     struct {
         NvBool enabled;
@@ -1868,8 +1875,6 @@ typedef struct _NVDispApiHeadStateEvoRec {
     NVAttributesSetEvoRec attributes;
 
     enum NvKmsOutputTf tf;
-
-    enum NvKmsOutputColorimetry colorimetry;
 
     NvBool hdrInfoFrameOverride;
     NvU32 hdrStaticMetadataLayerMask;
@@ -3059,36 +3064,43 @@ typedef const struct _nv_evo_hal {
                                     NVEvoChannelPtr pChannel,
                                     NVSurfaceDescriptor *pSurfaceDesc);
 
-    void (*SetTmoLutSurfaceAddress) (NVEvoChannelPtr pChannel,
+    void (*SetTmoLutSurfaceAddress) (const NVDevEvoRec *pDevEvo,
+                                     NVEvoChannelPtr pChannel,
                                      const NVSurfaceDescriptor *pSurfaceDesc,
                                      NvU32 offset);
 
-    void (*SetILUTSurfaceAddress) (NVEvoChannelPtr pChannel,
+    void (*SetILUTSurfaceAddress) (const NVDevEvoRec *pDevEvo,
+                                   NVEvoChannelPtr pChannel,
                                    const NVSurfaceDescriptor *pSurfaceDesc,
                                    NvU32 offset);
 
-    void (*SetISOSurfaceAddress) (NVEvoChannelPtr pChannel,
+    void (*SetISOSurfaceAddress) (const NVDevEvoRec *pDevEvo,
+                                  NVEvoChannelPtr pChannel,
                                   const NVSurfaceDescriptor *pSurfaceDesc,
                                   NvU32 offset,
                                   NvU32 ctxDmaIdx,
                                   NvBool isBlocklinear);
 
-    void (*SetCoreNotifierSurfaceAddressAndControl) (NVEvoChannelPtr pChannel,
+    void (*SetCoreNotifierSurfaceAddressAndControl) (const NVDevEvoRec *pDevEvo,
+                                                     NVEvoChannelPtr pChannel,
                                                      const NVSurfaceDescriptor *pSurfaceDesc,
                                                      NvU32 notifierOffset,
                                                      NvU32 ctrlVal);
 
-    void (*SetWinNotifierSurfaceAddressAndControl) (NVEvoChannelPtr pChannel,
+    void (*SetWinNotifierSurfaceAddressAndControl) (const NVDevEvoRec *pDevEvo,
+                                                    NVEvoChannelPtr pChannel,
                                                     const NVSurfaceDescriptor *pSurfaceDesc,
                                                     NvU32 notifierOffset,
                                                     NvU32 ctrlVal);
 
-    void (*SetSemaphoreSurfaceAddressAndControl) (NVEvoChannelPtr pChannel,
+    void (*SetSemaphoreSurfaceAddressAndControl) (const NVDevEvoRec *pDevEvo,
+                                                  NVEvoChannelPtr pChannel,
                                                   const NVSurfaceDescriptor *pSurfaceDesc,
                                                   NvU32 semaphoreOffset,
                                                   NvU32 ctrlVal);
 
-    void (*SetAcqSemaphoreSurfaceAddressAndControl) (NVEvoChannelPtr pChannel,
+    void (*SetAcqSemaphoreSurfaceAddressAndControl) (const NVDevEvoRec *pDevEvo,
+                                                     NVEvoChannelPtr pChannel,
                                                      const NVSurfaceDescriptor *pSurfaceDesc,
                                                      NvU32 semaphoreOffset,
                                                      NvU32 ctrlVal);
@@ -3111,6 +3123,7 @@ typedef const struct _nv_evo_hal {
         NvU32 requiresScalingTapsInBothDimensions       :1;
         NvU32 supportsMergeMode                         :1;
         NvU32 supportsHDMI10BPC                         :1;
+        NvU32 supportsDPAudio192KHz                     :1;
 
         NvU32 supportedDitheringModes;
         size_t impStructSize;
@@ -3172,7 +3185,7 @@ static inline void nvAssignHwHeadsMaskApiHeadState(
 
 typedef struct _NVVblankSemControl {
     NvU32 dispIndex;
-    NvU32 hwHead;
+    NvU32 hwHeadMask;
     NvU64 surfaceOffset;
     NVSurfaceEvoRec *pSurfaceEvo;
 } NVVblankSemControl;

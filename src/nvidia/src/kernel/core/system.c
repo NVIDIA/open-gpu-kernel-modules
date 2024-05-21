@@ -173,7 +173,6 @@ NV_STATUS
 sysConstruct_IMPL(OBJSYS *pSys)
 {
     NV_STATUS          status;
-    OBJOS             *pOS;
     NvU32              sec = 0;
     NvU32              uSec = 0;
 
@@ -191,22 +190,20 @@ sysConstruct_IMPL(OBJSYS *pSys)
     }
 
     // Use the monotonic system clock for a unique value
-    pOS = SYS_GET_OS(pSys);
     osGetCurrentTime(&sec, &uSec);
     pSys->rmInstanceId = (NvU64)sec * 1000000 + (NvU64)uSec;
 
     {
         // Using Hypervisor native interface to detect
+        OBJOS         *pOS         = SYS_GET_OS(pSys);
         OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
         if (pHypervisor)
             hypervisorDetection(pHypervisor, pOS);
     }
 
-    if (!pOS->osRmInitRm(pOS))
-    {
-        status = NV_ERR_GENERIC;
+    status = osRmInitRm();
+    if (status != NV_OK)
         goto failed;
-    }
 
     _sysNvSwitchDetection(pSys);
 
@@ -789,6 +786,12 @@ sysInitRegistryOverrides_IMPL
     if (osReadRegistryDword(pGpu, NV_REG_STR_RM_GPU_LOCK_MIDPATH, &data32) == NV_OK)
     {
         pSys->setProperty(pSys, PDB_PROP_SYS_GPU_LOCK_MIDPATH_ENABLED, !!data32);
+    }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_ENABLE_RM_TEST_ONLY_CODE,
+                            &data32) == NV_OK)
+    {
+        pSys->setProperty(pSys, PDB_PROP_SYS_ENABLE_RM_TEST_ONLY_CODE, !!data32);
     }
 
     gpumgrSetGpuNvlinkBwModeFromRegistry(pGpu);

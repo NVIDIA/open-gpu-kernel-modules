@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -44,8 +44,6 @@
  *         
  *       NV0000_CTRL_GET_FEATURES_SLI
  *         When this bit is set, SLI is supported.
- *       NV0000_CTRL_GET_FEATURES_UEFI
- *         When this bit is set, it is a UEFI system.
  *       NV0000_CTRL_SYSTEM_GET_FEATURES_IS_EFI_INIT
  *         When this bit is set, EFI has initialized core channel 
  *
@@ -67,10 +65,6 @@ typedef struct NV0000_CTRL_SYSTEM_GET_FEATURES_PARAMS {
 #define NV0000_CTRL_SYSTEM_GET_FEATURES_SLI                                 0:0
 #define NV0000_CTRL_SYSTEM_GET_FEATURES_SLI_FALSE                    (0x00000000U)
 #define NV0000_CTRL_SYSTEM_GET_FEATURES_SLI_TRUE                     (0x00000001U)
-
-#define NV0000_CTRL_SYSTEM_GET_FEATURES_UEFI                                1:1
-#define NV0000_CTRL_SYSTEM_GET_FEATURES_UEFI_FALSE                   (0x00000000U)
-#define NV0000_CTRL_SYSTEM_GET_FEATURES_UEFI_TRUE                    (0x00000001U)
 
 #define NV0000_CTRL_SYSTEM_GET_FEATURES_IS_EFI_INIT                         2:2
 #define NV0000_CTRL_SYSTEM_GET_FEATURES_IS_EFI_INIT_FALSE            (0x00000000U)

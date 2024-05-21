@@ -157,7 +157,7 @@ vgpuDestructObject
     vgpuGspTeardownBuffers(pGpu);
 
     if (pVGpu != NULL)
-       teardownSysmemPfnBitMap(pGpu, pVGpu);
+        teardownSysmemPfnBitMap(pGpu, pVGpu);
 
     portMemFree(pVGpu);
     NvVGPU_Table[gpuGetInstance(pGpu)] = NULL;

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2023 NVIDIA Corporation
+    Copyright (c) 2023-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -30,6 +30,8 @@ const uvm_processor_mask_t g_uvm_processor_mask_empty = { };
 
 NV_STATUS uvm_processor_mask_cache_init(void)
 {
+    BUILD_BUG_ON((8 * sizeof(((uvm_sub_processor_mask_t *)0)->bitmap)) < UVM_PARENT_ID_MAX_SUB_PROCESSORS);
+
     g_uvm_processor_mask_cache = NV_KMEM_CACHE_CREATE("uvm_processor_mask_t", uvm_processor_mask_t);
     if (!g_uvm_processor_mask_cache)
         return NV_ERR_NO_MEMORY;

@@ -2602,7 +2602,7 @@ nvlink_lib_ctrl_train_intranode_conns_parallel
         case nvlink_train_conn_off_to_active_ali_non_blocking:
         case nvlink_train_conn_off_to_active_ali_blocking:
         {
-            if (srcLink->version >= NVLINK_DEVICE_VERSION_40 &&
+            if (srcLink->version == NVLINK_DEVICE_VERSION_40 &&
                 srcLink->dev->enableALI)
             {
                 status = nvlink_core_train_intranode_conns_from_off_to_active_ALI(

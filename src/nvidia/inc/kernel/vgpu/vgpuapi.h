@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_vgpuapi_nvoc.h"
 
 #ifndef _VGPUAPI_H_

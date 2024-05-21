@@ -110,7 +110,7 @@ void portMemShutdown(NvBool bForceSilent);
  * @pre Unix:    Non-interrupt context
  * @note Will not put the thread to sleep.
  */
-void *portMemAllocPaged(NvLength lengthBytes);
+NV_FORCERESULTCHECK void *portMemAllocPaged(NvLength lengthBytes);
 
 /**
  * @brief Allocates non-paged (i.e. pinned) memory.
@@ -127,7 +127,7 @@ void *portMemAllocPaged(NvLength lengthBytes);
  * @pre Unix:    Non-interrupt context
  * @note Will not put the thread to sleep.
  */
-void *portMemAllocNonPaged(NvLength lengthBytes);
+NV_FORCERESULTCHECK void *portMemAllocNonPaged(NvLength lengthBytes);
 
 /**
  * @brief Allocates non-paged (i.e. pinned) memory on the stack or the heap
@@ -402,7 +402,7 @@ struct PORT_MEM_ALLOCATOR {
  * @pre Unix:    Non-interrupt context
  * @note Will not put the thread to sleep.
  */
-PORT_MEM_ALLOCATOR *portMemAllocatorCreatePaged(void);
+NV_FORCERESULTCHECK PORT_MEM_ALLOCATOR *portMemAllocatorCreatePaged(void);
 
 /**
  * @brief Creates an allocator for non-paged memory.
@@ -417,7 +417,7 @@ PORT_MEM_ALLOCATOR *portMemAllocatorCreatePaged(void);
  * @pre Unix:    Non-interrupt context
  * @note Will not put the thread to sleep.
  */
-PORT_MEM_ALLOCATOR *portMemAllocatorCreateNonPaged(void);
+NV_FORCERESULTCHECK PORT_MEM_ALLOCATOR *portMemAllocatorCreateNonPaged(void);
 
 /**
  * @brief Creates an allocator over an existing block of memory.
@@ -447,7 +447,7 @@ PORT_MEM_ALLOCATOR *portMemAllocatorCreateNonPaged(void);
  * @note Will not put the thread to sleep.
  * @note This allocator is not thread safe.
  */
-PORT_MEM_ALLOCATOR *portMemAllocatorCreateOnExistingBlock(void *pPreallocatedBlock, NvLength blockSizeBytes);
+NV_FORCERESULTCHECK PORT_MEM_ALLOCATOR *portMemAllocatorCreateOnExistingBlock(void *pPreallocatedBlock, NvLength blockSizeBytes);
 
 /**
  * @brief Extends the given size to fit the required bookkeeping information

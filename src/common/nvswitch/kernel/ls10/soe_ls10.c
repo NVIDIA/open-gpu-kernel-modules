@@ -38,6 +38,7 @@
 #include "nvswitch/ls10/dev_nvlsaw_ip.h"
 #include "nvswitch/ls10/dev_nvlsaw_ip_addendum.h"
 #include "nvswitch/ls10/dev_riscv_pri.h"
+#include "nvswitch/ls10/dev_nport_ip.h"
 
 #include "flcn/flcnable_nvswitch.h"
 #include "flcn/flcn_nvswitch.h"
@@ -517,22 +518,23 @@ nvswitch_soe_disable_nport_fatal_interrupts_ls10
     if ((status != NVL_SUCCESS) || ((p.version & SOE_VBIOS_VERSION_MASK) < 
             SOE_VBIOS_REVLOCK_DISABLE_NPORT_FATAL_INTR))
     {
-        NVSWITCH_PRINT(device, ERROR,
+        NVSWITCH_PRINT(device, INFO,
             "%s: Skipping DISABLE_NPORT_FATAL_INTR command to SOE.  Update firmware "
             "from .%02X to .%02X\n",
             __FUNCTION__, (NvU32)((p.version & SOE_VBIOS_VERSION_MASK) >> 16), 
-                SOE_VBIOS_REVLOCK_DISABLE_NPORT_FATAL_INTR);
+            SOE_VBIOS_REVLOCK_DISABLE_NPORT_FATAL_INTR);
         return;
     }
 
     if (!nvswitch_is_soe_supported(device))
     {
-        NVSWITCH_PRINT(device, INFO, "%s: SOE is not supported\n",
-                       __FUNCTION__);
+        NVSWITCH_PRINT(device, INFO,
+            "%s: SOE is not supported\n",
+            __FUNCTION__);
         return;
     }
 
-    pFlcn       = device->pSoe->pFlcn;
+    pFlcn = device->pSoe->pFlcn;
 
     nvswitch_os_memset(&cmd, 0, sizeof(cmd));
     cmd.hdr.unitId = RM_SOE_UNIT_CORE;
@@ -554,9 +556,114 @@ nvswitch_soe_disable_nport_fatal_interrupts_ls10
                                       &timeout);
     if (status != NV_OK)
     {
-        NVSWITCH_PRINT(device, ERROR, "%s: Failed to send DISABLE_NPORT_FATAL_INTR command to SOE, status 0x%x\n", 
-                       __FUNCTION__, status);
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: Failed to send DISABLE_NPORT_FATAL_INTR command to SOE, status 0x%x\n", 
+            __FUNCTION__, status);
     }
+}
+
+/*
+ * @Brief : Issue INGRESS STOP in SOE
+ *
+ * @param[in] device
+ * @param[in] nport
+ * @param[in] bStop
+ */
+NvlStatus
+nvswitch_soe_issue_ingress_stop_ls10
+(
+    nvswitch_device *device,
+    NvU32 nport,
+    NvBool bStop
+)
+{
+    FLCN *pFlcn;
+    NvU32               cmdSeqDesc = 0;
+    NV_STATUS           status;
+    RM_FLCN_CMD_SOE     cmd;
+    NVSWITCH_TIMEOUT    timeout;
+    RM_SOE_CORE_CMD_INGRESS_STOP *pIngressStop;
+    NVSWITCH_GET_BIOS_INFO_PARAMS params = { 0 };
+    NvBool bKeepPolling;
+    NvU32 val;
+
+    if (!nvswitch_is_soe_supported(device))
+    {
+        NVSWITCH_PRINT(device, INFO,
+            "%s: SOE is not supported\n",
+            __FUNCTION__);
+        return NVL_SUCCESS; // -NVL_ERR_NOT_SUPPORTED
+    }
+
+    status = device->hal.nvswitch_ctrl_get_bios_info(device, &params);
+    if ((status != NVL_SUCCESS) || ((params.version & SOE_VBIOS_VERSION_MASK) < 
+            SOE_VBIOS_REVLOCK_ISSUE_INGRESS_STOP))
+    {
+        return NVL_SUCCESS; // -NVL_ERR_NOT_SUPPORTED
+    }
+
+    pFlcn = device->pSoe->pFlcn;
+     
+    nvswitch_os_memset(&cmd, 0, sizeof(cmd));
+
+    cmd.hdr.unitId = RM_SOE_UNIT_CORE;
+    cmd.hdr.size   = RM_SOE_CMD_SIZE(CORE, INGRESS_STOP);
+     
+    pIngressStop = &cmd.cmd.core.ingressStop;
+    pIngressStop->nport = nport;
+    pIngressStop->cmdType = RM_SOE_CORE_CMD_ISSUE_INGRESS_STOP;
+    pIngressStop->bStop = bStop;
+     
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_5MSEC_IN_NS, &timeout);
+    status = flcnQueueCmdPostBlocking(device, pFlcn,
+                                      (PRM_FLCN_CMD)&cmd,
+                                      NULL,                 // pMsg
+                                      NULL,                 // pPayload
+                                      SOE_RM_CMDQ_LOG_ID,
+                                      &cmdSeqDesc,
+                                      &timeout);
+    if (status != NV_OK)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: Failed to send INGRESS STOP command to SOE status 0x%x\n", 
+            __FUNCTION__, status);
+        return -NVL_ERR_GENERIC;
+    }
+
+    //
+    // After asserting INGRESS_STOP, wait until nport is idle
+    // to indicate that traffic is drained out.
+    //
+    if (bStop)
+    {
+        nvswitch_timeout_create(NVSWITCH_INTERVAL_1MSEC_IN_NS, &timeout);
+        do
+        {
+            bKeepPolling = (nvswitch_timeout_check(&timeout)) ? NV_FALSE : NV_TRUE;
+
+            val = NVSWITCH_NPORT_RD32_LS10(device, nport, _NPORT, _STATUS);
+
+            if (FLD_TEST_DRF(_NPORT, _STATUS, _INGRESS_IDLE, _IDLE, val) &&
+                FLD_TEST_DRF(_NPORT, _STATUS, _ROUTE_IDLE,   _IDLE, val))
+            {
+                break;
+            }
+
+            NVSWITCH_NSEC_DELAY(2 * NVSWITCH_INTERVAL_1USEC_IN_NS);
+
+        } while (bKeepPolling);
+
+        if (!FLD_TEST_DRF(_NPORT, _STATUS, _INGRESS_IDLE, _IDLE, val) ||
+            !FLD_TEST_DRF(_NPORT, _STATUS, _ROUTE_IDLE,   _IDLE, val))
+        {
+            NVSWITCH_PRINT(device, ERROR,
+                "%s: Traffic failed to drain after ingress stop is asserted, val = 0x%x\n", 
+                __FUNCTION__, val);
+            return -NVL_ERR_GENERIC;
+        }
+    }
+
+    return NVL_SUCCESS;
 }
 
 /*

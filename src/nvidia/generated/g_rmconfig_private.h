@@ -402,7 +402,12 @@
 
 
 // Any DISPLAYLESS chip?
-#define IsDISPLAYLESS(pGpu)            rmcfg_IsDISPLAYLESS(pGpu)
+#define IsDISPLAYLESS(pGpu)            (IsDISPLAYLESS_CLASSIC_GPUS(pGpu) || IsDISPLAYLESS_TEGRA_BIG_GPUS(pGpu))
+
+
+// Any DISPLAYLESS_CLASSIC_GPUS chip?
+#define IsDISPLAYLESS_CLASSIC_GPUS(pGpu) rmcfg_IsDISPLAYLESS_CLASSIC_GPUS(pGpu)
+#define IsDISPLAYLESS_CLASSIC_GPUSorBetter(pGpu) rmcfg_IsDISPLAYLESS_CLASSIC_GPUSorBetter(pGpu)
 
 
 // Any dKEPLER chip?
@@ -538,8 +543,8 @@
 
 
 // Any TEGRA_DISP chip?
-#define IsTEGRA_DISP(pGpu)             (IsTEGRA_DISP_CLASSIC_GPUS(pGpu) || IsTEGRA_DISP_TEGRA_BIG_GPUS(pGpu) || IsTEGRA_DISP_TEGRA_NVDISP_GPUS(pGpu))
-#define IsTEGRA_DISPorBetter(pGpu)     (IsTEGRA_DISP_CLASSIC_GPUSorBetter(pGpu) || IsTEGRA_DISP_TEGRA_BIG_GPUSorBetter(pGpu) || IsTEGRA_DISP_TEGRA_NVDISP_GPUSorBetter(pGpu))
+#define IsTEGRA_DISP(pGpu)             (IsTEGRA_DISP_CLASSIC_GPUS(pGpu) || IsTEGRA_DISP_TEGRA_NVDISP_GPUS(pGpu))
+#define IsTEGRA_DISPorBetter(pGpu)     (IsTEGRA_DISP_CLASSIC_GPUSorBetter(pGpu) || IsTEGRA_DISP_TEGRA_NVDISP_GPUSorBetter(pGpu))
 
 
 // Any TEGRA_BIG_GPUS chip?
@@ -592,6 +597,11 @@
 #define IsPASCAL_TEGRA_BIG_GPUSorBetter(pGpu) (0 && (pGpu))
 
 
+// Any DISPLAYLESS_TEGRA_BIG_GPUS chip?
+#define IsDISPLAYLESS_TEGRA_BIG_GPUS(pGpu) (0 && (pGpu))
+#define IsDISPLAYLESS_TEGRA_BIG_GPUSorBetter(pGpu) (0 && (pGpu))
+
+
 // Any tVOLTA chip?
 #define IstVOLTA(pGpu)                 (0 && (pGpu))
 #define IstVOLTAorBetter(pGpu)         (0 && (pGpu))
@@ -600,11 +610,6 @@
 // Any VOLTA_TEGRA_BIG_GPUS chip?
 #define IsVOLTA_TEGRA_BIG_GPUS(pGpu)   (0 && (pGpu))
 #define IsVOLTA_TEGRA_BIG_GPUSorBetter(pGpu) (0 && (pGpu))
-
-
-// Any TEGRA_DISP_TEGRA_BIG_GPUS chip?
-#define IsTEGRA_DISP_TEGRA_BIG_GPUS(pGpu) (0 && (pGpu))
-#define IsTEGRA_DISP_TEGRA_BIG_GPUSorBetter(pGpu) (0 && (pGpu))
 
 
 // Any TURING_TEGRA_BIG_GPUS chip?

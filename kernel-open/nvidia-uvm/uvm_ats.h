@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018-2021 NVIDIA Corporation
+    Copyright (c) 2018-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -29,10 +29,9 @@
 #include "uvm_ats_ibm.h"
 #include "nv_uvm_types.h"
 #include "uvm_lock.h"
+#include "uvm_ats_sva.h"
 
-    #include "uvm_ats_sva.h"
-
-    #define UVM_ATS_SUPPORTED() (UVM_ATS_IBM_SUPPORTED() || UVM_ATS_SVA_SUPPORTED())
+#define UVM_ATS_SUPPORTED() (UVM_ATS_IBM_SUPPORTED() || UVM_ATS_SVA_SUPPORTED())
 
 typedef struct
 {

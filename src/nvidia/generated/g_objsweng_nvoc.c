@@ -66,61 +66,81 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJSWENG =
     /*pExportInfo=*/        &__nvoc_export_info_OBJSWENG
 };
 
-static NV_STATUS __nvoc_thunk_OBJSWENG_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pSweng, ENGDESCRIPTOR arg0) {
-    return swengConstructEngine(pGpu, (struct OBJSWENG *)(((unsigned char *)pSweng) - __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset), arg0);
+// 1 down-thunk(s) defined to bridge methods in OBJSWENG from superclasses
+
+// swengConstructEngine: virtual override (engstate) base (engstate)
+static NV_STATUS __nvoc_down_thunk_OBJSWENG_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pSweng, ENGDESCRIPTOR arg3) {
+    return swengConstructEngine(pGpu, (struct OBJSWENG *)(((unsigned char *) pSweng) - __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_swengStateLoad(POBJGPU pGpu, struct OBJSWENG *pEngstate, NvU32 arg0) {
-    return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset), arg0);
+
+// 13 up-thunk(s) defined to bridge methods in OBJSWENG to superclasses
+
+// swengInitMissing: virtual inherited (engstate) base (engstate)
+static void __nvoc_up_thunk_OBJENGSTATE_swengInitMissing(POBJGPU pGpu, struct OBJSWENG *pEngstate) {
+    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_swengStateUnload(POBJGPU pGpu, struct OBJSWENG *pEngstate, NvU32 arg0) {
-    return engstateStateUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset), arg0);
+// swengStatePreInitLocked: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swengStatePreInitLocked(POBJGPU pGpu, struct OBJSWENG *pEngstate) {
+    return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_swengStateInitLocked(POBJGPU pGpu, struct OBJSWENG *pEngstate) {
-    return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset));
+// swengStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swengStatePreInitUnlocked(POBJGPU pGpu, struct OBJSWENG *pEngstate) {
+    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_swengStatePreLoad(POBJGPU pGpu, struct OBJSWENG *pEngstate, NvU32 arg0) {
-    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset), arg0);
+// swengStateInitLocked: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swengStateInitLocked(POBJGPU pGpu, struct OBJSWENG *pEngstate) {
+    return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_swengStatePostUnload(POBJGPU pGpu, struct OBJSWENG *pEngstate, NvU32 arg0) {
-    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset), arg0);
+// swengStateInitUnlocked: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swengStateInitUnlocked(POBJGPU pGpu, struct OBJSWENG *pEngstate) {
+    return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset));
 }
 
-static void __nvoc_thunk_OBJENGSTATE_swengStateDestroy(POBJGPU pGpu, struct OBJSWENG *pEngstate) {
-    engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset));
+// swengStatePreLoad: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swengStatePreLoad(POBJGPU pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
+    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_swengStatePreUnload(POBJGPU pGpu, struct OBJSWENG *pEngstate, NvU32 arg0) {
-    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset), arg0);
+// swengStateLoad: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swengStateLoad(POBJGPU pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
+    return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_swengStateInitUnlocked(POBJGPU pGpu, struct OBJSWENG *pEngstate) {
-    return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset));
+// swengStatePostLoad: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swengStatePostLoad(POBJGPU pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
+    return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset), arg3);
 }
 
-static void __nvoc_thunk_OBJENGSTATE_swengInitMissing(POBJGPU pGpu, struct OBJSWENG *pEngstate) {
-    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset));
+// swengStatePreUnload: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swengStatePreUnload(POBJGPU pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
+    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_swengStatePreInitLocked(POBJGPU pGpu, struct OBJSWENG *pEngstate) {
-    return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset));
+// swengStateUnload: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swengStateUnload(POBJGPU pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
+    return engstateStateUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_swengStatePreInitUnlocked(POBJGPU pGpu, struct OBJSWENG *pEngstate) {
-    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset));
+// swengStatePostUnload: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_swengStatePostUnload(POBJGPU pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
+    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset), arg3);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_swengStatePostLoad(POBJGPU pGpu, struct OBJSWENG *pEngstate, NvU32 arg0) {
-    return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset), arg0);
+// swengStateDestroy: virtual inherited (engstate) base (engstate)
+static void __nvoc_up_thunk_OBJENGSTATE_swengStateDestroy(POBJGPU pGpu, struct OBJSWENG *pEngstate) {
+    engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset));
 }
 
-static NvBool __nvoc_thunk_OBJENGSTATE_swengIsPresent(POBJGPU pGpu, struct OBJSWENG *pEngstate) {
-    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset));
+// swengIsPresent: virtual inherited (engstate) base (engstate)
+static NvBool __nvoc_up_thunk_OBJENGSTATE_swengIsPresent(POBJGPU pGpu, struct OBJSWENG *pEngstate) {
+    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJSWENG_OBJENGSTATE.offset));
 }
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJSWENG = 
 {
@@ -152,41 +172,59 @@ __nvoc_ctor_OBJSWENG_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_OBJSWENG_1(OBJSWENG *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // swengConstructEngine -- virtual override (engstate) base (engstate)
     pThis->__swengConstructEngine__ = &swengConstructEngine_IMPL;
+    pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_down_thunk_OBJSWENG_engstateConstructEngine;
 
-    pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_thunk_OBJSWENG_engstateConstructEngine;
+    // swengInitMissing -- virtual inherited (engstate) base (engstate)
+    pThis->__swengInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_swengInitMissing;
 
-    pThis->__swengStateLoad__ = &__nvoc_thunk_OBJENGSTATE_swengStateLoad;
+    // swengStatePreInitLocked -- virtual inherited (engstate) base (engstate)
+    pThis->__swengStatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_swengStatePreInitLocked;
 
-    pThis->__swengStateUnload__ = &__nvoc_thunk_OBJENGSTATE_swengStateUnload;
+    // swengStatePreInitUnlocked -- virtual inherited (engstate) base (engstate)
+    pThis->__swengStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_swengStatePreInitUnlocked;
 
-    pThis->__swengStateInitLocked__ = &__nvoc_thunk_OBJENGSTATE_swengStateInitLocked;
+    // swengStateInitLocked -- virtual inherited (engstate) base (engstate)
+    pThis->__swengStateInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_swengStateInitLocked;
 
-    pThis->__swengStatePreLoad__ = &__nvoc_thunk_OBJENGSTATE_swengStatePreLoad;
+    // swengStateInitUnlocked -- virtual inherited (engstate) base (engstate)
+    pThis->__swengStateInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_swengStateInitUnlocked;
 
-    pThis->__swengStatePostUnload__ = &__nvoc_thunk_OBJENGSTATE_swengStatePostUnload;
+    // swengStatePreLoad -- virtual inherited (engstate) base (engstate)
+    pThis->__swengStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_swengStatePreLoad;
 
-    pThis->__swengStateDestroy__ = &__nvoc_thunk_OBJENGSTATE_swengStateDestroy;
+    // swengStateLoad -- virtual inherited (engstate) base (engstate)
+    pThis->__swengStateLoad__ = &__nvoc_up_thunk_OBJENGSTATE_swengStateLoad;
 
-    pThis->__swengStatePreUnload__ = &__nvoc_thunk_OBJENGSTATE_swengStatePreUnload;
+    // swengStatePostLoad -- virtual inherited (engstate) base (engstate)
+    pThis->__swengStatePostLoad__ = &__nvoc_up_thunk_OBJENGSTATE_swengStatePostLoad;
 
-    pThis->__swengStateInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_swengStateInitUnlocked;
+    // swengStatePreUnload -- virtual inherited (engstate) base (engstate)
+    pThis->__swengStatePreUnload__ = &__nvoc_up_thunk_OBJENGSTATE_swengStatePreUnload;
 
-    pThis->__swengInitMissing__ = &__nvoc_thunk_OBJENGSTATE_swengInitMissing;
+    // swengStateUnload -- virtual inherited (engstate) base (engstate)
+    pThis->__swengStateUnload__ = &__nvoc_up_thunk_OBJENGSTATE_swengStateUnload;
 
-    pThis->__swengStatePreInitLocked__ = &__nvoc_thunk_OBJENGSTATE_swengStatePreInitLocked;
+    // swengStatePostUnload -- virtual inherited (engstate) base (engstate)
+    pThis->__swengStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_swengStatePostUnload;
 
-    pThis->__swengStatePreInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_swengStatePreInitUnlocked;
+    // swengStateDestroy -- virtual inherited (engstate) base (engstate)
+    pThis->__swengStateDestroy__ = &__nvoc_up_thunk_OBJENGSTATE_swengStateDestroy;
 
-    pThis->__swengStatePostLoad__ = &__nvoc_thunk_OBJENGSTATE_swengStatePostLoad;
+    // swengIsPresent -- virtual inherited (engstate) base (engstate)
+    pThis->__swengIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_swengIsPresent;
+} // End __nvoc_init_funcTable_OBJSWENG_1 with approximately 15 basic block(s).
 
-    pThis->__swengIsPresent__ = &__nvoc_thunk_OBJENGSTATE_swengIsPresent;
-}
 
+// Initialize vtable(s) for 14 virtual method(s).
 void __nvoc_init_funcTable_OBJSWENG(OBJSWENG *pThis) {
+
+    // Initialize vtable(s) with 14 per-object function pointer(s).
     __nvoc_init_funcTable_OBJSWENG_1(pThis);
 }
 

@@ -1,6 +1,13 @@
+
 #ifndef _G_GSYNC_NVOC_H_
 #define _G_GSYNC_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,6 +36,7 @@ extern "C" {
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_gsync_nvoc.h"
 
 #ifndef GSYNC_H_
@@ -229,11 +237,20 @@ typedef struct OBJGSYNCMGR *POBJGSYNCMGR;
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 
+
 struct OBJGSYNCMGR {
+
+    // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+
+    // Parent (i.e. superclass or base class) object pointers
     struct Object __nvoc_base_Object;
-    struct Object *__nvoc_pbase_Object;
-    struct OBJGSYNCMGR *__nvoc_pbase_OBJGSYNCMGR;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super
+    struct OBJGSYNCMGR *__nvoc_pbase_OBJGSYNCMGR;    // gsyncmgr
+
+    // Data members
     NvU32 gsyncCount;
     OBJGSYNC gsyncTable[4];
 };
@@ -247,6 +264,7 @@ typedef struct OBJGSYNCMGR OBJGSYNCMGR;
 #define __nvoc_class_id_OBJGSYNCMGR 0xd07fd0
 #endif /* __nvoc_class_id_OBJGSYNCMGR */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGSYNCMGR;
 
 #define __staticCast_OBJGSYNCMGR(pThis) \
@@ -259,13 +277,16 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGSYNCMGR;
     ((OBJGSYNCMGR*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(OBJGSYNCMGR)))
 #endif //__nvoc_gsync_h_disabled
 
-
 NV_STATUS __nvoc_objCreateDynamic_OBJGSYNCMGR(OBJGSYNCMGR**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_OBJGSYNCMGR(OBJGSYNCMGR**, Dynamic*, NvU32);
 #define __objCreate_OBJGSYNCMGR(ppNewObj, pParent, createFlags) \
     __nvoc_objCreate_OBJGSYNCMGR((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
+
+// Wrapper macros
+
+// Dispatch functions
 NV_STATUS gsyncmgrConstruct_IMPL(struct OBJGSYNCMGR *arg_pGsyncmgr);
 
 #define __nvoc_gsyncmgrConstruct(arg_pGsyncmgr) gsyncmgrConstruct_IMPL(arg_pGsyncmgr)

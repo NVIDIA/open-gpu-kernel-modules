@@ -128,8 +128,8 @@ kgmmuValidateFabricBaseAddress_GA100
     return NV_OK;
 }
 
-NV_STATUS
-kgmmuSetupWarForBug2720120_GA100
+static NV_STATUS
+kgmmuSetupWarForBug2720120FmtFamily_GA100
 (
     KernelGmmu      *pKernelGmmu,
     GMMU_FMT_FAMILY *pFam
@@ -138,22 +138,15 @@ kgmmuSetupWarForBug2720120_GA100
     NV_STATUS            status      = NV_OK;
     OBJGPU              *pGpu        = ENG_GET_GPU(pKernelGmmu);
     KernelBus           *pKernelBus  = GPU_GET_KERNEL_BUS(pGpu);
+    MemoryManager       *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     const GMMU_FMT      *pFmt        = kgmmuFmtGet(pKernelGmmu, GMMU_FMT_VERSION_DEFAULT, 0);
     const MMU_FMT_LEVEL *pPageDir1   = mmuFmtFindLevelWithPageShift(pFmt->pRoot, 29);
     const MMU_FMT_LEVEL *pPageDir0   = mmuFmtFindLevelWithPageShift(pFmt->pRoot, 21);
     const MMU_FMT_LEVEL *pSmallPT    = mmuFmtFindLevelWithPageShift(pFmt->pRoot, 12);
     const GMMU_FMT_PDE  *pPde0Fmt    = gmmuFmtGetPde(pFmt, pPageDir0, 1);
     const GMMU_FMT_PDE  *pPde1Fmt    = gmmuFmtGetPde(pFmt, pPageDir1, 0);
-    NvU8                *pMap        = NULL;
-    void                *pPriv       = NULL;
-    NvU32                sizeOfDWord = sizeof(NvU32);
-    RmPhysAddr           physAddr;
-    RmPhysAddr           physAddrOrig;
-    NvU64                sizeInDWord;
-    NvU32                bar0Addr;
     NvU32                entryIndex;
     NvU32                entryIndexHi;
-    NvU32                entryOffset;
 
     //
     // BAR2 is not yet initialized. Thus use either the BAR0 window or
@@ -176,32 +169,9 @@ kgmmuSetupWarForBug2720120_GA100
                     pKernelGmmu->pWarSmallPageTable);
     NV_ASSERT_OK_OR_GOTO(status, status, failed);
 
-    switch (memdescGetAddressSpace(pKernelGmmu->pWarSmallPageTable))
-    {
-        case ADDR_FBMEM:
-            memUtilsMemSetNoBAR2(pGpu, pKernelGmmu->pWarSmallPageTable, 0);
-            break;
-
-        case ADDR_SYSMEM:
-            // Plain old memmap.
-            NV_ASSERT_OK_OR_GOTO(status, memdescMapOld(pKernelGmmu->pWarSmallPageTable, 0,
-                                                       pKernelGmmu->pWarSmallPageTable->Size,
-                                                       NV_TRUE, // kernel,
-                                                       NV_PROTECT_READ_WRITE,
-                                                       (void **)&pMap,
-                                                       &pPriv), failed);
-
-            portMemSet(pMap, 0, pKernelGmmu->pWarSmallPageTable->Size);
-
-            memdescUnmapOld(pKernelGmmu->pWarSmallPageTable, 1, 0, pMap, pPriv);
-            break;
-
-        default:
-            // Should not happen.
-            status = NV_ERR_INVALID_ARGUMENT;
-            NV_ASSERT_OR_GOTO(status == NV_OK, failed);
-            break;
-    }
+    NV_ASSERT_OK_OR_GOTO(status,
+        memmgrMemDescMemSet(pMemoryManager, pKernelGmmu->pWarSmallPageTable, 0, TRANSFER_FLAGS_NONE),
+        failed);
 
     // The WAR PDE0 points to the small page table allocated above
     {
@@ -235,80 +205,14 @@ kgmmuSetupWarForBug2720120_GA100
     NV_ASSERT_OK_OR_GOTO(status, status, failed);
 
     entryIndexHi = mmuFmtLevelEntryCount(pPageDir0) - 1;
-    switch (memdescGetAddressSpace(pKernelGmmu->pWarPageDirectory0))
+    for (entryIndex = 0; entryIndex <= entryIndexHi; entryIndex++)
     {
-        case ADDR_FBMEM:
-            //
-            // Set the BAR0 window to encompass the given surface while
-            // saving off the location to where the BAR0 window was
-            // previously pointing.
-            //
-            physAddr = memdescGetPhysAddr(pKernelGmmu->pWarPageDirectory0, AT_GPU, 0);
-            NV_ASSERT_OR_GOTO(NV_IS_ALIGNED64(physAddr, sizeOfDWord), failed);
+        TRANSFER_SURFACE pageDirEntry =
+            { .pMemDesc = pKernelGmmu->pWarPageDirectory0, .offset = entryIndex * pPageDir0->entrySize };
 
-            physAddrOrig = kbusGetBAR0WindowVidOffset_HAL(pGpu, pKernelBus);
-            NV_ASSERT_OK_OR_GOTO(status,
-                                 kbusSetBAR0WindowVidOffset_HAL(pGpu,
-                                                                pKernelBus,
-                                                                physAddr & ~0xffffULL),
-                                 failed);
-
-            bar0Addr = NvU64_LO32(kbusGetBAR0WindowAddress_HAL(pKernelBus) +
-                          (physAddr - kbusGetBAR0WindowVidOffset_HAL(pGpu, pKernelBus)));
-
-            //
-            // Iterate and initialize the given surface with BAR0
-            // writes.
-            //
-            sizeInDWord = (NvU32)NV_DIV_AND_CEIL(pPageDir0->entrySize, sizeOfDWord);
-            for (entryIndex = 0; entryIndex <= entryIndexHi; entryIndex++)
-            {
-                entryOffset = entryIndex * pPageDir0->entrySize;
-                NvU32 i;
-                for (i = 0; i < sizeInDWord; i++)
-                {
-                    GPU_REG_WR32(pGpu,
-                                 bar0Addr + entryOffset + (sizeOfDWord * i),
-                                 pFam->bug2720120WarPde0.v32[i]);
-                }
-            }
-
-            // Restore where the BAR0 window was previously pointing to
-            NV_ASSERT_OK_OR_GOTO(status,
-                                 kbusSetBAR0WindowVidOffset_HAL(pGpu, pKernelBus,
-                                                                physAddrOrig),
-                                 failed);
-
-            break;
-
-        case ADDR_SYSMEM:
-            // Plain old memmap.
-            NV_ASSERT_OK_OR_GOTO(status, memdescMapOld(pKernelGmmu->pWarPageDirectory0, 0,
-                                                       pKernelGmmu->pWarPageDirectory0->Size,
-                                                       NV_TRUE, // kernel,
-                                                       NV_PROTECT_READ_WRITE,
-                                                       (void **)&pMap,
-                                                       &pPriv), failed);
-
-            for (entryIndex = 0; entryIndex <= entryIndexHi; entryIndex++)
-            {
-                entryOffset = entryIndex * pPageDir0->entrySize;
-
-                // Memory-mapped write.
-                portMemCopy(pMap + entryOffset,
-                            pPageDir0->entrySize,
-                            pFam->bug2720120WarPde0.v8,
-                            pPageDir0->entrySize);
-            }
-
-            memdescUnmapOld(pKernelGmmu->pWarPageDirectory0, 1, 0, pMap, pPriv);
-            break;
-
-        default:
-            // Should not happen.
-            status = NV_ERR_INVALID_ARGUMENT;
-            NV_ASSERT_OR_GOTO(status == NV_OK, failed);
-            break;
+        NV_ASSERT_OK_OR_GOTO(status, memmgrMemWrite(pMemoryManager, &pageDirEntry, pFam->bug2720120WarPde0.v8,
+                                                    pPageDir0->entrySize, TRANSFER_FLAGS_NONE),
+            failed);
     }
 
     // The WAR PDE1 points to the PD0 instance allocated above
@@ -345,6 +249,33 @@ failed:
         }
     }
     return status;
+}
+
+NV_STATUS
+kgmmuSetupWarForBug2720120_GA100
+(
+    KernelGmmu      *pKernelGmmu
+)
+{
+    NvU32 v;
+    GMMU_FMT_FAMILY *pFam;
+
+    if (pKernelGmmu->pWarPageDirectory0 != NULL)
+        return NV_OK;
+
+    for (v = 0; v < GMMU_FMT_MAX_VERSION_COUNT; ++v)
+    {
+        pFam = pKernelGmmu->pFmtFamilies[v];
+        if (NULL != pFam)
+        {
+            if (kgmmuIsBug2720120WarEnabled(pKernelGmmu))
+            {
+                NV_ASSERT_OK_OR_RETURN(kgmmuSetupWarForBug2720120FmtFamily_GA100(pKernelGmmu, pFam));
+            }
+        }
+    }
+
+    return NV_OK;
 }
 
 /*!

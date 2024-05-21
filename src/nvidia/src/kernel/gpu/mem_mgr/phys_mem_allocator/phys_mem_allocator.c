@@ -40,7 +40,10 @@
 #if !defined(SRT_BUILD)
 // These files are not found on SRT builds
 #include "os/os.h"
+#define PMA_DEBUG 1
 #else
+// disable PMA debug prints on SRTs to not bloat the logs
+#define PMA_DEBUG 0
 NV_STATUS pmaNumaAllocate
 (
     PMA                    *pPma,
@@ -561,6 +564,7 @@ pmaAllocatePages
     NvS32 regionList[PMA_REGION_SIZE];
     NV_STATUS status, prediction;
     NvU32 flags, evictFlag, contigFlag, persistFlag, alignFlag, pinFlag, rangeFlag, blacklistOffFlag, partialFlag, skipScrubFlag, reverseFlag;
+
     NvU32 regId, regionIdx;
     NvU64 numPagesAllocatedThisTime, numPagesLeftToAllocate, numPagesAllocatedSoFar;
     NvU64 addrBase, addrLimit;
@@ -574,7 +578,8 @@ pmaAllocatePages
     scanFunc useFunc;
     PMA_PAGESTATUS pinOption;
     NvU64 alignment = pageSize;
-    NvU32 framesPerPage  = (NvU32)(pageSize >> PMA_PAGE_SHIFT);
+    NvU32 framesPerPage;
+    NvU64 numFramesToAllocateTotal;
 
     //
     // A boolean indicating if we should try to evict. We at most try eviction once per call
@@ -582,8 +587,6 @@ pmaAllocatePages
     //
     NvBool tryEvict = NV_TRUE;
     NvBool tryAlloc = NV_TRUE;
-
-    const NvU64 numFramesToAllocateTotal = framesPerPage * allocationCount;
 
     if (pPma == NULL || pPages == NULL || allocationCount == 0
         || (pageSize != _PMA_64KB && pageSize != _PMA_128KB && pageSize != _PMA_2MB && pageSize != _PMA_512MB)
@@ -622,6 +625,7 @@ pmaAllocatePages
             NV_PRINTF(LEVEL_ERROR, "Reverse allocation not supported on NUMA.\n");
             return NV_ERR_INVALID_ARGUMENT;
         }
+
         return pmaNumaAllocate(pPma, allocationCount, pageSize, allocationOptions, pPages);
     }
 
@@ -688,6 +692,9 @@ pmaAllocatePages
         }
     }
 
+    framesPerPage  = (NvU32)(pageSize >> PMA_PAGE_SHIFT);
+    numFramesToAllocateTotal = framesPerPage * allocationCount;
+
     pinOption = pinFlag ? STATE_PIN : STATE_UNPIN;
     pinOption |= persistFlag ? ATTRIB_PERSISTENT : 0;
 
@@ -723,10 +730,12 @@ pmaAllocatePages_retry:
     // after checking the scrubber so any pages allocated so far are not guaranteed
     // to be there any more. Restart from scratch.
     //
+#if PMA_DEBUG
     NV_PRINTF(LEVEL_INFO, "Attempt %s allocation of 0x%llx pages of size 0x%llx "
                           "(0x%x frames per page)\n",
                           contigFlag ? "contiguous" : "discontiguous",
                           (NvU64)allocationCount, pageSize, framesPerPage);
+#endif
 
     // Check if scrubbing is done before allocating each time before we retry
     if (bScrubOnFree)
@@ -1067,9 +1076,12 @@ pmaAllocatePages_retry:
             addrBase = pPma->pRegDescriptors[regId]->base;
             frameBase = PMA_ADDR2FRAME(pPages[0], addrBase);
 
+#if PMA_DEBUG
+
             NV_PRINTF(LEVEL_INFO, "Successfully allocated frames 0x%llx through 0x%llx\n",
                                   frameBase,
                                   frameBase + numFramesAllocated - 1);
+#endif
 
             pPma->pMapInfo->pmaMapChangeBlockStateAttrib(pMap, frameBase, numPagesAllocatedSoFar * framesPerPage,
                                                          pinOption, MAP_MASK);
@@ -1085,9 +1097,11 @@ pmaAllocatePages_retry:
                 if (allocatedRegionEnd < blacklistOffAddrEnd)
                     _pmaReallocBlacklistPages(pPma, regId, allocatedRegionEnd, (blacklistOffAddrEnd - allocatedRegionEnd));
             }
+
         }
         else
         {
+#if PMA_DEBUG
             NvU64 frameRangeStart   = 0;
             NvU64 nextExpectedFrame = 0;
             NvU32 frameRangeRegId   = 0;
@@ -1098,12 +1112,15 @@ pmaAllocatePages_retry:
             (void)frameRangeRegId;
 
             NV_PRINTF(LEVEL_INFO, "Successfully allocated frames:\n");
+#endif
 
             for (i = 0; i < numPagesAllocatedSoFar; i++)
             {
                 regId = findRegionID(pPma, pPages[i]);
                 pMap  = pPma->pRegions[regId];
                 addrBase = pPma->pRegDescriptors[regId]->base;
+
+#if PMA_DEBUG
                 frameBase = PMA_ADDR2FRAME(pPages[i], addrBase);
 
                 // Print out contiguous frames in the same NV_PRINTF
@@ -1124,6 +1141,7 @@ pmaAllocatePages_retry:
                     frameRangeRegId = regId;
                 }
                 nextExpectedFrame = reverseFlag ? frameBase - framesPerPage : frameBase + framesPerPage;
+#endif
 
                 pPma->pMapInfo->pmaMapChangePageStateAttrib(pMap, PMA_ADDR2FRAME(pPages[i], addrBase),
                                                             pageSize, pinOption, MAP_MASK);
@@ -1132,11 +1150,13 @@ pmaAllocatePages_retry:
 
             pPma->pStatsUpdateCb(pPma->pStatsUpdateCtx, pPma->pmaStats.numFreeFrames);
 
-            // Break in frame range detected
-            NV_PRINTF(LEVEL_INFO, "0x%llx through 0x%llx region %d \n",
+#if PMA_DEBUG
+                // Break in frame range detected
+                NV_PRINTF(LEVEL_INFO, "0x%llx through 0x%llx region %d \n",
                                       reverseFlag ? nextExpectedFrame + framesPerPage : frameRangeStart,
                                       reverseFlag ? frameRangeStart + framesPerPage - 1 : nextExpectedFrame - 1,
                                       frameRangeRegId);
+#endif
         }
     }
 
@@ -1312,8 +1332,6 @@ pmaFreePages
         return;
     }
 
-    framesPerPage = size >> PMA_PAGE_SHIFT;
-
     // Check if any scrubbing is done before we actually free
     if (bNeedScrub)
     {
@@ -1339,6 +1357,8 @@ pmaFreePages
     // Only hold Reader lock here if (bScrubValid && bNeedScrub)
 
     portSyncSpinlockAcquire(pPma->pPmaLock);
+
+    framesPerPage = size >> PMA_PAGE_SHIFT;
 
     for (i = 0; i < pageCount; i++)
     {
@@ -1369,17 +1389,18 @@ pmaFreePages
         PSCRUB_NODE pPmaScrubList = NULL;
         NvU64 count;
         if (scrubSubmitPages(pPma->pScrubObj, size, pPages, pageCount,
-                             &pPmaScrubList, &count) != NV_OK)
+                             &pPmaScrubList, &count) == NV_OK)
+        {
+            if (count > 0)
+            {
+                _pmaClearScrubBit(pPma, pPmaScrubList, count);
+            }
+        }
+        else
         {
             portAtomicSetSize(&pPma->scrubberValid, PMA_SCRUBBER_INVALID);
-            goto exit;
         }
 
-        if (count > 0)
-        {
-            _pmaClearScrubBit(pPma, pPmaScrubList, count);
-        }
-exit:
         // Free the actual list, although allocated by objscrub
         portMemFree(pPmaScrubList);
 

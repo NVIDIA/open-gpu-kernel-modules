@@ -431,9 +431,11 @@ krcErrorSendEventNotifications_KERNEL
     KernelRc          *pKernelRc,
     KernelChannel     *pKernelChannel,
     RM_ENGINE_TYPE     rmEngineType,       // unused
+    NvU32              exceptLevel,        // unused
     NvU32              exceptType,
     RC_NOTIFIER_SCOPE  scope,
-    NvU16              partitionAttributionId
+    NvU16              partitionAttributionId,
+    NvBool             bOsRcCallbackNeeded // unused
 )
 {
     NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);

@@ -1,5 +1,9 @@
 # Changelog
 
+## Release 555 Entries
+
+### [555.42.02] 2024-05-21
+
 ## Release 550 Entries
 
 ### [550.78] 2024-04-25

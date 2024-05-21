@@ -93,47 +93,70 @@ __nvoc_ctor_RsResource_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_RsResource_1(RsResource *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // resCanCopy -- virtual
     pThis->__resCanCopy__ = &resCanCopy_IMPL;
 
+    // resIsDuplicate -- virtual
     pThis->__resIsDuplicate__ = &resIsDuplicate_IMPL;
 
+    // resPreDestruct -- virtual
     pThis->__resPreDestruct__ = &resPreDestruct_IMPL;
 
+    // resControl -- virtual
     pThis->__resControl__ = &resControl_IMPL;
 
+    // resControlFilter -- virtual
     pThis->__resControlFilter__ = &resControlFilter_IMPL;
 
+    // resControlSerialization_Prologue -- virtual
     pThis->__resControlSerialization_Prologue__ = &resControlSerialization_Prologue_IMPL;
 
+    // resControlSerialization_Epilogue -- virtual
     pThis->__resControlSerialization_Epilogue__ = &resControlSerialization_Epilogue_IMPL;
 
+    // resControl_Prologue -- virtual
     pThis->__resControl_Prologue__ = &resControl_Prologue_IMPL;
 
+    // resControl_Epilogue -- virtual
     pThis->__resControl_Epilogue__ = &resControl_Epilogue_IMPL;
 
+    // resMap -- virtual
     pThis->__resMap__ = &resMap_IMPL;
 
+    // resUnmap -- virtual
     pThis->__resUnmap__ = &resUnmap_IMPL;
 
+    // resIsPartialUnmapSupported -- inline virtual body
     pThis->__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_bf6dfa;
 
+    // resMapTo -- virtual
     pThis->__resMapTo__ = &resMapTo_IMPL;
 
+    // resUnmapFrom -- virtual
     pThis->__resUnmapFrom__ = &resUnmapFrom_IMPL;
 
+    // resGetRefCount -- virtual
     pThis->__resGetRefCount__ = &resGetRefCount_IMPL;
 
+    // resAccessCallback -- virtual
     pThis->__resAccessCallback__ = &resAccessCallback_IMPL;
 
+    // resShareCallback -- virtual
     pThis->__resShareCallback__ = &resShareCallback_IMPL;
 
+    // resAddAdditionalDependants -- virtual
     pThis->__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL;
-}
+} // End __nvoc_init_funcTable_RsResource_1 with approximately 18 basic block(s).
 
+
+// Initialize vtable(s) for 18 virtual method(s).
 void __nvoc_init_funcTable_RsResource(RsResource *pThis) {
+
+    // Initialize vtable(s) with 18 per-object function pointer(s).
     __nvoc_init_funcTable_RsResource_1(pThis);
 }
 

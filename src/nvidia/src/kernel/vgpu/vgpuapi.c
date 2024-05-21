@@ -24,7 +24,7 @@
 #include "core/core.h"
 #include "os/os.h"
 
-#include "vgpuapi.h"
+#include "vgpu/vgpuapi.h"
 #include "gpu/gpu.h"
 
 NV_STATUS

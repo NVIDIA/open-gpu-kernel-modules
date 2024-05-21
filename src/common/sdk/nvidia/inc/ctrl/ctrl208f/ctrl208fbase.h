@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -53,9 +53,8 @@
 #define NV208F_CTRL_PMGR         (0x13)
 #define NV208F_CTRL_DMA          (0x14)
 // const NV208F_CTRL_TMR = (0x15); // not supported
-#define NV208F_CTRL_RMFS         (0x16)
-#define NV208F_CTRL_GSPMSGTIMING (0x17)
-#define NV208F_CTRL_BUS          (0x18)
+#define NV208F_CTRL_GSPMSGTIMING (0x16)
+#define NV208F_CTRL_BUS          (0x17)
 
 /*
  * NV208F_CTRL_CMD_NULL

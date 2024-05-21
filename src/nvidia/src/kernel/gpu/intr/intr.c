@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -170,7 +170,7 @@ subdeviceCtrlCmdMcServiceInterrupts_IMPL
 
         //
         // Force kernel-RM to service interrupts from GSP-RM. This will allow
-        // kernel-RM to write notifiers and send an ack back to GSP. 
+        // kernel-RM to write notifiers and send an ack back to GSP.
         // GSP waits for this ack before clearing fast path POSSIBLE_ERR interrupt.
         //
         if (pGpu->getProperty(pGpu, PDB_PROP_GPU_FASTPATH_SEQ_ENABLED))
@@ -592,13 +592,24 @@ intrGetVectorFromEngineId_IMPL
     NvBool  bNonStall
 )
 {
+    NvU32 intrVector;
     INTR_TABLE_ENTRY *pEntry = intrGetInterruptTableEntryFromEngineId(pGpu,
         pIntr,
         mcEngineId,
         bNonStall);
 
     NV_ASSERT_OR_RETURN(pEntry != NULL, NV_INTR_VECTOR_INVALID);
-    return bNonStall ? pEntry->intrVectorNonStall : pEntry->intrVector;
+    intrVector = bNonStall ? pEntry->intrVectorNonStall : pEntry->intrVector;
+
+    if (intrVector == NV_INTR_VECTOR_INVALID)
+    {
+        NV_PRINTF(LEVEL_ERROR, "mcEngineIdx %d with bNonStall = %d has invalid vector\n",
+                                mcEngineId, bNonStall);
+
+        NV_ASSERT_OR_RETURN(intrVector != NV_INTR_VECTOR_INVALID, NV_INTR_VECTOR_INVALID);
+    }
+
+    return intrVector;
 }
 
 
@@ -790,6 +801,29 @@ intrDestruct_IMPL
 
 
 NV_STATUS
+intrStatePreInitLocked_IMPL
+(
+    OBJGPU *pGpu,
+    Intr   *pIntr
+)
+{
+    NV_STATUS status = NV_OK;
+
+    for (NvU32 i = 0; i < NV_ARRAY_ELEMENTS(pIntr->subtreeMap); i++)
+    {
+        pIntr->subtreeMap[i].subtreeStart = NV2080_INTR_INVALID_SUBTREE;
+        pIntr->subtreeMap[i].subtreeEnd   = NV2080_INTR_INVALID_SUBTREE;
+    }
+
+    NV_ASSERT_OK_OR_GOTO(status, intrInitInterruptTable_HAL(pGpu, pIntr), exit);
+    _intrInitServiceTable(pGpu, pIntr);
+
+exit:
+
+    return status;
+}
+
+NV_STATUS
 intrStateInitUnlocked_IMPL
 (
     OBJGPU *pGpu,
@@ -797,7 +831,6 @@ intrStateInitUnlocked_IMPL
 )
 {
     NvU32 data = 0;
-    NvU32 i;
 
     if (osReadRegistryDword(pGpu,
                             NV_REG_STR_RM_INTR_DETAILED_LOGS, &data) == NV_OK)
@@ -812,12 +845,6 @@ intrStateInitUnlocked_IMPL
 
     _intrInitRegistryOverrides(pGpu, pIntr);
 
-    for (i = 0; i < NV_ARRAY_ELEMENTS(pIntr->subtreeMap); ++i)
-    {
-        pIntr->subtreeMap[i].subtreeStart = NV2080_INTR_INVALID_SUBTREE;
-        pIntr->subtreeMap[i].subtreeEnd   = NV2080_INTR_INVALID_SUBTREE;
-    }
-
     return NV_OK;
 }
 
@@ -829,7 +856,6 @@ intrStateInitLocked_IMPL
     Intr     *pIntr
 )
 {
-    NV_STATUS status = NV_OK;
     // Enable interrupts in the HAL
     pIntr->halIntrEnabled = NV_TRUE;
 
@@ -847,12 +873,8 @@ intrStateInitLocked_IMPL
         pKernelGmmu->uvmSharedIntrRmOwnsMask = RM_UVM_SHARED_INTR_MASK_ALL;
     }
 
-    NV_ASSERT_OK_OR_GOTO(status, intrInitInterruptTable_HAL(pGpu, pIntr), exit);
-    _intrInitServiceTable(pGpu, pIntr);
-
     if (pIntr->getProperty(pIntr, PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING))
     {
-        intrGetIntrMask_HAL(pGpu, pIntr, &pIntr->intrMask.engMaskOrig, NULL /* threadstate */);
         if (RMCFG_FEATURE_PLATFORM_WINDOWS)
         {
             MC_ENGINE_BITVECTOR engines;
@@ -866,9 +888,7 @@ intrStateInitLocked_IMPL
         // Hypervisor will set the intr unblocked mask later at the time of SWRL init.
     }
 
-exit:
-
-    return status;
+    return NV_OK;
 }
 
 void
@@ -954,8 +974,7 @@ _intrInitRegistryOverrides
     if (RMCFG_FEATURE_PLATFORM_WINDOWS || hypervisorIsVgxHyper())
     {
         // Enable IntrMask Locking by default if supported
-        if (pIntr->getProperty(pIntr, PDB_PROP_INTR_MASK_SUPPORTED) &&
-            (!IS_VIRTUAL(pGpu) && !IS_GSP_CLIENT(pGpu)))
+        if (pIntr->getProperty(pIntr, PDB_PROP_INTR_MASK_SUPPORTED) && !IS_VIRTUAL(pGpu))
         {
             pIntr->setProperty(pIntr, PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING, NV_TRUE);
         }
@@ -1072,18 +1091,14 @@ _intrInitServiceTable
     Intr *pIntr
 )
 {
-    ENGSTATE_ITER iter = gpuGetEngstateIter(pGpu);
-    OBJENGSTATE *pEngstate;
+    GPU_CHILD_ITER iter = {0};
+    IntrService *pIntrService;
 
     portMemSet(pIntr->intrServiceTable, 0, sizeof(pIntr->intrServiceTable));
 
-    while (gpuGetNextEngstate(pGpu, &iter, &pEngstate))
+    while ((pIntrService = GPU_GET_NEXT_CHILD_OF_TYPE(pGpu, &iter, IntrService)))
     {
-        IntrService *pIntrService = dynamicCast(pEngstate, IntrService);
-        if (pIntrService != NULL)
-        {
-            intrservRegisterIntrService(pGpu, pIntrService, pIntr->intrServiceTable);
-        }
+        intrservRegisterIntrService(pGpu, pIntrService, pIntr->intrServiceTable);
     }
 
     gpuRegisterGenericKernelFalconIntrService(pGpu, pIntr->intrServiceTable);
@@ -1121,10 +1136,9 @@ NvU32 intrServiceInterruptRecords_IMPL
 
     if (bShouldService)
     {
-        GSP_TRACE_RATS_ADD_RECORD(NV_RATS_GSP_TRACE_TYPE_INTR_INFO, pGpu, (NvU32) engineIdx);
         GSP_TRACE_RATS_ADD_RECORD(NV_RATS_GSP_TRACE_TYPE_INTR_START, pGpu, 0);
         ret = intrservServiceInterrupt(pGpu, pIntrService, &serviceParams);
-        GSP_TRACE_RATS_ADD_RECORD(NV_RATS_GSP_TRACE_TYPE_INTR_END, pGpu, 0);
+        GSP_TRACE_RATS_ADD_RECORD(NV_RATS_GSP_TRACE_TYPE_INTR_END, pGpu, (NvU32) engineIdx);
     }
     return ret;
 }
@@ -1775,5 +1789,80 @@ NV_STATUS intrSetInterruptEntry_IMPL
         pIntr->vectorToMcIdx[tree][vector].mcEngine == MC_ENGINE_IDX_NULL,
         NV_ERR_INVALID_STATE);
     pIntr->vectorToMcIdx[tree][vector] = *pEntry;
+    return NV_OK;
+}
+
+
+NvU64
+intrGetUvmSharedLeafEnDisableMask_IMPL
+(
+    OBJGPU *pGpu,
+    Intr   *pIntr
+)
+{
+    NvU64 mask = 0;
+    NV2080_INTR_CATEGORY_SUBTREE_MAP uvmShared;
+
+    // GSP RM services both MMU non-replayable fault and FIFO interrupts
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        return ~mask;
+    }
+
+    NvU32 locklessRmVectors[2];
+    intrGetLocklessVectorsInRmSubtree_HAL(pGpu, pIntr, &locklessRmVectors);
+
+    NV_ASSERT_OK(intrGetSubtreeRange(pIntr,
+                                     NV2080_INTR_CATEGORY_UVM_SHARED,
+                                     &uvmShared));
+    //
+    // Ascertain that we only have 1 client subtree (we assume
+    // this since we cache only 64 bits).
+    //
+    NV_ASSERT(uvmShared.subtreeStart == uvmShared.subtreeEnd);
+
+    //
+    // Ascertain that we only have 2 subtrees as this is what we currently
+    // support by only caching 64 bits
+    //
+    NV_ASSERT(
+        (NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_END(uvmShared.subtreeEnd) - 1) ==
+        NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_START(uvmShared.subtreeStart));
+
+    NvU32 i;
+    for (i = 0; i < NV_ARRAY_ELEMENTS(locklessRmVectors); ++i)
+    {
+        NvU32 vector = locklessRmVectors[i];
+        if (vector == NV_INTR_VECTOR_INVALID)
+        {
+            continue;
+        }
+
+        // Ascertain that they're in the first leaf
+        NV_ASSERT(
+            NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_REG(vector) ==
+            NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_START(uvmShared.subtreeStart));
+
+        mask |= NVBIT64(NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_BIT(vector));
+    }
+
+    mask <<= 32;
+
+    return ~mask;
+}
+
+NV_STATUS
+intrRefetchInterruptTable_IMPL
+(
+    OBJGPU *pGpu,
+    Intr   *pIntr
+)
+{
+    NV_ASSERT_OK_OR_RETURN(intrStateUnload_HAL(pGpu, pIntr, GPU_STATE_FLAGS_PRESERVING));
+
+    NV_ASSERT_OK_OR_RETURN(intrInitInterruptTable_HAL(pGpu, pIntr));
+
+    NV_ASSERT_OK_OR_RETURN(intrStateLoad_HAL(pGpu, pIntr, GPU_STATE_FLAGS_PRESERVING));
+
     return NV_OK;
 }

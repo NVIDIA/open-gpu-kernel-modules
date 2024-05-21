@@ -102,141 +102,181 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelGsp =
     /*pExportInfo=*/        &__nvoc_export_info_KernelGsp
 };
 
-static NV_STATUS __nvoc_thunk_KernelGsp_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelGsp, ENGDESCRIPTOR arg0) {
-    return kgspConstructEngine(pGpu, (struct KernelGsp *)(((unsigned char *)pKernelGsp) - __nvoc_rtti_KernelGsp_OBJENGSTATE.offset), arg0);
+// 5 down-thunk(s) defined to bridge methods in KernelGsp from superclasses
+
+// kgspConstructEngine: virtual override (engstate) base (engstate)
+static NV_STATUS __nvoc_down_thunk_KernelGsp_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelGsp, ENGDESCRIPTOR arg3) {
+    return kgspConstructEngine(pGpu, (struct KernelGsp *)(((unsigned char *) pKernelGsp) - __nvoc_rtti_KernelGsp_OBJENGSTATE.offset), arg3);
 }
 
-static void __nvoc_thunk_KernelGsp_intrservRegisterIntrService(struct OBJGPU *pGpu, struct IntrService *pKernelGsp, IntrServiceRecord pRecords[171]) {
-    kgspRegisterIntrService(pGpu, (struct KernelGsp *)(((unsigned char *)pKernelGsp) - __nvoc_rtti_KernelGsp_IntrService.offset), pRecords);
+// kgspRegisterIntrService: virtual override (intrserv) base (intrserv)
+static void __nvoc_down_thunk_KernelGsp_intrservRegisterIntrService(struct OBJGPU *pGpu, struct IntrService *pKernelGsp, IntrServiceRecord pRecords[175]) {
+    kgspRegisterIntrService(pGpu, (struct KernelGsp *)(((unsigned char *) pKernelGsp) - __nvoc_rtti_KernelGsp_IntrService.offset), pRecords);
 }
 
-static NvU32 __nvoc_thunk_KernelGsp_intrservServiceInterrupt(struct OBJGPU *pGpu, struct IntrService *pKernelGsp, IntrServiceServiceInterruptArguments *pParams) {
-    return kgspServiceInterrupt(pGpu, (struct KernelGsp *)(((unsigned char *)pKernelGsp) - __nvoc_rtti_KernelGsp_IntrService.offset), pParams);
+// kgspServiceInterrupt: virtual override (intrserv) base (intrserv)
+static NvU32 __nvoc_down_thunk_KernelGsp_intrservServiceInterrupt(struct OBJGPU *pGpu, struct IntrService *pKernelGsp, IntrServiceServiceInterruptArguments *pParams) {
+    return kgspServiceInterrupt(pGpu, (struct KernelGsp *)(((unsigned char *) pKernelGsp) - __nvoc_rtti_KernelGsp_IntrService.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_KernelGsp_kflcnResetHw(struct OBJGPU *pGpu, struct KernelFalcon *pKernelGsp) {
-    return kgspResetHw(pGpu, (struct KernelGsp *)(((unsigned char *)pKernelGsp) - __nvoc_rtti_KernelGsp_KernelFalcon.offset));
+// kgspResetHw: virtual halified (3 hals) override (kflcn) base (kflcn) body
+static NV_STATUS __nvoc_down_thunk_KernelGsp_kflcnResetHw(struct OBJGPU *pGpu, struct KernelFalcon *pKernelGsp) {
+    return kgspResetHw(pGpu, (struct KernelGsp *)(((unsigned char *) pKernelGsp) - __nvoc_rtti_KernelGsp_KernelFalcon.offset));
 }
 
-static void __nvoc_thunk_KernelGsp_kcrashcatEngineReadEmem(struct KernelCrashCatEngine *pKernelGsp, NvU64 offset, NvU64 size, void *pBuf) {
-    kgspReadEmem((struct KernelGsp *)(((unsigned char *)pKernelGsp) - __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset), offset, size, pBuf);
+// kgspReadEmem: virtual halified (2 hals) override (kcrashcatEngine) base (kflcn) body
+static void __nvoc_down_thunk_KernelGsp_kcrashcatEngineReadEmem(struct KernelCrashCatEngine *pKernelGsp, NvU64 offset, NvU64 size, void *pBuf) {
+    kgspReadEmem((struct KernelGsp *)(((unsigned char *) pKernelGsp) - __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset), offset, size, pBuf);
 }
 
-static NvBool __nvoc_thunk_KernelCrashCatEngine_kgspConfigured(struct KernelGsp *arg0) {
-    return kcrashcatEngineConfigured((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset));
+
+// 29 up-thunk(s) defined to bridge methods in KernelGsp to superclasses
+
+// kgspInitMissing: virtual inherited (engstate) base (engstate)
+static void __nvoc_up_thunk_OBJENGSTATE_kgspInitMissing(POBJGPU pGpu, struct KernelGsp *pEngstate) {
+    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset));
 }
 
-static NvU32 __nvoc_thunk_KernelCrashCatEngine_kgspPriRead(struct KernelGsp *arg0, NvU32 offset) {
-    return kcrashcatEnginePriRead((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset), offset);
+// kgspStatePreInitLocked: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspStatePreInitLocked(POBJGPU pGpu, struct KernelGsp *pEngstate) {
+    return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset));
 }
 
-static void __nvoc_thunk_KernelFalcon_kgspRegWrite(struct OBJGPU *pGpu, struct KernelGsp *pKernelFlcn, NvU32 offset, NvU32 data) {
-    kflcnRegWrite(pGpu, (struct KernelFalcon *)(((unsigned char *)pKernelFlcn) + __nvoc_rtti_KernelGsp_KernelFalcon.offset), offset, data);
+// kgspStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspStatePreInitUnlocked(POBJGPU pGpu, struct KernelGsp *pEngstate) {
+    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset));
 }
 
-static NvU32 __nvoc_thunk_KernelFalcon_kgspMaskDmemAddr(struct OBJGPU *pGpu, struct KernelGsp *pKernelFlcn, NvU32 addr) {
-    return kflcnMaskDmemAddr(pGpu, (struct KernelFalcon *)(((unsigned char *)pKernelFlcn) + __nvoc_rtti_KernelGsp_KernelFalcon.offset), addr);
+// kgspStateInitLocked: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspStateInitLocked(POBJGPU pGpu, struct KernelGsp *pEngstate) {
+    return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset));
 }
 
-static void __nvoc_thunk_OBJENGSTATE_kgspStateDestroy(POBJGPU pGpu, struct KernelGsp *pEngstate) {
-    engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset));
+// kgspStateInitUnlocked: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspStateInitUnlocked(POBJGPU pGpu, struct KernelGsp *pEngstate) {
+    return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset));
 }
 
-static void __nvoc_thunk_KernelCrashCatEngine_kgspVprintf(struct KernelGsp *arg0, NvBool bReportStart, const char *fmt, va_list args) {
-    kcrashcatEngineVprintf((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset), bReportStart, fmt, args);
+// kgspStatePreLoad: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspStatePreLoad(POBJGPU pGpu, struct KernelGsp *pEngstate, NvU32 arg3) {
+    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset), arg3);
 }
 
-static NvBool __nvoc_thunk_IntrService_kgspClearInterrupt(struct OBJGPU *pGpu, struct KernelGsp *pIntrService, IntrServiceClearInterruptArguments *pParams) {
-    return intrservClearInterrupt(pGpu, (struct IntrService *)(((unsigned char *)pIntrService) + __nvoc_rtti_KernelGsp_IntrService.offset), pParams);
+// kgspStateLoad: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspStateLoad(POBJGPU pGpu, struct KernelGsp *pEngstate, NvU32 arg3) {
+    return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset), arg3);
 }
 
-static void __nvoc_thunk_KernelCrashCatEngine_kgspPriWrite(struct KernelGsp *arg0, NvU32 offset, NvU32 data) {
-    kcrashcatEnginePriWrite((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset), offset, data);
+// kgspStatePostLoad: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspStatePostLoad(POBJGPU pGpu, struct KernelGsp *pEngstate, NvU32 arg3) {
+    return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset), arg3);
 }
 
-static void *__nvoc_thunk_KernelCrashCatEngine_kgspMapBufferDescriptor(struct KernelGsp *arg0, CrashCatBufferDescriptor *pBufDesc) {
-    return kcrashcatEngineMapBufferDescriptor((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset), pBufDesc);
+// kgspStatePreUnload: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspStatePreUnload(POBJGPU pGpu, struct KernelGsp *pEngstate, NvU32 arg3) {
+    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset), arg3);
 }
 
-static void __nvoc_thunk_KernelCrashCatEngine_kgspSyncBufferDescriptor(struct KernelGsp *arg0, CrashCatBufferDescriptor *pBufDesc, NvU32 offset, NvU32 size) {
-    kcrashcatEngineSyncBufferDescriptor((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset), pBufDesc, offset, size);
+// kgspStateUnload: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspStateUnload(POBJGPU pGpu, struct KernelGsp *pEngstate, NvU32 arg3) {
+    return engstateStateUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset), arg3);
 }
 
-static NvU32 __nvoc_thunk_KernelFalcon_kgspRegRead(struct OBJGPU *pGpu, struct KernelGsp *pKernelFlcn, NvU32 offset) {
-    return kflcnRegRead(pGpu, (struct KernelFalcon *)(((unsigned char *)pKernelFlcn) + __nvoc_rtti_KernelGsp_KernelFalcon.offset), offset);
+// kgspStatePostUnload: virtual inherited (engstate) base (engstate)
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspStatePostUnload(POBJGPU pGpu, struct KernelGsp *pEngstate, NvU32 arg3) {
+    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset), arg3);
 }
 
-static NvBool __nvoc_thunk_OBJENGSTATE_kgspIsPresent(POBJGPU pGpu, struct KernelGsp *pEngstate) {
-    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset));
+// kgspStateDestroy: virtual inherited (engstate) base (engstate)
+static void __nvoc_up_thunk_OBJENGSTATE_kgspStateDestroy(POBJGPU pGpu, struct KernelGsp *pEngstate) {
+    engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgspStateLoad(POBJGPU pGpu, struct KernelGsp *pEngstate, NvU32 arg0) {
-    return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset), arg0);
+// kgspIsPresent: virtual inherited (engstate) base (engstate)
+static NvBool __nvoc_up_thunk_OBJENGSTATE_kgspIsPresent(POBJGPU pGpu, struct KernelGsp *pEngstate) {
+    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset));
 }
 
-static const NvU32 *__nvoc_thunk_KernelCrashCatEngine_kgspGetScratchOffsets(struct KernelGsp *arg0, NV_CRASHCAT_SCRATCH_GROUP_ID scratchGroupId) {
-    return kcrashcatEngineGetScratchOffsets((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset), scratchGroupId);
+// kgspClearInterrupt: virtual inherited (intrserv) base (intrserv)
+static NvBool __nvoc_up_thunk_IntrService_kgspClearInterrupt(struct OBJGPU *pGpu, struct KernelGsp *pIntrService, IntrServiceClearInterruptArguments *pParams) {
+    return intrservClearInterrupt(pGpu, (struct IntrService *)(((unsigned char *) pIntrService) + __nvoc_rtti_KernelGsp_IntrService.offset), pParams);
 }
 
-static void __nvoc_thunk_KernelCrashCatEngine_kgspUnload(struct KernelGsp *arg0) {
-    kcrashcatEngineUnload((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset));
+// kgspServiceNotificationInterrupt: virtual inherited (intrserv) base (intrserv)
+static NV_STATUS __nvoc_up_thunk_IntrService_kgspServiceNotificationInterrupt(struct OBJGPU *pGpu, struct KernelGsp *pIntrService, IntrServiceServiceNotificationInterruptArguments *pParams) {
+    return intrservServiceNotificationInterrupt(pGpu, (struct IntrService *)(((unsigned char *) pIntrService) + __nvoc_rtti_KernelGsp_IntrService.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgspStateUnload(POBJGPU pGpu, struct KernelGsp *pEngstate, NvU32 arg0) {
-    return engstateStateUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset), arg0);
+// kgspRegRead: virtual halified (2 hals) inherited (kflcn) base (kflcn) body
+static NvU32 __nvoc_up_thunk_KernelFalcon_kgspRegRead(struct OBJGPU *pGpu, struct KernelGsp *pKernelFlcn, NvU32 offset) {
+    return kflcnRegRead(pGpu, (struct KernelFalcon *)(((unsigned char *) pKernelFlcn) + __nvoc_rtti_KernelGsp_KernelFalcon.offset), offset);
 }
 
-static NV_STATUS __nvoc_thunk_IntrService_kgspServiceNotificationInterrupt(struct OBJGPU *pGpu, struct KernelGsp *pIntrService, IntrServiceServiceNotificationInterruptArguments *pParams) {
-    return intrservServiceNotificationInterrupt(pGpu, (struct IntrService *)(((unsigned char *)pIntrService) + __nvoc_rtti_KernelGsp_IntrService.offset), pParams);
+// kgspRegWrite: virtual halified (2 hals) inherited (kflcn) base (kflcn) body
+static void __nvoc_up_thunk_KernelFalcon_kgspRegWrite(struct OBJGPU *pGpu, struct KernelGsp *pKernelFlcn, NvU32 offset, NvU32 data) {
+    kflcnRegWrite(pGpu, (struct KernelFalcon *)(((unsigned char *) pKernelFlcn) + __nvoc_rtti_KernelGsp_KernelFalcon.offset), offset, data);
 }
 
-static NvU32 __nvoc_thunk_KernelCrashCatEngine_kgspGetWFL0Offset(struct KernelGsp *arg0) {
-    return kcrashcatEngineGetWFL0Offset((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset));
+// kgspMaskDmemAddr: virtual halified (3 hals) inherited (kflcn) base (kflcn) body
+static NvU32 __nvoc_up_thunk_KernelFalcon_kgspMaskDmemAddr(struct OBJGPU *pGpu, struct KernelGsp *pKernelFlcn, NvU32 addr) {
+    return kflcnMaskDmemAddr(pGpu, (struct KernelFalcon *)(((unsigned char *) pKernelFlcn) + __nvoc_rtti_KernelGsp_KernelFalcon.offset), addr);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgspStateInitLocked(POBJGPU pGpu, struct KernelGsp *pEngstate) {
-    return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset));
+// kgspConfigured: virtual inherited (kcrashcatEngine) base (kflcn)
+static NvBool __nvoc_up_thunk_KernelCrashCatEngine_kgspConfigured(struct KernelGsp *arg_this) {
+    return kcrashcatEngineConfigured((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgspStatePreLoad(POBJGPU pGpu, struct KernelGsp *pEngstate, NvU32 arg0) {
-    return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset), arg0);
+// kgspUnload: virtual inherited (kcrashcatEngine) base (kflcn)
+static void __nvoc_up_thunk_KernelCrashCatEngine_kgspUnload(struct KernelGsp *arg_this) {
+    kcrashcatEngineUnload((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgspStatePostUnload(POBJGPU pGpu, struct KernelGsp *pEngstate, NvU32 arg0) {
-    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset), arg0);
+// kgspVprintf: virtual inherited (kcrashcatEngine) base (kflcn)
+static void __nvoc_up_thunk_KernelCrashCatEngine_kgspVprintf(struct KernelGsp *arg_this, NvBool bReportStart, const char *fmt, va_list args) {
+    kcrashcatEngineVprintf((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset), bReportStart, fmt, args);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgspStatePreUnload(POBJGPU pGpu, struct KernelGsp *pEngstate, NvU32 arg0) {
-    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset), arg0);
+// kgspPriRead: virtual inherited (kcrashcatEngine) base (kflcn)
+static NvU32 __nvoc_up_thunk_KernelCrashCatEngine_kgspPriRead(struct KernelGsp *arg_this, NvU32 offset) {
+    return kcrashcatEnginePriRead((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset), offset);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgspStateInitUnlocked(POBJGPU pGpu, struct KernelGsp *pEngstate) {
-    return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset));
+// kgspPriWrite: virtual inherited (kcrashcatEngine) base (kflcn)
+static void __nvoc_up_thunk_KernelCrashCatEngine_kgspPriWrite(struct KernelGsp *arg_this, NvU32 offset, NvU32 data) {
+    kcrashcatEnginePriWrite((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset), offset, data);
 }
 
-static void __nvoc_thunk_OBJENGSTATE_kgspInitMissing(POBJGPU pGpu, struct KernelGsp *pEngstate) {
-    engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset));
+// kgspMapBufferDescriptor: virtual inherited (kcrashcatEngine) base (kflcn)
+static void * __nvoc_up_thunk_KernelCrashCatEngine_kgspMapBufferDescriptor(struct KernelGsp *arg_this, CrashCatBufferDescriptor *pBufDesc) {
+    return kcrashcatEngineMapBufferDescriptor((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset), pBufDesc);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgspStatePreInitLocked(POBJGPU pGpu, struct KernelGsp *pEngstate) {
-    return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset));
+// kgspUnmapBufferDescriptor: virtual inherited (kcrashcatEngine) base (kflcn)
+static void __nvoc_up_thunk_KernelCrashCatEngine_kgspUnmapBufferDescriptor(struct KernelGsp *arg_this, CrashCatBufferDescriptor *pBufDesc) {
+    kcrashcatEngineUnmapBufferDescriptor((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset), pBufDesc);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgspStatePreInitUnlocked(POBJGPU pGpu, struct KernelGsp *pEngstate) {
-    return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset));
+// kgspSyncBufferDescriptor: virtual inherited (kcrashcatEngine) base (kflcn)
+static void __nvoc_up_thunk_KernelCrashCatEngine_kgspSyncBufferDescriptor(struct KernelGsp *arg_this, CrashCatBufferDescriptor *pBufDesc, NvU32 offset, NvU32 size) {
+    kcrashcatEngineSyncBufferDescriptor((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset), pBufDesc, offset, size);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgspStatePostLoad(POBJGPU pGpu, struct KernelGsp *pEngstate, NvU32 arg0) {
-    return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset), arg0);
+// kgspReadDmem: virtual halified (singleton optimized) inherited (kcrashcatEngine) base (kflcn)
+static void __nvoc_up_thunk_KernelCrashCatEngine_kgspReadDmem(struct KernelGsp *arg_this, NvU32 offset, NvU32 size, void *pBuf) {
+    kcrashcatEngineReadDmem((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset), offset, size, pBuf);
 }
 
-static void __nvoc_thunk_KernelCrashCatEngine_kgspUnmapBufferDescriptor(struct KernelGsp *arg0, CrashCatBufferDescriptor *pBufDesc) {
-    kcrashcatEngineUnmapBufferDescriptor((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset), pBufDesc);
+// kgspGetScratchOffsets: virtual halified (singleton optimized) inherited (kcrashcatEngine) base (kflcn)
+static const NvU32 * __nvoc_up_thunk_KernelCrashCatEngine_kgspGetScratchOffsets(struct KernelGsp *arg_this, NV_CRASHCAT_SCRATCH_GROUP_ID scratchGroupId) {
+    return kcrashcatEngineGetScratchOffsets((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset), scratchGroupId);
 }
 
-static void __nvoc_thunk_KernelCrashCatEngine_kgspReadDmem(struct KernelGsp *arg0, NvU32 offset, NvU32 size, void *pBuf) {
-    kcrashcatEngineReadDmem((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset), offset, size, pBuf);
+// kgspGetWFL0Offset: virtual halified (singleton optimized) inherited (kcrashcatEngine) base (kflcn)
+static NvU32 __nvoc_up_thunk_KernelCrashCatEngine_kgspGetWFL0Offset(struct KernelGsp *arg_this) {
+    return kcrashcatEngineGetWFL0Offset((struct KernelCrashCatEngine *)(((unsigned char *) arg_this) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset));
 }
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelGsp = 
 {
@@ -266,9 +306,6 @@ void __nvoc_init_dataField_KernelGsp(KernelGsp *pThis, RmHalspecOwner *pRmhalspe
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
-
-    // Hal field -- bIsTaskIsrQueueRequired
-    pThis->bIsTaskIsrQueueRequired = ((NvBool)(0 != 0));
 
     // Hal field -- bPartitionedFmc
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
@@ -353,6 +390,7 @@ __nvoc_ctor_KernelGsp_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *pRmhalspecowner) {
     ChipHal *chipHal = &pRmhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
@@ -365,13 +403,19 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
+    // kgspConstructEngine -- virtual override (engstate) base (engstate)
     pThis->__kgspConstructEngine__ = &kgspConstructEngine_IMPL;
+    pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_down_thunk_KernelGsp_engstateConstructEngine;
 
+    // kgspRegisterIntrService -- virtual override (intrserv) base (intrserv)
     pThis->__kgspRegisterIntrService__ = &kgspRegisterIntrService_IMPL;
+    pThis->__nvoc_base_IntrService.__intrservRegisterIntrService__ = &__nvoc_down_thunk_KernelGsp_intrservRegisterIntrService;
 
+    // kgspServiceInterrupt -- virtual override (intrserv) base (intrserv)
     pThis->__kgspServiceInterrupt__ = &kgspServiceInterrupt_IMPL;
+    pThis->__nvoc_base_IntrService.__intrservServiceInterrupt__ = &__nvoc_down_thunk_KernelGsp_intrservServiceInterrupt;
 
-    // Hal function -- kgspConfigureFalcon
+    // kgspConfigureFalcon -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspConfigureFalcon__ = &kgspConfigureFalcon_f2d351;
@@ -388,7 +432,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspIsDebugModeEnabled
+    // kgspIsDebugModeEnabled -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspIsDebugModeEnabled__ = &kgspIsDebugModeEnabled_108313;
@@ -405,7 +449,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspAllocBootArgs
+    // kgspAllocBootArgs -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspAllocBootArgs__ = &kgspAllocBootArgs_5baef9;
@@ -422,7 +466,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspFreeBootArgs
+    // kgspFreeBootArgs -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspFreeBootArgs__ = &kgspFreeBootArgs_f2d351;
@@ -439,7 +483,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspProgramLibosBootArgsAddr
+    // kgspProgramLibosBootArgsAddr -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspProgramLibosBootArgsAddr__ = &kgspProgramLibosBootArgsAddr_f2d351;
@@ -449,7 +493,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         pThis->__kgspProgramLibosBootArgsAddr__ = &kgspProgramLibosBootArgsAddr_TU102;
     }
 
-    // Hal function -- kgspSetCmdQueueHead
+    // kgspSetCmdQueueHead -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspSetCmdQueueHead__ = &kgspSetCmdQueueHead_5baef9;
@@ -459,7 +503,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         pThis->__kgspSetCmdQueueHead__ = &kgspSetCmdQueueHead_TU102;
     }
 
-    // Hal function -- kgspPrepareForBootstrap
+    // kgspPrepareForBootstrap -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspPrepareForBootstrap__ = &kgspPrepareForBootstrap_5baef9;
@@ -476,7 +520,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspBootstrap
+    // kgspBootstrap -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspBootstrap__ = &kgspBootstrap_5baef9;
@@ -493,7 +537,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspGetGspRmBootUcodeStorage
+    // kgspGetGspRmBootUcodeStorage -- halified (4 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspGetGspRmBootUcodeStorage__ = &kgspGetGspRmBootUcodeStorage_f2d351;
@@ -514,7 +558,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspGetBinArchiveGspRmBoot
+    // kgspGetBinArchiveGspRmBoot -- halified (6 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspGetBinArchiveGspRmBoot__ = &kgspGetBinArchiveGspRmBoot_80f438;
@@ -543,7 +587,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspGetBinArchiveConcatenatedFMCDesc
+    // kgspGetBinArchiveConcatenatedFMCDesc -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspGetBinArchiveConcatenatedFMCDesc__ = &kgspGetBinArchiveConcatenatedFMCDesc_80f438;
@@ -560,7 +604,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspGetBinArchiveConcatenatedFMC
+    // kgspGetBinArchiveConcatenatedFMC -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspGetBinArchiveConcatenatedFMC__ = &kgspGetBinArchiveConcatenatedFMC_80f438;
@@ -577,7 +621,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspGetBinArchiveGspRmFmcGfwDebugSigned
+    // kgspGetBinArchiveGspRmFmcGfwDebugSigned -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspGetBinArchiveGspRmFmcGfwDebugSigned__ = &kgspGetBinArchiveGspRmFmcGfwDebugSigned_80f438;
@@ -595,7 +639,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspGetBinArchiveGspRmFmcGfwProdSigned
+    // kgspGetBinArchiveGspRmFmcGfwProdSigned -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspGetBinArchiveGspRmFmcGfwProdSigned__ = &kgspGetBinArchiveGspRmFmcGfwProdSigned_80f438;
@@ -613,7 +657,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspGetBinArchiveGspRmCcFmcGfwProdSigned
+    // kgspGetBinArchiveGspRmCcFmcGfwProdSigned -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspGetBinArchiveGspRmCcFmcGfwProdSigned__ = &kgspGetBinArchiveGspRmCcFmcGfwProdSigned_80f438;
@@ -631,7 +675,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspCalculateFbLayout
+    // kgspCalculateFbLayout -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspCalculateFbLayout__ = &kgspCalculateFbLayout_5baef9;
@@ -648,7 +692,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspGetNonWprHeapSize
+    // kgspGetNonWprHeapSize -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspGetNonWprHeapSize__ = &kgspGetNonWprHeapSize_5baef9;
@@ -665,7 +709,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspExecuteSequencerCommand
+    // kgspExecuteSequencerCommand -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspExecuteSequencerCommand__ = &kgspExecuteSequencerCommand_5baef9;
@@ -682,7 +726,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspReadUcodeFuseVersion
+    // kgspReadUcodeFuseVersion -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspReadUcodeFuseVersion__ = &kgspReadUcodeFuseVersion_474d46;
@@ -699,7 +743,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspResetHw
+    // kgspResetHw -- virtual halified (3 hals) override (kflcn) base (kflcn) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspResetHw__ = &kgspResetHw_5baef9;
@@ -715,8 +759,9 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
             pThis->__kgspResetHw__ = &kgspResetHw_TU102;
         }
     }
+    pThis->__nvoc_base_KernelFalcon.__kflcnResetHw__ = &__nvoc_down_thunk_KernelGsp_kflcnResetHw;
 
-    // Hal function -- kgspHealthCheck
+    // kgspHealthCheck -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspHealthCheck__ = &kgspHealthCheck_108313;
@@ -726,7 +771,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         pThis->__kgspHealthCheck__ = &kgspHealthCheck_TU102;
     }
 
-    // Hal function -- kgspService
+    // kgspService -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspService__ = &kgspService_474d46;
@@ -736,7 +781,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         pThis->__kgspService__ = &kgspService_TU102;
     }
 
-    // Hal function -- kgspIsWpr2Up
+    // kgspIsWpr2Up -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspIsWpr2Up__ = &kgspIsWpr2Up_108313;
@@ -753,7 +798,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspGetFrtsSize
+    // kgspGetFrtsSize -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspGetFrtsSize__ = &kgspGetFrtsSize_474d46;
@@ -770,7 +815,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspGetPrescrubbedTopFbSize
+    // kgspGetPrescrubbedTopFbSize -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspGetPrescrubbedTopFbSize__ = &kgspGetPrescrubbedTopFbSize_474d46;
@@ -787,7 +832,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspExtractVbiosFromRom
+    // kgspExtractVbiosFromRom -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspExtractVbiosFromRom__ = &kgspExtractVbiosFromRom_5baef9;
@@ -804,7 +849,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspPrepareForFwsecFrts
+    // kgspPrepareForFwsecFrts -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspPrepareForFwsecFrts__ = &kgspPrepareForFwsecFrts_5baef9;
@@ -821,7 +866,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspPrepareForFwsecSb
+    // kgspPrepareForFwsecSb -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspPrepareForFwsecSb__ = &kgspPrepareForFwsecSb_5baef9;
@@ -838,7 +883,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspExecuteFwsec
+    // kgspExecuteFwsec -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspExecuteFwsec__ = &kgspExecuteFwsec_5baef9;
@@ -855,7 +900,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspExecuteScrubberIfNeeded
+    // kgspExecuteScrubberIfNeeded -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspExecuteScrubberIfNeeded__ = &kgspExecuteScrubberIfNeeded_5baef9;
@@ -872,7 +917,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspExecuteBooterLoad
+    // kgspExecuteBooterLoad -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspExecuteBooterLoad__ = &kgspExecuteBooterLoad_5baef9;
@@ -889,7 +934,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspExecuteBooterUnloadIfNeeded
+    // kgspExecuteBooterUnloadIfNeeded -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspExecuteBooterUnloadIfNeeded__ = &kgspExecuteBooterUnloadIfNeeded_5baef9;
@@ -906,7 +951,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspExecuteHsFalcon
+    // kgspExecuteHsFalcon -- halified (4 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspExecuteHsFalcon__ = &kgspExecuteHsFalcon_5baef9;
@@ -927,7 +972,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspWaitForProcessorSuspend
+    // kgspWaitForProcessorSuspend -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspWaitForProcessorSuspend__ = &kgspWaitForProcessorSuspend_5baef9;
@@ -937,7 +982,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         pThis->__kgspWaitForProcessorSuspend__ = &kgspWaitForProcessorSuspend_TU102;
     }
 
-    // Hal function -- kgspSavePowerMgmtState
+    // kgspSavePowerMgmtState -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspSavePowerMgmtState__ = &kgspSavePowerMgmtState_5baef9;
@@ -947,7 +992,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         pThis->__kgspSavePowerMgmtState__ = &kgspSavePowerMgmtState_TU102;
     }
 
-    // Hal function -- kgspRestorePowerMgmtState
+    // kgspRestorePowerMgmtState -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspRestorePowerMgmtState__ = &kgspRestorePowerMgmtState_5baef9;
@@ -957,7 +1002,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         pThis->__kgspRestorePowerMgmtState__ = &kgspRestorePowerMgmtState_TU102;
     }
 
-    // Hal function -- kgspFreeSuspendResumeData
+    // kgspFreeSuspendResumeData -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspFreeSuspendResumeData__ = &kgspFreeSuspendResumeData_f2d351;
@@ -967,7 +1012,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         pThis->__kgspFreeSuspendResumeData__ = &kgspFreeSuspendResumeData_TU102;
     }
 
-    // Hal function -- kgspWaitForGfwBootOk
+    // kgspWaitForGfwBootOk -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspWaitForGfwBootOk__ = &kgspWaitForGfwBootOk_5baef9;
@@ -984,7 +1029,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspGetBinArchiveBooterLoadUcode
+    // kgspGetBinArchiveBooterLoadUcode -- halified (7 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspGetBinArchiveBooterLoadUcode__ = &kgspGetBinArchiveBooterLoadUcode_80f438;
@@ -1017,7 +1062,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspGetBinArchiveBooterUnloadUcode
+    // kgspGetBinArchiveBooterUnloadUcode -- halified (7 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspGetBinArchiveBooterUnloadUcode__ = &kgspGetBinArchiveBooterUnloadUcode_80f438;
@@ -1050,7 +1095,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspGetMinWprHeapSizeMB
+    // kgspGetMinWprHeapSizeMB -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspGetMinWprHeapSizeMB__ = &kgspGetMinWprHeapSizeMB_b2b553;
@@ -1067,7 +1112,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspGetMaxWprHeapSizeMB
+    // kgspGetMaxWprHeapSizeMB -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspGetMaxWprHeapSizeMB__ = &kgspGetMaxWprHeapSizeMB_b2b553;
@@ -1084,7 +1129,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspGetFwHeapParamOsCarveoutSize
+    // kgspGetFwHeapParamOsCarveoutSize -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspGetFwHeapParamOsCarveoutSize__ = &kgspGetFwHeapParamOsCarveoutSize_b2b553;
@@ -1101,7 +1146,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspInitVgpuPartitionLogging
+    // kgspInitVgpuPartitionLogging -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspInitVgpuPartitionLogging__ = &kgspInitVgpuPartitionLogging_395e98;
@@ -1118,7 +1163,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspFreeVgpuPartitionLogging
+    // kgspFreeVgpuPartitionLogging -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspFreeVgpuPartitionLogging__ = &kgspFreeVgpuPartitionLogging_395e98;
@@ -1135,7 +1180,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspGetSignatureSectionNamePrefix
+    // kgspGetSignatureSectionNamePrefix -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspGetSignatureSectionNamePrefix__ = &kgspGetSignatureSectionNamePrefix_80f438;
@@ -1153,7 +1198,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspSetupGspFmcArgs
+    // kgspSetupGspFmcArgs -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspSetupGspFmcArgs__ = &kgspSetupGspFmcArgs_5baef9;
@@ -1171,7 +1216,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspReadEmem
+    // kgspReadEmem -- virtual halified (2 hals) override (kcrashcatEngine) base (kflcn) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspReadEmem__ = &kgspReadEmem_366c4c;
@@ -1180,8 +1225,9 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
     {
         pThis->__kgspReadEmem__ = &kgspReadEmem_TU102;
     }
+    pThis->__nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine.__kcrashcatEngineReadEmem__ = &__nvoc_down_thunk_KernelGsp_kcrashcatEngineReadEmem;
 
-    // Hal function -- kgspIssueNotifyOp
+    // kgspIssueNotifyOp -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspIssueNotifyOp__ = &kgspIssueNotifyOp_5baef9;
@@ -1199,7 +1245,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    // Hal function -- kgspCheckGspRmCcCleanup
+    // kgspCheckGspRmCcCleanup -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgspCheckGspRmCcCleanup__ = &kgspCheckGspRmCcCleanup_5baef9;
@@ -1217,76 +1263,99 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
-    pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_thunk_KernelGsp_engstateConstructEngine;
+    // kgspInitMissing -- virtual inherited (engstate) base (engstate)
+    pThis->__kgspInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_kgspInitMissing;
 
-    pThis->__nvoc_base_IntrService.__intrservRegisterIntrService__ = &__nvoc_thunk_KernelGsp_intrservRegisterIntrService;
+    // kgspStatePreInitLocked -- virtual inherited (engstate) base (engstate)
+    pThis->__kgspStatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_kgspStatePreInitLocked;
 
-    pThis->__nvoc_base_IntrService.__intrservServiceInterrupt__ = &__nvoc_thunk_KernelGsp_intrservServiceInterrupt;
+    // kgspStatePreInitUnlocked -- virtual inherited (engstate) base (engstate)
+    pThis->__kgspStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kgspStatePreInitUnlocked;
 
-    pThis->__nvoc_base_KernelFalcon.__kflcnResetHw__ = &__nvoc_thunk_KernelGsp_kflcnResetHw;
+    // kgspStateInitLocked -- virtual inherited (engstate) base (engstate)
+    pThis->__kgspStateInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_kgspStateInitLocked;
 
-    pThis->__nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine.__kcrashcatEngineReadEmem__ = &__nvoc_thunk_KernelGsp_kcrashcatEngineReadEmem;
+    // kgspStateInitUnlocked -- virtual inherited (engstate) base (engstate)
+    pThis->__kgspStateInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kgspStateInitUnlocked;
 
-    pThis->__kgspConfigured__ = &__nvoc_thunk_KernelCrashCatEngine_kgspConfigured;
+    // kgspStatePreLoad -- virtual inherited (engstate) base (engstate)
+    pThis->__kgspStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kgspStatePreLoad;
 
-    pThis->__kgspPriRead__ = &__nvoc_thunk_KernelCrashCatEngine_kgspPriRead;
+    // kgspStateLoad -- virtual inherited (engstate) base (engstate)
+    pThis->__kgspStateLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kgspStateLoad;
 
-    pThis->__kgspRegWrite__ = &__nvoc_thunk_KernelFalcon_kgspRegWrite;
+    // kgspStatePostLoad -- virtual inherited (engstate) base (engstate)
+    pThis->__kgspStatePostLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kgspStatePostLoad;
 
-    pThis->__kgspMaskDmemAddr__ = &__nvoc_thunk_KernelFalcon_kgspMaskDmemAddr;
+    // kgspStatePreUnload -- virtual inherited (engstate) base (engstate)
+    pThis->__kgspStatePreUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kgspStatePreUnload;
 
-    pThis->__kgspStateDestroy__ = &__nvoc_thunk_OBJENGSTATE_kgspStateDestroy;
+    // kgspStateUnload -- virtual inherited (engstate) base (engstate)
+    pThis->__kgspStateUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kgspStateUnload;
 
-    pThis->__kgspVprintf__ = &__nvoc_thunk_KernelCrashCatEngine_kgspVprintf;
+    // kgspStatePostUnload -- virtual inherited (engstate) base (engstate)
+    pThis->__kgspStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kgspStatePostUnload;
 
-    pThis->__kgspClearInterrupt__ = &__nvoc_thunk_IntrService_kgspClearInterrupt;
+    // kgspStateDestroy -- virtual inherited (engstate) base (engstate)
+    pThis->__kgspStateDestroy__ = &__nvoc_up_thunk_OBJENGSTATE_kgspStateDestroy;
 
-    pThis->__kgspPriWrite__ = &__nvoc_thunk_KernelCrashCatEngine_kgspPriWrite;
+    // kgspIsPresent -- virtual inherited (engstate) base (engstate)
+    pThis->__kgspIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_kgspIsPresent;
 
-    pThis->__kgspMapBufferDescriptor__ = &__nvoc_thunk_KernelCrashCatEngine_kgspMapBufferDescriptor;
+    // kgspClearInterrupt -- virtual inherited (intrserv) base (intrserv)
+    pThis->__kgspClearInterrupt__ = &__nvoc_up_thunk_IntrService_kgspClearInterrupt;
 
-    pThis->__kgspSyncBufferDescriptor__ = &__nvoc_thunk_KernelCrashCatEngine_kgspSyncBufferDescriptor;
+    // kgspServiceNotificationInterrupt -- virtual inherited (intrserv) base (intrserv)
+    pThis->__kgspServiceNotificationInterrupt__ = &__nvoc_up_thunk_IntrService_kgspServiceNotificationInterrupt;
 
-    pThis->__kgspRegRead__ = &__nvoc_thunk_KernelFalcon_kgspRegRead;
+    // kgspRegRead -- virtual halified (2 hals) inherited (kflcn) base (kflcn) body
+    pThis->__kgspRegRead__ = &__nvoc_up_thunk_KernelFalcon_kgspRegRead;
 
-    pThis->__kgspIsPresent__ = &__nvoc_thunk_OBJENGSTATE_kgspIsPresent;
+    // kgspRegWrite -- virtual halified (2 hals) inherited (kflcn) base (kflcn) body
+    pThis->__kgspRegWrite__ = &__nvoc_up_thunk_KernelFalcon_kgspRegWrite;
 
-    pThis->__kgspStateLoad__ = &__nvoc_thunk_OBJENGSTATE_kgspStateLoad;
+    // kgspMaskDmemAddr -- virtual halified (3 hals) inherited (kflcn) base (kflcn) body
+    pThis->__kgspMaskDmemAddr__ = &__nvoc_up_thunk_KernelFalcon_kgspMaskDmemAddr;
 
-    pThis->__kgspGetScratchOffsets__ = &__nvoc_thunk_KernelCrashCatEngine_kgspGetScratchOffsets;
+    // kgspConfigured -- virtual inherited (kcrashcatEngine) base (kflcn)
+    pThis->__kgspConfigured__ = &__nvoc_up_thunk_KernelCrashCatEngine_kgspConfigured;
 
-    pThis->__kgspUnload__ = &__nvoc_thunk_KernelCrashCatEngine_kgspUnload;
+    // kgspUnload -- virtual inherited (kcrashcatEngine) base (kflcn)
+    pThis->__kgspUnload__ = &__nvoc_up_thunk_KernelCrashCatEngine_kgspUnload;
 
-    pThis->__kgspStateUnload__ = &__nvoc_thunk_OBJENGSTATE_kgspStateUnload;
+    // kgspVprintf -- virtual inherited (kcrashcatEngine) base (kflcn)
+    pThis->__kgspVprintf__ = &__nvoc_up_thunk_KernelCrashCatEngine_kgspVprintf;
 
-    pThis->__kgspServiceNotificationInterrupt__ = &__nvoc_thunk_IntrService_kgspServiceNotificationInterrupt;
+    // kgspPriRead -- virtual inherited (kcrashcatEngine) base (kflcn)
+    pThis->__kgspPriRead__ = &__nvoc_up_thunk_KernelCrashCatEngine_kgspPriRead;
 
-    pThis->__kgspGetWFL0Offset__ = &__nvoc_thunk_KernelCrashCatEngine_kgspGetWFL0Offset;
+    // kgspPriWrite -- virtual inherited (kcrashcatEngine) base (kflcn)
+    pThis->__kgspPriWrite__ = &__nvoc_up_thunk_KernelCrashCatEngine_kgspPriWrite;
 
-    pThis->__kgspStateInitLocked__ = &__nvoc_thunk_OBJENGSTATE_kgspStateInitLocked;
+    // kgspMapBufferDescriptor -- virtual inherited (kcrashcatEngine) base (kflcn)
+    pThis->__kgspMapBufferDescriptor__ = &__nvoc_up_thunk_KernelCrashCatEngine_kgspMapBufferDescriptor;
 
-    pThis->__kgspStatePreLoad__ = &__nvoc_thunk_OBJENGSTATE_kgspStatePreLoad;
+    // kgspUnmapBufferDescriptor -- virtual inherited (kcrashcatEngine) base (kflcn)
+    pThis->__kgspUnmapBufferDescriptor__ = &__nvoc_up_thunk_KernelCrashCatEngine_kgspUnmapBufferDescriptor;
 
-    pThis->__kgspStatePostUnload__ = &__nvoc_thunk_OBJENGSTATE_kgspStatePostUnload;
+    // kgspSyncBufferDescriptor -- virtual inherited (kcrashcatEngine) base (kflcn)
+    pThis->__kgspSyncBufferDescriptor__ = &__nvoc_up_thunk_KernelCrashCatEngine_kgspSyncBufferDescriptor;
 
-    pThis->__kgspStatePreUnload__ = &__nvoc_thunk_OBJENGSTATE_kgspStatePreUnload;
+    // kgspReadDmem -- virtual halified (singleton optimized) inherited (kcrashcatEngine) base (kflcn)
+    pThis->__kgspReadDmem__ = &__nvoc_up_thunk_KernelCrashCatEngine_kgspReadDmem;
 
-    pThis->__kgspStateInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_kgspStateInitUnlocked;
+    // kgspGetScratchOffsets -- virtual halified (singleton optimized) inherited (kcrashcatEngine) base (kflcn)
+    pThis->__kgspGetScratchOffsets__ = &__nvoc_up_thunk_KernelCrashCatEngine_kgspGetScratchOffsets;
 
-    pThis->__kgspInitMissing__ = &__nvoc_thunk_OBJENGSTATE_kgspInitMissing;
+    // kgspGetWFL0Offset -- virtual halified (singleton optimized) inherited (kcrashcatEngine) base (kflcn)
+    pThis->__kgspGetWFL0Offset__ = &__nvoc_up_thunk_KernelCrashCatEngine_kgspGetWFL0Offset;
+} // End __nvoc_init_funcTable_KernelGsp_1 with approximately 195 basic block(s).
 
-    pThis->__kgspStatePreInitLocked__ = &__nvoc_thunk_OBJENGSTATE_kgspStatePreInitLocked;
 
-    pThis->__kgspStatePreInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_kgspStatePreInitUnlocked;
-
-    pThis->__kgspStatePostLoad__ = &__nvoc_thunk_OBJENGSTATE_kgspStatePostLoad;
-
-    pThis->__kgspUnmapBufferDescriptor__ = &__nvoc_thunk_KernelCrashCatEngine_kgspUnmapBufferDescriptor;
-
-    pThis->__kgspReadDmem__ = &__nvoc_thunk_KernelCrashCatEngine_kgspReadDmem;
-}
-
+// Initialize vtable(s) for 82 virtual method(s).
 void __nvoc_init_funcTable_KernelGsp(KernelGsp *pThis, RmHalspecOwner *pRmhalspecowner) {
+
+    // Initialize vtable(s) with 82 per-object function pointer(s).
     __nvoc_init_funcTable_KernelGsp_1(pThis, pRmhalspecowner);
 }
 

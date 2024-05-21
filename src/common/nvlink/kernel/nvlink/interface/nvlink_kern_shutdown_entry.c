@@ -378,21 +378,6 @@ nvlink_lib_powerdown_links_from_active_to_off
         lockLinkCount++;
     }
 
-    if (lockLinkCount == 0)
-    {
-        if (conns != NULL)
-            nvlink_free((void *)conns);
-
-        if (lockLinks != NULL)
-            nvlink_free((void *)lockLinks);
-
-         // Release the top-level lock
-        nvlink_lib_top_lock_release();
-        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
-            "%s: No conns were found\n", __FUNCTION__));
-        return NVL_NOT_FOUND;
-    }
-
     // Acquire the per-link locks for all links captured
     status = nvlink_lib_link_locks_acquire(lockLinks, lockLinkCount);
     if (status != NVL_SUCCESS)
@@ -938,3 +923,4 @@ nvlink_core_powerdown_floorswept_conns_to_off_end:
 
     return status;
 }
+

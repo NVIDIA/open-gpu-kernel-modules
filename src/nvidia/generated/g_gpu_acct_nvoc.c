@@ -93,10 +93,13 @@ __nvoc_ctor_GpuAccounting_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_GpuAccounting_1(GpuAccounting *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-}
+} // End __nvoc_init_funcTable_GpuAccounting_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_GpuAccounting(GpuAccounting *pThis) {
     __nvoc_init_funcTable_GpuAccounting_1(pThis);
 }

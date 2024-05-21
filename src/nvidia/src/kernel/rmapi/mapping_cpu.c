@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -310,8 +310,7 @@ memMap_IMPL
         effectiveAddrSpace = ADDR_SYSMEM;
     }
 
-    bIsSysmem = (effectiveAddrSpace == ADDR_SYSMEM);
-    bIsSysmem = bIsSysmem || (effectiveAddrSpace == ADDR_EGM);
+    bIsSysmem = (effectiveAddrSpace == ADDR_SYSMEM) || (effectiveAddrSpace == ADDR_EGM);
 
     if (dynamicCast(pMemoryInfo, FlaMemory) != NULL)
     {
@@ -333,35 +332,16 @@ memMap_IMPL
         {
             if (pMapParams->bKernel)
             {
-                if (pMemDesc->_flags & MEMDESC_FLAGS_PHYSICALLY_CONTIGUOUS)
-                {
-                    NvP64 tempCpuPtr = kbusMapCoherentCpuMapping_HAL(pGpu, pKernelBus, pMemDesc);
-                    if (tempCpuPtr == NULL)
-                    {
-                        rmStatus = NV_ERR_GENERIC;
-                    }
-                    else
-                    {
-                        rmStatus = NV_OK;
-                        tempCpuPtr = NvP64_PLUS_OFFSET(tempCpuPtr, pMapParams->offset);
-                    }
-                    *pMapParams->ppCpuVirtAddr = tempCpuPtr;
-
-                    if (rmStatus != NV_OK)
-                        return rmStatus;
-                }
-                else
-                {
-                    rmStatus = osMapSystemMemory(pMemDesc,
-                                                 pMapParams->offset,
-                                                 pMapParams->length,
-                                                 pMapParams->bKernel,
-                                                 pMapParams->protect,
-                                                 pMapParams->ppCpuVirtAddr,
-                                                 &priv);
-                    if (rmStatus != NV_OK)
-                        return rmStatus;
-                }
+                rmStatus = kbusMapCoherentCpuMapping_HAL(pGpu,
+                                                         pKernelBus,
+                                                         pMemDesc,
+                                                         pMapParams->offset,
+                                                         pMapParams->length,
+                                                         pMapParams->protect,
+                                                         pMapParams->ppCpuVirtAddr,
+                                                         &priv);
+                if (rmStatus != NV_OK)
+                    return rmStatus;
             }
             else
             {
@@ -717,19 +697,9 @@ memUnmap_IMPL
 
         if (pCpuMapping->pPrivate->bKernel)
         {
-            if(pMemDesc->_flags & MEMDESC_FLAGS_PHYSICALLY_CONTIGUOUS)
-            {
-                NV_ASSERT(pMemDesc->_flags & MEMDESC_FLAGS_PHYSICALLY_CONTIGUOUS);
-                kbusUnmapCoherentCpuMapping_HAL(pGpu, pKernelBus, pMemDesc);
-            }
-            else
-            {
-                osUnmapSystemMemory(pMemDesc,
-                                    pCpuMapping->pPrivate->bKernel,
-                                    pCpuMapping->processId,
-                                    pCpuMapping->pLinearAddress,
-                                    pCpuMapping->pPrivate->pPriv);
-            }
+            kbusUnmapCoherentCpuMapping_HAL(pGpu, pKernelBus, pMemDesc,
+                                            pCpuMapping->pLinearAddress,
+                                            pCpuMapping->pPrivate->pPriv);
         }
 
         NV_PRINTF(LEVEL_INFO,
@@ -743,9 +713,9 @@ memUnmap_IMPL
         //
     }
     // System Memory case
-    else if ((pGpu == NULL) || (((memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM)
-                                 || (memdescGetAddressSpace(pMemDesc) == ADDR_EGM)
-                                ) && FLD_TEST_DRF(OS33, _FLAGS, _MAPPING, _DIRECT, pCpuMapping->flags)))
+    else if ((pGpu == NULL) || (((memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM) ||
+                                  (memdescGetAddressSpace(pMemDesc) == ADDR_EGM)) &&
+                                 FLD_TEST_DRF(OS33, _FLAGS, _MAPPING, _DIRECT, pCpuMapping->flags)))
     {
         if (FLD_TEST_DRF(OS33, _FLAGS, _MAPPING, _DIRECT, pCpuMapping->flags))
         {
@@ -1154,6 +1124,17 @@ rmapiMapToCpuWithSecInfoV2
     {
         rmapiEpilogue(pRmApi, &rmApiContext);
         return status;
+    }
+
+    //
+    // In the RTD3 case, the API lock isn't taken since it can be initiated
+    // from another thread that holds the API lock and because we now hold
+    // the GPU lock.
+    //
+    if (rmapiInRtd3PmPath())
+    {
+        lockInfo.flags |= RM_LOCK_FLAGS_NO_API_LOCK;
+        lockInfo.state &= ~RM_LOCK_STATES_API_LOCK_ACQUIRED;
     }
 
     LOCK_METER_DATA(MAPMEM, flags, 0, 0);

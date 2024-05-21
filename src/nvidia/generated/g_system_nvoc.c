@@ -92,6 +92,7 @@ void __nvoc_init_dataField_OBJSYS(OBJSYS *pThis) {
     pThis->setProperty(pThis, PDB_PROP_SYS_PRIORITY_THROTTLE_DELAY_US, 16 * 1000);
     pThis->setProperty(pThis, PDB_PROP_SYS_CLIENT_HANDLE_LOOKUP, ((NvBool)(0 == 0)));
     pThis->setProperty(pThis, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT, ((NvBool)(0 != 0)));
+    pThis->setProperty(pThis, PDB_PROP_SYS_ENABLE_RM_TEST_ONLY_CODE, ((NvBool)(0 != 0)));
     pThis->setProperty(pThis, PDB_PROP_SYS_ROUTE_TO_PHYSICAL_LOCK_BYPASS, ((NvBool)(0 == 0)));
 
     pThis->bUseDeferredClientListFree = ((NvBool)(0 != 0));
@@ -123,13 +124,19 @@ __nvoc_ctor_OBJSYS_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_OBJSYS_1(OBJSYS *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // sysCaptureState -- virtual
     pThis->__sysCaptureState__ = &sysCaptureState_IMPL;
-}
+} // End __nvoc_init_funcTable_OBJSYS_1 with approximately 1 basic block(s).
 
+
+// Initialize vtable(s) for 1 virtual method(s).
 void __nvoc_init_funcTable_OBJSYS(OBJSYS *pThis) {
+
+    // Initialize vtable(s) with 1 per-object function pointer(s).
     __nvoc_init_funcTable_OBJSYS_1(pThis);
 }
 

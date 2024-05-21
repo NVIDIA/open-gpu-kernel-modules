@@ -1,13 +1,20 @@
+
 #ifndef _G_FECS_EVENT_LIST_NVOC_H_
 #define _G_FECS_EVENT_LIST_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +36,7 @@ extern "C" {
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_fecs_event_list_nvoc.h"
 
 #ifndef _FECS_EVENT_LIST_H_
@@ -45,8 +53,10 @@ extern "C" {
 #include "containers/multimap.h"
 #include "resserv/resserv.h"
 #include "rmapi/client.h"
+#include "vgpu/rpc_headers.h"
 
 #include "ctrl/ctrl2080/ctrl2080gr.h" // NV2080_CTRL_GR_FECS_BIND_EVTBUF_LOD
+
 
 struct KernelGraphics;
 
@@ -58,6 +68,7 @@ typedef struct KernelGraphics KernelGraphics;
 #ifndef __nvoc_class_id_KernelGraphics
 #define __nvoc_class_id_KernelGraphics 0xea3fa9
 #endif /* __nvoc_class_id_KernelGraphics */
+
 
 
 struct KernelGraphicsManager;
@@ -72,6 +83,7 @@ typedef struct KernelGraphicsManager KernelGraphicsManager;
 #endif /* __nvoc_class_id_KernelGraphicsManager */
 
 
+
 struct EventBuffer;
 
 #ifndef __NVOC_CLASS_EventBuffer_TYPEDEF__
@@ -82,6 +94,7 @@ typedef struct EventBuffer EventBuffer;
 #ifndef __nvoc_class_id_EventBuffer
 #define __nvoc_class_id_EventBuffer 0x63502b
 #endif /* __nvoc_class_id_EventBuffer */
+
 
 
 struct Subdevice;
@@ -147,7 +160,6 @@ typedef struct
 } FECS_EVENT_RECORD_OUTPUT;
 ct_assert(NV_OFFSETOF(FECS_EVENT_RECORD_OUTPUT, record) == sizeof(NV_EVENT_BUFFER_RECORD_HEADER));
 ct_assert(sizeof(FECS_EVENT_RECORD_OUTPUT) == sizeof(NV_EVENT_BUFFER_RECORD_HEADER) + sizeof(NV_EVENT_BUFFER_FECS_RECORD_V2));
-
 
 NV_STATUS fecsAddBindpoint
 (
@@ -243,8 +255,11 @@ void fecsBufferTeardown(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics);
  */
 void fecsBufferDisableHw(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics);
 
+void fecsRemoveAllBindpointsForGpu(OBJGPU *pGpu);
 void fecsRemoveAllBindpoints(struct EventBuffer *pEventBuffer);
 void fecsRemoveBindpoint(OBJGPU *pGpu, NvU64 uid, NV_EVENT_BUFFER_BIND_POINT_FECS* pBind);
+
+NV_STATUS fecsHandleFecsLoggingError(OBJGPU *pGpu, NvU32 grIdx, FECS_ERROR_EVENT_TYPE errorType);
 
 /* The callback function that transfers FECS Buffer entries to an EventBuffer */
 void nvEventBufferFecsCallback(OBJGPU *pGpu, void *pArgs);

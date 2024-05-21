@@ -34,7 +34,7 @@
 #include "gpu/device/device.h"
 
 NV_STATUS
-dmaConstructHal_VGPUSTUB(OBJGPU *pGpu, VirtMemAllocator *pDma)
+dmaConstructHal_VF(OBJGPU *pGpu, VirtMemAllocator *pDma)
 {
     return NV_OK;
 }

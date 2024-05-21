@@ -85,6 +85,44 @@ kmemsysConstructEngine_IMPL
     return NV_OK;
 }
 
+NV_STATUS
+kmemsysStatePreInitLocked_IMPL
+(
+    OBJGPU *pGpu,
+    KernelMemorySystem *pKernelMemorySystem
+)
+{
+    NV_STATUS status = NV_OK;
+    MEMORY_SYSTEM_STATIC_CONFIG *pStaticConfig;
+
+    pStaticConfig =
+        portMemAllocNonPaged(sizeof(*pStaticConfig));
+    NV_ASSERT_TRUE_OR_GOTO(status,
+        (pStaticConfig != NULL),
+        NV_ERR_INSUFFICIENT_RESOURCES,
+        exit);
+    portMemSet(pStaticConfig, 0, sizeof(*pStaticConfig));
+    //
+    // Assign the pointer immediately after allocating to make sure it will
+    // always be freed
+    //
+    pKernelMemorySystem->pStaticConfig = pStaticConfig;
+
+    NV_ASSERT_OK_OR_GOTO(status,
+        kmemsysInitStaticConfig_HAL(
+            pGpu, pKernelMemorySystem, pStaticConfig),
+        exit);
+
+exit:
+    if (status != NV_OK)
+    {
+        portMemFree((void *)pKernelMemorySystem->pStaticConfig);
+        pKernelMemorySystem->pStaticConfig = NULL;
+    }
+
+    return status;
+}
+
 /*
  * Initialize the Kernel Memory System state.
  *
@@ -99,20 +137,9 @@ NV_STATUS kmemsysStateInitLocked_IMPL
     KernelMemorySystem *pKernelMemorySystem
 )
 {
-    MEMORY_SYSTEM_STATIC_CONFIG *pStaticConfig;
     NV_STATUS status = NV_OK;
 
     NV_ASSERT_OK_OR_GOTO(status, kmemsysEnsureSysmemFlushBufferInitialized(pGpu, pKernelMemorySystem), fail);
-
-    pStaticConfig = portMemAllocNonPaged(sizeof(*pStaticConfig));
-    NV_CHECK_OR_RETURN(LEVEL_ERROR, pStaticConfig != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
-    portMemSet(pStaticConfig, 0, sizeof(*pStaticConfig));
-
-    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-        kmemsysInitStaticConfig_HAL(pGpu, pKernelMemorySystem, pStaticConfig),
-        fail);
-
-    pKernelMemorySystem->pStaticConfig = pStaticConfig;
 
     KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
 
@@ -180,11 +207,6 @@ NV_STATUS kmemsysStateInitLocked_IMPL
     }
 
 fail:
-    if (status != NV_OK)
-    {
-        portMemFree((void *)pKernelMemorySystem->pStaticConfig);
-    }
-
     return status;
 }
 
@@ -229,6 +251,13 @@ kmemsysStatePostLoad_IMPL
     NvU32 flags
 )
 {
+    if (IS_SILICON(pGpu) &&
+        osNumaOnliningEnabled(pGpu->pOsGpuInfo))
+    {
+        NV_ASSERT_OR_RETURN(pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED),
+                            NV_ERR_INVALID_STATE);
+    }
+
     if (IS_SILICON(pGpu) &&
         pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED))
     {
@@ -333,7 +362,6 @@ kmemsysDestruct_IMPL
     pKernelMemorySystem->pSysmemFlushBufferMemDesc = NULL;
 
     portMemSet(pKernelMemorySystem->gpuInstanceMemConfig, 0, sizeof(pKernelMemorySystem->gpuInstanceMemConfig));
-
 }
 
 NV_STATUS
@@ -835,7 +863,6 @@ kmemsysSetupCoherentCpuLink_IMPL
     NvBool         bCpuMapping    = NV_TRUE; // Default enable
     NvS32          numaNodeId     = NV0000_CTRL_NO_NUMA_NODE;
     NvU64          memblockSize   = 0;
-    NvU64          numaOnlineBase = 0;
     NvU64          rsvdFastSize   = 0;
     NvU64          rsvdSlowSize   = 0;
     NvU64          rsvdISOSize    = 0;
@@ -848,33 +875,7 @@ kmemsysSetupCoherentCpuLink_IMPL
                                                         &numaNodeId));
         if (pKernelMemorySystem->coherentCpuFbBase != 0)
         {
-            if (gpuIsSelfHosted(pGpu))
-            {
-                //
-                // For self-hosted, coherentCpuFbEnd is only till the FB size
-                // end and NOT till the FB AMAP end since self-hosted doesn't
-                // support indirect peer and requires GPU nvlink for peer.
-                //
-                pKernelMemorySystem->coherentCpuFbEnd = pKernelMemorySystem->coherentCpuFbBase + fbSize;
-            }
-            else
-            {
-                RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-                NV2080_CTRL_INTERNAL_GET_COHERENT_FB_APERTURE_SIZE_PARAMS params = {0};
-
-                NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
-                                                       pGpu->hInternalClient,
-                                                       pGpu->hInternalSubdevice,
-                                                       NV2080_CTRL_CMD_INTERNAL_GET_COHERENT_FB_APERTURE_SIZE,
-                                                       &params,
-                                                       sizeof(NV2080_CTRL_INTERNAL_GET_COHERENT_FB_APERTURE_SIZE_PARAMS)));
-                //
-                // Indirect peer(uses P9 to reach other GV100) in P9+GV100 requires coherentCpuFbEnd to
-                // also include the entire FB AMAP range even when FB size is less than the FB AMAP size.
-                //
-                pKernelMemorySystem->coherentCpuFbEnd = pKernelMemorySystem->coherentCpuFbBase +
-                                                        params.coherentFbApertureSize;
-            }
+            pKernelMemorySystem->coherentCpuFbEnd = pKernelMemorySystem->coherentCpuFbBase + fbSize;
         }
     }
 
@@ -928,7 +929,7 @@ kmemsysSetupCoherentCpuLink_IMPL
     // one can access it. If FB size itself is memblock size unaligned(because
     // of CBC and row remapper deductions), then the memory wastage is unavoidable.
     //
-    numaOnlineSize = NV_ALIGN_DOWN64(fbSize - totalRsvdBytes, memblockSize);
+    numaOnlineSize = KMEMSYS_FB_NUMA_ONLINE_SIZE(fbSize - totalRsvdBytes, memblockSize);
 
     if (IS_PASSTHRU(pGpu) && pKernelMemorySystem->bBug3656943WAR)
     {
@@ -944,16 +945,16 @@ kmemsysSetupCoherentCpuLink_IMPL
         // wasted being part of non onlined region which can't be avoided
         // per the design.
         //
-        numaOnlineSize = NV_ALIGN_DOWN64(fbSize - totalRsvdBytes, 512 * 1024 * 1024);
+        numaOnlineSize = KMEMSYS_FB_NUMA_ONLINE_SIZE(fbSize - totalRsvdBytes, 512 * 1024 * 1024);
     }
-
 
     NV_PRINTF(LEVEL_INFO,
               "fbSize: 0x%llx NUMA reserved memory size: 0x%llx online memory size: 0x%llx\n",
               fbSize, totalRsvdBytes, numaOnlineSize);
+
     if (osNumaOnliningEnabled(pGpu->pOsGpuInfo))
     {
-        pKernelMemorySystem->numaOnlineBase   = numaOnlineBase;
+        pKernelMemorySystem->numaOnlineBase   = KMEMSYS_FB_NUMA_ONLINE_BASE;
         pKernelMemorySystem->numaOnlineSize   = numaOnlineSize;
         //
         // TODO: Bug 1945658: Soldier through on GPU memory add
@@ -1046,42 +1047,44 @@ kmemsysGetUsableFbSize_KERNEL
 }
 
 NV_STATUS
-kmemsysStateLoad_VF(OBJGPU *pGpu, KernelMemorySystem *pKernelMemorySystem, NvU32 flags)
+kmemsysStateLoad_IMPL(OBJGPU *pGpu, KernelMemorySystem *pKernelMemorySystem, NvU32 flags)
 {
     NV_STATUS status = NV_OK;
 
-    if (flags & GPU_STATE_FLAGS_PRESERVING)
+    if (IS_GSP_CLIENT(pGpu) || IS_VIRTUAL(pGpu))
     {
-        MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+        if ((flags & GPU_STATE_FLAGS_PRESERVING) &&
+            (flags & GPU_STATE_FLAGS_PM_TRANSITION) &&
+            !(flags & GPU_STATE_FLAGS_GC6_TRANSITION))
+        {
+            MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
-        NV_ASSERT(!(flags & GPU_STATE_FLAGS_GC6_TRANSITION));
-
-        status = memmgrRestorePowerMgmtState(pGpu, pMemoryManager);
-        if (status != NV_OK)
-            memmgrFreeFbsrMemory(pGpu, pMemoryManager);
-
-        NV_ASSERT_OK(status);
+            NV_ASSERT_OK_OR_ELSE(status,
+                                 memmgrRestorePowerMgmtState(pGpu, pMemoryManager),
+                                 memmgrFreeFbsrMemory(pGpu, pMemoryManager));
+        }
     }
 
     return status;
 }
 
 NV_STATUS
-kmemsysStateUnload_VF(OBJGPU *pGpu, KernelMemorySystem *pKernelMemorySystem, NvU32 flags)
+kmemsysStateUnload_IMPL(OBJGPU *pGpu, KernelMemorySystem *pKernelMemorySystem, NvU32 flags)
 {
     NV_STATUS status = NV_OK;
 
-    if (flags & GPU_STATE_FLAGS_PRESERVING)
+    if (IS_GSP_CLIENT(pGpu) || IS_VIRTUAL(pGpu))
     {
-        MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+        if ((flags & GPU_STATE_FLAGS_PRESERVING) &&
+            (flags & GPU_STATE_FLAGS_PM_TRANSITION) &&
+            !(flags & GPU_STATE_FLAGS_GC6_TRANSITION))
+        {
+            MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
-        NV_ASSERT(!(flags & GPU_STATE_FLAGS_GC6_TRANSITION));
-
-        status = memmgrSavePowerMgmtState(pGpu, pMemoryManager);
-        if (status != NV_OK)
-            memmgrFreeFbsrMemory(pGpu, pMemoryManager);
-
-        NV_ASSERT_OK(status);
+            NV_ASSERT_OK_OR_ELSE(status,
+                                 memmgrSavePowerMgmtState(pGpu, pMemoryManager),
+                                 memmgrFreeFbsrMemory(pGpu, pMemoryManager));
+        }
     }
 
     return status;

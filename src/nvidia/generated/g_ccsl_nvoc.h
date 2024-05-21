@@ -1,6 +1,13 @@
+
 #ifndef _G_CCSL_NVOC_H_
 #define _G_CCSL_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,6 +36,7 @@ extern "C" {
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
 #include "g_ccsl_nvoc.h"
 
 #ifndef CCSL_H
@@ -57,9 +65,14 @@ extern "C" {
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 
+
 struct Ccsl {
+
+    // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
-    struct Ccsl *__nvoc_pbase_Ccsl;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Ccsl *__nvoc_pbase_Ccsl;    // ccsl
 };
 
 #ifndef __NVOC_CLASS_Ccsl_TYPEDEF__
@@ -71,6 +84,7 @@ typedef struct Ccsl Ccsl;
 #define __nvoc_class_id_Ccsl 0x9bf1a1
 #endif /* __nvoc_class_id_Ccsl */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Ccsl;
 
 #define __staticCast_Ccsl(pThis) \
@@ -83,13 +97,16 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Ccsl;
     ((Ccsl*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(Ccsl)))
 #endif //__nvoc_ccsl_h_disabled
 
-
 NV_STATUS __nvoc_objCreateDynamic_Ccsl(Ccsl**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_Ccsl(Ccsl**, Dynamic*, NvU32);
 #define __objCreate_Ccsl(ppNewObj, pParent, createFlags) \
     __nvoc_objCreate_Ccsl((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
+
+// Wrapper macros
+
+// Dispatch functions
 NV_STATUS ccslContextInitViaChannel_IMPL(pCcslContext *ppCtx, NvHandle hClient, NvHandle hChannel);
 
 

@@ -1509,6 +1509,15 @@
 
 //
 // Type DWORD
+// Boolean to enable NVLink clock gating. WAR for JIRA BR-421.
+//
+#define NV_REG_STR_RM_NVLINK_ENABLE_CLOCK_GATING                   "RMNvLinkEnableClockGating"
+#define NV_REG_STR_RM_NVLINK_ENABLE_CLOCK_GATING_FALSE             (0x00000000)
+#define NV_REG_STR_RM_NVLINK_ENABLE_CLOCK_GATING_TRUE              (0x00000001)
+#define NV_REG_STR_RM_NVLINK_ENABLE_CLOCK_GATING_DEFAULT           (NV_REG_STR_RM_NVLINK_ENABLE_CLOCK_GATING_FALSE)
+
+//
+// Type DWORD
 // Knob to force lane disable and shutdown during driver unload
 //     The regkey will also cause a toggle of link reset on driver load
 //     The regkey should not be used in S/R paths
@@ -1922,10 +1931,6 @@
 #define NV_REG_STR_RM_CONFIDENTIAL_COMPUTE_GPUS_READY_CHECK_DISABLED    0x00000000
 #define NV_REG_STR_RM_CONFIDENTIAL_COMPUTE_GPUS_READY_CHECK_ENABLED     0x00000001
 
-#define NV_REG_STR_RM_CONF_COMPUTE_EARLY_INIT                            "RmConfComputeEarlyInit"
-#define NV_REG_STR_RM_CONF_COMPUTE_EARLY_INIT_DISABLED                   0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_EARLY_INIT_ENABLED                    0x00000001
-
 //
 // Enable/disable SPDM feature in Confidential Compute. SPDM-capable profiles
 // may not be loaded by default. This regkey allows us to override the default
@@ -1940,7 +1945,56 @@
 #define NV_REG_STR_RM_CONF_COMPUTE_SPDM_POLICY_ENABLED_YES                0x00000001
 
 //
-// Enable/disable dummy key rotation in Confidential Compute. 
+// Enable/disable key rotation in Confidential Compute.
+// If this is defined then NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION is ignored.
+//
+// 0 - Feature disabled
+// 1 - Feature enabled
+//
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION                    "RmConfComputeKeyRotation"
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_ENABLED            0:0
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_ENABLED_NO         0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_ENABLED_YES        0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_SEC2_KEYS          1:1
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_SEC2_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_SEC2_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE2_KEYS          2:2
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE2_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE2_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE3_KEYS          3:3
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE3_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE3_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE4_KEYS          4:4
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE4_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE4_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE5_KEYS          5:5
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE5_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE5_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE6_KEYS          6:6
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE6_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE6_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE7_KEYS          7:7
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE7_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE7_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE8_KEYS          8:8
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE8_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE8_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE9_KEYS          9:9
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE9_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE9_KEYS_YES      0x00000001
+
+// if all kernel keys should be considered for key rotation
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_KERNEL_KEYS        10:10
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_KERNEL_KEYS_NO     0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_KERNEL_KEYS_YES    0x00000001
+
+// if all user keys should be considered for key rotation
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_USER_KEYS          11:11
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_USER_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_USER_KEYS_YES      0x00000001
+
+//
+// Enable/disable dummy key rotation in Confidential Compute.
 // This is a temp reg key that will be removed once all RM clients
 // support key rotation by default.
 //
@@ -2005,7 +2059,42 @@
 #define NV_REG_STR_RM_CONF_COMPUTE_HEARTBEAT_PERIOD_SECONDS_MAX          0x000000FF
 
 //
-// Set lower threshold for dummy key rotation. 
+// Set the key rotation timeout value for user-mode clients.
+// This is the amount of time in seconds, after the threshold has been crossed, that user-mode clients
+// have to idle their channels before RM RCs the channels for key rotation.
+// This value must be greater than or equal to 2.
+//
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_TIMEOUT_IN_SEC "RmKeyRotationTimeout"
+
+//
+// Set the difference between the lower and upper thresholds.
+// Value is in units of (amount of data encrypted in units of 16 bytes + number of encryption invocations)
+// If this is set then NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LOWER_THRESHOLD and
+// NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_UPPER_THRESHOLD are ignored.
+// This value must be greater than 0.
+//
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_THRESHOLD_DELTA "RmKeyRotationThresholdDelta"
+
+//
+// Set lower threshold for key rotation.
+// Value is in units of (amount of data encrypted in units of 16 bytes + number of encryption invocations)
+// If this is set then RmKeyRotationUpperThreshold must also be set.
+// This value must be less than RmKeyRotationUpperThreshold.
+// Note that setting the attacker advantage via SMI/NVML will overwrite this value.
+//
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LOWER_THRESHOLD "RmKeyRotationLowerThreshold"
+
+//
+// Set upper threshold for key rotation.
+// Value is in units of (amount of data encrypted in units of 16 bytes + number of encryption invocations)
+// If this is set then RmKeyRotationLowerThreshold must also be set.
+// This value must be greater than RmKeyRotationLowerThreshold.
+// Note that setting the attacker advantage via SMI/NVML will overwrite this value.
+//
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_UPPER_THRESHOLD "RmKeyRotationUpperThreshold"
+
+//
+// Set lower threshold for dummy key rotation.
 // This is a temp reg key that will be removed once all RM clients
 // support prod key rotation.
 // Value is in seconds.
@@ -2013,7 +2102,7 @@
 #define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LOWER_THRESHOLD     "RmDummyKeyRotationLowerThreshold"
 
 //
-// Set upper threshold for dummy key rotation. 
+// Set upper threshold for dummy key rotation.
 // This is a temp reg key that will be removed once all RM clients
 // support prod key rotation.
 // Value is in seconds.
@@ -2271,6 +2360,16 @@
 #define NV_REG_STR_RM_GUEST_ECC_STATE_DEFAULT                              0x00000001
 
 //
+// TYPE DWORD
+// This regkey allows to enable RM test only code paths
+// 0 - Disable RM test only code
+// 1 - Enable RM test only code
+//
+#define NV_REG_STR_RM_ENABLE_RM_TEST_ONLY_CODE                  "EnableRmTestOnlyCode"
+#define NV_REG_STR_RM_ENABLE_RM_TEST_ONLY_CODE_DISABLED         0x00000000
+#define NV_REG_STR_RM_ENABLE_RM_TEST_ONLY_CODE_ENABLED          0x00000001
+
+//
 // Type DWORD
 // This regkey force-disables write-combine iomap allocations, used for chipsets where
 // write-combine is broken.
@@ -2279,45 +2378,6 @@
 #define NV_REG_STR_RM_FORCE_DISABLE_IOMAP_WC_YES         0x00000001
 #define NV_REG_STR_RM_FORCE_DISABLE_IOMAP_WC_NO          0x00000000
 #define NV_REG_STR_RM_FORCE_DISABLE_IOMAP_WC_DEFAULT     NV_REG_STR_RM_FORCE_DISABLE_IOMAP_WC_NO
-
-//
-// Regkey to configure Per VM RunList.
-// Type Dword
-//  BIT 0:0 - Overall PVMRL enable/disable.
-//   0 - Disable / Default - 1 HW runlist per engine.
-//   1 - Enable            - 1 SW runlist per VM for some engines.
-//  BIT 1:1 - Adaptive Round Robin Scheduler
-//   0 - Enable / Default - Use Adaptive Round Robin Scheduler
-//   1 - Disable          - Use Legacy PVMRL
-//  BIT 7:4 - PVMRL scheduler to run.
-//   0 - equal share / Default - equal share amongst running vGPUs.
-//   1 - fixed share           - fixed share of the physical GPU.
-//  BIT 21:12 - PVMRL Scheduling frequency.
-//   0 - Default timeslice.
-//   F - Timeslice = 1000 / F.
-//  BIT 23:16 - PVMRL timeslice in ms (Milli-seconds).
-//   0 - Default timeslice.
-//   T - Timeslice of T ms.
-//  BIT 31:24 - ARR Average Factor
-//   0 - Default Average Factor
-//   F - Average Factor = F
-//
-#define NV_REG_STR_RM_PVMRL                                       "RmPVMRL"
-#define NV_REG_STR_RM_PVMRL_ENABLE                                0:0
-#define NV_REG_STR_RM_PVMRL_ENABLE_DEFAULT                        0x00000000
-#define NV_REG_STR_RM_PVMRL_ENABLE_NO                             0x00000000
-#define NV_REG_STR_RM_PVMRL_ENABLE_YES                            0x00000001
-#define NV_REG_STR_RM_PVMRL_ARR_DISABLE                           1:1
-#define NV_REG_STR_RM_PVMRL_ARR_DISABLE_DEFAULT                   0x00000000
-#define NV_REG_STR_RM_PVMRL_ARR_DISABLE_NO                        0x00000000
-#define NV_REG_STR_RM_PVMRL_ARR_DISABLE_YES                       0x00000001
-#define NV_REG_STR_RM_PVMRL_SCHED_POLICY                          7:4
-#define NV_REG_STR_RM_PVMRL_SCHED_POLICY_DEFAULT                  0x00000000
-#define NV_REG_STR_RM_PVMRL_SCHED_POLICY_VGPU_EQUAL_SHARE         0x00000000
-#define NV_REG_STR_RM_PVMRL_SCHED_POLICY_VGPU_FIXED_SHARE         0x00000001
-#define NV_REG_STR_RM_PVMRL_FREQUENCY                             21:12
-#define NV_REG_STR_RM_PVMRL_TIMESLICE                             23:16
-#define NV_REG_STR_RM_PVMRL_AVERAGE_FACTOR                        31:24
 
 //
 // TYPE DWORD
@@ -2358,6 +2418,45 @@
 #define NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_DISABLE      0x00000000
 #define NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_ENABLE       0x00000001
 #define NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_DEFAULT      0x00000002
+
+//
+// Regkey to configure Per VM RunList.
+// Type Dword
+//  BIT 0:0 - Overall PVMRL enable/disable.
+//   0 - Disable / Default - 1 HW runlist per engine.
+//   1 - Enable            - 1 SW runlist per VM for some engines.
+//  BIT 1:1 - Adaptive Round Robin Scheduler
+//   0 - Enable / Default - Use Adaptive Round Robin Scheduler
+//   1 - Disable          - Use Legacy PVMRL
+//  BIT 7:4 - PVMRL scheduler to run.
+//   0 - equal share / Default - equal share amongst running vGPUs.
+//   1 - fixed share           - fixed share of the physical GPU.
+//  BIT 21:12 - PVMRL Scheduling frequency.
+//   0 - Default timeslice.
+//   F - Timeslice = 1000 / F.
+//  BIT 23:16 - PVMRL timeslice in ms (Milli-seconds).
+//   0 - Default timeslice.
+//   T - Timeslice of T ms.
+//  BIT 31:24 - ARR Average Factor
+//   0 - Default Average Factor
+//   F - Average Factor = F
+//
+#define NV_REG_STR_RM_PVMRL                                       "RmPVMRL"
+#define NV_REG_STR_RM_PVMRL_ENABLE                                0:0
+#define NV_REG_STR_RM_PVMRL_ENABLE_DEFAULT                        0x00000000
+#define NV_REG_STR_RM_PVMRL_ENABLE_NO                             0x00000000
+#define NV_REG_STR_RM_PVMRL_ENABLE_YES                            0x00000001
+#define NV_REG_STR_RM_PVMRL_ARR_DISABLE                           1:1
+#define NV_REG_STR_RM_PVMRL_ARR_DISABLE_DEFAULT                   0x00000000
+#define NV_REG_STR_RM_PVMRL_ARR_DISABLE_NO                        0x00000000
+#define NV_REG_STR_RM_PVMRL_ARR_DISABLE_YES                       0x00000001
+#define NV_REG_STR_RM_PVMRL_SCHED_POLICY                          7:4
+#define NV_REG_STR_RM_PVMRL_SCHED_POLICY_DEFAULT                  0x00000000
+#define NV_REG_STR_RM_PVMRL_SCHED_POLICY_VGPU_EQUAL_SHARE         0x00000000
+#define NV_REG_STR_RM_PVMRL_SCHED_POLICY_VGPU_FIXED_SHARE         0x00000001
+#define NV_REG_STR_RM_PVMRL_FREQUENCY                             21:12
+#define NV_REG_STR_RM_PVMRL_TIMESLICE                             23:16
+#define NV_REG_STR_RM_PVMRL_AVERAGE_FACTOR                        31:24
 
 //
 // Type: Dword

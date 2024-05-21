@@ -1,6 +1,13 @@
+
 #ifndef _G_NV_DEBUG_DUMP_NVOC_H_
 #define _G_NV_DEBUG_DUMP_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,6 +35,7 @@ extern "C" {
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+#pragma once
 #include "g_nv_debug_dump_nvoc.h"
 
 #ifndef _NV_DEBUG_DUMP_H_
@@ -161,26 +169,37 @@ typedef struct _def_nvd_engine_callback {
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 
+
 struct NvDebugDump {
+
+    // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+
+    // Parent (i.e. superclass or base class) object pointers
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
-    struct Object *__nvoc_pbase_Object;
-    struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;
-    struct NvDebugDump *__nvoc_pbase_NvDebugDump;
-    NV_STATUS (*__nvdConstructEngine__)(struct OBJGPU *, struct NvDebugDump *, ENGDESCRIPTOR);
-    NV_STATUS (*__nvdStateInitLocked__)(struct OBJGPU *, struct NvDebugDump *);
-    NV_STATUS (*__nvdStateLoad__)(POBJGPU, struct NvDebugDump *, NvU32);
-    NV_STATUS (*__nvdStateUnload__)(POBJGPU, struct NvDebugDump *, NvU32);
-    NV_STATUS (*__nvdStatePreLoad__)(POBJGPU, struct NvDebugDump *, NvU32);
-    NV_STATUS (*__nvdStatePostUnload__)(POBJGPU, struct NvDebugDump *, NvU32);
-    void (*__nvdStateDestroy__)(POBJGPU, struct NvDebugDump *);
-    NV_STATUS (*__nvdStatePreUnload__)(POBJGPU, struct NvDebugDump *, NvU32);
-    NV_STATUS (*__nvdStateInitUnlocked__)(POBJGPU, struct NvDebugDump *);
-    void (*__nvdInitMissing__)(POBJGPU, struct NvDebugDump *);
-    NV_STATUS (*__nvdStatePreInitLocked__)(POBJGPU, struct NvDebugDump *);
-    NV_STATUS (*__nvdStatePreInitUnlocked__)(POBJGPU, struct NvDebugDump *);
-    NV_STATUS (*__nvdStatePostLoad__)(POBJGPU, struct NvDebugDump *, NvU32);
-    NvBool (*__nvdIsPresent__)(POBJGPU, struct NvDebugDump *);
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super^2
+    struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
+    struct NvDebugDump *__nvoc_pbase_NvDebugDump;    // nvd
+
+    // Vtable with 14 per-object function pointers
+    NV_STATUS (*__nvdConstructEngine__)(struct OBJGPU *, struct NvDebugDump * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__nvdStateInitLocked__)(struct OBJGPU *, struct NvDebugDump * /*this*/);  // virtual override (engstate) base (engstate)
+    void (*__nvdInitMissing__)(POBJGPU, struct NvDebugDump * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__nvdStatePreInitLocked__)(POBJGPU, struct NvDebugDump * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__nvdStatePreInitUnlocked__)(POBJGPU, struct NvDebugDump * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__nvdStateInitUnlocked__)(POBJGPU, struct NvDebugDump * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__nvdStatePreLoad__)(POBJGPU, struct NvDebugDump * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__nvdStateLoad__)(POBJGPU, struct NvDebugDump * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__nvdStatePostLoad__)(POBJGPU, struct NvDebugDump * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__nvdStatePreUnload__)(POBJGPU, struct NvDebugDump * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__nvdStateUnload__)(POBJGPU, struct NvDebugDump * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__nvdStatePostUnload__)(POBJGPU, struct NvDebugDump * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    void (*__nvdStateDestroy__)(POBJGPU, struct NvDebugDump * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__nvdIsPresent__)(POBJGPU, struct NvDebugDump * /*this*/);  // virtual inherited (engstate) base (engstate)
+
+    // Data members
     NVD_DEBUG_BUFFER *pHeadDebugBuffer;
     NVD_ENGINE_CALLBACK *pCallbacks;
 };
@@ -194,6 +213,7 @@ typedef struct NvDebugDump NvDebugDump;
 #define __nvoc_class_id_NvDebugDump 0x7e80a2
 #endif /* __nvoc_class_id_NvDebugDump */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_NvDebugDump;
 
 #define __staticCast_NvDebugDump(pThis) \
@@ -206,6 +226,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_NvDebugDump;
     ((NvDebugDump*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(NvDebugDump)))
 #endif //__nvoc_nv_debug_dump_h_disabled
 
+// Property macros
 #define PDB_PROP_NVD_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
 #define PDB_PROP_NVD_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
 
@@ -215,58 +236,44 @@ NV_STATUS __nvoc_objCreate_NvDebugDump(NvDebugDump**, Dynamic*, NvU32);
 #define __objCreate_NvDebugDump(ppNewObj, pParent, createFlags) \
     __nvoc_objCreate_NvDebugDump((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
-#define nvdConstructEngine(pGpu, pNvd, arg0) nvdConstructEngine_DISPATCH(pGpu, pNvd, arg0)
+
+// Wrapper macros
+#define nvdConstructEngine_FNPTR(pNvd) pNvd->__nvdConstructEngine__
+#define nvdConstructEngine(pGpu, pNvd, arg3) nvdConstructEngine_DISPATCH(pGpu, pNvd, arg3)
+#define nvdStateInitLocked_FNPTR(pNvd) pNvd->__nvdStateInitLocked__
 #define nvdStateInitLocked(pGpu, pNvd) nvdStateInitLocked_DISPATCH(pGpu, pNvd)
-#define nvdStateLoad(pGpu, pEngstate, arg0) nvdStateLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define nvdStateUnload(pGpu, pEngstate, arg0) nvdStateUnload_DISPATCH(pGpu, pEngstate, arg0)
-#define nvdStatePreLoad(pGpu, pEngstate, arg0) nvdStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define nvdStatePostUnload(pGpu, pEngstate, arg0) nvdStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
-#define nvdStateDestroy(pGpu, pEngstate) nvdStateDestroy_DISPATCH(pGpu, pEngstate)
-#define nvdStatePreUnload(pGpu, pEngstate, arg0) nvdStatePreUnload_DISPATCH(pGpu, pEngstate, arg0)
-#define nvdStateInitUnlocked(pGpu, pEngstate) nvdStateInitUnlocked_DISPATCH(pGpu, pEngstate)
+#define nvdInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateInitMissing__
 #define nvdInitMissing(pGpu, pEngstate) nvdInitMissing_DISPATCH(pGpu, pEngstate)
+#define nvdStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreInitLocked__
 #define nvdStatePreInitLocked(pGpu, pEngstate) nvdStatePreInitLocked_DISPATCH(pGpu, pEngstate)
+#define nvdStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreInitUnlocked__
 #define nvdStatePreInitUnlocked(pGpu, pEngstate) nvdStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define nvdStatePostLoad(pGpu, pEngstate, arg0) nvdStatePostLoad_DISPATCH(pGpu, pEngstate, arg0)
+#define nvdStateInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStateInitUnlocked__
+#define nvdStateInitUnlocked(pGpu, pEngstate) nvdStateInitUnlocked_DISPATCH(pGpu, pEngstate)
+#define nvdStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreLoad__
+#define nvdStatePreLoad(pGpu, pEngstate, arg3) nvdStatePreLoad_DISPATCH(pGpu, pEngstate, arg3)
+#define nvdStateLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStateLoad__
+#define nvdStateLoad(pGpu, pEngstate, arg3) nvdStateLoad_DISPATCH(pGpu, pEngstate, arg3)
+#define nvdStatePostLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePostLoad__
+#define nvdStatePostLoad(pGpu, pEngstate, arg3) nvdStatePostLoad_DISPATCH(pGpu, pEngstate, arg3)
+#define nvdStatePreUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreUnload__
+#define nvdStatePreUnload(pGpu, pEngstate, arg3) nvdStatePreUnload_DISPATCH(pGpu, pEngstate, arg3)
+#define nvdStateUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStateUnload__
+#define nvdStateUnload(pGpu, pEngstate, arg3) nvdStateUnload_DISPATCH(pGpu, pEngstate, arg3)
+#define nvdStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePostUnload__
+#define nvdStatePostUnload(pGpu, pEngstate, arg3) nvdStatePostUnload_DISPATCH(pGpu, pEngstate, arg3)
+#define nvdStateDestroy_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStateDestroy__
+#define nvdStateDestroy(pGpu, pEngstate) nvdStateDestroy_DISPATCH(pGpu, pEngstate)
+#define nvdIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateIsPresent__
 #define nvdIsPresent(pGpu, pEngstate) nvdIsPresent_DISPATCH(pGpu, pEngstate)
-NV_STATUS nvdConstructEngine_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, ENGDESCRIPTOR arg0);
 
-static inline NV_STATUS nvdConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, ENGDESCRIPTOR arg0) {
-    return pNvd->__nvdConstructEngine__(pGpu, pNvd, arg0);
+// Dispatch functions
+static inline NV_STATUS nvdConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, ENGDESCRIPTOR arg3) {
+    return pNvd->__nvdConstructEngine__(pGpu, pNvd, arg3);
 }
-
-NV_STATUS nvdStateInitLocked_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd);
 
 static inline NV_STATUS nvdStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct NvDebugDump *pNvd) {
     return pNvd->__nvdStateInitLocked__(pGpu, pNvd);
-}
-
-static inline NV_STATUS nvdStateLoad_DISPATCH(POBJGPU pGpu, struct NvDebugDump *pEngstate, NvU32 arg0) {
-    return pEngstate->__nvdStateLoad__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS nvdStateUnload_DISPATCH(POBJGPU pGpu, struct NvDebugDump *pEngstate, NvU32 arg0) {
-    return pEngstate->__nvdStateUnload__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS nvdStatePreLoad_DISPATCH(POBJGPU pGpu, struct NvDebugDump *pEngstate, NvU32 arg0) {
-    return pEngstate->__nvdStatePreLoad__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS nvdStatePostUnload_DISPATCH(POBJGPU pGpu, struct NvDebugDump *pEngstate, NvU32 arg0) {
-    return pEngstate->__nvdStatePostUnload__(pGpu, pEngstate, arg0);
-}
-
-static inline void nvdStateDestroy_DISPATCH(POBJGPU pGpu, struct NvDebugDump *pEngstate) {
-    pEngstate->__nvdStateDestroy__(pGpu, pEngstate);
-}
-
-static inline NV_STATUS nvdStatePreUnload_DISPATCH(POBJGPU pGpu, struct NvDebugDump *pEngstate, NvU32 arg0) {
-    return pEngstate->__nvdStatePreUnload__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS nvdStateInitUnlocked_DISPATCH(POBJGPU pGpu, struct NvDebugDump *pEngstate) {
-    return pEngstate->__nvdStateInitUnlocked__(pGpu, pEngstate);
 }
 
 static inline void nvdInitMissing_DISPATCH(POBJGPU pGpu, struct NvDebugDump *pEngstate) {
@@ -281,13 +288,45 @@ static inline NV_STATUS nvdStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct Nv
     return pEngstate->__nvdStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS nvdStatePostLoad_DISPATCH(POBJGPU pGpu, struct NvDebugDump *pEngstate, NvU32 arg0) {
-    return pEngstate->__nvdStatePostLoad__(pGpu, pEngstate, arg0);
+static inline NV_STATUS nvdStateInitUnlocked_DISPATCH(POBJGPU pGpu, struct NvDebugDump *pEngstate) {
+    return pEngstate->__nvdStateInitUnlocked__(pGpu, pEngstate);
+}
+
+static inline NV_STATUS nvdStatePreLoad_DISPATCH(POBJGPU pGpu, struct NvDebugDump *pEngstate, NvU32 arg3) {
+    return pEngstate->__nvdStatePreLoad__(pGpu, pEngstate, arg3);
+}
+
+static inline NV_STATUS nvdStateLoad_DISPATCH(POBJGPU pGpu, struct NvDebugDump *pEngstate, NvU32 arg3) {
+    return pEngstate->__nvdStateLoad__(pGpu, pEngstate, arg3);
+}
+
+static inline NV_STATUS nvdStatePostLoad_DISPATCH(POBJGPU pGpu, struct NvDebugDump *pEngstate, NvU32 arg3) {
+    return pEngstate->__nvdStatePostLoad__(pGpu, pEngstate, arg3);
+}
+
+static inline NV_STATUS nvdStatePreUnload_DISPATCH(POBJGPU pGpu, struct NvDebugDump *pEngstate, NvU32 arg3) {
+    return pEngstate->__nvdStatePreUnload__(pGpu, pEngstate, arg3);
+}
+
+static inline NV_STATUS nvdStateUnload_DISPATCH(POBJGPU pGpu, struct NvDebugDump *pEngstate, NvU32 arg3) {
+    return pEngstate->__nvdStateUnload__(pGpu, pEngstate, arg3);
+}
+
+static inline NV_STATUS nvdStatePostUnload_DISPATCH(POBJGPU pGpu, struct NvDebugDump *pEngstate, NvU32 arg3) {
+    return pEngstate->__nvdStatePostUnload__(pGpu, pEngstate, arg3);
+}
+
+static inline void nvdStateDestroy_DISPATCH(POBJGPU pGpu, struct NvDebugDump *pEngstate) {
+    pEngstate->__nvdStateDestroy__(pGpu, pEngstate);
 }
 
 static inline NvBool nvdIsPresent_DISPATCH(POBJGPU pGpu, struct NvDebugDump *pEngstate) {
     return pEngstate->__nvdIsPresent__(pGpu, pEngstate);
 }
+
+NV_STATUS nvdConstructEngine_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, ENGDESCRIPTOR arg3);
+
+NV_STATUS nvdStateInitLocked_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd);
 
 void nvdDestruct_IMPL(struct NvDebugDump *pNvd);
 
@@ -303,48 +342,48 @@ static inline NV_STATUS nvdDumpComponent(struct OBJGPU *pGpu, struct NvDebugDump
 #define nvdDumpComponent(pGpu, pNvd, component, pBuffer, policy, pBufferCallback) nvdDumpComponent_IMPL(pGpu, pNvd, component, pBuffer, policy, pBufferCallback)
 #endif //__nvoc_nv_debug_dump_h_disabled
 
-NV_STATUS nvdAllocDebugBuffer_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvU32 arg0, NvU32 *arg1, MEMORY_DESCRIPTOR **arg2);
+NV_STATUS nvdAllocDebugBuffer_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvU32 arg3, NvU32 *arg4, MEMORY_DESCRIPTOR **arg5);
 
 #ifdef __nvoc_nv_debug_dump_h_disabled
-static inline NV_STATUS nvdAllocDebugBuffer(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvU32 arg0, NvU32 *arg1, MEMORY_DESCRIPTOR **arg2) {
+static inline NV_STATUS nvdAllocDebugBuffer(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvU32 arg3, NvU32 *arg4, MEMORY_DESCRIPTOR **arg5) {
     NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_nv_debug_dump_h_disabled
-#define nvdAllocDebugBuffer(pGpu, pNvd, arg0, arg1, arg2) nvdAllocDebugBuffer_IMPL(pGpu, pNvd, arg0, arg1, arg2)
+#define nvdAllocDebugBuffer(pGpu, pNvd, arg3, arg4, arg5) nvdAllocDebugBuffer_IMPL(pGpu, pNvd, arg3, arg4, arg5)
 #endif //__nvoc_nv_debug_dump_h_disabled
 
-NV_STATUS nvdFreeDebugBuffer_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, MEMORY_DESCRIPTOR *arg0);
+NV_STATUS nvdFreeDebugBuffer_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, MEMORY_DESCRIPTOR *arg3);
 
 #ifdef __nvoc_nv_debug_dump_h_disabled
-static inline NV_STATUS nvdFreeDebugBuffer(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, MEMORY_DESCRIPTOR *arg0) {
+static inline NV_STATUS nvdFreeDebugBuffer(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, MEMORY_DESCRIPTOR *arg3) {
     NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_nv_debug_dump_h_disabled
-#define nvdFreeDebugBuffer(pGpu, pNvd, arg0) nvdFreeDebugBuffer_IMPL(pGpu, pNvd, arg0)
+#define nvdFreeDebugBuffer(pGpu, pNvd, arg3) nvdFreeDebugBuffer_IMPL(pGpu, pNvd, arg3)
 #endif //__nvoc_nv_debug_dump_h_disabled
 
-NV_STATUS nvdDumpDebugBuffers_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, PRB_ENCODER *arg0);
+NV_STATUS nvdDumpDebugBuffers_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, PRB_ENCODER *arg3);
 
 #ifdef __nvoc_nv_debug_dump_h_disabled
-static inline NV_STATUS nvdDumpDebugBuffers(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, PRB_ENCODER *arg0) {
+static inline NV_STATUS nvdDumpDebugBuffers(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, PRB_ENCODER *arg3) {
     NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_nv_debug_dump_h_disabled
-#define nvdDumpDebugBuffers(pGpu, pNvd, arg0) nvdDumpDebugBuffers_IMPL(pGpu, pNvd, arg0)
+#define nvdDumpDebugBuffers(pGpu, pNvd, arg3) nvdDumpDebugBuffers_IMPL(pGpu, pNvd, arg3)
 #endif //__nvoc_nv_debug_dump_h_disabled
 
-NV_STATUS nvdEngineSignUp_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvdDumpEngineFunc *arg0, NvU32 engDesc, NvU32 flags, void *arg1);
+NV_STATUS nvdEngineSignUp_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvdDumpEngineFunc *arg3, NvU32 engDesc, NvU32 flags, void *arg6);
 
 #ifdef __nvoc_nv_debug_dump_h_disabled
-static inline NV_STATUS nvdEngineSignUp(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvdDumpEngineFunc *arg0, NvU32 engDesc, NvU32 flags, void *arg1) {
+static inline NV_STATUS nvdEngineSignUp(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, NvdDumpEngineFunc *arg3, NvU32 engDesc, NvU32 flags, void *arg6) {
     NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_nv_debug_dump_h_disabled
-#define nvdEngineSignUp(pGpu, pNvd, arg0, engDesc, flags, arg1) nvdEngineSignUp_IMPL(pGpu, pNvd, arg0, engDesc, flags, arg1)
+#define nvdEngineSignUp(pGpu, pNvd, arg3, engDesc, flags, arg6) nvdEngineSignUp_IMPL(pGpu, pNvd, arg3, engDesc, flags, arg6)
 #endif //__nvoc_nv_debug_dump_h_disabled
 
 NV_STATUS nvdEngineRelease_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd);
@@ -358,15 +397,15 @@ static inline NV_STATUS nvdEngineRelease(struct OBJGPU *pGpu, struct NvDebugDump
 #define nvdEngineRelease(pGpu, pNvd) nvdEngineRelease_IMPL(pGpu, pNvd)
 #endif //__nvoc_nv_debug_dump_h_disabled
 
-NV_STATUS nvdDoEngineDump_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState, NvU32 arg0);
+NV_STATUS nvdDoEngineDump_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState, NvU32 arg5);
 
 #ifdef __nvoc_nv_debug_dump_h_disabled
-static inline NV_STATUS nvdDoEngineDump(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState, NvU32 arg0) {
+static inline NV_STATUS nvdDoEngineDump(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState, NvU32 arg5) {
     NV_ASSERT_FAILED_PRECOMP("NvDebugDump was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_nv_debug_dump_h_disabled
-#define nvdDoEngineDump(pGpu, pNvd, pPrbEnc, pNvDumpState, arg0) nvdDoEngineDump_IMPL(pGpu, pNvd, pPrbEnc, pNvDumpState, arg0)
+#define nvdDoEngineDump(pGpu, pNvd, pPrbEnc, pNvDumpState, arg5) nvdDoEngineDump_IMPL(pGpu, pNvd, pPrbEnc, pNvDumpState, arg5)
 #endif //__nvoc_nv_debug_dump_h_disabled
 
 NV_STATUS nvdDumpAllEngines_IMPL(struct OBJGPU *pGpu, struct NvDebugDump *pNvd, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState);

@@ -84,90 +84,6 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_GpuManagementApi =
     /*pExportInfo=*/        &__nvoc_export_info_GpuManagementApi
 };
 
-static NvBool __nvoc_thunk_RmResource_gpumgmtapiShareCallback(struct GpuManagementApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return rmresShareCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuManagementApi_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_gpumgmtapiCheckMemInterUnmap(struct GpuManagementApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_GpuManagementApi_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_gpumgmtapiControl(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControl((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_gpumgmtapiGetMemInterMapParams(struct GpuManagementApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_GpuManagementApi_RmResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_gpumgmtapiGetMemoryMappingDescriptor(struct GpuManagementApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_GpuManagementApi_RmResource.offset), ppMemDesc);
-}
-
-static NvU32 __nvoc_thunk_RsResource_gpumgmtapiGetRefCount(struct GpuManagementApi *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_gpumgmtapiControlFilter(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset), pCallContext, pParams);
-}
-
-static void __nvoc_thunk_RsResource_gpumgmtapiAddAdditionalDependants(struct RsClient *pClient, struct GpuManagementApi *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset), pReference);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_gpumgmtapiControlSerialization_Prologue(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuManagementApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_gpumgmtapiControl_Prologue(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuManagementApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NvBool __nvoc_thunk_RsResource_gpumgmtapiCanCopy(struct GpuManagementApi *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_gpumgmtapiUnmap(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return resUnmap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset), pCallContext, pCpuMapping);
-}
-
-static NvBool __nvoc_thunk_RsResource_gpumgmtapiIsPartialUnmapSupported(struct GpuManagementApi *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_gpumgmtapiPreDestruct(struct GpuManagementApi *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_gpumgmtapiMapTo(struct GpuManagementApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_gpumgmtapiIsDuplicate(struct GpuManagementApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset), hMemory, pDuplicate);
-}
-
-static void __nvoc_thunk_RmResource_gpumgmtapiControlSerialization_Epilogue(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuManagementApi_RmResource.offset), pCallContext, pParams);
-}
-
-static void __nvoc_thunk_RmResource_gpumgmtapiControl_Epilogue(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuManagementApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_gpumgmtapiUnmapFrom(struct GpuManagementApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_gpumgmtapiMap(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return resMap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset), pCallContext, pParams, pCpuMapping);
-}
-
-static NvBool __nvoc_thunk_RmResource_gpumgmtapiAccessCallback(struct GpuManagementApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuManagementApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
-}
-
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
@@ -191,6 +107,114 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_GpuManag
     },
 
 };
+
+// 21 up-thunk(s) defined to bridge methods in GpuManagementApi to superclasses
+
+// gpumgmtapiAccessCallback: virtual inherited (rmres) base (rmres)
+static NvBool __nvoc_up_thunk_RmResource_gpumgmtapiAccessCallback(struct GpuManagementApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_GpuManagementApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+}
+
+// gpumgmtapiShareCallback: virtual inherited (rmres) base (rmres)
+static NvBool __nvoc_up_thunk_RmResource_gpumgmtapiShareCallback(struct GpuManagementApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_GpuManagementApi_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+}
+
+// gpumgmtapiGetMemInterMapParams: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_gpumgmtapiGetMemInterMapParams(struct GpuManagementApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_GpuManagementApi_RmResource.offset), pParams);
+}
+
+// gpumgmtapiCheckMemInterUnmap: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_gpumgmtapiCheckMemInterUnmap(struct GpuManagementApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_GpuManagementApi_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+// gpumgmtapiGetMemoryMappingDescriptor: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_gpumgmtapiGetMemoryMappingDescriptor(struct GpuManagementApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_GpuManagementApi_RmResource.offset), ppMemDesc);
+}
+
+// gpumgmtapiControlSerialization_Prologue: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_gpumgmtapiControlSerialization_Prologue(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_GpuManagementApi_RmResource.offset), pCallContext, pParams);
+}
+
+// gpumgmtapiControlSerialization_Epilogue: virtual inherited (rmres) base (rmres)
+static void __nvoc_up_thunk_RmResource_gpumgmtapiControlSerialization_Epilogue(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_GpuManagementApi_RmResource.offset), pCallContext, pParams);
+}
+
+// gpumgmtapiControl_Prologue: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_gpumgmtapiControl_Prologue(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_GpuManagementApi_RmResource.offset), pCallContext, pParams);
+}
+
+// gpumgmtapiControl_Epilogue: virtual inherited (rmres) base (rmres)
+static void __nvoc_up_thunk_RmResource_gpumgmtapiControl_Epilogue(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_GpuManagementApi_RmResource.offset), pCallContext, pParams);
+}
+
+// gpumgmtapiCanCopy: virtual inherited (res) base (rmres)
+static NvBool __nvoc_up_thunk_RsResource_gpumgmtapiCanCopy(struct GpuManagementApi *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset));
+}
+
+// gpumgmtapiIsDuplicate: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_gpumgmtapiIsDuplicate(struct GpuManagementApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset), hMemory, pDuplicate);
+}
+
+// gpumgmtapiPreDestruct: virtual inherited (res) base (rmres)
+static void __nvoc_up_thunk_RsResource_gpumgmtapiPreDestruct(struct GpuManagementApi *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset));
+}
+
+// gpumgmtapiControl: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_gpumgmtapiControl(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControl((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset), pCallContext, pParams);
+}
+
+// gpumgmtapiControlFilter: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_gpumgmtapiControlFilter(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset), pCallContext, pParams);
+}
+
+// gpumgmtapiMap: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_gpumgmtapiMap(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+    return resMap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset), pCallContext, pParams, pCpuMapping);
+}
+
+// gpumgmtapiUnmap: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_gpumgmtapiUnmap(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return resUnmap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset), pCallContext, pCpuMapping);
+}
+
+// gpumgmtapiIsPartialUnmapSupported: inline virtual inherited (res) base (rmres) body
+static NvBool __nvoc_up_thunk_RsResource_gpumgmtapiIsPartialUnmapSupported(struct GpuManagementApi *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset));
+}
+
+// gpumgmtapiMapTo: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_gpumgmtapiMapTo(struct GpuManagementApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset), pParams);
+}
+
+// gpumgmtapiUnmapFrom: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_gpumgmtapiUnmapFrom(struct GpuManagementApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset), pParams);
+}
+
+// gpumgmtapiGetRefCount: virtual inherited (res) base (rmres)
+static NvU32 __nvoc_up_thunk_RsResource_gpumgmtapiGetRefCount(struct GpuManagementApi *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset));
+}
+
+// gpumgmtapiAddAdditionalDependants: virtual inherited (res) base (rmres)
+static void __nvoc_up_thunk_RsResource_gpumgmtapiAddAdditionalDependants(struct RsClient *pClient, struct GpuManagementApi *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset), pReference);
+}
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_GpuManagementApi = 
 {
@@ -228,57 +252,84 @@ __nvoc_ctor_GpuManagementApi_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_GpuManagementApi_1(GpuManagementApi *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // gpumgmtapiCtrlCmdSetShutdownState -- exported (id=0x200101)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x7u)
     pThis->__gpumgmtapiCtrlCmdSetShutdownState__ = &gpumgmtapiCtrlCmdSetShutdownState_IMPL;
 #endif
 
-    pThis->__gpumgmtapiShareCallback__ = &__nvoc_thunk_RmResource_gpumgmtapiShareCallback;
+    // gpumgmtapiAccessCallback -- virtual inherited (rmres) base (rmres)
+    pThis->__gpumgmtapiAccessCallback__ = &__nvoc_up_thunk_RmResource_gpumgmtapiAccessCallback;
 
-    pThis->__gpumgmtapiCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_gpumgmtapiCheckMemInterUnmap;
+    // gpumgmtapiShareCallback -- virtual inherited (rmres) base (rmres)
+    pThis->__gpumgmtapiShareCallback__ = &__nvoc_up_thunk_RmResource_gpumgmtapiShareCallback;
 
-    pThis->__gpumgmtapiControl__ = &__nvoc_thunk_RsResource_gpumgmtapiControl;
+    // gpumgmtapiGetMemInterMapParams -- virtual inherited (rmres) base (rmres)
+    pThis->__gpumgmtapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpumgmtapiGetMemInterMapParams;
 
-    pThis->__gpumgmtapiGetMemInterMapParams__ = &__nvoc_thunk_RmResource_gpumgmtapiGetMemInterMapParams;
+    // gpumgmtapiCheckMemInterUnmap -- virtual inherited (rmres) base (rmres)
+    pThis->__gpumgmtapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpumgmtapiCheckMemInterUnmap;
 
-    pThis->__gpumgmtapiGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_gpumgmtapiGetMemoryMappingDescriptor;
+    // gpumgmtapiGetMemoryMappingDescriptor -- virtual inherited (rmres) base (rmres)
+    pThis->__gpumgmtapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpumgmtapiGetMemoryMappingDescriptor;
 
-    pThis->__gpumgmtapiGetRefCount__ = &__nvoc_thunk_RsResource_gpumgmtapiGetRefCount;
+    // gpumgmtapiControlSerialization_Prologue -- virtual inherited (rmres) base (rmres)
+    pThis->__gpumgmtapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpumgmtapiControlSerialization_Prologue;
 
-    pThis->__gpumgmtapiControlFilter__ = &__nvoc_thunk_RsResource_gpumgmtapiControlFilter;
+    // gpumgmtapiControlSerialization_Epilogue -- virtual inherited (rmres) base (rmres)
+    pThis->__gpumgmtapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpumgmtapiControlSerialization_Epilogue;
 
-    pThis->__gpumgmtapiAddAdditionalDependants__ = &__nvoc_thunk_RsResource_gpumgmtapiAddAdditionalDependants;
+    // gpumgmtapiControl_Prologue -- virtual inherited (rmres) base (rmres)
+    pThis->__gpumgmtapiControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpumgmtapiControl_Prologue;
 
-    pThis->__gpumgmtapiControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_gpumgmtapiControlSerialization_Prologue;
+    // gpumgmtapiControl_Epilogue -- virtual inherited (rmres) base (rmres)
+    pThis->__gpumgmtapiControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpumgmtapiControl_Epilogue;
 
-    pThis->__gpumgmtapiControl_Prologue__ = &__nvoc_thunk_RmResource_gpumgmtapiControl_Prologue;
+    // gpumgmtapiCanCopy -- virtual inherited (res) base (rmres)
+    pThis->__gpumgmtapiCanCopy__ = &__nvoc_up_thunk_RsResource_gpumgmtapiCanCopy;
 
-    pThis->__gpumgmtapiCanCopy__ = &__nvoc_thunk_RsResource_gpumgmtapiCanCopy;
+    // gpumgmtapiIsDuplicate -- virtual inherited (res) base (rmres)
+    pThis->__gpumgmtapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpumgmtapiIsDuplicate;
 
-    pThis->__gpumgmtapiUnmap__ = &__nvoc_thunk_RsResource_gpumgmtapiUnmap;
+    // gpumgmtapiPreDestruct -- virtual inherited (res) base (rmres)
+    pThis->__gpumgmtapiPreDestruct__ = &__nvoc_up_thunk_RsResource_gpumgmtapiPreDestruct;
 
-    pThis->__gpumgmtapiIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_gpumgmtapiIsPartialUnmapSupported;
+    // gpumgmtapiControl -- virtual inherited (res) base (rmres)
+    pThis->__gpumgmtapiControl__ = &__nvoc_up_thunk_RsResource_gpumgmtapiControl;
 
-    pThis->__gpumgmtapiPreDestruct__ = &__nvoc_thunk_RsResource_gpumgmtapiPreDestruct;
+    // gpumgmtapiControlFilter -- virtual inherited (res) base (rmres)
+    pThis->__gpumgmtapiControlFilter__ = &__nvoc_up_thunk_RsResource_gpumgmtapiControlFilter;
 
-    pThis->__gpumgmtapiMapTo__ = &__nvoc_thunk_RsResource_gpumgmtapiMapTo;
+    // gpumgmtapiMap -- virtual inherited (res) base (rmres)
+    pThis->__gpumgmtapiMap__ = &__nvoc_up_thunk_RsResource_gpumgmtapiMap;
 
-    pThis->__gpumgmtapiIsDuplicate__ = &__nvoc_thunk_RsResource_gpumgmtapiIsDuplicate;
+    // gpumgmtapiUnmap -- virtual inherited (res) base (rmres)
+    pThis->__gpumgmtapiUnmap__ = &__nvoc_up_thunk_RsResource_gpumgmtapiUnmap;
 
-    pThis->__gpumgmtapiControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_gpumgmtapiControlSerialization_Epilogue;
+    // gpumgmtapiIsPartialUnmapSupported -- inline virtual inherited (res) base (rmres) body
+    pThis->__gpumgmtapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpumgmtapiIsPartialUnmapSupported;
 
-    pThis->__gpumgmtapiControl_Epilogue__ = &__nvoc_thunk_RmResource_gpumgmtapiControl_Epilogue;
+    // gpumgmtapiMapTo -- virtual inherited (res) base (rmres)
+    pThis->__gpumgmtapiMapTo__ = &__nvoc_up_thunk_RsResource_gpumgmtapiMapTo;
 
-    pThis->__gpumgmtapiUnmapFrom__ = &__nvoc_thunk_RsResource_gpumgmtapiUnmapFrom;
+    // gpumgmtapiUnmapFrom -- virtual inherited (res) base (rmres)
+    pThis->__gpumgmtapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpumgmtapiUnmapFrom;
 
-    pThis->__gpumgmtapiMap__ = &__nvoc_thunk_RsResource_gpumgmtapiMap;
+    // gpumgmtapiGetRefCount -- virtual inherited (res) base (rmres)
+    pThis->__gpumgmtapiGetRefCount__ = &__nvoc_up_thunk_RsResource_gpumgmtapiGetRefCount;
 
-    pThis->__gpumgmtapiAccessCallback__ = &__nvoc_thunk_RmResource_gpumgmtapiAccessCallback;
-}
+    // gpumgmtapiAddAdditionalDependants -- virtual inherited (res) base (rmres)
+    pThis->__gpumgmtapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpumgmtapiAddAdditionalDependants;
+} // End __nvoc_init_funcTable_GpuManagementApi_1 with approximately 22 basic block(s).
 
+
+// Initialize vtable(s) for 22 virtual method(s).
 void __nvoc_init_funcTable_GpuManagementApi(GpuManagementApi *pThis) {
+
+    // Initialize vtable(s) with 22 per-object function pointer(s).
     __nvoc_init_funcTable_GpuManagementApi_1(pThis);
 }
 

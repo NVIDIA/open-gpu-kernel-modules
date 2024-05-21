@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -194,6 +194,14 @@ typedef enum
     RPC_GR_BUFFER_TYPE_GRAPHICS_PRIV_ACCESS_MAP = 12,
     RPC_GR_BUFFER_TYPE_GRAPHICS_MAX             = 13,
 } RPC_GR_BUFFER_TYPE;
+
+typedef enum
+{
+    FECS_ERROR_EVENT_TYPE_NONE                  = 0,
+    FECS_ERROR_EVENT_TYPE_BUFFER_RESET_REQUIRED = 1,
+    FECS_ERROR_EVENT_TYPE_BUFFER_FULL           = 2,
+    FECS_ERROR_EVENT_TYPE_MAX                   = 3,
+} FECS_ERROR_EVENT_TYPE;
 
 /*
  * Maximum entries that can be sent in a single pass of RPC.

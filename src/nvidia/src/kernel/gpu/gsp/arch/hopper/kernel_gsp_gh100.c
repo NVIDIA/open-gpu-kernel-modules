@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,7 @@
 #include "spdm/rmspdmtransport.h"
 #include "gpu/fsp/kern_fsp.h"
 #include "gpu/gsp/kernel_gsp.h"
+#include "gpu/pmu/kern_pmu.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
 #include "gsp/gspifpub.h"
 #include "vgpu/rpc.h"
@@ -263,7 +264,9 @@ kgspWaitForGfwBootOk_GH100
  *   | VGA WORKSPACE            |
  *   ---------------------------- <- vbiosReservedOffset  (64K? aligned)
  *   | (potential align. gap)   |
- *   ---------------------------- <- gspFwWprEnd (128K aligned)
+ *   ---------------------------- <- gspFwWprEnd + frtsSize + pmuReservedSize
+ *   | PMU mem reservation      |
+ *   ---------------------------- <- gspFwWprEnd (128K aligned) + frtsSize
  *   | FRTS data                |
  *   | ------------------------ | <- frtsOffset
  *   | BOOT BIN (e.g. GSP-FMC)  |
@@ -303,10 +306,11 @@ kgspCalculateFbLayout_GH100
     NV_ASSERT_OR_RETURN(pRiscvDesc != NULL, NV_ERR_INVALID_STATE);
 
     //
-    // We send this to FSP as the size to reserve above FRTS.
-    // The actual offset gets filled in by ACR ucode when it sets up WPR2.
+    // We send these to FSP as the size to reserve above FRTS.
+    // The actual offsets get filled in by ACR ucode when it sets up WPR2.
     //
     pWprMeta->vgaWorkspaceSize = 128 * 1024;
+    pWprMeta->pmuReservedSize = kpmuReservedMemorySizeGet(GPU_GET_KERNEL_PMU(pGpu));
 
     // Physical address and size of GSP-FMC ucode in system memory
     pWprMeta->sizeOfBootloader = pKernelGsp->gspRmBootUcodeSize;
@@ -459,9 +463,32 @@ _kgspLockdownReleasedOrFmcError
     //
     // If lockdown has not been released, check NV_PGSP_FALCON_MAILBOX0, where the GSP-FMC
     // (namely ACR) logs error codes during boot. GSP-FMC reported errors are always fatal,
-    // so there's no reason to continue polling for lockdown release.
+    // so there's no reason to continue polling for lockdown release. This register can be
+    // accessed when GSP PRIV is locked down, but not when the GSP PRIV target mask is locked
+    // to FSP - so this shouldn't be called until the latter has been lifted.
+    //
+    // Generally, this mailbox check could fail if the PRIV target mask is *never* locked to FSP,
+    // e.g., this isn't a Chain-of-Trust (COT) boot, because we'd be able to read the original
+    // boot args addresses stuffed in the mailboxes (before the GSP-FMC has read and cleared
+    // them during bootstrap, while the PRIV target mask is typically locked in COT). To avoid
+    // premature failure in this case, if NV_PGSP_FALCON_MAILBOX0 is non-zero, check whether the
+    // boot args address is still in the mailboxes, and continue to wait, if so.
     //
     mailbox0 = kflcnRegRead_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX0);
+    if (mailbox0 != 0)
+    {
+        //
+        // Collision of a real error code with the boot args address should never happen:
+        // - the boot args phys address is page-allocated, so at least 4K-aligned, if not more
+        // - the GSP-FMC error codes stashed in NV_PGSP_FALCON_MAILBOX0 are effectively 8-bit
+        //   and value 0 means "no error"
+        //
+        NvU64 physAddr = memdescGetPhysAddr(pKernelGsp->pGspFmcArgumentsDescriptor, AT_GPU, 0);
+        if ((NvU64_LO32(physAddr) == mailbox0) &&
+            (NvU64_HI32(physAddr) == kflcnRegRead_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX1)))
+            return NV_FALSE;
+    }
+
     hwcfg2 = kflcnRegRead_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_HWCFG2);
 
     return (FLD_TEST_DRF(_PFALCON, _FALCON_HWCFG2, _RISCV_BR_PRIV_LOCKDOWN, _UNLOCK, hwcfg2) ||

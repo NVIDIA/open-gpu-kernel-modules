@@ -105,6 +105,17 @@ kgmmuConstructEngine_IMPL(OBJGPU *pGpu, KernelGmmu *pKernelGmmu, ENGDESCRIPTOR e
 
     NV_ASSERT_OK_OR_RETURN(kgmmuFmtInit(pKernelGmmu));
 
+    //
+    // On vGPU, all hardware management is done by the host except for full SR-IOV.
+    // Thus, only do any further HW initialization on the host.
+    //
+    if (!(IS_VIRTUAL_WITHOUT_SRIOV(pGpu) ||
+          (IS_VIRTUAL_WITH_SRIOV(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu))))
+    {
+        // Init HAL specific features.
+        NV_ASSERT_OK_OR_RETURN(kgmmuFmtFamiliesInit_HAL(pGpu, pKernelGmmu));
+    }
+
     portMemSet(&pKernelGmmu->mmuFaultBuffer, 0, sizeof(pKernelGmmu->mmuFaultBuffer));
 
     // Default placement for PDEs is in vidmem.
@@ -133,17 +144,6 @@ _kgmmuInitStaticInfo
 {
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV_STATUS status;
-
-    //
-    // On vGPU, all hardware management is done by the host except for full SR-IOV.
-    // Thus, only do any further HW initialization on the host.
-    //
-    if (!(IS_VIRTUAL_WITHOUT_SRIOV(pGpu) ||
-          (IS_VIRTUAL_WITH_SRIOV(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu))))
-    {
-        // Init HAL specific features.
-        NV_ASSERT_OK_OR_RETURN(kgmmuFmtFamiliesInit_HAL(pGpu, pKernelGmmu));
-    }
 
     pKernelGmmu->pStaticInfo = portMemAllocNonPaged(sizeof(*pKernelGmmu->pStaticInfo));
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pKernelGmmu->pStaticInfo != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
@@ -3156,4 +3156,22 @@ subdeviceCtrlCmdInternalGmmuUnregisterFaultBuffer_IMPL
                                  NV_FALSE);
     }
     return status;
+}
+
+NV_STATUS
+subdeviceCtrlCmdGmmuCommitTlbInvalidate_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_GMMU_COMMIT_TLB_INVALIDATE_PARAMS *pTlbInvalidateParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+    COMMIT_TLB_INVALIDATE_TEST_PARAMS params;
+
+    params.gfid = pTlbInvalidateParams->gfid;
+    params.invalidateAll = pTlbInvalidateParams->invalidateAll;
+
+    return kgmmuCommitInvalidateTlbTest_HAL(pGpu, pKernelGmmu, &params);
+
 }

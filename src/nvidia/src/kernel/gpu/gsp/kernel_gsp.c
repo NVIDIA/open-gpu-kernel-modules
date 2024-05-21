@@ -65,6 +65,7 @@
 #include "gpu/perf/kern_perf.h"
 #include "core/locks.h"
 #include "kernel/gpu/intr/intr.h"
+#include "kernel/gpu/gr/fecs_event_list.h"
 
 #define RPC_STRUCTURES
 #define RPC_GENERIC_UNION
@@ -91,6 +92,12 @@ struct MIG_CI_UPDATE_CALLBACK_PARAMS
     NvU32 gfid;
     NvBool bDelete;
 };
+
+typedef struct
+{
+    NvU32 grIdx;
+    FECS_ERROR_EVENT_TYPE errorType;
+} FECS_ERROR_REPORT;
 
 //
 // RPC_PARAMS defines the rpc_params pointer and initializes it to the correct
@@ -144,6 +151,9 @@ static NV_STATUS _kgspFwContainerGetSection(OBJGPU *pGpu, KernelGsp *pKernelGsp,
 static NV_STATUS _kgspGetSectionNameForPrefix(OBJGPU *pGpu, KernelGsp *pKernelGsp,
                                               char *pSectionNameBuf, NvLength sectionNameBufSize,
                                               const char *pSectionPrefix);
+
+static NV_STATUS _kgspRpcGspEventFecsError(OBJGPU *, OBJRPC *);
+static void _kgspRpcGspEventHandleFecsBufferError(NvU32, void *);
 
 static void
 _kgspGetActiveRpcDebugData
@@ -596,10 +606,13 @@ _kgspRpcRCTriggered
 
     return krcErrorSendEventNotifications_HAL(pGpu, pKernelRc,
         pKernelChannel,
-        rmEngineType,           // unused on kernel side
+        rmEngineType,            // unused on kernel side
+        rpc_params->exceptLevel, // unused on kernel side
         rpc_params->exceptType,
         rpc_params->scope,
-        rpc_params->partitionAttributionId);
+        rpc_params->partitionAttributionId,
+        NV_FALSE                 // unused on kernel side
+        );
 }
 
 /*!
@@ -846,14 +859,6 @@ _kgspRpcEventIsGpuDegradedCallback
     OBJRPC  *pRpc
 )
 {
-    RPC_PARAMS(nvlink_is_gpu_degraded, _v17_00);
-    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
-    NV2080_CTRL_NVLINK_IS_GPU_DEGRADED_PARAMS_v17_00 *dest = &rpc_params->params;
-
-    if(dest->bIsGpuDegraded)
-    {
-        knvlinkSetDegradedMode(pGpu, pKernelNvlink, dest->linkId);
-    }
 }
 
 static void
@@ -1116,7 +1121,7 @@ _kgspRpcMigCiConfigUpdate
     status = osQueueWorkItemWithFlags(pGpu,
                                       _kgspRpcMigCiConfigUpdateCallback,
                                       (void *)pParams,
-                                      OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW | OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS_RW);
+                                      OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW | OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS);
     if (status != NV_OK)
     {
         portMemFree(pParams);
@@ -1449,6 +1454,10 @@ _kgspProcessRpcEvent
             _kgspRpcGspPostNocatRecord(pGpu, pRpc);
             break;
 
+        case NV_VGPU_MSG_EVENT_FECS_ERROR:
+            nvStatus = _kgspRpcGspEventFecsError(pGpu, pRpc);
+            break;
+
         case NV_VGPU_MSG_EVENT_GSP_INIT_DONE:   // Handled by _kgspRpcRecvPoll.
         default:
             //
@@ -1476,6 +1485,71 @@ _kgspProcessRpcEvent
 
 done:
     _kgspCompleteRpcHistoryEntry(pRpc->rpcEventHistory, pRpc->rpcEventHistoryCurrent);
+}
+
+/*!
+ * Receive FECS error notification from GSP
+ *
+ * FECS error interrupt goes to GSP, but Kernel needs
+ * to take action
+ */
+static NV_STATUS
+_kgspRpcGspEventFecsError
+(
+    OBJGPU *pGpu,
+    OBJRPC *pRpc
+)
+{
+    NV_STATUS status;
+    RPC_PARAMS(fecs_error, _v26_02);
+
+    switch (rpc_params->error_type)
+    {
+        case FECS_ERROR_EVENT_TYPE_BUFFER_RESET_REQUIRED:
+        case FECS_ERROR_EVENT_TYPE_BUFFER_FULL:
+        {
+            FECS_ERROR_REPORT *pErrorReport = portMemAllocNonPaged(sizeof(*pErrorReport));
+            NV_ASSERT_OR_RETURN(pErrorReport != NULL, NV_ERR_NO_MEMORY);
+
+            pErrorReport->grIdx = rpc_params->grIdx;
+            pErrorReport->errorType = rpc_params->error_type;
+            status = osQueueWorkItemWithFlags(pGpu,
+                                              _kgspRpcGspEventHandleFecsBufferError,
+                                              pErrorReport,
+                                              OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RO |
+                                              OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW);
+
+            if (status != NV_OK)
+                portMemFree(pErrorReport);
+
+            break;
+        }
+        default:
+        {
+            status = NV_ERR_INVALID_PARAMETER;
+            break;
+        }
+    }
+
+    return status;
+}
+
+/*!
+ * Processes the callback for the FECS buffer error notifications
+ *
+ * The callback RPCs to GSP, so it must be done with osQueueWorkItem
+ */
+static void
+_kgspRpcGspEventHandleFecsBufferError
+(
+    NvU32 gpuInstance,
+    void *pArgs
+)
+{
+    OBJGPU *pGpu = gpumgrGetGpu(gpuInstance);
+    FECS_ERROR_REPORT *pErrorReport = (FECS_ERROR_REPORT *)pArgs;
+
+    fecsHandleFecsLoggingError(pGpu, pErrorReport->grIdx, pErrorReport->errorType);
 }
 
 /*!
@@ -1983,19 +2057,6 @@ _kgspInitRpcInfrastructure
         goto done;
     }
 
-    // Init task_isr RPC object
-    if (pKernelGsp->bIsTaskIsrQueueRequired)
-    {
-        nvStatus = _kgspConstructRpcObject(pGpu, pKernelGsp,
-                                           &pMQCollection->rpcQueues[RPC_TASK_ISR_QUEUE_IDX],
-                                           &pKernelGsp->pLocklessRpc);
-        if (nvStatus != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR, "init task ISR RPC infrastructure failed\n");
-            goto done;
-        }
-    }
-
 done:
     if (nvStatus != NV_OK)
     {
@@ -2059,12 +2120,6 @@ _kgspFreeRpcInfrastructure
         rpcDestroy(pGpu, pKernelGsp->pRpc);
         portMemFree(pKernelGsp->pRpc);
         pKernelGsp->pRpc = NULL;
-    }
-    if (pKernelGsp->pLocklessRpc != NULL)
-    {
-        rpcDestroy(pGpu, pKernelGsp->pLocklessRpc);
-        portMemFree(pKernelGsp->pLocklessRpc);
-        pKernelGsp->pLocklessRpc = NULL;
     }
     GspMsgQueuesCleanup(&pKernelGsp->pMQCollection);
 }
@@ -2789,33 +2844,12 @@ _kgspShouldRelaxGspInitLocking
         relaxGspInitLockingReg = NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_DEFAULT;
     }
 
-    // Due to bug 4399629, restrict which platforms have parallel init enabled by default
-    if (relaxGspInitLockingReg == NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_DEFAULT)
+    if ((relaxGspInitLockingReg == NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_DEFAULT) ||
+        (relaxGspInitLockingReg == NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_ENABLE))
     {
-        NvU16 devId = (NvU16)(((pGpu->idInfo.PCIDeviceID) >> 16) & 0x0000FFFF);
-        NvU32 i;
-
-        static const NvU16 defaultRelaxGspInitLockingGpus[] = {
-            0x1EB8, // T4
-            0x1EB9, // T4
-        };
-
-        if (IsHOPPER(pGpu) || IsADA(pGpu))
-        {
-            return NV_TRUE;
-        }
-
-        for (i = 0; i < NV_ARRAY_ELEMENTS(defaultRelaxGspInitLockingGpus); i++)
-        {
-            if (devId == defaultRelaxGspInitLockingGpus[i])
-            {
-                return NV_TRUE;
-            }
-        }
-        return NV_FALSE;
+        return NV_TRUE;
     }
 
-    return (relaxGspInitLockingReg == NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_ENABLE);
     return NV_FALSE;
 }
 
@@ -3098,7 +3132,7 @@ kgspInitRm_IMPL
     // Subsequent attempts will shift the GSP region of FB in an attempt to avoid the
     // unstable memory.
     //
-    const NvU8 MAX_GSP_BOOT_ATTEMPTS = 4;
+    const NvU8 MAX_GSP_BOOT_ATTEMPTS = 1;
     do
     {
         // Reset the thread state timeout after failed attempts to prevent premature timeouts.
@@ -3399,16 +3433,6 @@ kgspPopulateGspRmInitArgs_IMPL
     pMQInitArgs->pageTableEntryCount    = pMQCollection->pageTableEntryCount;
     pMQInitArgs->cmdQueueOffset         = pMQCollection->pageTableSize;
     pMQInitArgs->statQueueOffset        = pMQInitArgs->cmdQueueOffset + pMQCollection->rpcQueues[RPC_TASK_RM_QUEUE_IDX].commandQueueSize;
-    if (pKernelGsp->bIsTaskIsrQueueRequired)
-    {
-        pMQInitArgs->locklessCmdQueueOffset  = pMQInitArgs->statQueueOffset        + pMQCollection->rpcQueues[RPC_TASK_RM_QUEUE_IDX].statusQueueSize;
-        pMQInitArgs->locklessStatQueueOffset = pMQInitArgs->locklessCmdQueueOffset + pMQCollection->rpcQueues[RPC_TASK_ISR_QUEUE_IDX].commandQueueSize;
-    }
-    else
-    {
-        pMQInitArgs->locklessCmdQueueOffset  = 0;
-        pMQInitArgs->locklessStatQueueOffset = 0;
-    }
 
     if (pGspInitArgs == NULL)
     {

@@ -102,109 +102,138 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_ExtendedGpuMemory =
     /*pExportInfo=*/        &__nvoc_export_info_ExtendedGpuMemory
 };
 
-static NV_STATUS __nvoc_thunk_Memory_egmmemCheckMemInterUnmap(struct ExtendedGpuMemory *pMemory, NvBool bSubdeviceHandleProvided) {
-    return memCheckMemInterUnmap((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), bSubdeviceHandleProvided);
+// 26 up-thunk(s) defined to bridge methods in ExtendedGpuMemory to superclasses
+
+// egmmemCanCopy: virtual inherited (stdmem) base (stdmem)
+static NvBool __nvoc_up_thunk_StandardMemory_egmmemCanCopy(struct ExtendedGpuMemory *pStandardMemory) {
+    return stdmemCanCopy((struct StandardMemory *)(((unsigned char *) pStandardMemory) + __nvoc_rtti_ExtendedGpuMemory_StandardMemory.offset));
 }
 
-static NvBool __nvoc_thunk_RmResource_egmmemShareCallback(struct ExtendedGpuMemory *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return rmresShareCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ExtendedGpuMemory_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+// egmmemIsDuplicate: virtual inherited (mem) base (stdmem)
+static NV_STATUS __nvoc_up_thunk_Memory_egmmemIsDuplicate(struct ExtendedGpuMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return memIsDuplicate((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), hMemory, pDuplicate);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_egmmemMapTo(struct ExtendedGpuMemory *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ExtendedGpuMemory_RsResource.offset), pParams);
+// egmmemGetMapAddrSpace: virtual inherited (mem) base (stdmem)
+static NV_STATUS __nvoc_up_thunk_Memory_egmmemGetMapAddrSpace(struct ExtendedGpuMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return memGetMapAddrSpace((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_egmmemGetMapAddrSpace(struct ExtendedGpuMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), pCallContext, mapFlags, pAddrSpace);
+// egmmemControl: virtual inherited (mem) base (stdmem)
+static NV_STATUS __nvoc_up_thunk_Memory_egmmemControl(struct ExtendedGpuMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return memControl((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), pCallContext, pParams);
 }
 
-static NvBool __nvoc_thunk_Memory_egmmemIsExportAllowed(struct ExtendedGpuMemory *pMemory) {
-    return memIsExportAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset));
+// egmmemMap: virtual inherited (mem) base (stdmem)
+static NV_STATUS __nvoc_up_thunk_Memory_egmmemMap(struct ExtendedGpuMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+    return memMap((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), pCallContext, pParams, pCpuMapping);
 }
 
-static NvU32 __nvoc_thunk_RsResource_egmmemGetRefCount(struct ExtendedGpuMemory *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ExtendedGpuMemory_RsResource.offset));
+// egmmemUnmap: virtual inherited (mem) base (stdmem)
+static NV_STATUS __nvoc_up_thunk_Memory_egmmemUnmap(struct ExtendedGpuMemory *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return memUnmap((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), pCallContext, pCpuMapping);
 }
 
-static void __nvoc_thunk_RsResource_egmmemAddAdditionalDependants(struct RsClient *pClient, struct ExtendedGpuMemory *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ExtendedGpuMemory_RsResource.offset), pReference);
+// egmmemGetMemInterMapParams: virtual inherited (mem) base (stdmem)
+static NV_STATUS __nvoc_up_thunk_Memory_egmmemGetMemInterMapParams(struct ExtendedGpuMemory *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return memGetMemInterMapParams((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_egmmemControl_Prologue(struct ExtendedGpuMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ExtendedGpuMemory_RmResource.offset), pCallContext, pParams);
+// egmmemCheckMemInterUnmap: inline virtual inherited (mem) base (stdmem) body
+static NV_STATUS __nvoc_up_thunk_Memory_egmmemCheckMemInterUnmap(struct ExtendedGpuMemory *pMemory, NvBool bSubdeviceHandleProvided) {
+    return memCheckMemInterUnmap((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), bSubdeviceHandleProvided);
 }
 
-static NvBool __nvoc_thunk_Memory_egmmemIsGpuMapAllowed(struct ExtendedGpuMemory *pMemory, struct OBJGPU *pGpu) {
-    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), pGpu);
+// egmmemGetMemoryMappingDescriptor: virtual inherited (mem) base (stdmem)
+static NV_STATUS __nvoc_up_thunk_Memory_egmmemGetMemoryMappingDescriptor(struct ExtendedGpuMemory *pMemory, MEMORY_DESCRIPTOR **ppMemDesc) {
+    return memGetMemoryMappingDescriptor((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), ppMemDesc);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_egmmemUnmapFrom(struct ExtendedGpuMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ExtendedGpuMemory_RsResource.offset), pParams);
+// egmmemCheckCopyPermissions: inline virtual inherited (mem) base (stdmem) body
+static NV_STATUS __nvoc_up_thunk_Memory_egmmemCheckCopyPermissions(struct ExtendedGpuMemory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return memCheckCopyPermissions((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), pDstGpu, pDstDevice);
 }
 
-static void __nvoc_thunk_RmResource_egmmemControl_Epilogue(struct ExtendedGpuMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ExtendedGpuMemory_RmResource.offset), pCallContext, pParams);
+// egmmemIsReady: virtual inherited (mem) base (stdmem)
+static NV_STATUS __nvoc_up_thunk_Memory_egmmemIsReady(struct ExtendedGpuMemory *pMemory, NvBool bCopyConstructorContext) {
+    return memIsReady((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), bCopyConstructorContext);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_egmmemControl(struct ExtendedGpuMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return memControl((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), pCallContext, pParams);
+// egmmemIsGpuMapAllowed: inline virtual inherited (mem) base (stdmem) body
+static NvBool __nvoc_up_thunk_Memory_egmmemIsGpuMapAllowed(struct ExtendedGpuMemory *pMemory, struct OBJGPU *pGpu) {
+    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), pGpu);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_egmmemUnmap(struct ExtendedGpuMemory *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return memUnmap((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), pCallContext, pCpuMapping);
+// egmmemIsExportAllowed: inline virtual inherited (mem) base (stdmem) body
+static NvBool __nvoc_up_thunk_Memory_egmmemIsExportAllowed(struct ExtendedGpuMemory *pMemory) {
+    return memIsExportAllowed((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Memory_egmmemGetMemInterMapParams(struct ExtendedGpuMemory *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return memGetMemInterMapParams((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), pParams);
+// egmmemAccessCallback: virtual inherited (rmres) base (stdmem)
+static NvBool __nvoc_up_thunk_RmResource_egmmemAccessCallback(struct ExtendedGpuMemory *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ExtendedGpuMemory_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_egmmemGetMemoryMappingDescriptor(struct ExtendedGpuMemory *pMemory, MEMORY_DESCRIPTOR **ppMemDesc) {
-    return memGetMemoryMappingDescriptor((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), ppMemDesc);
+// egmmemShareCallback: virtual inherited (rmres) base (stdmem)
+static NvBool __nvoc_up_thunk_RmResource_egmmemShareCallback(struct ExtendedGpuMemory *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ExtendedGpuMemory_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_egmmemControlFilter(struct ExtendedGpuMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ExtendedGpuMemory_RsResource.offset), pCallContext, pParams);
+// egmmemControlSerialization_Prologue: virtual inherited (rmres) base (stdmem)
+static NV_STATUS __nvoc_up_thunk_RmResource_egmmemControlSerialization_Prologue(struct ExtendedGpuMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ExtendedGpuMemory_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_egmmemControlSerialization_Prologue(struct ExtendedGpuMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ExtendedGpuMemory_RmResource.offset), pCallContext, pParams);
+// egmmemControlSerialization_Epilogue: virtual inherited (rmres) base (stdmem)
+static void __nvoc_up_thunk_RmResource_egmmemControlSerialization_Epilogue(struct ExtendedGpuMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ExtendedGpuMemory_RmResource.offset), pCallContext, pParams);
 }
 
-static NvBool __nvoc_thunk_StandardMemory_egmmemCanCopy(struct ExtendedGpuMemory *pStandardMemory) {
-    return stdmemCanCopy((struct StandardMemory *)(((unsigned char *)pStandardMemory) + __nvoc_rtti_ExtendedGpuMemory_StandardMemory.offset));
+// egmmemControl_Prologue: virtual inherited (rmres) base (stdmem)
+static NV_STATUS __nvoc_up_thunk_RmResource_egmmemControl_Prologue(struct ExtendedGpuMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ExtendedGpuMemory_RmResource.offset), pCallContext, pParams);
 }
 
-static NvBool __nvoc_thunk_RsResource_egmmemIsPartialUnmapSupported(struct ExtendedGpuMemory *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ExtendedGpuMemory_RsResource.offset));
+// egmmemControl_Epilogue: virtual inherited (rmres) base (stdmem)
+static void __nvoc_up_thunk_RmResource_egmmemControl_Epilogue(struct ExtendedGpuMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_ExtendedGpuMemory_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_egmmemIsReady(struct ExtendedGpuMemory *pMemory, NvBool bCopyConstructorContext) {
-    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), bCopyConstructorContext);
+// egmmemPreDestruct: virtual inherited (res) base (stdmem)
+static void __nvoc_up_thunk_RsResource_egmmemPreDestruct(struct ExtendedGpuMemory *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ExtendedGpuMemory_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Memory_egmmemCheckCopyPermissions(struct ExtendedGpuMemory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
-    return memCheckCopyPermissions((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), pDstGpu, pDstDevice);
+// egmmemControlFilter: virtual inherited (res) base (stdmem)
+static NV_STATUS __nvoc_up_thunk_RsResource_egmmemControlFilter(struct ExtendedGpuMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ExtendedGpuMemory_RsResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_egmmemPreDestruct(struct ExtendedGpuMemory *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ExtendedGpuMemory_RsResource.offset));
+// egmmemIsPartialUnmapSupported: inline virtual inherited (res) base (stdmem) body
+static NvBool __nvoc_up_thunk_RsResource_egmmemIsPartialUnmapSupported(struct ExtendedGpuMemory *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ExtendedGpuMemory_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Memory_egmmemIsDuplicate(struct ExtendedGpuMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
-    return memIsDuplicate((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), hMemory, pDuplicate);
+// egmmemMapTo: virtual inherited (res) base (stdmem)
+static NV_STATUS __nvoc_up_thunk_RsResource_egmmemMapTo(struct ExtendedGpuMemory *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ExtendedGpuMemory_RsResource.offset), pParams);
 }
 
-static void __nvoc_thunk_RmResource_egmmemControlSerialization_Epilogue(struct ExtendedGpuMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ExtendedGpuMemory_RmResource.offset), pCallContext, pParams);
+// egmmemUnmapFrom: virtual inherited (res) base (stdmem)
+static NV_STATUS __nvoc_up_thunk_RsResource_egmmemUnmapFrom(struct ExtendedGpuMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ExtendedGpuMemory_RsResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_egmmemMap(struct ExtendedGpuMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return memMap((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), pCallContext, pParams, pCpuMapping);
+// egmmemGetRefCount: virtual inherited (res) base (stdmem)
+static NvU32 __nvoc_up_thunk_RsResource_egmmemGetRefCount(struct ExtendedGpuMemory *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ExtendedGpuMemory_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RmResource_egmmemAccessCallback(struct ExtendedGpuMemory *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ExtendedGpuMemory_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+// egmmemAddAdditionalDependants: virtual inherited (res) base (stdmem)
+static void __nvoc_up_thunk_RsResource_egmmemAddAdditionalDependants(struct RsClient *pClient, struct ExtendedGpuMemory *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_ExtendedGpuMemory_RsResource.offset), pReference);
 }
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_ExtendedGpuMemory = 
 {
@@ -241,63 +270,94 @@ __nvoc_ctor_ExtendedGpuMemory_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_ExtendedGpuMemory_1(ExtendedGpuMemory *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
-    pThis->__egmmemCheckMemInterUnmap__ = &__nvoc_thunk_Memory_egmmemCheckMemInterUnmap;
+    // egmmemCanCopy -- virtual inherited (stdmem) base (stdmem)
+    pThis->__egmmemCanCopy__ = &__nvoc_up_thunk_StandardMemory_egmmemCanCopy;
 
-    pThis->__egmmemShareCallback__ = &__nvoc_thunk_RmResource_egmmemShareCallback;
+    // egmmemIsDuplicate -- virtual inherited (mem) base (stdmem)
+    pThis->__egmmemIsDuplicate__ = &__nvoc_up_thunk_Memory_egmmemIsDuplicate;
 
-    pThis->__egmmemMapTo__ = &__nvoc_thunk_RsResource_egmmemMapTo;
+    // egmmemGetMapAddrSpace -- virtual inherited (mem) base (stdmem)
+    pThis->__egmmemGetMapAddrSpace__ = &__nvoc_up_thunk_Memory_egmmemGetMapAddrSpace;
 
-    pThis->__egmmemGetMapAddrSpace__ = &__nvoc_thunk_Memory_egmmemGetMapAddrSpace;
+    // egmmemControl -- virtual inherited (mem) base (stdmem)
+    pThis->__egmmemControl__ = &__nvoc_up_thunk_Memory_egmmemControl;
 
-    pThis->__egmmemIsExportAllowed__ = &__nvoc_thunk_Memory_egmmemIsExportAllowed;
+    // egmmemMap -- virtual inherited (mem) base (stdmem)
+    pThis->__egmmemMap__ = &__nvoc_up_thunk_Memory_egmmemMap;
 
-    pThis->__egmmemGetRefCount__ = &__nvoc_thunk_RsResource_egmmemGetRefCount;
+    // egmmemUnmap -- virtual inherited (mem) base (stdmem)
+    pThis->__egmmemUnmap__ = &__nvoc_up_thunk_Memory_egmmemUnmap;
 
-    pThis->__egmmemAddAdditionalDependants__ = &__nvoc_thunk_RsResource_egmmemAddAdditionalDependants;
+    // egmmemGetMemInterMapParams -- virtual inherited (mem) base (stdmem)
+    pThis->__egmmemGetMemInterMapParams__ = &__nvoc_up_thunk_Memory_egmmemGetMemInterMapParams;
 
-    pThis->__egmmemControl_Prologue__ = &__nvoc_thunk_RmResource_egmmemControl_Prologue;
+    // egmmemCheckMemInterUnmap -- inline virtual inherited (mem) base (stdmem) body
+    pThis->__egmmemCheckMemInterUnmap__ = &__nvoc_up_thunk_Memory_egmmemCheckMemInterUnmap;
 
-    pThis->__egmmemIsGpuMapAllowed__ = &__nvoc_thunk_Memory_egmmemIsGpuMapAllowed;
+    // egmmemGetMemoryMappingDescriptor -- virtual inherited (mem) base (stdmem)
+    pThis->__egmmemGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_Memory_egmmemGetMemoryMappingDescriptor;
 
-    pThis->__egmmemUnmapFrom__ = &__nvoc_thunk_RsResource_egmmemUnmapFrom;
+    // egmmemCheckCopyPermissions -- inline virtual inherited (mem) base (stdmem) body
+    pThis->__egmmemCheckCopyPermissions__ = &__nvoc_up_thunk_Memory_egmmemCheckCopyPermissions;
 
-    pThis->__egmmemControl_Epilogue__ = &__nvoc_thunk_RmResource_egmmemControl_Epilogue;
+    // egmmemIsReady -- virtual inherited (mem) base (stdmem)
+    pThis->__egmmemIsReady__ = &__nvoc_up_thunk_Memory_egmmemIsReady;
 
-    pThis->__egmmemControl__ = &__nvoc_thunk_Memory_egmmemControl;
+    // egmmemIsGpuMapAllowed -- inline virtual inherited (mem) base (stdmem) body
+    pThis->__egmmemIsGpuMapAllowed__ = &__nvoc_up_thunk_Memory_egmmemIsGpuMapAllowed;
 
-    pThis->__egmmemUnmap__ = &__nvoc_thunk_Memory_egmmemUnmap;
+    // egmmemIsExportAllowed -- inline virtual inherited (mem) base (stdmem) body
+    pThis->__egmmemIsExportAllowed__ = &__nvoc_up_thunk_Memory_egmmemIsExportAllowed;
 
-    pThis->__egmmemGetMemInterMapParams__ = &__nvoc_thunk_Memory_egmmemGetMemInterMapParams;
+    // egmmemAccessCallback -- virtual inherited (rmres) base (stdmem)
+    pThis->__egmmemAccessCallback__ = &__nvoc_up_thunk_RmResource_egmmemAccessCallback;
 
-    pThis->__egmmemGetMemoryMappingDescriptor__ = &__nvoc_thunk_Memory_egmmemGetMemoryMappingDescriptor;
+    // egmmemShareCallback -- virtual inherited (rmres) base (stdmem)
+    pThis->__egmmemShareCallback__ = &__nvoc_up_thunk_RmResource_egmmemShareCallback;
 
-    pThis->__egmmemControlFilter__ = &__nvoc_thunk_RsResource_egmmemControlFilter;
+    // egmmemControlSerialization_Prologue -- virtual inherited (rmres) base (stdmem)
+    pThis->__egmmemControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_egmmemControlSerialization_Prologue;
 
-    pThis->__egmmemControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_egmmemControlSerialization_Prologue;
+    // egmmemControlSerialization_Epilogue -- virtual inherited (rmres) base (stdmem)
+    pThis->__egmmemControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_egmmemControlSerialization_Epilogue;
 
-    pThis->__egmmemCanCopy__ = &__nvoc_thunk_StandardMemory_egmmemCanCopy;
+    // egmmemControl_Prologue -- virtual inherited (rmres) base (stdmem)
+    pThis->__egmmemControl_Prologue__ = &__nvoc_up_thunk_RmResource_egmmemControl_Prologue;
 
-    pThis->__egmmemIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_egmmemIsPartialUnmapSupported;
+    // egmmemControl_Epilogue -- virtual inherited (rmres) base (stdmem)
+    pThis->__egmmemControl_Epilogue__ = &__nvoc_up_thunk_RmResource_egmmemControl_Epilogue;
 
-    pThis->__egmmemIsReady__ = &__nvoc_thunk_Memory_egmmemIsReady;
+    // egmmemPreDestruct -- virtual inherited (res) base (stdmem)
+    pThis->__egmmemPreDestruct__ = &__nvoc_up_thunk_RsResource_egmmemPreDestruct;
 
-    pThis->__egmmemCheckCopyPermissions__ = &__nvoc_thunk_Memory_egmmemCheckCopyPermissions;
+    // egmmemControlFilter -- virtual inherited (res) base (stdmem)
+    pThis->__egmmemControlFilter__ = &__nvoc_up_thunk_RsResource_egmmemControlFilter;
 
-    pThis->__egmmemPreDestruct__ = &__nvoc_thunk_RsResource_egmmemPreDestruct;
+    // egmmemIsPartialUnmapSupported -- inline virtual inherited (res) base (stdmem) body
+    pThis->__egmmemIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_egmmemIsPartialUnmapSupported;
 
-    pThis->__egmmemIsDuplicate__ = &__nvoc_thunk_Memory_egmmemIsDuplicate;
+    // egmmemMapTo -- virtual inherited (res) base (stdmem)
+    pThis->__egmmemMapTo__ = &__nvoc_up_thunk_RsResource_egmmemMapTo;
 
-    pThis->__egmmemControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_egmmemControlSerialization_Epilogue;
+    // egmmemUnmapFrom -- virtual inherited (res) base (stdmem)
+    pThis->__egmmemUnmapFrom__ = &__nvoc_up_thunk_RsResource_egmmemUnmapFrom;
 
-    pThis->__egmmemMap__ = &__nvoc_thunk_Memory_egmmemMap;
+    // egmmemGetRefCount -- virtual inherited (res) base (stdmem)
+    pThis->__egmmemGetRefCount__ = &__nvoc_up_thunk_RsResource_egmmemGetRefCount;
 
-    pThis->__egmmemAccessCallback__ = &__nvoc_thunk_RmResource_egmmemAccessCallback;
-}
+    // egmmemAddAdditionalDependants -- virtual inherited (res) base (stdmem)
+    pThis->__egmmemAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_egmmemAddAdditionalDependants;
+} // End __nvoc_init_funcTable_ExtendedGpuMemory_1 with approximately 26 basic block(s).
 
+
+// Initialize vtable(s) for 26 virtual method(s).
 void __nvoc_init_funcTable_ExtendedGpuMemory(ExtendedGpuMemory *pThis) {
+
+    // Initialize vtable(s) with 26 per-object function pointer(s).
     __nvoc_init_funcTable_ExtendedGpuMemory_1(pThis);
 }
 

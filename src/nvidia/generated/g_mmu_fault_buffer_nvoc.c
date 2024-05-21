@@ -111,126 +111,6 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_MmuFaultBuffer =
     /*pExportInfo=*/        &__nvoc_export_info_MmuFaultBuffer
 };
 
-static NV_STATUS __nvoc_thunk_MmuFaultBuffer_gpuresMap(struct GpuResource *pMmuFaultBuffer, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return faultbufMap((struct MmuFaultBuffer *)(((unsigned char *)pMmuFaultBuffer) - __nvoc_rtti_MmuFaultBuffer_GpuResource.offset), pCallContext, pParams, pCpuMapping);
-}
-
-static NV_STATUS __nvoc_thunk_MmuFaultBuffer_gpuresUnmap(struct GpuResource *pMmuFaultBuffer, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return faultbufUnmap((struct MmuFaultBuffer *)(((unsigned char *)pMmuFaultBuffer) - __nvoc_rtti_MmuFaultBuffer_GpuResource.offset), pCallContext, pCpuMapping);
-}
-
-static NV_STATUS __nvoc_thunk_MmuFaultBuffer_gpuresGetMapAddrSpace(struct GpuResource *pMmuFaultBuffer, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return faultbufGetMapAddrSpace((struct MmuFaultBuffer *)(((unsigned char *)pMmuFaultBuffer) - __nvoc_rtti_MmuFaultBuffer_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static NvBool __nvoc_thunk_GpuResource_faultbufShareCallback(struct MmuFaultBuffer *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_MmuFaultBuffer_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_faultbufCheckMemInterUnmap(struct MmuFaultBuffer *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_MmuFaultBuffer_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_Notifier_faultbufGetOrAllocNotifShare(struct MmuFaultBuffer *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_MmuFaultBuffer_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_faultbufMapTo(struct MmuFaultBuffer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MmuFaultBuffer_RsResource.offset), pParams);
-}
-
-static void __nvoc_thunk_Notifier_faultbufSetNotificationShare(struct MmuFaultBuffer *pNotifier, struct NotifShare *pNotifShare) {
-    notifySetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_MmuFaultBuffer_Notifier.offset), pNotifShare);
-}
-
-static NvU32 __nvoc_thunk_RsResource_faultbufGetRefCount(struct MmuFaultBuffer *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MmuFaultBuffer_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_faultbufAddAdditionalDependants(struct RsClient *pClient, struct MmuFaultBuffer *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MmuFaultBuffer_RsResource.offset), pReference);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_faultbufControl_Prologue(struct MmuFaultBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MmuFaultBuffer_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_faultbufGetRegBaseOffsetAndSize(struct MmuFaultBuffer *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_MmuFaultBuffer_GpuResource.offset), pGpu, pOffset, pSize);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_faultbufInternalControlForward(struct MmuFaultBuffer *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_MmuFaultBuffer_GpuResource.offset), command, pParams, size);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_faultbufUnmapFrom(struct MmuFaultBuffer *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MmuFaultBuffer_RsResource.offset), pParams);
-}
-
-static void __nvoc_thunk_RmResource_faultbufControl_Epilogue(struct MmuFaultBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MmuFaultBuffer_RmResource.offset), pCallContext, pParams);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_faultbufGetInternalObjectHandle(struct MmuFaultBuffer *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_MmuFaultBuffer_GpuResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_faultbufControl(struct MmuFaultBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_MmuFaultBuffer_GpuResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_faultbufGetMemInterMapParams(struct MmuFaultBuffer *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_MmuFaultBuffer_RmResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_faultbufGetMemoryMappingDescriptor(struct MmuFaultBuffer *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_MmuFaultBuffer_RmResource.offset), ppMemDesc);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_faultbufControlFilter(struct MmuFaultBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MmuFaultBuffer_RsResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_Notifier_faultbufUnregisterEvent(struct MmuFaultBuffer *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_MmuFaultBuffer_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_faultbufControlSerialization_Prologue(struct MmuFaultBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MmuFaultBuffer_RmResource.offset), pCallContext, pParams);
-}
-
-static NvBool __nvoc_thunk_RsResource_faultbufCanCopy(struct MmuFaultBuffer *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MmuFaultBuffer_RsResource.offset));
-}
-
-static NvBool __nvoc_thunk_RsResource_faultbufIsPartialUnmapSupported(struct MmuFaultBuffer *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MmuFaultBuffer_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_faultbufPreDestruct(struct MmuFaultBuffer *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MmuFaultBuffer_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_faultbufIsDuplicate(struct MmuFaultBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MmuFaultBuffer_RsResource.offset), hMemory, pDuplicate);
-}
-
-static void __nvoc_thunk_RmResource_faultbufControlSerialization_Epilogue(struct MmuFaultBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MmuFaultBuffer_RmResource.offset), pCallContext, pParams);
-}
-
-static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_faultbufGetNotificationListPtr(struct MmuFaultBuffer *pNotifier) {
-    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_MmuFaultBuffer_Notifier.offset));
-}
-
-static struct NotifShare *__nvoc_thunk_Notifier_faultbufGetNotificationShare(struct MmuFaultBuffer *pNotifier) {
-    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_MmuFaultBuffer_Notifier.offset));
-}
-
-static NvBool __nvoc_thunk_RmResource_faultbufAccessCallback(struct MmuFaultBuffer *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MmuFaultBuffer_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
-}
-
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
@@ -238,12 +118,12 @@ static NvBool __nvoc_thunk_RmResource_faultbufAccessCallback(struct MmuFaultBuff
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_MmuFaultBuffer[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) faultbufCtrlCmdFaultbufferGetSize_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xb0690105u,
         /*paramSize=*/  sizeof(NVB069_CTRL_FAULTBUFFER_GET_SIZE_PARAMS),
@@ -330,6 +210,162 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_MmuFault
 
 };
 
+// 3 down-thunk(s) defined to bridge methods in MmuFaultBuffer from superclasses
+
+// faultbufMap: virtual override (res) base (gpures)
+static NV_STATUS __nvoc_down_thunk_MmuFaultBuffer_gpuresMap(struct GpuResource *pMmuFaultBuffer, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+    return faultbufMap((struct MmuFaultBuffer *)(((unsigned char *) pMmuFaultBuffer) - __nvoc_rtti_MmuFaultBuffer_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+}
+
+// faultbufUnmap: virtual override (res) base (gpures)
+static NV_STATUS __nvoc_down_thunk_MmuFaultBuffer_gpuresUnmap(struct GpuResource *pMmuFaultBuffer, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return faultbufUnmap((struct MmuFaultBuffer *)(((unsigned char *) pMmuFaultBuffer) - __nvoc_rtti_MmuFaultBuffer_GpuResource.offset), pCallContext, pCpuMapping);
+}
+
+// faultbufGetMapAddrSpace: virtual override (gpures) base (gpures)
+static NV_STATUS __nvoc_down_thunk_MmuFaultBuffer_gpuresGetMapAddrSpace(struct GpuResource *pMmuFaultBuffer, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return faultbufGetMapAddrSpace((struct MmuFaultBuffer *)(((unsigned char *) pMmuFaultBuffer) - __nvoc_rtti_MmuFaultBuffer_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+
+// 27 up-thunk(s) defined to bridge methods in MmuFaultBuffer to superclasses
+
+// faultbufControl: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_faultbufControl(struct MmuFaultBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_MmuFaultBuffer_GpuResource.offset), pCallContext, pParams);
+}
+
+// faultbufShareCallback: virtual inherited (gpures) base (gpures)
+static NvBool __nvoc_up_thunk_GpuResource_faultbufShareCallback(struct MmuFaultBuffer *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_MmuFaultBuffer_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+}
+
+// faultbufGetRegBaseOffsetAndSize: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_faultbufGetRegBaseOffsetAndSize(struct MmuFaultBuffer *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_MmuFaultBuffer_GpuResource.offset), pGpu, pOffset, pSize);
+}
+
+// faultbufInternalControlForward: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_faultbufInternalControlForward(struct MmuFaultBuffer *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_MmuFaultBuffer_GpuResource.offset), command, pParams, size);
+}
+
+// faultbufGetInternalObjectHandle: virtual inherited (gpures) base (gpures)
+static NvHandle __nvoc_up_thunk_GpuResource_faultbufGetInternalObjectHandle(struct MmuFaultBuffer *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_MmuFaultBuffer_GpuResource.offset));
+}
+
+// faultbufAccessCallback: virtual inherited (rmres) base (gpures)
+static NvBool __nvoc_up_thunk_RmResource_faultbufAccessCallback(struct MmuFaultBuffer *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MmuFaultBuffer_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+}
+
+// faultbufGetMemInterMapParams: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_faultbufGetMemInterMapParams(struct MmuFaultBuffer *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_MmuFaultBuffer_RmResource.offset), pParams);
+}
+
+// faultbufCheckMemInterUnmap: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_faultbufCheckMemInterUnmap(struct MmuFaultBuffer *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_MmuFaultBuffer_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+// faultbufGetMemoryMappingDescriptor: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_faultbufGetMemoryMappingDescriptor(struct MmuFaultBuffer *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_MmuFaultBuffer_RmResource.offset), ppMemDesc);
+}
+
+// faultbufControlSerialization_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_faultbufControlSerialization_Prologue(struct MmuFaultBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MmuFaultBuffer_RmResource.offset), pCallContext, pParams);
+}
+
+// faultbufControlSerialization_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_faultbufControlSerialization_Epilogue(struct MmuFaultBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MmuFaultBuffer_RmResource.offset), pCallContext, pParams);
+}
+
+// faultbufControl_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_faultbufControl_Prologue(struct MmuFaultBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MmuFaultBuffer_RmResource.offset), pCallContext, pParams);
+}
+
+// faultbufControl_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_faultbufControl_Epilogue(struct MmuFaultBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MmuFaultBuffer_RmResource.offset), pCallContext, pParams);
+}
+
+// faultbufCanCopy: virtual inherited (res) base (gpures)
+static NvBool __nvoc_up_thunk_RsResource_faultbufCanCopy(struct MmuFaultBuffer *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MmuFaultBuffer_RsResource.offset));
+}
+
+// faultbufIsDuplicate: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_faultbufIsDuplicate(struct MmuFaultBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MmuFaultBuffer_RsResource.offset), hMemory, pDuplicate);
+}
+
+// faultbufPreDestruct: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_faultbufPreDestruct(struct MmuFaultBuffer *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MmuFaultBuffer_RsResource.offset));
+}
+
+// faultbufControlFilter: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_faultbufControlFilter(struct MmuFaultBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MmuFaultBuffer_RsResource.offset), pCallContext, pParams);
+}
+
+// faultbufIsPartialUnmapSupported: inline virtual inherited (res) base (gpures) body
+static NvBool __nvoc_up_thunk_RsResource_faultbufIsPartialUnmapSupported(struct MmuFaultBuffer *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MmuFaultBuffer_RsResource.offset));
+}
+
+// faultbufMapTo: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_faultbufMapTo(struct MmuFaultBuffer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MmuFaultBuffer_RsResource.offset), pParams);
+}
+
+// faultbufUnmapFrom: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_faultbufUnmapFrom(struct MmuFaultBuffer *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MmuFaultBuffer_RsResource.offset), pParams);
+}
+
+// faultbufGetRefCount: virtual inherited (res) base (gpures)
+static NvU32 __nvoc_up_thunk_RsResource_faultbufGetRefCount(struct MmuFaultBuffer *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MmuFaultBuffer_RsResource.offset));
+}
+
+// faultbufAddAdditionalDependants: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_faultbufAddAdditionalDependants(struct RsClient *pClient, struct MmuFaultBuffer *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MmuFaultBuffer_RsResource.offset), pReference);
+}
+
+// faultbufGetNotificationListPtr: virtual inherited (notify) base (notify)
+static PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_faultbufGetNotificationListPtr(struct MmuFaultBuffer *pNotifier) {
+    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_MmuFaultBuffer_Notifier.offset));
+}
+
+// faultbufGetNotificationShare: virtual inherited (notify) base (notify)
+static struct NotifShare * __nvoc_up_thunk_Notifier_faultbufGetNotificationShare(struct MmuFaultBuffer *pNotifier) {
+    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_MmuFaultBuffer_Notifier.offset));
+}
+
+// faultbufSetNotificationShare: virtual inherited (notify) base (notify)
+static void __nvoc_up_thunk_Notifier_faultbufSetNotificationShare(struct MmuFaultBuffer *pNotifier, struct NotifShare *pNotifShare) {
+    notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_MmuFaultBuffer_Notifier.offset), pNotifShare);
+}
+
+// faultbufUnregisterEvent: virtual inherited (notify) base (notify)
+static NV_STATUS __nvoc_up_thunk_Notifier_faultbufUnregisterEvent(struct MmuFaultBuffer *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
+    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_MmuFaultBuffer_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
+}
+
+// faultbufGetOrAllocNotifShare: virtual inherited (notify) base (notify)
+static NV_STATUS __nvoc_up_thunk_Notifier_faultbufGetOrAllocNotifShare(struct MmuFaultBuffer *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
+    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_MmuFaultBuffer_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
+}
+
+
 const struct NVOC_EXPORT_INFO __nvoc_export_info_MmuFaultBuffer = 
 {
     /*numEntries=*/     6,
@@ -373,101 +409,139 @@ __nvoc_ctor_MmuFaultBuffer_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_MmuFaultBuffer_1(MmuFaultBuffer *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // faultbufMap -- virtual override (res) base (gpures)
     pThis->__faultbufMap__ = &faultbufMap_IMPL;
+    pThis->__nvoc_base_GpuResource.__gpuresMap__ = &__nvoc_down_thunk_MmuFaultBuffer_gpuresMap;
 
+    // faultbufUnmap -- virtual override (res) base (gpures)
     pThis->__faultbufUnmap__ = &faultbufUnmap_IMPL;
+    pThis->__nvoc_base_GpuResource.__gpuresUnmap__ = &__nvoc_down_thunk_MmuFaultBuffer_gpuresUnmap;
 
+    // faultbufGetMapAddrSpace -- virtual override (gpures) base (gpures)
     pThis->__faultbufGetMapAddrSpace__ = &faultbufGetMapAddrSpace_IMPL;
+    pThis->__nvoc_base_GpuResource.__gpuresGetMapAddrSpace__ = &__nvoc_down_thunk_MmuFaultBuffer_gpuresGetMapAddrSpace;
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // faultbufCtrlCmdFaultbufferGetSize -- exported (id=0xb0690105)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__faultbufCtrlCmdFaultbufferGetSize__ = &faultbufCtrlCmdFaultbufferGetSize_IMPL;
 #endif
 
+    // faultbufCtrlCmdFaultbufferGetRegisterMappings -- exported (id=0xb0690106)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
     pThis->__faultbufCtrlCmdFaultbufferGetRegisterMappings__ = &faultbufCtrlCmdFaultbufferGetRegisterMappings_IMPL;
 #endif
 
+    // faultbufCtrlCmdMmuFaultBufferRegisterNonReplayBuf -- exported (id=0xc3690101)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
     pThis->__faultbufCtrlCmdMmuFaultBufferRegisterNonReplayBuf__ = &faultbufCtrlCmdMmuFaultBufferRegisterNonReplayBuf_IMPL;
 #endif
 
+    // faultbufCtrlCmdMmuFaultBufferUnregisterNonReplayBuf -- exported (id=0xc3690102)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
     pThis->__faultbufCtrlCmdMmuFaultBufferUnregisterNonReplayBuf__ = &faultbufCtrlCmdMmuFaultBufferUnregisterNonReplayBuf_IMPL;
 #endif
 
+    // faultbufCtrlCmdMmuFaultBufferRegisterReplayBuf -- exported (id=0xc3690103)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
     pThis->__faultbufCtrlCmdMmuFaultBufferRegisterReplayBuf__ = &faultbufCtrlCmdMmuFaultBufferRegisterReplayBuf_IMPL;
 #endif
 
+    // faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf -- exported (id=0xc3690104)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
     pThis->__faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf__ = &faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf_IMPL;
 #endif
 
-    pThis->__nvoc_base_GpuResource.__gpuresMap__ = &__nvoc_thunk_MmuFaultBuffer_gpuresMap;
+    // faultbufControl -- virtual inherited (gpures) base (gpures)
+    pThis->__faultbufControl__ = &__nvoc_up_thunk_GpuResource_faultbufControl;
 
-    pThis->__nvoc_base_GpuResource.__gpuresUnmap__ = &__nvoc_thunk_MmuFaultBuffer_gpuresUnmap;
+    // faultbufShareCallback -- virtual inherited (gpures) base (gpures)
+    pThis->__faultbufShareCallback__ = &__nvoc_up_thunk_GpuResource_faultbufShareCallback;
 
-    pThis->__nvoc_base_GpuResource.__gpuresGetMapAddrSpace__ = &__nvoc_thunk_MmuFaultBuffer_gpuresGetMapAddrSpace;
+    // faultbufGetRegBaseOffsetAndSize -- virtual inherited (gpures) base (gpures)
+    pThis->__faultbufGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_faultbufGetRegBaseOffsetAndSize;
 
-    pThis->__faultbufShareCallback__ = &__nvoc_thunk_GpuResource_faultbufShareCallback;
+    // faultbufInternalControlForward -- virtual inherited (gpures) base (gpures)
+    pThis->__faultbufInternalControlForward__ = &__nvoc_up_thunk_GpuResource_faultbufInternalControlForward;
 
-    pThis->__faultbufCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_faultbufCheckMemInterUnmap;
+    // faultbufGetInternalObjectHandle -- virtual inherited (gpures) base (gpures)
+    pThis->__faultbufGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_faultbufGetInternalObjectHandle;
 
-    pThis->__faultbufGetOrAllocNotifShare__ = &__nvoc_thunk_Notifier_faultbufGetOrAllocNotifShare;
+    // faultbufAccessCallback -- virtual inherited (rmres) base (gpures)
+    pThis->__faultbufAccessCallback__ = &__nvoc_up_thunk_RmResource_faultbufAccessCallback;
 
-    pThis->__faultbufMapTo__ = &__nvoc_thunk_RsResource_faultbufMapTo;
+    // faultbufGetMemInterMapParams -- virtual inherited (rmres) base (gpures)
+    pThis->__faultbufGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_faultbufGetMemInterMapParams;
 
-    pThis->__faultbufSetNotificationShare__ = &__nvoc_thunk_Notifier_faultbufSetNotificationShare;
+    // faultbufCheckMemInterUnmap -- virtual inherited (rmres) base (gpures)
+    pThis->__faultbufCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_faultbufCheckMemInterUnmap;
 
-    pThis->__faultbufGetRefCount__ = &__nvoc_thunk_RsResource_faultbufGetRefCount;
+    // faultbufGetMemoryMappingDescriptor -- virtual inherited (rmres) base (gpures)
+    pThis->__faultbufGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_faultbufGetMemoryMappingDescriptor;
 
-    pThis->__faultbufAddAdditionalDependants__ = &__nvoc_thunk_RsResource_faultbufAddAdditionalDependants;
+    // faultbufControlSerialization_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__faultbufControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_faultbufControlSerialization_Prologue;
 
-    pThis->__faultbufControl_Prologue__ = &__nvoc_thunk_RmResource_faultbufControl_Prologue;
+    // faultbufControlSerialization_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__faultbufControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_faultbufControlSerialization_Epilogue;
 
-    pThis->__faultbufGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_faultbufGetRegBaseOffsetAndSize;
+    // faultbufControl_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__faultbufControl_Prologue__ = &__nvoc_up_thunk_RmResource_faultbufControl_Prologue;
 
-    pThis->__faultbufInternalControlForward__ = &__nvoc_thunk_GpuResource_faultbufInternalControlForward;
+    // faultbufControl_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__faultbufControl_Epilogue__ = &__nvoc_up_thunk_RmResource_faultbufControl_Epilogue;
 
-    pThis->__faultbufUnmapFrom__ = &__nvoc_thunk_RsResource_faultbufUnmapFrom;
+    // faultbufCanCopy -- virtual inherited (res) base (gpures)
+    pThis->__faultbufCanCopy__ = &__nvoc_up_thunk_RsResource_faultbufCanCopy;
 
-    pThis->__faultbufControl_Epilogue__ = &__nvoc_thunk_RmResource_faultbufControl_Epilogue;
+    // faultbufIsDuplicate -- virtual inherited (res) base (gpures)
+    pThis->__faultbufIsDuplicate__ = &__nvoc_up_thunk_RsResource_faultbufIsDuplicate;
 
-    pThis->__faultbufGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_faultbufGetInternalObjectHandle;
+    // faultbufPreDestruct -- virtual inherited (res) base (gpures)
+    pThis->__faultbufPreDestruct__ = &__nvoc_up_thunk_RsResource_faultbufPreDestruct;
 
-    pThis->__faultbufControl__ = &__nvoc_thunk_GpuResource_faultbufControl;
+    // faultbufControlFilter -- virtual inherited (res) base (gpures)
+    pThis->__faultbufControlFilter__ = &__nvoc_up_thunk_RsResource_faultbufControlFilter;
 
-    pThis->__faultbufGetMemInterMapParams__ = &__nvoc_thunk_RmResource_faultbufGetMemInterMapParams;
+    // faultbufIsPartialUnmapSupported -- inline virtual inherited (res) base (gpures) body
+    pThis->__faultbufIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_faultbufIsPartialUnmapSupported;
 
-    pThis->__faultbufGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_faultbufGetMemoryMappingDescriptor;
+    // faultbufMapTo -- virtual inherited (res) base (gpures)
+    pThis->__faultbufMapTo__ = &__nvoc_up_thunk_RsResource_faultbufMapTo;
 
-    pThis->__faultbufControlFilter__ = &__nvoc_thunk_RsResource_faultbufControlFilter;
+    // faultbufUnmapFrom -- virtual inherited (res) base (gpures)
+    pThis->__faultbufUnmapFrom__ = &__nvoc_up_thunk_RsResource_faultbufUnmapFrom;
 
-    pThis->__faultbufUnregisterEvent__ = &__nvoc_thunk_Notifier_faultbufUnregisterEvent;
+    // faultbufGetRefCount -- virtual inherited (res) base (gpures)
+    pThis->__faultbufGetRefCount__ = &__nvoc_up_thunk_RsResource_faultbufGetRefCount;
 
-    pThis->__faultbufControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_faultbufControlSerialization_Prologue;
+    // faultbufAddAdditionalDependants -- virtual inherited (res) base (gpures)
+    pThis->__faultbufAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_faultbufAddAdditionalDependants;
 
-    pThis->__faultbufCanCopy__ = &__nvoc_thunk_RsResource_faultbufCanCopy;
+    // faultbufGetNotificationListPtr -- virtual inherited (notify) base (notify)
+    pThis->__faultbufGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_faultbufGetNotificationListPtr;
 
-    pThis->__faultbufIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_faultbufIsPartialUnmapSupported;
+    // faultbufGetNotificationShare -- virtual inherited (notify) base (notify)
+    pThis->__faultbufGetNotificationShare__ = &__nvoc_up_thunk_Notifier_faultbufGetNotificationShare;
 
-    pThis->__faultbufPreDestruct__ = &__nvoc_thunk_RsResource_faultbufPreDestruct;
+    // faultbufSetNotificationShare -- virtual inherited (notify) base (notify)
+    pThis->__faultbufSetNotificationShare__ = &__nvoc_up_thunk_Notifier_faultbufSetNotificationShare;
 
-    pThis->__faultbufIsDuplicate__ = &__nvoc_thunk_RsResource_faultbufIsDuplicate;
+    // faultbufUnregisterEvent -- virtual inherited (notify) base (notify)
+    pThis->__faultbufUnregisterEvent__ = &__nvoc_up_thunk_Notifier_faultbufUnregisterEvent;
 
-    pThis->__faultbufControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_faultbufControlSerialization_Epilogue;
+    // faultbufGetOrAllocNotifShare -- virtual inherited (notify) base (notify)
+    pThis->__faultbufGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_faultbufGetOrAllocNotifShare;
+} // End __nvoc_init_funcTable_MmuFaultBuffer_1 with approximately 39 basic block(s).
 
-    pThis->__faultbufGetNotificationListPtr__ = &__nvoc_thunk_Notifier_faultbufGetNotificationListPtr;
 
-    pThis->__faultbufGetNotificationShare__ = &__nvoc_thunk_Notifier_faultbufGetNotificationShare;
-
-    pThis->__faultbufAccessCallback__ = &__nvoc_thunk_RmResource_faultbufAccessCallback;
-}
-
+// Initialize vtable(s) for 36 virtual method(s).
 void __nvoc_init_funcTable_MmuFaultBuffer(MmuFaultBuffer *pThis) {
+
+    // Initialize vtable(s) with 36 per-object function pointer(s).
     __nvoc_init_funcTable_MmuFaultBuffer_1(pThis);
 }
 

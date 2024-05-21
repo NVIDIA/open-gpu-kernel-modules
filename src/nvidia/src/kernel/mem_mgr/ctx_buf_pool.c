@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -65,7 +65,7 @@ ctxBufPoolIsSupported
         return NV_FALSE;
     }
 
-    if (!memmgrIsPmaInitialized(pMemoryManager))
+    if (!memmgrIsPmaEnabled(pMemoryManager) || !memmgrIsPmaSupportedOnPlatform(pMemoryManager))
     {
         NV_PRINTF(LEVEL_INFO, "PMA is disabled. Ctx buffers will be allocated in RM reserved heap\n");
         return NV_FALSE;
@@ -504,15 +504,9 @@ ctxBufPoolFree
     {
         OBJGPU *pGpu = pMemDesc->pGpu;
         MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-        TRANSFER_SURFACE surf = {0};
 
-        surf.pMemDesc = pMemDesc;
-        surf.offset = 0;
-
-        NV_ASSERT_OK_OR_RETURN(
-            memmgrMemSet(pMemoryManager, &surf, 0,
-                         pMemDesc->Size,
-                         TRANSFER_FLAGS_NONE));
+        memmgrMemsetInBlocks(pMemoryManager, pMemDesc, 0, 0, pMemDesc->Size,
+                                    TRANSFER_FLAGS_NONE, 0 /* Default Block Size */);
     }
     rmMemPoolFree(pPool, (RM_POOL_ALLOC_MEMDESC*)pMemDesc, 0);
 

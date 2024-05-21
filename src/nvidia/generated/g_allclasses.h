@@ -75,6 +75,7 @@
 #include <nvos.h>                       // NV01_EVENT_KERNEL_CALLBACK_EX
 #include <class/cl0004.h>               // NV01_TIMER
 #include <class/cl0090.h>               // KERNEL_GRAPHICS_CONTEXT
+#include <class/cl0100.h>               // LOCK_STRESS_OBJECT
 #include <class/cl506f.h>               // NV50_CHANNEL_GPFIFO
 #include <class/cl906f.h>               // GF100_CHANNEL_GPFIFO
 #include <class/cla06f.h>               // KEPLER_CHANNEL_GPFIFO_A
@@ -424,6 +425,10 @@
 
 #ifndef KERNEL_GRAPHICS_CONTEXT
 #define KERNEL_GRAPHICS_CONTEXT                  (0x00000090)
+#endif
+
+#ifndef LOCK_STRESS_OBJECT
+#define LOCK_STRESS_OBJECT                       (0x00000100)
 #endif
 
 #ifndef NV50_CHANNEL_GPFIFO

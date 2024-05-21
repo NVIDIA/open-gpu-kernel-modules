@@ -3131,6 +3131,7 @@ NV_STATUS NV_API_CALL
 nv_alias_pages(
     nv_state_t *nv,
     NvU32 page_cnt,
+    NvU64 page_size,
     NvU32 contiguous,
     NvU32 cache_type,
     NvU64 guest_id,
@@ -3152,15 +3153,20 @@ nv_alias_pages(
 
     at->cache_type = cache_type;
     if (contiguous)
+    {
         at->flags.contig = NV_TRUE;
+        at->order = get_order(at->num_pages * PAGE_SIZE);
+    }
+    else
+    {
+        at->order = get_order(page_size);
+    }
 #if defined(NVCPU_AARCH64)
     if (at->cache_type != NV_MEMORY_CACHED)
         at->flags.aliased = NV_TRUE;
 #endif
 
     at->flags.guest = NV_TRUE;
-
-    at->order = get_order(at->num_pages * PAGE_SIZE);
 
     for (i=0; i < at->num_pages; ++i)
     {
@@ -3271,7 +3277,7 @@ NV_STATUS NV_API_CALL nv_register_user_pages(
     nv_linux_state_t *nvl;
     nvidia_pte_t *page_ptr;
 
-    nv_printf(NV_DBG_MEMINFO, "NVRM: VM: nv_register_user_pages: 0x%x\n", page_count);
+    nv_printf(NV_DBG_MEMINFO, "NVRM: VM: nv_register_user_pages: 0x%" NvU64_fmtx"\n", page_count);
     user_pages = *priv_data;
     nvl = NV_GET_NVL_FROM_NV_STATE(nv);
 
@@ -3332,7 +3338,7 @@ void NV_API_CALL nv_unregister_user_pages(
 {
     nv_alloc_t *at = *priv_data;
 
-    nv_printf(NV_DBG_MEMINFO, "NVRM: VM: nv_unregister_user_pages: 0x%x\n", page_count);
+    nv_printf(NV_DBG_MEMINFO, "NVRM: VM: nv_unregister_user_pages: 0x%" NvU64_fmtx "\n", page_count);
 
     NV_PRINT_AT(NV_DBG_MEMINFO, at);
 
@@ -6133,7 +6139,10 @@ void NV_API_CALL nv_get_screen_info(
     {
         NvU64 physAddr = screen_info.lfb_base;
 #if defined(VIDEO_CAPABILITY_64BIT_BASE)
-        physAddr |= (NvU64)screen_info.ext_lfb_base << 32;
+        if  (screen_info.capabilities & VIDEO_CAPABILITY_64BIT_BASE)
+        {
+            physAddr |= (NvU64)screen_info.ext_lfb_base << 32;
+        }
 #endif
 
         /* Make sure base address is mapped to GPU BAR */

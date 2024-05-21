@@ -267,6 +267,7 @@ gpuGetClassList_IMPL(OBJGPU *pGpu, NvU32 *pNumClasses, NvU32 *pClassList, NvU32 
     NvU32 i, k;
     NvBool bCount;
     PCLASSDESCRIPTOR classDB = pGpu->classDB.pClasses;
+    NvU32 lastClassId = 0;
 
     // Read the registry one time to get the list
     if (NV_FALSE == pGpu->classDB.bSuppressRead)
@@ -300,15 +301,27 @@ gpuGetClassList_IMPL(OBJGPU *pGpu, NvU32 *pNumClasses, NvU32 *pClassList, NvU32 
 
         if (bCount)
         {
-            // save the class in caller's buffer, if provided
-            if (pClassList)
+            const NvU32 classId = classDB[i].externalClassId;
+
+            //
+            // Skip duplicate classes.  These exist in the classDB for
+            // multi-instance engines (e.g., CE0, CE1, etc), but we only want
+            // one entry in the class list.  The classDB maintains ordering
+            // such that all classes with the same ID are contiguous.
+            //
+            if (classId != lastClassId)
             {
-                if (numClasses < *pNumClasses)
-                    pClassList[numClasses] = classDB[i].externalClassId;
-                else
-                    status = NV_ERR_INVALID_PARAM_STRUCT;
+                // save the class in caller's buffer, if provided
+                if (pClassList)
+                {
+                    if (numClasses < *pNumClasses)
+                        pClassList[numClasses] = classId;
+                    else
+                        status = NV_ERR_INVALID_PARAM_STRUCT;
+                }
+                numClasses++;
+                lastClassId = classId;
             }
-            numClasses++;
         }
     }
 
@@ -321,6 +334,11 @@ gpuGetClassList_IMPL(OBJGPU *pGpu, NvU32 *pNumClasses, NvU32 *pClassList, NvU32 
 
 /*!
  * @brief Add a class to class DB with given Engine Tag and Class Id.
+ *
+ * Note that a matching class/engine must already exist in the read-only
+ * "static" class list populated from gpuGetClassDescriptorList_HAL().  This
+ * means that only classes/engines which have previously been removed from the
+ * class DB can be added here.
  *
  * @side Sets engineDB.bValid to NV_FALSE.
  *
@@ -338,14 +356,18 @@ _gpuAddClassToClassDBByEngTagClassId(OBJGPU *pGpu, ENGDESCRIPTOR *pEngDesc, NvU3
 {
     PGPU_ENGINE_ORDER      pEngineOrder = &pGpu->engineOrder;
     const CLASSDESCRIPTOR *pClassDesc = &pEngineOrder->pClassDescriptors[0];
+    const CLASSDESCRIPTOR *pClassDescToCopy = NULL;
     PGPUCLASSDB            pClassDB   = &pGpu->classDB;
     NvU32                  numClasses = pClassDB->numClasses;
+    NvBool                 bMatchingClassIdFound = NV_FALSE;
+    NvU32                  matchingClassIdIndex;
+    NvU32                  newClassDBIndex;
     NvU32                  i;
 
     NV_CHECK_OR_RETURN(LEVEL_INFO, (NULL != pEngDesc) || (NULL != pExternalClassId), NV_ERR_INVALID_ARGUMENT);
 
-    // Return early if requested class/engine is already in classdb
-    for (i = 0; i < pClassDB->numClasses; i++)
+    // Return early if requested class/engine is already in the dynamic classdb
+    for (i = 0; i < numClasses; i++)
     {
         if (((NULL == pEngDesc) || (pClassDB->pClasses[i].engDesc == *pEngDesc)) &&
             ((NULL == pExternalClassId) || (pClassDB->pClasses[i].externalClassId == *pExternalClassId)))
@@ -354,7 +376,7 @@ _gpuAddClassToClassDBByEngTagClassId(OBJGPU *pGpu, ENGDESCRIPTOR *pEngDesc, NvU3
         }
     }
 
-    // Populate the ClassDB with information from PMODULEDESCRIPTOR (R/O classhal.h data)
+    // Populate the ClassDB with information from the static class list (g_gpu_class_list.c)
     for (i = 0; i < pEngineOrder->numClassDescriptors; i++)
     {
         // RMCONFIG: skip over any that are not supported
@@ -364,12 +386,60 @@ _gpuAddClassToClassDBByEngTagClassId(OBJGPU *pGpu, ENGDESCRIPTOR *pEngDesc, NvU3
         if (((NULL == pEngDesc) || (pClassDesc[i].engDesc == *pEngDesc)) &&
             ((NULL == pExternalClassId) || (pClassDesc[i].externalClassId == *pExternalClassId)))
         {
-            // store info for class in class DB entry
-            pClassDB->pClasses[numClasses] = pClassDesc[i];
-            pClassDB->numClasses++;
+            pClassDescToCopy = &pClassDesc[i];
             break;
         }
     }
+
+    if (pClassDescToCopy == NULL) {
+        // This should probably be an error, but that causes existing tests to fail...
+        return NV_OK;
+    }
+
+    //
+    // Find the last entry with a matching externalClassId, if any.  We keep
+    // all entries of the same externalClassId contiguous so that
+    // gpuGetClassList_IMPL() can easily filter them out.
+    //
+    for (i = 0; i < numClasses; i++)
+    {
+        if (pClassDB->pClasses[i].externalClassId == pClassDescToCopy->externalClassId)
+        {
+            bMatchingClassIdFound = NV_TRUE;
+            matchingClassIdIndex = i;
+        }
+    }
+
+    if (bMatchingClassIdFound)
+    {
+        NvLength bytesToMove;
+
+        // Add an entry next to the existing block of this class ID.
+        newClassDBIndex = matchingClassIdIndex + 1;
+
+        // Move the rest of the entries to make space.
+        bytesToMove = (numClasses - newClassDBIndex) * sizeof(pClassDB->pClasses[0]);
+        portMemMove(&pClassDB->pClasses[newClassDBIndex + 1], bytesToMove,
+                    &pClassDB->pClasses[newClassDBIndex],     bytesToMove);
+
+    }
+    else
+    {
+        // Add new entry at the end.
+        newClassDBIndex = numClasses;
+    }
+
+    //
+    // Store info for class in class DB entry.
+    //
+    // It is assumed that because there is a matching entry in the static class
+    // list, but not the dynamic class list, the classDB array already has
+    // enough space allocated (because gpuBuildClassDB_IMPL duplicated the
+    // static class list, and this entry must have been removed since then).
+    //
+
+    pClassDB->pClasses[newClassDBIndex] = *pClassDescToCopy;
+    pClassDB->numClasses++;
 
     pGpu->engineDB.bValid = NV_FALSE;
 

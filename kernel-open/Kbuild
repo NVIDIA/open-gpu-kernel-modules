@@ -72,7 +72,7 @@ EXTRA_CFLAGS += -I$(src)/common/inc
 EXTRA_CFLAGS += -I$(src)
 EXTRA_CFLAGS += -Wall $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-format-extra-args
 EXTRA_CFLAGS += -D__KERNEL__ -DMODULE -DNVRM
-EXTRA_CFLAGS += -DNV_VERSION_STRING=\"550.78\"
+EXTRA_CFLAGS += -DNV_VERSION_STRING=\"555.42.02\"
 
 ifneq ($(SYSSRCHOST1X),)
  EXTRA_CFLAGS += -I$(SYSSRCHOST1X)
@@ -118,7 +118,7 @@ ifeq ($(ARCH),x86_64)
 endif
 
 ifeq ($(ARCH),powerpc)
- EXTRA_CFLAGS += -mlittle-endian -mno-strict-align -mno-altivec
+ EXTRA_CFLAGS += -mlittle-endian -mno-strict-align
 endif
 
 EXTRA_CFLAGS += -DNV_UVM_ENABLE
@@ -172,6 +172,7 @@ NV_CFLAGS_FROM_CONFTEST := $(shell $(NV_CONFTEST_CMD) build_cflags)
 NV_CONFTEST_CFLAGS = $(NV_CFLAGS_FROM_CONFTEST) $(EXTRA_CFLAGS) -fno-pie
 NV_CONFTEST_CFLAGS += $(call cc-disable-warning,pointer-sign)
 NV_CONFTEST_CFLAGS += $(call cc-option,-fshort-wchar,)
+NV_CONFTEST_CFLAGS += $(call cc-option,-Werror=incompatible-pointer-types,)
 NV_CONFTEST_CFLAGS += -Wno-error
 
 NV_CONFTEST_COMPILE_TEST_HEADERS := $(obj)/conftest/macros.h

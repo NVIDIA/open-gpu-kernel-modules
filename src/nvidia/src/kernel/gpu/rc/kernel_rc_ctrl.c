@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -66,56 +66,6 @@ subdeviceCtrlCmdRcReadVirtualMem_IMPL
     }
 
     return status;
-}
-
-
-NV_STATUS
-subdeviceCtrlCmdSetRcInfo_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_CMD_RC_INFO_PARAMS *pParams
-)
-{
-    OBJGPU   *pGpu      = GPU_RES_GET_GPU(pSubdevice);
-    KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
-
-    if (!((pParams->rcBreak == NV2080_CTRL_CMD_RC_INFO_BREAK_DISABLE ||
-           pParams->rcBreak == NV2080_CTRL_CMD_RC_INFO_BREAK_ENABLE) &&
-          (pParams->rcMode == NV2080_CTRL_CMD_RC_INFO_MODE_DISABLE ||
-           pParams->rcMode == NV2080_CTRL_CMD_RC_INFO_MODE_ENABLE)))
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    pKernelRc->bBreakOnRc = (pParams->rcBreak ==
-                             NV2080_CTRL_CMD_RC_INFO_BREAK_ENABLE);
-
-    pKernelRc->bRobustChannelsEnabled = (pParams->rcMode ==
-                                         NV2080_CTRL_CMD_RC_INFO_MODE_ENABLE);
-
-    return NV_OK;
-}
-
-
-NV_STATUS
-subdeviceCtrlCmdGetRcInfo_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_CMD_RC_INFO_PARAMS *pParams
-)
-{
-    OBJGPU   *pGpu      = GPU_RES_GET_GPU(pSubdevice);
-    KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
-
-    pParams->rcBreak = pKernelRc->bBreakOnRc ?
-                           NV2080_CTRL_CMD_RC_INFO_BREAK_ENABLE :
-                           NV2080_CTRL_CMD_RC_INFO_BREAK_DISABLE;
-
-    pParams->rcMode = pKernelRc->bRobustChannelsEnabled ?
-                          NV2080_CTRL_CMD_RC_INFO_MODE_ENABLE :
-                          NV2080_CTRL_CMD_RC_INFO_MODE_DISABLE;
-
-    return NV_OK;
 }
 
 

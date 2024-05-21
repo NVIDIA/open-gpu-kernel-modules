@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -109,6 +109,9 @@ deviceCtrlCmdFifoIdleChannels_IMPL
     CALL_CONTEXT *pCallContext  = resservGetTlsCallContext();
     RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams->pLegacyParams;
 
+    if (IS_VIRTUAL(pGpu))
+        return NV_ERR_NOT_SUPPORTED;
+
     // Check buffer size against maximum
     if (pParams->numChannels > NV0080_CTRL_CMD_FIFO_IDLE_CHANNELS_MAX_CHANNELS)
         return NV_ERR_INVALID_ARGUMENT;
@@ -128,10 +131,10 @@ deviceCtrlCmdFifoIdleChannels_IMPL
     }
 
     //
-    // Send RPC if running in Guest/CPU-RM. Do this manually instead of ROUTE_TO_PHYSICAL
+    // Send RPC if running in CPU-RM. Do this manually instead of ROUTE_TO_PHYSICAL
     // so that we can acquire the GPU lock in CPU-RM first.
     //
-    if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
+    if (IS_GSP_CLIENT(pGpu))
     {
         NV_RM_RPC_CONTROL(pGpu,
                           pRmCtrlParams->hClient,
@@ -790,7 +793,7 @@ subdeviceCtrlCmdFifoDisableChannelsForKeyRotation_IMPL
     NV_CHECK_OR_RETURN(LEVEL_INFO,
         pDisableChannelParams->numChannels <= NV_ARRAY_ELEMENTS(pDisableChannelParams->hChannelList),
         NV_ERR_INVALID_ARGUMENT);
-    ct_assert(NV_ARRAY_ELEMENTS(pDisableChannelParams->hClientList) == \
+    ct_assert(NV_ARRAY_ELEMENTS(pDisableChannelParams->hClientList) ==
               NV_ARRAY_ELEMENTS(pDisableChannelParams->hChannelList));
 
     // Send RPC to handle message on Host-RM
@@ -834,20 +837,129 @@ subdeviceCtrlCmdFifoDisableChannelsForKeyRotation_IMPL
         }
         kchannelDisableForKeyRotation(pGpu, pKernelChannel, NV_TRUE);
         kchannelEnableAfterKeyRotation(pGpu, pKernelChannel, pDisableChannelParams->bEnableAfterKeyRotation);
-    }
-
-    if ((IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu)) &&
-        (pKernelChannel != NULL))
-    {
-        NvU32 h2dKey, d2hKey;
-        ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
-        NV_ASSERT_OK_OR_RETURN(confComputeGetKeyPairByChannel_HAL(pGpu, pConfCompute, pKernelChannel, &h2dKey, &d2hKey));
-        KEY_ROTATION_STATUS state;
-        NV_ASSERT_OK_OR_RETURN(confComputeGetKeyRotationStatus(pConfCompute, h2dKey, &state));
-        if (state == KEY_ROTATION_STATUS_PENDING)
+        if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
         {
-            NV_ASSERT_OK_OR_RETURN(confComputeCheckAndScheduleKeyRotation(pGpu, pConfCompute, h2dKey, d2hKey));
+            NvU32 h2dKey, d2hKey;
+            ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+            NV_ASSERT_OK_OR_RETURN(confComputeGetKeyPairByChannel_HAL(pGpu, pConfCompute, pKernelChannel,
+                                                                      &h2dKey, &d2hKey));
+            KEY_ROTATION_STATUS state;
+            NV_ASSERT_OK_OR_RETURN(confComputeGetKeyRotationStatus(pConfCompute, h2dKey, &state));
+            if (state == KEY_ROTATION_STATUS_PENDING)
+            {
+                NV_ASSERT_OK_OR_RETURN(confComputeCheckAndPerformKeyRotation(pGpu, pConfCompute, h2dKey, d2hKey));
+            }
         }
     }
     return status;
+}
+
+NV_STATUS
+subdeviceCtrlCmdFifoGetDeviceInfoTable_VF
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_FIFO_GET_DEVICE_INFO_TABLE_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+    NvU32 i = pParams->baseIndex / NV2080_CTRL_FIFO_GET_DEVICE_INFO_TABLE_MAX_ENTRIES;
+
+    NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
+
+    if (i >= MAX_ITERATIONS_DEVICE_INFO_TABLE)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    pParams->numEntries = pVSI->fifoDeviceInfoTable[i].numEntries;
+    if (pParams->numEntries > NV2080_CTRL_FIFO_GET_DEVICE_INFO_TABLE_MAX_ENTRIES)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    pParams->bMore = pVSI->fifoDeviceInfoTable[i].bMore;
+
+    portMemCopy(&pParams->entries,
+                pParams->numEntries * sizeof(NV2080_CTRL_FIFO_DEVICE_ENTRY),
+                pVSI->fifoDeviceInfoTable[i].entries,
+                pParams->numEntries * sizeof(NV2080_CTRL_FIFO_DEVICE_ENTRY));
+
+    return NV_OK;
+}
+
+NV_STATUS
+deviceCtrlCmdFifoGetLatencyBufferSize_VF
+(
+    Device *pDevice,
+    NV0080_CTRL_FIFO_GET_LATENCY_BUFFER_SIZE_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+    NvU32 i;
+
+    NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
+
+    for (i = 0; i < NV2080_ENGINE_TYPE_LAST_v1C_09; i++)
+    {
+        if (pParams->engineID == pVSI->fifoLatencyBufferSize[i].engineID)
+        {
+            pParams->gpEntries = pVSI->fifoLatencyBufferSize[i].gpEntries;
+            pParams->pbEntries = pVSI->fifoLatencyBufferSize[i].pbEntries;
+            break;
+        }
+    }
+
+    NV_ASSERT_OR_RETURN(i < NV2080_ENGINE_TYPE_LAST_v1C_09, NV_ERR_INVALID_ARGUMENT);
+
+    return NV_OK;
+}
+
+NV_STATUS
+deviceCtrlCmdFifoGetEngineContextProperties_VF
+(
+    Device *pDevice,
+    NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+    NV_STATUS status = NV_OK;
+
+    NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
+
+    if (gpuIsClientRmAllocatedCtxBufferEnabled(pGpu))
+    {
+        NvU32 size = 0;
+        NvU32 alignment = RM_PAGE_SIZE;
+        NvU32 engine;
+
+        pParams->size = 0;
+        pParams->alignment = 0;
+
+        engine = DRF_VAL(0080_CTRL_FIFO, _GET_ENGINE_CONTEXT_PROPERTIES, _ENGINE_ID,
+                pParams->engineId);
+
+        switch (engine)
+        {
+            case NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS:
+            case NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS_ZCULL:
+            case NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS_PREEMPT:
+            case NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS_SPILL:
+            case NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS_PAGEPOOL:
+            case NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS_BETACB:
+            case NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS_RTV:
+                pParams->size = NV_MAX(pVSI->ctxBuffInfo.engineContextBuffersInfo[0].engine[engine].size, size);
+                pParams->alignment = NV_MAX(pVSI->ctxBuffInfo.engineContextBuffersInfo[0].engine[engine].alignment, alignment);
+                status = NV_OK;
+                break;
+
+            default:
+                status = NV_ERR_NOT_SUPPORTED;
+        }
+        return status;
+    }
+
+    return NV_ERR_NOT_SUPPORTED;
 }

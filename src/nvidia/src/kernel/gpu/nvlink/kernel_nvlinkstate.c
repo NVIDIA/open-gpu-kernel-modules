@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -987,10 +987,6 @@ _knvlinkPurgeState
     {
         if ((pKernelNvlink->nvlinkLinks[linkId].pTmrEvent != NULL) && (pTmr != NULL))
         {
-            if (tmrEventOnList(pTmr, pKernelNvlink->nvlinkLinks[linkId].pTmrEvent))
-            {
-                 tmrEventCancel(pTmr, pKernelNvlink->nvlinkLinks[linkId].pTmrEvent);
-            }
             tmrEventDestroy(pTmr, pKernelNvlink->nvlinkLinks[linkId].pTmrEvent);
             pKernelNvlink->nvlinkLinks[linkId].pTmrEvent = NULL;
         }

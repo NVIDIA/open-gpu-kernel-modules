@@ -199,7 +199,7 @@ void uvm_hal_volta_host_tlb_invalidate_va(uvm_push_t *push,
                                           NvU32 depth,
                                           NvU64 base,
                                           NvU64 size,
-                                          NvU32 page_size,
+                                          NvU64 page_size,
                                           uvm_membar_t membar)
 {
     NvU32 aperture_value;
@@ -216,9 +216,9 @@ void uvm_hal_volta_host_tlb_invalidate_va(uvm_push_t *push,
     NvU32 log2_invalidation_size;
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
 
-    UVM_ASSERT_MSG(IS_ALIGNED(page_size, 1 << 12), "page_size 0x%x\n", page_size);
-    UVM_ASSERT_MSG(IS_ALIGNED(base, page_size), "base 0x%llx page_size 0x%x\n", base, page_size);
-    UVM_ASSERT_MSG(IS_ALIGNED(size, page_size), "size 0x%llx page_size 0x%x\n", size, page_size);
+    UVM_ASSERT_MSG(IS_ALIGNED(page_size, 1 << 12), "page_size 0x%llx\n", page_size);
+    UVM_ASSERT_MSG(IS_ALIGNED(base, page_size), "base 0x%llx page_size 0x%llx\n", base, page_size);
+    UVM_ASSERT_MSG(IS_ALIGNED(size, page_size), "size 0x%llx page_size 0x%llx\n", size, page_size);
     UVM_ASSERT_MSG(size > 0, "size 0x%llx\n", size);
 
     // The invalidation size must be a power-of-two number of pages containing

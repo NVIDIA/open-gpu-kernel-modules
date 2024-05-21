@@ -93,106 +93,6 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelGraphicsContext =
     /*pExportInfo=*/        &__nvoc_export_info_KernelGraphicsContext
 };
 
-static NvBool __nvoc_thunk_KernelGraphicsContext_resCanCopy(struct RsResource *arg0) {
-    return kgrctxCanCopy((struct KernelGraphicsContext *)(((unsigned char *)arg0) - __nvoc_rtti_KernelGraphicsContext_RsResource.offset));
-}
-
-static NvHandle __nvoc_thunk_KernelGraphicsContext_gpuresGetInternalObjectHandle(struct GpuResource *arg0) {
-    return kgrctxGetInternalObjectHandle((struct KernelGraphicsContext *)(((unsigned char *)arg0) - __nvoc_rtti_KernelGraphicsContext_GpuResource.offset));
-}
-
-static NvBool __nvoc_thunk_GpuResource_kgrctxShareCallback(struct KernelGraphicsContext *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelGraphicsContext_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_kgrctxCheckMemInterUnmap(struct KernelGraphicsContext *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_KernelGraphicsContext_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_kgrctxMapTo(struct KernelGraphicsContext *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelGraphicsContext_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_kgrctxGetMapAddrSpace(struct KernelGraphicsContext *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelGraphicsContext_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static NvU32 __nvoc_thunk_RsResource_kgrctxGetRefCount(struct KernelGraphicsContext *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelGraphicsContext_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_kgrctxAddAdditionalDependants(struct RsClient *pClient, struct KernelGraphicsContext *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelGraphicsContext_RsResource.offset), pReference);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_kgrctxControl_Prologue(struct KernelGraphicsContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelGraphicsContext_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_kgrctxGetRegBaseOffsetAndSize(struct KernelGraphicsContext *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelGraphicsContext_GpuResource.offset), pGpu, pOffset, pSize);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_kgrctxInternalControlForward(struct KernelGraphicsContext *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelGraphicsContext_GpuResource.offset), command, pParams, size);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_kgrctxUnmapFrom(struct KernelGraphicsContext *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelGraphicsContext_RsResource.offset), pParams);
-}
-
-static void __nvoc_thunk_RmResource_kgrctxControl_Epilogue(struct KernelGraphicsContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelGraphicsContext_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_kgrctxControl(struct KernelGraphicsContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelGraphicsContext_GpuResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_kgrctxUnmap(struct KernelGraphicsContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelGraphicsContext_GpuResource.offset), pCallContext, pCpuMapping);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_kgrctxGetMemInterMapParams(struct KernelGraphicsContext *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_KernelGraphicsContext_RmResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_kgrctxGetMemoryMappingDescriptor(struct KernelGraphicsContext *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_KernelGraphicsContext_RmResource.offset), ppMemDesc);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_kgrctxControlFilter(struct KernelGraphicsContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelGraphicsContext_RsResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_kgrctxControlSerialization_Prologue(struct KernelGraphicsContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelGraphicsContext_RmResource.offset), pCallContext, pParams);
-}
-
-static NvBool __nvoc_thunk_RsResource_kgrctxIsPartialUnmapSupported(struct KernelGraphicsContext *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelGraphicsContext_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_kgrctxPreDestruct(struct KernelGraphicsContext *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelGraphicsContext_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_kgrctxIsDuplicate(struct KernelGraphicsContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelGraphicsContext_RsResource.offset), hMemory, pDuplicate);
-}
-
-static void __nvoc_thunk_RmResource_kgrctxControlSerialization_Epilogue(struct KernelGraphicsContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelGraphicsContext_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_kgrctxMap(struct KernelGraphicsContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return gpuresMap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelGraphicsContext_GpuResource.offset), pCallContext, pParams, pCpuMapping);
-}
-
-static NvBool __nvoc_thunk_RmResource_kgrctxAccessCallback(struct KernelGraphicsContext *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelGraphicsContext_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
-}
-
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
@@ -200,12 +100,12 @@ static NvBool __nvoc_thunk_RmResource_kgrctxAccessCallback(struct KernelGraphics
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelGraphicsContext[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) kgrctxCtrlSetTpcPartitionMode_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x900101u,
         /*paramSize=*/  sizeof(NV0090_CTRL_TPC_PARTITION_MODE_PARAMS),
@@ -215,12 +115,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelGr
 #endif
     },
     {               /*  [1] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) kgrctxCtrlGetTpcPartitionMode_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x900103u,
         /*paramSize=*/  sizeof(NV0090_CTRL_TPC_PARTITION_MODE_PARAMS),
@@ -230,12 +130,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelGr
 #endif
     },
     {               /*  [2] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) kgrctxCtrlGetMMUDebugMode_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x900105u,
         /*paramSize=*/  sizeof(NV0090_CTRL_GET_MMU_DEBUG_MODE_PARAMS),
@@ -245,12 +145,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelGr
 #endif
     },
     {               /*  [3] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) kgrctxCtrlProgramVidmemPromote_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x900107u,
         /*paramSize=*/  sizeof(NV0090_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS),
@@ -261,6 +161,137 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelGr
     },
 
 };
+
+// 2 down-thunk(s) defined to bridge methods in KernelGraphicsContext from superclasses
+
+// kgrctxCanCopy: inline virtual override (res) base (gpures) body
+static NvBool __nvoc_down_thunk_KernelGraphicsContext_resCanCopy(struct RsResource *arg_this) {
+    return kgrctxCanCopy((struct KernelGraphicsContext *)(((unsigned char *) arg_this) - __nvoc_rtti_KernelGraphicsContext_RsResource.offset));
+}
+
+// kgrctxGetInternalObjectHandle: virtual override (gpures) base (gpures)
+static NvHandle __nvoc_down_thunk_KernelGraphicsContext_gpuresGetInternalObjectHandle(struct GpuResource *arg_this) {
+    return kgrctxGetInternalObjectHandle((struct KernelGraphicsContext *)(((unsigned char *) arg_this) - __nvoc_rtti_KernelGraphicsContext_GpuResource.offset));
+}
+
+
+// 23 up-thunk(s) defined to bridge methods in KernelGraphicsContext to superclasses
+
+// kgrctxControl: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_kgrctxControl(struct KernelGraphicsContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelGraphicsContext_GpuResource.offset), pCallContext, pParams);
+}
+
+// kgrctxMap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_kgrctxMap(struct KernelGraphicsContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelGraphicsContext_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+}
+
+// kgrctxUnmap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_kgrctxUnmap(struct KernelGraphicsContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelGraphicsContext_GpuResource.offset), pCallContext, pCpuMapping);
+}
+
+// kgrctxShareCallback: virtual inherited (gpures) base (gpures)
+static NvBool __nvoc_up_thunk_GpuResource_kgrctxShareCallback(struct KernelGraphicsContext *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelGraphicsContext_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+}
+
+// kgrctxGetRegBaseOffsetAndSize: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_kgrctxGetRegBaseOffsetAndSize(struct KernelGraphicsContext *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelGraphicsContext_GpuResource.offset), pGpu, pOffset, pSize);
+}
+
+// kgrctxGetMapAddrSpace: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_kgrctxGetMapAddrSpace(struct KernelGraphicsContext *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelGraphicsContext_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+// kgrctxInternalControlForward: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_kgrctxInternalControlForward(struct KernelGraphicsContext *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelGraphicsContext_GpuResource.offset), command, pParams, size);
+}
+
+// kgrctxAccessCallback: virtual inherited (rmres) base (gpures)
+static NvBool __nvoc_up_thunk_RmResource_kgrctxAccessCallback(struct KernelGraphicsContext *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelGraphicsContext_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+}
+
+// kgrctxGetMemInterMapParams: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_kgrctxGetMemInterMapParams(struct KernelGraphicsContext *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_KernelGraphicsContext_RmResource.offset), pParams);
+}
+
+// kgrctxCheckMemInterUnmap: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_kgrctxCheckMemInterUnmap(struct KernelGraphicsContext *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_KernelGraphicsContext_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+// kgrctxGetMemoryMappingDescriptor: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_kgrctxGetMemoryMappingDescriptor(struct KernelGraphicsContext *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_KernelGraphicsContext_RmResource.offset), ppMemDesc);
+}
+
+// kgrctxControlSerialization_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_kgrctxControlSerialization_Prologue(struct KernelGraphicsContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelGraphicsContext_RmResource.offset), pCallContext, pParams);
+}
+
+// kgrctxControlSerialization_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_kgrctxControlSerialization_Epilogue(struct KernelGraphicsContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelGraphicsContext_RmResource.offset), pCallContext, pParams);
+}
+
+// kgrctxControl_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_kgrctxControl_Prologue(struct KernelGraphicsContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelGraphicsContext_RmResource.offset), pCallContext, pParams);
+}
+
+// kgrctxControl_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_kgrctxControl_Epilogue(struct KernelGraphicsContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelGraphicsContext_RmResource.offset), pCallContext, pParams);
+}
+
+// kgrctxIsDuplicate: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_kgrctxIsDuplicate(struct KernelGraphicsContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelGraphicsContext_RsResource.offset), hMemory, pDuplicate);
+}
+
+// kgrctxPreDestruct: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_kgrctxPreDestruct(struct KernelGraphicsContext *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelGraphicsContext_RsResource.offset));
+}
+
+// kgrctxControlFilter: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_kgrctxControlFilter(struct KernelGraphicsContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelGraphicsContext_RsResource.offset), pCallContext, pParams);
+}
+
+// kgrctxIsPartialUnmapSupported: inline virtual inherited (res) base (gpures) body
+static NvBool __nvoc_up_thunk_RsResource_kgrctxIsPartialUnmapSupported(struct KernelGraphicsContext *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelGraphicsContext_RsResource.offset));
+}
+
+// kgrctxMapTo: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_kgrctxMapTo(struct KernelGraphicsContext *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelGraphicsContext_RsResource.offset), pParams);
+}
+
+// kgrctxUnmapFrom: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_kgrctxUnmapFrom(struct KernelGraphicsContext *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelGraphicsContext_RsResource.offset), pParams);
+}
+
+// kgrctxGetRefCount: virtual inherited (res) base (gpures)
+static NvU32 __nvoc_up_thunk_RsResource_kgrctxGetRefCount(struct KernelGraphicsContext *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelGraphicsContext_RsResource.offset));
+}
+
+// kgrctxAddAdditionalDependants: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_kgrctxAddAdditionalDependants(struct RsClient *pClient, struct KernelGraphicsContext *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelGraphicsContext_RsResource.offset), pReference);
+}
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelGraphicsContext = 
 {
@@ -307,6 +338,7 @@ __nvoc_ctor_KernelGraphicsContext_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_KernelGraphicsContext_1(KernelGraphicsContext *pThis, RmHalspecOwner *pRmhalspecowner) {
     ChipHal *chipHal = &pRmhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
@@ -319,11 +351,15 @@ static void __nvoc_init_funcTable_KernelGraphicsContext_1(KernelGraphicsContext 
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
+    // kgrctxCanCopy -- inline virtual override (res) base (gpures) body
     pThis->__kgrctxCanCopy__ = &kgrctxCanCopy_0c883b;
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__ = &__nvoc_down_thunk_KernelGraphicsContext_resCanCopy;
 
+    // kgrctxGetInternalObjectHandle -- virtual override (gpures) base (gpures)
     pThis->__kgrctxGetInternalObjectHandle__ = &kgrctxGetInternalObjectHandle_IMPL;
+    pThis->__nvoc_base_GpuResource.__gpuresGetInternalObjectHandle__ = &__nvoc_down_thunk_KernelGraphicsContext_gpuresGetInternalObjectHandle;
 
-    // Hal function -- kgrctxShouldPreAllocPmBuffer
+    // kgrctxShouldPreAllocPmBuffer -- halified (2 hals) body
     if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */  && (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ ))
     {
         pThis->__kgrctxShouldPreAllocPmBuffer__ = &kgrctxShouldPreAllocPmBuffer_VF;
@@ -333,7 +369,7 @@ static void __nvoc_init_funcTable_KernelGraphicsContext_1(KernelGraphicsContext 
         pThis->__kgrctxShouldPreAllocPmBuffer__ = &kgrctxShouldPreAllocPmBuffer_PF;
     }
 
-    // Hal function -- kgrctxGetRegisterAccessMapId
+    // kgrctxGetRegisterAccessMapId -- halified (2 hals)
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kgrctxGetRegisterAccessMapId__ = &kgrctxGetRegisterAccessMapId_aa21e9;
@@ -343,74 +379,101 @@ static void __nvoc_init_funcTable_KernelGraphicsContext_1(KernelGraphicsContext 
         pThis->__kgrctxGetRegisterAccessMapId__ = &kgrctxGetRegisterAccessMapId_PF;
     }
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // kgrctxCtrlGetTpcPartitionMode -- exported (id=0x900103)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__kgrctxCtrlGetTpcPartitionMode__ = &kgrctxCtrlGetTpcPartitionMode_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // kgrctxCtrlSetTpcPartitionMode -- exported (id=0x900101)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__kgrctxCtrlSetTpcPartitionMode__ = &kgrctxCtrlSetTpcPartitionMode_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // kgrctxCtrlGetMMUDebugMode -- exported (id=0x900105)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__kgrctxCtrlGetMMUDebugMode__ = &kgrctxCtrlGetMMUDebugMode_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // kgrctxCtrlProgramVidmemPromote -- exported (id=0x900107)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__kgrctxCtrlProgramVidmemPromote__ = &kgrctxCtrlProgramVidmemPromote_IMPL;
 #endif
 
-    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__ = &__nvoc_thunk_KernelGraphicsContext_resCanCopy;
+    // kgrctxControl -- virtual inherited (gpures) base (gpures)
+    pThis->__kgrctxControl__ = &__nvoc_up_thunk_GpuResource_kgrctxControl;
 
-    pThis->__nvoc_base_GpuResource.__gpuresGetInternalObjectHandle__ = &__nvoc_thunk_KernelGraphicsContext_gpuresGetInternalObjectHandle;
+    // kgrctxMap -- virtual inherited (gpures) base (gpures)
+    pThis->__kgrctxMap__ = &__nvoc_up_thunk_GpuResource_kgrctxMap;
 
-    pThis->__kgrctxShareCallback__ = &__nvoc_thunk_GpuResource_kgrctxShareCallback;
+    // kgrctxUnmap -- virtual inherited (gpures) base (gpures)
+    pThis->__kgrctxUnmap__ = &__nvoc_up_thunk_GpuResource_kgrctxUnmap;
 
-    pThis->__kgrctxCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_kgrctxCheckMemInterUnmap;
+    // kgrctxShareCallback -- virtual inherited (gpures) base (gpures)
+    pThis->__kgrctxShareCallback__ = &__nvoc_up_thunk_GpuResource_kgrctxShareCallback;
 
-    pThis->__kgrctxMapTo__ = &__nvoc_thunk_RsResource_kgrctxMapTo;
+    // kgrctxGetRegBaseOffsetAndSize -- virtual inherited (gpures) base (gpures)
+    pThis->__kgrctxGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_kgrctxGetRegBaseOffsetAndSize;
 
-    pThis->__kgrctxGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_kgrctxGetMapAddrSpace;
+    // kgrctxGetMapAddrSpace -- virtual inherited (gpures) base (gpures)
+    pThis->__kgrctxGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_kgrctxGetMapAddrSpace;
 
-    pThis->__kgrctxGetRefCount__ = &__nvoc_thunk_RsResource_kgrctxGetRefCount;
+    // kgrctxInternalControlForward -- virtual inherited (gpures) base (gpures)
+    pThis->__kgrctxInternalControlForward__ = &__nvoc_up_thunk_GpuResource_kgrctxInternalControlForward;
 
-    pThis->__kgrctxAddAdditionalDependants__ = &__nvoc_thunk_RsResource_kgrctxAddAdditionalDependants;
+    // kgrctxAccessCallback -- virtual inherited (rmres) base (gpures)
+    pThis->__kgrctxAccessCallback__ = &__nvoc_up_thunk_RmResource_kgrctxAccessCallback;
 
-    pThis->__kgrctxControl_Prologue__ = &__nvoc_thunk_RmResource_kgrctxControl_Prologue;
+    // kgrctxGetMemInterMapParams -- virtual inherited (rmres) base (gpures)
+    pThis->__kgrctxGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_kgrctxGetMemInterMapParams;
 
-    pThis->__kgrctxGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_kgrctxGetRegBaseOffsetAndSize;
+    // kgrctxCheckMemInterUnmap -- virtual inherited (rmres) base (gpures)
+    pThis->__kgrctxCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_kgrctxCheckMemInterUnmap;
 
-    pThis->__kgrctxInternalControlForward__ = &__nvoc_thunk_GpuResource_kgrctxInternalControlForward;
+    // kgrctxGetMemoryMappingDescriptor -- virtual inherited (rmres) base (gpures)
+    pThis->__kgrctxGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_kgrctxGetMemoryMappingDescriptor;
 
-    pThis->__kgrctxUnmapFrom__ = &__nvoc_thunk_RsResource_kgrctxUnmapFrom;
+    // kgrctxControlSerialization_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__kgrctxControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_kgrctxControlSerialization_Prologue;
 
-    pThis->__kgrctxControl_Epilogue__ = &__nvoc_thunk_RmResource_kgrctxControl_Epilogue;
+    // kgrctxControlSerialization_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__kgrctxControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_kgrctxControlSerialization_Epilogue;
 
-    pThis->__kgrctxControl__ = &__nvoc_thunk_GpuResource_kgrctxControl;
+    // kgrctxControl_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__kgrctxControl_Prologue__ = &__nvoc_up_thunk_RmResource_kgrctxControl_Prologue;
 
-    pThis->__kgrctxUnmap__ = &__nvoc_thunk_GpuResource_kgrctxUnmap;
+    // kgrctxControl_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__kgrctxControl_Epilogue__ = &__nvoc_up_thunk_RmResource_kgrctxControl_Epilogue;
 
-    pThis->__kgrctxGetMemInterMapParams__ = &__nvoc_thunk_RmResource_kgrctxGetMemInterMapParams;
+    // kgrctxIsDuplicate -- virtual inherited (res) base (gpures)
+    pThis->__kgrctxIsDuplicate__ = &__nvoc_up_thunk_RsResource_kgrctxIsDuplicate;
 
-    pThis->__kgrctxGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_kgrctxGetMemoryMappingDescriptor;
+    // kgrctxPreDestruct -- virtual inherited (res) base (gpures)
+    pThis->__kgrctxPreDestruct__ = &__nvoc_up_thunk_RsResource_kgrctxPreDestruct;
 
-    pThis->__kgrctxControlFilter__ = &__nvoc_thunk_RsResource_kgrctxControlFilter;
+    // kgrctxControlFilter -- virtual inherited (res) base (gpures)
+    pThis->__kgrctxControlFilter__ = &__nvoc_up_thunk_RsResource_kgrctxControlFilter;
 
-    pThis->__kgrctxControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_kgrctxControlSerialization_Prologue;
+    // kgrctxIsPartialUnmapSupported -- inline virtual inherited (res) base (gpures) body
+    pThis->__kgrctxIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_kgrctxIsPartialUnmapSupported;
 
-    pThis->__kgrctxIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_kgrctxIsPartialUnmapSupported;
+    // kgrctxMapTo -- virtual inherited (res) base (gpures)
+    pThis->__kgrctxMapTo__ = &__nvoc_up_thunk_RsResource_kgrctxMapTo;
 
-    pThis->__kgrctxPreDestruct__ = &__nvoc_thunk_RsResource_kgrctxPreDestruct;
+    // kgrctxUnmapFrom -- virtual inherited (res) base (gpures)
+    pThis->__kgrctxUnmapFrom__ = &__nvoc_up_thunk_RsResource_kgrctxUnmapFrom;
 
-    pThis->__kgrctxIsDuplicate__ = &__nvoc_thunk_RsResource_kgrctxIsDuplicate;
+    // kgrctxGetRefCount -- virtual inherited (res) base (gpures)
+    pThis->__kgrctxGetRefCount__ = &__nvoc_up_thunk_RsResource_kgrctxGetRefCount;
 
-    pThis->__kgrctxControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_kgrctxControlSerialization_Epilogue;
+    // kgrctxAddAdditionalDependants -- virtual inherited (res) base (gpures)
+    pThis->__kgrctxAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_kgrctxAddAdditionalDependants;
+} // End __nvoc_init_funcTable_KernelGraphicsContext_1 with approximately 35 basic block(s).
 
-    pThis->__kgrctxMap__ = &__nvoc_thunk_GpuResource_kgrctxMap;
 
-    pThis->__kgrctxAccessCallback__ = &__nvoc_thunk_RmResource_kgrctxAccessCallback;
-}
-
+// Initialize vtable(s) for 31 virtual method(s).
 void __nvoc_init_funcTable_KernelGraphicsContext(KernelGraphicsContext *pThis, RmHalspecOwner *pRmhalspecowner) {
+
+    // Initialize vtable(s) with 31 per-object function pointer(s).
     __nvoc_init_funcTable_KernelGraphicsContext_1(pThis, pRmhalspecowner);
 }
 
@@ -597,10 +660,13 @@ __nvoc_ctor_KernelGraphicsContextShared_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_KernelGraphicsContextShared_1(KernelGraphicsContextShared *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-}
+} // End __nvoc_init_funcTable_KernelGraphicsContextShared_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_KernelGraphicsContextShared(KernelGraphicsContextShared *pThis) {
     __nvoc_init_funcTable_KernelGraphicsContextShared_1(pThis);
 }

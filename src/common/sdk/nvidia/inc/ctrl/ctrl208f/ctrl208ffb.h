@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -590,26 +590,5 @@ typedef struct NV208F_CTRL_FB_CLEAR_REMAPPED_ROWS_PARAMS {
     NvU32  sourceMask;
     NvBool bForcePurge;
 } NV208F_CTRL_FB_CLEAR_REMAPPED_ROWS_PARAMS;
-
-/*
- * NV208F_CTRL_CMD_FB_GET_FLOORSWEPT_FBPA_MASK
- *
- * This command calculates the floorswept fbpa mask by taking 1/2 HBM
- * floorsweeping into account
- *
- *   fbpaMask
- *     This value of the mask.
- *
- *   Possbile status values returned are:
- *     NV_OK
- *     NV_ERR_NOT_SUPPORTED
- */
-#define NV208F_CTRL_CMD_FB_GET_FLOORSWEPT_FBPA_MASK (0x208f0516) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_FB_INTERFACE_ID << 8) | NV208F_CTRL_FB_GET_FLOORSWEPT_FBPA_MASK_PARAMS_MESSAGE_ID" */
-
-#define NV208F_CTRL_FB_GET_FLOORSWEPT_FBPA_MASK_PARAMS_MESSAGE_ID (0x16U)
-
-typedef struct NV208F_CTRL_FB_GET_FLOORSWEPT_FBPA_MASK_PARAMS {
-    NvU32 fbpaMask;
-} NV208F_CTRL_FB_GET_FLOORSWEPT_FBPA_MASK_PARAMS;
 
 /* _ctrl208ffb_h_ */

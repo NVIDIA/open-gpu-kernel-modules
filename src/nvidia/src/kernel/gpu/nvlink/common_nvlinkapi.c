@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -60,6 +60,24 @@ subdeviceCtrlCmdBusGetNvlinkCaps_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
 
     return nvlinkCtrlCmdBusGetNvlinkCaps(pGpu, pParams);
+}
+
+NV_STATUS
+subdeviceCtrlCmdBusGetNvlinkCaps_VF
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+
+    NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
+
+    portMemCopy(pParams, sizeof(*pParams),
+                &pVSI->nvlinkCaps, sizeof(pVSI->nvlinkCaps));
+
+    return NV_OK;
 }
 
 static void _calculateNvlinkCaps
@@ -325,7 +343,6 @@ static _getNvlinkStatus
             case NV2080_CTRL_NVLINK_CAPS_NVLINK_VERSION_2_0:
                 RMCTRL_SET_CAP(tempCaps, NV2080_CTRL_NVLINK_CAPS, _POWER_STATE_L0);
                 break;
-
             case NV2080_CTRL_NVLINK_CAPS_NVLINK_VERSION_4_0:
             case NV2080_CTRL_NVLINK_CAPS_NVLINK_VERSION_3_1:
             case NV2080_CTRL_NVLINK_CAPS_NVLINK_VERSION_3_0:
@@ -421,6 +438,10 @@ static _getNvlinkStatus
         pParams->linkInfo[i].nvlinkLinkDataRateKiBps = pLinkAndClockValues->nvlinkLinkDataRateKiBps;
         pParams->linkInfo[i].nvlinkRefClkType        = pLinkAndClockValues->nvlinkRefClkType;
         pParams->linkInfo[i].nvlinkRefClkSpeedMhz    = pLinkAndClockValues->nvlinkReqLinkClockMhz;
+
+        pParams->linkInfo[i].nvlinkMinL1Threshold    = pLinkAndClockValues->nvlinkMinL1Threshold;
+        pParams->linkInfo[i].nvlinkMaxL1Threshold    = pLinkAndClockValues->nvlinkMaxL1Threshold;
+        pParams->linkInfo[i].nvlinkL1ThresholdUnits  = pLinkAndClockValues->nvlinkL1ThresholdUnits;
 
         if (nvlinkLinks[i].bConnected)
         {

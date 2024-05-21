@@ -93,10 +93,13 @@ __nvoc_ctor_OBJREFCNT_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_OBJREFCNT_1(OBJREFCNT *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-}
+} // End __nvoc_init_funcTable_OBJREFCNT_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_OBJREFCNT(OBJREFCNT *pThis) {
     __nvoc_init_funcTable_OBJREFCNT_1(pThis);
 }

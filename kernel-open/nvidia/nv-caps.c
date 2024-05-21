@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,6 +26,8 @@
 #include "nv-procfs.h"
 #include "nv-hash.h"
 
+#include "nvmisc.h"
+
 extern int NVreg_ModifyDeviceFiles;
 
 /* sys_close() or __close_fd() */
@@ -49,7 +51,7 @@ typedef struct nv_cap_table_entry
     struct hlist_node hlist;
 } nv_cap_table_entry_t;
 
-#define NV_CAP_NUM_ENTRIES(_table) (sizeof(_table) / sizeof(_table[0]))
+#define NV_CAP_NUM_ENTRIES(_table) (NV_ARRAY_ELEMENTS(_table))
 
 static nv_cap_table_entry_t g_nv_cap_nvlink_table[] =
 {
@@ -361,18 +363,28 @@ static ssize_t nv_cap_procfs_write(struct file *file,
     nv_cap_file_private_t *private = NULL;
     unsigned long bytes_left;
     char *proc_buffer;
+    int status;
+
+    status = nv_down_read_interruptible(&nv_system_pm_lock);
+    if (status < 0)
+    {
+        nv_printf(NV_DBG_ERRORS, "nv-caps: failed to lock the nv_system_pm_lock!\n");
+        return status;
+    }
 
     private = ((struct seq_file *)file->private_data)->private;
     bytes_left = (sizeof(private->buffer) - private->offset - 1);
 
     if (count == 0)
     {
-        return -EINVAL;
+        count = -EINVAL;
+        goto done;
     }
 
     if ((bytes_left == 0) || (count > bytes_left))
     {
-        return -ENOSPC;
+        count = -ENOSPC;
+        goto done;
     }
 
     proc_buffer = &private->buffer[private->offset];
@@ -380,7 +392,8 @@ static ssize_t nv_cap_procfs_write(struct file *file,
     if (copy_from_user(proc_buffer, buffer, count))
     {
         nv_printf(NV_DBG_ERRORS, "nv-caps: failed to copy in proc data!\n");
-        return -EFAULT;
+        count = -EFAULT;
+        goto done;
     }
 
     private->offset += count;
@@ -388,17 +401,28 @@ static ssize_t nv_cap_procfs_write(struct file *file,
 
     *pos = private->offset;
 
+done:
+    up_read(&nv_system_pm_lock);
+
     return count;
 }
 
 static int nv_cap_procfs_read(struct seq_file *s, void *v)
 {
+    int status;
     nv_cap_file_private_t *private = s->private;
+
+    status = nv_down_read_interruptible(&nv_system_pm_lock);
+    if (status < 0)
+    {
+        return status;
+    }
 
     seq_printf(s, "%s: %d\n", "DeviceFileMinor", private->minor);
     seq_printf(s, "%s: %d\n", "DeviceFileMode", private->permissions);
     seq_printf(s, "%s: %d\n", "DeviceFileModify", private->modify);
 
+    up_read(&nv_system_pm_lock);
     return 0;
 }
 
@@ -423,14 +447,6 @@ static int nv_cap_procfs_open(struct inode *inode, struct file *file)
     if (rc < 0)
     {
         NV_KFREE(private, sizeof(nv_cap_file_private_t));
-        return rc;
-    }
-
-    rc = nv_down_read_interruptible(&nv_system_pm_lock);
-    if (rc < 0)
-    {
-        single_release(inode, file);
-        NV_KFREE(private, sizeof(nv_cap_file_private_t));
     }
 
     return rc;
@@ -448,8 +464,6 @@ static int nv_cap_procfs_release(struct inode *inode, struct file *file)
     {
         private = s->private;
     }
-
-    up_read(&nv_system_pm_lock);
 
     single_release(inode, file);
 

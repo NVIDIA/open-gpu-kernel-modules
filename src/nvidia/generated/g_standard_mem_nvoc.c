@@ -93,109 +93,141 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_StandardMemory =
     /*pExportInfo=*/        &__nvoc_export_info_StandardMemory
 };
 
-static NvBool __nvoc_thunk_StandardMemory_resCanCopy(struct RsResource *pStandardMemory) {
-    return stdmemCanCopy((struct StandardMemory *)(((unsigned char *)pStandardMemory) - __nvoc_rtti_StandardMemory_RsResource.offset));
+// 1 down-thunk(s) defined to bridge methods in StandardMemory from superclasses
+
+// stdmemCanCopy: virtual override (res) base (mem)
+static NvBool __nvoc_down_thunk_StandardMemory_resCanCopy(struct RsResource *pStandardMemory) {
+    return stdmemCanCopy((struct StandardMemory *)(((unsigned char *) pStandardMemory) - __nvoc_rtti_StandardMemory_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Memory_stdmemCheckMemInterUnmap(struct StandardMemory *pMemory, NvBool bSubdeviceHandleProvided) {
-    return memCheckMemInterUnmap((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), bSubdeviceHandleProvided);
+
+// 25 up-thunk(s) defined to bridge methods in StandardMemory to superclasses
+
+// stdmemIsDuplicate: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_stdmemIsDuplicate(struct StandardMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return memIsDuplicate((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), hMemory, pDuplicate);
 }
 
-static NvBool __nvoc_thunk_RmResource_stdmemShareCallback(struct StandardMemory *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return rmresShareCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_StandardMemory_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+// stdmemGetMapAddrSpace: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_stdmemGetMapAddrSpace(struct StandardMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return memGetMapAddrSpace((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_stdmemMapTo(struct StandardMemory *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_StandardMemory_RsResource.offset), pParams);
+// stdmemControl: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_stdmemControl(struct StandardMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return memControl((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_stdmemGetMapAddrSpace(struct StandardMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), pCallContext, mapFlags, pAddrSpace);
+// stdmemMap: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_stdmemMap(struct StandardMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+    return memMap((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), pCallContext, pParams, pCpuMapping);
 }
 
-static NvBool __nvoc_thunk_Memory_stdmemIsExportAllowed(struct StandardMemory *pMemory) {
-    return memIsExportAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_StandardMemory_Memory.offset));
+// stdmemUnmap: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_stdmemUnmap(struct StandardMemory *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return memUnmap((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), pCallContext, pCpuMapping);
 }
 
-static NvU32 __nvoc_thunk_RsResource_stdmemGetRefCount(struct StandardMemory *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_StandardMemory_RsResource.offset));
+// stdmemGetMemInterMapParams: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_stdmemGetMemInterMapParams(struct StandardMemory *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return memGetMemInterMapParams((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), pParams);
 }
 
-static void __nvoc_thunk_RsResource_stdmemAddAdditionalDependants(struct RsClient *pClient, struct StandardMemory *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_StandardMemory_RsResource.offset), pReference);
+// stdmemCheckMemInterUnmap: inline virtual inherited (mem) base (mem) body
+static NV_STATUS __nvoc_up_thunk_Memory_stdmemCheckMemInterUnmap(struct StandardMemory *pMemory, NvBool bSubdeviceHandleProvided) {
+    return memCheckMemInterUnmap((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), bSubdeviceHandleProvided);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_stdmemControl_Prologue(struct StandardMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_StandardMemory_RmResource.offset), pCallContext, pParams);
+// stdmemGetMemoryMappingDescriptor: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_stdmemGetMemoryMappingDescriptor(struct StandardMemory *pMemory, MEMORY_DESCRIPTOR **ppMemDesc) {
+    return memGetMemoryMappingDescriptor((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), ppMemDesc);
 }
 
-static NvBool __nvoc_thunk_Memory_stdmemIsGpuMapAllowed(struct StandardMemory *pMemory, struct OBJGPU *pGpu) {
-    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), pGpu);
+// stdmemCheckCopyPermissions: inline virtual inherited (mem) base (mem) body
+static NV_STATUS __nvoc_up_thunk_Memory_stdmemCheckCopyPermissions(struct StandardMemory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return memCheckCopyPermissions((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), pDstGpu, pDstDevice);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_stdmemUnmapFrom(struct StandardMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_StandardMemory_RsResource.offset), pParams);
+// stdmemIsReady: virtual inherited (mem) base (mem)
+static NV_STATUS __nvoc_up_thunk_Memory_stdmemIsReady(struct StandardMemory *pMemory, NvBool bCopyConstructorContext) {
+    return memIsReady((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), bCopyConstructorContext);
 }
 
-static void __nvoc_thunk_RmResource_stdmemControl_Epilogue(struct StandardMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_StandardMemory_RmResource.offset), pCallContext, pParams);
+// stdmemIsGpuMapAllowed: inline virtual inherited (mem) base (mem) body
+static NvBool __nvoc_up_thunk_Memory_stdmemIsGpuMapAllowed(struct StandardMemory *pMemory, struct OBJGPU *pGpu) {
+    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), pGpu);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_stdmemControl(struct StandardMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return memControl((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), pCallContext, pParams);
+// stdmemIsExportAllowed: inline virtual inherited (mem) base (mem) body
+static NvBool __nvoc_up_thunk_Memory_stdmemIsExportAllowed(struct StandardMemory *pMemory) {
+    return memIsExportAllowed((struct Memory *)(((unsigned char *) pMemory) + __nvoc_rtti_StandardMemory_Memory.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Memory_stdmemUnmap(struct StandardMemory *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return memUnmap((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), pCallContext, pCpuMapping);
+// stdmemAccessCallback: virtual inherited (rmres) base (mem)
+static NvBool __nvoc_up_thunk_RmResource_stdmemAccessCallback(struct StandardMemory *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_StandardMemory_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_stdmemGetMemInterMapParams(struct StandardMemory *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return memGetMemInterMapParams((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), pParams);
+// stdmemShareCallback: virtual inherited (rmres) base (mem)
+static NvBool __nvoc_up_thunk_RmResource_stdmemShareCallback(struct StandardMemory *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_StandardMemory_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_stdmemGetMemoryMappingDescriptor(struct StandardMemory *pMemory, MEMORY_DESCRIPTOR **ppMemDesc) {
-    return memGetMemoryMappingDescriptor((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), ppMemDesc);
+// stdmemControlSerialization_Prologue: virtual inherited (rmres) base (mem)
+static NV_STATUS __nvoc_up_thunk_RmResource_stdmemControlSerialization_Prologue(struct StandardMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_StandardMemory_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_stdmemControlFilter(struct StandardMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_StandardMemory_RsResource.offset), pCallContext, pParams);
+// stdmemControlSerialization_Epilogue: virtual inherited (rmres) base (mem)
+static void __nvoc_up_thunk_RmResource_stdmemControlSerialization_Epilogue(struct StandardMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_StandardMemory_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_stdmemControlSerialization_Prologue(struct StandardMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_StandardMemory_RmResource.offset), pCallContext, pParams);
+// stdmemControl_Prologue: virtual inherited (rmres) base (mem)
+static NV_STATUS __nvoc_up_thunk_RmResource_stdmemControl_Prologue(struct StandardMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_StandardMemory_RmResource.offset), pCallContext, pParams);
 }
 
-static NvBool __nvoc_thunk_RsResource_stdmemIsPartialUnmapSupported(struct StandardMemory *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_StandardMemory_RsResource.offset));
+// stdmemControl_Epilogue: virtual inherited (rmres) base (mem)
+static void __nvoc_up_thunk_RmResource_stdmemControl_Epilogue(struct StandardMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_StandardMemory_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_stdmemIsReady(struct StandardMemory *pMemory, NvBool bCopyConstructorContext) {
-    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), bCopyConstructorContext);
+// stdmemPreDestruct: virtual inherited (res) base (mem)
+static void __nvoc_up_thunk_RsResource_stdmemPreDestruct(struct StandardMemory *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_StandardMemory_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Memory_stdmemCheckCopyPermissions(struct StandardMemory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
-    return memCheckCopyPermissions((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), pDstGpu, pDstDevice);
+// stdmemControlFilter: virtual inherited (res) base (mem)
+static NV_STATUS __nvoc_up_thunk_RsResource_stdmemControlFilter(struct StandardMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_StandardMemory_RsResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_stdmemPreDestruct(struct StandardMemory *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_StandardMemory_RsResource.offset));
+// stdmemIsPartialUnmapSupported: inline virtual inherited (res) base (mem) body
+static NvBool __nvoc_up_thunk_RsResource_stdmemIsPartialUnmapSupported(struct StandardMemory *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_StandardMemory_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Memory_stdmemIsDuplicate(struct StandardMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
-    return memIsDuplicate((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), hMemory, pDuplicate);
+// stdmemMapTo: virtual inherited (res) base (mem)
+static NV_STATUS __nvoc_up_thunk_RsResource_stdmemMapTo(struct StandardMemory *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_StandardMemory_RsResource.offset), pParams);
 }
 
-static void __nvoc_thunk_RmResource_stdmemControlSerialization_Epilogue(struct StandardMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_StandardMemory_RmResource.offset), pCallContext, pParams);
+// stdmemUnmapFrom: virtual inherited (res) base (mem)
+static NV_STATUS __nvoc_up_thunk_RsResource_stdmemUnmapFrom(struct StandardMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_StandardMemory_RsResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_stdmemMap(struct StandardMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return memMap((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), pCallContext, pParams, pCpuMapping);
+// stdmemGetRefCount: virtual inherited (res) base (mem)
+static NvU32 __nvoc_up_thunk_RsResource_stdmemGetRefCount(struct StandardMemory *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_StandardMemory_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RmResource_stdmemAccessCallback(struct StandardMemory *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_StandardMemory_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+// stdmemAddAdditionalDependants: virtual inherited (res) base (mem)
+static void __nvoc_up_thunk_RsResource_stdmemAddAdditionalDependants(struct RsClient *pClient, struct StandardMemory *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_StandardMemory_RsResource.offset), pReference);
 }
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_StandardMemory = 
 {
@@ -232,65 +264,95 @@ __nvoc_ctor_StandardMemory_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_StandardMemory_1(StandardMemory *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // stdmemCanCopy -- virtual override (res) base (mem)
     pThis->__stdmemCanCopy__ = &stdmemCanCopy_IMPL;
+    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__ = &__nvoc_down_thunk_StandardMemory_resCanCopy;
 
-    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__ = &__nvoc_thunk_StandardMemory_resCanCopy;
+    // stdmemIsDuplicate -- virtual inherited (mem) base (mem)
+    pThis->__stdmemIsDuplicate__ = &__nvoc_up_thunk_Memory_stdmemIsDuplicate;
 
-    pThis->__stdmemCheckMemInterUnmap__ = &__nvoc_thunk_Memory_stdmemCheckMemInterUnmap;
+    // stdmemGetMapAddrSpace -- virtual inherited (mem) base (mem)
+    pThis->__stdmemGetMapAddrSpace__ = &__nvoc_up_thunk_Memory_stdmemGetMapAddrSpace;
 
-    pThis->__stdmemShareCallback__ = &__nvoc_thunk_RmResource_stdmemShareCallback;
+    // stdmemControl -- virtual inherited (mem) base (mem)
+    pThis->__stdmemControl__ = &__nvoc_up_thunk_Memory_stdmemControl;
 
-    pThis->__stdmemMapTo__ = &__nvoc_thunk_RsResource_stdmemMapTo;
+    // stdmemMap -- virtual inherited (mem) base (mem)
+    pThis->__stdmemMap__ = &__nvoc_up_thunk_Memory_stdmemMap;
 
-    pThis->__stdmemGetMapAddrSpace__ = &__nvoc_thunk_Memory_stdmemGetMapAddrSpace;
+    // stdmemUnmap -- virtual inherited (mem) base (mem)
+    pThis->__stdmemUnmap__ = &__nvoc_up_thunk_Memory_stdmemUnmap;
 
-    pThis->__stdmemIsExportAllowed__ = &__nvoc_thunk_Memory_stdmemIsExportAllowed;
+    // stdmemGetMemInterMapParams -- virtual inherited (mem) base (mem)
+    pThis->__stdmemGetMemInterMapParams__ = &__nvoc_up_thunk_Memory_stdmemGetMemInterMapParams;
 
-    pThis->__stdmemGetRefCount__ = &__nvoc_thunk_RsResource_stdmemGetRefCount;
+    // stdmemCheckMemInterUnmap -- inline virtual inherited (mem) base (mem) body
+    pThis->__stdmemCheckMemInterUnmap__ = &__nvoc_up_thunk_Memory_stdmemCheckMemInterUnmap;
 
-    pThis->__stdmemAddAdditionalDependants__ = &__nvoc_thunk_RsResource_stdmemAddAdditionalDependants;
+    // stdmemGetMemoryMappingDescriptor -- virtual inherited (mem) base (mem)
+    pThis->__stdmemGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_Memory_stdmemGetMemoryMappingDescriptor;
 
-    pThis->__stdmemControl_Prologue__ = &__nvoc_thunk_RmResource_stdmemControl_Prologue;
+    // stdmemCheckCopyPermissions -- inline virtual inherited (mem) base (mem) body
+    pThis->__stdmemCheckCopyPermissions__ = &__nvoc_up_thunk_Memory_stdmemCheckCopyPermissions;
 
-    pThis->__stdmemIsGpuMapAllowed__ = &__nvoc_thunk_Memory_stdmemIsGpuMapAllowed;
+    // stdmemIsReady -- virtual inherited (mem) base (mem)
+    pThis->__stdmemIsReady__ = &__nvoc_up_thunk_Memory_stdmemIsReady;
 
-    pThis->__stdmemUnmapFrom__ = &__nvoc_thunk_RsResource_stdmemUnmapFrom;
+    // stdmemIsGpuMapAllowed -- inline virtual inherited (mem) base (mem) body
+    pThis->__stdmemIsGpuMapAllowed__ = &__nvoc_up_thunk_Memory_stdmemIsGpuMapAllowed;
 
-    pThis->__stdmemControl_Epilogue__ = &__nvoc_thunk_RmResource_stdmemControl_Epilogue;
+    // stdmemIsExportAllowed -- inline virtual inherited (mem) base (mem) body
+    pThis->__stdmemIsExportAllowed__ = &__nvoc_up_thunk_Memory_stdmemIsExportAllowed;
 
-    pThis->__stdmemControl__ = &__nvoc_thunk_Memory_stdmemControl;
+    // stdmemAccessCallback -- virtual inherited (rmres) base (mem)
+    pThis->__stdmemAccessCallback__ = &__nvoc_up_thunk_RmResource_stdmemAccessCallback;
 
-    pThis->__stdmemUnmap__ = &__nvoc_thunk_Memory_stdmemUnmap;
+    // stdmemShareCallback -- virtual inherited (rmres) base (mem)
+    pThis->__stdmemShareCallback__ = &__nvoc_up_thunk_RmResource_stdmemShareCallback;
 
-    pThis->__stdmemGetMemInterMapParams__ = &__nvoc_thunk_Memory_stdmemGetMemInterMapParams;
+    // stdmemControlSerialization_Prologue -- virtual inherited (rmres) base (mem)
+    pThis->__stdmemControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_stdmemControlSerialization_Prologue;
 
-    pThis->__stdmemGetMemoryMappingDescriptor__ = &__nvoc_thunk_Memory_stdmemGetMemoryMappingDescriptor;
+    // stdmemControlSerialization_Epilogue -- virtual inherited (rmres) base (mem)
+    pThis->__stdmemControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_stdmemControlSerialization_Epilogue;
 
-    pThis->__stdmemControlFilter__ = &__nvoc_thunk_RsResource_stdmemControlFilter;
+    // stdmemControl_Prologue -- virtual inherited (rmres) base (mem)
+    pThis->__stdmemControl_Prologue__ = &__nvoc_up_thunk_RmResource_stdmemControl_Prologue;
 
-    pThis->__stdmemControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_stdmemControlSerialization_Prologue;
+    // stdmemControl_Epilogue -- virtual inherited (rmres) base (mem)
+    pThis->__stdmemControl_Epilogue__ = &__nvoc_up_thunk_RmResource_stdmemControl_Epilogue;
 
-    pThis->__stdmemIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_stdmemIsPartialUnmapSupported;
+    // stdmemPreDestruct -- virtual inherited (res) base (mem)
+    pThis->__stdmemPreDestruct__ = &__nvoc_up_thunk_RsResource_stdmemPreDestruct;
 
-    pThis->__stdmemIsReady__ = &__nvoc_thunk_Memory_stdmemIsReady;
+    // stdmemControlFilter -- virtual inherited (res) base (mem)
+    pThis->__stdmemControlFilter__ = &__nvoc_up_thunk_RsResource_stdmemControlFilter;
 
-    pThis->__stdmemCheckCopyPermissions__ = &__nvoc_thunk_Memory_stdmemCheckCopyPermissions;
+    // stdmemIsPartialUnmapSupported -- inline virtual inherited (res) base (mem) body
+    pThis->__stdmemIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_stdmemIsPartialUnmapSupported;
 
-    pThis->__stdmemPreDestruct__ = &__nvoc_thunk_RsResource_stdmemPreDestruct;
+    // stdmemMapTo -- virtual inherited (res) base (mem)
+    pThis->__stdmemMapTo__ = &__nvoc_up_thunk_RsResource_stdmemMapTo;
 
-    pThis->__stdmemIsDuplicate__ = &__nvoc_thunk_Memory_stdmemIsDuplicate;
+    // stdmemUnmapFrom -- virtual inherited (res) base (mem)
+    pThis->__stdmemUnmapFrom__ = &__nvoc_up_thunk_RsResource_stdmemUnmapFrom;
 
-    pThis->__stdmemControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_stdmemControlSerialization_Epilogue;
+    // stdmemGetRefCount -- virtual inherited (res) base (mem)
+    pThis->__stdmemGetRefCount__ = &__nvoc_up_thunk_RsResource_stdmemGetRefCount;
 
-    pThis->__stdmemMap__ = &__nvoc_thunk_Memory_stdmemMap;
+    // stdmemAddAdditionalDependants -- virtual inherited (res) base (mem)
+    pThis->__stdmemAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_stdmemAddAdditionalDependants;
+} // End __nvoc_init_funcTable_StandardMemory_1 with approximately 27 basic block(s).
 
-    pThis->__stdmemAccessCallback__ = &__nvoc_thunk_RmResource_stdmemAccessCallback;
-}
 
+// Initialize vtable(s) for 26 virtual method(s).
 void __nvoc_init_funcTable_StandardMemory(StandardMemory *pThis) {
+
+    // Initialize vtable(s) with 26 per-object function pointer(s).
     __nvoc_init_funcTable_StandardMemory_1(pThis);
 }
 

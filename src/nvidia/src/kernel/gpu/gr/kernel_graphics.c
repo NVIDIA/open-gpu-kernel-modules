@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -49,20 +49,7 @@
 #include "vgpu/vgpu_events.h"
 #include "vgpu/rpc.h"
 
-#include "class/clb0c0.h"
-#include "class/clb1c0.h"
-#include "class/clc0c0.h"
-#include "class/clc1c0.h"
-#include "class/clc3c0.h"
-#include "class/clc5c0.h"
-#include "class/clc6c0.h"
-#include "class/clc7c0.h"
-#include "class/clcbc0.h"
-
-#include "class/cl0080.h"
-#include "class/cl2080.h"
 #include "class/cla06f.h"
-#include "class/cla06fsubch.h"
 #include "class/cl90f1.h" // FERMI_VASPACE_A
 #include "class/cl003e.h" // NV01_MEMORY_SYSTEM
 #include "class/cl50a0.h" // NV50_MEMORY_VIRTUAL
@@ -445,7 +432,6 @@ _kgraphicsPostSchedulingEnableHandler
     KernelGraphics *pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, ((NvU32)(NvUPtr)pGrIndex));
     const KGRAPHICS_STATIC_INFO *pKernelGraphicsStaticInfo = kgraphicsGetStaticInfo(pGpu, pKernelGraphics);
 
-    // Nothing to do for non-GSPCLIENT
     if (!IS_GSP_CLIENT(pGpu))
         return NV_OK;
 

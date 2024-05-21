@@ -290,15 +290,15 @@ uvm_chunk_sizes_mask_t uvm_mem_kernel_chunk_sizes(uvm_gpu_t *gpu)
     // Get the mmu mode hal directly as the internal address space tree has not
     // been created yet.
     uvm_mmu_mode_hal_t *hal = gpu->parent->arch_hal->mmu_mode_hal(gpu->big_page.internal_size);
-    NvU32 page_sizes = hal->page_sizes();
+    NvU64 page_sizes = hal->page_sizes();
 
     return (uvm_chunk_sizes_mask_t)(page_sizes & UVM_CHUNK_SIZES_MASK);
 }
 
-static NvU32 mem_pick_chunk_size(uvm_mem_t *mem)
+static NvU64 mem_pick_chunk_size(uvm_mem_t *mem)
 {
-    NvU32 biggest_page_size;
-    NvU32 chunk_size;
+    NvU64 biggest_page_size;
+    NvU64 chunk_size;
 
     if (uvm_mem_is_sysmem(mem))
         return PAGE_SIZE;
@@ -315,12 +315,12 @@ static NvU32 mem_pick_chunk_size(uvm_mem_t *mem)
     // When UVM_PAGE_SIZE_DEFAULT is used on NUMA-enabled GPUs, we force
     // chunk_size to be PAGE_SIZE at least, to allow CPU mappings.
     if (mem->backing_gpu->mem_info.numa.enabled)
-        chunk_size = max(chunk_size, (NvU32)PAGE_SIZE);
+        chunk_size = max(chunk_size, (NvU64)PAGE_SIZE);
 
     return chunk_size;
 }
 
-static NvU32 mem_pick_gpu_page_size(uvm_mem_t *mem, uvm_gpu_t *gpu, uvm_page_tree_t *gpu_page_tree)
+static NvU64 mem_pick_gpu_page_size(uvm_mem_t *mem, uvm_gpu_t *gpu, uvm_page_tree_t *gpu_page_tree)
 {
     if (uvm_mem_is_vidmem(mem)) {
         // For vidmem allocations the chunk size is picked out of the supported
@@ -467,7 +467,7 @@ static NV_STATUS mem_alloc_sysmem_dma_chunks(uvm_mem_t *mem, gfp_t gfp_flags)
     NvU64 *dma_addrs;
 
     UVM_ASSERT_MSG(mem->chunk_size == PAGE_SIZE,
-                   "mem->chunk_size is 0x%x. PAGE_SIZE is only supported.",
+                   "mem->chunk_size is 0x%llx. PAGE_SIZE is only supported.",
                    mem->chunk_size);
     UVM_ASSERT(uvm_mem_is_sysmem_dma(mem));
 
@@ -528,10 +528,9 @@ static NV_STATUS mem_alloc_sysmem_chunks(uvm_mem_t *mem, gfp_t gfp_flags)
 
 // In case of failure, the caller is required to handle cleanup by calling
 // uvm_mem_free
-static NV_STATUS mem_alloc_vidmem_chunks(uvm_mem_t *mem, bool zero, bool is_unprotected)
+static NV_STATUS mem_alloc_vidmem_chunks(uvm_mem_t *mem, bool zero)
 {
     NV_STATUS status;
-    uvm_pmm_gpu_memory_type_t mem_type;
 
     UVM_ASSERT(uvm_mem_is_vidmem(mem));
 
@@ -548,23 +547,15 @@ static NV_STATUS mem_alloc_vidmem_chunks(uvm_mem_t *mem, bool zero, bool is_unpr
     if (!mem->vidmem.chunks)
         return NV_ERR_NO_MEMORY;
 
-    // When CC is disabled the behavior is identical to that of PMM, and the
-    // protection flag is ignored (squashed by PMM internally).
-    if (is_unprotected)
-        mem_type = UVM_PMM_GPU_MEMORY_TYPE_KERNEL_UNPROTECTED;
-    else
-        mem_type = UVM_PMM_GPU_MEMORY_TYPE_KERNEL_PROTECTED;
-
-    status = uvm_pmm_gpu_alloc(&mem->backing_gpu->pmm,
-                               mem->chunks_count,
-                               mem->chunk_size,
-                               mem_type,
-                               UVM_PMM_ALLOC_FLAGS_NONE,
-                               mem->vidmem.chunks,
-                               NULL);
+    status = uvm_pmm_gpu_alloc_kernel(&mem->backing_gpu->pmm,
+                                      mem->chunks_count,
+                                      mem->chunk_size,
+                                      UVM_PMM_ALLOC_FLAGS_NONE,
+                                      mem->vidmem.chunks,
+                                      NULL);
 
     if (status != NV_OK) {
-        UVM_ERR_PRINT("uvm_pmm_gpu_alloc (count=%zd, size=0x%x) failed: %s\n",
+        UVM_ERR_PRINT("uvm_pmm_gpu_alloc_kernel (count=%zd, size=0x%llx) failed: %s\n",
                       mem->chunks_count,
                       mem->chunk_size,
                       nvstatusToString(status));
@@ -574,7 +565,7 @@ static NV_STATUS mem_alloc_vidmem_chunks(uvm_mem_t *mem, bool zero, bool is_unpr
     return NV_OK;
 }
 
-static NV_STATUS mem_alloc_chunks(uvm_mem_t *mem, struct mm_struct *mm, bool zero, bool is_unprotected)
+static NV_STATUS mem_alloc_chunks(uvm_mem_t *mem, struct mm_struct *mm, bool zero)
 {
     if (uvm_mem_is_sysmem(mem)) {
         gfp_t gfp_flags;
@@ -596,7 +587,7 @@ static NV_STATUS mem_alloc_chunks(uvm_mem_t *mem, struct mm_struct *mm, bool zer
         return status;
     }
 
-    return mem_alloc_vidmem_chunks(mem, zero, is_unprotected);
+    return mem_alloc_vidmem_chunks(mem, zero);
 }
 
 NV_STATUS uvm_mem_map_kernel(uvm_mem_t *mem, const uvm_processor_mask_t *mask)
@@ -626,7 +617,6 @@ NV_STATUS uvm_mem_alloc(const uvm_mem_alloc_params_t *params, uvm_mem_t **mem_ou
     NV_STATUS status;
     NvU64 physical_size;
     uvm_mem_t *mem = NULL;
-    bool is_unprotected = false;
 
     UVM_ASSERT(params->size > 0);
 
@@ -648,12 +638,7 @@ NV_STATUS uvm_mem_alloc(const uvm_mem_alloc_params_t *params, uvm_mem_t **mem_ou
     physical_size = UVM_ALIGN_UP(mem->size, mem->chunk_size);
     mem->chunks_count = physical_size / mem->chunk_size;
 
-    if (params->is_unprotected)
-        UVM_ASSERT(uvm_mem_is_vidmem(mem));
-
-    is_unprotected = params->is_unprotected;
-
-    status = mem_alloc_chunks(mem, params->mm, params->zero, is_unprotected);
+    status = mem_alloc_chunks(mem, params->mm, params->zero);
     if (status != NV_OK)
         goto error;
 
@@ -1050,7 +1035,7 @@ static NV_STATUS mem_map_gpu(uvm_mem_t *mem,
                              uvm_page_table_range_vec_t **range_vec)
 {
     NV_STATUS status;
-    NvU32 page_size;
+    NvU64 page_size;
     uvm_pmm_alloc_flags_t pmm_flags = UVM_PMM_ALLOC_FLAGS_EVICT;
 
     uvm_mem_pte_maker_data_t pte_maker_data = {
@@ -1059,7 +1044,7 @@ static NV_STATUS mem_map_gpu(uvm_mem_t *mem,
         };
 
     page_size = mem_pick_gpu_page_size(mem, gpu, tree);
-    UVM_ASSERT_MSG(uvm_mmu_page_size_supported(tree, page_size), "page_size 0x%x\n", page_size);
+    UVM_ASSERT_MSG(uvm_mmu_page_size_supported(tree, page_size), "page_size 0x%llx\n", page_size);
 
     // When the Confidential Computing feature is enabled, DMA allocations are
     // majoritarily allocated and managed by a per-GPU DMA buffer pool

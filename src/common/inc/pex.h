@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -36,5 +36,36 @@
 #define PEX_FUNC_GETLTRLATENCY           0x00000006  // Get PCI Express Latency Tolerance Reporting Info
 #define PEX_FUNC_NAMEPCIDEVICE           0x00000007  // Get name of PCI or PCIE device 
 #define PEX_FUNC_SETLTRLATENCY           0x00000008  // Set PCI Express Latency Tolerance Reporting Values
+#define PEX_FUNC_AUXPOWERLIMIT           0x0000000A  // Set Aux power limit
+#define PEX_FUNC_PEXRST_DELAY            0x0000000B  // Set Pex reset delay
+
+
+/*
+ * 0h: Denied.
+ *     Indicates that the platform cannot support the power requested.
+ * 1h: Granted.
+ *     Indicates that the device is permitted to draw the requested auxiliary power.
+ * 2h: Granted.
+ *     Indicates that the platform will not remove main power from the slot
+ *     while the system is in S0.
+ */
+#define NV_AUX_POWER_REQUEST_STATUS                                  1:0
+#define NV_AUX_POWER_REQUEST_STATUS_DENIED                          0x00
+#define NV_AUX_POWER_REQUEST_STATUS_GRANTED_WITHOUT_12V_POWER       0x01
+#define NV_AUX_POWER_REQUEST_STATUS_GRANTED_WITH_12V_POWER          0x02
+
+/*
+ * Retry, with interval.
+ *     Bit 4, is a status bit. If set, it indicates that the platform cannot support
+ *     the power requested at this time, but it may be able to do so in the future.
+ *     Bits 3:0 contains the waiting time, in seconds, after which request can be made again.
+ */
+#define NV_AUX_POWER_REQUEST_STATUS_RETRY_LATER                      4:0
+#define NV_AUX_POWER_REQUEST_STATUS_RETRY_LATER_STATUS               4:4
+#define NV_AUX_POWER_REQUEST_STATUS_RETRY_LATER_STATUS_FALSE         0x0
+#define NV_AUX_POWER_REQUEST_STATUS_RETRY_LATER_STATUS_TRUE          0x1
+#define NV_AUX_POWER_REQUEST_STATUS_RETRY_LATER_INTERVAL             3:0
+#define NV_AUX_POWER_REQUEST_STATUS_RETRY_LATER_INTERVAL_MIN         0x1
+#define NV_AUX_POWER_REQUEST_STATUS_RETRY_LATER_INTERVAL_MAX         0xF
 
 #endif // PEX_H

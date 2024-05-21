@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -705,75 +705,13 @@ typedef struct NV2080_CTRL_BUS_SET_PCIE_SPEED_PARAMS {
     NvU32 busSpeed;
 } NV2080_CTRL_BUS_SET_PCIE_SPEED_PARAMS;
 
-#define NV2080_CTRL_BUS_SET_PCIE_SPEED_2500MBPS          (0x00000001)
-#define NV2080_CTRL_BUS_SET_PCIE_SPEED_5000MBPS          (0x00000002)
-#define NV2080_CTRL_BUS_SET_PCIE_SPEED_8000MBPS          (0x00000003)
-#define NV2080_CTRL_BUS_SET_PCIE_SPEED_16000MBPS         (0x00000004)
-#define NV2080_CTRL_BUS_SET_PCIE_SPEED_32000MBPS         (0x00000005)
-#define NV2080_CTRL_BUS_SET_PCIE_SPEED_64000MBPS         (0x00000006)
+#define NV2080_CTRL_BUS_SET_PCIE_SPEED_2500MBPS  (0x00000001)
+#define NV2080_CTRL_BUS_SET_PCIE_SPEED_5000MBPS  (0x00000002)
+#define NV2080_CTRL_BUS_SET_PCIE_SPEED_8000MBPS  (0x00000003)
+#define NV2080_CTRL_BUS_SET_PCIE_SPEED_16000MBPS (0x00000004)
+#define NV2080_CTRL_BUS_SET_PCIE_SPEED_32000MBPS (0x00000005)
+#define NV2080_CTRL_BUS_SET_PCIE_SPEED_64000MBPS (0x00000006)
 
-/*
- * NV2080_CTRL_CMD_BUS_SET_HWBC_UPSTREAM_PCIE_SPEED
- *
- * This command Initiates a change in PCIE Bus Speed for a HWBC device's upstream
- * link.
- *
- *   busSpeed
- *     This field specifies the target speed to which to train.
- *     Legal values for this parameter are:
- *       NV2080_CTRL_BUS_SET_PCIE_SPEED_2500MBPS
- *       NV2080_CTRL_BUS_SET_PCIE_SPEED_5000MBPS
- *   primaryBus
- *     This field is the PCI Express Primary Bus number that uniquely identifies
- *     a HWBC device's upstream port, i.e. the BR04 Upstream Port.
- *
- *   Possible status values returned are:
- *     NV_OK
- *     NV_ERR_INVALID_ARGUMENT
- */
-#define NV2080_CTRL_CMD_BUS_SET_HWBC_UPSTREAM_PCIE_SPEED (0x20801806) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | NV2080_CTRL_BUS_SET_HWBC_UPSTREAM_PCIE_SPEED_PARAMS_MESSAGE_ID" */
-
-#define NV2080_CTRL_BUS_SET_HWBC_UPSTREAM_PCIE_SPEED_PARAMS_MESSAGE_ID (0x6U)
-
-typedef struct NV2080_CTRL_BUS_SET_HWBC_UPSTREAM_PCIE_SPEED_PARAMS {
-    NvU32 busSpeed;
-    NvU8  primaryBus;
-} NV2080_CTRL_BUS_SET_HWBC_UPSTREAM_PCIE_SPEED_PARAMS;
-
-#define NV2080_CTRL_BUS_SET_HWBC_UPSTREAM_PCIE_SPEED_2500MBPS (0x00000001)
-#define NV2080_CTRL_BUS_SET_HWBC_UPSTREAM_PCIE_SPEED_5000MBPS (0x00000002)
-
-/*
- * NV2080_CTRL_CMD_BUS_GET_HWBC_UPSTREAM_PCIE_SPEED
- *
- * This command gets the current PCIE Bus Speed for a HWBC device's upstream
- * link.
- *
- *   primaryBus
- *     This field is the PCI Express Primary Bus number that uniquely identifies
- *     a HWBC device's upstream port, i.e. the BR04 Upstream Port.
- *   busSpeed
- *     This field specifies a pointer in the caller's address space
- *     to the NvU32 variable into which the bus speed is to be returned.
- *     On success, this parameter will contain one of the following values:
- *       NV2080_CTRL_BUS_SET_PCIE_SPEED_2500MBPS
- *       NV2080_CTRL_BUS_SET_PCIE_SPEED_5000MBPS
- *
- *   Possible status values returned are:
- *     NV_OK
- *     NV_ERR_INVALID_ARGUMENT
- */
-#define NV2080_CTRL_CMD_BUS_GET_HWBC_UPSTREAM_PCIE_SPEED      (0x20801807) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | NV2080_CTRL_BUS_GET_HWBC_UPSTREAM_PCIE_SPEED_PARAMS_MESSAGE_ID" */
-
-#define NV2080_CTRL_BUS_GET_HWBC_UPSTREAM_PCIE_SPEED_PARAMS_MESSAGE_ID (0x7U)
-
-typedef struct NV2080_CTRL_BUS_GET_HWBC_UPSTREAM_PCIE_SPEED_PARAMS {
-    NvU32 busSpeed;
-    NvU8  primaryBus;
-} NV2080_CTRL_BUS_GET_HWBC_UPSTREAM_PCIE_SPEED_PARAMS;
-
-#define NV2080_CTRL_BUS_GET_HWBC_UPSTREAM_PCIE_SPEED_2500MBPS (0x00000001)
-#define NV2080_CTRL_BUS_GET_HWBC_UPSTREAM_PCIE_SPEED_5000MBPS (0x00000002)
 
 /*
  * NV2080_CTRL_CMD_BUS_MAP_BAR2
@@ -791,7 +729,7 @@ typedef struct NV2080_CTRL_BUS_GET_HWBC_UPSTREAM_PCIE_SPEED_PARAMS {
  *    NV_ERR_NOT_SUPPORTED
  *
  */
-#define NV2080_CTRL_CMD_BUS_MAP_BAR2                          (0x20801809) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | NV2080_CTRL_BUS_MAP_BAR2_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_BUS_MAP_BAR2             (0x20801809) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | NV2080_CTRL_BUS_MAP_BAR2_PARAMS_MESSAGE_ID" */
 
 #define NV2080_CTRL_BUS_MAP_BAR2_PARAMS_MESSAGE_ID (0x9U)
 
@@ -852,31 +790,6 @@ typedef struct NV2080_CTRL_BUS_VERIFY_BAR2_PARAMS {
     NvU32    offset;
     NvU32    size;
 } NV2080_CTRL_BUS_VERIFY_BAR2_PARAMS;
-
-/*
- * NV2080_CTRL_CMD_BUS_HWBC_GET_UPSTREAM_BAR0
- *
- * This command gets the BAR0 for a HWBC device's upstream port.
- *
- *   primaryBus
- *     This field is the PCI Express Primary Bus number that uniquely identifies
- *     a HWBC device's upstream port, i.e. the BR04 Upstream Port.
- *   physBAR0
- *     This field returns the BAR0 physical address of the HWBC device's
- *     upstream port.
- *
- *   Possible status values returned are:
- *     NV_OK
- *     NV_ERR_INVALID_ARGUMENT
- */
-#define NV2080_CTRL_CMD_BUS_HWBC_GET_UPSTREAM_BAR0 (0x2080180e) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | NV2080_CTRL_BUS_HWBC_GET_UPSTREAM_BAR0_PARAMS_MESSAGE_ID" */
-
-#define NV2080_CTRL_BUS_HWBC_GET_UPSTREAM_BAR0_PARAMS_MESSAGE_ID (0xEU)
-
-typedef struct NV2080_CTRL_BUS_HWBC_GET_UPSTREAM_BAR0_PARAMS {
-    NV_DECLARE_ALIGNED(NvU64 physBAR0, 8);
-    NvU8 primaryBus;
-} NV2080_CTRL_BUS_HWBC_GET_UPSTREAM_BAR0_PARAMS;
 
 /*
  * NV2080_CTRL_CMD_BUS_SERVICE_GPU_MULTIFUNC_STATE
@@ -1417,14 +1330,8 @@ typedef struct NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS {
  *
  *   remoteType[OUT]
  *       NV2080_CTRL_BUS_GET_C2C_INFO_REMOTE_TYPE_CPU - connected to a CPU
+ *       in either self-hosted mode or externally-hostedmode.
  */
-
- /*
- *                                                      in either self-hosted mode or
- *                                                      externally-hostedmode.
- */
-
-
 
 #define NV2080_CTRL_CMD_BUS_GET_C2C_INFO                            (0x2080182b) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS_MESSAGE_ID" */
 

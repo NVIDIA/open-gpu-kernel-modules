@@ -102,3 +102,26 @@ kccuMigShrBufHandler_GH100
 
     return status;
 }
+
+/*!
+ * Get CCU shared buffer informtion
+ *
+ * @param[in] pGpu              GPU object pointer
+ * @param[in/out] pKernelCcu    KernelCcu object pointer
+ *
+ * @return  NV_OK
+ */
+NV_STATUS
+kccuGetBufSize_GH100
+(
+    OBJGPU    *pGpu,
+    KernelCcu *pKernelCcu
+)
+{
+    pKernelCcu->devBufSize = CCU_DEV_BUF_SIZE_16KB;
+    pKernelCcu->devSharedBufSize = CCU_DEV_SHARED_BUF_SIZE;
+    pKernelCcu->migBufSize = CCU_MIG_BUF_SIZE_2KB;
+    pKernelCcu->migSharedBufSize = CCU_MIG_SHARED_BUF_SIZE;
+
+    return NV_OK;
+}

@@ -42,7 +42,8 @@
                         __FUNCTION__, __LINE__, _unhandled);               \
             NVSWITCH_PRINT_SXID(_device,                                   \
                   NVSWITCH_ERR_HW_HOST_UNHANDLED_INTERRUPT,                \
-                  "Fatal, unhandled interrupt\n");                         \
+                  "Fatal, unhandled interrupt in %s(%d)\n",                \
+                  __FUNCTION__, __LINE__);                                 \
             NVSWITCH_LOG_FATAL_DATA(_device, _HW,                          \
                 _HW_HOST_UNHANDLED_INTERRUPT, 0, 0, NV_FALSE, &_unhandled);\
         }                                                                  \

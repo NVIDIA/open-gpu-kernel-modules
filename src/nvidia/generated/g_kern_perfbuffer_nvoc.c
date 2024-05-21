@@ -93,105 +93,133 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_PerfBuffer =
     /*pExportInfo=*/        &__nvoc_export_info_PerfBuffer
 };
 
-static NvBool __nvoc_thunk_GpuResource_perfbufferShareCallback(struct PerfBuffer *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+// 25 up-thunk(s) defined to bridge methods in PerfBuffer to superclasses
+
+// perfbufferControl: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_perfbufferControl(struct PerfBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_perfbufferCheckMemInterUnmap(struct PerfBuffer *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), bSubdeviceHandleProvided);
+// perfbufferMap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_perfbufferMap(struct PerfBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset), pCallContext, pParams, pCpuMapping);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_perfbufferMapTo(struct PerfBuffer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), pParams);
+// perfbufferUnmap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_perfbufferUnmap(struct PerfBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset), pCallContext, pCpuMapping);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_perfbufferGetMapAddrSpace(struct PerfBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+// perfbufferShareCallback: virtual inherited (gpures) base (gpures)
+static NvBool __nvoc_up_thunk_GpuResource_perfbufferShareCallback(struct PerfBuffer *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NvU32 __nvoc_thunk_RsResource_perfbufferGetRefCount(struct PerfBuffer *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset));
+// perfbufferGetRegBaseOffsetAndSize: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_perfbufferGetRegBaseOffsetAndSize(struct PerfBuffer *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset), pGpu, pOffset, pSize);
 }
 
-static void __nvoc_thunk_RsResource_perfbufferAddAdditionalDependants(struct RsClient *pClient, struct PerfBuffer *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), pReference);
+// perfbufferGetMapAddrSpace: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_perfbufferGetMapAddrSpace(struct PerfBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_perfbufferControl_Prologue(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), pCallContext, pParams);
+// perfbufferInternalControlForward: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_perfbufferInternalControlForward(struct PerfBuffer *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset), command, pParams, size);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_perfbufferGetRegBaseOffsetAndSize(struct PerfBuffer *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset), pGpu, pOffset, pSize);
+// perfbufferGetInternalObjectHandle: virtual inherited (gpures) base (gpures)
+static NvHandle __nvoc_up_thunk_GpuResource_perfbufferGetInternalObjectHandle(struct PerfBuffer *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_perfbufferInternalControlForward(struct PerfBuffer *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset), command, pParams, size);
+// perfbufferAccessCallback: virtual inherited (rmres) base (gpures)
+static NvBool __nvoc_up_thunk_RmResource_perfbufferAccessCallback(struct PerfBuffer *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_perfbufferUnmapFrom(struct PerfBuffer *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), pParams);
+// perfbufferGetMemInterMapParams: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_perfbufferGetMemInterMapParams(struct PerfBuffer *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), pParams);
 }
 
-static void __nvoc_thunk_RmResource_perfbufferControl_Epilogue(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), pCallContext, pParams);
+// perfbufferCheckMemInterUnmap: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_perfbufferCheckMemInterUnmap(struct PerfBuffer *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), bSubdeviceHandleProvided);
 }
 
-static NvHandle __nvoc_thunk_GpuResource_perfbufferGetInternalObjectHandle(struct PerfBuffer *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset));
+// perfbufferGetMemoryMappingDescriptor: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_perfbufferGetMemoryMappingDescriptor(struct PerfBuffer *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), ppMemDesc);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_perfbufferControl(struct PerfBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset), pCallContext, pParams);
+// perfbufferControlSerialization_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_perfbufferControlSerialization_Prologue(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_perfbufferUnmap(struct PerfBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset), pCallContext, pCpuMapping);
+// perfbufferControlSerialization_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_perfbufferControlSerialization_Epilogue(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_perfbufferGetMemInterMapParams(struct PerfBuffer *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), pParams);
+// perfbufferControl_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_perfbufferControl_Prologue(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_perfbufferGetMemoryMappingDescriptor(struct PerfBuffer *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), ppMemDesc);
+// perfbufferControl_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_perfbufferControl_Epilogue(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_perfbufferControlFilter(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), pCallContext, pParams);
+// perfbufferCanCopy: virtual inherited (res) base (gpures)
+static NvBool __nvoc_up_thunk_RsResource_perfbufferCanCopy(struct PerfBuffer *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_perfbufferControlSerialization_Prologue(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), pCallContext, pParams);
+// perfbufferIsDuplicate: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_perfbufferIsDuplicate(struct PerfBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), hMemory, pDuplicate);
 }
 
-static NvBool __nvoc_thunk_RsResource_perfbufferCanCopy(struct PerfBuffer *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset));
+// perfbufferPreDestruct: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_perfbufferPreDestruct(struct PerfBuffer *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RsResource_perfbufferIsPartialUnmapSupported(struct PerfBuffer *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset));
+// perfbufferControlFilter: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_perfbufferControlFilter(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_perfbufferPreDestruct(struct PerfBuffer *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset));
+// perfbufferIsPartialUnmapSupported: inline virtual inherited (res) base (gpures) body
+static NvBool __nvoc_up_thunk_RsResource_perfbufferIsPartialUnmapSupported(struct PerfBuffer *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_perfbufferIsDuplicate(struct PerfBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), hMemory, pDuplicate);
+// perfbufferMapTo: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_perfbufferMapTo(struct PerfBuffer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), pParams);
 }
 
-static void __nvoc_thunk_RmResource_perfbufferControlSerialization_Epilogue(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), pCallContext, pParams);
+// perfbufferUnmapFrom: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_perfbufferUnmapFrom(struct PerfBuffer *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_perfbufferMap(struct PerfBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return gpuresMap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+// perfbufferGetRefCount: virtual inherited (res) base (gpures)
+static NvU32 __nvoc_up_thunk_RsResource_perfbufferGetRefCount(struct PerfBuffer *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RmResource_perfbufferAccessCallback(struct PerfBuffer *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+// perfbufferAddAdditionalDependants: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_perfbufferAddAdditionalDependants(struct RsClient *pClient, struct PerfBuffer *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), pReference);
 }
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_PerfBuffer = 
 {
@@ -234,6 +262,7 @@ __nvoc_ctor_PerfBuffer_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_PerfBuffer_1(PerfBuffer *pThis, RmHalspecOwner *pRmhalspecowner) {
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
@@ -242,7 +271,7 @@ static void __nvoc_init_funcTable_PerfBuffer_1(PerfBuffer *pThis, RmHalspecOwner
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
-    // Hal function -- perfbufferConstructHal
+    // perfbufferConstructHal -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__perfbufferConstructHal__ = &perfbufferConstructHal_46f6a7;
@@ -252,58 +281,87 @@ static void __nvoc_init_funcTable_PerfBuffer_1(PerfBuffer *pThis, RmHalspecOwner
         pThis->__perfbufferConstructHal__ = &perfbufferConstructHal_KERNEL;
     }
 
-    pThis->__perfbufferShareCallback__ = &__nvoc_thunk_GpuResource_perfbufferShareCallback;
+    // perfbufferControl -- virtual inherited (gpures) base (gpures)
+    pThis->__perfbufferControl__ = &__nvoc_up_thunk_GpuResource_perfbufferControl;
 
-    pThis->__perfbufferCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_perfbufferCheckMemInterUnmap;
+    // perfbufferMap -- virtual inherited (gpures) base (gpures)
+    pThis->__perfbufferMap__ = &__nvoc_up_thunk_GpuResource_perfbufferMap;
 
-    pThis->__perfbufferMapTo__ = &__nvoc_thunk_RsResource_perfbufferMapTo;
+    // perfbufferUnmap -- virtual inherited (gpures) base (gpures)
+    pThis->__perfbufferUnmap__ = &__nvoc_up_thunk_GpuResource_perfbufferUnmap;
 
-    pThis->__perfbufferGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_perfbufferGetMapAddrSpace;
+    // perfbufferShareCallback -- virtual inherited (gpures) base (gpures)
+    pThis->__perfbufferShareCallback__ = &__nvoc_up_thunk_GpuResource_perfbufferShareCallback;
 
-    pThis->__perfbufferGetRefCount__ = &__nvoc_thunk_RsResource_perfbufferGetRefCount;
+    // perfbufferGetRegBaseOffsetAndSize -- virtual inherited (gpures) base (gpures)
+    pThis->__perfbufferGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_perfbufferGetRegBaseOffsetAndSize;
 
-    pThis->__perfbufferAddAdditionalDependants__ = &__nvoc_thunk_RsResource_perfbufferAddAdditionalDependants;
+    // perfbufferGetMapAddrSpace -- virtual inherited (gpures) base (gpures)
+    pThis->__perfbufferGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_perfbufferGetMapAddrSpace;
 
-    pThis->__perfbufferControl_Prologue__ = &__nvoc_thunk_RmResource_perfbufferControl_Prologue;
+    // perfbufferInternalControlForward -- virtual inherited (gpures) base (gpures)
+    pThis->__perfbufferInternalControlForward__ = &__nvoc_up_thunk_GpuResource_perfbufferInternalControlForward;
 
-    pThis->__perfbufferGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_perfbufferGetRegBaseOffsetAndSize;
+    // perfbufferGetInternalObjectHandle -- virtual inherited (gpures) base (gpures)
+    pThis->__perfbufferGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_perfbufferGetInternalObjectHandle;
 
-    pThis->__perfbufferInternalControlForward__ = &__nvoc_thunk_GpuResource_perfbufferInternalControlForward;
+    // perfbufferAccessCallback -- virtual inherited (rmres) base (gpures)
+    pThis->__perfbufferAccessCallback__ = &__nvoc_up_thunk_RmResource_perfbufferAccessCallback;
 
-    pThis->__perfbufferUnmapFrom__ = &__nvoc_thunk_RsResource_perfbufferUnmapFrom;
+    // perfbufferGetMemInterMapParams -- virtual inherited (rmres) base (gpures)
+    pThis->__perfbufferGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_perfbufferGetMemInterMapParams;
 
-    pThis->__perfbufferControl_Epilogue__ = &__nvoc_thunk_RmResource_perfbufferControl_Epilogue;
+    // perfbufferCheckMemInterUnmap -- virtual inherited (rmres) base (gpures)
+    pThis->__perfbufferCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_perfbufferCheckMemInterUnmap;
 
-    pThis->__perfbufferGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_perfbufferGetInternalObjectHandle;
+    // perfbufferGetMemoryMappingDescriptor -- virtual inherited (rmres) base (gpures)
+    pThis->__perfbufferGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_perfbufferGetMemoryMappingDescriptor;
 
-    pThis->__perfbufferControl__ = &__nvoc_thunk_GpuResource_perfbufferControl;
+    // perfbufferControlSerialization_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__perfbufferControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_perfbufferControlSerialization_Prologue;
 
-    pThis->__perfbufferUnmap__ = &__nvoc_thunk_GpuResource_perfbufferUnmap;
+    // perfbufferControlSerialization_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__perfbufferControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_perfbufferControlSerialization_Epilogue;
 
-    pThis->__perfbufferGetMemInterMapParams__ = &__nvoc_thunk_RmResource_perfbufferGetMemInterMapParams;
+    // perfbufferControl_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__perfbufferControl_Prologue__ = &__nvoc_up_thunk_RmResource_perfbufferControl_Prologue;
 
-    pThis->__perfbufferGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_perfbufferGetMemoryMappingDescriptor;
+    // perfbufferControl_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__perfbufferControl_Epilogue__ = &__nvoc_up_thunk_RmResource_perfbufferControl_Epilogue;
 
-    pThis->__perfbufferControlFilter__ = &__nvoc_thunk_RsResource_perfbufferControlFilter;
+    // perfbufferCanCopy -- virtual inherited (res) base (gpures)
+    pThis->__perfbufferCanCopy__ = &__nvoc_up_thunk_RsResource_perfbufferCanCopy;
 
-    pThis->__perfbufferControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_perfbufferControlSerialization_Prologue;
+    // perfbufferIsDuplicate -- virtual inherited (res) base (gpures)
+    pThis->__perfbufferIsDuplicate__ = &__nvoc_up_thunk_RsResource_perfbufferIsDuplicate;
 
-    pThis->__perfbufferCanCopy__ = &__nvoc_thunk_RsResource_perfbufferCanCopy;
+    // perfbufferPreDestruct -- virtual inherited (res) base (gpures)
+    pThis->__perfbufferPreDestruct__ = &__nvoc_up_thunk_RsResource_perfbufferPreDestruct;
 
-    pThis->__perfbufferIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_perfbufferIsPartialUnmapSupported;
+    // perfbufferControlFilter -- virtual inherited (res) base (gpures)
+    pThis->__perfbufferControlFilter__ = &__nvoc_up_thunk_RsResource_perfbufferControlFilter;
 
-    pThis->__perfbufferPreDestruct__ = &__nvoc_thunk_RsResource_perfbufferPreDestruct;
+    // perfbufferIsPartialUnmapSupported -- inline virtual inherited (res) base (gpures) body
+    pThis->__perfbufferIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_perfbufferIsPartialUnmapSupported;
 
-    pThis->__perfbufferIsDuplicate__ = &__nvoc_thunk_RsResource_perfbufferIsDuplicate;
+    // perfbufferMapTo -- virtual inherited (res) base (gpures)
+    pThis->__perfbufferMapTo__ = &__nvoc_up_thunk_RsResource_perfbufferMapTo;
 
-    pThis->__perfbufferControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_perfbufferControlSerialization_Epilogue;
+    // perfbufferUnmapFrom -- virtual inherited (res) base (gpures)
+    pThis->__perfbufferUnmapFrom__ = &__nvoc_up_thunk_RsResource_perfbufferUnmapFrom;
 
-    pThis->__perfbufferMap__ = &__nvoc_thunk_GpuResource_perfbufferMap;
+    // perfbufferGetRefCount -- virtual inherited (res) base (gpures)
+    pThis->__perfbufferGetRefCount__ = &__nvoc_up_thunk_RsResource_perfbufferGetRefCount;
 
-    pThis->__perfbufferAccessCallback__ = &__nvoc_thunk_RmResource_perfbufferAccessCallback;
-}
+    // perfbufferAddAdditionalDependants -- virtual inherited (res) base (gpures)
+    pThis->__perfbufferAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_perfbufferAddAdditionalDependants;
+} // End __nvoc_init_funcTable_PerfBuffer_1 with approximately 27 basic block(s).
 
+
+// Initialize vtable(s) for 26 virtual method(s).
 void __nvoc_init_funcTable_PerfBuffer(PerfBuffer *pThis, RmHalspecOwner *pRmhalspecowner) {
+
+    // Initialize vtable(s) with 26 per-object function pointer(s).
     __nvoc_init_funcTable_PerfBuffer_1(pThis, pRmhalspecowner);
 }
 

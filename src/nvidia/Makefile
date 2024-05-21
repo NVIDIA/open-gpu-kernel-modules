@@ -216,6 +216,7 @@ $(NV_KERNEL_O): $(OBJS) $(EXPORTS_LINK_COMMAND) $(LINKER_SCRIPT)
 	$(call quiet_cmd,OBJCOPY) \
 	  --localize-symbol=memset \
 	  --localize-symbol=memcpy \
+	  --remove-section=.note.gnu.property \
 	  $@
 
 .PHONY: clean

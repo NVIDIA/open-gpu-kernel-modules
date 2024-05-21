@@ -1599,7 +1599,7 @@ static void hmm_va_block_cpu_unpopulate_chunk(uvm_va_block_t *va_block,
     UVM_ASSERT(uvm_cpu_chunk_get_size(chunk) == PAGE_SIZE);
 
     uvm_cpu_chunk_remove_from_block(va_block, chunk_nid, page_index);
-    uvm_va_block_unmap_cpu_chunk_on_gpus(va_block, chunk, page_index);
+    uvm_va_block_unmap_cpu_chunk_on_gpus(va_block, chunk);
     uvm_cpu_chunk_free(chunk);
 }
 

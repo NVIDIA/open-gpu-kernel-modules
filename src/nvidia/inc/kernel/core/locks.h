@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -106,14 +106,12 @@ typedef struct
 #define GPUS_LOCK_FLAGS_NONE                            (0x00000000)
 // conditional acquire; if lock is already held then return error
 #define GPU_LOCK_FLAGS_COND_ACQUIRE                     NVBIT(0)
-// acquire the lock in read (shared) mode, if applicable
-#define GPU_LOCK_FLAGS_READ                             NVBIT(1)
 // Attempt acquire even if it potentially violates the locking order
 // But do not block in a way that could cause a deadlock
-#define GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE                NVBIT(2)
+#define GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE                NVBIT(1)
 // Additionally acquire the GPU alloc lock (implied if locking all GPUs)
 // to prevent the set of lockable GPUs from changing
-#define GPU_LOCK_FLAGS_LOCK_ALLOC                       NVBIT(3)
+#define GPU_LOCK_FLAGS_LOCK_ALLOC                       NVBIT(2)
 
 //
 // RM Lock Related Functions

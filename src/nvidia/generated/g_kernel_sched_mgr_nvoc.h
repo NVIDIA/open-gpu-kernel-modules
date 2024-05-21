@@ -1,6 +1,13 @@
+
 #ifndef _G_KERNEL_SCHED_MGR_NVOC_H_
 #define _G_KERNEL_SCHED_MGR_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,6 +41,7 @@ extern "C" {
  * @brief  Provides definition for KernelSchedMgr data-structures and interfaces.
  */
 
+#pragma once
 #include "g_kernel_sched_mgr_nvoc.h"
 
 #ifndef _KERNELSCHEDMGR_H_
@@ -70,11 +78,20 @@ typedef enum __SCHED_POLICY SCHED_POLICY;
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 
+
 struct KernelSchedMgr {
+
+    // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+
+    // Parent (i.e. superclass or base class) object pointers
     struct Object __nvoc_base_Object;
-    struct Object *__nvoc_pbase_Object;
-    struct KernelSchedMgr *__nvoc_pbase_KernelSchedMgr;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super
+    struct KernelSchedMgr *__nvoc_pbase_KernelSchedMgr;    // kschedmgr
+
+    // Data members
     NvBool bIsSchedSwEnabled;
     NvU32 configSchedPolicy;
 };
@@ -88,6 +105,7 @@ typedef struct KernelSchedMgr KernelSchedMgr;
 #define __nvoc_class_id_KernelSchedMgr 0xea0970
 #endif /* __nvoc_class_id_KernelSchedMgr */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelSchedMgr;
 
 #define __staticCast_KernelSchedMgr(pThis) \
@@ -100,13 +118,16 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelSchedMgr;
     ((KernelSchedMgr*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(KernelSchedMgr)))
 #endif //__nvoc_kernel_sched_mgr_h_disabled
 
-
 NV_STATUS __nvoc_objCreateDynamic_KernelSchedMgr(KernelSchedMgr**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_KernelSchedMgr(KernelSchedMgr**, Dynamic*, NvU32);
 #define __objCreate_KernelSchedMgr(ppNewObj, pParent, createFlags) \
     __nvoc_objCreate_KernelSchedMgr((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
+
+// Wrapper macros
+
+// Dispatch functions
 static inline NvBool kschedmgrIsSchedSwEnabled(struct KernelSchedMgr *pKernelSchedMgr) {
     return pKernelSchedMgr->bIsSchedSwEnabled;
 }

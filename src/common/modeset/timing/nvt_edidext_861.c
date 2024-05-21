@@ -57,7 +57,7 @@ static const NVT_TIMING EIA861B[]=
 {
     // all 64 EIA/CEA-861E timings
     EIA_TIMING( 640,  16, 96, 800,'-', 480,10,2, 525,'-', 59940,'p', 4:3,   0x1, 1),//640       x  480p @59.94/60   (Format 1)
-    EIA_TIMING( 720,  16, 62, 858,'-', 480, 9,6, 525,'-', 59940,'p', 4:3,   0x1, 2),//720       x  480p @59.94/60   (Format 2) 
+    EIA_TIMING( 720,  16, 62, 858,'-', 480, 9,6, 525,'-', 59940,'p', 4:3,   0x1, 2),//720       x  480p @59.94/60   (Format 2)
     EIA_TIMING( 720,  16, 62, 858,'-', 480, 9,6, 525,'-', 59940,'p',16:9,   0x1, 3),//720       x  480p @59.94/60   (Format 3)
     EIA_TIMING(1280, 110, 40,1650,'+', 720, 5,5, 750,'+', 59940,'p',16:9,   0x1, 4),//1280      x  720p @59.94/60   (Format 4)
     EIA_TIMING(1920,  88, 44,2200,'+', 540, 2,5, 562,'+', 59940,'i',16:9,   0x1, 5),//1920      x 1080i @59.94/60   (Format 5)
@@ -170,7 +170,7 @@ static const NVT_TIMING EIA861B[]=
     EIA_TIMING(1680, 810, 40, 2750,'+', 720, 5, 5, 750,'+', 47950,'p',  64:27,  0x1,110),//1680 x  720p @47.95/48   (Format 110)
     EIA_TIMING(1920, 638, 44, 2750,'+',1080, 4, 5,1125,'+', 47950,'p',   16:9,  0x1,111),//1920 x 1080p @47.95/48   (Format 111)
     EIA_TIMING(1920, 638, 44, 2750,'+',1080, 4, 5,1125,'+', 47950,'p',  64:27,  0x1,112),//1920 x 1080p @47.95/48   (Format 112)
-    EIA_TIMING(2560, 998, 44, 3750,'+',1080, 4, 5,1100,'+', 47950,'p',  64:27,  0x1,113),//2560 x 1080p @47.95/48   (Format 113)    
+    EIA_TIMING(2560, 998, 44, 3750,'+',1080, 4, 5,1100,'+', 47950,'p',  64:27,  0x1,113),//2560 x 1080p @47.95/48   (Format 113)
     EIA_TIMING(3840,1276, 88, 5500,'+',2160, 8,10,2250,'+', 47950,'p',   16:9,  0x1,114),//3840 x 2160p @47.95/48   (Format 114)
     EIA_TIMING(4096,1020, 88, 5500,'+',2160, 8,10,2250,'+', 47950,'p',256:135,  0x1,115),//4096 x 2160p @47.95/48   (Format 115)
     EIA_TIMING(3840,1276, 88, 5500,'+',2160, 8,10,2250,'+', 47950,'p',  64:27,  0x1,116),//3840 x 2160p @47.95/48   (Format 116)
@@ -181,11 +181,11 @@ static const NVT_TIMING EIA861B[]=
     EIA_TIMING(5120,1996, 88, 7500,'+',2160, 8,10,2200,'+', 23976,'p',  64:27,  0x1,121),//5120 x 2160p @23.98/24   (Format 121)
     EIA_TIMING(5120,1696, 88, 7200,'+',2160, 8,10,2200,'+', 25000,'p',  64:27,  0x1,122),//5120 x 2160p @25         (Format 122)
     EIA_TIMING(5120, 664, 88, 6000,'+',2160, 8,10,2200,'+', 29970,'p',  64:27,  0x1,123),//5120 x 2160p @29.97/30   (Format 123)
-    EIA_TIMING(5120, 746, 88, 6250,'+',2160, 8,10,2475,'+', 47950,'p',  64:27,  0x1,124),//5120 x 2160p @47.95/48   (Format 124)    
-    EIA_TIMING(5120,1096, 88, 6600,'+',2160, 8,10,2250,'+', 50000,'p',  64:27,  0x1,125),//5120 x 2160p @50         (Format 125)    
-    EIA_TIMING(5120, 164, 88, 5500,'+',2160, 8,10,2250,'+', 59940,'p',  64:27,  0x1,126),//5120 x 2160p @59.94/60   (Format 126)    
+    EIA_TIMING(5120, 746, 88, 6250,'+',2160, 8,10,2475,'+', 47950,'p',  64:27,  0x1,124),//5120 x 2160p @47.95/48   (Format 124)
+    EIA_TIMING(5120,1096, 88, 6600,'+',2160, 8,10,2250,'+', 50000,'p',  64:27,  0x1,125),//5120 x 2160p @50         (Format 125)
+    EIA_TIMING(5120, 164, 88, 5500,'+',2160, 8,10,2250,'+', 59940,'p',  64:27,  0x1,126),//5120 x 2160p @59.94/60   (Format 126)
     EIA_TIMING(5120,1096, 88, 6600,'+',2160, 8,10,2250,'+',100000,'p',  64:27,  0x1,127),//5120 x 2160p @100        (Format 127)
-    // VIC 128-192 are Forbidden and should be never used. But to simplify the SVD access, put a default timing here. 
+    // VIC 128-192 are Forbidden and should be never used. But to simplify the SVD access, put a default timing here.
     // We can remove these after adding a function to access CEA Timings.
     EIA_TIMING( 640,  16, 96, 800,'-', 480,10,2, 525,'-', 59940,'p', 4:3, 0x1, 0),//640 x 480p @59.94/60 //Forbidden (Format 128)
     EIA_TIMING( 640,  16, 96, 800,'-', 480,10,2, 525,'-', 59940,'p', 4:3, 0x1, 0),//640 x 480p @59.94/60 //Forbidden (Format 129)
@@ -287,7 +287,7 @@ static const NVT_TIMING EIA861B[]=
 static NvU32 MAX_CEA861B_FORMAT = sizeof(EIA861B)/sizeof(EIA861B[0]) - 1;
 
 static const NvU32 EIA861B_DUAL_ASPECT_VICS[][2] =
-{ 
+{
     { 2, 3 },   // 720x480p         59.94Hz/60Hz
     { 4, 69 },  // 1280x720p        59.94Hz/60Hz
     { 6, 7 },   // 720(1440)x480i   59.94Hz/60Hz
@@ -321,7 +321,7 @@ static const NvU32 EIA861B_DUAL_ASPECT_VICS[][2] =
 
     { 50, 51 }, // 720(1440)x480i   119.88/120Hz
     { 52, 53 }, // 720x576p         200Hz
-    { 54, 55 }, // 720(1440)x576i   200Hz 
+    { 54, 55 }, // 720(1440)x576i   200Hz
     { 56, 57 }, // 720x480p         239.76/240Hz
     { 58, 59 }, // 720(1440)x480i   239.76/240Hz
 
@@ -375,7 +375,7 @@ static const NVT_RID_CODES RID[] =
 static NvU32 MAX_RID_CODES_COUNT = sizeof(RID) / sizeof(RID[0]) - 1;
 
 // RID to VIC Mapping
-static const NvU8 RID_VIC_MAP[][8] = 
+static const NvU8 RID_VIC_MAP[][8] =
 {
     {   0,   0,   0,   0,   0,   0,   0,   0 },
     {  60,  61,  62, 108,  19,   4,  41,  47 }, // RID 01
@@ -408,7 +408,7 @@ static const NvU8 RID_VIC_MAP[][8] =
 };
 
 // All the frame rate supported in VF
-static const NvU16 VF_FRAME_RATE[] = 
+static const NvU16 VF_FRAME_RATE[] =
 {
     0, 24, 25, 30, 48, 50, 60, 100, 120, 144, 200, 240, 300, 360, 400, 480
 };
@@ -436,9 +436,9 @@ static const NVT_TIMING HDMI_EXT_4Kx2K_TIMING[]=
 };
 static NvU32 MAX_HDMI_EXT_4Kx2K_FORMAT = sizeof(HDMI_EXT_4Kx2K_TIMING)/sizeof(HDMI_EXT_4Kx2K_TIMING[0]) - 1;
 
-// HDMI 1.4a mandatory 3D video formats. 
+// HDMI 1.4a mandatory 3D video formats.
 // From HDMI 1.4a specification page 147 of 201, table 8-15. And HDMI 1.4a Complaince test specification page 190.
-static const HDMI3DDETAILS   HDMI_MANDATORY_3D_FORMATS[] = 
+static const HDMI3DDETAILS   HDMI_MANDATORY_3D_FORMATS[] =
 {
     {32, NVT_HDMI_3D_SUPPORTED_FRAMEPACK_MASK | NVT_HDMI_3D_SUPPORTED_TOPBOTTOM_MASK, 0},       // 1920 x 1080p @ 24 Hz
     { 4, NVT_HDMI_3D_SUPPORTED_FRAMEPACK_MASK | NVT_HDMI_3D_SUPPORTED_TOPBOTTOM_MASK, 0},       // 1280 x  720p @ 60 Hz
@@ -451,9 +451,9 @@ static const NVT_VIDEO_INFOFRAME DEFAULT_VIDEO_INFOFRAME = {/*header*/2,2,13, /*
 static const NVT_AUDIO_INFOFRAME DEFAULT_AUDIO_INFOFRAME = {/*header*/4,1,10, /*byte1*/0, /*byte2*/0,   /*byte3*/0, /*byte*/0,  /*byte5*/0, /*byte6~10*/0,0,0,0,0};
 
 CODE_SEGMENT(PAGE_DD_CODE)
-static NvU8 
+static NvU8
 getExistedCTATimingSeqNumber(
-    NVT_EDID_INFO *pInfo, 
+    NVT_EDID_INFO *pInfo,
     enum NVT_TIMING_TYPE timingType)
 {
     NvU8 count = 0;
@@ -501,7 +501,7 @@ static NvBool isVFDRefreshRate(NvU8 vfdSize, NvU8 *vfd, NvU8 rateIdx)
 
     rid = ((const VFD_ONE_BYTE*)vfd)->rid;
     if (rid == 0) return NV_FALSE;
-    
+
     bBFR50    = ((const VFD_ONE_BYTE*)vfd)->bfr50;
     // frame rate factor
     // If Byte 2 is not present in the VFD, flags 0.5X, 1X and BFR60 shall be considered set
@@ -511,15 +511,15 @@ static NvBool isVFDRefreshRate(NvU8 vfdSize, NvU8 *vfd, NvU8 rateIdx)
     // individual frame rate
     bFR24  = ((const VFD_ONE_BYTE*)vfd)->fr24;
     if (rr == 24) return bFR24;
-    
+
     // individual frame rate
     bFR48  = vfdSize > 2 ? ((const VFD_THREE_BYTE*)vfd)->fr48 : 0;
     if (rr == 48) return bFR48;
-    
+
     // individual frame rate
     bFR144 = vfdSize > 1 ? ((const VFD_TWO_BYTE*)vfd)->fr144  : 0;
     if (rr == 144) return bFR144;
-    
+
     if (rr % (50/2) == 0)
     {
         if (!bBFR50) return NV_FALSE;
@@ -541,7 +541,7 @@ static NvBool isVFDRefreshRate(NvU8 vfdSize, NvU8 *vfd, NvU8 rateIdx)
                 break;
         }
     }
-        
+
     return NV_FALSE;
 }
 
@@ -607,7 +607,7 @@ void parse861bShortTiming(NVT_EDID_CEA861_INFO *pExt861,
     NVT_DISPLAYID_2_0_INFO  *pDisplayID20   = NULL;
 
     NvU8                    *pVic           = pExt861->video;
-    NvU32                    total_svd      = pExt861->total_svd;    
+    NvU32                    total_svd      = pExt861->total_svd;
     NvU8                    *pYuv420Map     = pExt861->valid.y420cmdb ? pExt861->map_y420cmdb : NULL;
     NvU8                     yuv420MapCount = pExt861->total_y420cmdb;
 
@@ -629,7 +629,7 @@ void parse861bShortTiming(NVT_EDID_CEA861_INFO *pExt861,
     for (i = 0; i < total_svd; i++)
     {
         vic = NVT_GET_CTA_8BIT_VIC(pVic[i]);
-        
+
         if (vic == 0 || vic > MAX_CEA861B_FORMAT)
             continue;
 
@@ -637,12 +637,12 @@ void parse861bShortTiming(NVT_EDID_CEA861_INFO *pExt861,
         newTiming = EIA861B[vic-1];
         newTiming.etc.status = NVT_STATUS_EDID_861STn(vic);
 
-        // set CEA format to location of _CEA_FORMAT. _CEA_FORMAT isn't set in pre-defined CE timing from 
+        // set CEA format to location of _CEA_FORMAT. _CEA_FORMAT isn't set in pre-defined CE timing from
         // EIA861B table
         if (NVT_GET_TIMING_STATUS_SEQ(newTiming.etc.status) !=
             NVT_CEA861_640X480P_59940HZ_4X3)
         {
-            // Although IT 640x480 video timing has a CE id, it is not a CE timing. See 3.1 
+            // Although IT 640x480 video timing has a CE id, it is not a CE timing. See 3.1
             // "General Video Format Requirements" section in CEA-861-E spec
             NVT_SET_CEA_FORMAT(newTiming.etc.status,
                                NVT_GET_TIMING_STATUS_SEQ(newTiming.etc.status));
@@ -650,7 +650,7 @@ void parse861bShortTiming(NVT_EDID_CEA861_INFO *pExt861,
 
         // calculate the pixel clock
         newTiming.pclk  = RRx1kToPclk(&newTiming);
- 
+
         if ((vic <= 64) && (pVic[i] & NVT_CTA861_VIDEO_NATIVE_MASK))
         {
             NVT_SET_NATIVE_TIMING_FLAG(newTiming.etc.status);
@@ -716,7 +716,7 @@ void parseCta861VideoFormatDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawIn
     NvU8 eachOfDescSize = 0;
     NvU32 width         = 0;
     NvU32 height        = 0;
-    
+
     const VFD_ONE_BYTE *pVFDOneByte = 0 ;
 
     NVT_TIMING newTiming;
@@ -728,7 +728,7 @@ void parseCta861VideoFormatDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawIn
 
         if (eachOfDescSize == 0)
         {
-            nvt_assert(0 && "Video Format Descriptor length is 0!\n");
+            // Video Format Descriptor length is 0!;
             return;
         }
 
@@ -743,23 +743,23 @@ void parseCta861VideoFormatDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawIn
 
             pVFDOneByte = (const VFD_ONE_BYTE *)&pExt861->vfdb[vfdb_idx].video_format_desc[i*eachOfDescSize];
 
-            /* 
+            /*
              * If any of the following is true, then the RID shall be set to 0:
              * 1. If a Video Format not listed in "Table 12 - Resolution Identification (RID) is sent
              * 2. if a Video Format with Frame Rates not listed in "Table 13 - AVI InfoFrame Video Format Frame Rate" is sent
              * 3. if a Video Format listed in "Table 14 - RID To VIC Mapping" is sent.
              */
-            // For 1. 
+            // For 1.
             if ((pVFDOneByte->rid & NVT_CTA861_VF_RID_MASK) == 0 || pVFDOneByte->rid > MAX_RID_CODES_COUNT)
             {
-                nvt_assert(0 && "shall have a non-zero RID value or RID code value larger than 28");
+                // shall have a non-zero RID value or RID code value larger than 28
                 continue;
             }
 
             width  = RID[pVFDOneByte->rid].HVisible;
             height = RID[pVFDOneByte->rid].VVisible;
 
-            // If the Source is sending a Video Format that can be indicated by RID and FR, 
+            // If the Source is sending a Video Format that can be indicated by RID and FR,
             // and is not listed in Table 14 (RID to VIC), then it shall set the RID and FR fields to the proper codes
             for (rateIdx = 1; rateIdx <= MAX_VF_FRAME_RATE_COUNT; rateIdx++)
             {
@@ -783,9 +783,9 @@ void parseCta861VideoFormatDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawIn
                 if (NvTiming_CalcOVT(width, height, VF_FRAME_RATE[rateIdx], &newTiming) == NVT_STATUS_SUCCESS)
                 {
                     if (pExt861->vfdb[vfdb_idx].info.y420 && newTiming.pclk > NVT_HDMI_YUV_420_PCLK_SUPPORTED_MIN)
-                    {                 
-                        UPDATE_BPC_FOR_COLORFORMAT(newTiming.etc.yuv420, 0, 1, 
-                                                   pInfo->hdmiForumInfo.dc_30bit_420, 
+                    {
+                        UPDATE_BPC_FOR_COLORFORMAT(newTiming.etc.yuv420, 0, 1,
+                                                   pInfo->hdmiForumInfo.dc_30bit_420,
                                                    pInfo->hdmiForumInfo.dc_36bit_420, 0,
                                                    pInfo->hdmiForumInfo.dc_48bit_420);
                     }
@@ -806,7 +806,7 @@ void parseCta861VideoFormatDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawIn
                                                                                         (int)newTiming.etc.rrx1k%1000,
                                                                                         (newTiming.interlaced ? "I":"P"));
                     newTiming.etc.name[sizeof(newTiming.etc.name) - 1] = '\0';
-                    if (!assignNextAvailableTiming(pInfo, &newTiming))  
+                    if (!assignNextAvailableTiming(pInfo, &newTiming))
                     {
                         continue;
                     }
@@ -850,7 +850,7 @@ void parse861bShortYuv420Timing(NVT_EDID_CEA861_INFO *pExt861,
         pHfvs = &pDisplayID20->vendor_specific.hfvs;
         total_timings = pDisplayID20->total_timings;
     }
-    else 
+    else
     {
         return;
     }
@@ -863,13 +863,13 @@ void parse861bShortYuv420Timing(NVT_EDID_CEA861_INFO *pExt861,
     for (i = 0; i < total_y420vdb; i++)
     {
         vic = NVT_GET_CTA_8BIT_VIC(pYuv420Vic[i]);
-        
+
         if (vic == 0 || vic > MAX_CEA861B_FORMAT)
             continue;
 
         // assign corresponding CEA format's timing from pre-defined CE timing table, EIA861B
         newTiming = EIA861B[vic-1];
-        
+
         // if yuv420 is supported in the video SVDs, it is indicated by yuv420vdb
         if(total_svd > 0)
         {
@@ -896,7 +896,7 @@ void parse861bShortYuv420Timing(NVT_EDID_CEA861_INFO *pExt861,
                         {
                             bFound = NV_TRUE;
                             // we found one in pExt861->video[]. pHfvs->dcXXX are only for YCbCr420, so we can support:
-                            // 1. 8bpc yuv420 always supported. 
+                            // 1. 8bpc yuv420 always supported.
                             // 2. only add yuv420 and its deep colour caps into Video Data Block
                             UPDATE_BPC_FOR_COLORFORMAT(timing->etc.yuv420, 0, 1,
                                                        pHfvs->dc_30bit_420,
@@ -906,18 +906,18 @@ void parse861bShortYuv420Timing(NVT_EDID_CEA861_INFO *pExt861,
                         }
                     }
                 }
-            }            
+            }
             if (bFound) continue;
         }
 
         newTiming.etc.status = NVT_STATUS_EDID_861STn(vic);
 
-        // set CEA format to location of _CEA_FORMAT. _CEA_FORMAT isn't set in pre-defined CE timing from 
+        // set CEA format to location of _CEA_FORMAT. _CEA_FORMAT isn't set in pre-defined CE timing from
         // EIA861B table
         if (NVT_GET_TIMING_STATUS_SEQ(newTiming.etc.status) !=
             NVT_CEA861_640X480P_59940HZ_4X3)
         {
-            // Although IT 640x480 video timing has a CE id, it is not a CE timing. See 3.1 
+            // Although IT 640x480 video timing has a CE id, it is not a CE timing. See 3.1
             // "General Video Format Requirements" section in CEA-861-E spec
             NVT_SET_CEA_FORMAT(newTiming.etc.status,
                                NVT_GET_TIMING_STATUS_SEQ(newTiming.etc.status));
@@ -926,7 +926,7 @@ void parse861bShortYuv420Timing(NVT_EDID_CEA861_INFO *pExt861,
         // calculate the pixel clock
         newTiming.pclk = RRx1kToPclk(&newTiming);
 
-        // From CTA-861-F: By default, Y420VDB SVDs, when present in the EDID, shall be less preferred than all regular Video Data Block SVDs. 
+        // From CTA-861-F: By default, Y420VDB SVDs, when present in the EDID, shall be less preferred than all regular Video Data Block SVDs.
         // So it should use normal VIC code without native flag.
         //if ((vic <= 64) && (pVic[i] & NVT_CTA861_VIDEO_NATIVE_MASK))
         //{
@@ -962,7 +962,7 @@ void parse861bShortYuv420Timing(NVT_EDID_CEA861_INFO *pExt861,
 
             if (assignNextAvailableDisplayId20Timing(pDisplayID20, &newTiming))
             {
-                
+
                 break;
             }
         }
@@ -1001,7 +1001,7 @@ void parseCta861NativeOrPreferredTiming(NVT_EDID_CEA861_INFO *pExt861,
     {
         pDisplayID20 = (NVT_DISPLAYID_2_0_INFO *)pRawInfo;
     }
-    else 
+    else
     {
         return;
     }
@@ -1040,25 +1040,25 @@ void parseCta861NativeOrPreferredTiming(NVT_EDID_CEA861_INFO *pExt861,
         // Reserved
         if (svr == 0 || svr == 128 || (svr >= 176 && svr <= 192) || svr == 255)
             continue;
-        
+
         // Interpret as the Kth 18-byte DTD, where K = SVR - 128 (for K = 1 to 16) in both base0 and CTA block
         if (svr >= 129 && svr <= 144)
         {
             kth = svr - 128;
-            // only base EDID and CTA861 can support 18bytes 
+            // only base EDID and CTA861 can support 18bytes
             if (flag == FROM_CTA861_EXTENSION)
             {
                 for (j = 0; j < pInfo->total_timings; j++)
                 {
                     if (kth <= DTDCount)
                     {
-                        if (NVT_IS_DTDn(pInfo->timing[j].etc.status, kth))  
+                        if (NVT_IS_DTDn(pInfo->timing[j].etc.status, kth))
                             break;
                     }
                     else
                     {
                         extKth = kth - DTDCount;
-                        if (NVT_IS_EXT_DTDn(pInfo->timing[j].etc.status, extKth)) 
+                        if (NVT_IS_EXT_DTDn(pInfo->timing[j].etc.status, extKth))
                             break;
                     }
                 }
@@ -1084,7 +1084,7 @@ void parseCta861NativeOrPreferredTiming(NVT_EDID_CEA861_INFO *pExt861,
                         extKth = kth - DIDT7Count; // pick the T10 CVT-based timing then
                         if (NVT_IS_CTA861_DID_T10n(pInfo->timing[j].etc.status, extKth))
                             break;
-                    } 
+                    }
                 }
             }
         }
@@ -1121,7 +1121,7 @@ void parseCta861NativeOrPreferredTiming(NVT_EDID_CEA861_INFO *pExt861,
             }
         }
         else // assign corresponding CEA format's timing from pre-defined CE timing table, EIA861B
-        {    
+        {
             // ( SVR >= 1 and SVR <= 127) and (SVR >= 193 and SVR <= 253)
             vic = NVT_GET_CTA_8BIT_VIC(svr);
             preferTiming = EIA861B[vic-1];
@@ -1129,14 +1129,14 @@ void parseCta861NativeOrPreferredTiming(NVT_EDID_CEA861_INFO *pExt861,
             if (flag == FROM_CTA861_EXTENSION || flag == FROM_DISPLAYID_13_DATA_BLOCK)
             {
                 for (j = 0; j < pInfo->total_timings; j++)
-                {            
+                {
                     isMatch = NvTiming_IsTimingExactEqual(&pInfo->timing[j], &preferTiming);
                     if (isMatch && (NVT_GET_TIMING_STATUS_TYPE(pInfo->timing[j].etc.status) == NVT_TYPE_EDID_861ST))
                         break;
-                }    
+                }
             }
-            else if (flag == FROM_DISPLAYID_20_DATA_BLOCK) 
-            {                
+            else if (flag == FROM_DISPLAYID_20_DATA_BLOCK)
+            {
                 for (j = 0; j < pDisplayID20->total_timings; j++)
                 {
                     isMatch = NvTiming_IsTimingExactEqual(&pDisplayID20->timing[j], &preferTiming);
@@ -1164,7 +1164,7 @@ void parseCta861NativeOrPreferredTiming(NVT_EDID_CEA861_INFO *pExt861,
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
-void parseCea861HdrStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861,
+void parseCta861HdrStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861,
                                            void *pRawInfo,
                                            NVT_CTA861_ORIGIN flag)
 {
@@ -1214,10 +1214,6 @@ void parseCea861HdrStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861,
     if (pExt861->hdr_static_metadata.byte2)
     {
         pHdrInfo->static_metadata_type = 1;
-    }
-    else
-    {
-        pHdrInfo->static_metadata_type = 0;
     }
 
     pHdrInfo->max_cll  = pExt861->hdr_static_metadata.byte3 & NVT_CEA861_MAX_CLL_MASK;
@@ -1338,7 +1334,7 @@ void parseCta861DvStaticMetadataDataBlock(VSVDB_DATA* pVsvdb, NVT_DV_STATIC_META
             {
                 return;
             }
-            
+
             break;
         case 2:
             if (pVsvdb->vendor_data_size < sizeof(NVT_DV_STATIC_METADATA_TYPE2))
@@ -1363,7 +1359,7 @@ void parseCta861DvStaticMetadataDataBlock(VSVDB_DATA* pVsvdb, NVT_DV_STATIC_META
             pDvInfo->cc_red_x                    = NVT_DOLBY_CHROMATICITY_MSB_RX | pDvType2->unique_Rx;
             pDvInfo->cc_red_y                    = NVT_DOLBY_CHROMATICITY_MSB_RY | pDvType2->unique_Ry;
             pDvInfo->supports_10b_12b_444        = pDvType2->supports_10b_12b_444_bit0 | (pDvType2->supports_10b_12b_444_bit1 << 1);
-            pDvInfo->colorimetry                 = 0; 
+            pDvInfo->colorimetry                 = 0;
             pDvInfo->supports_2160p60hz          = 0;
             pDvInfo->cc_white_x                  = 0;
             pDvInfo->cc_white_y                  = 0;
@@ -1376,24 +1372,24 @@ void parseCta861DvStaticMetadataDataBlock(VSVDB_DATA* pVsvdb, NVT_DV_STATIC_META
 // find both hdmi llc and hdmi forum vendor specific data block and return basic hdmi information
 CODE_SEGMENT(PAGE_DD_CODE)
 void parseCta861VsdbBlocks(NVT_EDID_CEA861_INFO *pExt861,
-                           void *pRawInfo, 
+                           void *pRawInfo,
                            NVT_CTA861_ORIGIN flag
     )
 {
     NvU32 i;
-    
+
     NVT_EDID_INFO           *pInfo         = NULL;
     NVT_DISPLAYID_2_0_INFO  *pDisplayID20  = NULL;
     NVT_HDMI_LLC_INFO       *pHdmiLlc      = NULL;
     NVT_HDMI_FORUM_INFO     *pHfvs         = NULL;
     NVDA_VSDB_PARSED_INFO   *pNvVsdb       = NULL;
     MSFT_VSDB_PARSED_INFO   *pMsftVsdb     = NULL;
-    
+
     if (pExt861 == NULL || pRawInfo == NULL)
     {
         return;
     }
-    
+
     if (flag == FROM_CTA861_EXTENSION || flag == FROM_DISPLAYID_13_DATA_BLOCK)
     {
         pInfo     = (NVT_EDID_INFO *)pRawInfo;
@@ -1410,7 +1406,7 @@ void parseCta861VsdbBlocks(NVT_EDID_CEA861_INFO *pExt861,
         pNvVsdb   = &pDisplayID20->vendor_specific.nvVsdb;
         pMsftVsdb = &pDisplayID20->vendor_specific.msftVsdb;
     }
-    else 
+    else
     {
         return;
     }
@@ -1430,7 +1426,7 @@ void parseCta861VsdbBlocks(NVT_EDID_CEA861_INFO *pExt861,
                 parseEdidHdmiLlcBasicInfo((VSDB_DATA *)(&pExt861->vsdb[i]), pHdmiLlc);
                 pExt861->valid.H14B_VSDB = 1;
                 break;
-                
+
             case NVT_CEA861_HDMI_FORUM_IEEE_ID:
                 parseEdidHdmiForumVSDB((VSDB_DATA *)(&pExt861->vsdb[i]), pHfvs);
                 pExt861->valid.H20_HF_VSDB = 1;
@@ -1449,7 +1445,7 @@ void parseCta861VsdbBlocks(NVT_EDID_CEA861_INFO *pExt861,
         }
     }
 
-    // H20_HF_VSDB shall be listed only if H14B_VSDB is also listed 
+    // H20_HF_VSDB shall be listed only if H14B_VSDB is also listed
     // H20_HF_VSDB should not specify > 600MHz
     nvt_assert(!pExt861->valid.H20_HF_VSDB || (pExt861->valid.H14B_VSDB && (pHfvs->max_TMDS_char_rate <= 0x78)));
 
@@ -1467,7 +1463,7 @@ void parseCta861VsdbBlocks(NVT_EDID_CEA861_INFO *pExt861,
 
         // Pick updated TMDS clock rate
         pHdmiLlc->effective_tmds_clock = (pExt861->valid.H20_HF_VSDB) ?
-                                            MAX(pHdmiLlc->max_tmds_clock, pHfvs->max_TMDS_char_rate) : 
+                                            MAX(pHdmiLlc->max_tmds_clock, pHfvs->max_TMDS_char_rate) :
                                             MIN(pHdmiLlc->max_tmds_clock, 0x44);
     }
 
@@ -1476,22 +1472,22 @@ void parseCta861VsdbBlocks(NVT_EDID_CEA861_INFO *pExt861,
 // parse vendor specific video data block (VSVDB) information
 CODE_SEGMENT(PAGE_DD_CODE)
 void parseCta861VsvdbBlocks(NVT_EDID_CEA861_INFO *pExt861,
-                           void *pRawInfo, 
+                           void *pRawInfo,
                            NVT_CTA861_ORIGIN flag
     )
 {
     NvU32 i;
-    
+
     NVT_EDID_INFO           *pInfo          = NULL;
     NVT_DISPLAYID_2_0_INFO  *pDisplayID20   = NULL;
     NVT_DV_STATIC_METADATA  *pDvInfo        = NULL;
     NVT_HDR10PLUS_INFO      *pHdr10PlusInfo = NULL;
-    
+
     if (pExt861 == NULL || pRawInfo == NULL)
     {
         return;
     }
-    
+
     if (flag == FROM_CTA861_EXTENSION || flag == FROM_DISPLAYID_13_DATA_BLOCK)
     {
         pInfo     = (NVT_EDID_INFO *)pRawInfo;
@@ -1504,7 +1500,7 @@ void parseCta861VsvdbBlocks(NVT_EDID_CEA861_INFO *pExt861,
         pDvInfo = &pDisplayID20->cta.dvInfo;
         pHdr10PlusInfo = &pDisplayID20->cta.hdr10PlusInfo;
     }
-    else 
+    else
     {
         return;
     }
@@ -1524,7 +1520,7 @@ void parseCta861VsvdbBlocks(NVT_EDID_CEA861_INFO *pExt861,
                 parseCta861DvStaticMetadataDataBlock(&pExt861->vsvdb[i], pDvInfo);
                 pExt861->valid.dv_static_metadata = 1;
                 break;
-                
+
             case NVT_CEA861_HDR10PLUS_IEEE_ID:
                 // parse HDR10+ related information from the HDR10+ LLC Vendor Specific Video Data Block
                 parseCta861Hdr10PlusDataBlock(&pExt861->vsvdb[i], pHdr10PlusInfo);
@@ -1617,12 +1613,12 @@ NVT_STATUS get861ExtInfo(NvU8 *p, NvU32 size, NVT_EDID_CEA861_INFO *p861info)
     }
 
     // make sure we have 861 extension
-    if (p[0] != 0x2 || p[1] < NVT_CEA861_REV_ORIGINAL) 
+    if (p[0] != 0x2 || p[1] < NVT_CEA861_REV_ORIGINAL)
     {
         return NVT_STATUS_ERR;
     }
 
-    // DTD offset sanity check 
+    // DTD offset sanity check
     if (p[2] >= 1 && p[2] <= 3)
     {
         return NVT_STATUS_ERR;
@@ -1639,7 +1635,7 @@ NVT_STATUS get861ExtInfo(NvU8 *p, NvU32 size, NVT_EDID_CEA861_INFO *p861info)
 
     // get the revision number
     p861info->revision = p[1];
-    
+
     // no extra info for 861-original, returning from here
     if (p861info->revision == NVT_CEA861_REV_ORIGINAL)
     {
@@ -1668,8 +1664,8 @@ NVT_STATUS get861ExtInfo(NvU8 *p, NvU32 size, NVT_EDID_CEA861_INFO *p861info)
 // 1. get the  861 extension tags info
 // 2. or validation purpose if p861info == NULL
 CODE_SEGMENT(PAGE_DD_CODE)
-NVT_STATUS parseCta861DataBlockInfo(NvU8 *p, 
-                                    NvU32 size, 
+NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
+                                    NvU32 size,
                                     NVT_EDID_CEA861_INFO *p861info)
 {
     NvU32 i, j;
@@ -1696,13 +1692,13 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
         payload = NVT_CEA861_GET_SHORT_DESCRIPTOR_SIZE(p[i]);
 
         /*don't allow data colleciton totally size larger than [127 - 5 (tag, revision, offset, describing native video format, checksum)]*/
-        if ((i + payload > size) || (i + payload > 122))  
+        if ((i + payload > size) || (i + payload > 122))
         {
             break;
         }
         // move the pointer to the payload section or extended Tag Code
         i++;
-        
+
         // NvTiming_EDIDValidationMask will use the different tag/payload value to make sure each of cta861 data block legal
         if (p861info == NULL)
         {
@@ -1723,7 +1719,7 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
                 case NVT_CEA861_TAG_EXTENDED_FLAG:
                     if (payload >= 1)
                     {
-                        ext_tag = p[i]; 
+                        ext_tag = p[i];
                         if      (ext_tag == NVT_CEA861_EXT_TAG_VIDEO_CAP && (payload != 2))            return NVT_STATUS_ERR;
                         else if (ext_tag == NVT_CEA861_EXT_TAG_COLORIMETRY && payload != 3)            return NVT_STATUS_ERR;
                         else if (ext_tag == NVT_CEA861_EXT_TAG_VIDEO_FORMAT_PREFERENCE && payload < 2) return NVT_STATUS_ERR;
@@ -1740,7 +1736,7 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
                         {
                             if (payload != 2 && payload != 3 && payload != 7)                          return NVT_STATUS_ERR;
                         }
-                            
+
                         if (payload > 2)
                         {
                             if (ext_tag == NVT_CTA861_EXT_TAG_DID_TYPE_VII)
@@ -1758,7 +1754,7 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
                             else if (ext_tag == NVT_CTA861_EXT_TAG_DID_TYPE_X)
                             {
                                 if ((p[i+1] & 0x7) != 0)                                               return NVT_STATUS_ERR;    // Block Revision shall be 0
-                                if (((p[i+1] & 0x70) >> 4 == 0) && (payload-2) % 6)                    return NVT_STATUS_ERR;    // supported 6-bytes descriptors  
+                                if (((p[i+1] & 0x70) >> 4 == 0) && (payload-2) % 6)                    return NVT_STATUS_ERR;    // supported 6-bytes descriptors
                                 if (((p[i+1] & 0x70) >> 4 == 1) && (payload-2) % 7)                    return NVT_STATUS_ERR;    // supported 7-bytes descriptors
                             }
                         }
@@ -1839,7 +1835,7 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
 
                 p861info->vsdb[vendor_index].vendor_data_size = payload - 3;
 
-                // move the pointer to the payload
+                // move the pointer to the vsdb payload
                 i += 3;
 
                 // get the other vendor specific data
@@ -2001,7 +1997,7 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
                     else
                     {
                         // skip the extended block that we don't have a room for,
-                        // the NVT_CEA861_VSVDB_MAX_BLOCKS should be incremented for new VSVDB types 
+                        // the NVT_CEA861_VSVDB_MAX_BLOCKS should be incremented for new VSVDB types
                         nvt_assert(vsvdb_index >= NVT_CEA861_VSVDB_MAX_BLOCKS);
                         i += payload;
                     }
@@ -2037,14 +2033,14 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
                     i++; payload--;
                     p861info->did_type7_data_block[didT7_index].version.revision =  p[i] & 0x07;
                     p861info->did_type7_data_block[didT7_index].version.dsc_pt   = (p[i] & 0x08) >> 3;
-                    p861info->did_type7_data_block[didT7_index].version.t7_m     = (p[i] & 0x70) >> 4; 
+                    p861info->did_type7_data_block[didT7_index].version.t7_m     = (p[i] & 0x70) >> 4;
 
                     //do not consider Byte 3
                     i++; payload--;
 
-                    p861info->did_type7_data_block[didT7_index].total_descriptors = 
+                    p861info->did_type7_data_block[didT7_index].total_descriptors =
                         (NvU8)(payload / (NVT_CTA861_DID_TYPE7_DESCRIPTORS_LENGTH + p861info->did_type7_data_block[didT7_index].version.t7_m));
-                    
+
                     for (j = 0; j < payload; j++, i++)
                     {
                         p861info->did_type7_data_block[didT7_index].payload[j] = p[i];
@@ -2069,7 +2065,7 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
                         p861info->did_type8_data_block[didT8_index].total_descriptors = (NvU8)payload;
                     else if (p861info->did_type8_data_block[didT8_index].version.tcs == 1)
                         p861info->did_type8_data_block[didT8_index].total_descriptors = (NvU8)(payload / 2);
-                    
+
                     for (j = 0; j < payload; j++, i++)
                     {
                         p861info->did_type8_data_block[didT8_index].payload[j] = p[i];
@@ -2107,7 +2103,7 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
                     // Sinks will expose HF-SCDB if they do not expose HF-VSDB.
 
                     // move pointer to SCDS
-                    i += 3; 
+                    i += 3;
 
                     // Copy SCDS over to p861info->vsdb[vendor_index]. Parsing will later be handled in parseEdidHdmiForumVSDB().
                     for (j = 0; (j < payload - 3) && (j < NVT_CTA861_EXT_SCDB_PAYLOAD_MAX_LENGTH); j ++, i ++)
@@ -2140,7 +2136,7 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
         }
     }
 
-    if (p861info) 
+    if (p861info)
     {
         p861info->total_vsdb = (NvU8)vendor_index;
     }
@@ -2175,7 +2171,7 @@ NVT_STATUS NvTiming_EnumCEA861bTiming(NvU32 ceaFormat, NVT_TIMING *pT)
 }
 
 
-// Check whether the given timing is a CEA 861 timing. 
+// Check whether the given timing is a CEA 861 timing.
 CODE_SEGMENT(PAGE_DD_CODE)
 NvU32 NvTiming_GetCEA861TimingIndex (NVT_TIMING *pT)
 {
@@ -2199,7 +2195,7 @@ NvU32 NvTiming_GetCEA861TimingIndex (NVT_TIMING *pT)
     aspect_y = nvt_aspect_y(pT->etc.aspect);
 
     // loop through the pre-defined CEA 861 table
-    // Skip VIC1 - Although IT 640x480 video timing has a CE id, it is not a CE timing. See 3.1 
+    // Skip VIC1 - Although IT 640x480 video timing has a CE id, it is not a CE timing. See 3.1
     // "General Video Format Requirements" section in CEA-861-E spec
     for (i = 1; i < MAX_CEA861B_FORMAT; i++)
     {
@@ -2212,7 +2208,7 @@ NvU32 NvTiming_GetCEA861TimingIndex (NVT_TIMING *pT)
             {
                 return ceaIndex;
             }
-            
+
             // for the dual-aspect ratio timings we should further check the aspect ratio matching(16:9 or 4:3) based on the integer rounding error
             for (j = 0; j < MAX_EIA861B_DUAL_ASPECT_VICS; j++)
             {
@@ -2232,7 +2228,7 @@ NvU32 NvTiming_GetCEA861TimingIndex (NVT_TIMING *pT)
                     }
                     break;
                 }
-                else if (ceaIndex < EIA861B_DUAL_ASPECT_VICS[j][0]) // not a dual-dspect ratio timing 
+                else if (ceaIndex < EIA861B_DUAL_ASPECT_VICS[j][0]) // not a dual-dspect ratio timing
                 {
                     break;
                 }
@@ -2260,8 +2256,8 @@ NVT_STATUS NvTiming_CalcCEA861bTiming(NvU32 width, NvU32 height, NvU32 rr, NvU32
 
     // loop through the table
     for (i = 0; i < MAX_CEA861B_FORMAT; i ++)
-    {        
-        if ((EIA861B[i].etc.rep & pixelRepeatMask) == 0) 
+    {
+        if ((EIA861B[i].etc.rep & pixelRepeatMask) == 0)
         {
             continue;
         }
@@ -2305,7 +2301,7 @@ NVT_STATUS NvTiming_ConstructVideoInfoframeCtrl(const NVT_TIMING *pTiming, NVT_V
         {
             // Prior RFE 543088
             if (pCtrl->video_format_id == 0 &&
-                !(NVT_FRR_TIMING_IS_OVT(pTiming->etc.flag) || NVT_TIMING_IS_OVT(pTiming->etc.flag)) && 
+                !(NVT_FRR_TIMING_IS_OVT(pTiming->etc.flag) || NVT_TIMING_IS_OVT(pTiming->etc.flag)) &&
                 NVT_GET_TIMING_STATUS_TYPE(pTiming->etc.status) == NVT_TYPE_EDID_861ST)
             {
                 pCtrl->video_format_id = (NvU8)NVT_GET_TIMING_STATUS_SEQ(pTiming->etc.status);
@@ -2321,10 +2317,10 @@ NVT_STATUS NvTiming_ConstructVideoInfoframeCtrl(const NVT_TIMING *pTiming, NVT_V
         }
     }
 
-    // setup RID code 
+    // setup RID code
     if (pCtrl->rid == NVT_INFOFRAME_CTRL_DONTCARE)
     {
-        if (NVT_TYPE_EDID_861ST == NVT_GET_TIMING_STATUS_TYPE(pTiming->etc.status) && 
+        if (NVT_TYPE_EDID_861ST == NVT_GET_TIMING_STATUS_TYPE(pTiming->etc.status) &&
             NVT_TIMING_IS_OVT(pTiming->etc.flag))
         {
             NvU8 ridIdx = 0;
@@ -2340,7 +2336,7 @@ NVT_STATUS NvTiming_ConstructVideoInfoframeCtrl(const NVT_TIMING *pTiming, NVT_V
                 ridIdx = 10 * (pTiming->etc.name[10] - '0') + (pTiming->etc.name[11] - '0');
             }
 
-            if (ridIdx > NVT_CTA861_RID_1280x720p_16x9 && 
+            if (ridIdx > NVT_CTA861_RID_1280x720p_16x9 &&
                 ridIdx < NVT_CTA861_RID_20480x8640p_64x27)
             {
                 pCtrl->rid = ridIdx;
@@ -2525,10 +2521,10 @@ NVT_STATUS NvTiming_ConstructVideoInfoframe(NVT_EDID_INFO *pEdidInfo, NVT_VIDEO_
     {
         *pInfoFrame = DEFAULT_VIDEO_INFOFRAME;
     }
- 
+
     // init the header
     pInfoFrame->type = NVT_INFOFRAME_TYPE_VIDEO;
-    
+
     // see 6.4 Format of Version 2, 3, and 4 AVI InfoFrames in CTA861-I
     if (pCtrl)
     {
@@ -2542,14 +2538,14 @@ NVT_STATUS NvTiming_ConstructVideoInfoframe(NVT_EDID_INFO *pEdidInfo, NVT_VIDEO_
             else
             if ((nvt_get_bits(pInfoFrame->byte2, NVT_VIDEO_INFOFRAME_BYTE2_C1C0_MASK, NVT_VIDEO_INFOFRAME_BYTE2_C1C0_SHIFT) == NVT_VIDEO_INFOFRAME_BYTE2_C1C0_EXT_COLORIMETRY) &&
                 //EC2-0 is based on the 7.5.5 at CTA861-G which DCI-P3 bit defined or notat byte4
-                (nvt_get_bits(pInfoFrame->byte3, NVT_VIDEO_INFOFRAME_BYTE3_EC_MASK, NVT_VIDEO_INFOFRAME_BYTE3_EC_SHIFT)     == NVT_VIDEO_INFOFRAME_BYTE3_EC_AdditionalColorExt))  
+                (nvt_get_bits(pInfoFrame->byte3, NVT_VIDEO_INFOFRAME_BYTE3_EC_MASK, NVT_VIDEO_INFOFRAME_BYTE3_EC_SHIFT)     == NVT_VIDEO_INFOFRAME_BYTE3_EC_AdditionalColorExt))
             {
                 pInfoFrame->version = NVT_VIDEO_INFOFRAME_VERSION_4; // just put the logic to get the correct version 4, but it shall not be used at currently stage.
                 pInfoFrame->length  = 14;
             }
             else
             {
-                pInfoFrame->version = (((pCtrl->video_format_id & NVT_VIDEO_INFOFRAME_BYTE4_VIC7) != 0) ? NVT_VIDEO_INFOFRAME_VERSION_3 : 
+                pInfoFrame->version = (((pCtrl->video_format_id & NVT_VIDEO_INFOFRAME_BYTE4_VIC7) != 0) ? NVT_VIDEO_INFOFRAME_VERSION_3 :
                                        ((pEdidInfo->ext861.revision >= NVT_CEA861_REV_B) ? NVT_VIDEO_INFOFRAME_VERSION_2 : NVT_VIDEO_INFOFRAME_VERSION_1));
                 pInfoFrame->length  = 13;
             }
@@ -2565,18 +2561,18 @@ NVT_STATUS NvTiming_ConstructVideoInfoframe(NVT_EDID_INFO *pEdidInfo, NVT_VIDEO_
         pInfoFrame->version = (pEdidInfo->ext861.revision >= NVT_CEA861_REV_B) ? NVT_VIDEO_INFOFRAME_VERSION_2 : NVT_VIDEO_INFOFRAME_VERSION_1;
         pInfoFrame->length  = 13;
     }
-    
+
     if (pInfoFrame->version < NVT_VIDEO_INFOFRAME_VERSION_3)
     {
         nvt_nvu8_set_bits(pInfoFrame->byte1, 0, NVT_VIDEO_INFOFRAME_BYTE1_RESERVED_MASK, NVT_VIDEO_INFOFRAME_BYTE1_RESERVED_SHIFT);
     }
-    
+
     if (pInfoFrame->version == NVT_VIDEO_INFOFRAME_VERSION_2)
-    {   
+    {
         nvt_nvu8_set_bits(pInfoFrame->byte4, 0, NVT_VIDEO_INFOFRAME_BYTE4_RESERVED_V2_MASK, NVT_VIDEO_INFOFRAME_BYTE4_RESERVED_V2_SHIFT);
     }
     else if (pInfoFrame->version == NVT_VIDEO_INFOFRAME_VERSION_1)
-    {        
+    {
         nvt_nvu8_set_bits(pInfoFrame->byte3, 0, NVT_VIDEO_INFOFRAME_BYTE3_RESERVED_V1_MASK, NVT_VIDEO_INFOFRAME_BYTE3_RESERVED_V1_SHIFT);
         nvt_nvu8_set_bits(pInfoFrame->byte4, 0, NVT_VIDEO_INFOFRAME_BYTE4_RESERVED_V1_MASK, NVT_VIDEO_INFOFRAME_BYTE4_RESERVED_V1_SHIFT);
         nvt_nvu8_set_bits(pInfoFrame->byte5, 0, NVT_VIDEO_INFOFRAME_BYTE5_RESERVED_V1_MASK, NVT_VIDEO_INFOFRAME_BYTE5_RESERVED_V1_SHIFT);
@@ -2643,7 +2639,7 @@ NVT_STATUS NvTiming_ConstructVideoInfoframe(NVT_EDID_INFO *pEdidInfo, NVT_VIDEO_
             nvt_nvu8_set_bits(pInfoFrame->byte3, pCtrl->nonuniform_scaling, NVT_VIDEO_INFOFRAME_BYTE3_SC_MASK, NVT_VIDEO_INFOFRAME_BYTE3_SC_SHIFT);
         }
 
-        // byte 4 and byte 5 only supported on InfoFrame 2.0 
+        // byte 4 and byte 5 only supported on InfoFrame 2.0
         if (pInfoFrame->version >= NVT_VIDEO_INFOFRAME_VERSION_2)
         {
             // byte 4
@@ -2694,13 +2690,13 @@ NVT_STATUS NvTiming_ConstructVideoInfoframe(NVT_EDID_INFO *pEdidInfo, NVT_VIDEO_
             {
                 nvt_nvu8_set_bits(pInfoFrame->byte14, pCtrl->addition_colorimetry_ext, NVT_VIDEO_INFOFRAME_BYTE14_ACE0_3_MASK, NVT_VIDEO_INFOFRAME_BYTE14_ACE0_3_SHIFT);
             }
-            
+
             if (pCtrl->frame_rate != NVT_INFOFRAME_CTRL_DONTCARE)
             {
                 // Frame rate
                 nvt_nvu8_set_bits(pInfoFrame->byte14, pCtrl->frame_rate, NVT_VIDEO_INFOFRAME_BYTE14_FR0_FR3_MASK, NVT_VIDEO_INFOFRAME_BYTE14_FR0_FR3_SHIFT);
                 pInfoFrame->byte15 &= NVT_VIDEO_INFOFRAME_BYTE15_FR4_MASK^0xFFU;
-                pInfoFrame->byte15 |= ((pCtrl->frame_rate & NVT_VIDEO_INFOFRAME_BYTE14_FR4_ONE_BIT_MASK) << NVT_VIDEO_INFOFRAME_BYTE15_FR4_SHIFT) & NVT_VIDEO_INFOFRAME_BYTE15_FR4_MASK;                    
+                pInfoFrame->byte15 |= ((pCtrl->frame_rate & NVT_VIDEO_INFOFRAME_BYTE14_FR4_ONE_BIT_MASK) << NVT_VIDEO_INFOFRAME_BYTE15_FR4_SHIFT) & NVT_VIDEO_INFOFRAME_BYTE15_FR4_MASK;
             }
 
             if (pCtrl->rid != NVT_INFOFRAME_CTRL_DONTCARE)
@@ -2860,7 +2856,7 @@ NVT_STATUS NvTiming_ConstructVendorSpecificInfoframe(NVT_EDID_INFO *pEdidInfo, N
     pInfoFrame->Header.length   = offsetof(NVT_VENDOR_SPECIFIC_INFOFRAME_PAYLOAD, optionalBytes);
 
     // construct the desired infoframe contents based on the control
-    
+
     // clear all static reserved fields
     nvt_nvu8_set_bits(pInfoFrame->Data.byte4, 0, NVT_HDMI_VS_BYTE4_RSVD_MASK, NVT_HDMI_VS_BYTE4_RSVD_SHIFT);
 
@@ -2961,7 +2957,7 @@ NVT_STATUS NvTiming_ConstructVendorSpecificInfoframe(NVT_EDID_INFO *pEdidInfo, N
     {
         nvt_nvu8_set_bits(pInfoFrame->Data.optionalBytes[optIdx], NVT_HDMI_VS_BYTENv_RSVD, NVT_HDMI_VS_BYTENv_RSVD_MASK, NVT_HDMI_VS_BYTENv_RSVD_SHIFT);
     }
-    
+
     return RetCode;
 }
 
@@ -2991,7 +2987,7 @@ NVT_STATUS NvTiming_ConstructExtendedMetadataPacketInfoframe(
                                                   NVT_HDMI_EMP_BYTE1_SYNC_MASK,
                                                   NVT_HDMI_EMP_BYTE1_SYNC_SHIFT);
     }
-        
+
     nvt_nvu8_set_bits(pInfoFrame->Data.byte1, NVT_HDMI_EMP_BYTE1_VFR_ENABLE,
                                               NVT_HDMI_EMP_BYTE1_VFR_MASK,
                                               NVT_HDMI_EMP_BYTE1_VFR_SHIFT);
@@ -3044,7 +3040,7 @@ NVT_STATUS NvTiming_ConstructExtendedMetadataPacketInfoframe(
                           pCtrl->BaseVFP,
                           NVT_HDMI_EMP_BYTE8_MD1_BASE_VFRONT_MASK,
                           NVT_HDMI_EMP_BYTE8_MD1_BASE_VFRONT_SHIFT);
-        
+
         // In HDMI2.1, MD2 bit 2 is set when RB timing is used.
         // In HDMI2.1A, MD2 bit 2 is RSVD as 0
         if (pCtrl->version == NVT_EXTENDED_METADATA_PACKET_INFOFRAME_VER_HDMI21)
@@ -3095,7 +3091,7 @@ void NvTiming_ConstructAdaptiveSyncSDP(
 
     // Construct an infoframe to enable or disable Adaptive Sync SDP
     pSdp->header.type = NVT_DP_ADAPTIVE_SYNC_SDP_PACKET_TYPE;
-    pSdp->header.version = NVT_DP_ADAPTIVE_SYNC_SDP_VERSION; 
+    pSdp->header.version = NVT_DP_ADAPTIVE_SYNC_SDP_VERSION;
     pSdp->header.length = NVT_DP_ADAPTIVE_SYNC_SDP_LENGTH;
 
     // Payload
@@ -3326,7 +3322,7 @@ void parseEdidHdmiLlcBasicInfo(VSDB_DATA *pVsdb, NVT_HDMI_LLC_INFO *pHdmiLlc)
     {
         return;
     }
-    
+
     p = (NVT_HDMI_LLC_VSDB_PAYLOAD *)(&pVsdb->vendor_data);
 
     // Minimum vendor_data_size is 2
@@ -3555,7 +3551,7 @@ void parseEdidHDMILLCTiming(NVT_EDID_INFO *pInfo, VSDB_DATA *pVsdb, NvU32 *pMapS
                     NVT_3D_MULTI_LIST * pMultiListEntry = (NVT_3D_MULTI_LIST *) &pHdmiLLC->Data[DataCnt];
 
                     // apply the specified structure to the Support Map
-                    pM->map[pMultiListEntry->TwoD_VIC_order].StereoStructureMask = 
+                    pM->map[pMultiListEntry->TwoD_VIC_order].StereoStructureMask =
                         pM->map[pMultiListEntry->TwoD_VIC_order].StereoStructureMask | NVT_HDMI_3D_SUPPORTED_STRUCT_MASK(pMultiListEntry->ThreeD_Structure);
 
                     // increment the Data count by 2 if this is side by side half,
@@ -3574,7 +3570,7 @@ void parseEdidHDMILLCTiming(NVT_EDID_INFO *pInfo, VSDB_DATA *pVsdb, NvU32 *pMapS
             }
         }
     }
-        
+
 
     // compress out entries where there is no 3D support.
     for (i = 0, j = 0; i < pM->total; ++i)
@@ -3648,7 +3644,7 @@ NVT_STATUS NvTiming_EnumHdmiVsdbExtendedTiming(NvU32 hdmi_vic, NVT_TIMING *pT)
 
 CODE_SEGMENT(PAGE_DD_CODE)
 void parseEdidNvidiaVSDBBlock(VSDB_DATA *pVsdb, NVDA_VSDB_PARSED_INFO *vsdbInfo)
-{    
+{
     NVT_NVDA_VSDB_PAYLOAD       *pNvda;
 
     if ((pVsdb == NULL) || (vsdbInfo == NULL))
@@ -3661,8 +3657,7 @@ void parseEdidNvidiaVSDBBlock(VSDB_DATA *pVsdb, NVDA_VSDB_PARSED_INFO *vsdbInfo)
     {
         pNvda = (NVT_NVDA_VSDB_PAYLOAD *)(&pVsdb->vendor_data);
 
-        // only version 0x1 is supported 
-        if (pNvda->opcode == 0x1)
+        if (pNvda->opcode == 0x1 || pNvda->opcode == 0x2)
         {
             vsdbInfo->vsdbVersion = pNvda->opcode;
         }
@@ -3670,11 +3665,11 @@ void parseEdidNvidiaVSDBBlock(VSDB_DATA *pVsdb, NVDA_VSDB_PARSED_INFO *vsdbInfo)
         switch (vsdbInfo->vsdbVersion)
         {
             case 1:
+            case 2:
                 vsdbInfo->valid = NV_TRUE;
                 vsdbInfo->vrrData.v1.supportsVrr = NV_TRUE;
                 vsdbInfo->vrrData.v1.minRefreshRate = pNvda->vrrMinRefreshRate;
                 break;
-
             default:
                 break;
         }
@@ -3699,9 +3694,9 @@ void parseEdidMsftVsdbBlock(VSDB_DATA *pVsdb, MSFT_VSDB_PARSED_INFO *pVsdbInfo)
 
         pVsdbInfo->version = pMsftVsdbPayload->version;
 
-        if (pVsdbInfo->version >= 1) 
+        if (pVsdbInfo->version >= 1)
         {
-            for (i = 0; i < MSFT_VSDB_CONTAINER_ID_SIZE; i++) 
+            for (i = 0; i < MSFT_VSDB_CONTAINER_ID_SIZE; i++)
             {
                 pVsdbInfo->containerId[i] = pMsftVsdbPayload->containerId[i];
             }
@@ -3711,7 +3706,7 @@ void parseEdidMsftVsdbBlock(VSDB_DATA *pVsdb, MSFT_VSDB_PARSED_INFO *pVsdbInfo)
             pVsdbInfo->valid = NV_TRUE;
         }
         // Version 3 is the latest version of MSFT VSDB at the time of writing this code
-        // Any update from newer version will be ignored and be parsed as Version 3, till 
+        // Any update from newer version will be ignored and be parsed as Version 3, till
         // we have an explicit handling for newer version here.
         if (pVsdbInfo->version >= 3)
         {
@@ -3731,22 +3726,22 @@ void parseEdidHdmiForumVSDB(VSDB_DATA *pVsdb, NVT_HDMI_FORUM_INFO *pHdmiInfo)
     {
         return;
     }
-    
+
     pHdmiForum = (NVT_HDMI_FORUM_VSDB_PAYLOAD *)(&pVsdb->vendor_data);
     switch(pHdmiForum->Version)
     {
         case 1:
             // From HDMI spec the payload data size is from 7 to 31
-            // In parseCta861DataBlockInfo(), the payload size recorded in pHdmiForum is 
+            // In parseCta861DataBlockInfo(), the payload size recorded in pHdmiForum is
             //    subtracted by 3. Thus the expected range here is 4 - 28.
             // Assert if the the vendor_data_size < 4.
             nvt_assert(pVsdb->vendor_data_size >= 4);
 
             remainingSize  =  pVsdb->vendor_data_size;
-            
+
             // second byte
             pHdmiInfo->max_TMDS_char_rate   = pHdmiForum->Max_TMDS_Character_Rate;
-           
+
             // third byte
             pHdmiInfo->threeD_Osd_Disparity = pHdmiForum->ThreeD_Osd_Disparity;
             pHdmiInfo->dual_view            = pHdmiForum->Dual_View;
@@ -3756,7 +3751,7 @@ void parseEdidHdmiForumVSDB(VSDB_DATA *pVsdb, NVT_HDMI_FORUM_INFO *pHdmiInfo)
             pHdmiInfo->cable_status         = pHdmiForum->CABLE_STATUS;
             pHdmiInfo->rr_capable           = pHdmiForum->RR_Capable;
             pHdmiInfo->scdc_present         = pHdmiForum->SCDC_Present;
-            
+
             // fourth byte
             pHdmiInfo->dc_30bit_420         = pHdmiForum->DC_30bit_420;
             pHdmiInfo->dc_36bit_420         = pHdmiForum->DC_36bit_420;
@@ -3765,7 +3760,7 @@ void parseEdidHdmiForumVSDB(VSDB_DATA *pVsdb, NVT_HDMI_FORUM_INFO *pHdmiInfo)
             pHdmiInfo->max_FRL_Rate         = pHdmiForum->Max_FRL_Rate;
 
             remainingSize -= 4;
-            
+
             // fifth byte
             if (!remainingSize--)
             {
@@ -3779,7 +3774,7 @@ void parseEdidHdmiForumVSDB(VSDB_DATA *pVsdb, NVT_HDMI_FORUM_INFO *pHdmiInfo)
             pHdmiInfo->m_delta              = pHdmiForum->M_delta;
             pHdmiInfo->qms                  = pHdmiForum->QMS;
             pHdmiInfo->fapa_end_extended    = pHdmiForum->FAPA_End_Extended;
-            
+
             // sixth byte
             if (!remainingSize--)
             {
@@ -3787,14 +3782,14 @@ void parseEdidHdmiForumVSDB(VSDB_DATA *pVsdb, NVT_HDMI_FORUM_INFO *pHdmiInfo)
             }
             pHdmiInfo->vrr_min              = pHdmiForum->VRR_min;
             pHdmiInfo->vrr_max              = ((NvU16)pHdmiForum->VRR_max_high) << 8;
-            
+
             // seventh byte
             if (!remainingSize--)
             {
                 break;
             }
             pHdmiInfo->vrr_max             |= (pHdmiForum->VRR_max_low);
-           
+
             // eighth byte
             if (!remainingSize--)
             {
@@ -3829,21 +3824,21 @@ void parseEdidHdmiForumVSDB(VSDB_DATA *pVsdb, NVT_HDMI_FORUM_INFO *pHdmiInfo)
             }
 
             pHdmiInfo->dsc_Max_FRL_Rate     = pHdmiForum->DSC_Max_FRL_Rate;
-          
+
             // tenth byte
             if (!remainingSize--)
             {
                 break;
             }
 
-            // Per spec, number of bytes has to be computed as 1024 x (1 + DSC_TotalChunkKBytes). 
+            // Per spec, number of bytes has to be computed as 1024 x (1 + DSC_TotalChunkKBytes).
             // For driver parser purposes, add 1 here so that the field means max num of KBytes in a link of chunks
             pHdmiInfo->dsc_totalChunkKBytes = (pHdmiForum->DSC_totalChunkKBytes == 0) ? 0 : pHdmiForum->DSC_totalChunkKBytes + 1;
             break;
 
         default:
             break;
-    }    
+    }
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
@@ -3852,7 +3847,7 @@ void parseCta861Hdr10PlusDataBlock(VSVDB_DATA* pVsvdb, NVT_HDR10PLUS_INFO* pHdr1
     if (pVsvdb == NULL || pHdr10PlusInfo == NULL)
         return;
 
-    if(pVsvdb->ieee_id != NVT_CEA861_HDR10PLUS_IEEE_ID) 
+    if(pVsvdb->ieee_id != NVT_CEA861_HDR10PLUS_IEEE_ID)
         return;
 
     NVMISC_MEMSET(pHdr10PlusInfo, 0, sizeof(NVT_HDR10PLUS_INFO));
@@ -3882,7 +3877,7 @@ void parseCta861DIDType7VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, void
 
         if (pExt861->did_type7_data_block[t7db_idx].total_descriptors != NVT_CTA861_DID_TYPE7_DESCRIPTORS_MAX)
         {
-            nvt_assert(0 && "payload descriptor invalid. expect T7VTDB only 1 descriptor");
+            // payload descriptor invalid. expect T7VTDB only 1 descriptor
             continue;
         }
 
@@ -3897,11 +3892,11 @@ void parseCta861DIDType7VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, void
         {
             NVMISC_MEMSET(&newTiming, 0, sizeof(newTiming));
             if (NVT_STATUS_SUCCESS == parseDisplayId20Timing7Descriptor(&pExt861->did_type7_data_block[t7db_idx].payload[i*eachOfDescSize],
-                                                                        &newTiming, 
+                                                                        &newTiming,
                                                                         startSeqNum+i))
             {
                 // T7VTDB shall not be used with video timing that can be expressed in an 18-byte DTD
-                if (newTiming.HVisible < 4096 && newTiming.VVisible < 4096 && newTiming.pclk < 65536) 
+                if (newTiming.HVisible < 4096 && newTiming.VVisible < 4096 && newTiming.pclk < 65536)
                 {
                     nvt_assert(0 && "The timing can be expressed in an 18-byte DTD");
                     continue;
@@ -3909,7 +3904,7 @@ void parseCta861DIDType7VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, void
 
                 pT7Descriptor = (const DISPLAYID_2_0_TIMING_7_DESCRIPTOR *)
                                     &pExt861->did_type7_data_block[t7db_idx].payload[i*eachOfDescSize];
-                
+
                 if (pT7Descriptor->options.is_preferred_or_ycc420 == 1 && newTiming.pclk > NVT_HDMI_YUV_420_PCLK_SUPPORTED_MIN)
                 {
                     newTiming.etc.yuv420.bpcs = 0;
@@ -3921,10 +3916,10 @@ void parseCta861DIDType7VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, void
 
                 NVT_SNPRINTF((char *)newTiming.etc.name, sizeof(newTiming.etc.name), "CTA861-T7:#%3d:%dx%dx%3d.%03dHz/%s",
                                                                                      (int)NVT_GET_TIMING_STATUS_SEQ(newTiming.etc.status),
-                                                                                     (int)newTiming.HVisible, 
+                                                                                     (int)newTiming.HVisible,
                                                                                      (int)newTiming.VVisible,
-                                                                                     (int)newTiming.etc.rrx1k/1000, 
-                                                                                     (int)newTiming.etc.rrx1k%1000, 
+                                                                                     (int)newTiming.etc.rrx1k/1000,
+                                                                                     (int)newTiming.etc.rrx1k%1000,
                                                                                      (newTiming.interlaced ? "I":"P"));
                 newTiming.etc.status = NVT_STATUS_CTA861_DID_T7N(NVT_GET_TIMING_STATUS_SEQ(newTiming.etc.status));
                 newTiming.etc.name[sizeof(newTiming.etc.name) - 1] = '\0';
@@ -3968,7 +3963,7 @@ void parseCta861DIDType8VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, void
         {
             NVMISC_MEMSET(&newTiming, 0, sizeof(newTiming));
 
-            if (parseDisplayId20Timing8Descriptor(pExt861->did_type8_data_block[t8db_idx].payload, 
+            if (parseDisplayId20Timing8Descriptor(pExt861->did_type8_data_block[t8db_idx].payload,
                                                   &newTiming, codeType, codeSize, i, startSeqNum + i) == NVT_STATUS_SUCCESS)
             {
                 if (pExt861->did_type8_data_block[t8db_idx].version.t8y420 == 1 && newTiming.pclk > NVT_HDMI_YUV_420_PCLK_SUPPORTED_MIN)
@@ -3981,7 +3976,7 @@ void parseCta861DIDType8VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, void
                 NVT_SNPRINTF((char *)newTiming.etc.name, sizeof(newTiming.etc.name), "CTA861-T8:#%3d:%dx%dx%3d.%03dHz/%s",
                                                                                     (int)NVT_GET_TIMING_STATUS_SEQ(newTiming.etc.status),
                                                                                     (int)newTiming.HVisible, (int)newTiming.VVisible,
-                                                                                    (int)newTiming.etc.rrx1k/1000, (int)newTiming.etc.rrx1k%1000, 
+                                                                                    (int)newTiming.etc.rrx1k/1000, (int)newTiming.etc.rrx1k%1000,
                                                                                     (newTiming.interlaced ? "I":"P"));
                 newTiming.etc.status = NVT_STATUS_CTA861_DID_T8N(NVT_GET_TIMING_STATUS_SEQ(newTiming.etc.status));
                 newTiming.etc.name[sizeof(newTiming.etc.name) - 1] = '\0';
@@ -3999,7 +3994,7 @@ void parseCta861DIDType8VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, void
 CODE_SEGMENT(PAGE_DD_CODE)
 void parseCta861DIDType10VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo)
 {
-    NvU8 i = 0;    
+    NvU8 i = 0;
     NvU8 t10db_idx = 0;
     NvU8 startSeqNum = 0;
 
@@ -4017,7 +4012,7 @@ void parseCta861DIDType10VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, voi
 
         for (i = 0; i < pExt861->did_type10_data_block[t10db_idx].total_descriptors; i++)
         {
-            if (pExt861->did_type10_data_block[t10db_idx].total_descriptors < NVT_CTA861_DID_TYPE10_DESCRIPTORS_MIN || 
+            if (pExt861->did_type10_data_block[t10db_idx].total_descriptors < NVT_CTA861_DID_TYPE10_DESCRIPTORS_MIN ||
                 pExt861->did_type10_data_block[t10db_idx].total_descriptors > NVT_CTA861_DID_TYPE10_DESCRIPTORS_MAX)
             {
                 nvt_assert(0 && "payload descriptor invalid. expect T10VTDB has minimum 1 descriptor, maximum 4 descriptors");
@@ -4026,16 +4021,16 @@ void parseCta861DIDType10VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, voi
 
             NVMISC_MEMSET(&newTiming, 0, sizeof(newTiming));
             if (NVT_STATUS_SUCCESS == parseDisplayId20Timing10Descriptor(&pExt861->did_type10_data_block[t10db_idx].payload[i*eachOfDescriptorsSize],
-                                                                        &newTiming, 
+                                                                        &newTiming,
                                                                         pExt861->did_type10_data_block[t10db_idx].version.t10_m, startSeqNum+i))
             {
                 p6bytesDescriptor = (const DISPLAYID_2_0_TIMING_10_6BYTES_DESCRIPTOR *)
                                     &pExt861->did_type10_data_block[t10db_idx].payload[i*eachOfDescriptorsSize];
 
                 if (p6bytesDescriptor->options.ycc420_support && newTiming.pclk > NVT_HDMI_YUV_420_PCLK_SUPPORTED_MIN)
-                {                 
-                    UPDATE_BPC_FOR_COLORFORMAT(newTiming.etc.yuv420, 0, 1, 
-                                               pInfo->hdmiForumInfo.dc_30bit_420, 
+                {
+                    UPDATE_BPC_FOR_COLORFORMAT(newTiming.etc.yuv420, 0, 1,
+                                               pInfo->hdmiForumInfo.dc_30bit_420,
                                                pInfo->hdmiForumInfo.dc_36bit_420, 0,
                                                pInfo->hdmiForumInfo.dc_48bit_420);
                 }
@@ -4044,10 +4039,10 @@ void parseCta861DIDType10VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, voi
                 {
                     NVT_SNPRINTF((char *)newTiming.etc.name, sizeof(newTiming.etc.name), "CTA861-T10:#%3d:%dx%dx%3d.%03dHz/%s",
                                                                                          (int)NVT_GET_TIMING_STATUS_SEQ(newTiming.etc.status),
-                                                                                         (int)newTiming.HVisible, 
+                                                                                         (int)newTiming.HVisible,
                                                                                          (int)newTiming.VVisible,
-                                                                                         (int)newTiming.etc.rrx1k/1000, 
-                                                                                         (int)newTiming.etc.rrx1k%1000, 
+                                                                                         (int)newTiming.etc.rrx1k/1000,
+                                                                                         (int)newTiming.etc.rrx1k%1000,
                                                                                          (newTiming.interlaced ? "I":"P"));
                 }
                 else
@@ -4055,10 +4050,10 @@ void parseCta861DIDType10VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, voi
                     NVT_SNPRINTF((char *)newTiming.etc.name, sizeof(newTiming.etc.name), "CTA861-T10RB%d:#%3d:%dx%dx%3d.%03dHz/%s",
                                                                                          p6bytesDescriptor->options.timing_formula,
                                                                                          (int)NVT_GET_TIMING_STATUS_SEQ(newTiming.etc.status),
-                                                                                         (int)newTiming.HVisible, 
+                                                                                         (int)newTiming.HVisible,
                                                                                          (int)newTiming.VVisible,
-                                                                                         (int)newTiming.etc.rrx1k/1000, 
-                                                                                         (int)newTiming.etc.rrx1k%1000, 
+                                                                                         (int)newTiming.etc.rrx1k/1000,
+                                                                                         (int)newTiming.etc.rrx1k%1000,
                                                                                          (newTiming.interlaced ? "I":"P"));
                 }
                 newTiming.etc.status = NVT_STATUS_CTA861_DID_T10N(NVT_GET_TIMING_STATUS_SEQ(newTiming.etc.status));

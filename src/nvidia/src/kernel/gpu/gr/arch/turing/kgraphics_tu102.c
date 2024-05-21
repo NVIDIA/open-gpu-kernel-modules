@@ -54,6 +54,9 @@
 #include "class/clc36f.h" // VOLTA_CHANNEL_GPFIFO_A
 #include "class/clc46f.h" // TURING_CHANNEL_GPFIFO_A
 
+
+#include "ctrl/ctrl0080/ctrl0080fifo.h"
+
 /*!
  * @brief Allocate common local/global buffers that are required by the graphics context
  *

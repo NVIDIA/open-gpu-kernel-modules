@@ -1257,6 +1257,74 @@ NV_STATUS deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v24_06(NV2080_CTRL
     return NVOS_STATUS_SUCCESS;
 }
 
+NV_STATUS deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v26_02(NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS *eccStatusParams, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
+{
+    if (!offset)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+
+    // If eccStatusParams and buffer are valid, then copy data and return the offset
+    if (eccStatusParams && buffer)
+    {
+        NvU32 i;
+        NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v26_02 *eccStatusParams_v26_02 = NULL;
+
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v26_02))))
+            return NV_ERR_BUFFER_TOO_SMALL;
+
+        eccStatusParams_v26_02 = (void*)(buffer + *offset);
+
+        eccStatusParams->bFatalPoisonError = eccStatusParams_v26_02->bFatalPoisonError;
+
+        for (i = 0; i < NV2080_CTRL_GPU_ECC_UNIT_COUNT_v26_02; i++) {
+            eccStatusParams->units[i].enabled                = eccStatusParams_v26_02->units[i].enabled;
+            eccStatusParams->units[i].scrubComplete          = eccStatusParams_v26_02->units[i].scrubComplete;
+            eccStatusParams->units[i].supported              = eccStatusParams_v26_02->units[i].supported;
+            eccStatusParams->units[i].dbe.count              = eccStatusParams_v26_02->units[i].dbe.count;
+            eccStatusParams->units[i].dbeNonResettable.count = eccStatusParams_v26_02->units[i].dbeNonResettable.count;
+            eccStatusParams->units[i].sbe.count              = eccStatusParams_v26_02->units[i].sbe.count;
+            eccStatusParams->units[i].sbeNonResettable.count = eccStatusParams_v26_02->units[i].sbeNonResettable.count;
+        }
+    }
+    *offset += sizeof(NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v26_02);
+
+    return NVOS_STATUS_SUCCESS;
+}
+
+NV_STATUS deserialize_GPU_EXEC_SYSPIPE_INFO_v26_01(GPU_EXEC_SYSPIPE_INFO *execSyspipeInfo, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
+{
+    if (!offset)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+
+    // If execSyspipeInfo and buffer are valid, then copy data and return the offset
+    if (execSyspipeInfo && buffer)
+    {
+        NvU32 i;
+        GPU_EXEC_SYSPIPE_INFO_v26_01 *execSyspipeInfo_v26_01 = NULL;
+
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(GPU_EXEC_SYSPIPE_INFO_v26_01))))
+            return NV_ERR_BUFFER_TOO_SMALL;
+
+        execSyspipeInfo_v26_01 = (void*)(buffer + *offset);
+
+        execSyspipeInfo->execPartCount    = execSyspipeInfo_v26_01->execPartCount;
+
+        for (i = 0; i < execSyspipeInfo_v26_01->execPartCount; i++)
+        {
+            execSyspipeInfo->execPartId[i] = execSyspipeInfo_v26_01->execPartId[i];
+            execSyspipeInfo->syspipeId[i]  = execSyspipeInfo_v26_01->syspipeId[i];
+        }
+    }
+    *offset += sizeof(GPU_EXEC_SYSPIPE_INFO_v26_01);
+
+    return NVOS_STATUS_SUCCESS;
+}
+
 NV_STATUS deserialize_NV2080_CTRL_GR_GET_ZCULL_INFO_PARAMS_v12_01(NV2080_CTRL_GR_GET_ZCULL_INFO_PARAMS *grZcullInfo, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
 {
     if (!offset)
@@ -1320,6 +1388,38 @@ NV_STATUS deserialize_VGPU_STATIC_PROPERTIES_v1B_01(VGPU_STATIC_PROPERTIES *vgpu
     }
 
     *offset += sizeof(VGPU_STATIC_PROPERTIES_v1B_01);
+
+    return NVOS_STATUS_SUCCESS;
+}
+
+NV_STATUS deserialize_VGPU_STATIC_PROPERTIES_v26_03(VGPU_STATIC_PROPERTIES *vgpuStaticProperties, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
+{
+    if (!offset)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+
+    // If vgpuStaticProperties and buffer are valid, then copy data and return the offset
+    if (vgpuStaticProperties && buffer)
+    {
+        VGPU_STATIC_PROPERTIES_v26_03 *vgpu_static_properties_v26_03 = NULL;
+
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(VGPU_STATIC_PROPERTIES_v26_03))))
+            return NV_ERR_BUFFER_TOO_SMALL;
+
+        vgpu_static_properties_v26_03 = (void*)(buffer + *offset);
+
+        // encSessionStatsReportingState
+        vgpuStaticProperties->encSessionStatsReportingState = vgpu_static_properties_v26_03->encSessionStatsReportingState;
+        vgpuStaticProperties->bProfilingTracingEnabled      = vgpu_static_properties_v26_03->bProfilingTracingEnabled;
+        vgpuStaticProperties->bDebuggingEnabled             = vgpu_static_properties_v26_03->bDebuggingEnabled;
+        vgpuStaticProperties->channelCount                  = vgpu_static_properties_v26_03->channelCount;
+        vgpuStaticProperties->bPblObjNotPresent             = vgpu_static_properties_v26_03->bPblObjNotPresent;
+        vgpuStaticProperties->vmmuSegmentSize               = vgpu_static_properties_v26_03->vmmuSegmentSize;
+    }
+
+    *offset += sizeof(VGPU_STATIC_PROPERTIES_v26_03);
 
     return NVOS_STATUS_SUCCESS;
 }

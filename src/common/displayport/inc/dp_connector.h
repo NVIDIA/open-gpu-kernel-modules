@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -65,6 +65,7 @@ namespace DisplayPort
         DP_IMP_ERROR_INSUFFICIENT_BANDWIDTH,
         DP_IMP_ERROR_INSUFFICIENT_BANDWIDTH_DSC,
         DP_IMP_ERROR_INSUFFICIENT_BANDWIDTH_NO_DSC,
+        DP_IMP_ERROR_INSUFFICIENT_DP_TUNNELING_BANDWIDTH,
         DP_IMP_ERROR_WATERMARK_BLANKING,
         DP_IMP_ERROR_PPS_COLOR_FORMAT_NOT_SUPPORTED,
         DP_IMP_ERROR_PPS_INVALID_HBLANK,
@@ -274,6 +275,10 @@ namespace DisplayPort
 
         virtual DscCaps getDscCaps() = 0;
 
+        virtual NvBool isDynamicPPSSupported() = 0;
+
+        virtual NvBool isDynamicDscToggleSupported() = 0;
+
         //
         // This function returns the device itself or its parent device that is doing
         // DSC decompression for it.
@@ -321,8 +326,14 @@ namespace DisplayPort
         virtual bool isMSAOverMSTCapable() = 0;
         virtual bool isFakedMuxDevice() = 0;
         virtual bool setPanelReplayConfig(panelReplayConfig prcfg) = 0;
+        virtual bool getPanelReplayConfig(panelReplayConfig *pPrcfg) = 0;
         virtual bool isPanelReplaySupported() = 0;
         virtual bool getPanelReplayStatus(PanelReplayStatus *pPrStatus) = 0;
+        virtual bool getDeviceSpecificData(NvU8 *oui, NvU8 *deviceIdString,
+                                           NvU8 *hwRevision, NvU8 *swMajorRevision,
+                                           NvU8 *swMinorRevision) = 0;
+
+        virtual bool setModeList(DisplayPort::DpModesetParams *pModeList, unsigned numModes) = 0;
 
     protected:
             virtual ~Device() {}
@@ -594,6 +605,8 @@ namespace DisplayPort
         virtual void notifyGPUCapabilityChange() = 0;
         virtual void notifyHBR2WAREngage() = 0;
 
+        virtual bool dpUpdateDscStream(Group *target, NvU32 dscBpp) = 0;
+
         // Create a new Group.  Note that if you wish to do a modeset but send the
         // stream nowhere, you may do a modeset with an EMPTY group.  This is expected
         // to be the mechanism by which monitor faking is implemented.
@@ -710,6 +723,7 @@ namespace DisplayPort
         virtual bool setTestPattern(NV0073_CTRL_DP_TESTPATTERN testPattern,
                                     NvU8 laneMask, NV0073_CTRL_DP_CSTM cstm,
                                     NvBool bIsHBR2, NvBool bSkipLaneDataOverride) = 0;
+
         // "data" is an array of NV0073_CTRL_MAX_LANES unsigned ints
         virtual bool getLaneConfig(NvU32 *numLanes, NvU32 *data) = 0;
         // "data" is an array of NV0073_CTRL_MAX_LANES unsigned ints
@@ -735,6 +749,7 @@ namespace DisplayPort
     virtual bool updatePsrLinkState(bool bTurnOnLink) = 0;
 
     virtual bool readPrSinkDebugInfo(panelReplaySinkDebugInfo *prDbgInfo) = 0;
+    virtual void enableDpTunnelingBwAllocationSupport() = 0;
 
     protected:
            virtual ~Connector() {}

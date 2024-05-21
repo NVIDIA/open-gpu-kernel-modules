@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2003-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,32 +21,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-//******************************************************************************
-//
-//   Declarations for VGPU util functions.
-//
-//******************************************************************************
-
-#ifndef __vgpu_util_h__
-#define __vgpu_util_h__
-
-#include "gpu/gpu.h"
-#include "gpu/mem_mgr/mem_desc.h"
-
-#include "vgpu/vgpu_events.h"
-
-#include "vgpu/dev_vgpu.h"
-
-NV_STATUS vgpuAllocSysmemPfnBitMapNode(OBJGPU *pGpu, VGPU_SYSMEM_PFN_BITMAP_NODE_P *node, NvU32 index);
-NvU64 vgpuGspSysmemPfnMakeBufferAddress(MEMORY_DESCRIPTOR *pMemDesc,  NvU64 pfn);
-void vgpuFreeSysmemPfnBitMapNode(VGPU_SYSMEM_PFN_BITMAP_NODE_P node);
-NV_STATUS vgpuUpdateSysmemPfnBitMap(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc, NvBool bAlloc);
-
-static inline NvBool vgpuIsGuestManagedHwAlloc(OBJGPU *pGpu)
-{
-    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
-
-    return pVSI && pVSI->guestManagedHwAlloc;
-}
-
-#endif // __vgpu_util_h__
+#ifndef __gp102_dev_nv_xp_h__
+#define __gp102_dev_nv_xp_h__
+#define NV_XP_PL_CYA_1(i)                                   (0x0008C300+(i)*4) /* RW-4A */
+#define NV_XP_PL_CYA_1_BLOCK_HOST2XP_HOLD_LTSSM                            4:4 /* RWIVF */
+#define NV_XP_PL_CYA_1_BLOCK_HOST2XP_HOLD_LTSSM_ENABLE              0x00000001 /* RW--V */
+#endif // __gp102_dev_nv_xp_h__

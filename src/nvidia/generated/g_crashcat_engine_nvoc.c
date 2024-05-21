@@ -88,31 +88,46 @@ __nvoc_ctor_CrashCatEngine_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_CrashCatEngine_1(CrashCatEngine *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // crashcatEngineUnload -- virtual
     pThis->__crashcatEngineUnload__ = &crashcatEngineUnload_IMPL;
 
+    // crashcatEngineConfigured -- pure virtual
     pThis->__crashcatEngineConfigured__ = NULL;
 
+    // crashcatEngineVprintf -- pure virtual
     pThis->__crashcatEngineVprintf__ = NULL;
 
+    // crashcatEnginePriRead -- pure virtual
     pThis->__crashcatEnginePriRead__ = NULL;
 
+    // crashcatEnginePriWrite -- pure virtual
     pThis->__crashcatEnginePriWrite__ = NULL;
 
+    // crashcatEngineMapBufferDescriptor -- pure virtual
     pThis->__crashcatEngineMapBufferDescriptor__ = NULL;
 
+    // crashcatEngineUnmapBufferDescriptor -- pure virtual
     pThis->__crashcatEngineUnmapBufferDescriptor__ = NULL;
 
+    // crashcatEngineSyncBufferDescriptor -- pure virtual
     pThis->__crashcatEngineSyncBufferDescriptor__ = NULL;
 
+    // crashcatEngineGetScratchOffsets -- pure virtual
     pThis->__crashcatEngineGetScratchOffsets__ = NULL;
 
+    // crashcatEngineGetWFL0Offset -- pure virtual
     pThis->__crashcatEngineGetWFL0Offset__ = NULL;
-}
+} // End __nvoc_init_funcTable_CrashCatEngine_1 with approximately 10 basic block(s).
 
+
+// Initialize vtable(s) for 10 virtual method(s).
 void __nvoc_init_funcTable_CrashCatEngine(CrashCatEngine *pThis) {
+
+    // Initialize vtable(s) with 10 per-object function pointer(s).
     __nvoc_init_funcTable_CrashCatEngine_1(pThis);
 }
 

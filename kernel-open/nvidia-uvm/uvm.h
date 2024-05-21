@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2013-2023 NVIDIA Corporation
+    Copyright (c) 2013-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -3463,8 +3463,7 @@ NV_STATUS UvmToolsDestroySession(UvmToolsSessionHandle session);
 //
 
 #if UVM_API_REV_IS_AT_MOST(10)
-// This is deprecated and replaced by sizeof(UvmToolsEventControlData_V1) or
-// sizeof(UvmToolsEventControlData_V2).
+// This is deprecated and replaced by sizeof(UvmToolsEventControlData).
 NvLength UvmToolsGetEventControlSize(void);
 
 // This is deprecated and replaced by sizeof(UvmEventEntry_V1) or
@@ -3488,8 +3487,6 @@ NvLength UvmToolsGetNumberOfCounters(void);
 //     version: (INPUT)
 //         Requested version for events or counters.
 //         See UvmEventEntry_V1 and UvmEventEntry_V2.
-//         UvmToolsEventControlData_V2::version records the entry version that
-//         will be generated.
 //
 //     event_buffer: (INPUT)
 //         User allocated buffer. Must be page-aligned. Must be large enough to
@@ -3502,8 +3499,7 @@ NvLength UvmToolsGetNumberOfCounters(void);
 //
 //     event_control (INPUT)
 //         User allocated buffer. Must be page-aligned. Must be large enough to
-//         hold UvmToolsEventControlData_V1 if version is UvmEventEntry_V1 or
-//         UvmToolsEventControlData_V2 (although single page-size allocation
+//         hold UvmToolsEventControlData (although single page-size allocation
 //         should be more than enough). Gets pinned until queue is destroyed.
 //
 //     queue: (OUTPUT)

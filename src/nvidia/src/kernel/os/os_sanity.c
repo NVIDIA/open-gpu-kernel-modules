@@ -34,7 +34,6 @@
 #include <gpu_mgr/gpu_mgr.h>
 #include "kernel/gpu/intr/intr.h"
 #include <gpu/bif/kernel_bif.h>
-#include <objtmr.h>
 
 /*!
  * @brief Wait for interrupt
@@ -235,14 +234,9 @@ static NV_STATUS _osVerifyInterrupts(
 
     while (!interrupt_triggered)
     {
-#if defined(NV_UNIX) && !defined(NV_MODS)
-        osDelayNs(5 * 1000);
+        osDelayUs(5);
         Bailout += 5;
-#else
-        OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
-        tmrDelay(pTmr, 5 * 1000);
-        Bailout += 5;
-#endif
+
         if (Bailout > pGpu->timeoutData.defaultus)
             break;
     }

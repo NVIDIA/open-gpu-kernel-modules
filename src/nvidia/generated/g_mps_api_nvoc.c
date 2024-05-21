@@ -84,89 +84,113 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_MpsApi =
     /*pExportInfo=*/        &__nvoc_export_info_MpsApi
 };
 
-static NvBool __nvoc_thunk_RmResource_mpsApiShareCallback(struct MpsApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return rmresShareCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+// 21 up-thunk(s) defined to bridge methods in MpsApi to superclasses
+
+// mpsApiAccessCallback: virtual inherited (rmres) base (rmres)
+static NvBool __nvoc_up_thunk_RmResource_mpsApiAccessCallback(struct MpsApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MpsApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_mpsApiCheckMemInterUnmap(struct MpsApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_MpsApi_RmResource.offset), bSubdeviceHandleProvided);
+// mpsApiShareCallback: virtual inherited (rmres) base (rmres)
+static NvBool __nvoc_up_thunk_RmResource_mpsApiShareCallback(struct MpsApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MpsApi_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_mpsApiControl(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControl((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RsResource.offset), pCallContext, pParams);
+// mpsApiGetMemInterMapParams: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_mpsApiGetMemInterMapParams(struct MpsApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_MpsApi_RmResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_mpsApiGetMemInterMapParams(struct MpsApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_MpsApi_RmResource.offset), pParams);
+// mpsApiCheckMemInterUnmap: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_mpsApiCheckMemInterUnmap(struct MpsApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_MpsApi_RmResource.offset), bSubdeviceHandleProvided);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_mpsApiGetMemoryMappingDescriptor(struct MpsApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_MpsApi_RmResource.offset), ppMemDesc);
+// mpsApiGetMemoryMappingDescriptor: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_mpsApiGetMemoryMappingDescriptor(struct MpsApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_MpsApi_RmResource.offset), ppMemDesc);
 }
 
-static NvU32 __nvoc_thunk_RsResource_mpsApiGetRefCount(struct MpsApi *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RsResource.offset));
+// mpsApiControlSerialization_Prologue: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_mpsApiControlSerialization_Prologue(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MpsApi_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_mpsApiControlFilter(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RsResource.offset), pCallContext, pParams);
+// mpsApiControlSerialization_Epilogue: virtual inherited (rmres) base (rmres)
+static void __nvoc_up_thunk_RmResource_mpsApiControlSerialization_Epilogue(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MpsApi_RmResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_mpsApiAddAdditionalDependants(struct RsClient *pClient, struct MpsApi *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RsResource.offset), pReference);
+// mpsApiControl_Prologue: virtual inherited (rmres) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RmResource_mpsApiControl_Prologue(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MpsApi_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_mpsApiControlSerialization_Prologue(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RmResource.offset), pCallContext, pParams);
+// mpsApiControl_Epilogue: virtual inherited (rmres) base (rmres)
+static void __nvoc_up_thunk_RmResource_mpsApiControl_Epilogue(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_MpsApi_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_mpsApiControl_Prologue(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RmResource.offset), pCallContext, pParams);
+// mpsApiCanCopy: virtual inherited (res) base (rmres)
+static NvBool __nvoc_up_thunk_RsResource_mpsApiCanCopy(struct MpsApi *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MpsApi_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RsResource_mpsApiCanCopy(struct MpsApi *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RsResource.offset));
+// mpsApiIsDuplicate: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_mpsApiIsDuplicate(struct MpsApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MpsApi_RsResource.offset), hMemory, pDuplicate);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_mpsApiUnmap(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return resUnmap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RsResource.offset), pCallContext, pCpuMapping);
+// mpsApiPreDestruct: virtual inherited (res) base (rmres)
+static void __nvoc_up_thunk_RsResource_mpsApiPreDestruct(struct MpsApi *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MpsApi_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RsResource_mpsApiIsPartialUnmapSupported(struct MpsApi *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RsResource.offset));
+// mpsApiControl: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_mpsApiControl(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControl((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MpsApi_RsResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_mpsApiPreDestruct(struct MpsApi *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RsResource.offset));
+// mpsApiControlFilter: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_mpsApiControlFilter(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MpsApi_RsResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_mpsApiMapTo(struct MpsApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RsResource.offset), pParams);
+// mpsApiMap: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_mpsApiMap(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+    return resMap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MpsApi_RsResource.offset), pCallContext, pParams, pCpuMapping);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_mpsApiIsDuplicate(struct MpsApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RsResource.offset), hMemory, pDuplicate);
+// mpsApiUnmap: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_mpsApiUnmap(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return resUnmap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MpsApi_RsResource.offset), pCallContext, pCpuMapping);
 }
 
-static void __nvoc_thunk_RmResource_mpsApiControlSerialization_Epilogue(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RmResource.offset), pCallContext, pParams);
+// mpsApiIsPartialUnmapSupported: inline virtual inherited (res) base (rmres) body
+static NvBool __nvoc_up_thunk_RsResource_mpsApiIsPartialUnmapSupported(struct MpsApi *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MpsApi_RsResource.offset));
 }
 
-static void __nvoc_thunk_RmResource_mpsApiControl_Epilogue(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RmResource.offset), pCallContext, pParams);
+// mpsApiMapTo: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_mpsApiMapTo(struct MpsApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MpsApi_RsResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_mpsApiUnmapFrom(struct MpsApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RsResource.offset), pParams);
+// mpsApiUnmapFrom: virtual inherited (res) base (rmres)
+static NV_STATUS __nvoc_up_thunk_RsResource_mpsApiUnmapFrom(struct MpsApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MpsApi_RsResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_mpsApiMap(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return resMap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RsResource.offset), pCallContext, pParams, pCpuMapping);
+// mpsApiGetRefCount: virtual inherited (res) base (rmres)
+static NvU32 __nvoc_up_thunk_RsResource_mpsApiGetRefCount(struct MpsApi *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MpsApi_RsResource.offset));
 }
 
-static NvBool __nvoc_thunk_RmResource_mpsApiAccessCallback(struct MpsApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+// mpsApiAddAdditionalDependants: virtual inherited (res) base (rmres)
+static void __nvoc_up_thunk_RsResource_mpsApiAddAdditionalDependants(struct RsClient *pClient, struct MpsApi *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_MpsApi_RsResource.offset), pReference);
 }
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_MpsApi = 
 {
@@ -204,53 +228,79 @@ __nvoc_ctor_MpsApi_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_MpsApi_1(MpsApi *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
-    pThis->__mpsApiShareCallback__ = &__nvoc_thunk_RmResource_mpsApiShareCallback;
+    // mpsApiAccessCallback -- virtual inherited (rmres) base (rmres)
+    pThis->__mpsApiAccessCallback__ = &__nvoc_up_thunk_RmResource_mpsApiAccessCallback;
 
-    pThis->__mpsApiCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_mpsApiCheckMemInterUnmap;
+    // mpsApiShareCallback -- virtual inherited (rmres) base (rmres)
+    pThis->__mpsApiShareCallback__ = &__nvoc_up_thunk_RmResource_mpsApiShareCallback;
 
-    pThis->__mpsApiControl__ = &__nvoc_thunk_RsResource_mpsApiControl;
+    // mpsApiGetMemInterMapParams -- virtual inherited (rmres) base (rmres)
+    pThis->__mpsApiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_mpsApiGetMemInterMapParams;
 
-    pThis->__mpsApiGetMemInterMapParams__ = &__nvoc_thunk_RmResource_mpsApiGetMemInterMapParams;
+    // mpsApiCheckMemInterUnmap -- virtual inherited (rmres) base (rmres)
+    pThis->__mpsApiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_mpsApiCheckMemInterUnmap;
 
-    pThis->__mpsApiGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_mpsApiGetMemoryMappingDescriptor;
+    // mpsApiGetMemoryMappingDescriptor -- virtual inherited (rmres) base (rmres)
+    pThis->__mpsApiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_mpsApiGetMemoryMappingDescriptor;
 
-    pThis->__mpsApiGetRefCount__ = &__nvoc_thunk_RsResource_mpsApiGetRefCount;
+    // mpsApiControlSerialization_Prologue -- virtual inherited (rmres) base (rmres)
+    pThis->__mpsApiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_mpsApiControlSerialization_Prologue;
 
-    pThis->__mpsApiControlFilter__ = &__nvoc_thunk_RsResource_mpsApiControlFilter;
+    // mpsApiControlSerialization_Epilogue -- virtual inherited (rmres) base (rmres)
+    pThis->__mpsApiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_mpsApiControlSerialization_Epilogue;
 
-    pThis->__mpsApiAddAdditionalDependants__ = &__nvoc_thunk_RsResource_mpsApiAddAdditionalDependants;
+    // mpsApiControl_Prologue -- virtual inherited (rmres) base (rmres)
+    pThis->__mpsApiControl_Prologue__ = &__nvoc_up_thunk_RmResource_mpsApiControl_Prologue;
 
-    pThis->__mpsApiControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_mpsApiControlSerialization_Prologue;
+    // mpsApiControl_Epilogue -- virtual inherited (rmres) base (rmres)
+    pThis->__mpsApiControl_Epilogue__ = &__nvoc_up_thunk_RmResource_mpsApiControl_Epilogue;
 
-    pThis->__mpsApiControl_Prologue__ = &__nvoc_thunk_RmResource_mpsApiControl_Prologue;
+    // mpsApiCanCopy -- virtual inherited (res) base (rmres)
+    pThis->__mpsApiCanCopy__ = &__nvoc_up_thunk_RsResource_mpsApiCanCopy;
 
-    pThis->__mpsApiCanCopy__ = &__nvoc_thunk_RsResource_mpsApiCanCopy;
+    // mpsApiIsDuplicate -- virtual inherited (res) base (rmres)
+    pThis->__mpsApiIsDuplicate__ = &__nvoc_up_thunk_RsResource_mpsApiIsDuplicate;
 
-    pThis->__mpsApiUnmap__ = &__nvoc_thunk_RsResource_mpsApiUnmap;
+    // mpsApiPreDestruct -- virtual inherited (res) base (rmres)
+    pThis->__mpsApiPreDestruct__ = &__nvoc_up_thunk_RsResource_mpsApiPreDestruct;
 
-    pThis->__mpsApiIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_mpsApiIsPartialUnmapSupported;
+    // mpsApiControl -- virtual inherited (res) base (rmres)
+    pThis->__mpsApiControl__ = &__nvoc_up_thunk_RsResource_mpsApiControl;
 
-    pThis->__mpsApiPreDestruct__ = &__nvoc_thunk_RsResource_mpsApiPreDestruct;
+    // mpsApiControlFilter -- virtual inherited (res) base (rmres)
+    pThis->__mpsApiControlFilter__ = &__nvoc_up_thunk_RsResource_mpsApiControlFilter;
 
-    pThis->__mpsApiMapTo__ = &__nvoc_thunk_RsResource_mpsApiMapTo;
+    // mpsApiMap -- virtual inherited (res) base (rmres)
+    pThis->__mpsApiMap__ = &__nvoc_up_thunk_RsResource_mpsApiMap;
 
-    pThis->__mpsApiIsDuplicate__ = &__nvoc_thunk_RsResource_mpsApiIsDuplicate;
+    // mpsApiUnmap -- virtual inherited (res) base (rmres)
+    pThis->__mpsApiUnmap__ = &__nvoc_up_thunk_RsResource_mpsApiUnmap;
 
-    pThis->__mpsApiControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_mpsApiControlSerialization_Epilogue;
+    // mpsApiIsPartialUnmapSupported -- inline virtual inherited (res) base (rmres) body
+    pThis->__mpsApiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_mpsApiIsPartialUnmapSupported;
 
-    pThis->__mpsApiControl_Epilogue__ = &__nvoc_thunk_RmResource_mpsApiControl_Epilogue;
+    // mpsApiMapTo -- virtual inherited (res) base (rmres)
+    pThis->__mpsApiMapTo__ = &__nvoc_up_thunk_RsResource_mpsApiMapTo;
 
-    pThis->__mpsApiUnmapFrom__ = &__nvoc_thunk_RsResource_mpsApiUnmapFrom;
+    // mpsApiUnmapFrom -- virtual inherited (res) base (rmres)
+    pThis->__mpsApiUnmapFrom__ = &__nvoc_up_thunk_RsResource_mpsApiUnmapFrom;
 
-    pThis->__mpsApiMap__ = &__nvoc_thunk_RsResource_mpsApiMap;
+    // mpsApiGetRefCount -- virtual inherited (res) base (rmres)
+    pThis->__mpsApiGetRefCount__ = &__nvoc_up_thunk_RsResource_mpsApiGetRefCount;
 
-    pThis->__mpsApiAccessCallback__ = &__nvoc_thunk_RmResource_mpsApiAccessCallback;
-}
+    // mpsApiAddAdditionalDependants -- virtual inherited (res) base (rmres)
+    pThis->__mpsApiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_mpsApiAddAdditionalDependants;
+} // End __nvoc_init_funcTable_MpsApi_1 with approximately 21 basic block(s).
 
+
+// Initialize vtable(s) for 21 virtual method(s).
 void __nvoc_init_funcTable_MpsApi(MpsApi *pThis) {
+
+    // Initialize vtable(s) with 21 per-object function pointer(s).
     __nvoc_init_funcTable_MpsApi_1(pThis);
 }
 

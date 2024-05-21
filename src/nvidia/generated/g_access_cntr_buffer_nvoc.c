@@ -111,126 +111,6 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_AccessCounterBuffer =
     /*pExportInfo=*/        &__nvoc_export_info_AccessCounterBuffer
 };
 
-static NV_STATUS __nvoc_thunk_AccessCounterBuffer_gpuresMap(struct GpuResource *pAccessCounterBuffer, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return accesscntrMap((struct AccessCounterBuffer *)(((unsigned char *)pAccessCounterBuffer) - __nvoc_rtti_AccessCounterBuffer_GpuResource.offset), pCallContext, pParams, pCpuMapping);
-}
-
-static NV_STATUS __nvoc_thunk_AccessCounterBuffer_gpuresUnmap(struct GpuResource *pAccessCounterBuffer, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return accesscntrUnmap((struct AccessCounterBuffer *)(((unsigned char *)pAccessCounterBuffer) - __nvoc_rtti_AccessCounterBuffer_GpuResource.offset), pCallContext, pCpuMapping);
-}
-
-static NV_STATUS __nvoc_thunk_AccessCounterBuffer_gpuresGetMapAddrSpace(struct GpuResource *pAccessCounterBuffer, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return accesscntrGetMapAddrSpace((struct AccessCounterBuffer *)(((unsigned char *)pAccessCounterBuffer) - __nvoc_rtti_AccessCounterBuffer_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static NvBool __nvoc_thunk_GpuResource_accesscntrShareCallback(struct AccessCounterBuffer *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_AccessCounterBuffer_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_accesscntrCheckMemInterUnmap(struct AccessCounterBuffer *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_AccessCounterBuffer_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_Notifier_accesscntrGetOrAllocNotifShare(struct AccessCounterBuffer *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_AccessCounterBuffer_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_accesscntrMapTo(struct AccessCounterBuffer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset), pParams);
-}
-
-static void __nvoc_thunk_Notifier_accesscntrSetNotificationShare(struct AccessCounterBuffer *pNotifier, struct NotifShare *pNotifShare) {
-    notifySetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_AccessCounterBuffer_Notifier.offset), pNotifShare);
-}
-
-static NvU32 __nvoc_thunk_RsResource_accesscntrGetRefCount(struct AccessCounterBuffer *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_accesscntrAddAdditionalDependants(struct RsClient *pClient, struct AccessCounterBuffer *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset), pReference);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_accesscntrControl_Prologue(struct AccessCounterBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_AccessCounterBuffer_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_accesscntrGetRegBaseOffsetAndSize(struct AccessCounterBuffer *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_AccessCounterBuffer_GpuResource.offset), pGpu, pOffset, pSize);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_accesscntrInternalControlForward(struct AccessCounterBuffer *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_AccessCounterBuffer_GpuResource.offset), command, pParams, size);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_accesscntrUnmapFrom(struct AccessCounterBuffer *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset), pParams);
-}
-
-static void __nvoc_thunk_RmResource_accesscntrControl_Epilogue(struct AccessCounterBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_AccessCounterBuffer_RmResource.offset), pCallContext, pParams);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_accesscntrGetInternalObjectHandle(struct AccessCounterBuffer *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_AccessCounterBuffer_GpuResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_accesscntrControl(struct AccessCounterBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_AccessCounterBuffer_GpuResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_accesscntrGetMemInterMapParams(struct AccessCounterBuffer *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_AccessCounterBuffer_RmResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_accesscntrGetMemoryMappingDescriptor(struct AccessCounterBuffer *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_AccessCounterBuffer_RmResource.offset), ppMemDesc);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_accesscntrControlFilter(struct AccessCounterBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_Notifier_accesscntrUnregisterEvent(struct AccessCounterBuffer *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_AccessCounterBuffer_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_accesscntrControlSerialization_Prologue(struct AccessCounterBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_AccessCounterBuffer_RmResource.offset), pCallContext, pParams);
-}
-
-static NvBool __nvoc_thunk_RsResource_accesscntrCanCopy(struct AccessCounterBuffer *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset));
-}
-
-static NvBool __nvoc_thunk_RsResource_accesscntrIsPartialUnmapSupported(struct AccessCounterBuffer *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_accesscntrPreDestruct(struct AccessCounterBuffer *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_accesscntrIsDuplicate(struct AccessCounterBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset), hMemory, pDuplicate);
-}
-
-static void __nvoc_thunk_RmResource_accesscntrControlSerialization_Epilogue(struct AccessCounterBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_AccessCounterBuffer_RmResource.offset), pCallContext, pParams);
-}
-
-static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_accesscntrGetNotificationListPtr(struct AccessCounterBuffer *pNotifier) {
-    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_AccessCounterBuffer_Notifier.offset));
-}
-
-static struct NotifShare *__nvoc_thunk_Notifier_accesscntrGetNotificationShare(struct AccessCounterBuffer *pNotifier) {
-    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_AccessCounterBuffer_Notifier.offset));
-}
-
-static NvBool __nvoc_thunk_RmResource_accesscntrAccessCallback(struct AccessCounterBuffer *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_AccessCounterBuffer_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
-}
-
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
@@ -343,12 +223,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_AccessCo
 #endif
     },
     {               /*  [7] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) accesscntrCtrlCmdAccessCntrBufferResetCounters_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
-        /*flags=*/      0x0u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+        /*flags=*/      0x40u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xc3650108u,
         /*paramSize=*/  sizeof(NVC365_CTRL_ACCESS_CNTR_BUFFER_RESET_COUNTERS_PARAMS),
@@ -389,6 +269,162 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_AccessCo
     },
 
 };
+
+// 3 down-thunk(s) defined to bridge methods in AccessCounterBuffer from superclasses
+
+// accesscntrMap: virtual override (res) base (gpures)
+static NV_STATUS __nvoc_down_thunk_AccessCounterBuffer_gpuresMap(struct GpuResource *pAccessCounterBuffer, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+    return accesscntrMap((struct AccessCounterBuffer *)(((unsigned char *) pAccessCounterBuffer) - __nvoc_rtti_AccessCounterBuffer_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+}
+
+// accesscntrUnmap: virtual override (res) base (gpures)
+static NV_STATUS __nvoc_down_thunk_AccessCounterBuffer_gpuresUnmap(struct GpuResource *pAccessCounterBuffer, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return accesscntrUnmap((struct AccessCounterBuffer *)(((unsigned char *) pAccessCounterBuffer) - __nvoc_rtti_AccessCounterBuffer_GpuResource.offset), pCallContext, pCpuMapping);
+}
+
+// accesscntrGetMapAddrSpace: virtual override (gpures) base (gpures)
+static NV_STATUS __nvoc_down_thunk_AccessCounterBuffer_gpuresGetMapAddrSpace(struct GpuResource *pAccessCounterBuffer, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return accesscntrGetMapAddrSpace((struct AccessCounterBuffer *)(((unsigned char *) pAccessCounterBuffer) - __nvoc_rtti_AccessCounterBuffer_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+
+// 27 up-thunk(s) defined to bridge methods in AccessCounterBuffer to superclasses
+
+// accesscntrControl: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_accesscntrControl(struct AccessCounterBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_AccessCounterBuffer_GpuResource.offset), pCallContext, pParams);
+}
+
+// accesscntrShareCallback: virtual inherited (gpures) base (gpures)
+static NvBool __nvoc_up_thunk_GpuResource_accesscntrShareCallback(struct AccessCounterBuffer *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_AccessCounterBuffer_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+}
+
+// accesscntrGetRegBaseOffsetAndSize: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_accesscntrGetRegBaseOffsetAndSize(struct AccessCounterBuffer *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_AccessCounterBuffer_GpuResource.offset), pGpu, pOffset, pSize);
+}
+
+// accesscntrInternalControlForward: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_accesscntrInternalControlForward(struct AccessCounterBuffer *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_AccessCounterBuffer_GpuResource.offset), command, pParams, size);
+}
+
+// accesscntrGetInternalObjectHandle: virtual inherited (gpures) base (gpures)
+static NvHandle __nvoc_up_thunk_GpuResource_accesscntrGetInternalObjectHandle(struct AccessCounterBuffer *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_AccessCounterBuffer_GpuResource.offset));
+}
+
+// accesscntrAccessCallback: virtual inherited (rmres) base (gpures)
+static NvBool __nvoc_up_thunk_RmResource_accesscntrAccessCallback(struct AccessCounterBuffer *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_AccessCounterBuffer_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+}
+
+// accesscntrGetMemInterMapParams: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_accesscntrGetMemInterMapParams(struct AccessCounterBuffer *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_AccessCounterBuffer_RmResource.offset), pParams);
+}
+
+// accesscntrCheckMemInterUnmap: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_accesscntrCheckMemInterUnmap(struct AccessCounterBuffer *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_AccessCounterBuffer_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+// accesscntrGetMemoryMappingDescriptor: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_accesscntrGetMemoryMappingDescriptor(struct AccessCounterBuffer *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_AccessCounterBuffer_RmResource.offset), ppMemDesc);
+}
+
+// accesscntrControlSerialization_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_accesscntrControlSerialization_Prologue(struct AccessCounterBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_AccessCounterBuffer_RmResource.offset), pCallContext, pParams);
+}
+
+// accesscntrControlSerialization_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_accesscntrControlSerialization_Epilogue(struct AccessCounterBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_AccessCounterBuffer_RmResource.offset), pCallContext, pParams);
+}
+
+// accesscntrControl_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_accesscntrControl_Prologue(struct AccessCounterBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_AccessCounterBuffer_RmResource.offset), pCallContext, pParams);
+}
+
+// accesscntrControl_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_accesscntrControl_Epilogue(struct AccessCounterBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_AccessCounterBuffer_RmResource.offset), pCallContext, pParams);
+}
+
+// accesscntrCanCopy: virtual inherited (res) base (gpures)
+static NvBool __nvoc_up_thunk_RsResource_accesscntrCanCopy(struct AccessCounterBuffer *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset));
+}
+
+// accesscntrIsDuplicate: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_accesscntrIsDuplicate(struct AccessCounterBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset), hMemory, pDuplicate);
+}
+
+// accesscntrPreDestruct: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_accesscntrPreDestruct(struct AccessCounterBuffer *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset));
+}
+
+// accesscntrControlFilter: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_accesscntrControlFilter(struct AccessCounterBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset), pCallContext, pParams);
+}
+
+// accesscntrIsPartialUnmapSupported: inline virtual inherited (res) base (gpures) body
+static NvBool __nvoc_up_thunk_RsResource_accesscntrIsPartialUnmapSupported(struct AccessCounterBuffer *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset));
+}
+
+// accesscntrMapTo: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_accesscntrMapTo(struct AccessCounterBuffer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset), pParams);
+}
+
+// accesscntrUnmapFrom: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_accesscntrUnmapFrom(struct AccessCounterBuffer *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset), pParams);
+}
+
+// accesscntrGetRefCount: virtual inherited (res) base (gpures)
+static NvU32 __nvoc_up_thunk_RsResource_accesscntrGetRefCount(struct AccessCounterBuffer *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset));
+}
+
+// accesscntrAddAdditionalDependants: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_accesscntrAddAdditionalDependants(struct RsClient *pClient, struct AccessCounterBuffer *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset), pReference);
+}
+
+// accesscntrGetNotificationListPtr: virtual inherited (notify) base (notify)
+static PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_accesscntrGetNotificationListPtr(struct AccessCounterBuffer *pNotifier) {
+    return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_AccessCounterBuffer_Notifier.offset));
+}
+
+// accesscntrGetNotificationShare: virtual inherited (notify) base (notify)
+static struct NotifShare * __nvoc_up_thunk_Notifier_accesscntrGetNotificationShare(struct AccessCounterBuffer *pNotifier) {
+    return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_AccessCounterBuffer_Notifier.offset));
+}
+
+// accesscntrSetNotificationShare: virtual inherited (notify) base (notify)
+static void __nvoc_up_thunk_Notifier_accesscntrSetNotificationShare(struct AccessCounterBuffer *pNotifier, struct NotifShare *pNotifShare) {
+    notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_AccessCounterBuffer_Notifier.offset), pNotifShare);
+}
+
+// accesscntrUnregisterEvent: virtual inherited (notify) base (notify)
+static NV_STATUS __nvoc_up_thunk_Notifier_accesscntrUnregisterEvent(struct AccessCounterBuffer *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
+    return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_AccessCounterBuffer_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
+}
+
+// accesscntrGetOrAllocNotifShare: virtual inherited (notify) base (notify)
+static NV_STATUS __nvoc_up_thunk_Notifier_accesscntrGetOrAllocNotifShare(struct AccessCounterBuffer *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
+    return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_AccessCounterBuffer_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
+}
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_AccessCounterBuffer = 
 {
@@ -433,117 +469,159 @@ __nvoc_ctor_AccessCounterBuffer_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_AccessCounterBuffer_1(AccessCounterBuffer *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
+    // accesscntrMap -- virtual override (res) base (gpures)
     pThis->__accesscntrMap__ = &accesscntrMap_IMPL;
+    pThis->__nvoc_base_GpuResource.__gpuresMap__ = &__nvoc_down_thunk_AccessCounterBuffer_gpuresMap;
 
+    // accesscntrUnmap -- virtual override (res) base (gpures)
     pThis->__accesscntrUnmap__ = &accesscntrUnmap_IMPL;
+    pThis->__nvoc_base_GpuResource.__gpuresUnmap__ = &__nvoc_down_thunk_AccessCounterBuffer_gpuresUnmap;
 
+    // accesscntrGetMapAddrSpace -- virtual override (gpures) base (gpures)
     pThis->__accesscntrGetMapAddrSpace__ = &accesscntrGetMapAddrSpace_IMPL;
+    pThis->__nvoc_base_GpuResource.__gpuresGetMapAddrSpace__ = &__nvoc_down_thunk_AccessCounterBuffer_gpuresGetMapAddrSpace;
 
+    // accesscntrCtrlCmdAccessCntrBufferReadGet -- exported (id=0xc3650101)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
     pThis->__accesscntrCtrlCmdAccessCntrBufferReadGet__ = &accesscntrCtrlCmdAccessCntrBufferReadGet_IMPL;
 #endif
 
+    // accesscntrCtrlCmdAccessCntrBufferReadPut -- exported (id=0xc3650103)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
     pThis->__accesscntrCtrlCmdAccessCntrBufferReadPut__ = &accesscntrCtrlCmdAccessCntrBufferReadPut_IMPL;
 #endif
 
+    // accesscntrCtrlCmdAccessCntrBufferWriteGet -- exported (id=0xc3650102)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
     pThis->__accesscntrCtrlCmdAccessCntrBufferWriteGet__ = &accesscntrCtrlCmdAccessCntrBufferWriteGet_IMPL;
 #endif
 
+    // accesscntrCtrlCmdAccessCntrBufferEnable -- exported (id=0xc3650104)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
     pThis->__accesscntrCtrlCmdAccessCntrBufferEnable__ = &accesscntrCtrlCmdAccessCntrBufferEnable_IMPL;
 #endif
 
+    // accesscntrCtrlCmdAccessCntrBufferGetSize -- exported (id=0xc3650105)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
     pThis->__accesscntrCtrlCmdAccessCntrBufferGetSize__ = &accesscntrCtrlCmdAccessCntrBufferGetSize_IMPL;
 #endif
 
+    // accesscntrCtrlCmdAccessCntrBufferGetRegisterMappings -- exported (id=0xc3650106)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
     pThis->__accesscntrCtrlCmdAccessCntrBufferGetRegisterMappings__ = &accesscntrCtrlCmdAccessCntrBufferGetRegisterMappings_IMPL;
 #endif
 
+    // accesscntrCtrlCmdAccessCntrBufferGetFullInfo -- exported (id=0xc3650107)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
     pThis->__accesscntrCtrlCmdAccessCntrBufferGetFullInfo__ = &accesscntrCtrlCmdAccessCntrBufferGetFullInfo_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
+    // accesscntrCtrlCmdAccessCntrBufferResetCounters -- exported (id=0xc3650108)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
     pThis->__accesscntrCtrlCmdAccessCntrBufferResetCounters__ = &accesscntrCtrlCmdAccessCntrBufferResetCounters_IMPL;
 #endif
 
+    // accesscntrCtrlCmdAccessCntrSetConfig -- exported (id=0xc3650109)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
     pThis->__accesscntrCtrlCmdAccessCntrSetConfig__ = &accesscntrCtrlCmdAccessCntrSetConfig_IMPL;
 #endif
 
+    // accesscntrCtrlCmdAccessCntrBufferEnableIntr -- exported (id=0xc365010b)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
     pThis->__accesscntrCtrlCmdAccessCntrBufferEnableIntr__ = &accesscntrCtrlCmdAccessCntrBufferEnableIntr_IMPL;
 #endif
 
-    pThis->__nvoc_base_GpuResource.__gpuresMap__ = &__nvoc_thunk_AccessCounterBuffer_gpuresMap;
+    // accesscntrControl -- virtual inherited (gpures) base (gpures)
+    pThis->__accesscntrControl__ = &__nvoc_up_thunk_GpuResource_accesscntrControl;
 
-    pThis->__nvoc_base_GpuResource.__gpuresUnmap__ = &__nvoc_thunk_AccessCounterBuffer_gpuresUnmap;
+    // accesscntrShareCallback -- virtual inherited (gpures) base (gpures)
+    pThis->__accesscntrShareCallback__ = &__nvoc_up_thunk_GpuResource_accesscntrShareCallback;
 
-    pThis->__nvoc_base_GpuResource.__gpuresGetMapAddrSpace__ = &__nvoc_thunk_AccessCounterBuffer_gpuresGetMapAddrSpace;
+    // accesscntrGetRegBaseOffsetAndSize -- virtual inherited (gpures) base (gpures)
+    pThis->__accesscntrGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_accesscntrGetRegBaseOffsetAndSize;
 
-    pThis->__accesscntrShareCallback__ = &__nvoc_thunk_GpuResource_accesscntrShareCallback;
+    // accesscntrInternalControlForward -- virtual inherited (gpures) base (gpures)
+    pThis->__accesscntrInternalControlForward__ = &__nvoc_up_thunk_GpuResource_accesscntrInternalControlForward;
 
-    pThis->__accesscntrCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_accesscntrCheckMemInterUnmap;
+    // accesscntrGetInternalObjectHandle -- virtual inherited (gpures) base (gpures)
+    pThis->__accesscntrGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_accesscntrGetInternalObjectHandle;
 
-    pThis->__accesscntrGetOrAllocNotifShare__ = &__nvoc_thunk_Notifier_accesscntrGetOrAllocNotifShare;
+    // accesscntrAccessCallback -- virtual inherited (rmres) base (gpures)
+    pThis->__accesscntrAccessCallback__ = &__nvoc_up_thunk_RmResource_accesscntrAccessCallback;
 
-    pThis->__accesscntrMapTo__ = &__nvoc_thunk_RsResource_accesscntrMapTo;
+    // accesscntrGetMemInterMapParams -- virtual inherited (rmres) base (gpures)
+    pThis->__accesscntrGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_accesscntrGetMemInterMapParams;
 
-    pThis->__accesscntrSetNotificationShare__ = &__nvoc_thunk_Notifier_accesscntrSetNotificationShare;
+    // accesscntrCheckMemInterUnmap -- virtual inherited (rmres) base (gpures)
+    pThis->__accesscntrCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_accesscntrCheckMemInterUnmap;
 
-    pThis->__accesscntrGetRefCount__ = &__nvoc_thunk_RsResource_accesscntrGetRefCount;
+    // accesscntrGetMemoryMappingDescriptor -- virtual inherited (rmres) base (gpures)
+    pThis->__accesscntrGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_accesscntrGetMemoryMappingDescriptor;
 
-    pThis->__accesscntrAddAdditionalDependants__ = &__nvoc_thunk_RsResource_accesscntrAddAdditionalDependants;
+    // accesscntrControlSerialization_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__accesscntrControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_accesscntrControlSerialization_Prologue;
 
-    pThis->__accesscntrControl_Prologue__ = &__nvoc_thunk_RmResource_accesscntrControl_Prologue;
+    // accesscntrControlSerialization_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__accesscntrControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_accesscntrControlSerialization_Epilogue;
 
-    pThis->__accesscntrGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_accesscntrGetRegBaseOffsetAndSize;
+    // accesscntrControl_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__accesscntrControl_Prologue__ = &__nvoc_up_thunk_RmResource_accesscntrControl_Prologue;
 
-    pThis->__accesscntrInternalControlForward__ = &__nvoc_thunk_GpuResource_accesscntrInternalControlForward;
+    // accesscntrControl_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__accesscntrControl_Epilogue__ = &__nvoc_up_thunk_RmResource_accesscntrControl_Epilogue;
 
-    pThis->__accesscntrUnmapFrom__ = &__nvoc_thunk_RsResource_accesscntrUnmapFrom;
+    // accesscntrCanCopy -- virtual inherited (res) base (gpures)
+    pThis->__accesscntrCanCopy__ = &__nvoc_up_thunk_RsResource_accesscntrCanCopy;
 
-    pThis->__accesscntrControl_Epilogue__ = &__nvoc_thunk_RmResource_accesscntrControl_Epilogue;
+    // accesscntrIsDuplicate -- virtual inherited (res) base (gpures)
+    pThis->__accesscntrIsDuplicate__ = &__nvoc_up_thunk_RsResource_accesscntrIsDuplicate;
 
-    pThis->__accesscntrGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_accesscntrGetInternalObjectHandle;
+    // accesscntrPreDestruct -- virtual inherited (res) base (gpures)
+    pThis->__accesscntrPreDestruct__ = &__nvoc_up_thunk_RsResource_accesscntrPreDestruct;
 
-    pThis->__accesscntrControl__ = &__nvoc_thunk_GpuResource_accesscntrControl;
+    // accesscntrControlFilter -- virtual inherited (res) base (gpures)
+    pThis->__accesscntrControlFilter__ = &__nvoc_up_thunk_RsResource_accesscntrControlFilter;
 
-    pThis->__accesscntrGetMemInterMapParams__ = &__nvoc_thunk_RmResource_accesscntrGetMemInterMapParams;
+    // accesscntrIsPartialUnmapSupported -- inline virtual inherited (res) base (gpures) body
+    pThis->__accesscntrIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_accesscntrIsPartialUnmapSupported;
 
-    pThis->__accesscntrGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_accesscntrGetMemoryMappingDescriptor;
+    // accesscntrMapTo -- virtual inherited (res) base (gpures)
+    pThis->__accesscntrMapTo__ = &__nvoc_up_thunk_RsResource_accesscntrMapTo;
 
-    pThis->__accesscntrControlFilter__ = &__nvoc_thunk_RsResource_accesscntrControlFilter;
+    // accesscntrUnmapFrom -- virtual inherited (res) base (gpures)
+    pThis->__accesscntrUnmapFrom__ = &__nvoc_up_thunk_RsResource_accesscntrUnmapFrom;
 
-    pThis->__accesscntrUnregisterEvent__ = &__nvoc_thunk_Notifier_accesscntrUnregisterEvent;
+    // accesscntrGetRefCount -- virtual inherited (res) base (gpures)
+    pThis->__accesscntrGetRefCount__ = &__nvoc_up_thunk_RsResource_accesscntrGetRefCount;
 
-    pThis->__accesscntrControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_accesscntrControlSerialization_Prologue;
+    // accesscntrAddAdditionalDependants -- virtual inherited (res) base (gpures)
+    pThis->__accesscntrAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_accesscntrAddAdditionalDependants;
 
-    pThis->__accesscntrCanCopy__ = &__nvoc_thunk_RsResource_accesscntrCanCopy;
+    // accesscntrGetNotificationListPtr -- virtual inherited (notify) base (notify)
+    pThis->__accesscntrGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_accesscntrGetNotificationListPtr;
 
-    pThis->__accesscntrIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_accesscntrIsPartialUnmapSupported;
+    // accesscntrGetNotificationShare -- virtual inherited (notify) base (notify)
+    pThis->__accesscntrGetNotificationShare__ = &__nvoc_up_thunk_Notifier_accesscntrGetNotificationShare;
 
-    pThis->__accesscntrPreDestruct__ = &__nvoc_thunk_RsResource_accesscntrPreDestruct;
+    // accesscntrSetNotificationShare -- virtual inherited (notify) base (notify)
+    pThis->__accesscntrSetNotificationShare__ = &__nvoc_up_thunk_Notifier_accesscntrSetNotificationShare;
 
-    pThis->__accesscntrIsDuplicate__ = &__nvoc_thunk_RsResource_accesscntrIsDuplicate;
+    // accesscntrUnregisterEvent -- virtual inherited (notify) base (notify)
+    pThis->__accesscntrUnregisterEvent__ = &__nvoc_up_thunk_Notifier_accesscntrUnregisterEvent;
 
-    pThis->__accesscntrControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_accesscntrControlSerialization_Epilogue;
+    // accesscntrGetOrAllocNotifShare -- virtual inherited (notify) base (notify)
+    pThis->__accesscntrGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_accesscntrGetOrAllocNotifShare;
+} // End __nvoc_init_funcTable_AccessCounterBuffer_1 with approximately 43 basic block(s).
 
-    pThis->__accesscntrGetNotificationListPtr__ = &__nvoc_thunk_Notifier_accesscntrGetNotificationListPtr;
 
-    pThis->__accesscntrGetNotificationShare__ = &__nvoc_thunk_Notifier_accesscntrGetNotificationShare;
-
-    pThis->__accesscntrAccessCallback__ = &__nvoc_thunk_RmResource_accesscntrAccessCallback;
-}
-
+// Initialize vtable(s) for 40 virtual method(s).
 void __nvoc_init_funcTable_AccessCounterBuffer(AccessCounterBuffer *pThis) {
+
+    // Initialize vtable(s) with 40 per-object function pointer(s).
     __nvoc_init_funcTable_AccessCounterBuffer_1(pThis);
 }
 

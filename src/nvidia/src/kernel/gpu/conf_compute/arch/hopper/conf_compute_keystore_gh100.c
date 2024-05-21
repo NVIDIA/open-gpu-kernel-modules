@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -353,12 +353,12 @@ confComputeKeyStoreRetrieveViaKeyId_GH100
                 }
                 else
                 {
-                    portMemCopy(keyMaterialBundle->encryptBundle.key,
-                                sizeof(keyMaterialBundle->encryptBundle.key),
+                    portMemCopy(keyMaterialBundle->decryptBundle.key,
+                                sizeof(keyMaterialBundle->decryptBundle.key),
                                 (*pKeyStore)[slotNumber + 1].cryptBundle.key,
                                 sizeof((*pKeyStore)[slotNumber + 1].cryptBundle.key));
-                    portMemCopy(keyMaterialBundle->encryptBundle.ivMask,
-                                sizeof(keyMaterialBundle->encryptBundle.ivMask),
+                    portMemCopy(keyMaterialBundle->decryptBundle.ivMask,
+                                sizeof(keyMaterialBundle->decryptBundle.ivMask),
                                 (*pKeyStore)[slotNumber + 1].cryptBundle.ivMask,
                                 sizeof((*pKeyStore)[slotNumber + 1].cryptBundle.ivMask));
                 }
@@ -420,7 +420,7 @@ confComputeKeyStoreUpdateKey_GH100(ConfidentialCompute *pConfCompute, NvU32 glob
                                     (const uint8_t *)(CC_GKEYID_GET_STR(globalKeyId)),
                                     (size_t)portStringLength(CC_GKEYID_GET_STR(globalKeyId)),
                                     pKey,
-                                    keySize));
+                                    keySize))
     {
         return NV_ERR_FATAL_ERROR;
     }

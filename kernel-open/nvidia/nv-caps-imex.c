@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,6 +24,7 @@
 #include "nv-linux.h"
 
 extern int NVreg_ImexChannelCount;
+extern int NVreg_CreateImexChannel0;
 
 static int nv_caps_imex_open(struct inode *inode, struct file *file)
 {
@@ -104,6 +105,10 @@ int NV_API_CALL nv_caps_imex_init(void)
     if (NVreg_ImexChannelCount == 0)
     {
         nv_printf(NV_DBG_INFO, "nv-caps-imex is disabled.\n");
+
+        // Disable channel creation as well
+        NVreg_CreateImexChannel0 = 0;
+
         return 0;
     }
 

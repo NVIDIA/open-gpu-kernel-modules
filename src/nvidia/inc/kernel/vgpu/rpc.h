@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -46,66 +46,67 @@
 typedef struct ContextDma ContextDma;
 
 #define NV_RM_RPC_ALLOC_SHARE_DEVICE_FWCLIENT(pGpu, hclient, hdevice, hclientshare, htargetclient, htargetdevice, hclass, \
-                                        allocflags, vasize, vamode, bFirstDevice, status)     \
-    do                                                                                        \
-    {                                                                                         \
-        RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);                                        \
-        NV0000_ALLOC_PARAMETERS root_alloc_params = {0};                                      \
-                                                                                              \
-        root_alloc_params.hClient = hclient;                                                  \
-                                                                                              \
-        if (!IsT234DorBetter(pGpu))                                                           \
-        {                                                                                     \
-            RmClient *pClient = serverutilGetClientUnderLock(hclient);                        \
-                                                                                              \
-            /* Get process ID from the client database */                                     \
-            if (pClient != NULL)                                                              \
-            {                                                                                 \
-                CALL_CONTEXT *pCallContext = resservGetTlsCallContext();                      \
-                NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);              \
-                                                                                              \
-                if (pCallContext->secInfo.privLevel >= RS_PRIV_LEVEL_KERNEL)                  \
-                {                                                                             \
-                    root_alloc_params.processID = KERNEL_PID;                                 \
-                }                                                                             \
-                else                                                                          \
-                {                                                                             \
-                    root_alloc_params.processID = pClient->ProcID;                            \
-                    NV_ASSERT(root_alloc_params.processID == osGetCurrentProcess());          \
-                }                                                                             \
-            }                                                                                 \
-            else                                                                              \
-                NV_ASSERT(0);                                                                 \
-        }                                                                                     \
-                                                                                              \
-        if (bFirstDevice)                                                                     \
-        {                                                                                     \
-            status = pRmApi->AllocWithHandle(pRmApi, hclient, NV01_NULL_OBJECT,               \
-                                             NV01_NULL_OBJECT, NV01_ROOT,                     \
-                                             &root_alloc_params, sizeof(root_alloc_params));  \
-        }                                                                                     \
-        else                                                                                  \
-        {                                                                                     \
-            status = NV_OK;                                                                   \
-        }                                                                                     \
-                                                                                              \
-        if (status == NV_OK)                                                                  \
-        {                                                                                     \
-            NV0080_ALLOC_PARAMETERS device_alloc_params = {0};                                \
-                                                                                              \
-            device_alloc_params.hClientShare = hclientshare;                                  \
-            device_alloc_params.hTargetClient = htargetclient;                                \
-            device_alloc_params.hTargetDevice = htargetdevice;                                \
-            device_alloc_params.flags = allocflags;                                           \
-            device_alloc_params.vaSpaceSize = vasize;                                         \
-                                                                                              \
-            status = pRmApi->AllocWithHandle(pRmApi, hclient, hclient, hdevice,               \
-                                                hclass, &device_alloc_params,                 \
-                                                sizeof(device_alloc_params));                 \
-        }                                                                                     \
-        else                                                                                  \
-            NV_ASSERT(0);                                                                     \
-    }                                                                                         \
+                                        allocflags, vasize, vamode, bFirstDevice, status)          \
+    do                                                                                             \
+    {                                                                                              \
+        RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);                                             \
+        NV0000_ALLOC_PARAMETERS root_alloc_params = {0};                                           \
+                                                                                                   \
+        root_alloc_params.hClient = hclient;                                                       \
+                                                                                                   \
+        if (!IsT234DorBetter(pGpu))                                                                \
+        {                                                                                          \
+            RmClient *pClient = serverutilGetClientUnderLock(hclient);                             \
+                                                                                                   \
+            /* Get process ID from the client database */                                          \
+            if (pClient != NULL)                                                                   \
+            {                                                                                      \
+                CALL_CONTEXT *pCallContext = resservGetTlsCallContext();                           \
+                NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);                   \
+                                                                                                   \
+                if (RMCFG_FEATURE_PLATFORM_UNIX &&                                                     \
+                   (pCallContext->secInfo.privLevel >= RS_PRIV_LEVEL_KERNEL))                      \
+                {                                                                                  \
+                    root_alloc_params.processID = KERNEL_PID;                                      \
+                }                                                                                  \
+                else                                                                               \
+                {                                                                                  \
+                    root_alloc_params.processID = pClient->ProcID;                                 \
+                    NV_ASSERT(root_alloc_params.processID == osGetCurrentProcess());               \
+                }                                                                                  \
+            }                                                                                      \
+            else                                                                                   \
+                NV_ASSERT(0);                                                                      \
+        }                                                                                          \
+                                                                                                   \
+        if (bFirstDevice)                                                                          \
+        {                                                                                          \
+            status = pRmApi->AllocWithHandle(pRmApi, hclient, NV01_NULL_OBJECT,                    \
+                                             NV01_NULL_OBJECT, NV01_ROOT,                          \
+                                             &root_alloc_params, sizeof(root_alloc_params));       \
+        }                                                                                          \
+        else                                                                                       \
+        {                                                                                          \
+            status = NV_OK;                                                                        \
+        }                                                                                          \
+                                                                                                   \
+        if (status == NV_OK)                                                                       \
+        {                                                                                          \
+            NV0080_ALLOC_PARAMETERS device_alloc_params = {0};                                     \
+                                                                                                   \
+            device_alloc_params.hClientShare = hclientshare;                                       \
+            device_alloc_params.hTargetClient = htargetclient;                                     \
+            device_alloc_params.hTargetDevice = htargetdevice;                                     \
+            device_alloc_params.flags = allocflags;                                                \
+            device_alloc_params.vaSpaceSize = vasize;                                              \
+                                                                                                   \
+            status = pRmApi->AllocWithHandle(pRmApi, hclient, hclient, hdevice,                    \
+                                                hclass, &device_alloc_params,                      \
+                                                sizeof(device_alloc_params));                      \
+        }                                                                                          \
+        else                                                                                       \
+            NV_ASSERT(0);                                                                          \
+    }                                                                                              \
     while (0)
 
 #define NV_RM_RPC_ALLOC_MEMORY(pGpu, hclient, hdevice, hmemory, hclass,                 \
@@ -238,19 +239,6 @@ typedef struct ContextDma ContextDma;
             }                                                                       \
         } else if (pRpc == NULL)                                                    \
             status = NV_ERR_INSUFFICIENT_RESOURCES;                                 \
-    } while (0)
-
-#define NV_RM_RPC_API_CONTROL(pGpu, hClient, hObject, cmd, pParams, paramSize, status)  \
-    do                                                                                  \
-    {                                                                                   \
-        OBJRPC *pRpc = GPU_GET_RPC(pGpu);                                               \
-        NV_ASSERT(pRpc != NULL);                                                        \
-        if ((status == NV_OK) && (pRpc != NULL))                                        \
-        {                                                                               \
-            status = rpcRmApiControl_HAL(pGpu, pRpc, hClient, hObject,                  \
-                                         cmd, pParams, paramSize);                      \
-        } else if (pRpc == NULL)                                                        \
-            status = NV_ERR_INSUFFICIENT_RESOURCES;                                     \
     } while (0)
 
 #define NV_RM_RPC_ALLOC_CHANNEL(pGpu, hclient, hparent, hchannel, hclass,               \
@@ -606,15 +594,6 @@ static inline void NV_RM_RPC_PMA_SCRUBBER_SHARED_BUFFER_GUEST_PAGES_OPERATION(OB
         else if (pRpc == NULL)                                                 \
             status = NV_ERR_INSUFFICIENT_RESOURCES;                            \
     } while (0)
-
-#define NV_RM_RPC_RMFS_INIT(pGpu, statusQueueMemDesc, status) do {} while(0)
-
-#define NV_RM_RPC_RMFS_CLOSE_QUEUE(pGpu, status)  do {} while(0)
-
-#define NV_RM_RPC_RMFS_CLEANUP(pGpu, status)  do {} while(0)
-
-#define NV_RM_RPC_RMFS_TEST(pGpu, numReps, testData1, testData2,              \
-                            testData3, status)  do {} while(0)
 
 void teardownSysmemPfnBitMap(OBJGPU *pGpu, OBJVGPU *pVGpu);
 

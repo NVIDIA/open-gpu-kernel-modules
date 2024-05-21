@@ -514,7 +514,6 @@ NV_STATUS nv_alloc_system_pages(
     struct device *dev = at->dev;
     dma_addr_t bus_addr;
 
-    // Order should be zero except for EGM allocations.
     unsigned int alloc_page_size = PAGE_SIZE << at->order;
     unsigned int alloc_num_pages = NV_CEIL(at->num_pages * PAGE_SIZE, alloc_page_size);
 
@@ -523,7 +522,7 @@ NV_STATUS nv_alloc_system_pages(
     unsigned int os_pages_in_page = alloc_page_size / PAGE_SIZE;
 
     nv_printf(NV_DBG_MEMINFO,
-            "NVRM: VM: %u: %u order0 pages, %u order\n", __FUNCTION__, at->num_pages, at->order);
+            "NVRM: VM: %s: %u order0 pages, %u order\n", __FUNCTION__, at->num_pages, at->order);
 
     gfp_mask = nv_compute_gfp_mask(nv, at);
 
@@ -641,7 +640,6 @@ void nv_free_system_pages(
     unsigned int i;
     struct device *dev = at->dev;
 
-    // Order should be zero except for EGM allocations.
     unsigned int alloc_page_size = PAGE_SIZE << at->order;
     unsigned int os_pages_in_page = alloc_page_size / PAGE_SIZE;
 

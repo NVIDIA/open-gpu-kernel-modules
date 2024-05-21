@@ -62,7 +62,6 @@ performKeyRotation_WORKITEM
     NvU32 h2dKey = pWorkItemInfo->h2dKey;
     NvU32 d2hKey = pWorkItemInfo->d2hKey;
     KernelChannel *pKernelChannel = NULL;
-    NvU16 notifyStatus = 0x0;
     CHANNEL_ITERATOR iter = {0};
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV2080_CTRL_INTERNAL_CONF_COMPUTE_RC_CHANNELS_FOR_KEY_ROTATION_PARAMS params = {0};
@@ -88,17 +87,11 @@ performKeyRotation_WORKITEM
         {
             if (!kchannelIsDisabledForKeyRotation(pGpu, pKernelChannel))
             {
-                // update notifier memory
-                notifyStatus =
-                    FLD_SET_DRF(_CHANNELGPFIFO, _NOTIFICATION_STATUS, _IN_PROGRESS, _FALSE, notifyStatus);
-
-                notifyStatus =
-                    FLD_SET_DRF_NUM(_CHANNELGPFIFO, _NOTIFICATION_STATUS, _VALUE, pWorkItemInfo->status, notifyStatus);
-
                 NV_ASSERT_OK(kchannelUpdateNotifierMem(pKernelChannel, NV_CHANNELGPFIFO_NOTIFICATION_TYPE_KEY_ROTATION_STATUS,
-                                                       0, 0, notifyStatus));
+                                                       0, 0, (NvU32)pWorkItemInfo->status));
 
-                NV_PRINTF(LEVEL_INFO, "chid 0x%x was NOT disabled for key rotation, writing notifier with val 0x%x\n", kchannelGetDebugTag(pKernelChannel), (NvU32)notifyStatus);
+                NV_PRINTF(LEVEL_INFO, "chid 0x%x was NOT disabled for key rotation, writing notifier with val 0x%x\n", 
+                    kchannelGetDebugTag(pKernelChannel), (NvU32)pWorkItemInfo->status);
                 // send events to clients if registered
                 kchannelNotifyEvent(pKernelChannel, NVC86F_NOTIFIERS_KEY_ROTATION, 0, pWorkItemInfo->status, NULL, 0);
             }
@@ -150,7 +143,6 @@ performKeyRotationByKeyPair
 )
 {
     KernelChannel *pKernelChannel = NULL;
-    NvU16  notifyStatus = 0x0;
     CHANNEL_ITERATOR iter = {0};
     NvU32 h2dIndex, d2hIndex;
 
@@ -162,19 +154,13 @@ performKeyRotationByKeyPair
     {
         if (kchannelIsDisabledForKeyRotation(pGpu, pKernelChannel))
         {
-            // update notifier memory
-            notifyStatus =
-                FLD_SET_DRF(_CHANNELGPFIFO, _NOTIFICATION_STATUS, _IN_PROGRESS, _FALSE, notifyStatus);
-
-            notifyStatus =
-                FLD_SET_DRF_NUM(_CHANNELGPFIFO, _NOTIFICATION_STATUS, _VALUE, (NvU16)KEY_ROTATION_STATUS_IDLE, notifyStatus);
-
             NV_ASSERT_OK(kchannelUpdateNotifierMem(pKernelChannel, NV_CHANNELGPFIFO_NOTIFICATION_TYPE_KEY_ROTATION_STATUS,
-                                                   0, 0, notifyStatus));
+                                                   0, 0, (NvU32)KEY_ROTATION_STATUS_IDLE));
 
             // send events to clients if registered
             kchannelNotifyEvent(pKernelChannel, NVC86F_NOTIFIERS_KEY_ROTATION, 0, (NvU16)KEY_ROTATION_STATUS_IDLE, NULL, 0);
-            NV_PRINTF(LEVEL_INFO, "chid 0x%x was disabled for key rotation, writing notifier with val 0x%x\n", kchannelGetDebugTag(pKernelChannel), (NvU32)notifyStatus);
+            NV_PRINTF(LEVEL_INFO, "chid 0x%x was disabled for key rotation, writing notifier with KEY_ROTATION_STATUS_IDLE\n",
+                kchannelGetDebugTag(pKernelChannel));
 
             // also reset channel sw state
             kchannelDisableForKeyRotation(pGpu, pKernelChannel, NV_FALSE);
@@ -186,13 +172,14 @@ performKeyRotationByKeyPair
             portMemSet(pKernelChannel->pEncStatsBuf, 0, sizeof(CC_CRYPTOBUNDLE_STATS));
     }
 
-    // reset KR state
-    pConfCompute->keyRotationCallbackCount = 1;
-
-    // clear aggregate and freed channel stats
     NV_ASSERT_OK_OR_RETURN(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, h2dKey, &h2dIndex));
     NV_ASSERT_OK_OR_RETURN(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, d2hKey, &d2hIndex));
 
+    // reset KR state
+    pConfCompute->keyRotationCallbackCount[h2dIndex] = 1;
+    pConfCompute->keyRotationCallbackCount[d2hIndex] = 1;
+
+    // clear aggregate and freed channel stats
     pConfCompute->aggregateStats[h2dIndex].totalBytesEncrypted = 0;
     pConfCompute->aggregateStats[h2dIndex].totalEncryptOps     = 0;
     pConfCompute->aggregateStats[d2hIndex].totalBytesEncrypted = 0;
@@ -209,7 +196,7 @@ performKeyRotationByKeyPair
 
 /*!
  * Checks if all channels corresponding to key pair
- * are disabled and schedules key rotation.
+ * are disabled and performs key rotation.
  *
  * @param[in]   pGpu            : OBJGPU pointer
  * @param[in]   pConfCompute    : conf comp pointer
@@ -217,7 +204,7 @@ performKeyRotationByKeyPair
  * @param[out]  d2hKey          : d2h key
  */
 NV_STATUS
-confComputeCheckAndScheduleKeyRotation_IMPL
+confComputeCheckAndPerformKeyRotation_IMPL
 (
     OBJGPU *pGpu,
     ConfidentialCompute *pConfCompute,
@@ -248,33 +235,36 @@ confComputeCheckAndScheduleKeyRotation_IMPL
     if (bIdle)
     {
         NV_PRINTF(LEVEL_INFO, "scheduling KR for h2d key = 0x%x\n", h2dKey);
-        NV_ASSERT_OK_OR_RETURN(confComputeScheduleKeyRotationWorkItem(pGpu, pConfCompute, h2dKey, d2hKey));
+        NV_ASSERT_OK_OR_RETURN(confComputePerformKeyRotation(pGpu, pConfCompute, h2dKey, d2hKey, NV_FALSE));
     }
     return NV_OK;
 }
 
 /*!
- * schedules key rotation workitem
+ * Schedules key rotation workitem/performs key rotation
  *
- * @param[in]   pGpu            : OBJGPU pointer
- * @param[in]   pConfCompute    : conf comp pointer
- * @param[out]  h2dKey          : h2d key
- * @param[out]  d2hKey          : d2h key
+ * @param[in]  pGpu             : OBJGPU pointer
+ * @param[in]  pConfCompute     : conf comp pointer
+ * @param[in]  h2dKey           : h2d key
+ * @param[in]  d2hKey           : d2h key
+ * @param[in]  bWorkItem        : schedule work item if called from top half (1 sec callback)
  */
 NV_STATUS
-confComputeScheduleKeyRotationWorkItem_IMPL
+confComputePerformKeyRotation_IMPL
 (
     OBJGPU *pGpu,
     ConfidentialCompute *pConfCompute,
     NvU32 h2dKey,
-    NvU32 d2hKey
+    NvU32 d2hKey,
+    NvBool bWorkItem
 )
 {
-    KEY_ROTATION_STATUS status;
-    NV_ASSERT_OK_OR_RETURN(confComputeGetKeyRotationStatus(pConfCompute, h2dKey, &status));
-    if (status == KEY_ROTATION_STATUS_IN_PROGRESS)
+    KEY_ROTATION_STATUS krStatus;
+    NV_STATUS status = NV_OK;
+    NV_ASSERT_OK_OR_RETURN(confComputeGetKeyRotationStatus(pConfCompute, h2dKey, &krStatus));
+    if (krStatus == KEY_ROTATION_STATUS_IN_PROGRESS)
     {
-        NV_PRINTF(LEVEL_INFO, "Key rotation is already scheduled for key 0x%x\n", h2dKey);
+        NV_PRINTF(LEVEL_ERROR, "Key rotation is already scheduled for key 0x%x\n", h2dKey);
         return NV_OK;
     }
 
@@ -283,24 +273,41 @@ confComputeScheduleKeyRotationWorkItem_IMPL
     NV_ASSERT_OR_RETURN(pWorkItemInfo != NULL, NV_ERR_NO_MEMORY);
     pWorkItemInfo->h2dKey = h2dKey;
     pWorkItemInfo->d2hKey = d2hKey;
-    pWorkItemInfo->status = status;
-    NV_ASSERT_OK_OR_RETURN(confComputeSetKeyRotationStatus(pConfCompute, h2dKey, KEY_ROTATION_STATUS_IN_PROGRESS));
+    pWorkItemInfo->status = krStatus;
+    NV_ASSERT_OK_OR_GOTO(status, confComputeSetKeyRotationStatus(pConfCompute, h2dKey, KEY_ROTATION_STATUS_IN_PROGRESS), cleanup);
 
     // cancel timeout event in case it was scheduled
-    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
-    NvU32 h2dIndex;
-    NV_ASSERT_OK_OR_RETURN(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, h2dKey, &h2dIndex));
-    if (pConfCompute->ppKeyRotationTimer[h2dIndex] != NULL)
+    if (krStatus != KEY_ROTATION_STATUS_FAILED_TIMEOUT)
     {
-        tmrEventCancel(pTmr, pConfCompute->ppKeyRotationTimer[h2dIndex]);
+        OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
+        NvU32 h2dIndex;
+        NV_ASSERT_OK_OR_GOTO(status, confComputeGetKeySlotFromGlobalKeyId(pConfCompute, h2dKey, &h2dIndex), cleanup);
+        if (pConfCompute->ppKeyRotationTimer[h2dIndex] != NULL)
+        {
+            tmrEventCancel(pTmr, pConfCompute->ppKeyRotationTimer[h2dIndex]);
+        }
     }
 
-    // Queue workitem to perform key rotation
-    NV_ASSERT_OK_OR_RETURN(osQueueWorkItemWithFlags(pGpu, performKeyRotation_WORKITEM, (void*)pWorkItemInfo,
-                                                    (OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
-                                                     OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW |
-                                                     OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS_RW)));
-    return NV_OK;
+    if (bWorkItem)
+    {
+        // Queue workitem to perform key rotation
+        NV_ASSERT_OK_OR_GOTO(status, osQueueWorkItemWithFlags(pGpu, performKeyRotation_WORKITEM, (void*)pWorkItemInfo,
+                                                              (OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
+                                                               OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW |
+                                                               OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS)), cleanup);
+    }
+    else
+    {
+        performKeyRotation_WORKITEM(gpuGetInstance(pGpu), (void*)pWorkItemInfo);
+        portMemFree(pWorkItemInfo);
+    }
+
+cleanup:
+    if ((status != NV_OK) && (pWorkItemInfo != NULL))
+    {
+        portMemFree(pWorkItemInfo);
+    }
+    return status;
 }
 
 /*!

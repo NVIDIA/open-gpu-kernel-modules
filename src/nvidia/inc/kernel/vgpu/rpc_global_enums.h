@@ -1,6 +1,7 @@
 #ifndef _RPC_GLOBAL_ENUMS_H_
 #define _RPC_GLOBAL_ENUMS_H_
 
+// Deprecated RPC's numbers cannot be reused in order to not break compatibility
 #ifndef X
 #    define X(UNIT, RPC, VAL) NV_VGPU_MSG_FUNCTION_##RPC = VAL,
 #    define DEFINING_X_IN_RPC_GLOBAL_ENUMS_H
@@ -22,7 +23,7 @@ enum {
     X(RM, UNMAP_MEMORY,                                           13)
     X(RM, MAP_MEMORY_DMA,                                         14)
     X(RM, UNMAP_MEMORY_DMA,                                       15)
-    X(RM, GET_EDID,                                               16)
+    X(RM, GET_EDID,                                               16) // deprecated
     X(RM, ALLOC_DISP_CHANNEL,                                     17)
     X(RM, ALLOC_DISP_OBJECT,                                      18)
     X(RM, ALLOC_SUBDEVICE,                                        19)
@@ -45,7 +46,7 @@ enum {
     X(RM, SIM_ESCAPE_WRITE,                                       36)
     X(RM, SIM_MANAGE_DISPLAY_CONTEXT_DMA,                         37)
     X(RM, FREE_VIDMEM_VIRT,                                       38)
-    X(RM, PERF_GET_PSTATE_INFO,                                   39) // deprecated for vGPU, used by GSP
+    X(RM, PERF_GET_PSTATE_INFO,                                   39) // deprecated
     X(RM, PERF_GET_PERFMON_SAMPLE,                                40)
     X(RM, PERF_GET_VIRTUAL_PSTATE_INFO,                           41) // deprecated
     X(RM, PERF_GET_LEVEL_INFO,                                    42)
@@ -72,10 +73,10 @@ enum {
     X(RM, VGPU_PF_REG_READ32,                                     63) // deprecated
     X(RM, SET_GUEST_SYSTEM_INFO_EXT,                              64)
     X(GSP, GET_GSP_STATIC_INFO,                                   65)
-    X(RM, RMFS_INIT,                                              66)
-    X(RM, RMFS_CLOSE_QUEUE,                                       67)
-    X(RM, RMFS_CLEANUP,                                           68)
-    X(RM, RMFS_TEST,                                              69)
+    X(RM, RMFS_INIT,                                              66) // deprecated
+    X(RM, RMFS_CLOSE_QUEUE,                                       67) // deprecated
+    X(RM, RMFS_CLEANUP,                                           68) // deprecated
+    X(RM, RMFS_TEST,                                              69) // deprecated
     X(RM, UPDATE_BAR_PDE,                                         70)
     X(RM, CONTINUATION_RECORD,                                    71)
     X(RM, GSP_SET_SYSTEM_INFO,                                    72)
@@ -129,7 +130,7 @@ enum {
     X(RM, CTRL_DMA_SET_DEFAULT_VASPACE,                           120)
     X(RM, CTRL_GET_CE_PCE_MASK,                                   121)
     X(RM, CTRL_GET_ZBC_CLEAR_TABLE_ENTRY,                         122)
-    X(RM, CTRL_GET_NVLINK_PEER_ID_MASK,                           123)
+    X(RM, CTRL_GET_NVLINK_PEER_ID_MASK,                           123) // deprecated
     X(RM, CTRL_GET_NVLINK_STATUS,                                 124)
     X(RM, CTRL_GET_P2P_CAPS,                                      125)
     X(RM, CTRL_GET_P2P_CAPS_MATRIX,                               126)
@@ -217,7 +218,8 @@ enum {
     X(RM, RESERVED_208,                                           208)
     X(RM, CTRL_GPU_GET_INFO_V2,                                   209)
     X(RM, GET_BRAND_CAPS,                                         210)
-    X(RM, NUM_FUNCTIONS,                                          211)
+    X(RM, CTRL_CMD_NVLINK_INBAND_SEND_DATA,                       211)
+    X(RM, NUM_FUNCTIONS,                                          212)
 #ifdef DEFINING_X_IN_RPC_GLOBAL_ENUMS_H
 };
 #   undef X
@@ -263,7 +265,8 @@ enum {
     E(UPDATE_GSP_TRACE,                                       0x101e)
     E(NVLINK_FATAL_ERROR_RECOVERY,                            0x101f)
     E(GSP_POST_NOCAT_RECORD,                                  0x1020)
-    E(NUM_EVENTS,                                             0x1021)
+    E(FECS_ERROR,                                             0x1021)
+    E(NUM_EVENTS,                                             0x1022)
 #ifdef DEFINING_E_IN_RPC_GLOBAL_ENUMS_H
 };
 #   undef E

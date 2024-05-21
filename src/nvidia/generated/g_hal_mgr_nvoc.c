@@ -93,10 +93,13 @@ __nvoc_ctor_OBJHALMGR_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_OBJHALMGR_1(OBJHALMGR *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-}
+} // End __nvoc_init_funcTable_OBJHALMGR_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_OBJHALMGR(OBJHALMGR *pThis) {
     __nvoc_init_funcTable_OBJHALMGR_1(pThis);
 }

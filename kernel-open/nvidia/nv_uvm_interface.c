@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1478,6 +1478,15 @@ NV_STATUS nvUvmInterfacePagingChannelPushStream(UvmGpuPagingChannelHandle channe
 }
 EXPORT_SYMBOL(nvUvmInterfacePagingChannelPushStream);
 
+NV_STATUS nvUvmInterfaceKeyRotationChannelDisable(uvmGpuChannelHandle channelList[],
+                                                  NvU32 channeListCount)
+{
+    nvidia_stack_t *sp = nvUvmGetSafeStack();
+
+    return rm_gpu_ops_key_rotation_channel_disable(sp, ((gpuChannelHandle *)channelList), channeListCount);
+}
+EXPORT_SYMBOL(nvUvmInterfaceKeyRotationChannelDisable);
+
 NV_STATUS nvUvmInterfaceCslInitContext(UvmCslContext *uvmCslContext,
                                        uvmGpuChannelHandle channel)
 {
@@ -1516,12 +1525,13 @@ void nvUvmInterfaceDeinitCslContext(UvmCslContext *uvmCslContext)
 }
 EXPORT_SYMBOL(nvUvmInterfaceDeinitCslContext);
 
-NV_STATUS nvUvmInterfaceCslUpdateContext(UvmCslContext *uvmCslContext)
+NV_STATUS nvUvmInterfaceCslUpdateContext(UvmCslContext *contextList[],
+                                         NvU32 contextListCount)
 {
     NV_STATUS status;
-    nvidia_stack_t *sp = uvmCslContext->nvidia_stack;
+    nvidia_stack_t *sp = contextList[0]->nvidia_stack;
 
-    status = rm_gpu_ops_ccsl_context_update(sp, uvmCslContext->ctx);
+    status = rm_gpu_ops_ccsl_context_update(sp, contextList, contextListCount);
 
     return status;
 }

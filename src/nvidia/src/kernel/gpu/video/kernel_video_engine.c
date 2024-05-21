@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,7 +26,9 @@
 #include "kernel/gpu/mem_mgr/mem_desc.h"
 #include "kernel/gpu/bus/kern_bus.h"
 #include "kernel/os/os.h"
+#include "kernel/virtualization/hypervisor/hypervisor.h"
 #include "nvrm_registry.h"
+#include "vgpu/sdk-structures.h"
 
 KernelVideoEngine *
 kvidengFromEngDesc
@@ -51,10 +53,30 @@ kvidengIsVideoTraceLogSupported_IMPL
     OBJGPU *pGpu
 )
 {
-    NvBool bSupported = !IS_VIRTUAL(pGpu) && !RMCFG_FEATURE_PLATFORM_MODS &&
+    NvBool bSupported = !hypervisorIsVgxHyper() &&
+                        !gpuIsSriovEnabled(pGpu) &&
+                        !RMCFG_FEATURE_MODS_FEATURES &&
                         !IS_SIMULATION(pGpu);
 
     bSupported &= !gpuIsCCFeatureEnabled(pGpu);
+
+    if (IS_VIRTUAL(pGpu))
+    {
+        // ensure profiling capability is enabled
+        // only full SRIOV platforms is supported
+        VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+        bSupported &= (pVSI != NULL) &&
+                      pVSI->vgpuStaticProperties.bProfilingTracingEnabled &&
+                      IS_VIRTUAL_WITH_FULL_SRIOV(pGpu);
+    }
+
+    if (pGpu->kernelVideoEngines[0] != NULL)
+    {
+        NvU32 data = pGpu->kernelVideoEngines[0]->videoTraceInfo.eventTraceRegkeyData;
+        bSupported &= (data != NV_REG_STR_RM_VIDEO_EVENT_TRACE_DISABLED);
+    }
+
+    NV_PRINTF(LEVEL_INFO, "video engine event tracing is %s.\n", bSupported ? "supported" : "unsupported");
 
     return bSupported;
 }
@@ -89,8 +111,6 @@ NV_STATUS kvidengInitLogging_KERNEL
     NV_CHECK_OR_RETURN(LEVEL_INFO, kvidengIsVideoTraceLogSupported(pGpu), NV_OK);
 
     data = pKernelVideoEngine->videoTraceInfo.eventTraceRegkeyData;
-
-    NV_CHECK_OR_RETURN(LEVEL_INFO, (data != NV_REG_STR_RM_VIDEO_EVENT_TRACE_DISABLED), NV_OK);
 
     bAlwaysLogging = DRF_VAL(_REG_STR, _RM_VIDEO_EVENT_TRACE, _ALWAYS_LOG, (data)) ==
                     NV_REG_STR_RM_VIDEO_EVENT_TRACE_ALWAYS_LOG_ENABLED;
@@ -136,38 +156,7 @@ NV_STATUS kvidengInitLogging_KERNEL
     pTraceBuf->flags = bAlwaysLogging ? VIDEO_TRACE_FLAG__LOGGING_ENABLED : 0;
 
     pKernelVideoEngine->videoTraceInfo.pTraceBufferEngine = pTraceBuf;
-
-    if (IS_GSP_CLIENT(pGpu))
-    {
-        RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-        NV2080_CTRL_INTERNAL_FLCN_SET_VIDEO_EVENT_BUFFER_MEMORY_PARAMS params = {0};
-
-        params.memDescInfo.base = memdescGetPhysAddr(pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc,
-                                                     AT_GPU,
-                                                     0);
-        params.memDescInfo.size = pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc->ActualSize;
-        params.memDescInfo.alignment = pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc->Alignment;
-        params.memDescInfo.addressSpace = addressSpace;
-        params.memDescInfo.cpuCacheAttrib = NV_MEMORY_UNCACHED;
-
-        params.engDesc = pKernelVideoEngine->physEngDesc;
-
-        NV_ASSERT_OK_OR_GOTO(
-            status,
-            pRmApi->Control(pRmApi,
-                            pGpu->hInternalClient,
-                            pGpu->hInternalSubdevice,
-                            NV2080_CTRL_CMD_INTERNAL_FLCN_SET_VIDEO_EVENT_BUFFER_MEMORY,
-                            &params,
-                            sizeof(params)),
-            exit);
-
-        if (!params.bEngineFound)
-        {
-            kvidengFreeLogging(pGpu, pKernelVideoEngine);
-            goto exit;
-        }
-    }
+    pKernelVideoEngine->videoTraceInfo.bAlwaysLogging = bAlwaysLogging;
 
     // Allocate allocate scratch pad for variable data
     pKernelVideoEngine->videoTraceInfo.pTraceBufferVariableData =

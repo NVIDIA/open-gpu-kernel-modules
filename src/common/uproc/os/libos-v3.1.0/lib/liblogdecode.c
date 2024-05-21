@@ -1,7 +1,7 @@
 /*
  * ----------------------------------------------------------------------
  * Copyright (c) 2005-2014 Rich Felker, et al.
- * Copyright (c) 2019-2022, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2019-2024, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -324,6 +324,7 @@ static void flush_line_buffer(LIBOS_LOG_DECODE *logDecode)
         // FIXME (bug 3924763): by default, nv_printf prints messages at level >= NV_DBG_WARNINGS=3.
         // We want to show all prints >= LEVEL_NOTICE=2, so bump LEVEL_NOTICE=2 to LEVEL_WARNING=3 for now.
         // This will be fixed by remapping log levels correctly.
+        // NB: This is not needed for MODS, because LEVEL_NOTICE is still recorded in MODS logs.
         //
         if (logLevel == LEVEL_NOTICE)
             logLevel = LEVEL_WARNING;

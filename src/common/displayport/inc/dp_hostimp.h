@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,12 +32,14 @@
 
 #include "nvtypes.h"
 #include "dp_tracing.h"
+#include "dp_printf.h"
 
 extern "C" void * dpMalloc(NvLength size);
 extern "C" void dpFree(void * ptr);
 extern "C" void dpDebugBreakpoint();
 // Note: dpPrint() implementations are expected to append a newline themselves.
 extern "C" void dpPrint(const char * formatter, ...);
+extern "C" void dpPrintf(DP_LOG_LEVEL severity, const char * formatter, ...);
 extern "C" void dpTraceEvent(NV_DP_TRACING_EVENT event,
                              NV_DP_TRACING_PRIORITY priority, NvU32 numArgs, ...);
 

@@ -77,10 +77,10 @@ module_param_named(disable_hdmi_frl, disable_hdmi_frl, bool, 0400);
 static bool disable_vrr_memclk_switch = false;
 module_param_named(disable_vrr_memclk_switch, disable_vrr_memclk_switch, bool, 0400);
 
-static bool hdmi_deepcolor = false;
+static bool hdmi_deepcolor = true;
 module_param_named(hdmi_deepcolor, hdmi_deepcolor, bool, 0400);
 
-static bool vblank_sem_control = false;
+static bool vblank_sem_control = true;
 module_param_named(vblank_sem_control, vblank_sem_control, bool, 0400);
 
 static bool opportunistic_display_sync = true;
@@ -137,6 +137,20 @@ NvBool nvkms_vblank_sem_control(void)
 NvBool nvkms_opportunistic_display_sync(void)
 {
     return opportunistic_display_sync;
+}
+
+NvBool nvkms_kernel_supports_syncpts(void)
+{
+/*
+ * Note this only checks that the kernel has the prerequisite
+ * support for syncpts; callers must also check that the hardware
+ * supports syncpts.
+ */
+#if (defined(CONFIG_TEGRA_GRHOST) || defined(NV_LINUX_HOST1X_NEXT_H_PRESENT))
+    return NV_TRUE;
+#else
+    return NV_FALSE;
+#endif
 }
 
 #define NVKMS_SYNCPT_STUBS_NEEDED
@@ -1232,6 +1246,26 @@ struct nvkms_per_open* nvkms_open_from_kapi
 void nvkms_close_from_kapi(struct nvkms_per_open *popen)
 {
     nvkms_close_pm_unlocked(popen);
+}
+
+NvBool nvkms_ioctl_from_kapi_try_pmlock
+(
+    struct nvkms_per_open *popen,
+    NvU32 cmd, void *params_address, const size_t param_size
+)
+{
+    NvBool ret;
+
+    if (nvkms_read_trylock_pm_lock()) {
+        return NV_FALSE;
+    }
+
+    ret = nvkms_ioctl_common(popen,
+                             cmd,
+                             (NvU64)(NvUPtr)params_address, param_size) == 0;
+    nvkms_read_unlock_pm_lock();
+
+    return ret;
 }
 
 NvBool nvkms_ioctl_from_kapi

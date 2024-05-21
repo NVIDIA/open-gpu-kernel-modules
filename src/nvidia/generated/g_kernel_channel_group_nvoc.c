@@ -111,6 +111,7 @@ __nvoc_ctor_KernelChannelGroup_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_KernelChannelGroup_1(KernelChannelGroup *pThis, RmHalspecOwner *pRmhalspecowner) {
     RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
     const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
@@ -122,8 +123,10 @@ static void __nvoc_init_funcTable_KernelChannelGroup_1(KernelChannelGroup *pThis
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
-}
+} // End __nvoc_init_funcTable_KernelChannelGroup_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_KernelChannelGroup(KernelChannelGroup *pThis, RmHalspecOwner *pRmhalspecowner) {
     __nvoc_init_funcTable_KernelChannelGroup_1(pThis, pRmhalspecowner);
 }

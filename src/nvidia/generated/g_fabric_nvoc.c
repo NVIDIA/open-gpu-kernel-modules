@@ -93,10 +93,13 @@ __nvoc_ctor_Fabric_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_Fabric_1(Fabric *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-}
+} // End __nvoc_init_funcTable_Fabric_1
 
+
+// Initialize vtable(s): Nothing to do for empty vtables
 void __nvoc_init_funcTable_Fabric(Fabric *pThis) {
     __nvoc_init_funcTable_Fabric_1(pThis);
 }

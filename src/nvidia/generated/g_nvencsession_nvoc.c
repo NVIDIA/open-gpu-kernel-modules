@@ -93,106 +93,6 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_NvencSession =
     /*pExportInfo=*/        &__nvoc_export_info_NvencSession
 };
 
-static NvBool __nvoc_thunk_GpuResource_nvencsessionShareCallback(struct NvencSession *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_NvencSession_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_nvencsessionCheckMemInterUnmap(struct NvencSession *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_NvencSession_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_nvencsessionMapTo(struct NvencSession *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvencSession_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_nvencsessionGetMapAddrSpace(struct NvencSession *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_NvencSession_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static NvU32 __nvoc_thunk_RsResource_nvencsessionGetRefCount(struct NvencSession *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvencSession_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_nvencsessionAddAdditionalDependants(struct RsClient *pClient, struct NvencSession *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvencSession_RsResource.offset), pReference);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_nvencsessionControl_Prologue(struct NvencSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvencSession_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_nvencsessionGetRegBaseOffsetAndSize(struct NvencSession *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_NvencSession_GpuResource.offset), pGpu, pOffset, pSize);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_nvencsessionInternalControlForward(struct NvencSession *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_NvencSession_GpuResource.offset), command, pParams, size);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_nvencsessionUnmapFrom(struct NvencSession *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvencSession_RsResource.offset), pParams);
-}
-
-static void __nvoc_thunk_RmResource_nvencsessionControl_Epilogue(struct NvencSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvencSession_RmResource.offset), pCallContext, pParams);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_nvencsessionGetInternalObjectHandle(struct NvencSession *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_NvencSession_GpuResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_nvencsessionControl(struct NvencSession *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_NvencSession_GpuResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_nvencsessionUnmap(struct NvencSession *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_NvencSession_GpuResource.offset), pCallContext, pCpuMapping);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_nvencsessionGetMemInterMapParams(struct NvencSession *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_NvencSession_RmResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_nvencsessionGetMemoryMappingDescriptor(struct NvencSession *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_NvencSession_RmResource.offset), ppMemDesc);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_nvencsessionControlFilter(struct NvencSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvencSession_RsResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_nvencsessionControlSerialization_Prologue(struct NvencSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvencSession_RmResource.offset), pCallContext, pParams);
-}
-
-static NvBool __nvoc_thunk_RsResource_nvencsessionCanCopy(struct NvencSession *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvencSession_RsResource.offset));
-}
-
-static NvBool __nvoc_thunk_RsResource_nvencsessionIsPartialUnmapSupported(struct NvencSession *pResource) {
-    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvencSession_RsResource.offset));
-}
-
-static void __nvoc_thunk_RsResource_nvencsessionPreDestruct(struct NvencSession *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvencSession_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_nvencsessionIsDuplicate(struct NvencSession *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvencSession_RsResource.offset), hMemory, pDuplicate);
-}
-
-static void __nvoc_thunk_RmResource_nvencsessionControlSerialization_Epilogue(struct NvencSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvencSession_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_nvencsessionMap(struct NvencSession *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return gpuresMap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_NvencSession_GpuResource.offset), pCallContext, pParams, pCpuMapping);
-}
-
-static NvBool __nvoc_thunk_RmResource_nvencsessionAccessCallback(struct NvencSession *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvencSession_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
-}
-
 #if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
 #endif
@@ -200,12 +100,12 @@ static NvBool __nvoc_thunk_RmResource_nvencsessionAccessCallback(struct NvencSes
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_NvencSession[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) nvencsessionCtrlCmdNvencSwSessionUpdateInfo_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xa0bc0101u,
         /*paramSize=*/  sizeof(NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS),
@@ -215,12 +115,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_NvencSes
 #endif
     },
     {               /*  [1] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xa0bc0102u,
         /*paramSize=*/  sizeof(NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_V2_PARAMS),
@@ -231,6 +131,134 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_NvencSes
     },
 
 };
+
+// 25 up-thunk(s) defined to bridge methods in NvencSession to superclasses
+
+// nvencsessionControl: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_nvencsessionControl(struct NvencSession *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvencSession_GpuResource.offset), pCallContext, pParams);
+}
+
+// nvencsessionMap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_nvencsessionMap(struct NvencSession *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+    return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvencSession_GpuResource.offset), pCallContext, pParams, pCpuMapping);
+}
+
+// nvencsessionUnmap: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_nvencsessionUnmap(struct NvencSession *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvencSession_GpuResource.offset), pCallContext, pCpuMapping);
+}
+
+// nvencsessionShareCallback: virtual inherited (gpures) base (gpures)
+static NvBool __nvoc_up_thunk_GpuResource_nvencsessionShareCallback(struct NvencSession *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvencSession_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+}
+
+// nvencsessionGetRegBaseOffsetAndSize: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_nvencsessionGetRegBaseOffsetAndSize(struct NvencSession *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvencSession_GpuResource.offset), pGpu, pOffset, pSize);
+}
+
+// nvencsessionGetMapAddrSpace: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_nvencsessionGetMapAddrSpace(struct NvencSession *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvencSession_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+// nvencsessionInternalControlForward: virtual inherited (gpures) base (gpures)
+static NV_STATUS __nvoc_up_thunk_GpuResource_nvencsessionInternalControlForward(struct NvencSession *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvencSession_GpuResource.offset), command, pParams, size);
+}
+
+// nvencsessionGetInternalObjectHandle: virtual inherited (gpures) base (gpures)
+static NvHandle __nvoc_up_thunk_GpuResource_nvencsessionGetInternalObjectHandle(struct NvencSession *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvencSession_GpuResource.offset));
+}
+
+// nvencsessionAccessCallback: virtual inherited (rmres) base (gpures)
+static NvBool __nvoc_up_thunk_RmResource_nvencsessionAccessCallback(struct NvencSession *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvencSession_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
+}
+
+// nvencsessionGetMemInterMapParams: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_nvencsessionGetMemInterMapParams(struct NvencSession *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_NvencSession_RmResource.offset), pParams);
+}
+
+// nvencsessionCheckMemInterUnmap: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_nvencsessionCheckMemInterUnmap(struct NvencSession *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_NvencSession_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+// nvencsessionGetMemoryMappingDescriptor: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_nvencsessionGetMemoryMappingDescriptor(struct NvencSession *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_NvencSession_RmResource.offset), ppMemDesc);
+}
+
+// nvencsessionControlSerialization_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_nvencsessionControlSerialization_Prologue(struct NvencSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvencSession_RmResource.offset), pCallContext, pParams);
+}
+
+// nvencsessionControlSerialization_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_nvencsessionControlSerialization_Epilogue(struct NvencSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvencSession_RmResource.offset), pCallContext, pParams);
+}
+
+// nvencsessionControl_Prologue: virtual inherited (rmres) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RmResource_nvencsessionControl_Prologue(struct NvencSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvencSession_RmResource.offset), pCallContext, pParams);
+}
+
+// nvencsessionControl_Epilogue: virtual inherited (rmres) base (gpures)
+static void __nvoc_up_thunk_RmResource_nvencsessionControl_Epilogue(struct NvencSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvencSession_RmResource.offset), pCallContext, pParams);
+}
+
+// nvencsessionCanCopy: virtual inherited (res) base (gpures)
+static NvBool __nvoc_up_thunk_RsResource_nvencsessionCanCopy(struct NvencSession *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvencSession_RsResource.offset));
+}
+
+// nvencsessionIsDuplicate: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_nvencsessionIsDuplicate(struct NvencSession *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvencSession_RsResource.offset), hMemory, pDuplicate);
+}
+
+// nvencsessionPreDestruct: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_nvencsessionPreDestruct(struct NvencSession *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvencSession_RsResource.offset));
+}
+
+// nvencsessionControlFilter: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_nvencsessionControlFilter(struct NvencSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvencSession_RsResource.offset), pCallContext, pParams);
+}
+
+// nvencsessionIsPartialUnmapSupported: inline virtual inherited (res) base (gpures) body
+static NvBool __nvoc_up_thunk_RsResource_nvencsessionIsPartialUnmapSupported(struct NvencSession *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvencSession_RsResource.offset));
+}
+
+// nvencsessionMapTo: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_nvencsessionMapTo(struct NvencSession *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvencSession_RsResource.offset), pParams);
+}
+
+// nvencsessionUnmapFrom: virtual inherited (res) base (gpures)
+static NV_STATUS __nvoc_up_thunk_RsResource_nvencsessionUnmapFrom(struct NvencSession *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvencSession_RsResource.offset), pParams);
+}
+
+// nvencsessionGetRefCount: virtual inherited (res) base (gpures)
+static NvU32 __nvoc_up_thunk_RsResource_nvencsessionGetRefCount(struct NvencSession *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvencSession_RsResource.offset));
+}
+
+// nvencsessionAddAdditionalDependants: virtual inherited (res) base (gpures)
+static void __nvoc_up_thunk_RsResource_nvencsessionAddAdditionalDependants(struct RsClient *pClient, struct NvencSession *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvencSession_RsResource.offset), pReference);
+}
+
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_NvencSession = 
 {
@@ -268,69 +296,101 @@ __nvoc_ctor_NvencSession_exit:
     return status;
 }
 
+// Vtable initialization
 static void __nvoc_init_funcTable_NvencSession_1(NvencSession *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // nvencsessionCtrlCmdNvencSwSessionUpdateInfo -- exported (id=0xa0bc0101)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__nvencsessionCtrlCmdNvencSwSessionUpdateInfo__ = &nvencsessionCtrlCmdNvencSwSessionUpdateInfo_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    // nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2 -- exported (id=0xa0bc0102)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2__ = &nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_IMPL;
 #endif
 
-    pThis->__nvencsessionShareCallback__ = &__nvoc_thunk_GpuResource_nvencsessionShareCallback;
+    // nvencsessionControl -- virtual inherited (gpures) base (gpures)
+    pThis->__nvencsessionControl__ = &__nvoc_up_thunk_GpuResource_nvencsessionControl;
 
-    pThis->__nvencsessionCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_nvencsessionCheckMemInterUnmap;
+    // nvencsessionMap -- virtual inherited (gpures) base (gpures)
+    pThis->__nvencsessionMap__ = &__nvoc_up_thunk_GpuResource_nvencsessionMap;
 
-    pThis->__nvencsessionMapTo__ = &__nvoc_thunk_RsResource_nvencsessionMapTo;
+    // nvencsessionUnmap -- virtual inherited (gpures) base (gpures)
+    pThis->__nvencsessionUnmap__ = &__nvoc_up_thunk_GpuResource_nvencsessionUnmap;
 
-    pThis->__nvencsessionGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_nvencsessionGetMapAddrSpace;
+    // nvencsessionShareCallback -- virtual inherited (gpures) base (gpures)
+    pThis->__nvencsessionShareCallback__ = &__nvoc_up_thunk_GpuResource_nvencsessionShareCallback;
 
-    pThis->__nvencsessionGetRefCount__ = &__nvoc_thunk_RsResource_nvencsessionGetRefCount;
+    // nvencsessionGetRegBaseOffsetAndSize -- virtual inherited (gpures) base (gpures)
+    pThis->__nvencsessionGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_nvencsessionGetRegBaseOffsetAndSize;
 
-    pThis->__nvencsessionAddAdditionalDependants__ = &__nvoc_thunk_RsResource_nvencsessionAddAdditionalDependants;
+    // nvencsessionGetMapAddrSpace -- virtual inherited (gpures) base (gpures)
+    pThis->__nvencsessionGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_nvencsessionGetMapAddrSpace;
 
-    pThis->__nvencsessionControl_Prologue__ = &__nvoc_thunk_RmResource_nvencsessionControl_Prologue;
+    // nvencsessionInternalControlForward -- virtual inherited (gpures) base (gpures)
+    pThis->__nvencsessionInternalControlForward__ = &__nvoc_up_thunk_GpuResource_nvencsessionInternalControlForward;
 
-    pThis->__nvencsessionGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_nvencsessionGetRegBaseOffsetAndSize;
+    // nvencsessionGetInternalObjectHandle -- virtual inherited (gpures) base (gpures)
+    pThis->__nvencsessionGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_nvencsessionGetInternalObjectHandle;
 
-    pThis->__nvencsessionInternalControlForward__ = &__nvoc_thunk_GpuResource_nvencsessionInternalControlForward;
+    // nvencsessionAccessCallback -- virtual inherited (rmres) base (gpures)
+    pThis->__nvencsessionAccessCallback__ = &__nvoc_up_thunk_RmResource_nvencsessionAccessCallback;
 
-    pThis->__nvencsessionUnmapFrom__ = &__nvoc_thunk_RsResource_nvencsessionUnmapFrom;
+    // nvencsessionGetMemInterMapParams -- virtual inherited (rmres) base (gpures)
+    pThis->__nvencsessionGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_nvencsessionGetMemInterMapParams;
 
-    pThis->__nvencsessionControl_Epilogue__ = &__nvoc_thunk_RmResource_nvencsessionControl_Epilogue;
+    // nvencsessionCheckMemInterUnmap -- virtual inherited (rmres) base (gpures)
+    pThis->__nvencsessionCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_nvencsessionCheckMemInterUnmap;
 
-    pThis->__nvencsessionGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_nvencsessionGetInternalObjectHandle;
+    // nvencsessionGetMemoryMappingDescriptor -- virtual inherited (rmres) base (gpures)
+    pThis->__nvencsessionGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_nvencsessionGetMemoryMappingDescriptor;
 
-    pThis->__nvencsessionControl__ = &__nvoc_thunk_GpuResource_nvencsessionControl;
+    // nvencsessionControlSerialization_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__nvencsessionControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_nvencsessionControlSerialization_Prologue;
 
-    pThis->__nvencsessionUnmap__ = &__nvoc_thunk_GpuResource_nvencsessionUnmap;
+    // nvencsessionControlSerialization_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__nvencsessionControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_nvencsessionControlSerialization_Epilogue;
 
-    pThis->__nvencsessionGetMemInterMapParams__ = &__nvoc_thunk_RmResource_nvencsessionGetMemInterMapParams;
+    // nvencsessionControl_Prologue -- virtual inherited (rmres) base (gpures)
+    pThis->__nvencsessionControl_Prologue__ = &__nvoc_up_thunk_RmResource_nvencsessionControl_Prologue;
 
-    pThis->__nvencsessionGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_nvencsessionGetMemoryMappingDescriptor;
+    // nvencsessionControl_Epilogue -- virtual inherited (rmres) base (gpures)
+    pThis->__nvencsessionControl_Epilogue__ = &__nvoc_up_thunk_RmResource_nvencsessionControl_Epilogue;
 
-    pThis->__nvencsessionControlFilter__ = &__nvoc_thunk_RsResource_nvencsessionControlFilter;
+    // nvencsessionCanCopy -- virtual inherited (res) base (gpures)
+    pThis->__nvencsessionCanCopy__ = &__nvoc_up_thunk_RsResource_nvencsessionCanCopy;
 
-    pThis->__nvencsessionControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_nvencsessionControlSerialization_Prologue;
+    // nvencsessionIsDuplicate -- virtual inherited (res) base (gpures)
+    pThis->__nvencsessionIsDuplicate__ = &__nvoc_up_thunk_RsResource_nvencsessionIsDuplicate;
 
-    pThis->__nvencsessionCanCopy__ = &__nvoc_thunk_RsResource_nvencsessionCanCopy;
+    // nvencsessionPreDestruct -- virtual inherited (res) base (gpures)
+    pThis->__nvencsessionPreDestruct__ = &__nvoc_up_thunk_RsResource_nvencsessionPreDestruct;
 
-    pThis->__nvencsessionIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_nvencsessionIsPartialUnmapSupported;
+    // nvencsessionControlFilter -- virtual inherited (res) base (gpures)
+    pThis->__nvencsessionControlFilter__ = &__nvoc_up_thunk_RsResource_nvencsessionControlFilter;
 
-    pThis->__nvencsessionPreDestruct__ = &__nvoc_thunk_RsResource_nvencsessionPreDestruct;
+    // nvencsessionIsPartialUnmapSupported -- inline virtual inherited (res) base (gpures) body
+    pThis->__nvencsessionIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_nvencsessionIsPartialUnmapSupported;
 
-    pThis->__nvencsessionIsDuplicate__ = &__nvoc_thunk_RsResource_nvencsessionIsDuplicate;
+    // nvencsessionMapTo -- virtual inherited (res) base (gpures)
+    pThis->__nvencsessionMapTo__ = &__nvoc_up_thunk_RsResource_nvencsessionMapTo;
 
-    pThis->__nvencsessionControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_nvencsessionControlSerialization_Epilogue;
+    // nvencsessionUnmapFrom -- virtual inherited (res) base (gpures)
+    pThis->__nvencsessionUnmapFrom__ = &__nvoc_up_thunk_RsResource_nvencsessionUnmapFrom;
 
-    pThis->__nvencsessionMap__ = &__nvoc_thunk_GpuResource_nvencsessionMap;
+    // nvencsessionGetRefCount -- virtual inherited (res) base (gpures)
+    pThis->__nvencsessionGetRefCount__ = &__nvoc_up_thunk_RsResource_nvencsessionGetRefCount;
 
-    pThis->__nvencsessionAccessCallback__ = &__nvoc_thunk_RmResource_nvencsessionAccessCallback;
-}
+    // nvencsessionAddAdditionalDependants -- virtual inherited (res) base (gpures)
+    pThis->__nvencsessionAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_nvencsessionAddAdditionalDependants;
+} // End __nvoc_init_funcTable_NvencSession_1 with approximately 27 basic block(s).
 
+
+// Initialize vtable(s) for 27 virtual method(s).
 void __nvoc_init_funcTable_NvencSession(NvencSession *pThis) {
+
+    // Initialize vtable(s) with 27 per-object function pointer(s).
     __nvoc_init_funcTable_NvencSession_1(pThis);
 }
 

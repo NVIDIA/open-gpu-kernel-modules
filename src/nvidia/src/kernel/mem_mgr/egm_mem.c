@@ -22,7 +22,6 @@
  */
 
 #include "mem_mgr/egm_mem.h"
-
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/mem_utils.h"
 #include "os/os.h"

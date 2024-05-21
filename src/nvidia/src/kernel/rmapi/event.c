@@ -511,32 +511,23 @@ CliGetEventInfo
 
 }
 
-NvBool
+void
 CliDelObjectEvents
 (
-    NvHandle hClient,
-    NvHandle hResource
+    RsResourceRef *pResourceRef
 )
 {
     NotifShare    *pNotifierShare;
     INotifier     *pNotifier;
-    RsClient      *pRsClient;
-    NV_STATUS      status = NV_OK;
-    RsResourceRef *pResourceRef;
 
-    status = serverGetClientUnderLock(&g_resServ, hClient, &pRsClient);
-    if (status != NV_OK)
-        return NV_FALSE;
-
-    status = clientGetResourceRef(pRsClient, hResource, &pResourceRef);
-    if (status != NV_OK)
-        return NV_FALSE;
+    if (pResourceRef == NULL)
+        return;
 
     // If not a notifier object, there aren't any events to free
     pNotifier = dynamicCast(pResourceRef->pResource, INotifier);
 
     if (pNotifier == NULL)
-        return NV_TRUE;
+        return;
 
     pNotifierShare = inotifyGetNotificationShare(pNotifier);
     if (pNotifierShare != NULL)
@@ -544,7 +535,7 @@ CliDelObjectEvents
         while(pNotifierShare->pEventList != NULL)
         {
             PEVENTNOTIFICATION pEventNotif = pNotifierShare->pEventList;
-            status = inotifyUnregisterEvent(pNotifier,
+            inotifyUnregisterEvent(pNotifier,
                     pNotifierShare->hNotifierClient,
                     pNotifierShare->hNotifierResource,
                     pEventNotif->hEventClient,
@@ -552,9 +543,6 @@ CliDelObjectEvents
         }
         pNotifierShare->pNotifier = NULL;
     }
-
-    return NV_TRUE;
-
 } // end of CliDelObjectEvents()
 
 // ****************************************************************************
@@ -563,7 +551,8 @@ CliDelObjectEvents
 
 void CliAddSystemEvent(
     NvU32 event,
-    NvU32 status
+    NvU32 status,
+    NvBool *isEventNotified
 )
 {
     NvU32 temp;
@@ -574,6 +563,9 @@ void CliAddSystemEvent(
     RsResourceRef *pCliResRef;
     NV_STATUS      rmStatus = NV_OK;
     Notifier  *pNotifier;
+
+    if (isEventNotified != NULL)
+        *isEventNotified = NV_FALSE;
 
     for (ppClient = serverutilGetFirstClientUnderLock();
          ppClient;
@@ -623,6 +615,8 @@ void CliAddSystemEvent(
                         NV_PRINTF(LEVEL_ERROR, "failed to deliver event 0x%x",
                                   event);
                     }
+                    if (isEventNotified != NULL)
+                        *isEventNotified = NV_TRUE;
                 }
                 pEventNotification = pEventNotification->Next;
             }

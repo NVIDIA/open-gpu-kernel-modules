@@ -52,6 +52,7 @@
 #define DRM_NVIDIA_SEMSURF_FENCE_CREATE             0x15
 #define DRM_NVIDIA_SEMSURF_FENCE_WAIT               0x16
 #define DRM_NVIDIA_SEMSURF_FENCE_ATTACH             0x17
+#define DRM_NVIDIA_GET_DRM_FILE_UNIQUE_ID           0x18
 
 #define DRM_IOCTL_NVIDIA_GEM_IMPORT_NVKMS_MEMORY                           \
     DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GEM_IMPORT_NVKMS_MEMORY),      \
@@ -156,6 +157,11 @@
     DRM_IOW((DRM_COMMAND_BASE +                                         \
               DRM_NVIDIA_SEMSURF_FENCE_ATTACH),                         \
               struct drm_nvidia_semsurf_fence_attach_params)
+
+#define DRM_IOCTL_NVIDIA_GET_DRM_FILE_UNIQUE_ID                         \
+    DRM_IOWR((DRM_COMMAND_BASE +                                        \
+              DRM_NVIDIA_GET_DRM_FILE_UNIQUE_ID),                       \
+              struct drm_nvidia_get_drm_file_unique_id_params)
 
 struct drm_nvidia_gem_import_nvkms_memory_params {
     uint64_t mem_size;           /* IN */
@@ -383,6 +389,10 @@ struct drm_nvidia_semsurf_fence_attach_params {
                                      * reserve exclusive access */
 
     uint64_t wait_value;            /* IN Semaphore value to reach before signal */
+};
+
+struct drm_nvidia_get_drm_file_unique_id_params {
+    uint64_t id;                    /* OUT Unique ID of the DRM file */
 };
 
 #endif /* _UAPI_NVIDIA_DRM_IOCTL_H_ */

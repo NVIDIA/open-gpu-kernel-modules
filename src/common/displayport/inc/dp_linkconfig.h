@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2010-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2010-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -303,7 +303,6 @@ namespace DisplayPort
         void enableFEC(bool setFEC)
         {
             bEnableFEC = setFEC;
-
             // If FEC is enabled, update minRate with FEC+downspread overhead.
             minRate = linkOverhead(peakRate);
         }
@@ -567,5 +566,11 @@ namespace DisplayPort
             }
         }
     };
+
+#define IS_DP2X_UHBR_LINK_DATA_RATE(val)   (((NvU32)(val) == UHBR_2_50GHZ) || \
+                                            ((NvU32)(val) == UHBR_2_70GHZ) || \
+                                            ((NvU32)(val) == UHBR_10_0GHZ) || \
+                                            ((NvU32)(val) == UHBR_13_5GHZ) || \
+                                            ((NvU32)(val) == UHBR_20_0GHZ))
 }
 #endif //INCLUDED_DP_LINKCONFIG_H

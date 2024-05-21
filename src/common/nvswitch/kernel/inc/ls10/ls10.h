@@ -188,7 +188,7 @@
 
 #define SOE_VBIOS_VERSION_MASK                        0xFF0000
 #define SOE_VBIOS_REVLOCK_DISABLE_NPORT_FATAL_INTR    0x370000
-#define SOE_VBIOS_REVLOCK_ISSUE_INGRESS_STOP          0x440000
+#define SOE_VBIOS_REVLOCK_ISSUE_INGRESS_STOP          0x4C0000
 
 // LS10 Saved LED state
 #define ACCESS_LINK_LED_STATE CPLD_MACHXO3_ACCESS_LINK_LED_CTL_NVL_CABLE_LED
@@ -219,12 +219,6 @@
 
 #define NVSWITCH_MINION_WR32_BCAST_LS10(_d, _dev, _reg, _data)          \
     NVSWITCH_ENG_WR32(_d, MINION, _BCAST, 0, _dev, _reg, _data)
-
-#define NVSWITCH_NPG_WR32_LS10(_d, _engidx, _dev, _reg, _data)          \
-    NVSWITCH_ENG_WR32(_d, NPG, , _engidx, _dev, _reg, _data)
-
-#define NVSWITCH_NPG_RD32_LS10(_d, _engidx, _dev, _reg)                 \
-    NVSWITCH_ENG_RD32(_d, NPG, , _engidx, _dev, _reg)
 
 //
 // Per-chip device information
@@ -613,6 +607,7 @@ typedef struct
 
     // Nvlink error reporting management
     NVLINK_LINK_ERROR_REPORTING deferredLinkErrors[NVSWITCH_NUM_LINKS_LS10];
+    NVSWITCH_DEFERRED_ERROR_REPORTING_ARGS deferredLinkErrorsArgs[NVSWITCH_NUM_LINKS_LS10];
 
 } ls10_device;
 
@@ -857,7 +852,6 @@ typedef const struct
 
 #define nvswitch_link_lane_reversed_ls10             nvswitch_link_lane_reversed_lr10
 
-#define nvswitch_i2c_get_port_info_ls10             nvswitch_i2c_get_port_info_lr10
 #define nvswitch_i2c_set_hw_speed_mode_ls10         nvswitch_i2c_set_hw_speed_mode_lr10
 
 #define nvswitch_ctrl_get_err_info_ls10             nvswitch_ctrl_get_err_info_lr10
@@ -938,6 +932,7 @@ NvlStatus nvswitch_request_tl_link_state_lr10(nvlink_link *link, NvU32 tlLinkSta
 NvlStatus nvswitch_wait_for_tl_request_ready_lr10(nvlink_link *link);
 
 NvlStatus nvswitch_parse_bios_image_lr10(nvswitch_device *device);
+NvU32 nvswitch_i2c_get_port_info_ls10(nvswitch_device *device, NvU32 port);
 NvU32 nvswitch_i2c_get_port_info_lr10(nvswitch_device *device, NvU32 port);
 void      nvswitch_i2c_set_hw_speed_mode_lr10(nvswitch_device *device, NvU32 port, NvU32 speedMode);
 NvlStatus nvswitch_ctrl_i2c_indexed_lr10(nvswitch_device *device, NVSWITCH_CTRL_I2C_INDEXED_PARAMS *pParams);

@@ -33,19 +33,20 @@
 typedef enum
 __attribute__ ((__packed__))
 {
-  LibosOk              = 0u,
+  LibosOk                    = 0u,
 
-  LibosErrorArgument   = 1u,
-  LibosErrorAccess     = 2u,
-  LibosErrorTimeout    = 3u,
-  LibosErrorIncomplete = 4u,
-  LibosErrorFailed     = 5u,
-  LibosErrorOutOfMemory= 6u,
-  LibosErrorSpoofed    = 7u,
-  LibosErrorPortLost   = 8u,
-  LibosErrorShuttleReset = 10u,
+  LibosErrorArgument         = 1u,
+  LibosErrorAccess           = 2u,
+  LibosErrorTimeout          = 3u,
+  LibosErrorIncomplete       = 4u,
+  LibosErrorFailed           = 5u,
+  LibosErrorOutOfMemory      = 6u,
+  LibosErrorSpoofed          = 7u,
+  LibosErrorPortLost         = 8u,
   LibosErrorExhaustedHandles = 9u,
-  LibosErrorNotDeviceMapped = 11u
+  LibosErrorShuttleReset     = 10u,
+  LibosErrorNotDeviceMapped  = 11u,
+  LibosErrorUnavailable      = 12u,
 } LibosStatus;
 
 #define LIBOS_OK LibosOk

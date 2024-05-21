@@ -533,7 +533,7 @@ sysmemAllocResources
     // than the capture OS so if we're running a replay where the requested page size is larger,
     // assume this is a contiguous piece of memory, if contiguity is not specified.
     //
-    if (FLD_TEST_DRF(OS32, _ATTR, _PHYSICALITY, _DEFAULT, pVidHeapAlloc->attr))
+    if (RMCFG_FEATURE_PLATFORM_MODS && FLD_TEST_DRF(OS32, _ATTR, _PHYSICALITY, _DEFAULT, pVidHeapAlloc->attr))
     {
         if ((FLD_TEST_DRF(OS32, _ATTR, _PAGE_SIZE, _BIG, pVidHeapAlloc->attr) ||
              FLD_TEST_DRF(OS32, _ATTR, _PAGE_SIZE, _HUGE, pVidHeapAlloc->attr)) &&

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -848,6 +848,18 @@ rm_gpu_ops_paging_channel_push_stream(nvidia_stack_t *sp,
     return rmStatus;
 }
 
+NV_STATUS NV_API_CALL rm_gpu_ops_key_rotation_channel_disable(nvidia_stack_t *sp,
+                                                              gpuChannelHandle channelList[],
+                                                              NvU32 channeListCount)
+{
+    NV_STATUS rmStatus;
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rmStatus = nvGpuOpsKeyRotationChannelDisable(channelList, channeListCount);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return rmStatus;
+}
+
 NV_STATUS NV_API_CALL rm_gpu_ops_ccsl_context_init(nvidia_stack_t *sp,
                                                    struct ccslContext_t **ctx,
                                                    gpuChannelHandle channel)
@@ -872,12 +884,13 @@ NV_STATUS NV_API_CALL rm_gpu_ops_ccsl_context_clear(nvidia_stack_t *sp,
 }
 
 NV_STATUS NV_API_CALL rm_gpu_ops_ccsl_context_update(nvidia_stack_t *sp,
-                                                     struct ccslContext_t *ctx)
+                                                     UvmCslContext *contextList[],
+                                                     NvU32 contextListCount)
 {
     NV_STATUS rmStatus;
     void *fp;
     NV_ENTER_RM_RUNTIME(sp,fp);
-    rmStatus = nvGpuOpsCcslContextUpdate(ctx);
+    rmStatus = nvGpuOpsCcslContextUpdate(contextList, contextListCount);
     NV_EXIT_RM_RUNTIME(sp,fp);
     return rmStatus;
 }

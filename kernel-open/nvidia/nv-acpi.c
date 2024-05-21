@@ -66,27 +66,15 @@ static NvBool battery_present = NV_FALSE;
 #define ACPI_VIDEO_CLASS    "video"
 #endif
 
+/* Maximum size of ACPI _DSM method's 4th argument */
+#define NV_MAX_ACPI_DSM_PARAM_SIZE     1024
+
 // Used for NVPCF event handling
 static acpi_handle nvpcf_handle = NULL;
 static acpi_handle nvpcf_device_handle = NULL;
 static nv_acpi_t  *nvpcf_nv_acpi_object = NULL;
 
 #define ACPI_NVPCF_EVENT_CHANGE    0xC0
-
-static int nv_acpi_get_device_handle(nv_state_t *nv, acpi_handle *dev_handle)
-{
-    nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
-
-#if defined(DEVICE_ACPI_HANDLE)
-    *dev_handle = DEVICE_ACPI_HANDLE(nvl->dev);
-    return NV_TRUE;
-#elif defined (ACPI_HANDLE)
-    *dev_handle = ACPI_HANDLE(nvl->dev);
-    return NV_TRUE;
-#else
-    return NV_FALSE;
-#endif
-}
 
 /*
  * This callback will be invoked by the acpi_notifier_call_chain()
@@ -174,7 +162,7 @@ static void nv_acpi_nvpcf_event(acpi_handle handle, u32 event_type, void *data)
     }
     else
     {
-        nv_printf(NV_DBG_INFO,"NVRM: %s: NVPCF event 0x%x is not supported\n", event_type, __FUNCTION__);
+        nv_printf(NV_DBG_INFO,"NVRM: %s: NVPCF event 0x%x is not supported\n", __FUNCTION__, event_type);
     }
 }
 
@@ -267,11 +255,10 @@ static void nv_acpi_notify_event(acpi_handle handle, u32 event_type, void *data)
 
 void nv_acpi_register_notifier(nv_linux_state_t *nvl)
 {
-    acpi_handle dev_handle  = NULL;
+    acpi_handle dev_handle  = ACPI_HANDLE(nvl->dev);
 
     /* Install the ACPI notifier corresponding to dGPU ACPI device. */
     if ((nvl->nv_acpi_object == NULL) &&
-        nv_acpi_get_device_handle(NV_STATE_PTR(nvl), &dev_handle) &&
         (dev_handle != NULL))
     {
         nvl->nv_acpi_object = nv_install_notifier(dev_handle, nv_acpi_notify_event, nvl);
@@ -657,63 +644,35 @@ static NV_STATUS nv_acpi_nvif_method(
     return NV_OK;
 }
 
-#define MAX_INPUT_PARAM_SIZE     1024
-/*
- * This function executes a _DSM ACPI method.
- */
-NV_STATUS NV_API_CALL nv_acpi_dsm_method(
-    nv_state_t *nv,
-    NvU8  *pAcpiDsmGuid,
-    NvU32 acpiDsmRev,
-    NvBool acpiNvpcfDsmFunction,
-    NvU32 acpiDsmSubFunction,
-    void  *pInParams,
-    NvU16 inParamSize,
-    NvU32 *outStatus,
-    void  *pOutData,
-    NvU16 *pSize
+static NV_STATUS nv_acpi_evaluate_dsm_method(
+    acpi_handle   dev_handle,
+    NvU8         *pathname,
+    NvU8         *pAcpiDsmGuid,
+    NvU32         acpiDsmRev,
+    NvU32         acpiDsmSubFunction,
+    void         *arg3,
+    NvU16         arg3Size,
+    NvBool        bArg3Integer,
+    NvU32        *outStatus,
+    void         *pOutData,
+    NvU16        *pSize
 )
 {
-    NV_STATUS status = NV_ERR_OPERATING_SYSTEM;
-    acpi_status acpi_status;
+    NV_STATUS rmStatus = NV_OK;
+    acpi_status status;
     struct acpi_object_list input;
     union acpi_object *dsm = NULL;
     struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
     union acpi_object dsm_params[4];
-    NvU8 *argument3 = NULL;
     NvU32 data_size;
-    acpi_handle dev_handle  = NULL;
-
-    if (!nv_acpi_get_device_handle(nv, &dev_handle))
-        return NV_ERR_NOT_SUPPORTED;
-
-    if (!dev_handle)
-        return NV_ERR_INVALID_ARGUMENT;
-
-    if ((!pInParams) || (inParamSize > MAX_INPUT_PARAM_SIZE) || (!pOutData) || (!pSize))
-    {
-        nv_printf(NV_DBG_INFO,
-                  "NVRM: %s: invalid argument(s)!\n", __FUNCTION__);
-        return NV_ERR_INVALID_ARGUMENT;
-    }
 
     if (!NV_MAY_SLEEP())
     {
 #if defined(DEBUG)
-        nv_printf(NV_DBG_INFO,
-                  "NVRM: %s: invalid argument(s)!\n", __FUNCTION__);
+        nv_printf(NV_DBG_ERRORS, "NVRM: %s: invalid context!\n", __FUNCTION__);
 #endif
         return NV_ERR_NOT_SUPPORTED;
     }
-
-    status = os_alloc_mem((void **)&argument3, inParamSize);
-    if (status != NV_OK)
-        return status;
-
-    //
-    // dsm_params[0].buffer.pointer and dsm_params[1].integer.value set in
-    // switch below based on acpiDsmFunction
-    //
 
     dsm_params[0].buffer.type    = ACPI_TYPE_BUFFER;
     dsm_params[0].buffer.length  = 0x10;
@@ -725,35 +684,28 @@ NV_STATUS NV_API_CALL nv_acpi_dsm_method(
     dsm_params[2].integer.type   = ACPI_TYPE_INTEGER;
     dsm_params[2].integer.value  = acpiDsmSubFunction;
 
-    dsm_params[3].buffer.type    = ACPI_TYPE_BUFFER;
-    dsm_params[3].buffer.length  = inParamSize;
-    memcpy(argument3, pInParams, dsm_params[3].buffer.length);
-    dsm_params[3].buffer.pointer = argument3;
+    if (bArg3Integer)
+    {
+        dsm_params[3].integer.type  = ACPI_TYPE_INTEGER;
+        dsm_params[3].integer.value = *((NvU32 *)arg3);
+    }
+    else
+    {
+         dsm_params[3].buffer.type    = ACPI_TYPE_BUFFER;
+         dsm_params[3].buffer.length  = arg3Size;
+         dsm_params[3].buffer.pointer = arg3;
+    }
 
     // parameters for dsm calls (GUID, rev, subfunction, data)
     input.count = 4;
     input.pointer = dsm_params;
 
-    if (acpiNvpcfDsmFunction)
-    {
-        //
-        // acpi_evaluate_object() can operate with either valid object pathname or
-        // valid object handle. For NVPCF DSM function, use valid pathname as we do
-        // not have device handle for NVPCF device
-        //
-        dev_handle = NULL;
-        acpi_status = acpi_evaluate_object(dev_handle, "\\_SB.NPCF._DSM", &input, &output);
-    }
-    else
-    {
-        acpi_status = acpi_evaluate_object(dev_handle, "_DSM", &input, &output);
-    }
-
-    if (ACPI_FAILURE(acpi_status))
+    status = acpi_evaluate_object(dev_handle, pathname, &input, &output);
+    if (ACPI_FAILURE(status))
     {
         nv_printf(NV_DBG_INFO,
               "NVRM: %s: failed to evaluate _DSM method!\n", __FUNCTION__);
-        goto exit;
+        return NV_ERR_OPERATING_SYSTEM;
     }
 
     dsm = output.pointer;
@@ -767,20 +719,80 @@ NV_STATUS NV_API_CALL nv_acpi_dsm_method(
                          dsm->buffer.pointer[0];
         }
 
-        status = nv_acpi_extract_object(dsm, pOutData, *pSize, &data_size);
+        rmStatus = nv_acpi_extract_object(dsm, pOutData, *pSize, &data_size);
         *pSize = data_size;
 
         kfree(output.pointer);
     }
-    if (status != NV_OK)
+    else
+    {
+        *pSize = 0;
+    }
+
+    if (rmStatus != NV_OK)
     {
         nv_printf(NV_DBG_ERRORS,
                   "NVRM: %s: DSM data invalid!\n", __FUNCTION__);
     }
 
-exit:
+    return rmStatus;
+}
+
+/*
+ * This function executes a _DSM ACPI method.
+ */
+NV_STATUS NV_API_CALL nv_acpi_dsm_method(
+    nv_state_t  *nv,
+    NvU8        *pAcpiDsmGuid,
+    NvU32        acpiDsmRev,
+    NvBool       acpiNvpcfDsmFunction,
+    NvU32        acpiDsmSubFunction,
+    void        *pInParams,
+    NvU16        inParamSize,
+    NvU32       *outStatus,
+    void        *pOutData,
+    NvU16       *pSize
+)
+{
+    NV_STATUS rmStatus     = NV_ERR_OPERATING_SYSTEM;
+    NvU8 *argument3        = NULL;
+    nv_linux_state_t *nvl  = NV_GET_NVL_FROM_NV_STATE(nv);
+    acpi_handle dev_handle = ACPI_HANDLE(nvl->dev);
+    NvU8         *pathname = "_DSM";
+
+    if (!dev_handle)
+        return NV_ERR_INVALID_ARGUMENT;
+
+    if ((!pInParams) || (inParamSize > NV_MAX_ACPI_DSM_PARAM_SIZE) || (!pOutData) || (!pSize))
+    {
+        nv_printf(NV_DBG_INFO,
+                  "NVRM: %s: invalid argument(s)!\n", __FUNCTION__);
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    rmStatus = os_alloc_mem((void **)&argument3, inParamSize);
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    memcpy(argument3, pInParams, inParamSize);
+
+    if (acpiNvpcfDsmFunction)
+    {
+        //
+        // acpi_evaluate_object() can operate with either valid object pathname or
+        // valid object handle. For NVPCF DSM function, use valid pathname as we do
+        // not have device handle for NVPCF device
+        //
+        dev_handle = NULL;
+        pathname   = "\\_SB.NPCF._DSM";
+    }
+
+    rmStatus = nv_acpi_evaluate_dsm_method(dev_handle, pathname, pAcpiDsmGuid, acpiDsmRev,
+                                           acpiDsmSubFunction, argument3, inParamSize,
+                                           NV_FALSE, NULL, pOutData, pSize);
+
     os_free_mem(argument3);
-    return status;
+    return rmStatus;
 }
 
 /*
@@ -796,12 +808,10 @@ NV_STATUS NV_API_CALL nv_acpi_ddc_method(
     acpi_status status;
     union acpi_object *ddc = NULL;
     NvU32 i, largestEdidSize;
-    acpi_handle dev_handle  = NULL;
+    nv_linux_state_t *nvl  = NV_GET_NVL_FROM_NV_STATE(nv);
+    acpi_handle dev_handle = ACPI_HANDLE(nvl->dev);
     acpi_handle lcd_dev_handle  = NULL;
     acpi_handle handle = NULL;
-
-    if (!nv_acpi_get_device_handle(nv, &dev_handle))
-        return NV_ERR_NOT_SUPPORTED;
 
     if (!dev_handle)
         return NV_ERR_INVALID_ARGUMENT;
@@ -836,7 +846,7 @@ NV_STATUS NV_API_CALL nv_acpi_ddc_method(
             case 0x0400:
             case 0xA420:
                 lcd_dev_handle = handle;
-                nv_printf(NV_DBG_INFO, "NVRM: %s Found LCD: %x\n",
+                nv_printf(NV_DBG_INFO, "NVRM: %s Found LCD: %llx\n",
                           __FUNCTION__, device_id);
                 break;
             default:
@@ -915,11 +925,9 @@ NV_STATUS NV_API_CALL nv_acpi_rom_method(
     union acpi_object *rom;
     union acpi_object rom_arg[2];
     struct acpi_object_list input = { 2, rom_arg };
-    acpi_handle dev_handle  = NULL;
+    nv_linux_state_t *nvl  = NV_GET_NVL_FROM_NV_STATE(nv);
+    acpi_handle dev_handle = ACPI_HANDLE(nvl->dev);
     uint32_t offset, length;
-
-    if (!nv_acpi_get_device_handle(nv, &dev_handle))
-        return NV_ERR_NOT_SUPPORTED;
 
     if (!dev_handle)
         return NV_ERR_INVALID_ARGUMENT;
@@ -982,11 +990,9 @@ NV_STATUS NV_API_CALL nv_acpi_dod_method(
     acpi_status status;
     struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
     union acpi_object *dod;
-    acpi_handle dev_handle = NULL;
+    nv_linux_state_t *nvl  = NV_GET_NVL_FROM_NV_STATE(nv);
+    acpi_handle dev_handle = ACPI_HANDLE(nvl->dev);
     NvU32 i, count = (*pSize / sizeof(NvU32));
-
-    if (!nv_acpi_get_device_handle(nv, &dev_handle))
-        return NV_ERR_NOT_SUPPORTED;
 
     if (!dev_handle)
         return NV_ERR_INVALID_ARGUMENT;
@@ -1129,16 +1135,10 @@ NvBool nv_acpi_power_resource_method_present(
     struct pci_dev *pdev
 )
 {
-    acpi_handle handle = NULL;
+    acpi_handle handle = ACPI_HANDLE(&pdev->dev);
     struct acpi_buffer buf = { ACPI_ALLOCATE_BUFFER, NULL };
     union acpi_object *object_package, *object_reference;
     acpi_status status;
-
-#if defined(DEVICE_ACPI_HANDLE)
-    handle = DEVICE_ACPI_HANDLE(&pdev->dev);
-#elif defined (ACPI_HANDLE)
-    handle = ACPI_HANDLE(&pdev->dev);
-#endif
 
     if (!handle)
         return NV_FALSE;
@@ -1198,7 +1198,8 @@ NV_STATUS NV_API_CALL nv_acpi_mux_method(
     union acpi_object *mux        = NULL;
     union acpi_object mux_arg     = { ACPI_TYPE_INTEGER };
     struct acpi_object_list input = { 1, &mux_arg };
-    acpi_handle dev_handle        = NULL;
+    nv_linux_state_t *nvl         = NV_GET_NVL_FROM_NV_STATE(nv);
+    acpi_handle dev_handle        = ACPI_HANDLE(nvl->dev);
     acpi_handle mux_dev_handle    = NULL;
     acpi_handle handle            = NULL;
     unsigned long long device_id  = 0;
@@ -1215,9 +1216,6 @@ NV_STATUS NV_API_CALL nv_acpi_mux_method(
         nv_printf(NV_DBG_INFO, "NVRM: %s: Call for %s ACPI method \n",
                   __FUNCTION__, pMethodName);
     }
-
-    if (!nv_acpi_get_device_handle(nv, &dev_handle))
-        return NV_ERR_NOT_SUPPORTED;
 
     if (!dev_handle)
         return NV_ERR_INVALID_ARGUMENT;
@@ -1384,6 +1382,34 @@ NvBool NV_API_CALL nv_acpi_is_battery_present(void)
     return NV_FALSE;
 }
 
+NV_STATUS NV_API_CALL nv_acpi_d3cold_dsm_for_upstream_port(
+    nv_state_t *nv,
+    NvU8       *pAcpiDsmGuid,
+    NvU32       acpiDsmRev,
+    NvU32       acpiDsmSubFunction,
+    NvU32      *data
+)
+{
+    NV_STATUS rmStatus = NV_ERR_OPERATING_SYSTEM;
+    nv_linux_state_t *nvl  = NV_GET_NVL_FROM_NV_STATE(nv);
+    acpi_handle dev_handle = ACPI_HANDLE(nvl->dev->parent);
+    NvU32 outData     = 0;
+    NvU16 outDatasize = sizeof(NvU32);
+    NvU16 inParamSize = sizeof(NvU32);
+
+    if (!dev_handle)
+        return NV_ERR_INVALID_ARGUMENT;
+
+    rmStatus = nv_acpi_evaluate_dsm_method(dev_handle, "_DSM", pAcpiDsmGuid, acpiDsmRev,
+                                           acpiDsmSubFunction, data, inParamSize, NV_TRUE,
+                                           NULL, &outData, &outDatasize);
+
+    if (rmStatus == NV_OK)
+        *data = outData;
+
+    return rmStatus;
+}
+
 #else // NV_LINUX_ACPI_EVENTS_SUPPORTED
 
 void NV_API_CALL nv_acpi_methods_init(NvU32 *handlePresent)
@@ -1421,6 +1447,17 @@ NV_STATUS NV_API_CALL nv_acpi_dsm_method(
     NvU32 *outStatus,
     void  *pOutData,
     NvU16 *pSize
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS NV_API_CALL nv_acpi_d3cold_dsm_for_upstream_port(
+    nv_state_t *nv,
+    NvU8       *pAcpiDsmGuid,
+    NvU32       acpiDsmRev,
+    NvU32       acpiDsmSubFunction,
+    NvU32      *data
 )
 {
     return NV_ERR_NOT_SUPPORTED;

@@ -93,7 +93,7 @@ intrGetPendingStall_GM107
         //
         for (i = 0; i < GPU_MAX_GRS; i++)
         {
-            KernelGraphics *pKernelGraphics = pGpu->pKernelGraphics[i];
+            KernelGraphics *pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, i);
             if ((pKernelGraphics != NULL) &&
                 kgraphicsIsIntrDrivenCtxswLoggingEnabled(pGpu, pKernelGraphics) &&
                 fecsIsIntrPending(pGpu, pKernelGraphics))
@@ -101,6 +101,42 @@ intrGetPendingStall_GM107
                 bitVectorSet(pEngines, MC_ENGINE_IDX_GRn_FECS_LOG(i));
             }
         }
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Returns a bitfield with only MC_ENGINE_IDX_DISP set if it's pending
+ *        Pre-Turing, there's only one stall interrupt register, so intrGetPendingStall_HAL
+ *        will only read one register, and there's no perf concern in calling it
+ *
+ * @param[in]  pGpu
+ * @param[in]  pMc
+ * @param[out] pEngines     List of engines that have pending stall interrupts
+ * @param[in]  pThreadState
+ *
+ * @return NV_OK if the list of engines that have pending stall interrupts was retrieved
+ */
+NV_STATUS
+intrGetPendingDisplayIntr_GM107
+(
+    OBJGPU              *pGpu,
+    Intr                *pIntr,
+    PMC_ENGINE_BITVECTOR pEngines,
+    THREAD_STATE_NODE   *pThreadState
+)
+{
+    MC_ENGINE_BITVECTOR intr0Pending;
+
+    bitVectorClrAll(pEngines);
+    bitVectorClrAll(&intr0Pending);
+
+    intrGetPendingStall_HAL(pGpu, pIntr, &intr0Pending, pThreadState);
+
+    if (bitVectorTest(&intr0Pending, MC_ENGINE_IDX_DISP))
+    {
+        bitVectorSet(pEngines, MC_ENGINE_IDX_DISP);
     }
 
     return NV_OK;

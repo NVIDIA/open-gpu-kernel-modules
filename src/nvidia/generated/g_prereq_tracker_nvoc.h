@@ -1,6 +1,13 @@
+
 #ifndef _G_PREREQ_TRACKER_NVOC_H_
 #define _G_PREREQ_TRACKER_NVOC_H_
 #include "nvoc/runtime.h"
+
+// Version of generated metadata structures
+#ifdef NVOC_METADATA_VERSION
+#undef NVOC_METADATA_VERSION
+#endif
+#define NVOC_METADATA_VERSION 0
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,6 +60,7 @@ extern "C" {
  *          stateLoad() or later.
  */
 
+#pragma once
 #include "g_prereq_tracker_nvoc.h"
 
 #ifndef __PREREQUISITE_TRACKER_H__
@@ -80,6 +88,7 @@ extern "C" {
     ((_pPrereq)->countRequested == (_pPrereq)->countSatisfied)
 
 /* ------------------------ Datatypes --------------------------------------- */
+
 
 struct OBJGPU;
 
@@ -165,11 +174,20 @@ MAKE_LIST(PrereqList, PREREQ_ENTRY);
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 
+
 struct PrereqTracker {
+
+    // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+
+    // Parent (i.e. superclass or base class) object pointers
     struct Object __nvoc_base_Object;
-    struct Object *__nvoc_pbase_Object;
-    struct PrereqTracker *__nvoc_pbase_PrereqTracker;
+
+    // Ancestor object pointers for `staticCast` feature
+    struct Object *__nvoc_pbase_Object;    // obj super
+    struct PrereqTracker *__nvoc_pbase_PrereqTracker;    // prereq
+
+    // Data members
     union PREREQ_ID_BIT_VECTOR satisfied;
     NvBool bInitialized;
     PrereqList prereqList;
@@ -185,6 +203,7 @@ typedef struct PrereqTracker PrereqTracker;
 #define __nvoc_class_id_PrereqTracker 0x0e171b
 #endif /* __nvoc_class_id_PrereqTracker */
 
+// Casting support
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_PrereqTracker;
 
 #define __staticCast_PrereqTracker(pThis) \
@@ -197,13 +216,16 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_PrereqTracker;
     ((PrereqTracker*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(PrereqTracker)))
 #endif //__nvoc_prereq_tracker_h_disabled
 
-
 NV_STATUS __nvoc_objCreateDynamic_PrereqTracker(PrereqTracker**, Dynamic*, NvU32, va_list);
 
 NV_STATUS __nvoc_objCreate_PrereqTracker(PrereqTracker**, Dynamic*, NvU32, struct OBJGPU * arg_pParent);
 #define __objCreate_PrereqTracker(ppNewObj, pParent, createFlags, arg_pParent) \
     __nvoc_objCreate_PrereqTracker((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pParent)
 
+
+// Wrapper macros
+
+// Dispatch functions
 NV_STATUS prereqConstruct_IMPL(struct PrereqTracker *arg_pTracker, struct OBJGPU *arg_pParent);
 
 #define __nvoc_prereqConstruct(arg_pTracker, arg_pParent) prereqConstruct_IMPL(arg_pTracker, arg_pParent)

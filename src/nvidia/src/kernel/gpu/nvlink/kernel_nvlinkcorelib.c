@@ -208,8 +208,8 @@ knvlinkCoreAddDevice_IMPL
     dev->pciInfo.device           = gpuGetDevice(pGpu);
     dev->pciInfo.function         = 0;
     dev->pciInfo.pciDeviceId      = pGpu->idInfo.PCIDeviceID;
-    dev->pciInfo.bars[0].baseAddr = pGpu->pKernelBus->pciBars[0];
-    dev->pciInfo.bars[0].barSize  = pGpu->pKernelBus->pciBarSizes[0];
+    dev->pciInfo.bars[0].baseAddr = GPU_GET_KERNEL_BUS(pGpu)->pciBars[0];
+    dev->pciInfo.bars[0].barSize  = GPU_GET_KERNEL_BUS(pGpu)->pciBarSizes[0];
     dev->initialized              = 1;
     dev->enableALI                = pKernelNvlink->bEnableAli;
     dev->numIoctrls               = nvPopCount32(pKernelNvlink->ioctrlMask);

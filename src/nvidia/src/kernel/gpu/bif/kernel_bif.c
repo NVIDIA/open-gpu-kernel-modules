@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1349,5 +1349,103 @@ kbifPollDeviceOnBus_IMPL
     }
 
     return NV_OK;
+}
+
+NV_STATUS
+kbifResetFromTimeoutFullChip_IMPL
+(
+    OBJGPU *pGpu,
+    KernelBif *pKernelBif
+)
+{
+
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJCL  *pCl = SYS_GET_CL(pSys);
+    NV_STATUS status;
+
+    if (pCl == NULL || 
+        (!pCl->getProperty(pCl, PDB_PROP_CL_PCIE_CONFIG_ACCESSIBLE)
+       ))
+    {
+        //
+        // We can not issue SW_RESET as we are not able to access PCI config
+        // space.
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    //
+    // Execute any workarounds or changes needed to make sure we can reset
+    // properly.
+    //
+    kbifPrepareForFullChipReset_HAL(pGpu, pKernelBif);
+
+    // Reset the gpu.
+    NV_ASSERT_OK(status = kbifDoFullChipReset_HAL(pGpu, pKernelBif));
+
+    //
+    // This 100ms wait is only required for legacy FLR where RM itself
+    // triggers FLR and it also does save/restore of config space.
+    // For hopper and later, HW will keep sending CRS status to OS
+    // until FWSEC boot sequence is not complete
+    //
+    if (!(pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_FLR_HANDLED_BY_OS)))
+    {
+        // Wait 100ms after GPU is reset to ensure Pre-OS completion.
+        osDelay(100);
+    }
+
+    return status;
+}
+
+NV_STATUS
+kbifWaitForConfigAccessAfterReset_IMPL
+(
+    OBJGPU *pGpu,
+    KernelBif *pKernelBif
+)
+{
+
+
+    NvU32 domain = gpuGetDomain(pGpu);
+    NvU8  bus    = gpuGetBus(pGpu);
+    NvU8  device = gpuGetDevice(pGpu);
+
+    NvU32 waitCount = 20; // iterations of the osDelayUs statements
+    while (NV_TRUE)
+    {
+        NvU16 vendorId;
+        NvU16 deviceId;
+        void *pGpuHandle = osPciInitHandle(domain,
+                                           bus,
+                                           device,
+                                           0 /* Function */,
+                                           &vendorId,
+                                           &deviceId);
+
+        NvU32 id = osPciReadDword(pGpuHandle, 0 /* Offset */);
+        if (id == pGpu->idInfo.PCIDeviceID)
+        {
+            // Found it.  Config space is accessible.  Break out.
+            return NV_OK;
+        }
+
+        if (waitCount == 0)
+        {
+            break;
+        }
+        waitCount--;
+
+        //
+        // Keep trying for at least 1 second.  Note that completion timeouts
+        // here can extend the amount of time we are in this loop.  But they are
+        // not fatal.
+        //
+        {
+            // Wait 50ms
+            osDelayUs(50000);
+        }
+    }
+
+    return NV_ERR_GENERIC;
 }
 

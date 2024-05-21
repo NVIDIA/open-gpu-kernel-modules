@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,6 +31,7 @@
 #include "dp_auxbus.h"
 #include "dp_auxretry.h"
 #include "dp_messageheader.h"
+#include "dp_printf.h"
 
 #include "displayport.h"
 
@@ -289,12 +290,12 @@ AuxBus::status AuxLogger::transaction(Action action, Type type, int address,
                 if (header.isTransactionStart && action==write && len > header.headerSizeBits/8)
                     name = getRequestId(buffer[header.headerSizeBits/8]);
 
-                DP_LOG(("DP-AUX> %s%s%s%s%04Xh hint(to:%s %s%s %s #%d) { %s| %s}",
-                        sizeRequested ==  *sizeCompleted ? "" : "INCOMPLETE ", getStatus(result),
-                        getAction(action), getType(type), address,
-                        header.address.toString(sb), header.isTransactionStart ? "S" : "",
-                        header.isTransactionEnd ? "E" : "", name, header.messageNumber,
-                        hex, hex_body));
+                DP_PRINTF(DP_NOTICE, "DP-AUX> %s%s%s%s%04Xh hint(to:%s %s%s %s #%d) { %s| %s}",
+                          sizeRequested ==  *sizeCompleted ? "" : "INCOMPLETE ", getStatus(result),
+                          getAction(action), getType(type), address,
+                          header.address.toString(sb), header.isTransactionStart ? "S" : "",
+                          header.isTransactionEnd ? "E" : "", name, header.messageNumber,
+                          hex, hex_body);
 #endif
                 return result;
             }
@@ -303,8 +304,8 @@ AuxBus::status AuxLogger::transaction(Action action, Type type, int address,
         hex[0] = 0;
 
     dpHexDump(&hex[0], sizeof(hex), buffer, *sizeCompleted);
-    DP_LOG(("DP-AUX> %s%s%s%s%04Xh { %s }",  sizeRequested ==  *sizeCompleted ? "" : "INCOMPLETE ",
-            getStatus(result), getAction(action), getType(type), address, hex));
+    DP_PRINTF(DP_NOTICE, "DP-AUX> %s%s%s%s%04Xh { %s }",  sizeRequested ==  *sizeCompleted ? "" : "INCOMPLETE ",
+              getStatus(result), getAction(action), getType(type), address, hex);
 
     return result;
 }

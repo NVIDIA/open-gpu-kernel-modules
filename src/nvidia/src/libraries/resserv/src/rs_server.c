@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +29,22 @@
 #include "resserv/rs_resource.h"
 #include "tls/tls.h"
 #include "nv_speculation_barrier.h"
+#if !RS_STANDALONE
+#include "os/os.h"
+#endif
+
+// Describes types of clients to find when getting client entries
+enum CLIENT_STATE
+{
+    CLIENT_PARTIALLY_INITIALIZED = NVBIT(0),
+    CLIENT_PENDING_FREE = NVBIT(1)
+} CLIENT_STATE;
+
+enum CLIENT_LIST_LOCK_STATE
+{
+    CLIENT_LIST_LOCK_LOCKED,
+    CLIENT_LIST_LOCK_UNLOCKED,
+};
 
 /**
  * Get the RsClient from a client handle without taking locks
@@ -42,25 +58,68 @@ static NV_STATUS _serverFindClient(RsServer *pServer, NvHandle hClient, RsClient
  * Get the CLIENT_ENTRY from a client handle without taking locks
  * @param[in]   pServer
  * @param[in]   hClient The handle to lookup
- * @param[in]   bFindPartial Include entries that have not finished constructing
+ * @param[in]   clientState Type of clients to look for
+ * @param[in]   clientListLockState State of the global client list lock
  * @param[out]  ppClientEntry The client entry associated with the handle
  */
-static NV_STATUS _serverFindClientEntry(RsServer *pServer, NvHandle hClient, NvBool bFindPartial, CLIENT_ENTRY **ppClientEntry);
+static NvBool _serverFindClientEntryByHandle(RsServer *pServer, NvHandle hClient, enum CLIENT_STATE clientState, enum CLIENT_LIST_LOCK_STATE clientListLockState, CLIENT_ENTRY **ppClientEntry);
 
 /**
- * Insert a CLIENT_ENTRY in the server database without taking locks
+ * Get the CLIENT_ENTRY from a client handle, incrementing the ref count if a reference
+ * to the CLIENT_ENTRY is held outside of this function (i.e. outside locks).
+ * @param[in]   pServer
+ * @param[in]   hClient The handle to lookup
+ * @param[in]   clientState Type of clients to look for
+ * @param[in]   clientListLockState State of the global client list lock
+ * @param[out]  ppClientEntry The client entry associated with the handle
+ */
+static NvBool _serverGetClientEntryByHandle(RsServer *pServer, NvHandle hClient, enum CLIENT_STATE clientState, enum CLIENT_LIST_LOCK_STATE clientListLockState, CLIENT_ENTRY **ppClientEntry);
+
+/**
+ * Get the CLIENT_ENTRY from a client handle, incrementing the reference count if a
+ * reference is held outside this function and also locking the client object if "access"
+ * dictates we should.
+ * @param[in]   pServer
+ * @param[in]   hClient The handle to lookup
+ * @param[in]   access Lock access type to lock the client object with
+ * @param[out]  ppClientEntry The client entry associated with the handle
+ */
+static NvBool _serverGetAndLockClientEntryByHandle(RsServer *pServer, NvHandle hClient, LOCK_ACCESS_TYPE access, CLIENT_ENTRY **ppClientEntry);
+
+/**
+ * Put the CLIENT_ENTRY, decrementing the reference count, and also
+ * unlocking the client object as "access" dictates we should.
+ * @param[in]   pServer
+ * @param[in]   access Lock access type to lock the client object with
+ * @param[in]   pClientEntry The client entry to put/unlock
+ */
+static void _serverPutAndUnlockClientEntry(RsServer *pServer, LOCK_ACCESS_TYPE access, CLIENT_ENTRY *pClientEntry);
+
+/**
+ * Insert a CLIENT_ENTRY in the server database at an arbitrary location, must be
+ * called with client list lock taken in RW mode.
  * @param[in]   pServer
  * @param[in]   pClientEntry The client entry associated with the handle
+ * @param[in]   ppClientNext The client entry to insert the entry before, or NULL if
+ *                            we should just insert at the end of the bucket list.
  */
-static NV_STATUS _serverInsertClientEntry(RsServer *pServer, CLIENT_ENTRY *pClientEntry, CLIENT_ENTRY **ppClientNext);
+static NV_STATUS _serverInsertClientEntry(RsServer *pServer, CLIENT_ENTRY *ppClientEntry, CLIENT_ENTRY *pClientNext);
 
 /**
- * Find the next available client handle in bucket.
+ * Mark a CLIENT_ENTRY as about to be freed
+ * @param[in]   pServer
+ * @param[in]   hClient The handle to lookup
+ * @param[out]  ppClientEntry The client entry associated with the handle
+ */
+static NvBool _serverMarkClientEntryPendingFree(RsServer *pServer, NvHandle hClient, CLIENT_ENTRY **ppClientEntry);
+
+/**
+ * Find the next available client handle in bucket, must be called with client list lock
  * @param[in]   pServer
  * @param[in]   hClientIn
  * @param[out]  pClientOut
  */
-static NV_STATUS _serverFindNextAvailableClientHandleInBucket(RsServer *pServer, NvHandle hClientIn, NvHandle *phClientOut, CLIENT_ENTRY  ***pppClientNext);
+static NV_STATUS _serverFindNextAvailableClientHandleInBucket(RsServer *pServer, NvHandle hClientIn, NvHandle *phClientOut, CLIENT_ENTRY  **ppClientNext);
 
 /**
  * Create a client entry and a client lock for a client that does not exist yet. Used during client
@@ -71,61 +130,92 @@ static NV_STATUS _serverFindNextAvailableClientHandleInBucket(RsServer *pServer,
 static NV_STATUS _serverCreateEntryAndLockForNewClient(RsServer *pServer, NvHandle *phClient, NvBool bInternalHandle, CLIENT_ENTRY **ppClientEntry, API_SECURITY_INFO *pSecInfo);
 
 /**
- * Lock and retrieve the RsClient associated with a client handle.
- * @param[in]   pServer
- * @param[in]   access
- * @param[in]   hClient Handle of client to look-up
- * @param[out]  pClient RsClient associated with the client handle
+ * Lock the RsClient given a CLIENT_ENTRY
+ * @param[in]   access       Read or write lock access
+ * @param[in]   pClientEntry The client entry to lock
  */
-static NV_STATUS _serverLockClient(RsServer *pServer, LOCK_ACCESS_TYPE access, NvHandle hClient, RsClient **ppClient);
+static void _serverLockClient(LOCK_ACCESS_TYPE access, CLIENT_ENTRY* pClientEntry);
 
 /**
  * Lock and retrieve the RsClient associated with a client handle, and update lock info.
- * @param[in]   pServer
- * @param[in]   access
- * @param[in]   hClient Handle of client to look-up
+ * @param[in]    pServer
+ * @param[in]    access
+ * @param[in]    hClient Handle of client to look-up
+ * @param[in]    bValidateLocks Whether to validate currently held locks are sufficient
  * @param[inout] pLockInfo Lock state
- * @param[out]  pClient RsClient associated with the client handle
+ * @param[out]   pReleaseFlags Local lock flags to keep track of what locks to release
+ * @param[out]   pplientEntry CLIENT_ENTRY associated with the client handle
  */
-static NV_STATUS _serverLockClientWithLockInfo(RsServer *pServer, LOCK_ACCESS_TYPE access, NvHandle hClient, RS_LOCK_INFO *pLockInfo, NvU32 *pReleaseFlags, RsClient **ppClient);
+static NV_STATUS _serverLockClientWithLockInfo(RsServer *pServer, LOCK_ACCESS_TYPE access, NvHandle hClient, NvBool bValidateLocks, RS_LOCK_INFO *pLockInfo, NvU32 *pReleaseFlags, CLIENT_ENTRY **ppClientEntry);
 
 /**
  * Lock and retrieve two RsClient associated with a pair of client handles, and update lock info.
- * @param[in]   pServer
- * @param[in]   access
- * @param[in]   hClient1, hClient2 Handles of clients to look-up and lock
+ * @param[in]    pServer
+ * @param[in]    access
+ * @param[in]    hClient1, hClient2 Handles of clients to look-up and lock
+ * @param[in]    bValidateLocks Whether to validate currently held locks are sufficient
  * @param[inout] pLockInfo Lock state
- * @param[out]  pClient1, pClient2 RsClient associated with the client handles
+ * @param[out]   pReleaseFlags Local lock flags to keep track of what locks to release
+ * @param[out]   ppClientEntry1 CLIENT_ENTRY associated with the first client handle
+ * @param[out]   ppClientEntry2 CLIENT_ENTRY associated with the second client handle
  */
-static NV_STATUS _serverLockDualClientWithLockInfo(RsServer *pServer, LOCK_ACCESS_TYPE access, NvHandle hClient1, NvHandle hClient2, RS_LOCK_INFO *pLockInfo, NvU32 *pReleaseFlags, RsClient **ppClient1, RsClient **ppClient2);
+static NV_STATUS _serverLockDualClientWithLockInfo(RsServer *pServer, LOCK_ACCESS_TYPE access, NvHandle hClient1, NvHandle hClient2, NvBool bValidateLocks, RS_LOCK_INFO *pLockInfo, NvU32 *pReleaseFlags, CLIENT_ENTRY **ppClientEntry1, CLIENT_ENTRY **ppClientEntry2);
 
 /**
- * Unlock a client by handle
- * @param[in]   pServer
- * @param[in]   access
- * @param[in]   hClient Handle of the client to unlock
+ * Lock all clients, and update lock info.
+ * @param[in]    pServer
+ * @param[inout] pLockInfo Lock state
+ * @param[out]   pReleaseFlags Local lock flags to keep track of what locks to release
  */
-static NV_STATUS _serverUnlockClient(RsServer *pServer, LOCK_ACCESS_TYPE access, NvHandle hClient);
+static NV_STATUS _serverLockAllClientsWithLockInfo(RsServer *pServer, RS_LOCK_INFO *pLockInfo, NvU32 *pReleaseFlags);
 
 /**
- * Unlock a client by handle, and update lock info.
+ * Unlock the RsClient given a CLIENT_ENTRY
+ * @param[in]   access       Read or write lock access
+ * @param[in]   pClientEntry The client entry to unlock
+ */
+static void _serverUnlockClient(LOCK_ACCESS_TYPE access, CLIENT_ENTRY* pClientEntry);
+
+/**
+ * Unlock a client and update lock info.
  * @param[in]   pServer
  * @param[in]   access
- * @param[in]   hClient Handle of the client to unlock
+ * @param[in]   pClientEntry Client entry to unlock
  * @param[inout] pLockInfo Lock state
  * @param[inout] pReleaseFlags   Flags indicating the locks that need to be released
  */
-static NV_STATUS _serverUnlockClientWithLockInfo(RsServer *pServer, LOCK_ACCESS_TYPE access, NvHandle hClient, RS_LOCK_INFO* pLockInfo, NvU32 *pReleaseFlags);
+static void _serverUnlockClientWithLockInfo(RsServer *pServer, LOCK_ACCESS_TYPE access, CLIENT_ENTRY *pClientEntry, RS_LOCK_INFO* pLockInfo, NvU32 *pReleaseFlags);
 
 /**
- * Unlock a client by handle, and update lock info.
+ * Unlock two clients and update lock info.
  * @param[in]   pServer
  * @param[in]   access
- * @param[in]   hClient1, hClient2 Handles of the clients to unlock
+ * @param[in]   pClientEntry1 First client's entry to unlock
+ * @param[in]   pClientEntry2 Second client's entry to unlock
  * @param[inout] pLockInfo Lock state
  * @param[inout] pReleaseFlags   Flags indicating the locks that need to be released
  */
-static NV_STATUS _serverUnlockDualClientWithLockInfo(RsServer *pServer, LOCK_ACCESS_TYPE access, NvHandle hClient1, NvHandle hClient2, RS_LOCK_INFO* pLockInfo, NvU32 *pReleaseFlags);
+static void _serverUnlockDualClientWithLockInfo(RsServer *pServer, LOCK_ACCESS_TYPE access, CLIENT_ENTRY *pClientEntry1, CLIENT_ENTRY *pClientEntry2, RS_LOCK_INFO* pLockInfo, NvU32 *pReleaseFlags);
+
+/**
+ * Unlock all clients, and update lock info.
+ * @param[in]    pServer
+ * @param[inout] pLockInfo Lock state
+ * @param[inout] pReleaseFlags   Flags indicating the locks that need to be released
+ */
+static NV_STATUS _serverUnlockAllClientsWithLockInfo(RsServer *pServer, RS_LOCK_INFO *pLockInfo, NvU32 *pReleaseFlags);
+
+/**
+ * Increment reference count for CLIENT_ENTRY, preventing it from being freed
+ * @param[in] pClientEntry The client entry to reference
+ */
+static void _serverGetClientEntry(CLIENT_ENTRY *pClientEntry);
+
+/**
+ * Decrement reference count for CLIENT_ENTRY, freeing it if it reaches 0
+ * @param[in] pClientEntry The client entry to dereference
+ */
+static void _serverPutClientEntry(RsServer *pServer, CLIENT_ENTRY *pClientEntry);
 
 NV_STATUS serverFreeResourceTreeUnderLock(RsServer *pServer, RS_RES_FREE_PARAMS *pFreeParams)
 {
@@ -231,11 +321,12 @@ serverConstruct
     NvU32 i;
     PORT_MEM_ALLOCATOR *pAllocator = portMemAllocatorCreateNonPaged();
 
-    pServer->privilegeLevel     = privilegeLevel;
-    pServer->bConstructed       = NV_TRUE;
-    pServer->pAllocator         = pAllocator;
-    pServer->bDebugFreeList     = NV_FALSE;
-    pServer->bRsAccessEnabled   = NV_TRUE;
+    pServer->privilegeLevel        = privilegeLevel;
+    pServer->bConstructed          = NV_TRUE;
+    pServer->pAllocator            = pAllocator;
+    pServer->bDebugFreeList        = NV_FALSE;
+    pServer->bRsAccessEnabled      = NV_TRUE;
+    pServer->allClientLockOwnerTid = ~0;
     pServer->internalHandleBase = RS_CLIENT_INTERNAL_HANDLE_BASE;
     pServer->clientHandleBase   = RS_CLIENT_HANDLE_BASE;
     pServer->activeClientCount  = 0;
@@ -249,11 +340,12 @@ serverConstruct
 
     for (i = 0; i < RS_CLIENT_HANDLE_BUCKET_COUNT; i++)
     {
-        listInit(&pServer->pClientSortedList[i], pAllocator);
+        listInitIntrusive(&pServer->pClientSortedList[i]);
     }
     pServer->clientCurrentHandleIndex = 0;
 
-    pServer->pClientListLock = portSyncRwLockCreate(pAllocator);
+    RS_LOCK_VALIDATOR_INIT(&pServer->clientListLockVal, LOCK_VAL_LOCK_CLASS_CLIENT_LIST, 0xcafe0000);
+    pServer->pClientListLock = portSyncSpinlockCreate(pAllocator);
     if (pServer->pClientListLock == NULL)
         goto fail;
 
@@ -301,7 +393,7 @@ fail:
 #endif
 
     if (pServer->pClientListLock != NULL)
-        portSyncRwLockDestroy(pServer->pClientListLock);
+        portSyncSpinlockDestroy(pServer->pClientListLock);
 
     if (pServer->pShareMapLock != NULL)
         portSyncSpinlockDestroy(pServer->pShareMapLock);
@@ -337,13 +429,13 @@ serverDestruct
 
     for (i = 0; i < RS_CLIENT_HANDLE_BUCKET_COUNT; i++)
     {
-        CLIENT_ENTRY **ppClientEntry;
+        CLIENT_ENTRY *pClientEntry;
         NvHandle hClient = 0;
 
-        while ((ppClientEntry = listHead(&pServer->pClientSortedList[i])) != NULL)
+        while ((pClientEntry = listHead(&pServer->pClientSortedList[i])) != NULL)
         {
             RS_RES_FREE_PARAMS_INTERNAL freeParams;
-            lockInfo.pClient = (*ppClientEntry)->pClient;
+            lockInfo.pClient = pClientEntry->pClient;
             hClient = lockInfo.pClient->hClient;
             serverInitFreeParams_Recursive(hClient, hClient, &lockInfo, &freeParams);
             serverFreeResourceTree(pServer, &freeParams);
@@ -366,7 +458,7 @@ serverDestruct
 #endif
 
     portSyncSpinlockDestroy(pServer->pShareMapLock);
-    portSyncRwLockDestroy(pServer->pClientListLock);
+    portSyncSpinlockDestroy(pServer->pClientListLock);
 
     portMemAllocatorRelease(pServer->pAllocator);
 
@@ -405,29 +497,15 @@ serverSetClientHandleBase
 }
 
 static
-NV_STATUS
+void
 _serverFreeClient_underlock
 (
     RsServer *pServer,
-    RsClient *pClient
+    CLIENT_ENTRY *pClientEntry
 )
 {
-    CLIENT_ENTRY *pClientEntry = NULL;
-    NvHandle hClient;
-    NV_STATUS status;
-    PORT_RWLOCK *pLock = NULL;
-
-    status =_serverFindClientEntry(pServer, pClient->hClient, NV_FALSE, &pClientEntry);
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    NV_ASSERT(pClientEntry->pClient != NULL);
-
-    hClient = pClient->hClient;
-    pClientEntry->pClient = NULL;
-    pClientEntry->hClient = 0;
+    RsClient *pClient = pClientEntry->pClient;
+    NvHandle hClient = pClient->hClient;
 
     clientFreeAccessBackRefs(pClient, pServer);
 
@@ -440,14 +518,15 @@ _serverFreeClient_underlock
 
     objDelete(pClient);
 
-    listRemoveFirstByValue(&pServer->pClientSortedList[hClient & RS_CLIENT_HANDLE_BUCKET_MASK], &pClientEntry);
-    pLock = pClientEntry->pLock;
+    // Now remove the client entry and decrease the client count
+    serverAcquireClientListLock(pServer);
+    listRemove(
+        &pServer->pClientSortedList[hClient & RS_CLIENT_HANDLE_BUCKET_MASK],
+        pClientEntry);
+    serverReleaseClientListLock(pServer);
 
-    RS_RWLOCK_RELEASE_WRITE_EXT(pLock, &pClientEntry->lockVal, NV_TRUE);
-    portSyncRwLockDestroy(pLock);
-    PORT_FREE(pServer->pAllocator, pClientEntry);
-
-    return NV_OK;
+    NV_ASSERT(pClientEntry->refCount == 1);
+    _serverPutClientEntry(pServer, pClientEntry);
 }
 
 NV_STATUS
@@ -473,22 +552,16 @@ serverFreeDomain
     for (bucket = 0; bucket < RS_CLIENT_HANDLE_BUCKET_COUNT; bucket ++)
     {
         RsClientList  *pClientList = &(pServer->pClientSortedList[bucket]);
-        CLIENT_ENTRY **ppClientEntry = listHead(pClientList);
-        while (ppClientEntry != NULL)
+        CLIENT_ENTRY  *pClientEntry = listHead(pClientList);
+        while (pClientEntry != NULL)
         {
-            CLIENT_ENTRY *pClientEntry = *ppClientEntry;
             RS_CLIENT_FREE_PARAMS params;
 
             portMemSet(&params, 0, sizeof(params));
-            if (pClientEntry == NULL)
-            {
-                ppClientEntry = listNext(pClientList, ppClientEntry);
-                continue;
-            }
             params.hClient = pClientEntry->hClient;
 
             serverFreeClient(pServer, &params);
-            ppClientEntry = listHead(pClientList);
+            pClientEntry = listHead(pClientList);
         }
     }
     return NV_OK;
@@ -530,29 +603,22 @@ serverAllocClient
     NvBool        bLockedClient = NV_FALSE;
 
     if (!pServer->bConstructed)
-    {
-        status = NV_ERR_NOT_READY;
-        goto done;
-    }
+        return NV_ERR_NOT_READY;
 
     // RS-TODO Assert that the RW top lock is held
 
     hClient = pParams->hClient;
 #if !(RS_COMPATABILITY_MODE)
+    // Fail if the server supplied a client id
     if (hClient != 0)
-    {
-        // Fail if the server supplied a client id
-        status = NV_ERR_INVALID_ARGUMENT;
-        goto done;
-    }
+        return NV_ERR_INVALID_ARGUMENT;
 #endif
 
     status = _serverCreateEntryAndLockForNewClient(pServer, &hClient, !!(pParams->allocState & ALLOC_STATE_INTERNAL_CLIENT_HANDLE), &pClientEntry, pParams->pSecInfo);
 
     if (status != NV_OK)
-    {
         goto done;
-    }
+
     pParams->hClient = hClient;
     pParams->hResource = hClient;
     bLockedClient = NV_TRUE;
@@ -564,31 +630,45 @@ serverAllocClient
         goto done;
     }
 
-    pClientEntry->pClient = pClient;
-
     // Automatically allocate client proxy resource
     status = clientAllocResource(pClient, pServer, pParams);
     if (status != NV_OK)
         goto done;
 
-    // NV_PRINTF(LEVEL_INFO, "Allocated hClient: %x\n", hClient);
+    //
+    // Client list lock is required when the client becomes active in order to avoid
+    // race conditions with serverLockAllClients.
+    //
+    serverAcquireClientListLock(pServer);
+    pClientEntry->pClient = pClient;
+
+    // Increase client count
     portAtomicIncrementU32(&pServer->activeClientCount);
+    serverReleaseClientListLock(pServer);
 
 done:
     if (bLockedClient)
-        _serverUnlockClient(pServer, LOCK_ACCESS_WRITE, pParams->hClient);
+        _serverUnlockClient(LOCK_ACCESS_WRITE, pClientEntry);
 
-    if ((status != NV_OK) && (status != NV_ERR_INSERT_DUPLICATE_NAME) && (hClient != 0))
+    if ((status != NV_OK) && (pClientEntry != NULL))
     {
-        if (_serverFindClientEntry(pServer, hClient, NV_TRUE, &pClientEntry) == NV_OK)
-        {
-            listRemoveFirstByValue(&pServer->pClientSortedList[hClient & RS_CLIENT_HANDLE_BUCKET_MASK], &pClientEntry);
-            portSyncRwLockDestroy(pClientEntry->pLock);
-            PORT_FREE(pServer->pAllocator, pClientEntry);
-        }
+        serverAcquireClientListLock(pServer);
+        listRemove(
+            &pServer->pClientSortedList[hClient & RS_CLIENT_HANDLE_BUCKET_MASK],
+            pClientEntry);
+        serverReleaseClientListLock(pServer);
+
+        //
+        // Decrement reference count outside of client list lock, memory free is
+        // disallowed in the spinlock's critical section on Windows.
+        //
+        _serverPutClientEntry(pServer, pClientEntry);
 
         objDelete(pClient);
     }
+
+    if (pClientEntry != NULL)
+        _serverPutClientEntry(pServer, pClientEntry);
 
     return status;
 }
@@ -601,35 +681,34 @@ _serverFreeClient
     RS_CLIENT_FREE_PARAMS *pParams
 )
 {
-    NV_STATUS   status;
-    NV_STATUS   lockStatus;
-    NvU32       releaseFlags = 0;
-    RsClient   *pClient;
+    NV_STATUS     status;
+    CLIENT_ENTRY *pClientEntry;
+    NvU32         releaseFlags = 0;
 
-    lockStatus = _serverLockClient(pServer, LOCK_ACCESS_WRITE, pParams->hClient, &pClient);
-    if (lockStatus != NV_OK)
-    {
-        status = NV_ERR_INVALID_CLIENT;
-        goto done;
-    }
-    releaseFlags |= RS_LOCK_RELEASE_CLIENT_LOCK;
+    //
+    // Mark the client entry as pending free which will allow us to prevent other threads
+    // from using the client while we deallocate resources.
+    //
+    if (!_serverMarkClientEntryPendingFree(pServer, pParams->hClient, &pClientEntry))
+        return NV_ERR_INVALID_OBJECT_HANDLE;
 
-    status = serverResLock_Prologue(pServer, LOCK_ACCESS_WRITE, pParams->pResFreeParams->pLockInfo, &releaseFlags);
+    status = serverResLock_Prologue(pServer, LOCK_ACCESS_WRITE,
+        pParams->pResFreeParams->pLockInfo, &releaseFlags);
     if (status != NV_OK)
         goto done;
 
-    status = _serverFreeClient_underlock(pServer, pClient);
-    if (status != NV_OK)
-        goto done;
-
-    // NV_PRINTF(LEVEL_INFO, "Freeing hClient: %x\n", hClient);
-    portAtomicDecrementU32(&pServer->activeClientCount);
+    _serverFreeClient_underlock(pServer, pClientEntry);
 
 done:
     serverResLock_Epilogue(pServer, LOCK_ACCESS_WRITE, pParams->pResFreeParams->pLockInfo, &releaseFlags);
 
-    if (releaseFlags & RS_LOCK_RELEASE_CLIENT_LOCK)
-        _serverUnlockClient(pServer, LOCK_ACCESS_WRITE, pParams->hClient);
+    // Undo pending free marker
+    if (status != NV_OK)
+    {
+        serverAcquireClientListLock(pServer);
+        pClientEntry->bPendingFree = NV_FALSE;
+        serverReleaseClientListLock(pServer);
+    }
 
     return status;
 }
@@ -650,7 +729,8 @@ serverAllocResource
     LOCK_ACCESS_TYPE    topLockAccess;
     NvU32               initialLockState;
     RS_LOCK_INFO       *pLockInfo;
-    RsClient           *pSecondClient = NULL;
+    CLIENT_ENTRY       *pClientEntry = NULL;
+    CLIENT_ENTRY       *pSecondClientEntry = NULL;
     NvHandle            hSecondClient;
     CALL_CONTEXT        callContext = {0};
 
@@ -694,13 +774,14 @@ serverAllocResource
             if (hSecondClient == 0)
             {
                 status = _serverLockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE,
-                                                       pParams->hClient, pLockInfo,
-                                                       &releaseFlags, &pParams->pClient);
+                                                       pParams->hClient, NV_TRUE,
+                                                       pLockInfo, &releaseFlags,
+                                                       &pClientEntry);
 
                 if (status != NV_OK)
                     goto done;
 
-                if (!pParams->pClient->bActive)
+                if (!pClientEntry->pClient->bActive)
                 {
                     status = NV_ERR_INVALID_STATE;
                     goto done;
@@ -710,18 +791,23 @@ serverAllocResource
             {
                 status = _serverLockDualClientWithLockInfo(pServer, LOCK_ACCESS_WRITE,
                                                            pParams->hClient, hSecondClient,
-                                                           pLockInfo, &releaseFlags,
-                                                           &pParams->pClient, &pSecondClient);
+                                                           NV_TRUE, pLockInfo,
+                                                           &releaseFlags,
+                                                           &pClientEntry,
+                                                           &pSecondClientEntry);
 
                 if (status != NV_OK)
                     goto done;
 
-                if (!pParams->pClient->bActive || !pSecondClient->bActive)
+                if (!pClientEntry->pClient->bActive ||
+                    !pSecondClientEntry->pClient->bActive)
                 {
                     status = NV_ERR_INVALID_STATE;
                     goto done;
                 }
             }
+
+            pParams->pClient = pClientEntry->pClient;
 
             // The second client's usage is class-dependent and should be validated
             // by the class's constructor
@@ -748,16 +834,19 @@ done:
 
     if (!bClientAlloc)
     {
-        if (pSecondClient != NULL)
+        if (pClientEntry != NULL)
         {
-            _serverUnlockDualClientWithLockInfo(pServer, LOCK_ACCESS_WRITE,
-                                                pParams->hClient, pSecondClient->hClient,
+            if (pSecondClientEntry != NULL)
+            {
+                _serverUnlockDualClientWithLockInfo(pServer, LOCK_ACCESS_WRITE,
+                                                    pClientEntry, pSecondClientEntry,
+                                                    pLockInfo, &releaseFlags);
+            }
+            else
+            {
+                _serverUnlockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pClientEntry,
                                                 pLockInfo, &releaseFlags);
-        }
-        else
-        {
-            _serverUnlockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pParams->hClient,
-                                            pLockInfo, &releaseFlags);
+            }
         }
     }
 
@@ -1024,6 +1113,7 @@ serverFreeResourceTree
     RS_RES_FREE_PARAMS *pParams
 )
 {
+    CLIENT_ENTRY       *pClientEntry = NULL;
     RsClient           *pClient = NULL;
     NV_STATUS           status;
     RsResourceRef      *pResourceRef = NULL;
@@ -1056,9 +1146,12 @@ serverFreeResourceTree
     if (status != NV_OK)
         goto done;
 
-    status = _serverLockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pParams->hClient, pLockInfo, &releaseFlags, &pClient);
+    status = _serverLockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pParams->hClient,
+        NV_TRUE, pLockInfo, &releaseFlags, &pClientEntry);
     if (status != NV_OK)
         goto done;
+
+    pClient = pClientEntry->pClient;
 
     status = clientValidate(pClient, pParams->pSecInfo);
     if (status != NV_OK)
@@ -1072,7 +1165,7 @@ serverFreeResourceTree
     status = clientGetResourceRef(pClient, pParams->hResource, &pResourceRef);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_NOTICE, "hObject 0x%x not found for client 0x%x\n",
+        NV_PRINTF(LEVEL_INFO, "hObject 0x%x not found for client 0x%x\n",
                 pParams->hResource,
                 pParams->hClient);
 #if (RS_COMPATABILITY_MODE)
@@ -1213,7 +1306,10 @@ serverFreeResourceTree
         pClient->bActive = NV_FALSE;
     }
 
-    _serverUnlockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pParams->hClient, pLockInfo, &releaseFlags);
+    _serverUnlockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pClientEntry, pLockInfo,
+        &releaseFlags);
+
+    pClientEntry = NULL;
 
     if (pParams->hClient == pParams->hResource)
     {
@@ -1247,7 +1343,11 @@ done:
         bPopFreeStack = NV_FALSE;
     }
 
-    _serverUnlockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pParams->hClient, pLockInfo, &releaseFlags);
+    if (pClientEntry != NULL)
+    {
+        _serverUnlockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE,
+            pClientEntry, pLockInfo, &releaseFlags);
+    }
     serverTopLock_Epilogue(pServer, topLockAccess, pLockInfo, &releaseFlags);
 
     //
@@ -1268,16 +1368,18 @@ serverControl
     RS_RES_CONTROL_PARAMS *pParams
 )
 {
-    NV_STATUS           status;
-    RsClient           *pClient;
-    RsClient           *pSecondClient = NULL;
-    RsResourceRef      *pResourceRef = NULL;
-    RS_LOCK_INFO       *pLockInfo;
-    NvU32               releaseFlags = 0;
-    CALL_CONTEXT        callContext;
-    CALL_CONTEXT       *pOldContext = NULL;
-    LOCK_ACCESS_TYPE    access = LOCK_ACCESS_WRITE;
-    NvHandle            hSecondClient;
+    NV_STATUS             status;
+    CLIENT_ENTRY         *pClientEntry = NULL;
+    CLIENT_ENTRY         *pSecondClientEntry = NULL;
+    RsClient             *pClient;
+    RsResourceRef        *pResourceRef = NULL;
+    RS_LOCK_INFO         *pLockInfo;
+    NvU32                 releaseFlags = 0;
+    CALL_CONTEXT          callContext;
+    CALL_CONTEXT         *pOldContext = NULL;
+    LOCK_ACCESS_TYPE      access = LOCK_ACCESS_WRITE;
+    enum CLIENT_LOCK_TYPE clientLockType = CLIENT_LOCK_SPECIFIC;
+    NvHandle              hSecondClient;
 
     pLockInfo = pParams->pLockInfo;
     NV_ASSERT_OR_RETURN(pLockInfo != NULL, NV_ERR_INVALID_ARGUMENT);
@@ -1297,37 +1399,61 @@ serverControl
     if (status != NV_OK)
         goto done;
 
-    status = serverControlLookupSecondClient(pParams->cmd, pParams->pParams,
-        pParams->pCookie, &hSecondClient);
+    status = serverControlLookupClientLockFlags(pParams->pCookie, &clientLockType);
     if (status != NV_OK)
         goto done;
 
-    if (hSecondClient == 0)
+    if (clientLockType == CLIENT_LOCK_SPECIFIC)
     {
-        status = _serverLockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE,
-            pParams->hClient, pLockInfo, &releaseFlags, &pClient);
+        status = serverControlLookupSecondClient(pParams->cmd, pParams->pParams,
+            pParams->pCookie, &hSecondClient);
         if (status != NV_OK)
             goto done;
 
-        if (!pClient->bActive)
+        if (hSecondClient == 0)
         {
-            status = NV_ERR_INVALID_STATE;
-            goto done;
+            status = _serverLockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE,
+                pParams->hClient,
+                (((pParams->flags & NVOS54_FLAGS_IRQL_RAISED) == 0) &&
+                 ((pParams->flags & NVOS54_FLAGS_LOCK_BYPASS) == 0)),
+                pLockInfo, &releaseFlags, &pClientEntry);
+            if (status != NV_OK)
+                goto done;
+
+            if (!pClientEntry->pClient->bActive)
+            {
+                status = NV_ERR_INVALID_STATE;
+                goto done;
+            }
         }
+        else
+        {
+            status = _serverLockDualClientWithLockInfo(pServer, LOCK_ACCESS_WRITE,
+                pParams->hClient, hSecondClient,
+                (((pParams->flags & NVOS54_FLAGS_IRQL_RAISED) == 0) &&
+                 ((pParams->flags & NVOS54_FLAGS_LOCK_BYPASS) == 0)),
+                pLockInfo, &releaseFlags, &pClientEntry, &pSecondClientEntry);
+            if (status != NV_OK)
+                goto done;
+
+            if (!pClientEntry->pClient->bActive || !pSecondClientEntry->pClient->bActive)
+            {
+                status = NV_ERR_INVALID_STATE;
+                goto done;
+            }
+        }
+
+        pClient = pClientEntry->pClient;
     }
     else
     {
-        status = _serverLockDualClientWithLockInfo(pServer, LOCK_ACCESS_WRITE,
-            pParams->hClient, hSecondClient, pLockInfo, &releaseFlags,
-            &pClient, &pSecondClient);
+        status = _serverLockAllClientsWithLockInfo(pServer, pLockInfo, &releaseFlags);
         if (status != NV_OK)
             goto done;
 
-        if (!pClient->bActive || !pSecondClient->bActive)
-        {
-            status = NV_ERR_INVALID_STATE;
+        status = _serverFindClient(pServer, pParams->hClient, &pClient);
+        if (status != NV_OK)
             goto done;
-        }
     }
 
     status = clientValidate(pClient, &pParams->secInfo);
@@ -1392,16 +1518,26 @@ done:
 
     serverSessionLock_Epilogue(pServer, LOCK_ACCESS_WRITE, pLockInfo, &releaseFlags);
 
-    if (pSecondClient != NULL)
+    if (clientLockType == CLIENT_LOCK_SPECIFIC)
     {
-        _serverUnlockDualClientWithLockInfo(pServer, LOCK_ACCESS_WRITE,
-            pParams->hClient, pSecondClient->hClient,
-            pLockInfo, &releaseFlags);
+        if (pClientEntry != NULL)
+        {
+            if (pSecondClientEntry != NULL)
+            {
+                _serverUnlockDualClientWithLockInfo(pServer, LOCK_ACCESS_WRITE,
+                                                    pClientEntry, pSecondClientEntry,
+                                                    pLockInfo, &releaseFlags);
+            }
+            else
+            {
+                _serverUnlockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pClientEntry,
+                                                pLockInfo, &releaseFlags);
+            }
+        }
     }
     else
     {
-        _serverUnlockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE,
-            pParams->hClient, pLockInfo, &releaseFlags);
+        _serverUnlockAllClientsWithLockInfo(pServer, pLockInfo, &releaseFlags);
     }
 
     serverTopLock_Epilogue(pServer, access, pLockInfo, &releaseFlags);
@@ -1424,6 +1560,8 @@ serverCopyResource
     NV_STATUS           status;
     RS_LOCK_INFO       *pLockInfo = pParams->pLockInfo;
     NvU32               releaseFlags = 0;
+    CLIENT_ENTRY       *pClientEntrySrc = NULL;
+    CLIENT_ENTRY       *pClientEntryDst = NULL;
     RsClient           *pClientSrc;
     RsClient           *pClientDst;
     RsResourceRef      *pResourceRefSrc;
@@ -1446,11 +1584,14 @@ serverCopyResource
         goto done;
 
     status = _serverLockDualClientWithLockInfo(pServer, LOCK_ACCESS_WRITE,
-                                               hClientSrc, hClientDst,
+                                               hClientSrc, hClientDst, NV_TRUE,
                                                pLockInfo, &releaseFlags,
-                                               &pClientSrc, &pClientDst);
+                                               &pClientEntrySrc, &pClientEntryDst);
     if (status != NV_OK)
         goto done;
+
+    pClientSrc = pClientEntrySrc->pClient;
+    pClientDst = pClientEntryDst->pClient;
 
     if (!pClientSrc->bActive || !pClientDst->bActive)
     {
@@ -1503,9 +1644,12 @@ serverCopyResource
 done:
     serverResLock_Epilogue(pServer, LOCK_ACCESS_WRITE, pParams->pLockInfo, &releaseFlags);
 
-    _serverUnlockDualClientWithLockInfo(pServer, LOCK_ACCESS_WRITE,
-                                        hClientSrc, hClientDst,
-                                        pLockInfo, &releaseFlags);
+    if (pClientEntrySrc != NULL && pClientEntryDst != NULL)
+    {
+        _serverUnlockDualClientWithLockInfo(pServer, LOCK_ACCESS_WRITE,
+                                            pClientEntrySrc, pClientEntryDst,
+                                            pLockInfo, &releaseFlags);
+    }
     serverTopLock_Epilogue(pServer, topLockAccess, pLockInfo, &releaseFlags);
 
     return status;
@@ -1527,6 +1671,8 @@ _serverShareResourceAccessClient
     NV_STATUS           status;
     RS_LOCK_INFO       *pLockInfo = pParams->pLockInfo;
     NvU32               releaseFlags = 0;
+    CLIENT_ENTRY       *pClientEntryOwner = NULL;
+    CLIENT_ENTRY       *pClientEntryTarget = NULL;
     RsClient           *pClientOwner;
     RsClient           *pClientTarget;
     RsResourceRef      *pResourceRef;
@@ -1550,11 +1696,14 @@ _serverShareResourceAccessClient
         goto done;
 
     status = _serverLockDualClientWithLockInfo(pServer, LOCK_ACCESS_WRITE,
-                                               hClientOwner, hClientTarget,
+                                               hClientOwner, hClientTarget, NV_TRUE,
                                                pLockInfo, &releaseFlags,
-                                               &pClientOwner, &pClientTarget);
+                                               &pClientEntryOwner, &pClientEntryTarget);
     if (status != NV_OK)
         goto done;
+
+    pClientOwner = pClientEntryOwner->pClient;
+    pClientTarget = pClientEntryTarget->pClient;
 
     status = clientGetResourceRef(pClientOwner, pParams->hResource, &pResourceRef);
     if (status != NV_OK)
@@ -1602,9 +1751,12 @@ restore_context:
     //           hClientOwner, pParams->hResource, hClientTarget);
 
 done:
-    _serverUnlockDualClientWithLockInfo(pServer, LOCK_ACCESS_WRITE,
-                                        hClientOwner, hClientTarget,
-                                        pLockInfo, &releaseFlags);
+    if (pClientEntryOwner != NULL && pClientEntryTarget != NULL)
+    {
+        _serverUnlockDualClientWithLockInfo(pServer, LOCK_ACCESS_WRITE,
+                                            pClientEntryOwner, pClientEntryTarget,
+                                            pLockInfo, &releaseFlags);
+    }
     serverTopLock_Epilogue(pServer, topLockAccess, pLockInfo, &releaseFlags);
 
     return status;
@@ -1621,6 +1773,7 @@ serverShareResourceAccess
     NV_STATUS           status;
     RS_LOCK_INFO       *pLockInfo;
     NvU32               releaseFlags = 0;
+    CLIENT_ENTRY       *pClientEntry = NULL;
     RsClient           *pClient;
     RsResourceRef      *pResourceRef;
     NvU16               shareType;
@@ -1658,9 +1811,12 @@ serverShareResourceAccess
     if (status != NV_OK)
         goto done;
 
-    status = _serverLockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pParams->hClient, pLockInfo, &releaseFlags, &pClient);
+    status = _serverLockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pParams->hClient,
+        NV_TRUE, pLockInfo, &releaseFlags, &pClientEntry);
     if (status != NV_OK)
         goto done;
+
+    pClient = pClientEntry->pClient;
 
     status = clientValidate(pClient, pParams->pSecInfo);
     if (status != NV_OK)
@@ -1694,7 +1850,11 @@ serverShareResourceAccess
     // NV_PRINTF(LEVEL_INFO, "hClient %x: Shared hResource: %x\n", hClient, pParams->hResource);
 
 done:
-    _serverUnlockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pParams->hClient, pLockInfo, &releaseFlags);
+    if (pClientEntry != NULL)
+    {
+        _serverUnlockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pClientEntry,
+            pLockInfo, &releaseFlags);
+    }
 
     serverTopLock_Epilogue(pServer, topLockAccess, pLockInfo, &releaseFlags);
 
@@ -1713,6 +1873,7 @@ serverMap
     NV_STATUS           status = NV_ERR_INVALID_STATE;
     CALL_CONTEXT        callContext;
     CALL_CONTEXT       *pOldContext = NULL;
+    CLIENT_ENTRY       *pClientEntry = NULL;
     RsClient           *pClient;
     RsResourceRef      *pResourceRef;
     RsResourceRef      *pContextRef = NULL;
@@ -1733,9 +1894,12 @@ serverMap
     if (status != NV_OK)
         goto done;
 
-    status = _serverLockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, hClient, pLockInfo, &releaseFlags, &pClient);
+    status = _serverLockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, hClient,
+        NV_TRUE, pLockInfo, &releaseFlags, &pClientEntry);
     if (status != NV_OK)
         goto done;
+
+    pClient = pClientEntry->pClient;
 
     if (!pClient->bActive)
     {
@@ -1812,7 +1976,11 @@ done:
     }
 
     serverResLock_Epilogue(pServer, LOCK_ACCESS_WRITE, pLockInfo, &releaseFlags);
-    _serverUnlockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, hClient, pLockInfo, &releaseFlags);
+    if (pClientEntry != NULL)
+    {
+        _serverUnlockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pClientEntry,
+            pLockInfo, &releaseFlags);
+    }
     serverTopLock_Epilogue(pServer, topLockAccess, pLockInfo, &releaseFlags);
 
     return status;
@@ -1828,6 +1996,7 @@ serverUnmap
 )
 {
     NV_STATUS           status = NV_ERR_INVALID_STATE;
+    CLIENT_ENTRY       *pClientEntry = NULL;
     RsClient           *pClient;
     RsResourceRef      *pResourceRef;
     RsResource         *pResource;
@@ -1847,9 +2016,12 @@ serverUnmap
     if (status != NV_OK)
         goto done;
 
-    status = _serverLockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, hClient, pLockInfo, &releaseFlags, &pClient);
+    status = _serverLockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, hClient,
+        NV_TRUE, pLockInfo, &releaseFlags, &pClientEntry);
     if (status != NV_OK)
         goto done;
+
+    pClient = pClientEntry->pClient;
 
     status = clientValidate(pClient, pParams->pSecInfo);
     if (status != NV_OK)
@@ -1886,7 +2058,11 @@ serverUnmap
 done:
     serverUnmap_Epilogue(pServer, pParams);
     serverResLock_Epilogue(pServer, LOCK_ACCESS_WRITE, pLockInfo, &releaseFlags);
-    _serverUnlockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, hClient, pLockInfo, &releaseFlags);
+    if (pClientEntry != NULL)
+    {
+        _serverUnlockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pClientEntry,
+            pLockInfo, &releaseFlags);
+    }
     serverTopLock_Epilogue(pServer, topLockAccess, pLockInfo, &releaseFlags);
 
     return status;
@@ -1899,6 +2075,7 @@ serverInterMap
     RS_INTER_MAP_PARAMS *pParams
 )
 {
+    CLIENT_ENTRY       *pClientEntry = NULL;
     RsClient           *pClient;
     RsResourceRef      *pMapperRef;
     RsResourceRef      *pMappableRef;
@@ -1927,9 +2104,12 @@ serverInterMap
         goto done;
 
     status = _serverLockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pParams->hClient,
-                                           pLockInfo, &releaseFlags, &pClient);
+                                           NV_TRUE, pLockInfo, &releaseFlags,
+                                           &pClientEntry);
     if (status != NV_OK)
         goto done;
+
+    pClient = pClientEntry->pClient;
 
     if (!pClient->bActive)
     {
@@ -2001,7 +2181,11 @@ done:
             refRemoveInterMapping(pMapperRef, pMapping);
     }
 
-    _serverUnlockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pParams->hClient, pLockInfo, &releaseFlags);
+    if (pClientEntry != NULL)
+    {
+        _serverUnlockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pClientEntry,
+            pLockInfo, &releaseFlags);
+    }
     serverTopLock_Epilogue(pServer, topLockAccess, pLockInfo, &releaseFlags);
 
     return status;
@@ -2143,6 +2327,7 @@ serverInterUnmap
     RS_INTER_UNMAP_PARAMS *pParams
 )
 {
+    CLIENT_ENTRY       *pClientEntry = NULL;
     RsClient           *pClient;
     RsResourceRef      *pMapperRef;
     RsResourceRef      *pContextRef;
@@ -2166,9 +2351,12 @@ serverInterUnmap
         goto done;
 
     status = _serverLockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pParams->hClient,
-                                           pLockInfo, &releaseFlags, &pClient);
+                                           NV_TRUE, pLockInfo, &releaseFlags,
+                                           &pClientEntry);
     if (status != NV_OK)
         goto done;
+
+    pClient = pClientEntry->pClient;
 
     status = clientValidate(pClient, pParams->pSecInfo);
     if (status != NV_OK)
@@ -2224,7 +2412,11 @@ done:
     if (bRestoreCallContext)
         NV_ASSERT_OK(resservRestoreTlsCallContext(pOldContext));
 
-    _serverUnlockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pParams->hClient, pLockInfo, &releaseFlags);
+    if (pClientEntry != NULL)
+    {
+        _serverUnlockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pClientEntry,
+            pLockInfo, &releaseFlags);
+    }
     serverTopLock_Epilogue(pServer, topLockAccess, pLockInfo, &releaseFlags);
 
     return status;
@@ -2236,19 +2428,22 @@ serverAcquireClient
     RsServer *pServer,
     NvHandle hClient,
     LOCK_ACCESS_TYPE lockAccess,
-    RsClient **ppClient
+    CLIENT_ENTRY **ppClientEntry
 )
 {
-    NV_STATUS   status;
-    RsClient   *pClient;
+    CLIENT_ENTRY *pClientEntry;
+
+    if (ppClientEntry == NULL)
+        return NV_ERR_INVALID_ARGUMENT;
 
     // NV_PRINTF(LEVEL_INFO, "Acquiring hClient %x\n", hClient);
-    status = _serverLockClient(pServer, lockAccess, hClient, &pClient);
-    if (status != NV_OK)
-        return status;
+    if (!_serverGetAndLockClientEntryByHandle(pServer, hClient, lockAccess,
+            &pClientEntry))
+    {
+        return NV_ERR_INVALID_OBJECT_HANDLE;
+    }
 
-    if (ppClient != NULL)
-        *ppClient = pClient;
+    *ppClientEntry = pClientEntry;
 
     return NV_OK;
 }
@@ -2277,62 +2472,388 @@ serverGetClientUnderLock
     return NV_OK;
 }
 
-NV_STATUS
+void
 serverReleaseClient
 (
     RsServer *pServer,
     LOCK_ACCESS_TYPE lockAccess,
-    RsClient *pClient
+    CLIENT_ENTRY *pClientEntry
 )
 {
-    NV_STATUS status;
-    status = _serverUnlockClient(pServer, lockAccess, pClient->hClient);
-    return status;
+    _serverPutAndUnlockClientEntry(pServer, lockAccess, pClientEntry);
+}
+
+NvBool
+serverIsClientLocked
+(
+    RsServer *pServer,
+    NvHandle hClient
+)
+{
+    CLIENT_ENTRY *pClientEntry;
+
+    NV_CHECK_OR_RETURN(LEVEL_SILENT, _serverFindClientEntryByHandle(pServer, hClient,
+            0, CLIENT_LIST_LOCK_UNLOCKED, &pClientEntry), NV_ERR_INVALID_OBJECT_HANDLE);
+
+    return (pClientEntry->lockOwnerTid == portThreadGetCurrentThreadId());
+}
+
+
+NvBool
+serverIsClientInternal
+(
+    RsServer *pServer,
+    NvHandle  hClient
+)
+{
+    return ((hClient & pServer->internalHandleBase) == pServer->internalHandleBase);
+}
+
+static NV_STATUS _serverBuildAllClientLockList
+(
+    RsServer *pServer
+)
+{
+    NvU32 i;
+    NvU32 activeClientCount;
+    NvBool bClientsRemaining;
+    NvHandle hClientBucket = RS_CLIENT_HANDLE_BASE;
+    CLIENT_ENTRY **ppClientListLocations;
+    RsLockedClientListIter lockedClientListIter;
+
+    //
+    // Perform memory allocations outside of the client list lock's
+    // critical section since it's a spinlock.
+    //
+    ppClientListLocations = PORT_ALLOC(pServer->pAllocator,
+        sizeof(*ppClientListLocations) * RS_CLIENT_HANDLE_BUCKET_COUNT);
+
+    if (ppClientListLocations == NULL)
+        return NV_ERR_NO_MEMORY;
+
+    i = 0;
+    while (1)
+    {
+        activeClientCount = pServer->activeClientCount;
+
+        //
+        // Allocate memory for locked client list outside of client list lock critical
+        // section.
+        //
+        listInit(&pServer->lockedClientList, pServer->pAllocator);
+
+        for (; i < activeClientCount; i++)
+        {
+            CLIENT_ENTRY **ppClientEntry = listAppendNew(&pServer->lockedClientList);
+
+            if (ppClientEntry == NULL)
+            {
+                listDestroy(&pServer->lockedClientList);
+                PORT_FREE(pServer->pAllocator, ppClientListLocations);
+                return NV_ERR_NO_MEMORY;
+            }
+
+            *ppClientEntry = NULL;
+        }
+
+        serverAcquireClientListLock(pServer);
+
+        //
+        // Ensure that active client count didn't increase while we checked it
+        // outside of the client list lock. Increase size of the list if so.
+        //
+        if (activeClientCount >= pServer->activeClientCount)
+            break;
+
+        serverReleaseClientListLock(pServer);
+    }
+
+    // Initialize the client location array to start of all used client lists
+    for (i = 0; i < RS_CLIENT_HANDLE_BUCKET_COUNT; i++)
+    {
+        RsClientList *pClientList = &(pServer->pClientSortedList[i]);
+
+        ppClientListLocations[i] = listHead(pClientList);
+    }
+
+    bClientsRemaining = (activeClientCount > 0);
+    lockedClientListIter = listIterAll(&pServer->lockedClientList);
+
+    //
+    // Add client entries to all clients lock list, keeping it sorted,
+    // using the client location array.
+    //
+    while (bClientsRemaining)
+    {
+        NvHandle hClientNextBucket = ~0;
+
+        bClientsRemaining = NV_FALSE;
+
+        // Iterate over client location array
+        for (i = 0; i < RS_CLIENT_HANDLE_BUCKET_COUNT; i++)
+        {
+            CLIENT_ENTRY *pClientEntry = ppClientListLocations[i];
+
+            if (pClientEntry == NULL)
+                continue;
+
+            //
+            // Add this client to the all clients lock list if it's in range of
+            // the current bucket to ensure sorted order.
+            //
+            if (pClientEntry->hClient >= hClientBucket &&
+                (pClientEntry->hClient < (hClientBucket + RS_CLIENT_HANDLE_BUCKET_COUNT)))
+            {
+                CLIENT_ENTRY **ppLockedClientEntry;
+                RsClientList  *pClientList = &(pServer->pClientSortedList[i]);
+
+                NV_ASSERT(listIterNext(&lockedClientListIter));
+                ppLockedClientEntry = lockedClientListIter.pValue;
+
+                //
+                // Ignore any partially constructed client.
+                // Ignore anything pending free since nothing can use this client
+                // object after it's been marked pending free
+                //
+                if ((pClientEntry->pClient != NULL) && !pClientEntry->bPendingFree)
+                {
+                    *ppLockedClientEntry = pClientEntry;
+
+                    //
+                    // Increase the ref count so client entry doesn't get freed when
+                    // we release the client list lock.
+                    //
+                    _serverGetClientEntry(pClientEntry);
+                }
+
+                pClientEntry = listNext(pClientList, pClientEntry);
+                ppClientListLocations[i] = pClientEntry;
+
+                // Move to next bucket if at end of the list
+                if (pClientEntry == NULL)
+                    continue;
+            }
+
+            // Any remaining non-NULL client entries must be in a larger bucket
+            if (pClientEntry->hClient >=
+                (hClientBucket + RS_CLIENT_HANDLE_BUCKET_COUNT))
+            {
+                // Update next bucket if there are remaining clients to process
+                hClientNextBucket = NV_MIN(hClientNextBucket,
+                    (pClientEntry->hClient & ~RS_CLIENT_HANDLE_BUCKET_MASK));
+                bClientsRemaining = NV_TRUE;
+            }
+        }
+
+        hClientBucket = hClientNextBucket;
+    }
+
+    serverReleaseClientListLock(pServer);
+
+    // Free client list locations array since it's no longer needed
+    PORT_FREE(pServer->pAllocator, ppClientListLocations);
+
+    return NV_OK;
+}
+
+NV_STATUS
+serverLockAllClients
+(
+    RsServer *pServer
+)
+{
+    RsLockedClientListIter lockedClientListIter;
+
+    NV_ASSERT_OK_OR_RETURN(_serverBuildAllClientLockList(pServer));
+
+    lockedClientListIter = listIterAll(&pServer->lockedClientList);
+
+    // Lock all clients in order
+    while (listIterNext(&lockedClientListIter))
+    {
+        CLIENT_ENTRY *pClientEntry = *lockedClientListIter.pValue;
+
+        if (pClientEntry != NULL)
+            _serverLockClient(LOCK_ACCESS_WRITE, pClientEntry);
+    }
+
+    // Set all client lock owner TID
+    pServer->allClientLockOwnerTid = portThreadGetCurrentThreadId();
+
+    return NV_OK;
+}
+
+NV_STATUS
+serverUnlockAllClients
+(
+    RsServer *pServer
+)
+{
+    CLIENT_ENTRY **ppClientEntry = listTail(&pServer->lockedClientList);
+
+    NV_ASSERT_OR_RETURN(serverAllClientsLockIsOwner(pServer), NV_ERR_INVALID_LOCK_STATE);
+
+    // Unlock clients in reverse order
+    while (ppClientEntry != NULL)
+    {
+        CLIENT_ENTRY *pClientEntry = *ppClientEntry;
+
+        if (pClientEntry != NULL)
+        {
+            // Unlock and restore reference count for clients
+            _serverPutAndUnlockClientEntry(pServer, LOCK_ACCESS_WRITE, *ppClientEntry);
+        }
+
+        ppClientEntry = listPrev(&pServer->lockedClientList, ppClientEntry);
+    }
+
+    // Destroy locked client list
+    listDestroy(&pServer->lockedClientList);
+
+    // Unset all client lock owner TID
+    pServer->allClientLockOwnerTid = ~0;
+
+    return NV_OK;
 }
 
 static
-NV_STATUS
-_serverFindClientEntry
+NvBool
+__serverFindClientEntryByHandle
 (
-    RsServer      *pServer,
-    NvHandle       hClient,
-    NvBool         bFindPartial,
-    CLIENT_ENTRY **ppClientEntry
+    RsServer                   *pServer,
+    NvHandle                    hClient,
+    enum CLIENT_STATE           clientState,
+    enum CLIENT_LIST_LOCK_STATE clientListLockState,
+    NvBool                      bIncRefCount,
+    CLIENT_ENTRY              **ppClientEntry
 )
 {
-    RsClientList  *pClientList       = &(pServer->pClientSortedList[hClient & RS_CLIENT_HANDLE_BUCKET_MASK]);
-    CLIENT_ENTRY **ppClientEntryLoop = listHead(pClientList);
+    NvBool         bClientFound = NV_FALSE;
+    RsClientList  *pClientList;
+    CLIENT_ENTRY  *pClientEntryLoop;
 
-    if (ppClientEntry != NULL)
-        *ppClientEntry = NULL;
+    if (clientListLockState == CLIENT_LIST_LOCK_UNLOCKED)
+        serverAcquireClientListLock(pServer);
 
-    while (ppClientEntryLoop != NULL)
+    pClientList = &(pServer->pClientSortedList[hClient & RS_CLIENT_HANDLE_BUCKET_MASK]);
+    pClientEntryLoop = listHead(pClientList);
+
+    while (pClientEntryLoop != NULL)
     {
-        CLIENT_ENTRY *pClientEntry = *ppClientEntryLoop;
-        ppClientEntryLoop = listNext(pClientList, ppClientEntryLoop);
-        if (pClientEntry == NULL)
-        {
-            continue;
-        }
-        else if (pClientEntry->hClient == hClient)
+        CLIENT_ENTRY *pClientEntry = pClientEntryLoop;
+        pClientEntryLoop = listNext(pClientList, pClientEntryLoop);
+
+        if (pClientEntry->hClient == hClient)
         {
             // Client may not have finished constructing yet
-            if (pClientEntry->pClient == NULL && !bFindPartial)
-                return NV_ERR_INVALID_OBJECT_HANDLE;
+            if ((pClientEntry->pClient == NULL) &&
+                ((clientState & CLIENT_PARTIALLY_INITIALIZED) == 0))
+            {
+                goto done;
+            }
+
+            // Client may be pending free
+            if (pClientEntry->bPendingFree &&
+                ((clientState & CLIENT_PENDING_FREE) == 0))
+            {
+                goto done;
+            }
+
+            if (bIncRefCount)
+                _serverGetClientEntry(pClientEntry);
 
             if (ppClientEntry != NULL)
                 *ppClientEntry = pClientEntry;
 
-            return NV_OK;
+            bClientFound = NV_TRUE;
+            goto done;
         }
         else if (pClientEntry->hClient > hClient)
         {
             // Not found in sorted list
-            return NV_ERR_INVALID_OBJECT;
+            goto done;
         }
     }
 
-    return NV_ERR_INVALID_OBJECT_HANDLE;
+done:
+    if (clientListLockState == CLIENT_LIST_LOCK_UNLOCKED)
+        serverReleaseClientListLock(pServer);
+
+    return bClientFound;
+}
+
+static
+NvBool
+_serverFindClientEntryByHandle
+(
+    RsServer                   *pServer,
+    NvHandle                    hClient,
+    enum CLIENT_STATE           clientState,
+    enum CLIENT_LIST_LOCK_STATE clientListLockState,
+    CLIENT_ENTRY              **ppClientEntry
+)
+{
+    return __serverFindClientEntryByHandle(pServer, hClient, clientState,
+        clientListLockState, NV_FALSE, ppClientEntry);
+}
+
+static
+NvBool
+_serverGetClientEntryByHandle
+(
+    RsServer                   *pServer,
+    NvHandle                    hClient,
+    enum CLIENT_STATE           clientState,
+    enum CLIENT_LIST_LOCK_STATE clientListLockState,
+    CLIENT_ENTRY              **ppClientEntry
+)
+{
+    return __serverFindClientEntryByHandle(pServer, hClient, clientState,
+        clientListLockState, NV_TRUE, ppClientEntry);
+}
+
+static
+NvBool
+_serverGetAndLockClientEntryByHandle
+(
+    RsServer        *pServer,
+    NvHandle         hClient,
+    LOCK_ACCESS_TYPE access,
+    CLIENT_ENTRY   **ppClientEntry
+)
+{
+    CLIENT_ENTRY *pClientEntry;
+
+    if (!_serverGetClientEntryByHandle(pServer, hClient, 0, CLIENT_LIST_LOCK_UNLOCKED,
+            &pClientEntry))
+    {
+        return NV_FALSE;
+    }
+
+    _serverLockClient(access, pClientEntry);
+
+    // Handle race condition where client entry was marked pending free
+    if (pClientEntry->bPendingFree)
+    {
+        _serverPutAndUnlockClientEntry(pServer, access, pClientEntry);
+        return NV_FALSE;
+    }
+
+    *ppClientEntry = pClientEntry;
+    return NV_TRUE;
+}
+
+static
+void
+_serverPutAndUnlockClientEntry
+(
+    RsServer        *pServer,
+    LOCK_ACCESS_TYPE access,
+    CLIENT_ENTRY    *pClientEntry
+)
+{
+    _serverUnlockClient(access, pClientEntry);
+    _serverPutClientEntry(pServer, pClientEntry);
 }
 
 static
@@ -2345,12 +2866,10 @@ _serverFindClient
 )
 {
     CLIENT_ENTRY *pClientEntry;
-    NV_STATUS status;
-    status =_serverFindClientEntry(pServer, hClient, NV_FALSE, &pClientEntry);
-    if (status != NV_OK)
-    {
-        return status;
-    }
+
+    NV_CHECK_OR_RETURN(LEVEL_SILENT, _serverFindClientEntryByHandle(pServer, hClient,
+            CLIENT_PENDING_FREE, CLIENT_LIST_LOCK_UNLOCKED, &pClientEntry),
+        NV_ERR_INVALID_OBJECT_HANDLE);
 
     *ppClient = pClientEntry->pClient;
     return NV_OK;
@@ -2362,11 +2881,10 @@ _serverInsertClientEntry
 (
     RsServer      *pServer,
     CLIENT_ENTRY  *pClientEntry,
-    CLIENT_ENTRY **ppClientNext
+    CLIENT_ENTRY  *pClientNext
 )
 {
     RsClientList  *pClientList;
-    CLIENT_ENTRY **ppClientEntry;
     NvHandle       hClient = pClientEntry->hClient;
 
     if (hClient == 0)
@@ -2376,23 +2894,132 @@ _serverInsertClientEntry
 
     pClientList  = &(pServer->pClientSortedList[hClient & RS_CLIENT_HANDLE_BUCKET_MASK]);
 
-    if (ppClientNext == NULL)
+    if (pClientNext == NULL)
     {
-        ppClientEntry = (CLIENT_ENTRY **)listAppendNew(pClientList);
+        listAppendExisting(pClientList, pClientEntry);
     }
     else
     {
-        ppClientEntry = (CLIENT_ENTRY **)listInsertNew(pClientList, ppClientNext);
+        listInsertExisting(pClientList, pClientNext, pClientEntry);
     }
-
-    if (ppClientEntry == NULL)
-    {
-        return NV_ERR_NO_MEMORY;
-    }
-
-    *ppClientEntry = pClientEntry;
 
     return NV_OK;
+}
+
+/**
+ * Mark a CLIENT_ENTRY as about to be freed
+ * @param[in]   pServer
+ * @param[in]   hClient The handle to lookup
+ * @param[out]   pClientEntry The client entry associated with the handle
+ *
+ * @return NV_TRUE if client entry was found and marked pending free
+ *         NV_FALSE if client couldn't be found
+ */
+static NvBool _serverMarkClientEntryPendingFree(RsServer *pServer, NvHandle hClient, CLIENT_ENTRY **ppClientEntry)
+{
+    RsClientList *pClientList;
+    CLIENT_ENTRY *pClientEntry;
+
+    serverAcquireClientListLock(pServer);
+
+    pClientList = &(pServer->pClientSortedList[hClient & RS_CLIENT_HANDLE_BUCKET_MASK]);
+    pClientEntry = listHead(pClientList);
+
+    while (pClientEntry != NULL)
+    {
+        if (pClientEntry->hClient == hClient)
+        {
+            if (pClientEntry->pClient == NULL)
+                goto fail;
+
+            *ppClientEntry = pClientEntry;
+
+            //
+            // Mark client entry pending free if it isn't already in the process of
+            // being freed
+            //
+            if (pClientEntry->bPendingFree)
+                goto fail;
+
+            pClientEntry->bPendingFree = NV_TRUE;
+
+            //
+            // Release client list lock - retaining it while attempting to acquire a
+            // client lock could deadlock.
+            //
+            serverReleaseClientListLock(pServer);
+
+            //
+            // If we locked this client as part of locking all client locks, ensure we
+            // unlock this client first to avoid self-deadlocking. Also decrement
+            // reference count since serverLockAllClients increments it. Remove from
+            // locked client list to prevent dangling reference to the CLIENT_ENTRY.
+            //
+            if (serverAllClientsLockIsOwner(pServer) &&
+                (pClientEntry->lockOwnerTid == portThreadGetCurrentThreadId()))
+            {
+                _serverPutAndUnlockClientEntry(pServer, LOCK_ACCESS_WRITE, pClientEntry);
+                listRemoveFirstByValue(&pServer->lockedClientList, &pClientEntry);
+            }
+
+            //
+            // Wait for all API's using the CLIENT_ENTRY to finish, waiting till the
+            // reference count reaches 1 and using the client lock to postpone execution
+            // until these API's finish. The caller will take care of the final decrement
+            // of the reference count to 0.
+            //
+            while (pClientEntry->refCount > 1)
+            {
+                _serverLockClient(LOCK_ACCESS_WRITE, pClientEntry);
+                _serverUnlockClient(LOCK_ACCESS_WRITE, pClientEntry);
+            }
+
+            // Client is no longer active so decrement the count
+            portAtomicDecrementU32(&pServer->activeClientCount);
+
+            return NV_TRUE;
+        }
+        else if (pClientEntry->hClient > hClient)
+        {
+            serverReleaseClientListLock(pServer);
+
+            // Not found in sorted list
+            return NV_FALSE;
+        }
+
+        pClientEntry = listNext(pClientList, pClientEntry);
+    }
+
+fail:
+    serverReleaseClientListLock(pServer);
+
+    return NV_FALSE;
+}
+
+static
+void
+_serverGetClientEntry(CLIENT_ENTRY *pClientEntry)
+{
+    NV_ASSERT(!pClientEntry->bPendingFree);
+    portAtomicIncrementU32(&pClientEntry->refCount);
+}
+
+static
+void
+_serverPutClientEntry
+(
+    RsServer *pServer,
+    CLIENT_ENTRY *pClientEntry
+)
+{
+    if (portAtomicDecrementU32(&pClientEntry->refCount) == 0)
+    {
+        pClientEntry->pClient = NULL;
+        pClientEntry->hClient = 0;
+
+        portSyncRwLockDestroy(pClientEntry->pLock);
+        PORT_FREE(pServer->pAllocator, pClientEntry);
+    }
 }
 
 static
@@ -2401,17 +3028,17 @@ _serverFindNextAvailableClientHandleInBucket
 (
     RsServer        *pServer,
     NvHandle         hClientIn,
-    NvHandle         *phClientOut,
-    CLIENT_ENTRY  ***pppClientNext
+    NvHandle        *phClientOut,
+    CLIENT_ENTRY   **ppClientNext
 )
 {
     NvHandle        hPrefixIn, hPrefixOut;
     RsClientList   *pClientList  = &(pServer->pClientSortedList[hClientIn & RS_CLIENT_HANDLE_BUCKET_MASK]);
     NvHandle        hClientOut   = hClientIn;
-    CLIENT_ENTRY **ppClientEntry = listHead(pClientList);
+    CLIENT_ENTRY   *pClientEntry = listHead(pClientList);
 
-    *pppClientNext = NULL;
-    if (ppClientEntry == NULL)
+    *ppClientNext = NULL;
+    if (pClientEntry == NULL)
     {
         *phClientOut = hClientOut;
         return NV_OK;
@@ -2421,12 +3048,11 @@ _serverFindNextAvailableClientHandleInBucket
     // The list is ordered by increased client handles
     // We need to find a value to insert or change the handle
     //
-    while (ppClientEntry != NULL)
+    while (pClientEntry != NULL)
     {
-        CLIENT_ENTRY *pClientEntry = *ppClientEntry;
-        if ((pClientEntry == NULL) || (pClientEntry->hClient < hClientOut))
+        if (pClientEntry->hClient < hClientOut)
         {
-            ppClientEntry = listNext(pClientList, ppClientEntry);
+            pClientEntry = listNext(pClientList, pClientEntry);
             continue;
         }
         else if (pClientEntry->hClient == hClientOut)
@@ -2439,7 +3065,7 @@ _serverFindNextAvailableClientHandleInBucket
         {
             break;
         }
-        ppClientEntry = listNext(pClientList, ppClientEntry);
+        pClientEntry = listNext(pClientList, pClientEntry);
     }
 
     hPrefixIn = hClientIn & ~RS_CLIENT_HANDLE_DECODE_MASK;
@@ -2448,9 +3074,9 @@ _serverFindNextAvailableClientHandleInBucket
         return NV_ERR_INSUFFICIENT_RESOURCES;
 
     *phClientOut = hClientOut;
-    if (ppClientEntry != NULL)
+    if (pClientEntry != NULL)
     {
-        *pppClientNext = ppClientEntry;
+        *ppClientNext = pClientEntry;
     }
     return  NV_OK;
 }
@@ -2466,12 +3092,35 @@ _serverCreateEntryAndLockForNewClient
     API_SECURITY_INFO *pSecInfo
 )
 {
-    CLIENT_ENTRY  *pClientEntry;
+    CLIENT_ENTRY  *pClientEntry = NULL;
     NV_STATUS      status = NV_OK;
     NvHandle       hClient = *phClient;
-    CLIENT_ENTRY **ppClientNext = 0;
+    CLIENT_ENTRY  *pClientNext = NULL;
     PORT_RWLOCK   *pLock = NULL;
     NvU32          handleBase = serverAllocClientHandleBase(pServer, bInternalHandle, pSecInfo);
+    NvBool         bLockedClientList = NV_FALSE;
+
+    //
+    // Perform memory allocations before taking the client list spinlock, they must
+    // be performed outside of the spinlock's critical section.
+    //
+    pLock = portSyncRwLockCreate(pServer->pAllocator);
+    if (pLock == NULL)
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+
+    pClientEntry = (CLIENT_ENTRY *)PORT_ALLOC(pServer->pAllocator, sizeof(CLIENT_ENTRY));
+    if (pClientEntry == NULL)
+    {
+        status = NV_ERR_INSUFFICIENT_RESOURCES;
+        goto _serverCreateEntryAndLockForNewClient_exit;
+    }
+
+    portMemSet(pClientEntry, 0, sizeof(*pClientEntry));
+
+    pClientEntry->pLock = pLock;
+
+    serverAcquireClientListLock(pServer);
+    bLockedClientList = NV_TRUE;
 
     if (hClient == 0)
     {
@@ -2493,7 +3142,7 @@ _serverCreateEntryAndLockForNewClient
                 goto _serverCreateEntryAndLockForNewClient_exit;
             }
         }
-        while (_serverFindNextAvailableClientHandleInBucket(pServer, hClient, &hClient, &ppClientNext) != NV_OK);
+        while (_serverFindNextAvailableClientHandleInBucket(pServer, hClient, &hClient, &pClientNext) != NV_OK);
 
         pServer->clientCurrentHandleIndex = clientHandleIndex;
     }
@@ -2507,17 +3156,19 @@ _serverCreateEntryAndLockForNewClient
         hClient = CLIENT_ENCODEHANDLE(handleBase, clientIndex);
 #endif
 
-        if (_serverFindClientEntry(pServer, hClient, NV_FALSE, NULL) == NV_OK)
+        if (_serverFindClientEntryByHandle(pServer, hClient,
+                CLIENT_PARTIALLY_INITIALIZED | CLIENT_PENDING_FREE,
+                CLIENT_LIST_LOCK_LOCKED, NULL))
         {
             // The handle already exists
             status = NV_ERR_INSERT_DUPLICATE_NAME;
             goto _serverCreateEntryAndLockForNewClient_exit;
         }
-        status = _serverFindNextAvailableClientHandleInBucket(pServer, hClient, &hClientOut, &ppClientNext);
+
+        status = _serverFindNextAvailableClientHandleInBucket(pServer, hClient, &hClientOut, &pClientNext);
         if (status != NV_OK)
-        {
              goto _serverCreateEntryAndLockForNewClient_exit;
-        }
+
         if (hClient != hClientOut)
         {
             // This should not happen as we checked for duplicates already
@@ -2527,37 +3178,34 @@ _serverCreateEntryAndLockForNewClient
         }
     }
 
-    pLock = portSyncRwLockCreate(pServer->pAllocator);
-    if (pLock == NULL)
-    {
-        status = NV_ERR_INSUFFICIENT_RESOURCES;
-        goto _serverCreateEntryAndLockForNewClient_exit;
-    }
-
     // At this point we have a hClient,  we know in which bucket and where in the bucket to insert the entry.
-    pClientEntry = (CLIENT_ENTRY *)PORT_ALLOC(pServer->pAllocator, sizeof(CLIENT_ENTRY));
-    if (pClientEntry == NULL)
-    {
-        status = NV_ERR_INSUFFICIENT_RESOURCES;
-        goto _serverCreateEntryAndLockForNewClient_exit;
-    }
-    portMemSet(pClientEntry, 0, sizeof(*pClientEntry));
-
     pClientEntry->hClient = hClient;
     pClientEntry->pLock = pLock;
-
+    pClientEntry->refCount = 1;
+    pClientEntry->bPendingFree = NV_FALSE;
 
     RS_LOCK_VALIDATOR_INIT(&pClientEntry->lockVal,
                            bInternalHandle ? LOCK_VAL_LOCK_CLASS_CLIENT_INTERNAL : LOCK_VAL_LOCK_CLASS_CLIENT,
                            hClient);
 
-    status = _serverInsertClientEntry(pServer, pClientEntry, ppClientNext);
+    status = _serverInsertClientEntry(pServer, pClientEntry, pClientNext);
     if (status != NV_OK)
-    {
-        PORT_FREE(pServer->pAllocator, pClientEntry);
         goto _serverCreateEntryAndLockForNewClient_exit;
-    }
 
+    //
+    // Increase the reference count so this CLIENT_ENTRY can't be freed until we're
+    // done using it.
+    //
+    _serverGetClientEntry(pClientEntry);
+
+    // Release client list lock
+    serverReleaseClientListLock(pServer);
+    bLockedClientList = NV_FALSE;
+
+    //
+    // Acquire the client lock here. Nothing else should have acquired it since
+    // pClientEntry->pClient is still NULL.
+    //
     RS_RWLOCK_ACQUIRE_WRITE(pClientEntry->pLock, &pClientEntry->lockVal);
     pClientEntry->lockOwnerTid = portThreadGetCurrentThreadId();
 
@@ -2565,40 +3213,29 @@ _serverCreateEntryAndLockForNewClient
     *ppClientEntry = pClientEntry;
 
 _serverCreateEntryAndLockForNewClient_exit:
-    if (status != NV_OK && pLock != NULL)
-        portSyncRwLockDestroy(pLock);
+    if (bLockedClientList)
+        serverReleaseClientListLock(pServer);
+
+    if (status != NV_OK)
+    {
+        if (pClientEntry != NULL)
+            PORT_FREE(pServer->pAllocator, pClientEntry);
+
+        if (pLock != NULL)
+            portSyncRwLockDestroy(pLock);
+    }
 
     return status;
 }
 
-
 static
-NV_STATUS
+void
 _serverLockClient
 (
-    RsServer *pServer,
     LOCK_ACCESS_TYPE access,
-    NvHandle hClient,
-    RsClient **ppClient
+    CLIENT_ENTRY* pClientEntry
 )
 {
-    RsClient *pClient;
-    CLIENT_ENTRY *pClientEntry = NULL;
-    NV_STATUS status = NV_OK;
-
-    status =_serverFindClientEntry(pServer, hClient, NV_FALSE, &pClientEntry);
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    nv_speculation_barrier();
-
-    if (pClientEntry->pLock == NULL)
-    {
-        return NV_ERR_INVALID_OBJECT_HANDLE;
-    }
-
     if (access == LOCK_ACCESS_READ)
     {
         RS_RWLOCK_ACQUIRE_READ(pClientEntry->pLock, &pClientEntry->lockVal);
@@ -2608,24 +3245,6 @@ _serverLockClient
         RS_RWLOCK_ACQUIRE_WRITE(pClientEntry->pLock, &pClientEntry->lockVal);
         pClientEntry->lockOwnerTid = portThreadGetCurrentThreadId();
     }
-
-    pClient = pClientEntry->pClient;
-
-    if ((pClient == NULL) || (pClient->hClient != hClient))
-    {
-        NV_ASSERT(0);
-        if (access == LOCK_ACCESS_READ)
-            RS_RWLOCK_RELEASE_READ(pClientEntry->pLock, &pClientEntry->lockVal);
-        else
-            RS_RWLOCK_RELEASE_WRITE(pClientEntry->pLock, &pClientEntry->lockVal);
-
-        return NV_ERR_INVALID_OBJECT;
-    }
-
-    if (ppClient != NULL)
-        *ppClient = pClient;
-
-    return NV_OK;
 }
 
 static
@@ -2635,39 +3254,68 @@ _serverLockClientWithLockInfo
     RsServer *pServer,
     LOCK_ACCESS_TYPE access,
     NvHandle hClient,
+    NvBool bValidateLocks,
     RS_LOCK_INFO *pLockInfo,
     NvU32 *pReleaseFlags,
-    RsClient **ppClient
+    CLIENT_ENTRY **ppClientEntry
 )
 {
-    NV_STATUS status;
-    if ((pLockInfo->flags & RS_LOCK_FLAGS_NO_CLIENT_LOCK))
+    NV_STATUS status = NV_OK;
+    if ((pLockInfo->flags & RS_LOCK_FLAGS_NO_CLIENT_LOCK) ||
+        serverAllClientsLockIsOwner(pServer))
     {
-        status = _serverFindClient(pServer, hClient, ppClient);
-        return status;
+        if (!_serverGetClientEntryByHandle(pServer, hClient, 0,
+                CLIENT_LIST_LOCK_UNLOCKED, ppClientEntry))
+        {
+            return NV_ERR_INVALID_OBJECT_HANDLE;
+        }
+
+        goto check_locks;
     }
 
     if ((pLockInfo->state & RS_LOCK_STATE_CLIENT_LOCK_ACQUIRED))
     {
-        CLIENT_ENTRY *pClientEntry;
-        NV_ASSERT_OK_OR_RETURN(_serverFindClientEntry(pServer, hClient, NV_FALSE, &pClientEntry));
-        NV_ASSERT_OR_RETURN(pLockInfo->pClient != NULL, NV_ERR_INVALID_STATE);
-        NV_ASSERT_OR_RETURN(pLockInfo->pClient == pClientEntry->pClient, NV_ERR_INVALID_STATE);
-        NV_ASSERT_OR_RETURN(pClientEntry->lockOwnerTid == portThreadGetCurrentThreadId(), NV_ERR_INVALID_STATE);
+        NV_ASSERT_OR_RETURN(_serverGetClientEntryByHandle(pServer, hClient, 0,
+                CLIENT_LIST_LOCK_UNLOCKED, ppClientEntry),
+            NV_ERR_INVALID_OBJECT_HANDLE);
+        NV_ASSERT_OR_ELSE(pLockInfo->pClient != NULL,
+            status = NV_ERR_INVALID_STATE; goto done);
+        NV_ASSERT_OR_ELSE(pLockInfo->pClient == (*ppClientEntry)->pClient,
+            status = NV_ERR_INVALID_STATE; goto done);
+        NV_ASSERT_OR_ELSE((*ppClientEntry)->lockOwnerTid ==
+            portThreadGetCurrentThreadId(),
+            status = NV_ERR_INVALID_STATE; goto done);
 
-        *ppClient = pLockInfo->pClient;
-        return NV_OK;
+        goto check_locks;
     }
 
-    status = _serverLockClient(pServer, access, hClient, ppClient);
-    if (status != NV_OK)
-        return status;
+    if (!_serverGetAndLockClientEntryByHandle(pServer, hClient, access, ppClientEntry))
+        return NV_ERR_INVALID_OBJECT_HANDLE;
 
     pLockInfo->state |= RS_LOCK_STATE_CLIENT_LOCK_ACQUIRED;
-    pLockInfo->pClient = *ppClient;
+    pLockInfo->pClient = (*ppClientEntry)->pClient;
     *pReleaseFlags |= RS_LOCK_RELEASE_CLIENT_LOCK;
 
-    return NV_OK;
+check_locks:
+    if (bValidateLocks)
+        status = clientValidateLocks((*ppClientEntry)->pClient, pServer, *ppClientEntry);
+
+done:
+    if (status != NV_OK)
+    {
+        if (*pReleaseFlags & RS_LOCK_RELEASE_CLIENT_LOCK)
+        {
+            _serverUnlockClientWithLockInfo(pServer, access, *ppClientEntry,
+                pLockInfo, pReleaseFlags);
+        }
+        else if (*ppClientEntry != NULL)
+        {
+            _serverPutClientEntry(pServer, *ppClientEntry);
+            *ppClientEntry = NULL;
+        }
+    }
+
+    return status;
 }
 
 static
@@ -2678,123 +3326,196 @@ _serverLockDualClientWithLockInfo
     LOCK_ACCESS_TYPE access,
     NvHandle hClient1,
     NvHandle hClient2,
+    NvBool bValidateLocks,
     RS_LOCK_INFO *pLockInfo,
     NvU32 *pReleaseFlags,
-    RsClient **ppClient1,
-    RsClient **ppClient2
+    CLIENT_ENTRY **ppClientEntry1,
+    CLIENT_ENTRY **ppClientEntry2
 )
 {
-    NV_STATUS status;
+    NV_STATUS status = NV_OK;
 
     // 1st and 2nd in handle order, as opposed to fixed 1 and 2
-    NvHandle    hClient1st;
-    NvHandle    hClient2nd;
-    RsClient  **ppClient1st;
-    RsClient  **ppClient2nd;
+    NvHandle       hClient1st;
+    NvHandle       hClient2nd;
+    CLIENT_ENTRY **ppClientEntry1st;
+    CLIENT_ENTRY **ppClientEntry2nd;
 
-    *ppClient1 = NULL;
-    *ppClient2 = NULL;
+    *ppClientEntry1 = NULL;
+    *ppClientEntry2 = NULL;
 
-    if ((pLockInfo->flags & RS_LOCK_FLAGS_NO_CLIENT_LOCK))
+    if ((pLockInfo->flags & RS_LOCK_FLAGS_NO_CLIENT_LOCK) ||
+        serverAllClientsLockIsOwner(pServer))
     {
-        status = _serverFindClient(pServer, hClient1, ppClient1);
-        if (status != NV_OK)
-            return status;
+        ppClientEntry1st = ppClientEntry1;
+        ppClientEntry2nd = ppClientEntry2;
+
+        if (!_serverGetClientEntryByHandle(pServer, hClient1, 0,
+                CLIENT_LIST_LOCK_UNLOCKED, ppClientEntry1st))
+        {
+            return NV_ERR_INVALID_OBJECT_HANDLE;
+        }
 
         if (hClient1 == hClient2)
         {
-            *ppClient2 = *ppClient1;
+            *ppClientEntry2nd = *ppClientEntry1st;
         }
         else
         {
-            status = _serverFindClient(pServer, hClient2, ppClient2);
+            NV_ASSERT_OR_ELSE(_serverGetClientEntryByHandle(pServer, hClient2, 0,
+                    CLIENT_LIST_LOCK_UNLOCKED, ppClientEntry2nd),
+                status = NV_ERR_INVALID_OBJECT_HANDLE; goto done);
         }
 
-        return status;
+        goto check_locks;
     }
 
     if (hClient1 <= hClient2)
     {
         hClient1st = hClient1;
-        ppClient1st = ppClient1;
+        ppClientEntry1st = ppClientEntry1;
 
         hClient2nd = hClient2;
-        ppClient2nd = ppClient2;
+        ppClientEntry2nd = ppClientEntry2;
     }
     else
     {
         hClient1st = hClient2;
-        ppClient1st = ppClient2;
+        ppClientEntry1st = ppClientEntry2;
 
         hClient2nd = hClient1;
-        ppClient2nd = ppClient1;
+        ppClientEntry2nd = ppClientEntry1;
     }
 
     if ((pLockInfo->state & RS_LOCK_STATE_CLIENT_LOCK_ACQUIRED))
     {
-        CLIENT_ENTRY *pClientEntry, *pSecondClientEntry;
-
         NV_ASSERT_OR_RETURN(pLockInfo->pSecondClient != NULL, NV_ERR_INVALID_STATE);
         NV_ASSERT_OR_RETURN(pLockInfo->pClient->hClient == hClient1st, NV_ERR_INVALID_STATE);
         NV_ASSERT_OR_RETURN(pLockInfo->pSecondClient->hClient == hClient2nd, NV_ERR_INVALID_STATE);
 
-        NV_ASSERT_OK_OR_RETURN(_serverFindClientEntry(pServer, hClient1st, NV_FALSE, &pClientEntry));
-        NV_ASSERT_OR_RETURN(pClientEntry->pClient == pLockInfo->pClient, NV_ERR_INVALID_STATE);
-        NV_ASSERT_OR_RETURN(pClientEntry->lockOwnerTid == portThreadGetCurrentThreadId(), NV_ERR_INVALID_STATE);
+        NV_ASSERT_OR_ELSE(_serverGetClientEntryByHandle(pServer, hClient1st, 0,
+                CLIENT_LIST_LOCK_UNLOCKED, ppClientEntry1st),
+            status = NV_ERR_INVALID_OBJECT_HANDLE; goto done);
+        NV_ASSERT_OR_ELSE((*ppClientEntry1st)->pClient == pLockInfo->pClient,
+            status =  NV_ERR_INVALID_STATE; goto done);
+        NV_ASSERT_OR_ELSE((*ppClientEntry1st)->lockOwnerTid ==
+            portThreadGetCurrentThreadId(),
+            status = NV_ERR_INVALID_STATE; goto done);
 
-        NV_ASSERT_OK_OR_RETURN(_serverFindClientEntry(pServer, hClient2nd, NV_FALSE, &pSecondClientEntry));
-        NV_ASSERT_OR_RETURN(pSecondClientEntry->pClient == pLockInfo->pSecondClient, NV_ERR_INVALID_STATE);
-        NV_ASSERT_OR_RETURN(pSecondClientEntry->lockOwnerTid == pClientEntry->lockOwnerTid, NV_ERR_INVALID_STATE);
+        if (hClient1st == hClient2nd)
+        {
+            *ppClientEntry2nd = *ppClientEntry1st;
+        }
+        else
+        {
+            NV_ASSERT_OR_ELSE(_serverGetClientEntryByHandle(pServer, hClient2nd, 0,
+                    CLIENT_LIST_LOCK_UNLOCKED, ppClientEntry2nd),
+                status = NV_ERR_INVALID_OBJECT_HANDLE; goto done);
+        }
 
-        *ppClient1st = pLockInfo->pClient;
-        *ppClient2nd = pLockInfo->pSecondClient;
-        return NV_OK;
+        NV_ASSERT_OR_ELSE((*ppClientEntry2nd)->pClient == pLockInfo->pSecondClient,
+            status = NV_ERR_INVALID_STATE; goto done);
+        NV_ASSERT_OR_ELSE(
+            (*ppClientEntry2nd)->lockOwnerTid == (*ppClientEntry1st)->lockOwnerTid,
+            status = NV_ERR_INVALID_STATE; goto done);
+
+        goto check_locks;
     }
 
-    status = _serverLockClient(pServer, access, hClient1st, ppClient1st);
-    if (status != NV_OK)
-        return status;
+    if (!_serverGetAndLockClientEntryByHandle(pServer, hClient1st, access,
+            ppClientEntry1st))
+    {
+        return NV_ERR_INVALID_OBJECT_HANDLE;
+    }
 
     if (hClient1 == hClient2)
-    {
-        *ppClient2nd = *ppClient1st;
-    }
+        *ppClientEntry2nd = *ppClientEntry1st;
     else
     {
-        status = _serverLockClient(pServer, access, hClient2nd, ppClient2nd);
-        if (status != NV_OK)
+        if (!_serverGetAndLockClientEntryByHandle(pServer, hClient2nd, access,
+                ppClientEntry2nd))
         {
-            _serverUnlockClient(pServer, access, hClient1st);
-            return status;
+            _serverUnlockClient(access, *ppClientEntry1st);
+            status = NV_ERR_INVALID_OBJECT_HANDLE;
+            goto done;
         }
     }
 
     pLockInfo->state |= RS_LOCK_STATE_CLIENT_LOCK_ACQUIRED;
-    pLockInfo->pClient = *ppClient1st;
-    pLockInfo->pSecondClient = *ppClient2nd;
+    pLockInfo->pClient = (*ppClientEntry1st)->pClient;
+    pLockInfo->pSecondClient = (*ppClientEntry2nd)->pClient;
     *pReleaseFlags |= RS_LOCK_RELEASE_CLIENT_LOCK;
+
+check_locks:
+    if (bValidateLocks)
+    {
+        status = clientValidateLocks((*ppClientEntry1st)->pClient, pServer, 
+            *ppClientEntry1st);
+
+        if ((status == NV_OK) && (hClient1 != hClient2))
+        {
+            status = clientValidateLocks((*ppClientEntry2nd)->pClient, pServer, 
+                *ppClientEntry2nd);
+        }
+    }
+
+done:
+
+    if (status != NV_OK)
+    {
+        if (*pReleaseFlags & RS_LOCK_RELEASE_CLIENT_LOCK)
+        {
+            _serverUnlockDualClientWithLockInfo(pServer, access, *ppClientEntry1st,
+                *ppClientEntry2nd, pLockInfo, pReleaseFlags);
+        }
+        else
+        {
+            if (*ppClientEntry1st != NULL)
+            {
+                _serverPutClientEntry(pServer, *ppClientEntry1st);
+                *ppClientEntry1st = NULL;
+            }
+
+            if ((*ppClientEntry2nd != NULL) && (*ppClientEntry2nd != *ppClientEntry1st))
+            {
+                _serverPutClientEntry(pServer, *ppClientEntry2nd);
+                *ppClientEntry2nd = NULL;
+            }
+        }
+    }
+
+    return status;
+}
+
+static
+NV_STATUS
+_serverLockAllClientsWithLockInfo
+(
+    RsServer *pServer,
+    RS_LOCK_INFO *pLockInfo,
+    NvU32 *pReleaseFlags
+)
+{
+    if (!serverAllClientsLockIsOwner(pServer))
+    {
+        NV_STATUS status = serverLockAllClients(pServer);
+        if (status != NV_OK)
+            return status;
+
+        *pReleaseFlags |= RS_LOCK_RELEASE_CLIENT_LOCK;
+    }
 
     return NV_OK;
 }
 
 static
-NV_STATUS
+void
 _serverUnlockClient
 (
-    RsServer *pServer,
     LOCK_ACCESS_TYPE access,
-    NvHandle hClient
+    CLIENT_ENTRY* pClientEntry
 )
 {
-    CLIENT_ENTRY *pClientEntry = NULL;
-    NV_STATUS status = NV_OK;
-
-    status =_serverFindClientEntry(pServer, hClient, NV_TRUE, &pClientEntry);
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
     if (access == LOCK_ACCESS_READ)
     {
         RS_RWLOCK_RELEASE_READ(pClientEntry->pLock, &pClientEntry->lockVal);
@@ -2804,61 +3525,90 @@ _serverUnlockClient
         pClientEntry->lockOwnerTid = ~0;
         RS_RWLOCK_RELEASE_WRITE(pClientEntry->pLock, &pClientEntry->lockVal);
     }
-
-    return NV_OK;
 }
 
 static
-NV_STATUS
+void
 _serverUnlockClientWithLockInfo
 (
     RsServer *pServer,
     LOCK_ACCESS_TYPE access,
-    NvHandle hClient,
+    CLIENT_ENTRY *pClientEntry,
     RS_LOCK_INFO *pLockInfo,
     NvU32 *pReleaseFlags
 )
 {
-    NV_STATUS status;
     if (*pReleaseFlags & RS_LOCK_RELEASE_CLIENT_LOCK)
     {
-        status = _serverUnlockClient(pServer, access, hClient);
-        if (status != NV_OK)
-            return status;
+        _serverUnlockClient(access, pClientEntry);
 
         pLockInfo->state &= ~RS_LOCK_STATE_CLIENT_LOCK_ACQUIRED;
         pLockInfo->pClient = NULL;
         *pReleaseFlags &= ~RS_LOCK_RELEASE_CLIENT_LOCK;
     }
-    return NV_OK;
+
+    _serverPutClientEntry(pServer, pClientEntry);
 }
 
 static
-NV_STATUS
+void
 _serverUnlockDualClientWithLockInfo
 (
     RsServer *pServer,
     LOCK_ACCESS_TYPE access,
-    NvHandle hClient1,
-    NvHandle hClient2,
+    CLIENT_ENTRY *pClientEntry1,
+    CLIENT_ENTRY *pClientEntry2,
     RS_LOCK_INFO *pLockInfo,
     NvU32 *pReleaseFlags
 )
 {
-    // 1st and 2nd in handle order, as opposed to fixed 1 and 2
-    NvHandle    hClient1st = NV_MIN(hClient1, hClient2);
-    NvHandle    hClient2nd = NV_MAX(hClient1, hClient2);
-
     if (*pReleaseFlags & RS_LOCK_RELEASE_CLIENT_LOCK)
     {
-        // Try to unlock both, even if one fails
-        NV_ASSERT_OK(_serverUnlockClient(pServer, access, hClient2nd));
-        if (hClient1 != hClient2)
-            NV_ASSERT_OK(_serverUnlockClient(pServer, access, hClient1st));
+        // 1st and 2nd in handle order, as opposed to fixed 1 and 2
+        CLIENT_ENTRY *pClientEntry1st;
+        CLIENT_ENTRY *pClientEntry2nd;
+
+        if (pClientEntry1->pClient->hClient <= pClientEntry2->pClient->hClient)
+        {
+            pClientEntry1st = pClientEntry1;
+            pClientEntry2nd = pClientEntry2;
+        }
+        else
+        {
+            pClientEntry1st = pClientEntry2;
+            pClientEntry2nd = pClientEntry1;
+        }
+
+        _serverUnlockClient(access, pClientEntry2nd);
+        if (pClientEntry1->pClient->hClient != pClientEntry2->pClient->hClient)
+            _serverUnlockClient(access, pClientEntry1st);
 
         pLockInfo->state &= ~RS_LOCK_STATE_CLIENT_LOCK_ACQUIRED;
         pLockInfo->pClient = NULL;
         pLockInfo->pSecondClient = NULL;
+        *pReleaseFlags &= ~RS_LOCK_RELEASE_CLIENT_LOCK;
+    }
+
+    _serverPutClientEntry(pServer, pClientEntry1);
+
+    if (pClientEntry1 != pClientEntry2)
+        _serverPutClientEntry(pServer, pClientEntry2);
+}
+
+NV_STATUS
+_serverUnlockAllClientsWithLockInfo
+(
+    RsServer *pServer,
+    RS_LOCK_INFO *pLockInfo,
+    NvU32 *pReleaseFlags
+)
+{
+    if (*pReleaseFlags & RS_LOCK_RELEASE_CLIENT_LOCK)
+    {
+        NV_STATUS status = serverUnlockAllClients(pServer);
+        if (status != NV_OK)
+            return status;
+
         *pReleaseFlags &= ~RS_LOCK_RELEASE_CLIENT_LOCK;
     }
 
@@ -3484,6 +4234,24 @@ serverAllocApiCopyOut
 }
 #endif
 
+void
+serverAcquireClientListLock
+(
+    RsServer *pServer
+)
+{
+    RS_SPINLOCK_ACQUIRE(pServer->pClientListLock, &pServer->clientListLockVal);
+}
+
+void
+serverReleaseClientListLock
+(
+    RsServer *pServer
+)
+{
+    RS_SPINLOCK_RELEASE(pServer->pClientListLock, &pServer->clientListLockVal);
+}
+
 #if (RS_STANDALONE)
 NV_STATUS
 serverAllocEpilogue_WAR
@@ -3825,6 +4593,17 @@ serverControlLookupLockFlags
     return NV_OK;
 }
 #endif
+
+NV_STATUS
+serverControlLookupClientLockFlags
+(
+    RS_CONTROL_COOKIE *pCookie,
+    enum CLIENT_LOCK_TYPE  *pClientLockType
+)
+{
+    *pClientLockType = CLIENT_LOCK_SPECIFIC;
+    return NV_OK;
+}
 
 NV_STATUS
 serverMapLookupLockFlags
