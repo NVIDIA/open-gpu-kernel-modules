@@ -313,6 +313,20 @@ _nvswitch_corelib_write_discovery_token
 }
 
 static NV_API_CALL NvlStatus
+_nvswitch_corelib_read_discovery_token
+(
+    nvlink_link *link,
+    NvU64 *token
+)
+{
+    if (link->version >= NVLINK_DEVICE_VERSION_40)
+    {
+        return NVL_SUCCESS;
+    }
+    return NVL_SUCCESS;
+}
+
+static NV_API_CALL NvlStatus
 _nvswitch_corelib_ali_training
 (
     nvlink_link *link
@@ -349,6 +363,7 @@ nvswitch_get_link_handlers
     nvswitch_link_handlers->training_complete = _nvswitch_corelib_training_complete;
     nvswitch_link_handlers->get_uphy_load = _nvswitch_corelib_get_uphy_load;
     nvswitch_link_handlers->write_discovery_token = _nvswitch_corelib_write_discovery_token;
+    nvswitch_link_handlers->read_discovery_token = _nvswitch_corelib_read_discovery_token;
     nvswitch_link_handlers->ali_training = _nvswitch_corelib_ali_training;
 }
 
