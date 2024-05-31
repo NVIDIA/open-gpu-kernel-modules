@@ -3103,7 +3103,10 @@ subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL
     status = gpuFabricProbeGetfmCaps(pGpu->pGpuFabricProbeInfoKernel, &fmCaps);
     NV_ASSERT_OK_OR_RETURN(status);
 
-    pParams->fabricCaps = _convertGpuFabricProbeInfoCaps(fmCaps);
+    if (!gpuIsCCFeatureEnabled(pGpu) || !gpuIsCCMultiGpuProtectedPcieModeEnabled(pGpu))
+    {
+        pParams->fabricCaps = _convertGpuFabricProbeInfoCaps(fmCaps);
+    }
 
     status = gpuFabricProbeGetFabricCliqueId(pGpu->pGpuFabricProbeInfoKernel,
                                              &pParams->fabricCliqueId);

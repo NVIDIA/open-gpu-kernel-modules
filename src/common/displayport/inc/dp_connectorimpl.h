@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -360,6 +360,7 @@ namespace DisplayPort
         // the stale messages from previous discovery.
         //
         bool        bForceClearPendingMsg;
+        bool        bSkipFakeDeviceDpcdAccess;
 
 
         Group *perHeadAttachedGroup[NV_MAX_HEADS];

@@ -638,6 +638,8 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdInternalConfComputeGetStaticInfo__)(struct Subdevice *, NV2080_CTRL_INTERNAL_CONF_COMPUTE_GET_STATIC_INFO_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalConfComputeDeriveSwlKeys__)(struct Subdevice *, NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_SWL_KEYS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalConfComputeDeriveLceKeys__)(struct Subdevice *, NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdInternalConfComputeRotateKeys__)(struct Subdevice *, NV2080_CTRL_INTERNAL_CONF_COMPUTE_ROTATE_KEYS_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdInternalConfComputeRCChannelsForKeyRotation__)(struct Subdevice *, NV2080_CTRL_INTERNAL_CONF_COMPUTE_RC_CHANNELS_FOR_KEY_ROTATION_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalConfComputeSetGpuState__)(struct Subdevice *, NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_GPU_STATE_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalInitUserSharedData__)(struct Subdevice *, NV2080_CTRL_INTERNAL_INIT_USER_SHARED_DATA_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalUserSharedDataSetDataPoll__)(struct Subdevice *, NV2080_CTRL_INTERNAL_USER_SHARED_DATA_SET_DATA_POLL_PARAMS *);
@@ -1291,6 +1293,8 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdInternalConfComputeGetStaticInfo(pSubdevice, pParams) subdeviceCtrlCmdInternalConfComputeGetStaticInfo_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalConfComputeDeriveSwlKeys(pSubdevice, pParams) subdeviceCtrlCmdInternalConfComputeDeriveSwlKeys_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalConfComputeDeriveLceKeys(pSubdevice, pParams) subdeviceCtrlCmdInternalConfComputeDeriveLceKeys_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdInternalConfComputeRotateKeys(pSubdevice, pParams) subdeviceCtrlCmdInternalConfComputeRotateKeys_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdInternalConfComputeRCChannelsForKeyRotation(pSubdevice, pParams) subdeviceCtrlCmdInternalConfComputeRCChannelsForKeyRotation_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalConfComputeSetGpuState(pSubdevice, pParams) subdeviceCtrlCmdInternalConfComputeSetGpuState_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalInitUserSharedData(pSubdevice, pParams) subdeviceCtrlCmdInternalInitUserSharedData_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalUserSharedDataSetDataPoll(pSubdevice, pParams) subdeviceCtrlCmdInternalUserSharedDataSetDataPoll_DISPATCH(pSubdevice, pParams)
@@ -4563,6 +4567,18 @@ NV_STATUS subdeviceCtrlCmdInternalConfComputeDeriveLceKeys_IMPL(struct Subdevice
 
 static inline NV_STATUS subdeviceCtrlCmdInternalConfComputeDeriveLceKeys_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS_PARAMS *pParams) {
     return pSubdevice->__subdeviceCtrlCmdInternalConfComputeDeriveLceKeys__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdInternalConfComputeRotateKeys_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_CONF_COMPUTE_ROTATE_KEYS_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdInternalConfComputeRotateKeys_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_CONF_COMPUTE_ROTATE_KEYS_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdInternalConfComputeRotateKeys__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdInternalConfComputeRCChannelsForKeyRotation_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_CONF_COMPUTE_RC_CHANNELS_FOR_KEY_ROTATION_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdInternalConfComputeRCChannelsForKeyRotation_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_CONF_COMPUTE_RC_CHANNELS_FOR_KEY_ROTATION_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdInternalConfComputeRCChannelsForKeyRotation__(pSubdevice, pParams);
 }
 
 NV_STATUS subdeviceCtrlCmdInternalConfComputeSetGpuState_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_GPU_STATE_PARAMS *pParams);

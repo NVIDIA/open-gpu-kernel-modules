@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -3293,7 +3293,14 @@ nvGpuOpsBuildExternalAllocPtes
             }
             else
             {
-                fabricBaseAddress = knvlinkGetUniqueFabricBaseAddress(pMemDesc->pGpu, pKernelNvlink);
+                if (memdescIsEgm(pMemDesc))
+                {
+                    fabricBaseAddress = knvlinkGetUniqueFabricEgmBaseAddress(pMemDesc->pGpu, pKernelNvlink);
+                }
+                else
+                {
+                    fabricBaseAddress = knvlinkGetUniqueFabricBaseAddress(pMemDesc->pGpu, pKernelNvlink);
+                }
             }
         }
     }
@@ -3318,8 +3325,8 @@ nvGpuOpsBuildExternalAllocPtes
     //
     memdescGetPhysAddrsForGpu(pMemDesc, pMappingGpu, AT_GPU, offset, mappingPageSize,
                               pteCount, physicalAddresses);
-    kgmmuEncodePhysAddrs(pKernelGmmu, aperture, physicalAddresses, fabricBaseAddress, pteCount);
 
+    kgmmuEncodePhysAddrs(pKernelGmmu, aperture, physicalAddresses, fabricBaseAddress, pteCount);
 
     //
     // Get information whether given physical address needs PLCable kind
@@ -9966,8 +9973,7 @@ void nvGpuOpsPagingChannelsUnmap(struct gpuAddressSpace *srcVaSpace,
         return;
     }
 
-    status = _nvGpuOpsLocksAcquire(RMAPI_LOCK_FLAGS_NONE, hClient, NULL, 2,
-                                   device->deviceInstance, srcVaSpace->device->deviceInstance, &acquiredLocks);
+    status = _nvGpuOpsLocksAcquireAll(RMAPI_LOCK_FLAGS_NONE, hClient, NULL, &acquiredLocks);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,

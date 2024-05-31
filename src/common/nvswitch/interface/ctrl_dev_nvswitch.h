@@ -4456,8 +4456,92 @@ typedef struct
     NvU32 commandNvdmType;
     NvU32 responseNvdmType;
     NvU32 errorCode;
-    NvU8* pRspPayload;
 } NVSWITCH_FSPRPC_GET_CAPS_PARAMS;
+
+typedef enum nvswitch_device_tnvl_mode
+{
+    NVSWITCH_DEVICE_TNVL_MODE_DISABLED = 0,       // TNVL mode is disabled
+    NVSWITCH_DEVICE_TNVL_MODE_ENABLED,            // TNVL mode is enabled 
+    NVSWITCH_DEVICE_TNVL_MODE_FAILURE,            // TNVL mode is enabled but in failure state
+    NVSWITCH_DEVICE_TNVL_MODE_LOCKED,             // TNVL mode is enabled and locked
+    NVSWITCH_DEVICE_TNVL_MODE_COUNT
+} NVSWITCH_DEVICE_TNVL_MODE;
+
+/*
+ * CTRL_NVSWITCH_SET_DEVICE_TNVL_LOCK
+ *
+ * Control to set Trusted NVLink(TNVL) lock
+ *
+ * FM sets the TNVL lock after Fabric State is CONFIGURED
+ *
+ * Parameters:
+ *    tnvlStatus [OUT]
+ *      TNVL mode status of the device
+ */
+typedef struct nvswitch_set_device_tnvl_lock_params
+{
+    NVSWITCH_DEVICE_TNVL_MODE tnvlStatus;
+} NVSWITCH_SET_DEVICE_TNVL_LOCK_PARAMS;
+
+/*
+ * CTRL_NVSWITCH_GET_ATTESTATION_CERTIFICATE_CHAIN
+ *   
+ * Control to query NvSwitch session attestation certificate chain
+ *
+ * Parameters:
+ *
+ *    attestationCertChain: [OUT]
+ *      Attestation certificate chain for the NvSwitch queried
+ *
+ *    attestationCertChainSize: [OUT]
+ *      Actual size of attestation cert chain data
+ */
+
+#define NVSWITCH_ATTESTATION_CERT_CHAIN_MAX_SIZE 0x1400
+
+typedef struct nvswitch_get_attestation_certificate_chain_params
+{
+    NvU8     attestationCertChain[NVSWITCH_ATTESTATION_CERT_CHAIN_MAX_SIZE];
+    NvU32    attestationCertChainSize;
+} NVSWITCH_GET_ATTESTATION_CERTIFICATE_CHAIN_PARAMS;
+
+/*
+ * CTRL_NVSWITCH_GET_ATTESTATION_REPORT
+ *
+ * Control to query NvSwitch attestation report.
+ *
+ * Parameters:
+ *    nonce: [IN]
+ *        nonce
+ *    attestationReport: [OUT]
+ *        Attestation report of the NvSwitch queried
+ *    attestationReportSize: [OUT]
+ *        Actual size of the report
+ */
+
+#define NVSWITCH_NONCE_SIZE                     0x20
+#define NVSWITCH_ATTESTATION_REPORT_MAX_SIZE    0x2000
+
+typedef struct nvswitch_get_attestation_report_params
+{
+    NvU8     nonce[NVSWITCH_NONCE_SIZE];
+    NvU8     attestationReport[NVSWITCH_ATTESTATION_REPORT_MAX_SIZE];
+    NvU32    attestationReportSize;
+} NVSWITCH_GET_ATTESTATION_REPORT_PARAMS;
+
+/* 
+ * CTRL_NVSWITCH_GET_TNVL_STATUS
+ *
+ * Control to query Trusted NVLink(TNVL) status
+ *
+ * Parameters :
+ *    status: [OUT]
+ *        TNVL mode status
+ */
+typedef struct nvswitch_get_tnvl_status_params
+{
+    NVSWITCH_DEVICE_TNVL_MODE status;
+} NVSWITCH_GET_TNVL_STATUS_PARAMS;
 
 #define REGISTER_RW_ENGINE_RAW                       0x00
 
@@ -4604,6 +4688,10 @@ typedef struct
 #define CTRL_NVSWITCH_GET_NVLINK_L1_THRESHOLD               0x66
 #define CTRL_NVSWITCH_SET_NVLINK_L1_THRESHOLD               0x67
 #define CTRL_NVSWITCH_FSPRPC_GET_CAPS                       0x68
+#define CTRL_NVSWITCH_SET_DEVICE_TNVL_LOCK                  0x69
+#define CTRL_NVSWITCH_GET_ATTESTATION_CERTIFICATE_CHAIN     0x6A
+#define CTRL_NVSWITCH_GET_ATTESTATION_REPORT                0x6B
+#define CTRL_NVSWITCH_GET_TNVL_STATUS                       0x6C
 
 #ifdef __cplusplus
 }

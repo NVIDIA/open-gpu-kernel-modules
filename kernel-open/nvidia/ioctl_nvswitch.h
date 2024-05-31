@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -164,6 +164,7 @@ typedef struct
     NVSWITCH_DEVICE_FABRIC_STATE deviceState;
     NVSWITCH_DEVICE_BLACKLIST_REASON deviceReason;
     NvU32 physId;
+    NvBool bTnvlEnabled;
 
     /* See ctrl_dev_nvswitch.h for struct definition modification guidelines */
 } NVSWITCH_DEVICE_INSTANCE_INFO_V2;

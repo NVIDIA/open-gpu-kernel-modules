@@ -96,9 +96,6 @@ NV_STATUS _setupGspEventInfrastructure(OBJGPU *pGpu, OBJVGPU *pVGpu)
     NvU32 memFlags = 0;
     KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
 
-    if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus))
-        memFlags = MEMDESC_FLAGS_CPU_ONLY;
-
     if (IsGH100orBetter(pGpu) && (!kbusIsBar2Initialized(pKernelBus)))
         addressSpace = ADDR_SYSMEM;
 

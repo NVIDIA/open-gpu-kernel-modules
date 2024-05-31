@@ -142,11 +142,6 @@ vgpuDestructObject
     OBJVGPU       *pVGpu = GPU_GET_VGPU(pGpu);
     NV_STATUS      rmStatus = NV_OK;
 
-    // Sysmem PFN Bitmap teardown invokes RPC for GSP enabled
-    // case. Hence this needs to happen before RPC teardown
-    if (pVGpu != NULL)
-        teardownSysmemPfnBitMap(pGpu, pVGpu);
-
     NV_RM_RPC_UNLOADING_GUEST_DRIVER(pGpu, rmStatus, NV_FALSE, NV_FALSE, 0);
 
     {
@@ -160,6 +155,9 @@ vgpuDestructObject
     }
 
     vgpuGspTeardownBuffers(pGpu);
+
+    if (pVGpu != NULL)
+       teardownSysmemPfnBitMap(pGpu, pVGpu);
 
     portMemFree(pVGpu);
     NvVGPU_Table[gpuGetInstance(pGpu)] = NULL;

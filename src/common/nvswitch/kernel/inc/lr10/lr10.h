@@ -707,5 +707,7 @@ NvlStatus nvswitch_fsp_config_ememc_lr10(nvswitch_device *device, NvU32 offset, 
 NvlStatus nvswitch_fsp_write_to_emem_lr10(nvswitch_device *device, NvU8 *pBuffer, NvU32 size);
 NvlStatus nvswitch_fsp_read_from_emem_lr10(nvswitch_device *device, NvU8 *pBuffer, NvU32 size);
 NvlStatus nvswitch_fsp_error_code_to_nvlstatus_map_lr10(nvswitch_device *device, NvU32 errorCode);
-
+NvlStatus nvswitch_tnvl_get_attestation_certificate_chain_lr10(nvswitch_device *device, NVSWITCH_GET_ATTESTATION_CERTIFICATE_CHAIN_PARAMS *params);
+NvlStatus nvswitch_tnvl_get_attestation_report_lr10(nvswitch_device *device, NVSWITCH_GET_ATTESTATION_REPORT_PARAMS *params);
+NvlStatus nvswitch_tnvl_get_status_lr10(nvswitch_device *device, NVSWITCH_GET_TNVL_STATUS_PARAMS *params);
 #endif //_LR10_H_

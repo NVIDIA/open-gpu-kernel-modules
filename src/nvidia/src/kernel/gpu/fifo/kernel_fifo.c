@@ -65,6 +65,10 @@ static void _kfifoChidMgrDestroyChannelGroupMgr(CHID_MGR *pChidMgr);
 
 static NV_STATUS _kfifoChidMgrFreeIsolationId(CHID_MGR *pChidMgr, NvU32 ChID);
 
+static NV_STATUS _kfifoChidMgrGetNextKernelChannel(OBJGPU *pGpu, KernelFifo *pKernelFifo,
+                                                   CHID_MGR *pChidMgr, CHANNEL_ITERATOR *pIt,
+                                                   KernelChannel **ppKernelChannel);
+
 
 NvU32 kfifoGetNumEschedDrivenEngines_IMPL
 (
@@ -1690,12 +1694,17 @@ kfifoFillMemInfo_IMPL
     }
 }
 
+/*
+ * Initializes an iterator to iterate through all channels of a runlist
+ * If runlistId is INVALID_RUNLIST_ID then it iterates channels for all runlists
+ */
 void
 kfifoGetChannelIterator_IMPL
 (
     OBJGPU *pGpu,
     KernelFifo *pKernelFifo,
-    CHANNEL_ITERATOR *pIt
+    CHANNEL_ITERATOR *pIt,
+    NvU32 runlistId
 )
 {
     portMemSet(pIt, 0, sizeof(*pIt));
@@ -1703,10 +1712,73 @@ kfifoGetChannelIterator_IMPL
     pIt->pFifoDataBlock    = NULL;
     pIt->runlistId         = 0;
     pIt->numRunlists       = 1;
-    if (kfifoIsPerRunlistChramEnabled(pKernelFifo))
+
+    // Do we want to ierate all runlist channels
+    if (runlistId == INVALID_RUNLIST_ID)
     {
-        pIt->numRunlists = kfifoGetMaxNumRunlists_HAL(pGpu, pKernelFifo);
+        if (kfifoIsPerRunlistChramEnabled(pKernelFifo))
+        {
+            pIt->numRunlists = kfifoGetMaxNumRunlists_HAL(pGpu, pKernelFifo);
+        }
     }
+    else
+    {
+        pIt->runlistId = runlistId;
+    }
+}
+
+// return next channel for a specific chidMgr
+static NV_STATUS
+_kfifoChidMgrGetNextKernelChannel
+(
+    OBJGPU              *pGpu,
+    KernelFifo          *pKernelFifo,
+    CHID_MGR            *pChidMgr,
+    CHANNEL_ITERATOR    *pIt,
+    KernelChannel      **ppKernelChannel
+)
+{
+    KernelChannel *pKernelChannel = NULL;
+    pIt->numChannels = kfifoChidMgrGetNumChannels(pGpu, pKernelFifo, pChidMgr);
+
+    if (pIt->pFifoDataBlock == NULL)
+    {
+        pIt->pFifoDataBlock = pChidMgr->pFifoDataHeap->eheapGetBlock(
+            pChidMgr->pFifoDataHeap,
+            pIt->physicalChannelID,
+            NV_TRUE);
+    }
+
+    while (pIt->physicalChannelID < pIt->numChannels)
+    {
+        if (pIt->pFifoDataBlock->owner == NVOS32_BLOCK_TYPE_FREE)
+        {
+            pIt->physicalChannelID = pIt->pFifoDataBlock->end + 1;
+        }
+        else
+        {
+            pIt->physicalChannelID++;
+            pKernelChannel = (KernelChannel *)pIt->pFifoDataBlock->pData;
+
+            //
+            // This iterator can be used during an interrupt, when a KernelChannel may
+            // be in the process of being destroyed. If a KernelChannel expects a pChannel
+            // but does not have one, it means it's being destroyed and we don't want to
+            // return it.
+            //
+            if (pKernelChannel != NULL && kchannelIsValid_HAL(pKernelChannel))
+            {
+                // Prepare iterator to check next block in pChidMgr->pFifoDataHeap
+                pIt->pFifoDataBlock = pIt->pFifoDataBlock->next;
+               *ppKernelChannel = pKernelChannel;
+                return NV_OK;
+            }
+        }
+
+        // Check next block in pChidMgr->pFifoDataHeap
+        pIt->pFifoDataBlock = pIt->pFifoDataBlock->next;
+    }
+    return NV_ERR_OBJECT_NOT_FOUND;
 }
 
 /**
@@ -1732,13 +1804,18 @@ NV_STATUS kfifoGetNextKernelChannel_IMPL
     KernelChannel      **ppKernelChannel
 )
 {
-    KernelChannel *pKernelChannel;
-
     if (ppKernelChannel == NULL)
         return NV_ERR_INVALID_ARGUMENT;
 
     *ppKernelChannel = NULL;
 
+    if (pIt->numRunlists == 1)
+    {
+        CHID_MGR *pChidMgr = kfifoGetChidMgr(pGpu, pKernelFifo, pIt->runlistId);
+        NV_ASSERT_OR_RETURN(pChidMgr != NULL, NV_ERR_INVALID_ARGUMENT);
+        return _kfifoChidMgrGetNextKernelChannel(pGpu, pKernelFifo,
+                                                 pChidMgr, pIt, ppKernelChannel);
+    }
     while (pIt->runlistId < pIt->numRunlists)
     {
         CHID_MGR *pChidMgr = kfifoGetChidMgr(pGpu, pKernelFifo, pIt->runlistId);
@@ -1749,50 +1826,18 @@ NV_STATUS kfifoGetNextKernelChannel_IMPL
             continue;
         }
 
-        pIt->numChannels = kfifoChidMgrGetNumChannels(pGpu, pKernelFifo, pChidMgr);
-
-        if (pIt->pFifoDataBlock == NULL)
+        if (_kfifoChidMgrGetNextKernelChannel(pGpu, pKernelFifo, pChidMgr,
+                                              pIt, ppKernelChannel) == NV_OK)
         {
-            pIt->pFifoDataBlock = pChidMgr->pFifoDataHeap->eheapGetBlock(
-                pChidMgr->pFifoDataHeap,
-                pIt->physicalChannelID,
-                NV_TRUE);
+            return NV_OK;
         }
-
-        while (pIt->physicalChannelID < pIt->numChannels)
+        else
         {
-            if (pIt->pFifoDataBlock->owner == NVOS32_BLOCK_TYPE_FREE)
-            {
-                pIt->physicalChannelID = pIt->pFifoDataBlock->end + 1;
-            }
-            else
-            {
-                pIt->physicalChannelID++;
-                pKernelChannel = (KernelChannel *)pIt->pFifoDataBlock->pData;
-
-                //
-                // This iterator can be used during an interrupt, when a KernelChannel may
-                // be in the process of being destroyed. If a KernelChannel expects a pChannel
-                // but does not have one, it means it's being destroyed and we don't want to
-                // return it.
-                //
-                if (pKernelChannel != NULL && kchannelIsValid_HAL(pKernelChannel))
-                {
-                    // Prepare iterator to check next block in pChidMgr->pFifoDataHeap
-                    pIt->pFifoDataBlock = pIt->pFifoDataBlock->next;
-                    *ppKernelChannel = pKernelChannel;
-                    return NV_OK;
-                }
-            }
-
-            // Check next block in pChidMgr->pFifoDataHeap
-            pIt->pFifoDataBlock = pIt->pFifoDataBlock->next;
+            pIt->runlistId++;
+            // Reset iterator for next runlist
+            pIt->physicalChannelID = 0;
+            pIt->pFifoDataBlock = NULL;
         }
-
-        pIt->runlistId++;
-        // Reset iterator for next runlist
-        pIt->physicalChannelID = 0;
-        pIt->pFifoDataBlock = NULL;
     }
 
     return NV_ERR_OBJECT_NOT_FOUND;
@@ -2349,7 +2394,7 @@ kfifoEngineListHasChannel_IMPL
     NV_ASSERT_OR_RETURN((pEngines != NULL) && (engineCount > 0), NV_TRUE);
 
     // Find any channels or contexts on passed engines
-    kfifoGetChannelIterator(pGpu, pKernelFifo, &it);
+    kfifoGetChannelIterator(pGpu, pKernelFifo, &it, INVALID_RUNLIST_ID);
     while (kchannelGetNextKernelChannel(pGpu, &it, &pKernelChannel) == NV_OK)
     {
         NV_ASSERT_OR_ELSE(pKernelChannel != NULL, continue);

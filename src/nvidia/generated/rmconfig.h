@@ -298,6 +298,7 @@
 #define RMCFG_FEATURE_FEATURE_GH180               1  // RMconfig to encapsulate GH180 features
 #define RMCFG_FEATURE_MULTICAST_FABRIC            1  // Support for MULTICAST_FABRIC
 #define RMCFG_FEATURE_NVLINK_ERROR_THRESHOLD      1  // Support for NVLINK_ERROR_THRESHOLD
+#define RMCFG_FEATURE_GSP_SEC2_ENC_CHNLMGMT_RC_WAR  1  // WAR required for RC handling. See comment #36 of bug 4406277
 #define RMCFG_FEATURE_FABRIC_LINEAR_ADDRESSING    1  // Unicast fabric memory management
 
 

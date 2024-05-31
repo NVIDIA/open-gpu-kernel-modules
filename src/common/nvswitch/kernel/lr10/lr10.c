@@ -3720,6 +3720,9 @@ nvswitch_initialize_device_state_lr10
         (NvU64)device->regkeys.link_enable_mask) &
         ((~0ULL) >> (64 - NVSWITCH_LINK_COUNT(device))));
 
+    // Detect TNVL mode
+    nvswitch_detect_tnvl_mode(device);
+
     if (nvswitch_is_soe_supported(device))
     {
         retval = nvswitch_init_soe(device);
@@ -8108,7 +8111,77 @@ nvswitch_fsprpc_get_caps_lr10
     NVSWITCH_FSPRPC_GET_CAPS_PARAMS *params
 )
 {
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvlStatus
+nvswitch_detect_tnvl_mode_lr10
+(
+    nvswitch_device *device
+)
+{
     return -NVL_ERR_NOT_SUPPORTED; 
+}
+
+NvBool
+nvswitch_is_tnvl_mode_enabled_lr10
+(
+    nvswitch_device *device
+)
+{
+    return NV_FALSE;
+}
+
+NvBool
+nvswitch_is_tnvl_mode_locked_lr10
+(
+    nvswitch_device *device
+)
+{
+    return NV_FALSE;
+}
+
+NvlStatus
+nvswitch_tnvl_get_attestation_certificate_chain_lr10
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_ATTESTATION_CERTIFICATE_CHAIN_PARAMS *params
+)
+{
+    // Not supported in LR10
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvlStatus
+nvswitch_tnvl_get_attestation_report_lr10
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_ATTESTATION_REPORT_PARAMS *params
+)
+{
+    // Not supported in LR10
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvlStatus
+nvswitch_tnvl_send_fsp_lock_config_lr10
+(
+    nvswitch_device *device
+)
+{
+    // Not supported in LR10
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvlStatus
+nvswitch_tnvl_get_status_lr10
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_TNVL_STATUS_PARAMS *params
+)
+{
+    // Not supported in LR10
+    return -NVL_ERR_NOT_SUPPORTED;
 }
 
 //

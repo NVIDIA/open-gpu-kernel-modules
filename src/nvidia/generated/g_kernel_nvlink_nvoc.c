@@ -257,6 +257,8 @@ void __nvoc_init_dataField_KernelNvlink(KernelNvlink *pThis, RmHalspecOwner *pRm
     }
 
     pThis->fabricBaseAddr = (+18446744073709551615ULL);
+
+    pThis->fabricEgmBaseAddr = (+18446744073709551615ULL);
 }
 
 NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE* );
@@ -325,6 +327,28 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
         pThis->__knvlinkClearUniqueFabricBaseAddress__ = &knvlinkClearUniqueFabricBaseAddress_b3696a;
     }
 
+    // Hal function -- knvlinkSetUniqueFabricEgmBaseAddress
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__knvlinkSetUniqueFabricEgmBaseAddress__ = &knvlinkSetUniqueFabricEgmBaseAddress_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__knvlinkSetUniqueFabricEgmBaseAddress__ = &knvlinkSetUniqueFabricEgmBaseAddress_46f6a7;
+    }
+
+    // Hal function -- knvlinkClearUniqueFabricEgmBaseAddress
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__knvlinkClearUniqueFabricEgmBaseAddress__ = &knvlinkClearUniqueFabricEgmBaseAddress_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__knvlinkClearUniqueFabricEgmBaseAddress__ = &knvlinkClearUniqueFabricEgmBaseAddress_b3696a;
+    }
+
     // Hal function -- knvlinkHandleFaultUpInterrupt
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
@@ -349,6 +373,17 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
     else
     {
         pThis->__knvlinkValidateFabricBaseAddress__ = &knvlinkValidateFabricBaseAddress_46f6a7;
+    }
+
+    // Hal function -- knvlinkValidateFabricEgmBaseAddress
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__knvlinkValidateFabricEgmBaseAddress__ = &knvlinkValidateFabricEgmBaseAddress_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__knvlinkValidateFabricEgmBaseAddress__ = &knvlinkValidateFabricEgmBaseAddress_46f6a7;
     }
 
     // Hal function -- knvlinkGetConnectedLinksMask

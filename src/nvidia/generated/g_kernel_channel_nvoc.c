@@ -1329,6 +1329,26 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspe
         pThis->__kchannelRetrieveKmb__ = &kchannelRetrieveKmb_KERNEL;
     }
 
+    // Hal function -- kchannelSetKeyRotationNotifier
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kchannelSetKeyRotationNotifier__ = &kchannelSetKeyRotationNotifier_56cd7a;
+    }
+    else
+    {
+        pThis->__kchannelSetKeyRotationNotifier__ = &kchannelSetKeyRotationNotifier_KERNEL;
+    }
+
+    // Hal function -- kchannelSetEncryptionStatsBuffer
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kchannelSetEncryptionStatsBuffer__ = &kchannelSetEncryptionStatsBuffer_56cd7a;
+    }
+    else
+    {
+        pThis->__kchannelSetEncryptionStatsBuffer__ = &kchannelSetEncryptionStatsBuffer_KERNEL;
+    }
+
     pThis->__nvoc_base_GpuResource.__gpuresMap__ = &__nvoc_thunk_KernelChannel_gpuresMap;
 
     pThis->__nvoc_base_GpuResource.__gpuresUnmap__ = &__nvoc_thunk_KernelChannel_gpuresUnmap;

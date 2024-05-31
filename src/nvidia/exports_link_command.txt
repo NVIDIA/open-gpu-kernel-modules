@@ -170,6 +170,7 @@
 --undefined=nvswitch_lib_get_valid_ports_mask
 --undefined=nvswitch_lib_is_i2c_supported
 --undefined=nvswitch_lib_i2c_transfer
+--undefined=nvswitch_lib_is_tnvl_enabled
 --undefined=rm_gpu_copy_mmu_faults
 --undefined=rm_gpu_handle_mmu_faults
 --undefined=rm_gpu_need_4k_page_isolation

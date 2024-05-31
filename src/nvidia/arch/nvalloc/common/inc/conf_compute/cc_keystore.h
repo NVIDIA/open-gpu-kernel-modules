@@ -55,6 +55,8 @@ enum
     CC_LKEYID_GSP_CPU_REPLAYABLE_FAULT,
     CC_LKEYID_CPU_GSP_RESERVED2,
     CC_LKEYID_GSP_CPU_NON_REPLAYABLE_FAULT,
+    CC_LKEYID_GSP_SEC2_LOCKED_RPC,
+    CC_LKEYID_SEC2_GSP_LOCKED_RPC,
     CC_KEYSPACE_GSP_SIZE // This is always the last element.
 };
 // The fault buffers only support GPU-to-CPU encryption, so the CPU-to-GPU encryption slot
@@ -158,6 +160,10 @@ enum
 
 // Get the local key ID from a global key ID.
 #define CC_GKEYID_GET_LKEYID(a) (NvU16)((a) & 0xffff)
+
+// Decrement/increment the local key ID portion of a global key ID.
+#define CC_GKEYID_DEC_LKEYID(a) CC_GKEYID_GEN(CC_GKEYID_GET_KEYSPACE((a)), CC_GKEYID_GET_LKEYID((a)) - 1)
+#define CC_GKEYID_INC_LKEYID(a) CC_GKEYID_GEN(CC_GKEYID_GET_KEYSPACE((a)), CC_GKEYID_GET_LKEYID((a)) + 1)
 
 // Get the unqiue string from a global key ID.
 #define CC_GKEYID_GET_STR(a) \

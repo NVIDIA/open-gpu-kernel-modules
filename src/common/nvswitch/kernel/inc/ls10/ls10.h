@@ -1051,6 +1051,13 @@ NvlStatus nvswitch_fsp_write_to_emem_ls10(nvswitch_device *device, NvU8 *pBuffer
 NvlStatus nvswitch_fsp_read_from_emem_ls10(nvswitch_device *device, NvU8 *pBuffer, NvU32 size);
 NvlStatus nvswitch_fsp_error_code_to_nvlstatus_map_ls10(nvswitch_device *device, NvU32 errorCode);
 NvlStatus nvswitch_fsprpc_get_caps_ls10(nvswitch_device *device, NVSWITCH_FSPRPC_GET_CAPS_PARAMS *params);
+NvlStatus nvswitch_detect_tnvl_mode_ls10(nvswitch_device *device);
+NvBool    nvswitch_is_tnvl_mode_enabled_ls10(nvswitch_device *device);
+NvBool    nvswitch_is_tnvl_mode_locked_ls10(nvswitch_device *device);
+NvlStatus nvswitch_tnvl_get_attestation_certificate_chain_ls10(nvswitch_device *device, NVSWITCH_GET_ATTESTATION_CERTIFICATE_CHAIN_PARAMS *params);
+NvlStatus nvswitch_tnvl_get_attestation_report_ls10(nvswitch_device *device, NVSWITCH_GET_ATTESTATION_REPORT_PARAMS *params);
+NvlStatus nvswitch_tnvl_send_fsp_lock_config_ls10(nvswitch_device *device);
+NvlStatus nvswitch_tnvl_get_status_ls10(nvswitch_device *device, NVSWITCH_GET_TNVL_STATUS_PARAMS *params);
 
 NvlStatus nvswitch_ctrl_get_soe_heartbeat_ls10(nvswitch_device *device, NVSWITCH_GET_SOE_HEARTBEAT_PARAMS *p);
 NvlStatus nvswitch_cci_enable_iobist_ls10(nvswitch_device *device, NvU32 linkNumber, NvBool bEnable);

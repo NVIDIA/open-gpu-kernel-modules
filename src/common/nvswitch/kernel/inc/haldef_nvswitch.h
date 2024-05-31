@@ -288,6 +288,13 @@
     _op(NvlStatus, nvswitch_fsp_error_code_to_nvlstatus_map, (nvswitch_device *device, NvU32 errorCode), _arch) \
     _op(NvlStatus, nvswitch_fsp_get_packet_info, (nvswitch_device *device, NvU8 *pBuffer, NvU32 size, NvU8 *pPacketState, NvU8 *pTag), _arch) \
     _op(NvlStatus, nvswitch_fsprpc_get_caps, (nvswitch_device *device, NVSWITCH_FSPRPC_GET_CAPS_PARAMS *params), _arch) \
+    _op(NvlStatus, nvswitch_detect_tnvl_mode, (nvswitch_device *device), _arch) \
+    _op(NvBool,    nvswitch_is_tnvl_mode_enabled, (nvswitch_device *device), _arch) \
+    _op(NvBool,    nvswitch_is_tnvl_mode_locked, (nvswitch_device *device), _arch) \
+    _op(NvlStatus, nvswitch_tnvl_get_attestation_certificate_chain, (nvswitch_device *device, NVSWITCH_GET_ATTESTATION_CERTIFICATE_CHAIN_PARAMS *params), _arch) \
+    _op(NvlStatus, nvswitch_tnvl_get_attestation_report, (nvswitch_device *device, NVSWITCH_GET_ATTESTATION_REPORT_PARAMS *params), _arch) \
+    _op(NvlStatus, nvswitch_tnvl_send_fsp_lock_config, (nvswitch_device *device), _arch) \
+    _op(NvlStatus, nvswitch_tnvl_get_status, (nvswitch_device *device, NVSWITCH_GET_TNVL_STATUS_PARAMS *params), _arch) \
     NVSWITCH_HAL_FUNCTION_LIST_FEATURE_0(_op, _arch) \
 
 #define NVSWITCH_HAL_FUNCTION_LIST_LS10(_op, _arch) \

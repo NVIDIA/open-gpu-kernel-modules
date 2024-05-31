@@ -362,6 +362,8 @@ deviceCtrlCmdGpuSetVgpuHeterogeneousMode_IMPL
         return NV_ERR_IN_USE;
     }
 
+    kvgpumgrSetVgpuType(pGpu, pPgpuInfo, NVA081_CTRL_VGPU_CONFIG_INVALID_TYPE);
+
     pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_VGPU_HETEROGENEOUS_MODE, pParams->bHeterogeneousMode);
 
     if (pParams->bHeterogeneousMode)

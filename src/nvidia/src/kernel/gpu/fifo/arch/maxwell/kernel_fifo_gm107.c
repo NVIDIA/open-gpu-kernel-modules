@@ -637,7 +637,7 @@ kfifoConvertInstToKernelChannel_GM107
 
     memdescDescribe(&instMemDesc, instAperture, pInst->address, NV_RAMIN_ALLOC_SIZE);
 
-    kfifoGetChannelIterator(pGpu, pKernelFifo, &chanIt);
+    kfifoGetChannelIterator(pGpu, pKernelFifo, &chanIt, INVALID_RUNLIST_ID);
     while (kfifoGetNextKernelChannel(pGpu, pKernelFifo, &chanIt, &pKernelChannel) == NV_OK)
     {
         NV_ASSERT_OR_ELSE(pKernelChannel != NULL, continue);

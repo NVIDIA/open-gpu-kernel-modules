@@ -25,6 +25,9 @@
 #define _FSP_TNVL_RPC_H_
 
 #define TNVL_CAPS_SUBMESSAGE_ID 0xFF
+#define TNVL_GET_ATT_CERTS_SUBMESSAGE_ID  0x0
+#define TNVL_GET_ATT_REPORT_SUBMESSAGE_ID 0x1
+#define TNVL_LOCK_CONFIG_SUBMESSAGE_ID    0x2
 
 #pragma pack(1)
 
@@ -45,6 +48,81 @@ typedef struct
     NVDM_PAYLOAD_COMMAND_RESPONSE cmdResponse;
     NvU8 rspPayload[40];
 } TNVL_RPC_CAPS_RSP_PAYLOAD;
+
+ /*!
+  * @brief TNVL payload to query attestation cert chain
+  */
+typedef struct
+{
+    NvU8 subMessageId;
+    NvU8 rsvd;
+    NvU8 minorVersion;
+    NvU8 majorVersion;
+} TNVL_GET_ATT_CERTS_CMD_PAYLOAD;
+
+/*!
+  * @brief TNVL response payload for attestation cert chain
+  */
+typedef struct
+{
+    NVDM_PAYLOAD_COMMAND_RESPONSE cmdResponse;
+    NvU8 subMessageId;
+    NvU8 rsvd0;
+    NvU8 minorVersion;
+    NvU8 majorVersion;
+    NvU16 certChainLength;
+    NvU16 rsvd1;
+    NvU8 certChain[NVSWITCH_ATTESTATION_CERT_CHAIN_MAX_SIZE];
+} TNVL_GET_ATT_CERTS_RSP_PAYLOAD;
+
+ /*!
+  * @brief TNVL payload to query attestation report
+  */
+typedef struct
+{
+    NvU8 subMessageId;
+    NvU8 rsvd;
+    NvU8 minorVersion;
+    NvU8 majorVersion;
+    NvU8 nonce[NVSWITCH_NONCE_SIZE];
+} TNVL_GET_ATT_REPORT_CMD_PAYLOAD;
+
+/*!
+ * @brief TNVL response payload for attestation report
+ */
+typedef struct
+{
+    NVDM_PAYLOAD_COMMAND_RESPONSE cmdResponse;
+    NvU8 subMessageId;
+    NvU8 rsvd0;
+    NvU8 minorVersion;
+    NvU8 majorVersion;
+    NvU32 measurementSize;
+    NvU8 measurementBuffer[NVSWITCH_ATTESTATION_REPORT_MAX_SIZE];
+} TNVL_GET_ATT_REPORT_RSP_PAYLOAD;
+
+/*!
+ * @brief TNVL payload to send lock config
+ */
+typedef struct
+{
+    NvU8 subMessageId;
+    NvU8 rsvd;
+    NvU8 minorVersion;
+    NvU8 majorVersion;
+} TNVL_LOCK_CONFIG_CMD_PAYLOAD;
+
+/*!
+ * @brief TNVL response payload for lock config
+ */
+typedef struct
+{
+    NVDM_PAYLOAD_COMMAND_RESPONSE cmdResponse;
+    NvU8 subMessageId;
+    NvU8 rsvd0;
+    NvU8 minorVersion;
+    NvU8 majorVersion;
+} TNVL_LOCK_CONFIG_RSP_PAYLOAD;
 
 #pragma pack()
 

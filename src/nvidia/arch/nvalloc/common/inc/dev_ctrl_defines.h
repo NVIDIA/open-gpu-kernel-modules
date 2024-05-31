@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -76,6 +76,9 @@
 //
 #define NV_CTRL_INTR_GPU_VECTOR_TO_SUBTREE(i) \
     ((NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_REG(i)) / 2)
+
+// First index of doorbell which is controlled by VF
+#define NV_CTRL_INTR_GPU_DOORBELL_INDEX_VF_START 2048
 
 // The max number of leaf registers we expect
 #define NV_MAX_INTR_LEAVES 16

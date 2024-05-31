@@ -1847,14 +1847,14 @@ static inline NvU32 kfifoGetRunlistChannelGroupsInUse(struct OBJGPU *pGpu, struc
 #define kfifoGetRunlistChannelGroupsInUse(pGpu, pKernelFifo, runlistId) kfifoGetRunlistChannelGroupsInUse_IMPL(pGpu, pKernelFifo, runlistId)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-void kfifoGetChannelIterator_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHANNEL_ITERATOR *pIt);
+void kfifoGetChannelIterator_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHANNEL_ITERATOR *pIt, NvU32 runlistId);
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline void kfifoGetChannelIterator(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHANNEL_ITERATOR *pIt) {
+static inline void kfifoGetChannelIterator(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHANNEL_ITERATOR *pIt, NvU32 runlistId) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoGetChannelIterator(pGpu, pKernelFifo, pIt) kfifoGetChannelIterator_IMPL(pGpu, pKernelFifo, pIt)
+#define kfifoGetChannelIterator(pGpu, pKernelFifo, pIt, runlistId) kfifoGetChannelIterator_IMPL(pGpu, pKernelFifo, pIt, runlistId)
 #endif //__nvoc_kernel_fifo_h_disabled
 
 NV_STATUS kfifoGetNextKernelChannel_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHANNEL_ITERATOR *pIt, struct KernelChannel **ppKernelChannel);

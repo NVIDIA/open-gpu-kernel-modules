@@ -231,7 +231,7 @@ kfifoStateDestroy_IMPL
     // On LDDM, we don't free these during freechannel because it's possible
     // we wouldn't be able to reallocate them (we want to keep them preallocated
     // from boot time). But we need to free before shutdown, so do that here.
-    kfifoGetChannelIterator(pGpu, pKernelFifo, &chanIt);
+    kfifoGetChannelIterator(pGpu, pKernelFifo, &chanIt, INVALID_RUNLIST_ID);
     while ((kfifoGetNextKernelChannel(pGpu, pKernelFifo, &chanIt, &pKernelChannel) == NV_OK))
     {
         RM_ENGINE_TYPE rmEngineType;
