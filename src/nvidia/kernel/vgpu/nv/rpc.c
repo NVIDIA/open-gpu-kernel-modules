@@ -1352,6 +1352,10 @@ NV_STATUS rpcGspSetSystemInfo_v17_00
         OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
         rpcInfo->sysTimerOffsetNs = pTmr->sysTimerOffsetNs;
 
+
+        // Indicate whether the driver supports NV2080_NOTIFIERS_UCODE_RESET event.
+        rpcInfo->bTdrEventSupported = pGpu->getProperty(pGpu, PDB_PROP_GPU_SUPPORTS_TDR_EVENT);
+
         status = _issueRpcAsync(pGpu, pRpc);
     }
 

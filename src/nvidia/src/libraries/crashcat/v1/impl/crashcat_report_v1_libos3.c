@@ -115,6 +115,11 @@ void crashcatReportLogSource_V1_LIBOS3(CrashCatReport *pReport)
     }
 }
 
+NV_CRASHCAT_CONTAINMENT crashcatReportSourceContainment_V1_LIBOS3(CrashCatReport *pReport)
+{
+    return crashcatReportV1SourceCauseContainment(&pReport->v1.report);
+}
+
 void crashcatReportLogReporter_V1_LIBOS3(CrashCatReport *pReport)
 {
     NvCrashCatReport_V1 *pReportV1 = &pReport->v1.report;

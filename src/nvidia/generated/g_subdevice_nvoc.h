@@ -346,6 +346,7 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdKGrInternalStaticGetFecsRecordSize__)(struct Subdevice *, NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_RECORD_SIZE_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdKGrInternalStaticGetFecsTraceDefines__)(struct Subdevice *, NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_TRACE_DEFINES_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdKGrInternalStaticGetPdbProperties__)(struct Subdevice *, NV2080_CTRL_INTERNAL_STATIC_GR_GET_PDB_PROPERTIES_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdKGrInternalInitBug4208224War__)(struct Subdevice *, NV2080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuGetCachedInfo__)(struct Subdevice *, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuGetInfoV2__)(struct Subdevice *, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuGetIpVersion__)(struct Subdevice *, NV2080_CTRL_GPU_GET_IP_VERSION_PARAMS *);
@@ -944,6 +945,7 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdKGrInternalStaticGetFecsRecordSize(pSubdevice, pParams) subdeviceCtrlCmdKGrInternalStaticGetFecsRecordSize_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdKGrInternalStaticGetFecsTraceDefines(pSubdevice, pParams) subdeviceCtrlCmdKGrInternalStaticGetFecsTraceDefines_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdKGrInternalStaticGetPdbProperties(pSubdevice, pParams) subdeviceCtrlCmdKGrInternalStaticGetPdbProperties_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdKGrInternalInitBug4208224War(pSubdevice, pParams) subdeviceCtrlCmdKGrInternalInitBug4208224War_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGpuGetCachedInfo(pSubdevice, pGpuInfoParams) subdeviceCtrlCmdGpuGetCachedInfo_DISPATCH(pSubdevice, pGpuInfoParams)
 #define subdeviceCtrlCmdGpuGetInfoV2(pSubdevice, pGpuInfoParams) subdeviceCtrlCmdGpuGetInfoV2_DISPATCH(pSubdevice, pGpuInfoParams)
 #define subdeviceCtrlCmdGpuGetIpVersion(pSubdevice, pGpuIpVersionParams) subdeviceCtrlCmdGpuGetIpVersion_DISPATCH(pSubdevice, pGpuIpVersionParams)
@@ -2632,6 +2634,12 @@ NV_STATUS subdeviceCtrlCmdKGrInternalStaticGetPdbProperties_IMPL(struct Subdevic
 
 static inline NV_STATUS subdeviceCtrlCmdKGrInternalStaticGetPdbProperties_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_STATIC_GR_GET_PDB_PROPERTIES_PARAMS *pParams) {
     return pSubdevice->__subdeviceCtrlCmdKGrInternalStaticGetPdbProperties__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdKGrInternalInitBug4208224War_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdKGrInternalInitBug4208224War_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdKGrInternalInitBug4208224War__(pSubdevice, pParams);
 }
 
 NV_STATUS subdeviceCtrlCmdGpuGetCachedInfo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pGpuInfoParams);

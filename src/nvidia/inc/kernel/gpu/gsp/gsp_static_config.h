@@ -177,6 +177,7 @@ typedef struct GspSystemInfo
     NvBool bIsPassthru;
     NvU64 sysTimerOffsetNs;
     GSP_VF_INFO gspVFInfo;
+    NvBool bTdrEventSupported;
 } GspSystemInfo;
 
 

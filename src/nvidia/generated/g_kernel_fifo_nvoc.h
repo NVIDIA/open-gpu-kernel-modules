@@ -41,6 +41,7 @@ extern "C" {
 \***************************************************************************/
 
 #include "kernel/gpu/eng_state.h"
+#include "kernel/gpu/gpu_timeout.h"
 #include "kernel/gpu/gpu_halspec.h"
 #include "kernel/gpu/fifo/channel_descendant.h"
 #include "kernel/gpu/gpu_engine_type.h"
@@ -493,6 +494,8 @@ struct KernelFifo {
     NV_STATUS (*__kfifoUpdateUsermodeDoorbell__)(struct OBJGPU *, struct KernelFifo *, NvU32, NvU32);
     NvU32 (*__kfifoRunlistGetBaseShift__)(struct KernelFifo *);
     NvU32 (*__kfifoGetMaxCeChannelGroups__)(struct OBJGPU *, struct KernelFifo *);
+    void (*__kfifoStartChannelHalt__)(struct OBJGPU *, struct KernelFifo *, struct KernelChannel *);
+    void (*__kfifoCompleteChannelHalt__)(struct OBJGPU *, struct KernelFifo *, struct KernelChannel *, RMTIMEOUT *);
     NV_STATUS (*__kfifoStateLoad__)(POBJGPU, struct KernelFifo *, NvU32);
     NV_STATUS (*__kfifoStateUnload__)(POBJGPU, struct KernelFifo *, NvU32);
     NV_STATUS (*__kfifoStatePreLoad__)(POBJGPU, struct KernelFifo *, NvU32);
@@ -595,6 +598,10 @@ NV_STATUS __nvoc_objCreate_KernelFifo(KernelFifo**, Dynamic*, NvU32);
 #define kfifoRunlistGetBaseShift_HAL(pKernelFifo) kfifoRunlistGetBaseShift_DISPATCH(pKernelFifo)
 #define kfifoGetMaxCeChannelGroups(pGpu, pKernelFifo) kfifoGetMaxCeChannelGroups_DISPATCH(pGpu, pKernelFifo)
 #define kfifoGetMaxCeChannelGroups_HAL(pGpu, pKernelFifo) kfifoGetMaxCeChannelGroups_DISPATCH(pGpu, pKernelFifo)
+#define kfifoStartChannelHalt(pGpu, pKernelFifo, pKernelChannel) kfifoStartChannelHalt_DISPATCH(pGpu, pKernelFifo, pKernelChannel)
+#define kfifoStartChannelHalt_HAL(pGpu, pKernelFifo, pKernelChannel) kfifoStartChannelHalt_DISPATCH(pGpu, pKernelFifo, pKernelChannel)
+#define kfifoCompleteChannelHalt(pGpu, pKernelFifo, pKernelChannel, pTimeout) kfifoCompleteChannelHalt_DISPATCH(pGpu, pKernelFifo, pKernelChannel, pTimeout)
+#define kfifoCompleteChannelHalt_HAL(pGpu, pKernelFifo, pKernelChannel, pTimeout) kfifoCompleteChannelHalt_DISPATCH(pGpu, pKernelFifo, pKernelChannel, pTimeout)
 #define kfifoStateLoad(pGpu, pEngstate, arg0) kfifoStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kfifoStateUnload(pGpu, pEngstate, arg0) kfifoStateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kfifoStatePreLoad(pGpu, pEngstate, arg0) kfifoStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
@@ -1472,6 +1479,26 @@ NvU32 kfifoGetMaxCeChannelGroups_GA100(struct OBJGPU *pGpu, struct KernelFifo *p
 
 static inline NvU32 kfifoGetMaxCeChannelGroups_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo) {
     return pKernelFifo->__kfifoGetMaxCeChannelGroups__(pGpu, pKernelFifo);
+}
+
+void kfifoStartChannelHalt_GA100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *pKernelChannel);
+
+static inline void kfifoStartChannelHalt_b3696a(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *pKernelChannel) {
+    return;
+}
+
+static inline void kfifoStartChannelHalt_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *pKernelChannel) {
+    pKernelFifo->__kfifoStartChannelHalt__(pGpu, pKernelFifo, pKernelChannel);
+}
+
+void kfifoCompleteChannelHalt_GA100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *pKernelChannel, RMTIMEOUT *pTimeout);
+
+static inline void kfifoCompleteChannelHalt_b3696a(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *pKernelChannel, RMTIMEOUT *pTimeout) {
+    return;
+}
+
+static inline void kfifoCompleteChannelHalt_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *pKernelChannel, RMTIMEOUT *pTimeout) {
+    pKernelFifo->__kfifoCompleteChannelHalt__(pGpu, pKernelFifo, pKernelChannel, pTimeout);
 }
 
 static inline NV_STATUS kfifoStateLoad_DISPATCH(POBJGPU pGpu, struct KernelFifo *pEngstate, NvU32 arg0) {

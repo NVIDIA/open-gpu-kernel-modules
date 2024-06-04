@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -343,7 +343,7 @@ static inline void kgrctxDecObjectCount(struct OBJGPU *arg0, struct KernelGraphi
 
 #define kgrctxDecObjectCount_HAL(arg0, arg1, classNum) kgrctxDecObjectCount(arg0, arg1, classNum)
 
-GR_GLOBALCTX_BUFFER kgrctxGetRegisterAccessMapId_PF(struct OBJGPU *arg0, struct KernelGraphicsContext *arg1, struct KernelChannel *arg2);
+GR_GLOBALCTX_BUFFER kgrctxGetRegisterAccessMapId_IMPL(struct OBJGPU *arg0, struct KernelGraphicsContext *arg1, struct KernelChannel *arg2);
 
 
 #ifdef __nvoc_kernel_graphics_context_h_disabled
@@ -354,7 +354,7 @@ static inline GR_GLOBALCTX_BUFFER kgrctxGetRegisterAccessMapId(struct OBJGPU *ar
     return ret;
 }
 #else //__nvoc_kernel_graphics_context_h_disabled
-#define kgrctxGetRegisterAccessMapId(arg0, arg1, arg2) kgrctxGetRegisterAccessMapId_PF(arg0, arg1, arg2)
+#define kgrctxGetRegisterAccessMapId(arg0, arg1, arg2) kgrctxGetRegisterAccessMapId_IMPL(arg0, arg1, arg2)
 #endif //__nvoc_kernel_graphics_context_h_disabled
 
 #define kgrctxGetRegisterAccessMapId_HAL(arg0, arg1, arg2) kgrctxGetRegisterAccessMapId(arg0, arg1, arg2)

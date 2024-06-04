@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -66,7 +66,7 @@
 #define NV_DP_REGKEY_POWER_DOWN_PHY                   "DP_POWER_DOWN_PHY"
 
 //
-// Regkey to re-assess max link if the first assessed link config 
+// Regkey to re-assess max link if the first assessed link config
 // is lower than the panel max
 //
 #define NV_DP_REGKEY_REASSESS_MAX_LINK                "DP_REASSESS_MAX_LINK"
@@ -77,10 +77,11 @@
 //
 #define NV_DP_DSC_MST_CAP_BUG_3143315                  "DP_DSC_MST_CAP_BUG_3143315"
 
-//
 // Bug 4388987 : This regkey will disable reading PCON caps for MST.
-//
 #define NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED       "DP_BUG_4388987_WAR"
+
+// Bug 4426624: Flush timeslot change to HW when dirty bit is set.
+#define NV_DP_REGKEY_FLUSH_TIMESLOT_INFO_WHEN_DIRTY    "DP_BUG_4426624_WAR"
 
 //
 // Data Base used to store all the regkey values.
@@ -117,6 +118,7 @@ struct DP_REGKEY_DATABASE
     bool  bCheckFECForDynamicMuxDSCPanel;
     bool  bReassessMaxLink;
     bool  bMSTPCONCapsReadDisabled;
+    bool  bFlushTimeslotWhenDirty;
 };
 
 #endif //INCLUDED_DP_REGKEYDATABASE_H
