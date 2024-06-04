@@ -267,7 +267,7 @@ sec2utilsConstruct_IMPL
 
     NV_ASSERT_OK_OR_GOTO(status, _sec2InitBuffers(pSec2Utils), free_channel);
 
-    NV_ASSERT_OK_OR_GOTO(status, ccslContextInitViaChannel(&pSec2Utils->pCcslCtx, pSec2Utils->hClient, pChannel->channelId), free_channel);
+    NV_ASSERT_OK_OR_GOTO(status, ccslContextInitViaChannel(&pSec2Utils->pCcslCtx, pSec2Utils->hClient, pSec2Utils->hSubdevice, pChannel->channelId), free_channel);
 
     return status;
 
@@ -314,7 +314,7 @@ sec2utilsDestruct_IMPL
     {
         if (kbusIsBarAccessBlocked(GPU_GET_KERNEL_BUS(pGpu)))
         {
-            // 
+            //
             // When PCIE is blocked, mappings should be created, used and torn
             // down when they are used
             //
@@ -379,7 +379,7 @@ sec2utilsServiceInterrupts_IMPL(Sec2Utils *pSec2Utils)
     //
     // FIXME: Bug 2463959: objmemscrub is called with the rmDeviceGpuLock in the
     // heapFree_IMPL->_stdmemPmaFree->pmaFreePages->scrubSubmitPages path.
-    // This can result in RM waiting for scrubbing to complete and yielding while holding the 
+    // This can result in RM waiting for scrubbing to complete and yielding while holding the
     // rmDeviceGpuLock. This can lead to deadlock.
     // Instead, if the lock is held, service any interrupts on SEC2 to help the engine make progress.
     // Bug 2527660 is filed to remove this change.
@@ -457,12 +457,12 @@ _sec2utilsSubmitPushBuffer
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pChannel->pGpu);
     NvBool bReleaseMapping = NV_FALSE;
 
-    // 
+    //
     // Use BAR1 if CPU access is allowed, otherwise allocate and init shadow
     // buffer for DMA access
     //
-    NvU32 transferFlags = (TRANSFER_FLAGS_USE_BAR1     | 
-                           TRANSFER_FLAGS_SHADOW_ALLOC | 
+    NvU32 transferFlags = (TRANSFER_FLAGS_USE_BAR1     |
+                           TRANSFER_FLAGS_SHADOW_ALLOC |
                            TRANSFER_FLAGS_SHADOW_INIT_MEM);
     NV_PRINTF(LEVEL_INFO, "Actual size of copying to be pushed: %x\n", pChannelPbInfo->size);
 
@@ -474,7 +474,7 @@ _sec2utilsSubmitPushBuffer
     }
 
     if (pChannel->pbCpuVA == NULL)
-    {    
+    {
         pChannel->pbCpuVA = memmgrMemDescBeginTransfer(pMemoryManager, pChannel->pChannelBufferMemdesc,
                                                        transferFlags);
         bReleaseMapping = NV_TRUE;
@@ -499,7 +499,7 @@ _sec2utilsSubmitPushBuffer
         return NV_ERR_NO_FREE_FIFOS;
     }
 
-    // 
+    //
     // Pushbuffer can be written in a batch, but GPFIFO and doorbell require
     // careful ordering so we do each write one-by-one
     //

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -103,14 +103,14 @@ NV_STATUS  NV_API_CALL rm_gpu_ops_paging_channel_push_stream(nvidia_stack_t *, n
 
 NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_context_init(nvidia_stack_t *, struct ccslContext_t **, nvgpuChannelHandle_t);
 NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_context_clear(nvidia_stack_t *, struct ccslContext_t *);
-NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_context_update(nvidia_stack_t *, struct ccslContext_t *);
+NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_rotate_key(nvidia_stack_t *, UvmCslContext *[], NvU32);
 NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_rotate_iv(nvidia_stack_t *, struct ccslContext_t *, NvU8);
 NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_encrypt(nvidia_stack_t *, struct ccslContext_t *, NvU32, NvU8 const *, NvU8 *, NvU8 *);
 NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_encrypt_with_iv(nvidia_stack_t *, struct ccslContext_t *, NvU32, NvU8 const *, NvU8*, NvU8 *, NvU8 *);
-NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_decrypt(nvidia_stack_t *, struct ccslContext_t *, NvU32, NvU8 const *, NvU8 const *, NvU8 *, NvU8 const *, NvU32, NvU8 const *);
+NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_decrypt(nvidia_stack_t *, struct ccslContext_t *, NvU32, NvU8 const *, NvU8 const *, NvU32, NvU8 *, NvU8 const *, NvU32, NvU8 const *);
 NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_sign(nvidia_stack_t *, struct ccslContext_t *, NvU32, NvU8 const *, NvU8 *);
 NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_query_message_pool(nvidia_stack_t *, struct ccslContext_t *, NvU8, NvU64 *);
 NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_increment_iv(nvidia_stack_t *, struct ccslContext_t *, NvU8, NvU64, NvU8 *);
-NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_log_device_encryption(nvidia_stack_t *, struct ccslContext_t *, NvU32);
+NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_log_encryption(nvidia_stack_t *, struct ccslContext_t *, NvU8, NvU32);
 
 #endif

@@ -1121,6 +1121,17 @@ static inline NV_STATUS tmrTimeUntilNextCallback(OBJGPU *pGpu, struct OBJTMR *pT
 #define tmrTimeUntilNextCallback(pGpu, pTmr, pTimeUntilCallbackNs) tmrTimeUntilNextCallback_IMPL(pGpu, pTmr, pTimeUntilCallbackNs)
 #endif //__nvoc_objtmr_h_disabled
 
+NV_STATUS tmrEventTimeUntilNextCallback_IMPL(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent, NvU64 *pTimeUntilCallbackNs);
+
+#ifdef __nvoc_objtmr_h_disabled
+static inline NV_STATUS tmrEventTimeUntilNextCallback(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent, NvU64 *pTimeUntilCallbackNs) {
+    NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_objtmr_h_disabled
+#define tmrEventTimeUntilNextCallback(pTmr, pEvent, pTimeUntilCallbackNs) tmrEventTimeUntilNextCallback_IMPL(pTmr, pEvent, pTimeUntilCallbackNs)
+#endif //__nvoc_objtmr_h_disabled
+
 NvBool tmrCallExpiredCallbacks_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
 #ifdef __nvoc_objtmr_h_disabled

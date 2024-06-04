@@ -1614,6 +1614,10 @@ typedef struct nv_linux_state_s {
     nv_kthread_q_t open_q;
     NvBool is_accepting_opens;
     struct semaphore open_q_lock;
+#if defined(NV_VGPU_KVM_BUILD)
+    wait_queue_head_t wait;
+    NvS32 return_status;
+#endif
 } nv_linux_state_t;
 
 extern nv_linux_state_t *nv_linux_devices;

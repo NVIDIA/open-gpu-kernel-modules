@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -749,6 +749,7 @@ kgmmuCopyFaultPacketToClientShadowBuffer_GH100
     NvU32 faultPacketPageOffset;
     void *pSrc;
     NvU8 *pDst;
+    ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
     NV_STATUS status;
     NvU8 *pDstMetadata;
     NvU32 metadataStartIndex;
@@ -850,20 +851,20 @@ kgmmuCopyFaultPacketToClientShadowBuffer_GH100
         return NV_ERR_INVALID_STATE;
     }
 
-    status = ccslEncrypt(pCslCtx,
-                         sizeof(GMMU_FAULT_PACKET),
-                         (NvU8*) &faultPacket,
-                         &validBit,
-                         GMMU_FAULT_PACKET_METADATA_VALID_SIZE,
-                         pDst,
-                         &pDstMetadata[GMMU_FAULT_PACKET_METADATA_AUTHTAG_IDX]);
+    status = ccslEncryptWithRotationChecks(pCslCtx,
+                                           sizeof(GMMU_FAULT_PACKET),
+                                           (NvU8*) &faultPacket,
+                                           &validBit,
+                                           GMMU_FAULT_PACKET_METADATA_VALID_SIZE,
+                                           pDst,
+                                           &pDstMetadata[GMMU_FAULT_PACKET_METADATA_AUTHTAG_IDX]);
     if (status != NV_OK)
     {
         if (status == NV_ERR_INSUFFICIENT_RESOURCES)
         {
             // IV overflow is considered fatal.
             NV_PRINTF(LEVEL_ERROR, "Fatal error detected in fault buffer packet encryption: IV overflow!\n");
-            confComputeSetErrorState(pGpu, GPU_GET_CONF_COMPUTE(pGpu));
+            confComputeSetErrorState(pGpu, pConfCompute);
         }
         else
         {

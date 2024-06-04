@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -434,7 +434,7 @@ static inline GR_GLOBALCTX_BUFFER kgrctxGetRegisterAccessMapId_aa21e9(struct OBJ
     return GR_GLOBALCTX_BUFFER_PRIV_ACCESS_MAP;
 }
 
-GR_GLOBALCTX_BUFFER kgrctxGetRegisterAccessMapId_PF(struct OBJGPU *arg0, struct KernelGraphicsContext *arg1, struct KernelChannel *arg2);
+GR_GLOBALCTX_BUFFER kgrctxGetRegisterAccessMapId_IMPL(struct OBJGPU *arg0, struct KernelGraphicsContext *arg1, struct KernelChannel *arg2);
 
 static inline GR_GLOBALCTX_BUFFER kgrctxGetRegisterAccessMapId_DISPATCH(struct OBJGPU *arg0, struct KernelGraphicsContext *arg1, struct KernelChannel *arg2) {
     return arg1->__kgrctxGetRegisterAccessMapId__(arg0, arg1, arg2);

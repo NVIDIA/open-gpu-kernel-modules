@@ -87,6 +87,7 @@ struct CrashCatReport {
     struct Object __nvoc_base_Object;
     struct Object *__nvoc_pbase_Object;
     struct CrashCatReport *__nvoc_pbase_CrashCatReport;
+    NV_CRASHCAT_CONTAINMENT (*__crashcatReportSourceContainment__)(struct CrashCatReport *);
     void (*__crashcatReportLogReporter__)(struct CrashCatReport *);
     void (*__crashcatReportLogSource__)(struct CrashCatReport *);
     struct CrashCatReportHal reportHal;
@@ -124,6 +125,8 @@ NV_STATUS __nvoc_objCreate_CrashCatReport(CrashCatReport**, Dynamic*, NvU32,
 #define __objCreate_CrashCatReport(ppNewObj, pParent, createFlags, CrashCatReportHal_version, CrashCatReportHal_implementer, arg_ppReportBytes, arg_bytesRemaining) \
     __nvoc_objCreate_CrashCatReport((ppNewObj), staticCast((pParent), Dynamic), (createFlags), CrashCatReportHal_version, CrashCatReportHal_implementer, arg_ppReportBytes, arg_bytesRemaining)
 
+#define crashcatReportSourceContainment(arg0) crashcatReportSourceContainment_DISPATCH(arg0)
+#define crashcatReportSourceContainment_HAL(arg0) crashcatReportSourceContainment_DISPATCH(arg0)
 #define crashcatReportLogReporter(arg0) crashcatReportLogReporter_DISPATCH(arg0)
 #define crashcatReportLogReporter_HAL(arg0) crashcatReportLogReporter_DISPATCH(arg0)
 #define crashcatReportLogSource(arg0) crashcatReportLogSource_DISPATCH(arg0)
@@ -267,6 +270,16 @@ static inline void crashcatReportLogIo32State(struct CrashCatReport *arg0) {
 #endif //__nvoc_crashcat_report_h_disabled
 
 #define crashcatReportLogIo32State_HAL(arg0) crashcatReportLogIo32State(arg0)
+
+static inline NV_CRASHCAT_CONTAINMENT crashcatReportSourceContainment_3e9f29(struct CrashCatReport *arg0) {
+    return NV_CRASHCAT_CONTAINMENT_UNSPECIFIED;
+}
+
+NV_CRASHCAT_CONTAINMENT crashcatReportSourceContainment_V1_LIBOS3(struct CrashCatReport *arg0);
+
+static inline NV_CRASHCAT_CONTAINMENT crashcatReportSourceContainment_DISPATCH(struct CrashCatReport *arg0) {
+    return arg0->__crashcatReportSourceContainment__(arg0);
+}
 
 void crashcatReportLogReporter_V1_GENERIC(struct CrashCatReport *arg0);
 

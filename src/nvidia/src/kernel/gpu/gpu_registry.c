@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -225,11 +225,13 @@ gpuInitInstLocOverrides_IMPL
 {
     NvU32 data32 = 0;
     //
-    // If Hopper CC mode is enabled, move all except few buffers to FB
+    // If Hopper CC mode or protected pcie is enabled, move all except few buffers to FB
     //
     if (((osReadRegistryDword(pGpu, NV_REG_STR_RM_CONFIDENTIAL_COMPUTE, &data32) == NV_OK) &&
          FLD_TEST_DRF(_REG_STR, _RM_CONFIDENTIAL_COMPUTE, _ENABLED, _YES, data32) &&
-         pGpu->getProperty(pGpu, PDB_PROP_GPU_CC_FEATURE_CAPABLE)) || gpuIsCCEnabledInHw_HAL(pGpu))
+         pGpu->getProperty(pGpu, PDB_PROP_GPU_CC_FEATURE_CAPABLE)) || gpuIsCCEnabledInHw_HAL(pGpu) ||
+        ((osReadRegistryDword(pGpu, NV_REG_STR_RM_CC_MULTI_GPU_MODE, &data32) == NV_OK) &&
+         (data32 == NV_REG_STR_RM_CC_MULTI_GPU_MODE_PROTECTED_PCIE)) || gpuIsProtectedPcieEnabledInHw_HAL(pGpu))
     {
 
         pGpu->instLocOverrides  = NV_REG_STR_RM_INST_LOC_ALL_VID;

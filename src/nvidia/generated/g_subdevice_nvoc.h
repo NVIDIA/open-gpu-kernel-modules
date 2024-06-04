@@ -293,6 +293,7 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdFifoGetInfo__)(struct Subdevice *, NV2080_CTRL_FIFO_GET_INFO_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdFifoDisableChannels__)(struct Subdevice *, NV2080_CTRL_FIFO_DISABLE_CHANNELS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdFifoDisableChannelsForKeyRotation__)(struct Subdevice *, NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdFifoDisableChannelsForKeyRotationV2__)(struct Subdevice *, NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_V2_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdFifoDisableUsermodeChannels__)(struct Subdevice *, NV2080_CTRL_FIFO_DISABLE_USERMODE_CHANNELS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdFifoGetChannelMemInfo__)(struct Subdevice *, NV2080_CTRL_CMD_FIFO_GET_CHANNEL_MEM_INFO_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdFifoGetUserdLocation__)(struct Subdevice *, NV2080_CTRL_CMD_FIFO_GET_USERD_LOCATION_PARAMS *);
@@ -369,6 +370,7 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdGrInternalGetFecsTraceRdOffset__)(struct Subdevice *, NV2080_CTRL_INTERNAL_GR_GET_FECS_TRACE_RD_OFFSET_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGrInternalSetFecsTraceWrOffset__)(struct Subdevice *, NV2080_CTRL_INTERNAL_GR_SET_FECS_TRACE_WR_OFFSET_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGrStaticGetFecsTraceDefines__)(struct Subdevice *, NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_TRACE_DEFINES_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdKGrInternalInitBug4208224War__)(struct Subdevice *, NV2080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuGetCachedInfo__)(struct Subdevice *, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuGetInfoV2__)(struct Subdevice *, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuGetIpVersion__)(struct Subdevice *, NV2080_CTRL_GPU_GET_IP_VERSION_PARAMS *);
@@ -940,6 +942,7 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdFifoGetInfo(pSubdevice, pFifoInfoParams) subdeviceCtrlCmdFifoGetInfo_DISPATCH(pSubdevice, pFifoInfoParams)
 #define subdeviceCtrlCmdFifoDisableChannels(pSubdevice, pDisableChannelParams) subdeviceCtrlCmdFifoDisableChannels_DISPATCH(pSubdevice, pDisableChannelParams)
 #define subdeviceCtrlCmdFifoDisableChannelsForKeyRotation(pSubdevice, pDisableChannelParams) subdeviceCtrlCmdFifoDisableChannelsForKeyRotation_DISPATCH(pSubdevice, pDisableChannelParams)
+#define subdeviceCtrlCmdFifoDisableChannelsForKeyRotationV2(pSubdevice, pDisableChannelParams) subdeviceCtrlCmdFifoDisableChannelsForKeyRotationV2_DISPATCH(pSubdevice, pDisableChannelParams)
 #define subdeviceCtrlCmdFifoDisableUsermodeChannels(pSubdevice, pParams) subdeviceCtrlCmdFifoDisableUsermodeChannels_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdFifoGetChannelMemInfo(pSubdevice, pChannelMemParams) subdeviceCtrlCmdFifoGetChannelMemInfo_DISPATCH(pSubdevice, pChannelMemParams)
 #define subdeviceCtrlCmdFifoGetUserdLocation(pSubdevice, pUserdLocationParams) subdeviceCtrlCmdFifoGetUserdLocation_DISPATCH(pSubdevice, pUserdLocationParams)
@@ -1017,6 +1020,7 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdGrInternalGetFecsTraceRdOffset(pSubdevice, pParams) subdeviceCtrlCmdGrInternalGetFecsTraceRdOffset_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGrInternalSetFecsTraceWrOffset(pSubdevice, pParams) subdeviceCtrlCmdGrInternalSetFecsTraceWrOffset_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGrStaticGetFecsTraceDefines(pSubdevice, pParams) subdeviceCtrlCmdGrStaticGetFecsTraceDefines_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdKGrInternalInitBug4208224War(pSubdevice, pParams) subdeviceCtrlCmdKGrInternalInitBug4208224War_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGpuGetCachedInfo(pSubdevice, pGpuInfoParams) subdeviceCtrlCmdGpuGetCachedInfo_DISPATCH(pSubdevice, pGpuInfoParams)
 #define subdeviceCtrlCmdGpuGetInfoV2(pSubdevice, pGpuInfoParams) subdeviceCtrlCmdGpuGetInfoV2_DISPATCH(pSubdevice, pGpuInfoParams)
 #define subdeviceCtrlCmdGpuGetIpVersion(pSubdevice, pGpuIpVersionParams) subdeviceCtrlCmdGpuGetIpVersion_DISPATCH(pSubdevice, pGpuIpVersionParams)
@@ -2456,6 +2460,12 @@ static inline NV_STATUS subdeviceCtrlCmdFifoDisableChannelsForKeyRotation_DISPAT
     return pSubdevice->__subdeviceCtrlCmdFifoDisableChannelsForKeyRotation__(pSubdevice, pDisableChannelParams);
 }
 
+NV_STATUS subdeviceCtrlCmdFifoDisableChannelsForKeyRotationV2_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_V2_PARAMS *pDisableChannelParams);
+
+static inline NV_STATUS subdeviceCtrlCmdFifoDisableChannelsForKeyRotationV2_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_V2_PARAMS *pDisableChannelParams) {
+    return pSubdevice->__subdeviceCtrlCmdFifoDisableChannelsForKeyRotationV2__(pSubdevice, pDisableChannelParams);
+}
+
 NV_STATUS subdeviceCtrlCmdFifoDisableUsermodeChannels_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_FIFO_DISABLE_USERMODE_CHANNELS_PARAMS *pParams);
 
 static inline NV_STATUS subdeviceCtrlCmdFifoDisableUsermodeChannels_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_FIFO_DISABLE_USERMODE_CHANNELS_PARAMS *pParams) {
@@ -2916,6 +2926,12 @@ NV_STATUS subdeviceCtrlCmdGrStaticGetFecsTraceDefines_IMPL(struct Subdevice *pSu
 
 static inline NV_STATUS subdeviceCtrlCmdGrStaticGetFecsTraceDefines_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_TRACE_DEFINES_PARAMS *pParams) {
     return pSubdevice->__subdeviceCtrlCmdGrStaticGetFecsTraceDefines__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdKGrInternalInitBug4208224War_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdKGrInternalInitBug4208224War_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdKGrInternalInitBug4208224War__(pSubdevice, pParams);
 }
 
 NV_STATUS subdeviceCtrlCmdGpuGetCachedInfo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pGpuInfoParams);

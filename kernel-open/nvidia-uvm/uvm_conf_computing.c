@@ -33,6 +33,15 @@
 #include "nv_uvm_interface.h"
 #include "uvm_va_block.h"
 
+// Amount of encrypted data on a given engine that triggers key rotation. This
+// is a UVM internal threshold, different from that of RM, and used only during
+// testing.
+//
+// Key rotation is triggered when the total encryption size, or the total
+// decryption size (whatever comes first) reaches this lower threshold on the
+// engine.
+#define UVM_CONF_COMPUTING_KEY_ROTATION_LOWER_THRESHOLD (UVM_SIZE_1MB * 8)
+
 // The maximum number of secure operations per push is:
 // UVM_MAX_PUSH_SIZE / min(CE encryption size, CE decryption size)
 // + 1 (tracking semaphore) =  128 * 1024 / 56 + 1 = 2342
@@ -352,6 +361,19 @@ error:
     return status;
 }
 
+// The production key rotation defaults are such that key rotations rarely
+// happen. During UVM testing more frequent rotations are triggering by relying
+// on internal encryption usage accounting. When key rotations are triggered by
+// UVM, the driver does not rely on channel key rotation notifiers.
+//
+// TODO: Bug 4612912: UVM should be able to programmatically set the rotation
+// lower threshold. This function, and all the metadata associated with it
+// (per-pool encryption accounting, for example) can be removed at that point.
+static bool key_rotation_is_notifier_driven(void)
+{
+    return !uvm_enable_builtin_tests;
+}
+
 NV_STATUS uvm_conf_computing_gpu_init(uvm_gpu_t *gpu)
 {
     NV_STATUS status;
@@ -394,17 +416,35 @@ void uvm_conf_computing_gpu_deinit(uvm_gpu_t *gpu)
     conf_computing_dma_buffer_pool_deinit(&gpu->conf_computing.dma_buffer_pool);
 }
 
-void uvm_conf_computing_log_gpu_encryption(uvm_channel_t *channel, UvmCslIv *iv)
+void uvm_conf_computing_log_gpu_encryption(uvm_channel_t *channel, size_t size, UvmCslIv *iv)
 {
     NV_STATUS status;
+    uvm_channel_pool_t *pool;
+
+    if (uvm_channel_is_lcic(channel))
+        pool = uvm_channel_lcic_get_paired_wlc(channel)->pool;
+    else
+        pool = channel->pool;
 
     uvm_mutex_lock(&channel->csl.ctx_lock);
+
+    if (uvm_conf_computing_is_key_rotation_enabled_in_pool(pool)) {
+        status = nvUvmInterfaceCslLogEncryption(&channel->csl.ctx, UVM_CSL_OPERATION_DECRYPT, size);
+
+        // Informing RM of an encryption/decryption should not fail
+        UVM_ASSERT(status == NV_OK);
+
+        if (!key_rotation_is_notifier_driven())
+            atomic64_add(size, &pool->conf_computing.key_rotation.encrypted);
+    }
+
     status = nvUvmInterfaceCslIncrementIv(&channel->csl.ctx, UVM_CSL_OPERATION_DECRYPT, 1, iv);
-    uvm_mutex_unlock(&channel->csl.ctx_lock);
 
     // IV rotation is done preemptively as needed, so the above
     // call cannot return failure.
     UVM_ASSERT(status == NV_OK);
+
+    uvm_mutex_unlock(&channel->csl.ctx_lock);
 }
 
 void uvm_conf_computing_acquire_encryption_iv(uvm_channel_t *channel, UvmCslIv *iv)
@@ -428,27 +468,46 @@ void uvm_conf_computing_cpu_encrypt(uvm_channel_t *channel,
                                     void *auth_tag_buffer)
 {
     NV_STATUS status;
+    uvm_channel_pool_t *pool;
 
     UVM_ASSERT(size);
 
+    if (uvm_channel_is_lcic(channel))
+        pool = uvm_channel_lcic_get_paired_wlc(channel)->pool;
+    else
+        pool = channel->pool;
+
     uvm_mutex_lock(&channel->csl.ctx_lock);
+
     status = nvUvmInterfaceCslEncrypt(&channel->csl.ctx,
                                       size,
                                       (NvU8 const *) src_plain,
                                       encrypt_iv,
                                       (NvU8 *) dst_cipher,
                                       (NvU8 *) auth_tag_buffer);
-    uvm_mutex_unlock(&channel->csl.ctx_lock);
 
     // IV rotation is done preemptively as needed, so the above
     // call cannot return failure.
     UVM_ASSERT(status == NV_OK);
+
+    if (uvm_conf_computing_is_key_rotation_enabled_in_pool(pool)) {
+        status = nvUvmInterfaceCslLogEncryption(&channel->csl.ctx, UVM_CSL_OPERATION_ENCRYPT, size);
+
+        // Informing RM of an encryption/decryption should not fail
+        UVM_ASSERT(status == NV_OK);
+
+        if (!key_rotation_is_notifier_driven())
+            atomic64_add(size, &pool->conf_computing.key_rotation.decrypted);
+    }
+
+    uvm_mutex_unlock(&channel->csl.ctx_lock);
 }
 
 NV_STATUS uvm_conf_computing_cpu_decrypt(uvm_channel_t *channel,
                                          void *dst_plain,
                                          const void *src_cipher,
                                          const UvmCslIv *src_iv,
+                                         NvU32 key_version,
                                          size_t size,
                                          const void *auth_tag_buffer)
 {
@@ -469,10 +528,19 @@ NV_STATUS uvm_conf_computing_cpu_decrypt(uvm_channel_t *channel,
                                       size,
                                       (const NvU8 *) src_cipher,
                                       src_iv,
+                                      key_version,
                                       (NvU8 *) dst_plain,
                                       NULL,
                                       0,
                                       (const NvU8 *) auth_tag_buffer);
+
+    if (status != NV_OK) {
+        UVM_ERR_PRINT("nvUvmInterfaceCslDecrypt() failed: %s, channel %s, GPU %s\n",
+                      nvstatusToString(status),
+                      channel->name,
+                      uvm_gpu_name(uvm_channel_get_gpu(channel)));
+    }
+
     uvm_mutex_unlock(&channel->csl.ctx_lock);
 
     return status;
@@ -485,6 +553,8 @@ NV_STATUS uvm_conf_computing_fault_decrypt(uvm_parent_gpu_t *parent_gpu,
                                            NvU8 valid)
 {
     NV_STATUS status;
+    NvU32 fault_entry_size = parent_gpu->fault_buffer_hal->entry_size(parent_gpu);
+    UvmCslContext *csl_context = &parent_gpu->fault_buffer_info.rm_info.replayable.cslCtx;
 
     // There is no dedicated lock for the CSL context associated with replayable
     // faults. The mutual exclusion required by the RM CSL API is enforced by
@@ -494,36 +564,48 @@ NV_STATUS uvm_conf_computing_fault_decrypt(uvm_parent_gpu_t *parent_gpu,
 
     UVM_ASSERT(g_uvm_global.conf_computing_enabled);
 
-    status = nvUvmInterfaceCslDecrypt(&parent_gpu->fault_buffer_info.rm_info.replayable.cslCtx,
-                                      parent_gpu->fault_buffer_hal->entry_size(parent_gpu),
+    status = nvUvmInterfaceCslLogEncryption(csl_context, UVM_CSL_OPERATION_DECRYPT, fault_entry_size);
+
+    // Informing RM of an encryption/decryption should not fail
+    UVM_ASSERT(status == NV_OK);
+
+    status = nvUvmInterfaceCslDecrypt(csl_context,
+                                      fault_entry_size,
                                       (const NvU8 *) src_cipher,
                                       NULL,
+                                      NV_U32_MAX,
                                       (NvU8 *) dst_plain,
                                       &valid,
                                       sizeof(valid),
                                       (const NvU8 *) auth_tag_buffer);
 
-    if (status != NV_OK)
+    if (status != NV_OK) {
         UVM_ERR_PRINT("nvUvmInterfaceCslDecrypt() failed: %s, GPU %s\n",
                       nvstatusToString(status),
                       uvm_parent_gpu_name(parent_gpu));
 
+    }
+
     return status;
 }
 
-void uvm_conf_computing_fault_increment_decrypt_iv(uvm_parent_gpu_t *parent_gpu, NvU64 increment)
+void uvm_conf_computing_fault_increment_decrypt_iv(uvm_parent_gpu_t *parent_gpu)
 {
     NV_STATUS status;
+    NvU32 fault_entry_size = parent_gpu->fault_buffer_hal->entry_size(parent_gpu);
+    UvmCslContext *csl_context = &parent_gpu->fault_buffer_info.rm_info.replayable.cslCtx;
 
     // See comment in uvm_conf_computing_fault_decrypt
     UVM_ASSERT(uvm_sem_is_locked(&parent_gpu->isr.replayable_faults.service_lock));
 
     UVM_ASSERT(g_uvm_global.conf_computing_enabled);
 
-    status = nvUvmInterfaceCslIncrementIv(&parent_gpu->fault_buffer_info.rm_info.replayable.cslCtx,
-                                          UVM_CSL_OPERATION_DECRYPT,
-                                          increment,
-                                          NULL);
+    status = nvUvmInterfaceCslLogEncryption(csl_context, UVM_CSL_OPERATION_DECRYPT, fault_entry_size);
+
+    // Informing RM of an encryption/decryption should not fail
+    UVM_ASSERT(status == NV_OK);
+
+    status = nvUvmInterfaceCslIncrementIv(csl_context, UVM_CSL_OPERATION_DECRYPT, 1, NULL);
 
     UVM_ASSERT(status == NV_OK);
 }
@@ -624,4 +706,232 @@ NV_STATUS uvm_conf_computing_maybe_rotate_channel_ivs(uvm_channel_t *channel)
 NV_STATUS uvm_conf_computing_maybe_rotate_channel_ivs_retry_busy(uvm_channel_t *channel)
 {
     return uvm_conf_computing_rotate_channel_ivs_below_limit(channel, uvm_conf_computing_channel_iv_rotation_limit, true);
+}
+
+void uvm_conf_computing_enable_key_rotation(uvm_gpu_t *gpu)
+{
+    if (!g_uvm_global.conf_computing_enabled)
+        return;
+
+    // Key rotation cannot be enabled on UVM if it is disabled on RM
+    if (!gpu->parent->rm_info.gpuConfComputeCaps.bKeyRotationEnabled)
+        return;
+
+    gpu->channel_manager->conf_computing.key_rotation_enabled = true;
+}
+
+void uvm_conf_computing_disable_key_rotation(uvm_gpu_t *gpu)
+{
+    if (!g_uvm_global.conf_computing_enabled)
+        return;
+
+    gpu->channel_manager->conf_computing.key_rotation_enabled = false;
+}
+
+bool uvm_conf_computing_is_key_rotation_enabled(uvm_gpu_t *gpu)
+{
+    return gpu->channel_manager->conf_computing.key_rotation_enabled;
+}
+
+bool uvm_conf_computing_is_key_rotation_enabled_in_pool(uvm_channel_pool_t *pool)
+{
+    if (!uvm_conf_computing_is_key_rotation_enabled(pool->manager->gpu))
+        return false;
+
+    // TODO: Bug 4586447: key rotation must be disabled in the SEC2 engine,
+    // because currently the encryption key is shared between UVM and RM, but
+    // UVM is not able to idle SEC2 channels owned by RM.
+    if (uvm_channel_pool_is_sec2(pool))
+        return false;
+
+    // Key rotation happens as part of channel reservation, and LCIC channels
+    // are never reserved directly. Rotation of keys in LCIC channels happens
+    // as the result of key rotation in WLC channels.
+    //
+    // Return false even if there is nothing fundamental prohibiting direct key
+    // rotation on LCIC pools
+    if (uvm_channel_pool_is_lcic(pool))
+        return false;
+
+    return true;
+}
+
+static bool conf_computing_is_key_rotation_pending_use_stats(uvm_channel_pool_t *pool)
+{
+    NvU64 decrypted, encrypted;
+
+    UVM_ASSERT(!key_rotation_is_notifier_driven());
+
+    decrypted = atomic64_read(&pool->conf_computing.key_rotation.decrypted);
+
+    if (decrypted > UVM_CONF_COMPUTING_KEY_ROTATION_LOWER_THRESHOLD)
+        return true;
+
+    encrypted = atomic64_read(&pool->conf_computing.key_rotation.encrypted);
+
+    if (encrypted > UVM_CONF_COMPUTING_KEY_ROTATION_LOWER_THRESHOLD)
+        return true;
+
+    return false;
+}
+
+static bool conf_computing_is_key_rotation_pending_use_notifier(uvm_channel_pool_t *pool)
+{
+    // If key rotation is pending for the pool's engine, then the key rotation
+    // notifier in any of the engine channels can be used by UVM to detect the
+    // situation. Note that RM doesn't update all the notifiers in a single
+    // atomic operation, so it is possible that the channel read by UVM (the
+    // first one in the pool) indicates that a key rotation is pending, but
+    // another channel in the pool (temporarily) indicates the opposite, or vice
+    // versa.
+    uvm_channel_t *first_channel = pool->channels;
+
+    UVM_ASSERT(key_rotation_is_notifier_driven());
+    UVM_ASSERT(first_channel != NULL);
+
+    return first_channel->channel_info.keyRotationNotifier->status == UVM_KEY_ROTATION_STATUS_PENDING;
+}
+
+bool uvm_conf_computing_is_key_rotation_pending_in_pool(uvm_channel_pool_t *pool)
+{
+    if (!uvm_conf_computing_is_key_rotation_enabled_in_pool(pool))
+        return false;
+
+    if (key_rotation_is_notifier_driven())
+        return conf_computing_is_key_rotation_pending_use_notifier(pool);
+    else
+        return conf_computing_is_key_rotation_pending_use_stats(pool);
+}
+
+NV_STATUS uvm_conf_computing_rotate_pool_key(uvm_channel_pool_t *pool)
+{
+    NV_STATUS status;
+
+    UVM_ASSERT(uvm_conf_computing_is_key_rotation_enabled_in_pool(pool));
+    UVM_ASSERT(pool->conf_computing.key_rotation.csl_contexts != NULL);
+    UVM_ASSERT(pool->conf_computing.key_rotation.num_csl_contexts > 0);
+
+    // NV_ERR_STATE_IN_USE indicates that RM was not able to acquire the
+    // required locks at this time. This status is not interpreted as an error,
+    // but as a sign for UVM to try again later. This is the same "protocol"
+    // used in IV rotation.
+    status = nvUvmInterfaceCslRotateKey(pool->conf_computing.key_rotation.csl_contexts,
+                                        pool->conf_computing.key_rotation.num_csl_contexts);
+
+    if (status == NV_OK) {
+        pool->conf_computing.key_rotation.version++;
+
+        if (!key_rotation_is_notifier_driven()) {
+            atomic64_set(&pool->conf_computing.key_rotation.decrypted, 0);
+            atomic64_set(&pool->conf_computing.key_rotation.encrypted, 0);
+        }
+    }
+    else if (status != NV_ERR_STATE_IN_USE) {
+        UVM_DBG_PRINT("nvUvmInterfaceCslRotateKey() failed in engine %u: %s\n",
+                      pool->engine_index,
+                      nvstatusToString(status));
+    }
+
+    return status;
+}
+
+__attribute__ ((format(printf, 6, 7)))
+NV_STATUS uvm_conf_computing_util_memcopy_cpu_to_gpu(uvm_gpu_t *gpu,
+                                                     uvm_gpu_address_t dst_gpu_address,
+                                                     void *src_plain,
+                                                     size_t size,
+                                                     uvm_tracker_t *tracker,
+                                                     const char *format,
+                                                     ...)
+{
+    NV_STATUS status;
+    uvm_push_t push;
+    uvm_conf_computing_dma_buffer_t *dma_buffer;
+    uvm_gpu_address_t src_gpu_address, auth_tag_gpu_address;
+    void *dst_cipher, *auth_tag;
+    va_list args;
+
+    UVM_ASSERT(g_uvm_global.conf_computing_enabled);
+    UVM_ASSERT(size <= UVM_CONF_COMPUTING_DMA_BUFFER_SIZE);
+
+    status = uvm_conf_computing_dma_buffer_alloc(&gpu->conf_computing.dma_buffer_pool, &dma_buffer, NULL);
+    if (status != NV_OK)
+        return status;
+
+    va_start(args, format);
+    status = uvm_push_begin_acquire(gpu->channel_manager, UVM_CHANNEL_TYPE_CPU_TO_GPU, tracker, &push, format, args);
+    va_end(args);
+
+    if (status != NV_OK)
+        goto out;
+
+    dst_cipher = uvm_mem_get_cpu_addr_kernel(dma_buffer->alloc);
+    auth_tag = uvm_mem_get_cpu_addr_kernel(dma_buffer->auth_tag);
+    uvm_conf_computing_cpu_encrypt(push.channel, dst_cipher, src_plain, NULL, size, auth_tag);
+
+    src_gpu_address = uvm_mem_gpu_address_virtual_kernel(dma_buffer->alloc, gpu);
+    auth_tag_gpu_address = uvm_mem_gpu_address_virtual_kernel(dma_buffer->auth_tag, gpu);
+    gpu->parent->ce_hal->decrypt(&push, dst_gpu_address, src_gpu_address, size, auth_tag_gpu_address);
+
+    status = uvm_push_end_and_wait(&push);
+
+out:
+    uvm_conf_computing_dma_buffer_free(&gpu->conf_computing.dma_buffer_pool, dma_buffer, NULL);
+    return status;
+}
+
+__attribute__ ((format(printf, 6, 7)))
+NV_STATUS uvm_conf_computing_util_memcopy_gpu_to_cpu(uvm_gpu_t *gpu,
+                                                     void *dst_plain,
+                                                     uvm_gpu_address_t src_gpu_address,
+                                                     size_t size,
+                                                     uvm_tracker_t *tracker,
+                                                     const char *format,
+                                                     ...)
+{
+    NV_STATUS status;
+    uvm_push_t push;
+    uvm_conf_computing_dma_buffer_t *dma_buffer;
+    uvm_gpu_address_t dst_gpu_address, auth_tag_gpu_address;
+    void *src_cipher, *auth_tag;
+    va_list args;
+
+    UVM_ASSERT(g_uvm_global.conf_computing_enabled);
+    UVM_ASSERT(size <= UVM_CONF_COMPUTING_DMA_BUFFER_SIZE);
+
+    status = uvm_conf_computing_dma_buffer_alloc(&gpu->conf_computing.dma_buffer_pool, &dma_buffer, NULL);
+    if (status != NV_OK)
+        return status;
+
+    va_start(args, format);
+    status = uvm_push_begin_acquire(gpu->channel_manager, UVM_CHANNEL_TYPE_GPU_TO_CPU, tracker, &push, format, args);
+    va_end(args);
+
+    if (status != NV_OK)
+        goto out;
+
+    uvm_conf_computing_log_gpu_encryption(push.channel, size, dma_buffer->decrypt_iv);
+    dma_buffer->key_version[0] = uvm_channel_pool_key_version(push.channel->pool);
+
+    dst_gpu_address = uvm_mem_gpu_address_virtual_kernel(dma_buffer->alloc, gpu);
+    auth_tag_gpu_address = uvm_mem_gpu_address_virtual_kernel(dma_buffer->auth_tag, gpu);
+    gpu->parent->ce_hal->encrypt(&push, dst_gpu_address, src_gpu_address, size, auth_tag_gpu_address);
+
+    status = uvm_push_end_and_wait(&push);
+    if (status != NV_OK)
+        goto out;
+
+    src_cipher = uvm_mem_get_cpu_addr_kernel(dma_buffer->alloc);
+    auth_tag = uvm_mem_get_cpu_addr_kernel(dma_buffer->auth_tag);
+    status = uvm_conf_computing_cpu_decrypt(push.channel,
+                                            dst_plain,
+                                            src_cipher,
+                                            dma_buffer->decrypt_iv,
+                                            dma_buffer->key_version[0],
+                                            size,
+                                            auth_tag);
+
+ out:
+    uvm_conf_computing_dma_buffer_free(&gpu->conf_computing.dma_buffer_pool, dma_buffer, NULL);
+    return status;
 }

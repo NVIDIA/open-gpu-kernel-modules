@@ -868,9 +868,9 @@ static void uvm_va_range_disable_peer_managed(uvm_va_range_t *va_range, uvm_gpu_
         // preferred location. If peer mappings are being disabled to the
         // preferred location, then unmap the other GPU.
         // Nothing to do otherwise.
-        if (uvm_id_equal(uvm_va_range_get_policy(va_range)->preferred_location, gpu0->id))
+        if (uvm_va_policy_preferred_location_equal(uvm_va_range_get_policy(va_range), gpu0->id, NUMA_NO_NODE))
             uvm_lite_gpu_to_unmap = gpu1;
-        else if (uvm_id_equal(uvm_va_range_get_policy(va_range)->preferred_location, gpu1->id))
+        else if (uvm_va_policy_preferred_location_equal(uvm_va_range_get_policy(va_range), gpu1->id, NUMA_NO_NODE))
             uvm_lite_gpu_to_unmap = gpu0;
         else
             return;
@@ -951,7 +951,7 @@ static void va_range_unregister_gpu_managed(uvm_va_range_t *va_range, uvm_gpu_t 
     // Reset preferred location and accessed-by of VA ranges if needed
     // Note: ignoring the return code of uvm_va_range_set_preferred_location since this
     // will only return on error when setting a preferred location, not on a reset
-    if (uvm_id_equal(uvm_va_range_get_policy(va_range)->preferred_location, gpu->id))
+    if (uvm_va_policy_preferred_location_equal(uvm_va_range_get_policy(va_range), gpu->id, NUMA_NO_NODE))
         (void)uvm_va_range_set_preferred_location(va_range, UVM_ID_INVALID, NUMA_NO_NODE, mm, NULL);
 
     uvm_va_range_unset_accessed_by(va_range, gpu->id, NULL);
@@ -1683,7 +1683,7 @@ void uvm_va_range_unset_accessed_by(uvm_va_range_t *va_range,
     // If a UVM-Lite GPU is being removed from the accessed_by mask, it will
     // also stop being a UVM-Lite GPU unless it's also the preferred location.
     if (uvm_processor_mask_test(&va_range->uvm_lite_gpus, processor_id) &&
-        !uvm_id_equal(uvm_va_range_get_policy(va_range)->preferred_location, processor_id)) {
+        !uvm_va_policy_preferred_location_equal(uvm_va_range_get_policy(va_range), processor_id, NUMA_NO_NODE)) {
         range_unmap(va_range, processor_id, out_tracker);
     }
 

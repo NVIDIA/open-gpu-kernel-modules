@@ -224,8 +224,9 @@ _memmgrMemReadOrWriteWithGsp
     {
         if (gpuIsCCFeatureEnabled(pGpu))
         {
-            status = ccslEncrypt_HAL(pConfCompute->pDmaCcslCtx, size, pBuf, NULL, 0,
-                                     pStagingBufMap, gspParams.authTag);
+            status = ccslEncryptWithRotationChecks(pConfCompute->pDmaCcslCtx,
+                                                   size, pBuf, NULL, 0, pStagingBufMap,
+                                                   gspParams.authTag);
             if (status != NV_OK)
             {
                 if (status == NV_ERR_INSUFFICIENT_RESOURCES)
@@ -294,8 +295,9 @@ _memmgrMemReadOrWriteWithGsp
     {
         if (gpuIsCCFeatureEnabled(pGpu))
         {
-            status = ccslDecrypt_HAL(pConfCompute->pDmaCcslCtx, size, pStagingBufMap,
-                                     NULL, NULL, 0, pBuf, gspParams.authTag);
+            status = ccslDecryptWithRotationChecks(pConfCompute->pDmaCcslCtx,
+                                                   size, pStagingBufMap, NULL, NULL, 0, pBuf,
+                                                   gspParams.authTag);
             if (status != NV_OK)
             {
                 // Failure in GSP-DMA decrypt is considered fatal.
@@ -375,8 +377,9 @@ _memmgrMemcpyWithGsp
         // Copy to staging buffer, encrypting first if CC mode
         if (gpuIsCCFeatureEnabled(pGpu))
         {
-            status = ccslEncrypt_HAL(pConfCompute->pDmaCcslCtx, size, pMap + pSrc->offset,
-                                NULL, 0, pStagingBufMap, gspParams.authTag);
+            status = ccslEncryptWithRotationChecks(pConfCompute->pDmaCcslCtx,
+                                                   size, pMap + pSrc->offset, NULL, 0,
+                                                   pStagingBufMap, gspParams.authTag);
             if (status == NV_ERR_INSUFFICIENT_RESOURCES)
             {
                 //
@@ -459,8 +462,9 @@ _memmgrMemcpyWithGsp
 
         if (gpuIsCCFeatureEnabled(pGpu))
         {
-            status = ccslDecrypt_HAL(pConfCompute->pDmaCcslCtx, size, pStagingBufMap,
-                                NULL, NULL, 0, pMap + pDst->offset, gspParams.authTag);
+            status = ccslDecryptWithRotationChecks(pConfCompute->pDmaCcslCtx,
+                                                   size, pStagingBufMap, NULL, NULL, 0,
+                                                   pMap + pDst->offset, gspParams.authTag);
             if (status != NV_OK)
             {
                 //

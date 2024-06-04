@@ -28,6 +28,7 @@
 #include "class/clc86fsw.h"
 #include "ctrl/ctrl2080/ctrl2080internal.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
+#include "nvrm_registry.h"
 
 static NV_STATUS performKeyRotationByKeyPair(OBJGPU *pGpu, ConfidentialCompute *pConfCompute,
                                              NvU32 h2dKey, NvU32 d2hKey);
@@ -62,13 +63,13 @@ performKeyRotation_WORKITEM
     NvU32 h2dKey = pWorkItemInfo->h2dKey;
     NvU32 d2hKey = pWorkItemInfo->d2hKey;
     KernelChannel *pKernelChannel = NULL;
-    NvU16 notifyStatus = 0x0;
     CHANNEL_ITERATOR iter = {0};
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV2080_CTRL_INTERNAL_CONF_COMPUTE_RC_CHANNELS_FOR_KEY_ROTATION_PARAMS params = {0};
     NV_STATUS status = NV_OK;
 
-    if (pWorkItemInfo->status == KEY_ROTATION_STATUS_PENDING)
+    if ((pWorkItemInfo->status == KEY_ROTATION_STATUS_PENDING) ||
+        (pWorkItemInfo->status == KEY_ROTATION_STATUS_PENDING_TIMER_SUSPENDED))
     {
         // This means all channels reported idle and we can go ahead with KR
         status = performKeyRotationByKeyPair(pGpu, pConfCompute, h2dKey, d2hKey);
@@ -82,25 +83,24 @@ performKeyRotation_WORKITEM
     else if ((pWorkItemInfo->status == KEY_ROTATION_STATUS_FAILED_THRESHOLD) ||
              (pWorkItemInfo->status == KEY_ROTATION_STATUS_FAILED_TIMEOUT))
     {
+        NvU32 h2dIndex;
+
+        NV_ASSERT_OR_RETURN_VOID(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, h2dKey, &h2dIndex) == NV_OK);
+
         // This means we need to notify and RC non-idle channels and go ahead with KR
         NV_ASSERT_OR_RETURN_VOID(confComputeInitChannelIterForKey(pGpu, pConfCompute, h2dKey, &iter) == NV_OK);
         while(confComputeGetNextChannelForKey(pGpu, pConfCompute, &iter, h2dKey, &pKernelChannel) == NV_OK)
         {
             if (!kchannelIsDisabledForKeyRotation(pGpu, pKernelChannel))
             {
-                // update notifier memory
-                notifyStatus =
-                    FLD_SET_DRF(_CHANNELGPFIFO, _NOTIFICATION_STATUS, _IN_PROGRESS, _FALSE, notifyStatus);
-
-                notifyStatus =
-                    FLD_SET_DRF_NUM(_CHANNELGPFIFO, _NOTIFICATION_STATUS, _VALUE, pWorkItemInfo->status, notifyStatus);
-
                 NV_ASSERT_OK(kchannelUpdateNotifierMem(pKernelChannel, NV_CHANNELGPFIFO_NOTIFICATION_TYPE_KEY_ROTATION_STATUS,
-                                                       0, 0, notifyStatus));
+                                                       pConfCompute->keyRotationCount[h2dIndex], 0, (NvU32)pWorkItemInfo->status));
 
-                NV_PRINTF(LEVEL_INFO, "chid 0x%x was NOT disabled for key rotation, writing notifier with val 0x%x\n", kchannelGetDebugTag(pKernelChannel), (NvU32)notifyStatus);
+                NV_PRINTF(LEVEL_INFO, "chid 0x%x was NOT disabled for key rotation, writing notifier with val 0x%x\n",
+                    kchannelGetDebugTag(pKernelChannel), (NvU32)pWorkItemInfo->status);
                 // send events to clients if registered
-                kchannelNotifyEvent(pKernelChannel, NVC86F_NOTIFIERS_KEY_ROTATION, 0, pWorkItemInfo->status, NULL, 0);
+                kchannelNotifyEvent(pKernelChannel, NVC86F_NOTIFIERS_KEY_ROTATION, pConfCompute->keyRotationCount[h2dIndex],
+                                    pWorkItemInfo->status, NULL, 0);
             }
         }
 
@@ -150,31 +150,31 @@ performKeyRotationByKeyPair
 )
 {
     KernelChannel *pKernelChannel = NULL;
-    NvU16  notifyStatus = 0x0;
     CHANNEL_ITERATOR iter = {0};
     NvU32 h2dIndex, d2hIndex;
 
     NV_ASSERT_OK_OR_RETURN(confComputeUpdateSecrets_HAL(pConfCompute, h2dKey));
 
     // notify clients
+    NV_ASSERT_OK_OR_RETURN(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, h2dKey, &h2dIndex));
+    NV_ASSERT_OK_OR_RETURN(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, d2hKey, &d2hIndex));
     NV_ASSERT_OK_OR_RETURN(confComputeInitChannelIterForKey(pGpu, pConfCompute, h2dKey, &iter));
-	while(confComputeGetNextChannelForKey(pGpu, pConfCompute, &iter, h2dKey, &pKernelChannel) == NV_OK)
+
+    pConfCompute->keyRotationCount[h2dIndex]++;
+    pConfCompute->keyRotationCount[d2hIndex]++;
+
+    while(confComputeGetNextChannelForKey(pGpu, pConfCompute, &iter, h2dKey, &pKernelChannel) == NV_OK)
     {
         if (kchannelIsDisabledForKeyRotation(pGpu, pKernelChannel))
         {
-            // update notifier memory
-            notifyStatus =
-                FLD_SET_DRF(_CHANNELGPFIFO, _NOTIFICATION_STATUS, _IN_PROGRESS, _FALSE, notifyStatus);
-
-            notifyStatus =
-                FLD_SET_DRF_NUM(_CHANNELGPFIFO, _NOTIFICATION_STATUS, _VALUE, (NvU16)KEY_ROTATION_STATUS_IDLE, notifyStatus);
-
             NV_ASSERT_OK(kchannelUpdateNotifierMem(pKernelChannel, NV_CHANNELGPFIFO_NOTIFICATION_TYPE_KEY_ROTATION_STATUS,
-                                                   0, 0, notifyStatus));
+                                                   pConfCompute->keyRotationCount[h2dIndex], 0, (NvU32)KEY_ROTATION_STATUS_IDLE));
 
             // send events to clients if registered
-            kchannelNotifyEvent(pKernelChannel, NVC86F_NOTIFIERS_KEY_ROTATION, 0, (NvU16)KEY_ROTATION_STATUS_IDLE, NULL, 0);
-            NV_PRINTF(LEVEL_INFO, "chid 0x%x was disabled for key rotation, writing notifier with val 0x%x\n", kchannelGetDebugTag(pKernelChannel), (NvU32)notifyStatus);
+            kchannelNotifyEvent(pKernelChannel, NVC86F_NOTIFIERS_KEY_ROTATION, pConfCompute->keyRotationCount[h2dIndex],
+                                (NvU16)KEY_ROTATION_STATUS_IDLE, NULL, 0);
+            NV_PRINTF(LEVEL_INFO, "chid 0x%x was disabled for key rotation, writing notifier with KEY_ROTATION_STATUS_IDLE\n",
+                kchannelGetDebugTag(pKernelChannel));
 
             // also reset channel sw state
             kchannelDisableForKeyRotation(pGpu, pKernelChannel, NV_FALSE);
@@ -186,13 +186,7 @@ performKeyRotationByKeyPair
             portMemSet(pKernelChannel->pEncStatsBuf, 0, sizeof(CC_CRYPTOBUNDLE_STATS));
     }
 
-    // reset KR state
-    pConfCompute->keyRotationCallbackCount = 1;
-
     // clear aggregate and freed channel stats
-    NV_ASSERT_OK_OR_RETURN(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, h2dKey, &h2dIndex));
-    NV_ASSERT_OK_OR_RETURN(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, d2hKey, &d2hIndex));
-
     pConfCompute->aggregateStats[h2dIndex].totalBytesEncrypted = 0;
     pConfCompute->aggregateStats[h2dIndex].totalEncryptOps     = 0;
     pConfCompute->aggregateStats[d2hIndex].totalBytesEncrypted = 0;
@@ -204,12 +198,50 @@ performKeyRotationByKeyPair
     pConfCompute->freedChannelAggregateStats[d2hIndex].totalEncryptOps     = 0;
 
     NV_ASSERT_OK_OR_RETURN(confComputeSetKeyRotationStatus(pConfCompute, h2dKey, KEY_ROTATION_STATUS_IDLE));
+
+    if (confComputeGlobalKeyIsUvmKey_HAL(pConfCompute, h2dKey))
+    {
+        //
+        // If we just finished rotating a UVM key then
+        // check if any other UVM keys have KR pending.
+        // If yes, we have nothing else to do.
+        //
+        if (!confComputeIsUvmKeyRotationPending(pGpu, pConfCompute))
+        {
+            //
+            // If there are pending UVM KRs then check if any user keys had pending KR
+            // which was suspended due to UVM KR. If yes, restart timers for those user keys.
+            //
+            NV_PRINTF(LEVEL_INFO, "No kernel key rotation pending,"
+                                  "restarting suspended user key rotation timers\n");
+            NvU32 userH2DKey;
+            KEY_ROTATION_STATUS userKRStatus;
+            NvU32 keySpace;
+            for (keySpace = 0; keySpace < CC_KEYSPACE_SIZE; keySpace++)
+            {
+                if (keySpace == CC_KEYSPACE_GSP)
+                    continue;
+
+                confComputeGetKeyPairForKeySpace_HAL(pGpu, pConfCompute, keySpace, NV_FALSE, &userH2DKey, NULL);
+                NV_ASSERT_OK_OR_RETURN(confComputeGetKeyRotationStatus(pConfCompute, userH2DKey, &userKRStatus));
+                if (userKRStatus == KEY_ROTATION_STATUS_PENDING_TIMER_SUSPENDED)
+                {
+                    NV_PRINTF(LEVEL_INFO, "Restarting timeout timer for user key 0x%x\n", userH2DKey);
+                    NV_ASSERT_OK_OR_RETURN(confComputeStartKeyRotationTimer(pGpu, pConfCompute, userH2DKey));
+                }
+            }
+        }
+    }
+
+    NV_PRINTF(LEVEL_INFO, "Key rotation successful for key IDs 0x%x and 0x%x.\n", h2dKey, d2hKey);
+    NV_PRINTF(LEVEL_INFO, "This keypair has been rotated %u times.", pConfCompute->keyRotationCount[h2dIndex]);
+
     return NV_OK;
 }
 
 /*!
  * Checks if all channels corresponding to key pair
- * are disabled and schedules key rotation.
+ * are disabled and performs key rotation.
  *
  * @param[in]   pGpu            : OBJGPU pointer
  * @param[in]   pConfCompute    : conf comp pointer
@@ -217,7 +249,7 @@ performKeyRotationByKeyPair
  * @param[out]  d2hKey          : d2h key
  */
 NV_STATUS
-confComputeCheckAndScheduleKeyRotation_IMPL
+confComputeCheckAndPerformKeyRotation_IMPL
 (
     OBJGPU *pGpu,
     ConfidentialCompute *pConfCompute,
@@ -229,7 +261,9 @@ confComputeCheckAndScheduleKeyRotation_IMPL
     KernelChannel *pKernelChannel = NULL;
     KEY_ROTATION_STATUS state;
     NV_ASSERT_OK_OR_RETURN(confComputeGetKeyRotationStatus(pConfCompute, h2dKey, &state));
-    NV_ASSERT_OR_RETURN(state == KEY_ROTATION_STATUS_PENDING, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN((state == KEY_ROTATION_STATUS_PENDING) ||
+                        (state == KEY_ROTATION_STATUS_PENDING_TIMER_SUSPENDED),
+                         NV_ERR_INVALID_STATE);
     NvBool bIdle = NV_TRUE;
 
     NV_ASSERT_OK_OR_RETURN(confComputeInitChannelIterForKey(pGpu, pConfCompute, h2dKey, &iter));
@@ -248,33 +282,36 @@ confComputeCheckAndScheduleKeyRotation_IMPL
     if (bIdle)
     {
         NV_PRINTF(LEVEL_INFO, "scheduling KR for h2d key = 0x%x\n", h2dKey);
-        NV_ASSERT_OK_OR_RETURN(confComputeScheduleKeyRotationWorkItem(pGpu, pConfCompute, h2dKey, d2hKey));
+        NV_ASSERT_OK_OR_RETURN(confComputePerformKeyRotation(pGpu, pConfCompute, h2dKey, d2hKey, NV_FALSE));
     }
     return NV_OK;
 }
 
 /*!
- * schedules key rotation workitem
+ * Schedules key rotation workitem/performs key rotation
  *
- * @param[in]   pGpu            : OBJGPU pointer
- * @param[in]   pConfCompute    : conf comp pointer
- * @param[out]  h2dKey          : h2d key
- * @param[out]  d2hKey          : d2h key
+ * @param[in]  pGpu             : OBJGPU pointer
+ * @param[in]  pConfCompute     : conf comp pointer
+ * @param[in]  h2dKey           : h2d key
+ * @param[in]  d2hKey           : d2h key
+ * @param[in]  bWorkItem        : schedule work item if called from top half (1 sec callback)
  */
 NV_STATUS
-confComputeScheduleKeyRotationWorkItem_IMPL
+confComputePerformKeyRotation_IMPL
 (
     OBJGPU *pGpu,
     ConfidentialCompute *pConfCompute,
     NvU32 h2dKey,
-    NvU32 d2hKey
+    NvU32 d2hKey,
+    NvBool bWorkItem
 )
 {
-    KEY_ROTATION_STATUS status;
-    NV_ASSERT_OK_OR_RETURN(confComputeGetKeyRotationStatus(pConfCompute, h2dKey, &status));
-    if (status == KEY_ROTATION_STATUS_IN_PROGRESS)
+    KEY_ROTATION_STATUS krStatus;
+    NV_STATUS status = NV_OK;
+    NV_ASSERT_OK_OR_RETURN(confComputeGetKeyRotationStatus(pConfCompute, h2dKey, &krStatus));
+    if (krStatus == KEY_ROTATION_STATUS_IN_PROGRESS)
     {
-        NV_PRINTF(LEVEL_INFO, "Key rotation is already scheduled for key 0x%x\n", h2dKey);
+        NV_PRINTF(LEVEL_ERROR, "Key rotation is already scheduled for key 0x%x\n", h2dKey);
         return NV_OK;
     }
 
@@ -283,24 +320,41 @@ confComputeScheduleKeyRotationWorkItem_IMPL
     NV_ASSERT_OR_RETURN(pWorkItemInfo != NULL, NV_ERR_NO_MEMORY);
     pWorkItemInfo->h2dKey = h2dKey;
     pWorkItemInfo->d2hKey = d2hKey;
-    pWorkItemInfo->status = status;
-    NV_ASSERT_OK_OR_RETURN(confComputeSetKeyRotationStatus(pConfCompute, h2dKey, KEY_ROTATION_STATUS_IN_PROGRESS));
+    pWorkItemInfo->status = krStatus;
+    NV_ASSERT_OK_OR_GOTO(status, confComputeSetKeyRotationStatus(pConfCompute, h2dKey, KEY_ROTATION_STATUS_IN_PROGRESS), cleanup);
 
     // cancel timeout event in case it was scheduled
-    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
-    NvU32 h2dIndex;
-    NV_ASSERT_OK_OR_RETURN(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, h2dKey, &h2dIndex));
-    if (pConfCompute->ppKeyRotationTimer[h2dIndex] != NULL)
+    if (krStatus != KEY_ROTATION_STATUS_FAILED_TIMEOUT)
     {
-        tmrEventCancel(pTmr, pConfCompute->ppKeyRotationTimer[h2dIndex]);
+        OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
+        NvU32 h2dIndex;
+        NV_ASSERT_OK_OR_GOTO(status, confComputeGetKeySlotFromGlobalKeyId(pConfCompute, h2dKey, &h2dIndex), cleanup);
+        if (pConfCompute->keyRotationTimeoutInfo[h2dIndex].pTimer != NULL)
+        {
+            tmrEventCancel(pTmr, pConfCompute->keyRotationTimeoutInfo[h2dIndex].pTimer);
+        }
     }
 
-    // Queue workitem to perform key rotation
-    NV_ASSERT_OK_OR_RETURN(osQueueWorkItemWithFlags(pGpu, performKeyRotation_WORKITEM, (void*)pWorkItemInfo,
-                                                    (OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
-                                                     OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW |
-                                                     OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS_RW)));
-    return NV_OK;
+    if (bWorkItem)
+    {
+        // Queue workitem to perform key rotation
+        NV_ASSERT_OK_OR_GOTO(status, osQueueWorkItemWithFlags(pGpu, performKeyRotation_WORKITEM, (void*)pWorkItemInfo,
+                                                              (OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
+                                                               OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW |
+                                                               OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS_RW)), cleanup);
+    }
+    else
+    {
+        performKeyRotation_WORKITEM(gpuGetInstance(pGpu), (void*)pWorkItemInfo);
+        portMemFree(pWorkItemInfo);
+    }
+
+cleanup:
+    if ((status != NV_OK) && (pWorkItemInfo != NULL))
+    {
+        portMemFree(pWorkItemInfo);
+    }
+    return status;
 }
 
 /*!
@@ -460,29 +514,19 @@ confComputeSetKeyRotationThreshold_IMPL(ConfidentialCompute *pConfCompute,
         12148001999ull,
         8589934591ull,
         6074000999ull,
-        4294967295ull,
-        3037000499ull,
-        2147483647ull,
-        1518500249ull,
-        1073741823ull,
-        759250124ull,
-        536870911ull,
-        379625061ull,
-        268435455ull,
-        189812530ull,
-        134217727ull};
+        4294967295ull};
 
     NV_ASSERT_OR_RETURN((attackerAdvantage >= offset) &&
         (attackerAdvantage <= (offset + NV_ARRAY_ELEMENTS(keyRotationUpperThreshold) - 1)),
         NV_ERR_INVALID_ARGUMENT);
 
-    pConfCompute->keyRotationUpperLimit = keyRotationUpperThreshold[attackerAdvantage - offset];
-    pConfCompute->keyRotationLowerLimit = pConfCompute->keyRotationUpperLimit -
-                                          pConfCompute->keyRotationLimitDelta;
+    pConfCompute->keyRotationUpperThreshold = keyRotationUpperThreshold[attackerAdvantage - offset];
+    pConfCompute->keyRotationLowerThreshold = pConfCompute->keyRotationUpperThreshold -
+                                              pConfCompute->keyRotationThresholdDelta;
 
     NV_PRINTF(LEVEL_INFO, "Setting key rotation attacker advantage to %llu.\n", attackerAdvantage);
-    NV_PRINTF(LEVEL_INFO, "Key rotation lower limit is %llu and upper limit is %llu.\n",
-              pConfCompute->keyRotationLowerLimit, pConfCompute->keyRotationUpperLimit);
+    NV_PRINTF(LEVEL_INFO, "Key rotation lower threshold is %llu and upper threshold is %llu.\n",
+              pConfCompute->keyRotationLowerThreshold, pConfCompute->keyRotationUpperThreshold);
 
     return NV_OK;
 }
@@ -492,7 +536,7 @@ NvBool confComputeIsUpperThresholdCrossed_IMPL(ConfidentialCompute           *pC
 {
     const NvU64 totalEncryptWork = (pStatsInfo->totalBytesEncrypted / 16) + pStatsInfo->totalEncryptOps;
 
-    return (totalEncryptWork > pConfCompute->keyRotationUpperLimit);
+    return (totalEncryptWork > pConfCompute->keyRotationUpperThreshold);
 }
 
 NvBool confComputeIsLowerThresholdCrossed_IMPL(ConfidentialCompute           *pConfCompute,
@@ -500,5 +544,180 @@ NvBool confComputeIsLowerThresholdCrossed_IMPL(ConfidentialCompute           *pC
 {
     const NvU64 totalEncryptWork = (pStatsInfo->totalBytesEncrypted / 16) + pStatsInfo->totalEncryptOps;
 
-    return (totalEncryptWork > pConfCompute->keyRotationLowerLimit);
+    return (totalEncryptWork > pConfCompute->keyRotationLowerThreshold);
+}
+
+NvBool confComputeIsGivenThresholdCrossed_IMPL(const CC_CRYPTOBUNDLE_STATS   *pStats,
+                                               NvU64                          threshold,
+                                               NvBool                         bH2D)
+{
+    const NvU64 totalEncryptWork = bH2D ? (pStats->bytesEncryptedH2D / 16) + pStats->numEncryptionsH2D :
+                                          (pStats->bytesEncryptedD2H / 16) + pStats->numEncryptionsD2H;
+
+    // Threshold value of zero is considered disabled
+    if (threshold == 0)
+    {
+        return NV_FALSE;
+    }
+
+    return (totalEncryptWork > threshold);
+}
+
+/*!
+ * Stop timer that tracks timeout to wait for kernel key rotation to complete
+ *
+ * @param[in]  pGpu            : OBJGPU pointer
+ * @param[in]  pConfCompute    : conf comp pointer
+ * @param[in]  h2dKey          : H2D key
+ */
+NV_STATUS
+confComputeStopKeyRotationTimer_IMPL
+(
+    OBJGPU *pGpu,
+    ConfidentialCompute *pConfCompute,
+    NvU32 h2dKey
+)
+{
+    NvU32 h2dKeyIndex;
+    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
+    KEY_ROTATION_STATUS status;
+    NV_ASSERT_OK_OR_RETURN(confComputeGetKeyRotationStatus(pConfCompute, h2dKey, &status));
+    // If KR is already suspended then nothing else to do here
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, status != KEY_ROTATION_STATUS_PENDING_TIMER_SUSPENDED, NV_OK);
+
+    // This should only be called if KR is pending
+    NV_ASSERT_OR_RETURN(status == KEY_ROTATION_STATUS_PENDING, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OK_OR_RETURN(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, h2dKey, &h2dKeyIndex));
+    NV_ASSERT_OR_RETURN((pConfCompute->keyRotationTimeoutInfo[h2dKeyIndex].pTimer != NULL), NV_ERR_INVALID_STATE);
+    if (tmrEventOnList(pTmr, pConfCompute->keyRotationTimeoutInfo[h2dKeyIndex].pTimer))
+    {
+        NvU64 timeNs;
+        NV_ASSERT_OK_OR_RETURN(tmrEventTimeUntilNextCallback(pTmr,
+                                   pConfCompute->keyRotationTimeoutInfo[h2dKeyIndex].pTimer, &timeNs));
+        pConfCompute->keyRotationTimeoutInfo[h2dKeyIndex].timeLeftNs = timeNs;
+        tmrEventCancel(pTmr, pConfCompute->keyRotationTimeoutInfo[h2dKeyIndex].pTimer);
+        NV_PRINTF(LEVEL_INFO, "Stopped key rotation timeout timer for key 0x%x with time left = %lldns\n",
+                                h2dKey, pConfCompute->keyRotationTimeoutInfo[h2dKeyIndex].timeLeftNs);
+    }
+    else
+    {
+        pConfCompute->keyRotationTimeoutInfo[h2dKeyIndex].timeLeftNs = (NvU64)(pConfCompute->keyRotationTimeout) *
+                                                                              (1000 * 1000 * 1000);
+        NV_PRINTF(LEVEL_INFO, "Timeout timer never started on key 0x%x. leave it as is at %lldns\n",
+                                h2dKey, pConfCompute->keyRotationTimeoutInfo[h2dKeyIndex].timeLeftNs);
+    }
+    NV_ASSERT_OK_OR_RETURN(confComputeSetKeyRotationStatus(pConfCompute, h2dKey, KEY_ROTATION_STATUS_PENDING_TIMER_SUSPENDED));
+    return NV_OK;
+}
+
+/*!
+ * Start timer to track timeout after crossing lower threshold
+ *
+ * @param[in]  pGpu            : OBJGPU pointer
+ * @param[in]  pConfCompute    : conf comp pointer
+ * @param[in]  h2dKey          : H2D key
+ */
+NV_STATUS
+confComputeStartKeyRotationTimer_IMPL
+(
+    OBJGPU *pGpu,
+    ConfidentialCompute *pConfCompute,
+    NvU32 h2dKey
+)
+{
+    NvU32 h2dKeyIndex;
+    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
+    KEY_ROTATION_STATUS status;
+    NV_ASSERT_OK_OR_RETURN(confComputeGetKeyRotationStatus(pConfCompute, h2dKey, &status));
+    NV_ASSERT_OR_RETURN(status == KEY_ROTATION_STATUS_PENDING_TIMER_SUSPENDED, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OK_OR_RETURN(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, h2dKey, &h2dKeyIndex));
+    NV_ASSERT_OK_OR_RETURN(tmrEventScheduleRelSec(pTmr,
+                                pConfCompute->keyRotationTimeoutInfo[h2dKeyIndex].pTimer,
+                                pConfCompute->keyRotationTimeoutInfo[h2dKeyIndex].timeLeftNs/(1000 * 1000 * 1000)));
+    NV_ASSERT_OK_OR_RETURN(confComputeSetKeyRotationStatus(pConfCompute, h2dKey, KEY_ROTATION_STATUS_PENDING));
+    NV_PRINTF(LEVEL_INFO, "Started key rotation timeout timer for key 0x%x with rel time left = %lldns\n",
+                            h2dKey, pConfCompute->keyRotationTimeoutInfo[h2dKeyIndex].timeLeftNs);
+    return NV_OK;
+}
+
+/*!
+ * Checks if any UVM keys have key rotation pending
+ *
+ * @param[in]  pGpu            : OBJGPU pointer
+ * @param[in]  pConfCompute    : conf comp pointer
+ */
+NvBool
+confComputeIsUvmKeyRotationPending_IMPL
+(
+    OBJGPU *pGpu,
+    ConfidentialCompute *pConfCompute
+)
+{
+    NvU32 kernH2DKey, kernD2HKey;
+    KEY_ROTATION_STATUS kernKRStatus;
+    NvU32 keySpace;
+    for (keySpace = 0; keySpace < CC_KEYSPACE_SIZE; keySpace++)
+    {
+        if (keySpace == CC_KEYSPACE_GSP)
+            continue;
+
+        confComputeGetKeyPairForKeySpace_HAL(pGpu, pConfCompute, keySpace, NV_TRUE, &kernH2DKey, &kernD2HKey);
+        NV_ASSERT_OK(confComputeGetKeyRotationStatus(pConfCompute, kernH2DKey, &kernKRStatus));
+        if (kernKRStatus == KEY_ROTATION_STATUS_PENDING)
+        {
+            NV_PRINTF(LEVEL_INFO, "Key rotation pending on h2d kern key  = 0x%x\n", kernH2DKey);
+            return NV_TRUE;
+        }
+    }
+    NV_PRINTF(LEVEL_INFO, "no kernel key rotation pending\n");
+    return NV_FALSE;
+}
+
+/*!
+ * Forces key rotation
+ *
+ * @param[in]  pGpu             : OBJGPU pointer
+ * @param[in]  pConfCompute     : conf comp pointer
+ * @param[in]  h2dKey           : h2d key
+ */
+NV_STATUS
+confComputeForceKeyRotation_IMPL
+(
+    OBJGPU *pGpu,
+    ConfidentialCompute *pConfCompute,
+    NvU32 h2dKey,
+    NvU32 d2hKey
+)
+{
+    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+    if (pCallContext->secInfo.privLevel < RS_PRIV_LEVEL_KERNEL)
+        return NV_ERR_INSUFFICIENT_PERMISSIONS;
+
+    if (!pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED) ||
+        !pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_ENABLED))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    if (!FLD_TEST_DRF(_REG_STR, _RM_CONF_COMPUTE_KEY_ROTATION, _KERNEL_KEYS, _YES,
+                     pConfCompute->keyRotationEnableMask))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    NvU32 keySpace = CC_GKEYID_GET_KEYSPACE(h2dKey);
+    if (!(pConfCompute->keyRotationEnableMask & NVBIT(keySpace)))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    KEY_ROTATION_STATUS krStatus;
+    NV_ASSERT_OK_OR_RETURN(confComputeGetKeyRotationStatus(pConfCompute, h2dKey, &krStatus));
+    if (krStatus == KEY_ROTATION_STATUS_IN_PROGRESS)
+    {
+        NV_PRINTF(LEVEL_INFO, "Key rotation is already scheduled for key 0x%x\n", h2dKey);
+        return NV_OK;
+    }
+    NV_ASSERT_OK_OR_RETURN(performKeyRotationByKeyPair(pGpu, pConfCompute, h2dKey, d2hKey));
+    return NV_OK;
 }

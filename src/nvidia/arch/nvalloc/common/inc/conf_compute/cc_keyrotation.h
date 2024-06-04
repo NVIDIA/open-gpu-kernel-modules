@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,21 +21,14 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#ifndef CC_KEYROTATION_H
+#define CC_KEYROTATION_H
 
-bool libspdm_aead_gcm_prealloc(void **context);
-void libspdm_aead_free(void *context);
-bool libspdm_aead_aes_gcm_encrypt_prealloc(void *context,
-        const uint8_t *key, size_t key_size,
-        const uint8_t *iv, size_t iv_size,
-        const uint8_t *a_data, size_t a_data_size,
-        const uint8_t *data_in, size_t data_in_size,
-        uint8_t *tag_out, size_t tag_size,
-        uint8_t *data_out, size_t *data_out_size);
-bool libspdm_aead_aes_gcm_decrypt_prealloc(void *context,
-        const uint8_t *key, size_t key_size,
-        const uint8_t *iv, size_t iv_size,
-        const uint8_t *a_data, size_t a_data_size,
-        const uint8_t *data_in, size_t data_in_size,
-        const uint8_t *tag, size_t tag_size,
-        uint8_t *data_out, size_t *data_out_size);
-bool libspdm_check_crypto_backend(void);
+//
+// Default threshold value derived from SECURITY_POLICY_ATTACKER_ADVANTAGE_DEFAULT
+// Minimum threshold defined based on minimum in confComputeSetKeyRotation.
+//
+#define KEY_ROTATION_MINIMUM_INTERNAL_THRESHOLD (134217727u)
+#define KEY_ROTATION_DEFAULT_INTERNAL_THRESHOLD (24296003999ull)
+
+#endif // CC_KEYROTATION_H

@@ -1664,8 +1664,8 @@ _nvswitch_reset_and_drain_links_ls10
             continue;
         }
 
-        // Initialize select scratch registers to 0x0
-        device->hal.nvswitch_init_scratch(device);
+        // Reset NV_NPORT_SCRATCH_WARM_PORT_RESET_REQUIRED to 0x0
+        NVSWITCH_LINK_WR32(device, link, NPORT, _NPORT, _SCRATCH_WARM, 0);
 
         //
         // Step 9.0: Launch ALI training to re-initialize and train the links

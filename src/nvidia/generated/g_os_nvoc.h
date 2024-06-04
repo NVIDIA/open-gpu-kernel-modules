@@ -851,11 +851,13 @@ NvBool osRemoveGpuSupported(void);
 
 void initVGXSpecificRegistry(OBJGPU *);
 
-NV_STATUS osVgpuVfioWake(void *waitQueue);
-NV_STATUS osVgpuInjectInterrupt(void *pArg1);
-NV_STATUS osVgpuRegisterMdev(OS_GPU_INFO  *pArg1);
+NV_STATUS nv_vgpu_rm_get_bar_info(OBJGPU *pGpu, const NvU8 *pMdevUuid, NvU64 *barSizes,
+                                  NvU64 *sparseOffsets, NvU64 *sparseSizes,
+                                  NvU32 *sparseCount, NvBool *isBar064bit,
+                                  NvU8 *configParams);
 NV_STATUS osIsVgpuVfioPresent(void);
 NV_STATUS osIsVfioPciCorePresent(void);
+void osWakeRemoveVgpu(NvU32, NvU32);
 NV_STATUS rm_is_vgpu_supported_device(OS_GPU_INFO *pNv, NvU32 pmc_boot_1,
                                       NvU32 pmc_boot_42);
 NV_STATUS osLockPageableDataSection(RM_PAGEABLE_SECTION   *pSection);
@@ -1279,12 +1281,21 @@ void osNumaRemoveGpuMemory(OS_GPU_INFO *pOsGpuInfo, NvU64 offset,
 
 NV_STATUS osOfflinePageAtAddress(NvU64 address);
 
+//
 // Os 1Hz timer callback functions
+//
+// 1 second is the median and mean time between two callback runs, but the worst
+// case can be anywhere between 0 (back-to-back) or (1s+RMTIMEOUT).
+// N callbacks are at least (N-2) seconds apart.
+//
+// Callbacks can run at either DISPATCH_LEVEL or PASSIVE_LEVEL
+//
 NV_STATUS osInit1HzCallbacks(OBJTMR *pTmr);
 NV_STATUS osDestroy1HzCallbacks(OBJTMR *pTmr);
 NV_STATUS osSchedule1HzCallback(OBJGPU *pGpu, OS1HZPROC callback, void *pData, NvU32 flags);
 void      osRemove1HzCallback(OBJGPU *pGpu, OS1HZPROC callback, void *pData);
 NvBool    osRun1HzCallbacksNow(OBJGPU *pGpu);
+void      osRunQueued1HzCallbacksUnderLock(OBJGPU *pGpu);
 
 NV_STATUS osDoFunctionLevelReset(OBJGPU *pGpu);
 

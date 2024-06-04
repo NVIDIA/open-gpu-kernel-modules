@@ -107,10 +107,13 @@ NV_STATUS vgpuAllocSysmemPfnBitMapNode(OBJGPU *pGpu, VGPU_SYSMEM_PFN_BITMAP_NODE
     OBJVGPU *pVGpu = GPU_GET_VGPU(pGpu);
     VGPU_GSP_SYSMEM_BITMAP_ROOT_NODE *sysmemBitmapRootNode = NULL;
     NvU32 memFlags = 0;
-    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+    if (!pVGpu->bGspPlugin)
+    {
+        KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
 
-    if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus))
-        memFlags = MEMDESC_FLAGS_CPU_ONLY;
+        if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus))
+            memFlags = MEMDESC_FLAGS_CPU_ONLY;
+    }
 
     if (index != listCount(&(vgpuSysmemPfnInfo.listVgpuSysmemPfnBitmapHead)) ||
         node == NULL) {

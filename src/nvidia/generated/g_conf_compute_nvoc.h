@@ -42,6 +42,7 @@ extern "C" {
 #include "ctrl/ctrlc56f.h"
 #include "cc_drv.h"
 #include "conf_compute/cc_keystore.h"
+#include "conf_compute/cc_keyrotation.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "kernel/gpu/intr/engine_idx.h"
@@ -55,12 +56,6 @@ extern "C" {
  ****************************************************************************/
 
 //
-// Temp threshold values until we move to using
-// encryption statistics buffers.
-//
-#define KEY_ROTATION_UPPER_THRESHOLD 30
-#define KEY_ROTATION_LOWER_THRESHOLD 20
-
 // Per-key info regarding encryption ops
 typedef struct
 {
@@ -75,6 +70,13 @@ typedef struct
     NvU32 d2hKey;
     KEY_ROTATION_STATUS status;
 } KEY_ROTATION_WORKITEM_INFO;
+
+// Info needed by timer to setup timeouts for key rotation
+typedef struct
+{
+    TMR_EVENT *pTimer;
+    NvU64      timeLeftNs; // time left before hitting timeout
+} KEY_ROTATION_TIMEOUT_INFO;
 
 
 // Private field names are wrapped in PRIVATE_FIELD, which does nothing for
@@ -106,20 +108,24 @@ struct ConfidentialCompute {
     NvBool (*__confComputeIsSpdmEnabled__)(struct OBJGPU *, struct ConfidentialCompute *);
     RM_ENGINE_TYPE (*__confComputeGetEngineIdFromKeySpace__)(struct ConfidentialCompute *, NvU32);
     NvBool (*__confComputeGlobalKeyIsKernelPriv__)(struct ConfidentialCompute *, NvU32);
+    NvBool (*__confComputeGlobalKeyIsUvmKey__)(struct ConfidentialCompute *, NvU32);
     NV_STATUS (*__confComputeGetKeyPairByChannel__)(struct OBJGPU *, struct ConfidentialCompute *, struct KernelChannel *, NvU32 *, NvU32 *);
     NV_STATUS (*__confComputeTriggerKeyRotation__)(struct OBJGPU *, struct ConfidentialCompute *);
+    void (*__confComputeGetKeyPairForKeySpace__)(struct OBJGPU *, struct ConfidentialCompute *, NvU32, NvBool, NvU32 *, NvU32 *);
     NV_STATUS (*__confComputeEnableKeyRotationCallback__)(struct OBJGPU *, struct ConfidentialCompute *, NvBool);
     NV_STATUS (*__confComputeEnableKeyRotationSupport__)(struct OBJGPU *, struct ConfidentialCompute *);
+    NV_STATUS (*__confComputeEnableInternalKeyRotationSupport__)(struct OBJGPU *, struct ConfidentialCompute *);
     NvBool (*__confComputeIsDebugModeEnabled__)(struct OBJGPU *, struct ConfidentialCompute *);
     NvBool (*__confComputeIsGpuCcCapable__)(struct OBJGPU *, struct ConfidentialCompute *);
     NV_STATUS (*__confComputeEstablishSpdmSessionAndKeys__)(struct OBJGPU *, struct ConfidentialCompute *);
     void (*__confComputeKeyStoreDepositIvMask__)(struct ConfidentialCompute *, NvU32, void *);
+    NV_STATUS (*__confComputeKeyStoreUpdateKey__)(struct ConfidentialCompute *, NvU32);
+    NvBool (*__confComputeKeyStoreIsValidGlobalKeyId__)(struct ConfidentialCompute *, NvU32);
     NV_STATUS (*__confComputeKeyStoreInit__)(struct ConfidentialCompute *);
     void (*__confComputeKeyStoreDeinit__)(struct ConfidentialCompute *);
     void *(*__confComputeKeyStoreGetExportMasterKey__)(struct ConfidentialCompute *);
     NV_STATUS (*__confComputeKeyStoreDeriveKey__)(struct ConfidentialCompute *, NvU32);
     void (*__confComputeKeyStoreClearExportMasterKey__)(struct ConfidentialCompute *);
-    NV_STATUS (*__confComputeKeyStoreUpdateKey__)(struct ConfidentialCompute *, NvU32);
     NV_STATUS (*__confComputeStateLoad__)(POBJGPU, struct ConfidentialCompute *, NvU32);
     NV_STATUS (*__confComputeStateUnload__)(POBJGPU, struct ConfidentialCompute *, NvU32);
     NV_STATUS (*__confComputeStatePreLoad__)(POBJGPU, struct ConfidentialCompute *, NvU32);
@@ -138,7 +144,8 @@ struct ConfidentialCompute {
     NvBool PDB_PROP_CONFCOMPUTE_SPDM_ENABLED;
     NvBool PDB_PROP_CONFCOMPUTE_MULTI_GPU_PROTECTED_PCIE_MODE_ENABLED;
     NvBool PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED;
-    NvBool PDB_PROP_CONFCOMPUTE_DUMMY_KEY_ROTATION_ENABLED;
+    NvBool PDB_PROP_CONFCOMPUTE_KEY_ROTATION_ENABLED;
+    NvBool PDB_PROP_CONFCOMPUTE_INTERNAL_KEY_ROTATION_ENABLED;
     NvU32 gspProxyRegkeys;
     struct Spdm *pSpdm;
     NV2080_CTRL_INTERNAL_CONF_COMPUTE_GET_STATIC_INFO_PARAMS ccStaticInfo;
@@ -147,24 +154,23 @@ struct ConfidentialCompute {
     struct ccslContext_t *pNonReplayableFaultCcslCtx;
     struct ccslContext_t *pReplayableFaultCcslCtx;
     struct ccslContext_t *pGspSec2RpcCcslCtx;
-    NvU32 keyRotationCallbackCount;
-    NvU32 keyRotationChannelRefCount;
     NvBool bAcceptClientRequest;
     PTMR_EVENT pGspHeartbeatTimer;
     NvU32 heartbeatPeriodSec;
     NvU32 keyRotationEnableMask;
-    KEY_ROTATION_STATS_INFO lowerThreshold;
-    KEY_ROTATION_STATS_INFO upperThreshold;
+    NvU64 keyRotationInternalThreshold;
     NvU64 attackerAdvantage;
+    KEY_ROTATION_STATS_INFO aggregateStats[64];
     NvU8 PRIVATE_FIELD(m_exportMasterKey)[32];
     void *PRIVATE_FIELD(m_keySlot);
-    KEY_ROTATION_STATUS PRIVATE_FIELD(keyRotationState)[62];
-    KEY_ROTATION_STATS_INFO PRIVATE_FIELD(aggregateStats)[62];
-    KEY_ROTATION_STATS_INFO PRIVATE_FIELD(freedChannelAggregateStats)[62];
-    PTMR_EVENT PRIVATE_FIELD(ppKeyRotationTimer)[62];
-    NvU64 PRIVATE_FIELD(keyRotationLimitDelta);
-    NvU64 PRIVATE_FIELD(keyRotationUpperLimit);
-    NvU64 PRIVATE_FIELD(keyRotationLowerLimit);
+    KEY_ROTATION_STATUS PRIVATE_FIELD(keyRotationState)[64];
+    KEY_ROTATION_STATS_INFO PRIVATE_FIELD(freedChannelAggregateStats)[64];
+    KEY_ROTATION_TIMEOUT_INFO PRIVATE_FIELD(keyRotationTimeoutInfo)[64];
+    NvU32 PRIVATE_FIELD(keyRotationCount)[64];
+    NvU32 PRIVATE_FIELD(keyRotationTimeout);
+    NvU64 PRIVATE_FIELD(keyRotationThresholdDelta);
+    NvU64 PRIVATE_FIELD(keyRotationUpperThreshold);
+    NvU64 PRIVATE_FIELD(keyRotationLowerThreshold);
 };
 
 #ifndef __NVOC_CLASS_ConfidentialCompute_TYPEDEF__
@@ -190,14 +196,16 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_ConfidentialCompute;
 
 #define PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED_BASE_CAST
 #define PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED_BASE_NAME PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED
+#define PDB_PROP_CONFCOMPUTE_INTERNAL_KEY_ROTATION_ENABLED_BASE_CAST
+#define PDB_PROP_CONFCOMPUTE_INTERNAL_KEY_ROTATION_ENABLED_BASE_NAME PDB_PROP_CONFCOMPUTE_INTERNAL_KEY_ROTATION_ENABLED
+#define PDB_PROP_CONFCOMPUTE_KEY_ROTATION_ENABLED_BASE_CAST
+#define PDB_PROP_CONFCOMPUTE_KEY_ROTATION_ENABLED_BASE_NAME PDB_PROP_CONFCOMPUTE_KEY_ROTATION_ENABLED
 #define PDB_PROP_CONFCOMPUTE_APM_FEATURE_ENABLED_BASE_CAST
 #define PDB_PROP_CONFCOMPUTE_APM_FEATURE_ENABLED_BASE_NAME PDB_PROP_CONFCOMPUTE_APM_FEATURE_ENABLED
 #define PDB_PROP_CONFCOMPUTE_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
 #define PDB_PROP_CONFCOMPUTE_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
 #define PDB_PROP_CONFCOMPUTE_ENABLE_EARLY_INIT_BASE_CAST
 #define PDB_PROP_CONFCOMPUTE_ENABLE_EARLY_INIT_BASE_NAME PDB_PROP_CONFCOMPUTE_ENABLE_EARLY_INIT
-#define PDB_PROP_CONFCOMPUTE_DUMMY_KEY_ROTATION_ENABLED_BASE_CAST
-#define PDB_PROP_CONFCOMPUTE_DUMMY_KEY_ROTATION_ENABLED_BASE_NAME PDB_PROP_CONFCOMPUTE_DUMMY_KEY_ROTATION_ENABLED
 #define PDB_PROP_CONFCOMPUTE_GPUS_READY_CHECK_ENABLED_BASE_CAST
 #define PDB_PROP_CONFCOMPUTE_GPUS_READY_CHECK_ENABLED_BASE_NAME PDB_PROP_CONFCOMPUTE_GPUS_READY_CHECK_ENABLED
 #define PDB_PROP_CONFCOMPUTE_ENABLED_BASE_CAST
@@ -242,14 +250,20 @@ NV_STATUS __nvoc_objCreate_ConfidentialCompute(ConfidentialCompute**, Dynamic*, 
 #define confComputeGetEngineIdFromKeySpace_HAL(pConfCompute, keySpace) confComputeGetEngineIdFromKeySpace_DISPATCH(pConfCompute, keySpace)
 #define confComputeGlobalKeyIsKernelPriv(pConfCompute, keyId) confComputeGlobalKeyIsKernelPriv_DISPATCH(pConfCompute, keyId)
 #define confComputeGlobalKeyIsKernelPriv_HAL(pConfCompute, keyId) confComputeGlobalKeyIsKernelPriv_DISPATCH(pConfCompute, keyId)
+#define confComputeGlobalKeyIsUvmKey(pConfCompute, keyId) confComputeGlobalKeyIsUvmKey_DISPATCH(pConfCompute, keyId)
+#define confComputeGlobalKeyIsUvmKey_HAL(pConfCompute, keyId) confComputeGlobalKeyIsUvmKey_DISPATCH(pConfCompute, keyId)
 #define confComputeGetKeyPairByChannel(pGpu, pConfCompute, pKernelChannel, pH2DKey, pD2HKey) confComputeGetKeyPairByChannel_DISPATCH(pGpu, pConfCompute, pKernelChannel, pH2DKey, pD2HKey)
 #define confComputeGetKeyPairByChannel_HAL(pGpu, pConfCompute, pKernelChannel, pH2DKey, pD2HKey) confComputeGetKeyPairByChannel_DISPATCH(pGpu, pConfCompute, pKernelChannel, pH2DKey, pD2HKey)
 #define confComputeTriggerKeyRotation(pGpu, pConfCompute) confComputeTriggerKeyRotation_DISPATCH(pGpu, pConfCompute)
 #define confComputeTriggerKeyRotation_HAL(pGpu, pConfCompute) confComputeTriggerKeyRotation_DISPATCH(pGpu, pConfCompute)
+#define confComputeGetKeyPairForKeySpace(pGpu, pConfCompute, arg0, arg1, arg2, arg3) confComputeGetKeyPairForKeySpace_DISPATCH(pGpu, pConfCompute, arg0, arg1, arg2, arg3)
+#define confComputeGetKeyPairForKeySpace_HAL(pGpu, pConfCompute, arg0, arg1, arg2, arg3) confComputeGetKeyPairForKeySpace_DISPATCH(pGpu, pConfCompute, arg0, arg1, arg2, arg3)
 #define confComputeEnableKeyRotationCallback(pGpu, pConfCompute, bEnable) confComputeEnableKeyRotationCallback_DISPATCH(pGpu, pConfCompute, bEnable)
 #define confComputeEnableKeyRotationCallback_HAL(pGpu, pConfCompute, bEnable) confComputeEnableKeyRotationCallback_DISPATCH(pGpu, pConfCompute, bEnable)
 #define confComputeEnableKeyRotationSupport(pGpu, pConfCompute) confComputeEnableKeyRotationSupport_DISPATCH(pGpu, pConfCompute)
 #define confComputeEnableKeyRotationSupport_HAL(pGpu, pConfCompute) confComputeEnableKeyRotationSupport_DISPATCH(pGpu, pConfCompute)
+#define confComputeEnableInternalKeyRotationSupport(pGpu, pConfCompute) confComputeEnableInternalKeyRotationSupport_DISPATCH(pGpu, pConfCompute)
+#define confComputeEnableInternalKeyRotationSupport_HAL(pGpu, pConfCompute) confComputeEnableInternalKeyRotationSupport_DISPATCH(pGpu, pConfCompute)
 #define confComputeIsDebugModeEnabled(pGpu, pConfCompute) confComputeIsDebugModeEnabled_DISPATCH(pGpu, pConfCompute)
 #define confComputeIsDebugModeEnabled_HAL(pGpu, pConfCompute) confComputeIsDebugModeEnabled_DISPATCH(pGpu, pConfCompute)
 #define confComputeIsGpuCcCapable(pGpu, pConfCompute) confComputeIsGpuCcCapable_DISPATCH(pGpu, pConfCompute)
@@ -258,6 +272,10 @@ NV_STATUS __nvoc_objCreate_ConfidentialCompute(ConfidentialCompute**, Dynamic*, 
 #define confComputeEstablishSpdmSessionAndKeys_HAL(pGpu, pConfCompute) confComputeEstablishSpdmSessionAndKeys_DISPATCH(pGpu, pConfCompute)
 #define confComputeKeyStoreDepositIvMask(pConfCompute, globalKeyId, ivMask) confComputeKeyStoreDepositIvMask_DISPATCH(pConfCompute, globalKeyId, ivMask)
 #define confComputeKeyStoreDepositIvMask_HAL(pConfCompute, globalKeyId, ivMask) confComputeKeyStoreDepositIvMask_DISPATCH(pConfCompute, globalKeyId, ivMask)
+#define confComputeKeyStoreUpdateKey(pConfCompute, globalKeyId) confComputeKeyStoreUpdateKey_DISPATCH(pConfCompute, globalKeyId)
+#define confComputeKeyStoreUpdateKey_HAL(pConfCompute, globalKeyId) confComputeKeyStoreUpdateKey_DISPATCH(pConfCompute, globalKeyId)
+#define confComputeKeyStoreIsValidGlobalKeyId(pConfCompute, globalKeyId) confComputeKeyStoreIsValidGlobalKeyId_DISPATCH(pConfCompute, globalKeyId)
+#define confComputeKeyStoreIsValidGlobalKeyId_HAL(pConfCompute, globalKeyId) confComputeKeyStoreIsValidGlobalKeyId_DISPATCH(pConfCompute, globalKeyId)
 #define confComputeKeyStoreInit(pConfCompute) confComputeKeyStoreInit_DISPATCH(pConfCompute)
 #define confComputeKeyStoreInit_HAL(pConfCompute) confComputeKeyStoreInit_DISPATCH(pConfCompute)
 #define confComputeKeyStoreDeinit(pConfCompute) confComputeKeyStoreDeinit_DISPATCH(pConfCompute)
@@ -268,8 +286,6 @@ NV_STATUS __nvoc_objCreate_ConfidentialCompute(ConfidentialCompute**, Dynamic*, 
 #define confComputeKeyStoreDeriveKey_HAL(pConfCompute, globalKeyId) confComputeKeyStoreDeriveKey_DISPATCH(pConfCompute, globalKeyId)
 #define confComputeKeyStoreClearExportMasterKey(pConfCompute) confComputeKeyStoreClearExportMasterKey_DISPATCH(pConfCompute)
 #define confComputeKeyStoreClearExportMasterKey_HAL(pConfCompute) confComputeKeyStoreClearExportMasterKey_DISPATCH(pConfCompute)
-#define confComputeKeyStoreUpdateKey(pConfCompute, globalKeyId) confComputeKeyStoreUpdateKey_DISPATCH(pConfCompute, globalKeyId)
-#define confComputeKeyStoreUpdateKey_HAL(pConfCompute, globalKeyId) confComputeKeyStoreUpdateKey_DISPATCH(pConfCompute, globalKeyId)
 #define confComputeStateLoad(pGpu, pEngstate, arg0) confComputeStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define confComputeStateUnload(pGpu, pEngstate, arg0) confComputeStateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define confComputeStatePreLoad(pGpu, pEngstate, arg0) confComputeStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
@@ -427,6 +443,16 @@ static inline NvBool confComputeGlobalKeyIsKernelPriv_DISPATCH(struct Confidenti
     return pConfCompute->__confComputeGlobalKeyIsKernelPriv__(pConfCompute, keyId);
 }
 
+NvBool confComputeGlobalKeyIsUvmKey_GH100(struct ConfidentialCompute *pConfCompute, NvU32 keyId);
+
+static inline NvBool confComputeGlobalKeyIsUvmKey_491d52(struct ConfidentialCompute *pConfCompute, NvU32 keyId) {
+    return ((NvBool)(0 != 0));
+}
+
+static inline NvBool confComputeGlobalKeyIsUvmKey_DISPATCH(struct ConfidentialCompute *pConfCompute, NvU32 keyId) {
+    return pConfCompute->__confComputeGlobalKeyIsUvmKey__(pConfCompute, keyId);
+}
+
 NV_STATUS confComputeGetKeyPairByChannel_GH100(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, struct KernelChannel *pKernelChannel, NvU32 *pH2DKey, NvU32 *pD2HKey);
 
 static inline NV_STATUS confComputeGetKeyPairByChannel_46f6a7(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, struct KernelChannel *pKernelChannel, NvU32 *pH2DKey, NvU32 *pD2HKey) {
@@ -451,6 +477,16 @@ static inline NV_STATUS confComputeTriggerKeyRotation_DISPATCH(struct OBJGPU *pG
     return pConfCompute->__confComputeTriggerKeyRotation__(pGpu, pConfCompute);
 }
 
+void confComputeGetKeyPairForKeySpace_GH100(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvU32 arg0, NvBool arg1, NvU32 *arg2, NvU32 *arg3);
+
+static inline void confComputeGetKeyPairForKeySpace_b3696a(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvU32 arg0, NvBool arg1, NvU32 *arg2, NvU32 *arg3) {
+    return;
+}
+
+static inline void confComputeGetKeyPairForKeySpace_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvU32 arg0, NvBool arg1, NvU32 *arg2, NvU32 *arg3) {
+    pConfCompute->__confComputeGetKeyPairForKeySpace__(pGpu, pConfCompute, arg0, arg1, arg2, arg3);
+}
+
 NV_STATUS confComputeEnableKeyRotationCallback_GH100(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvBool bEnable);
 
 static inline NV_STATUS confComputeEnableKeyRotationCallback_56cd7a(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvBool bEnable) {
@@ -469,6 +505,16 @@ static inline NV_STATUS confComputeEnableKeyRotationSupport_56cd7a(struct OBJGPU
 
 static inline NV_STATUS confComputeEnableKeyRotationSupport_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute) {
     return pConfCompute->__confComputeEnableKeyRotationSupport__(pGpu, pConfCompute);
+}
+
+NV_STATUS confComputeEnableInternalKeyRotationSupport_GH100(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute);
+
+static inline NV_STATUS confComputeEnableInternalKeyRotationSupport_56cd7a(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute) {
+    return NV_OK;
+}
+
+static inline NV_STATUS confComputeEnableInternalKeyRotationSupport_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute) {
+    return pConfCompute->__confComputeEnableInternalKeyRotationSupport__(pGpu, pConfCompute);
 }
 
 NvBool confComputeIsDebugModeEnabled_GH100(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute);
@@ -509,6 +555,26 @@ static inline void confComputeKeyStoreDepositIvMask_b3696a(struct ConfidentialCo
 
 static inline void confComputeKeyStoreDepositIvMask_DISPATCH(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId, void *ivMask) {
     pConfCompute->__confComputeKeyStoreDepositIvMask__(pConfCompute, globalKeyId, ivMask);
+}
+
+NV_STATUS confComputeKeyStoreUpdateKey_GH100(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId);
+
+static inline NV_STATUS confComputeKeyStoreUpdateKey_46f6a7(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS confComputeKeyStoreUpdateKey_DISPATCH(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId) {
+    return pConfCompute->__confComputeKeyStoreUpdateKey__(pConfCompute, globalKeyId);
+}
+
+NvBool confComputeKeyStoreIsValidGlobalKeyId_GH100(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId);
+
+static inline NvBool confComputeKeyStoreIsValidGlobalKeyId_491d52(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId) {
+    return ((NvBool)(0 != 0));
+}
+
+static inline NvBool confComputeKeyStoreIsValidGlobalKeyId_DISPATCH(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId) {
+    return pConfCompute->__confComputeKeyStoreIsValidGlobalKeyId__(pConfCompute, globalKeyId);
 }
 
 NV_STATUS confComputeKeyStoreInit_GH100(struct ConfidentialCompute *pConfCompute);
@@ -559,16 +625,6 @@ static inline void confComputeKeyStoreClearExportMasterKey_b3696a(struct Confide
 
 static inline void confComputeKeyStoreClearExportMasterKey_DISPATCH(struct ConfidentialCompute *pConfCompute) {
     pConfCompute->__confComputeKeyStoreClearExportMasterKey__(pConfCompute);
-}
-
-NV_STATUS confComputeKeyStoreUpdateKey_GH100(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId);
-
-static inline NV_STATUS confComputeKeyStoreUpdateKey_46f6a7(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-static inline NV_STATUS confComputeKeyStoreUpdateKey_DISPATCH(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId) {
-    return pConfCompute->__confComputeKeyStoreUpdateKey__(pConfCompute, globalKeyId);
 }
 
 static inline NV_STATUS confComputeStateLoad_DISPATCH(POBJGPU pGpu, struct ConfidentialCompute *pEngstate, NvU32 arg0) {
@@ -651,26 +707,37 @@ static inline NV_STATUS confComputeGetKeySlotFromGlobalKeyId(struct Confidential
 #define confComputeGetKeySlotFromGlobalKeyId(pConfCompute, globalKeyId, pSlot) confComputeGetKeySlotFromGlobalKeyId_IMPL(pConfCompute, globalKeyId, pSlot)
 #endif //__nvoc_conf_compute_h_disabled
 
-NV_STATUS confComputeCheckAndScheduleKeyRotation_IMPL(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvU32 h2dKey, NvU32 d2hKey);
+NV_STATUS confComputeCheckAndPerformKeyRotation_IMPL(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvU32 h2dKey, NvU32 d2hKey);
 
 #ifdef __nvoc_conf_compute_h_disabled
-static inline NV_STATUS confComputeCheckAndScheduleKeyRotation(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvU32 h2dKey, NvU32 d2hKey) {
+static inline NV_STATUS confComputeCheckAndPerformKeyRotation(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvU32 h2dKey, NvU32 d2hKey) {
     NV_ASSERT_FAILED_PRECOMP("ConfidentialCompute was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_conf_compute_h_disabled
-#define confComputeCheckAndScheduleKeyRotation(pGpu, pConfCompute, h2dKey, d2hKey) confComputeCheckAndScheduleKeyRotation_IMPL(pGpu, pConfCompute, h2dKey, d2hKey)
+#define confComputeCheckAndPerformKeyRotation(pGpu, pConfCompute, h2dKey, d2hKey) confComputeCheckAndPerformKeyRotation_IMPL(pGpu, pConfCompute, h2dKey, d2hKey)
 #endif //__nvoc_conf_compute_h_disabled
 
-NV_STATUS confComputeScheduleKeyRotationWorkItem_IMPL(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvU32 h2dKey, NvU32 d2hKey);
+NV_STATUS confComputePerformKeyRotation_IMPL(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvU32 h2dKey, NvU32 d2hKey, NvBool bWorkItem);
 
 #ifdef __nvoc_conf_compute_h_disabled
-static inline NV_STATUS confComputeScheduleKeyRotationWorkItem(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvU32 h2dKey, NvU32 d2hKey) {
+static inline NV_STATUS confComputePerformKeyRotation(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvU32 h2dKey, NvU32 d2hKey, NvBool bWorkItem) {
     NV_ASSERT_FAILED_PRECOMP("ConfidentialCompute was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_conf_compute_h_disabled
-#define confComputeScheduleKeyRotationWorkItem(pGpu, pConfCompute, h2dKey, d2hKey) confComputeScheduleKeyRotationWorkItem_IMPL(pGpu, pConfCompute, h2dKey, d2hKey)
+#define confComputePerformKeyRotation(pGpu, pConfCompute, h2dKey, d2hKey, bWorkItem) confComputePerformKeyRotation_IMPL(pGpu, pConfCompute, h2dKey, d2hKey, bWorkItem)
+#endif //__nvoc_conf_compute_h_disabled
+
+NV_STATUS confComputeForceKeyRotation_IMPL(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvU32 h2dKey, NvU32 d2hKey);
+
+#ifdef __nvoc_conf_compute_h_disabled
+static inline NV_STATUS confComputeForceKeyRotation(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvU32 h2dKey, NvU32 d2hKey) {
+    NV_ASSERT_FAILED_PRECOMP("ConfidentialCompute was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_conf_compute_h_disabled
+#define confComputeForceKeyRotation(pGpu, pConfCompute, h2dKey, d2hKey) confComputeForceKeyRotation_IMPL(pGpu, pConfCompute, h2dKey, d2hKey)
 #endif //__nvoc_conf_compute_h_disabled
 
 NV_STATUS confComputeSetKeyRotationStatus_IMPL(struct ConfidentialCompute *pConfCompute, NvU32 globalKey, KEY_ROTATION_STATUS status);
@@ -716,6 +783,39 @@ static inline NV_STATUS confComputeUpdateFreedChannelStats(struct OBJGPU *pGpu, 
 #define confComputeUpdateFreedChannelStats(pGpu, pConfCompute, pKernelChannel) confComputeUpdateFreedChannelStats_IMPL(pGpu, pConfCompute, pKernelChannel)
 #endif //__nvoc_conf_compute_h_disabled
 
+NV_STATUS confComputeStartKeyRotationTimer_IMPL(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvU32 h2dKey);
+
+#ifdef __nvoc_conf_compute_h_disabled
+static inline NV_STATUS confComputeStartKeyRotationTimer(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvU32 h2dKey) {
+    NV_ASSERT_FAILED_PRECOMP("ConfidentialCompute was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_conf_compute_h_disabled
+#define confComputeStartKeyRotationTimer(pGpu, pConfCompute, h2dKey) confComputeStartKeyRotationTimer_IMPL(pGpu, pConfCompute, h2dKey)
+#endif //__nvoc_conf_compute_h_disabled
+
+NV_STATUS confComputeStopKeyRotationTimer_IMPL(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvU32 h2dKey);
+
+#ifdef __nvoc_conf_compute_h_disabled
+static inline NV_STATUS confComputeStopKeyRotationTimer(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvU32 h2dKey) {
+    NV_ASSERT_FAILED_PRECOMP("ConfidentialCompute was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_conf_compute_h_disabled
+#define confComputeStopKeyRotationTimer(pGpu, pConfCompute, h2dKey) confComputeStopKeyRotationTimer_IMPL(pGpu, pConfCompute, h2dKey)
+#endif //__nvoc_conf_compute_h_disabled
+
+NvBool confComputeIsUvmKeyRotationPending_IMPL(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute);
+
+#ifdef __nvoc_conf_compute_h_disabled
+static inline NvBool confComputeIsUvmKeyRotationPending(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute) {
+    NV_ASSERT_FAILED_PRECOMP("ConfidentialCompute was disabled!");
+    return NV_FALSE;
+}
+#else //__nvoc_conf_compute_h_disabled
+#define confComputeIsUvmKeyRotationPending(pGpu, pConfCompute) confComputeIsUvmKeyRotationPending_IMPL(pGpu, pConfCompute)
+#endif //__nvoc_conf_compute_h_disabled
+
 NV_STATUS confComputeSetKeyRotationThreshold_IMPL(struct ConfidentialCompute *pConfCompute, NvU64 attackerAdvantage);
 
 #ifdef __nvoc_conf_compute_h_disabled
@@ -749,6 +849,9 @@ static inline NvBool confComputeIsLowerThresholdCrossed(struct ConfidentialCompu
 #define confComputeIsLowerThresholdCrossed(pConfCompute, pStatsInfo) confComputeIsLowerThresholdCrossed_IMPL(pConfCompute, pStatsInfo)
 #endif //__nvoc_conf_compute_h_disabled
 
+NvBool confComputeIsGivenThresholdCrossed_IMPL(const CC_CRYPTOBUNDLE_STATS *pStatsInfo, NvU64 threshold, NvBool bEncrypt);
+
+#define confComputeIsGivenThresholdCrossed(pStatsInfo, threshold, bEncrypt) confComputeIsGivenThresholdCrossed_IMPL(pStatsInfo, threshold, bEncrypt)
 #undef PRIVATE_FIELD
 
 #ifndef NVOC_CONF_COMPUTE_H_PRIVATE_ACCESS_ALLOWED
@@ -781,22 +884,6 @@ void NVOC_PRIVATE_FUNCTION(confComputeKeyStoreClearExportMasterKey)(struct Confi
 
 #undef confComputeKeyStoreClearExportMasterKey_HAL
 void NVOC_PRIVATE_FUNCTION(confComputeKeyStoreClearExportMasterKey_HAL)(struct ConfidentialCompute *pConfCompute);
-
-#undef confComputeKeyStoreUpdateKey
-NV_STATUS NVOC_PRIVATE_FUNCTION(confComputeKeyStoreUpdateKey)(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId);
-
-#undef confComputeKeyStoreUpdateKey_HAL
-NV_STATUS NVOC_PRIVATE_FUNCTION(confComputeKeyStoreUpdateKey_HAL)(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId);
-
-#ifndef __nvoc_conf_compute_h_disabled
-#undef confComputeIsUpperThresholdCrossed
-NvBool NVOC_PRIVATE_FUNCTION(confComputeIsUpperThresholdCrossed)(struct ConfidentialCompute *pConfCompute, const KEY_ROTATION_STATS_INFO *pStatsInfo);
-#endif //__nvoc_conf_compute_h_disabled
-
-#ifndef __nvoc_conf_compute_h_disabled
-#undef confComputeIsLowerThresholdCrossed
-NvBool NVOC_PRIVATE_FUNCTION(confComputeIsLowerThresholdCrossed)(struct ConfidentialCompute *pConfCompute, const KEY_ROTATION_STATS_INFO *pStatsInfo);
-#endif //__nvoc_conf_compute_h_disabled
 
 #endif // NVOC_CONF_COMPUTE_H_PRIVATE_ACCESS_ALLOWED
 

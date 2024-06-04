@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -99,8 +99,10 @@ confComputeKeyStoreInit_GH100(ConfidentialCompute *pConfCompute)
     }
 
     // SEC2 key slots are a mix of encryption / decryption with channel counter and HMAC.
-    ct_assert(CC_KEYSPACE_SEC2_SIZE == 4);
+    ct_assert(CC_KEYSPACE_SEC2_SIZE == 6);
 
+    (*pKeyStore)[index++].type = CRYPT_COUNTER;
+    (*pKeyStore)[index++].type = HMAC_COUNTER;
     (*pKeyStore)[index++].type = CRYPT_COUNTER;
     (*pKeyStore)[index++].type = HMAC_COUNTER;
     (*pKeyStore)[index++].type = CRYPT_COUNTER;
@@ -150,7 +152,8 @@ confComputeKeyStoreDeriveKey_GH100(ConfidentialCompute *pConfCompute, NvU32 glob
     NV_PRINTF(LEVEL_INFO, "Deriving key for global key ID %x.\n", globalKeyId);
 
     if ((globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_USER)) ||
-        (globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_KERN)))
+        (globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_KERN)) ||
+        (globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER)))
     {
         pKey = (uint8_t *)(*pKeyStore)[slotIndex].hmacBundle.key;
         keySize = sizeof((*pKeyStore)[slotIndex].hmacBundle.key);
@@ -353,12 +356,12 @@ confComputeKeyStoreRetrieveViaKeyId_GH100
                 }
                 else
                 {
-                    portMemCopy(keyMaterialBundle->encryptBundle.key,
-                                sizeof(keyMaterialBundle->encryptBundle.key),
+                    portMemCopy(keyMaterialBundle->decryptBundle.key,
+                                sizeof(keyMaterialBundle->decryptBundle.key),
                                 (*pKeyStore)[slotNumber + 1].cryptBundle.key,
                                 sizeof((*pKeyStore)[slotNumber + 1].cryptBundle.key));
-                    portMemCopy(keyMaterialBundle->encryptBundle.ivMask,
-                                sizeof(keyMaterialBundle->encryptBundle.ivMask),
+                    portMemCopy(keyMaterialBundle->decryptBundle.ivMask,
+                                sizeof(keyMaterialBundle->decryptBundle.ivMask),
                                 (*pKeyStore)[slotNumber + 1].cryptBundle.ivMask,
                                 sizeof((*pKeyStore)[slotNumber + 1].cryptBundle.ivMask));
                 }
@@ -399,7 +402,8 @@ confComputeKeyStoreUpdateKey_GH100(ConfidentialCompute *pConfCompute, NvU32 glob
     pKeyStore = pConfCompute->m_keySlot;
 
     if ((globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_USER)) ||
-        (globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_KERN)))
+        (globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_KERN)) ||
+        (globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER)))
     {
         pKey = (uint8_t *)(*pKeyStore)[slotIndex].hmacBundle.key;
         keySize = sizeof((*pKeyStore)[slotIndex].hmacBundle.key);
@@ -420,7 +424,7 @@ confComputeKeyStoreUpdateKey_GH100(ConfidentialCompute *pConfCompute, NvU32 glob
                                     (const uint8_t *)(CC_GKEYID_GET_STR(globalKeyId)),
                                     (size_t)portStringLength(CC_GKEYID_GET_STR(globalKeyId)),
                                     pKey,
-                                    keySize));
+                                    keySize))
     {
         return NV_ERR_FATAL_ERROR;
     }
@@ -490,6 +494,18 @@ confComputeGetKeyPairByChannel_GH100
         *pD2HKey = CC_GKEYID_GEN(keySpace, ld2hKeyId);
     }
     return NV_OK;
+}
+
+NvBool
+confComputeKeyStoreIsValidGlobalKeyId_GH100
+(
+    ConfidentialCompute *pConfCompute,
+    NvU32                globalKeyId
+)
+{
+    const char *globalKeyIdString = CC_GKEYID_GET_STR(globalKeyId);
+
+    return (globalKeyIdString != NULL);
 }
 
 //
@@ -565,13 +581,18 @@ getKeyIdSec2
     {
         if ((rotateOperation == ROTATE_IV_ENCRYPT) || (rotateOperation == ROTATE_IV_ALL_VALID))
         {
-            *keyId = CC_LKEYID_CPU_SEC2_DATA_KERN;
+            if (pKernelChannel->bUseScrubKey)
+                *keyId = CC_LKEYID_CPU_SEC2_DATA_SCRUBBER;
+            else
+                *keyId = CC_LKEYID_CPU_SEC2_DATA_KERN;
         }
         else
         {
-            *keyId = CC_LKEYID_CPU_SEC2_HMAC_KERN;
+            if (pKernelChannel->bUseScrubKey)
+                *keyId = CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER;
+            else
+                *keyId = CC_LKEYID_CPU_SEC2_HMAC_KERN;
         }
-
         return NV_OK;
     }
 

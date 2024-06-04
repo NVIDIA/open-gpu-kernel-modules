@@ -37,13 +37,11 @@ typedef enum _HYPERVISOR_TYPE
     OS_HYPERVISOR_UNKNOWN
 } HYPERVISOR_TYPE;
 
-#define CMD_VGPU_VFIO_WAKE_WAIT_QUEUE         0
-#define CMD_VGPU_VFIO_INJECT_INTERRUPT        1
-#define CMD_VGPU_VFIO_REGISTER_MDEV           2
-#define CMD_VGPU_VFIO_PRESENT                 3
-#define CMD_VFIO_PCI_CORE_PRESENT             4
+#define CMD_VFIO_WAKE_REMOVE_GPU              1
+#define CMD_VGPU_VFIO_PRESENT                 2
+#define CMD_VFIO_PCI_CORE_PRESENT             3
 
-#define MAX_VF_COUNT_PER_GPU 64
+#define MAX_VF_COUNT_PER_GPU                  64
 
 typedef enum _VGPU_TYPE_INFO
 {
@@ -54,17 +52,11 @@ typedef enum _VGPU_TYPE_INFO
 
 typedef struct
 {
-    void  *vgpuVfioRef;
-    void  *waitQueue;
     void  *nv;
-    NvU32 *vgpuTypeIds;
-    NvU8 **vgpuNames;
-    NvU32  numVgpuTypes;
-    NvU32  domain;
-    NvU8   bus;
-    NvU8   slot;
-    NvU8   function;
-    NvBool is_virtfn;
+    NvU32 domain;
+    NvU32 bus;
+    NvU32 device;
+    NvU32 return_status;
 } vgpu_vfio_info;
 
 typedef struct

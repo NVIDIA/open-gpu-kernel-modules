@@ -96,7 +96,8 @@ const struct
     {NV_DP_REGKEY_REASSESS_MAX_LINK,                &dpRegkeyDatabase.bReassessMaxLink,                DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED,      &dpRegkeyDatabase.bMSTPCONCapsReadDisabled,        DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_FORCE_DSC_ON_SINK,                &dpRegkeyDatabase.bForceDscOnSink,                 DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_ENABLE_SKIP_DPCD_READS_WAR,       &dpRegkeyDatabase.bSkipFakeDeviceDpcdAccess,       DP_REG_VAL_BOOL}
+    {NV_DP_REGKEY_ENABLE_SKIP_DPCD_READS_WAR,       &dpRegkeyDatabase.bSkipFakeDeviceDpcdAccess,       DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_FLUSH_TIMESLOT_INFO_WHEN_DIRTY,   &dpRegkeyDatabase.bFlushTimeslotWhenDirty,         DP_REG_VAL_BOOL}
 };
 
 EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :

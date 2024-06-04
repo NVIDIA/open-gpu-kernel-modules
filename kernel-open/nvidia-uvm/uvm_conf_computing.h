@@ -87,9 +87,9 @@ typedef struct
     // a free buffer.
     uvm_tracker_t tracker;
 
-    // When the DMA buffer is used as the destination of a GPU encryption, SEC2
-    // writes the authentication tag here. Later when the buffer is decrypted
-    // on the CPU the authentication tag is used again (read) for CSL to verify
+    // When the DMA buffer is used as the destination of a GPU encryption, the
+    // engine (CE or SEC2) writes the authentication tag here. When the buffer
+    // is decrypted on the CPU the authentication tag is used by CSL to verify
     // the authenticity. The allocation is big enough for one authentication
     // tag per PAGE_SIZE page in the alloc buffer.
     uvm_mem_t *auth_tag;
@@ -98,7 +98,12 @@ typedef struct
     // to the authentication tag. The allocation is big enough for one IV per
     // PAGE_SIZE page in the alloc buffer. The granularity between the decrypt
     // IV and authentication tag must match.
-    UvmCslIv decrypt_iv[(UVM_CONF_COMPUTING_DMA_BUFFER_SIZE / PAGE_SIZE)];
+    UvmCslIv decrypt_iv[UVM_CONF_COMPUTING_DMA_BUFFER_SIZE / PAGE_SIZE];
+
+    // When the DMA buffer is used as the destination of a GPU encryption, the
+    // key version used during GPU encryption of each PAGE_SIZE page can be
+    // saved here, so CPU decryption uses the correct decryption key.
+    NvU32 key_version[UVM_CONF_COMPUTING_DMA_BUFFER_SIZE / PAGE_SIZE];
 
     // Bitmap of the encrypted pages in the backing allocation
     uvm_page_mask_t encrypted_page_mask;
@@ -147,7 +152,7 @@ NV_STATUS uvm_conf_computing_gpu_init(uvm_gpu_t *gpu);
 void uvm_conf_computing_gpu_deinit(uvm_gpu_t *gpu);
 
 // Logs encryption information from the GPU and returns the IV.
-void uvm_conf_computing_log_gpu_encryption(uvm_channel_t *channel, UvmCslIv *iv);
+void uvm_conf_computing_log_gpu_encryption(uvm_channel_t *channel, size_t size, UvmCslIv *iv);
 
 // Acquires next CPU encryption IV and returns it.
 void uvm_conf_computing_acquire_encryption_iv(uvm_channel_t *channel, UvmCslIv *iv);
@@ -167,10 +172,14 @@ void uvm_conf_computing_cpu_encrypt(uvm_channel_t *channel,
 // CPU side decryption helper. Decrypts data from src_cipher and writes the
 // plain text in dst_plain. src_cipher and dst_plain can't overlap. IV obtained
 // from uvm_conf_computing_log_gpu_encryption() needs to be be passed to src_iv.
+//
+// The caller must indicate which key to use for decryption by passing the
+// appropiate key version number.
 NV_STATUS uvm_conf_computing_cpu_decrypt(uvm_channel_t *channel,
                                          void *dst_plain,
                                          const void *src_cipher,
                                          const UvmCslIv *src_iv,
+                                         NvU32 key_version,
                                          size_t size,
                                          const void *auth_tag_buffer);
 
@@ -191,12 +200,12 @@ NV_STATUS uvm_conf_computing_fault_decrypt(uvm_parent_gpu_t *parent_gpu,
                                            NvU8 valid);
 
 // Increment the CPU-side decrypt IV of the CSL context associated with
-// replayable faults. The function is a no-op if the given increment is zero.
+// replayable faults.
 //
 // The IV associated with a fault CSL context is a 64-bit counter.
 //
 // Locking: this function must be invoked while holding the replayable ISR lock.
-void uvm_conf_computing_fault_increment_decrypt_iv(uvm_parent_gpu_t *parent_gpu, NvU64 increment);
+void uvm_conf_computing_fault_increment_decrypt_iv(uvm_parent_gpu_t *parent_gpu);
 
 // Query the number of remaining messages before IV needs to be rotated.
 void uvm_conf_computing_query_message_pools(uvm_channel_t *channel,
@@ -214,4 +223,71 @@ NV_STATUS uvm_conf_computing_maybe_rotate_channel_ivs_retry_busy(uvm_channel_t *
 // Check if there are fewer than 'limit' messages available in either direction
 // and rotate if not.
 NV_STATUS uvm_conf_computing_rotate_channel_ivs_below_limit(uvm_channel_t *channel, NvU64 limit, bool retry_if_busy);
+
+// Rotate the engine key associated with the given channel pool.
+NV_STATUS uvm_conf_computing_rotate_pool_key(uvm_channel_pool_t *pool);
+
+// Returns true if key rotation is allowed in the channel pool.
+bool uvm_conf_computing_is_key_rotation_enabled_in_pool(uvm_channel_pool_t *pool);
+
+// Returns true if key rotation is pending in the channel pool.
+bool uvm_conf_computing_is_key_rotation_pending_in_pool(uvm_channel_pool_t *pool);
+
+// Enable/disable key rotation in the passed GPU. Note that UVM enablement is
+// dependent on RM enablement: key rotation may still be disabled upon calling
+// this function, if it is disabled in RM. On the other hand, key rotation can
+// be disabled in UVM, even if it is enabled in RM.
+//
+// Enablement/Disablement affects only kernel key rotation in keys owned by UVM.
+// It doesn't affect user key rotation (CUDA, Video...), nor it affects RM
+// kernel key rotation.
+void uvm_conf_computing_enable_key_rotation(uvm_gpu_t *gpu);
+void uvm_conf_computing_disable_key_rotation(uvm_gpu_t *gpu);
+
+// Returns true if key rotation is enabled on UVM in the given GPU. Key rotation
+// can be enabled on the GPU but disabled on some of GPU engines (LCEs or SEC2),
+// see uvm_conf_computing_is_key_rotation_enabled_in_pool.
+bool uvm_conf_computing_is_key_rotation_enabled(uvm_gpu_t *gpu);
+
+// Launch a synchronous, encrypted copy between CPU and GPU.
+//
+// The maximum copy size allowed is UVM_CONF_COMPUTING_DMA_BUFFER_SIZE.
+//
+// The source CPU buffer pointed by src_plain contains the unencrypted (plain
+// text) contents; the function internally performs a CPU-side encryption step
+// before launching the GPU-side CE decryption. The source buffer can be in
+// protected or unprotected sysmem, while the destination buffer must be in
+// protected vidmem.
+//
+// The input tracker, if not NULL, is internally acquired by the push
+// responsible for the encrypted copy.
+__attribute__ ((format(printf, 6, 7)))
+NV_STATUS uvm_conf_computing_util_memcopy_cpu_to_gpu(uvm_gpu_t *gpu,
+                                                     uvm_gpu_address_t dst_gpu_address,
+                                                     void *src_plain,
+                                                     size_t size,
+                                                     uvm_tracker_t *tracker,
+                                                     const char *format,
+                                                     ...);
+
+// Launch a synchronous, encrypted copy between CPU and GPU.
+//
+// The maximum copy size allowed is UVM_CONF_COMPUTING_DMA_BUFFER_SIZE.
+//
+// The source CPU buffer pointed by src_plain contains the unencrypted (plain
+// text) contents; the function internally performs a CPU-side encryption step
+// before launching the GPU-side CE decryption. The source buffer can be in
+// protected or unprotected sysmem, while the destination buffer must be in
+// protected vidmem.
+//
+// The input tracker, if not NULL, is internally acquired by the push
+// responsible for the encrypted copy.
+__attribute__ ((format(printf, 6, 7)))
+NV_STATUS uvm_conf_computing_util_memcopy_gpu_to_cpu(uvm_gpu_t *gpu,
+                                                     void *dst_plain,
+                                                     uvm_gpu_address_t src_gpu_address,
+                                                     size_t size,
+                                                     uvm_tracker_t *tracker,
+                                                     const char *format,
+                                                     ...);
 #endif // __UVM_CONF_COMPUTING_H__

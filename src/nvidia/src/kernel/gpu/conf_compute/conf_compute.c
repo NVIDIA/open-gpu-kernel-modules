@@ -50,7 +50,8 @@
 static NV_STATUS _confComputeInitRegistryOverrides(OBJGPU *, ConfidentialCompute*);
 static NvU32 _confComputeGetKeyspaceSize(NvU16 keyspace);
 
-#define KEY_ROTATION_THRESHOLD_DELTA 20000000ull
+#define KEY_ROTATION_THRESHOLD_DELTA 100000000ull
+#define KEY_ROTATION_TIMEOUT         5
 
 NV_STATUS
 confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
@@ -85,6 +86,15 @@ confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
         pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_DEVTOOLS_MODE_ENABLED, NV_TRUE);
     }
 
+    if (gpuIsProtectedPcieEnabledInHw_HAL(pGpu))
+    {
+        NV_PRINTF(LEVEL_INFO, "Enabling protected PCIe in secure PRI\n");
+        // Internally, RM must use CC code paths for protected pcie as well
+        pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENABLED, NV_TRUE);
+        pConfCompute->setProperty(pConfCompute,
+            PDB_PROP_CONFCOMPUTE_MULTI_GPU_PROTECTED_PCIE_MODE_ENABLED, NV_TRUE);
+    }
+
     status = _confComputeInitRegistryOverrides(pGpu, pConfCompute);
     if (status != NV_OK)
     {
@@ -92,7 +102,8 @@ confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
         return status;
     }
 
-    if ((sysGetStaticConfig(pSys)->bOsCCEnabled) && !gpuIsCCEnabledInHw_HAL(pGpu))
+    if ((sysGetStaticConfig(pSys)->bOsCCEnabled) && !gpuIsCCEnabledInHw_HAL(pGpu) &&
+        !gpuIsProtectedPcieEnabledInHw_HAL(pGpu))
     {
         if (pGpu->getProperty(pGpu, PDB_PROP_GPU_CC_FEATURE_CAPABLE))
         {
@@ -144,34 +155,25 @@ confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
             NV_ASSERT(0);
             return NV_ERR_INVALID_OPERATION;
         }
-
-        if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_CC_MULTI_GPU_MODE, &data) == NV_OK) &&
-            (data == NV_REG_STR_RM_CC_MULTI_GPU_MODE_PROTECTED_PCIE))
-        {
-            NV_PRINTF(LEVEL_INFO, "Enabling protected PCIe\n");
-            pConfCompute->setProperty(pConfCompute,
-                 PDB_PROP_CONFCOMPUTE_MULTI_GPU_PROTECTED_PCIE_MODE_ENABLED, NV_TRUE);
-            pConfCompute->gspProxyRegkeys |=
-                DRF_DEF(GSP, _PROXY_REG, _CONF_COMPUTE_MULTI_GPU_MODE, _PROTECTED_PCIE);
-        }
     }
     // init key rotation state
     pConfCompute->attackerAdvantage = SECURITY_POLICY_ATTACKER_ADVANTAGE_DEFAULT;
-    pConfCompute->keyRotationLimitDelta = KEY_ROTATION_THRESHOLD_DELTA;
+    pConfCompute->keyRotationThresholdDelta = KEY_ROTATION_THRESHOLD_DELTA;
+    pConfCompute->keyRotationTimeout = KEY_ROTATION_TIMEOUT;
     NV_ASSERT_OK_OR_RETURN(confComputeSetKeyRotationThreshold(pConfCompute,
                                                               pConfCompute->attackerAdvantage));
 
     for (NvU32 i = 0; i < CC_KEYSPACE_TOTAL_SIZE; i++)
     {
         pConfCompute->keyRotationState[i] = KEY_ROTATION_STATUS_IDLE;
-        pConfCompute->ppKeyRotationTimer[i] = NULL;
+        pConfCompute->keyRotationTimeoutInfo[i].pTimer = NULL;
+        pConfCompute->keyRotationCount[i] = 0;
     }
     portMemSet(pConfCompute->aggregateStats, 0, sizeof(pConfCompute->aggregateStats));
     portMemSet(pConfCompute->freedChannelAggregateStats, 0, sizeof(pConfCompute->freedChannelAggregateStats));
-    pConfCompute->keyRotationCallbackCount = 0;
-    pConfCompute->keyRotationChannelRefCount = 0;
     pConfCompute->keyRotationEnableMask = 0;
     NV_ASSERT_OK_OR_RETURN(confComputeEnableKeyRotationSupport_HAL(pGpu, pConfCompute));
+    NV_ASSERT_OK_OR_RETURN(confComputeEnableInternalKeyRotationSupport_HAL(pGpu, pConfCompute));
 
     return NV_OK;
 }
@@ -217,6 +219,18 @@ _confComputeInitRegistryOverrides
             pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_DEVTOOLS_MODE_ENABLED, NV_TRUE);
             pConfCompute->gspProxyRegkeys |= DRF_DEF(GSP, _PROXY_REG, _CONF_COMPUTE_DEV_MODE, _ENABLE);
         }
+    }
+
+    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_CC_MULTI_GPU_MODE, &data) == NV_OK) &&
+        (data == NV_REG_STR_RM_CC_MULTI_GPU_MODE_PROTECTED_PCIE))
+    {
+        NV_PRINTF(LEVEL_INFO, "Enabling protected PCIe\n");
+        // Internally, RM must use CC code paths for protected pcie as well
+        pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENABLED, NV_TRUE);
+        pConfCompute->setProperty(pConfCompute,
+             PDB_PROP_CONFCOMPUTE_MULTI_GPU_PROTECTED_PCIE_MODE_ENABLED, NV_TRUE);
+        pConfCompute->gspProxyRegkeys |=
+            DRF_DEF(GSP, _PROXY_REG, _CONF_COMPUTE_MULTI_GPU_MODE, _PROTECTED_PCIE);
     }
 
     if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENABLED))
@@ -476,7 +490,8 @@ confComputeStatePostLoad_IMPL
         }
     }
 
-    if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED))
+    if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED) &&
+        pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_ENABLED))
     {
         status = confComputeEnableKeyRotationCallback_HAL(pGpu, pConfCompute, NV_TRUE);
         if (status != NV_OK)
@@ -506,16 +521,18 @@ confComputeStatePreUnload_KERNEL
 {
     NV_STATUS status = NV_OK;
     NV_STATUS tempStatus = NV_OK;
-    if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED))
+    if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED) &&
+        pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_ENABLED))
     {
         OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
         for (NvU32 i = 0; i < CC_KEYSPACE_TOTAL_SIZE; i++)
         {
-            if (pConfCompute->ppKeyRotationTimer[i] != NULL)
+            if (pConfCompute->keyRotationTimeoutInfo[i].pTimer != NULL)
             {
-                tmrEventCancel(pTmr, pConfCompute->ppKeyRotationTimer[i]);
-                portMemFree(pConfCompute->ppKeyRotationTimer[i]->pUserData);
-                tmrEventDestroy(pTmr, pConfCompute->ppKeyRotationTimer[i]);
+                tmrEventCancel(pTmr, pConfCompute->keyRotationTimeoutInfo[i].pTimer);
+                portMemFree(pConfCompute->keyRotationTimeoutInfo[i].pTimer->pUserData);
+                tmrEventDestroy(pTmr, pConfCompute->keyRotationTimeoutInfo[i].pTimer);
+                pConfCompute->keyRotationTimeoutInfo[i].pTimer = NULL;
             }
         }
         tempStatus = confComputeEnableKeyRotationCallback_HAL(pGpu, pConfCompute, NV_FALSE);
@@ -684,8 +701,11 @@ confComputeGetNextChannelForKey_IMPL
 )
 {
     NV_ASSERT_OR_RETURN(ppKernelChannel != NULL, NV_ERR_INVALID_ARGUMENT);
+    *ppKernelChannel = NULL;
+
     KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
     NvBool bKernelPriv = confComputeGlobalKeyIsKernelPriv_HAL(pConfCompute, globalKey);
+    NvBool bUvmKey = confComputeGlobalKeyIsUvmKey_HAL(pConfCompute, globalKey);
     KernelChannel *pKernelChannel = NULL;
     while(kfifoGetNextKernelChannel(pGpu, pKernelFifo, pIt, &pKernelChannel) == NV_OK)
     {
@@ -697,8 +717,28 @@ confComputeGetNextChannelForKey_IMPL
 
         if (!(bKernelPriv ^ kchannelCheckIsKernel(pKernelChannel)))
         {
-           *ppKernelChannel = pKernelChannel;
-            return NV_OK;
+            if (bKernelPriv)
+            {
+                if (bUvmKey && !pKernelChannel->bUseScrubKey)
+                {
+                    // return all kern channels that don't use scrub key
+                   *ppKernelChannel = pKernelChannel;
+                }
+                else if (!bUvmKey && pKernelChannel->bUseScrubKey)
+                {
+                    // return all kern channels that use scrub key
+                   *ppKernelChannel = pKernelChannel;
+                }
+            }
+            else
+            {
+                // return all user channels
+               *ppKernelChannel = pKernelChannel;
+            }
+
+            // if we found a channel then return early
+            if (*ppKernelChannel != NULL)
+                return NV_OK;
         }
     }
     return NV_ERR_OBJECT_NOT_FOUND;

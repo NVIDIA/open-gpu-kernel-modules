@@ -186,6 +186,7 @@ struct KernelBif {
     NV_STATUS (*__kbifInit__)(struct OBJGPU *, struct KernelBif *);
     NvU32 (*__kbifGetValidEnginesToReset__)(struct OBJGPU *, struct KernelBif *);
     NvU32 (*__kbifGetValidDeviceEnginesToReset__)(struct OBJGPU *, struct KernelBif *);
+    NV_STATUS (*__kbifGetMigrationBandwidth__)(struct OBJGPU *, struct KernelBif *, NvU32 *);
     NvU32 (*__kbifGetEccCounts__)(struct OBJGPU *, struct KernelBif *);
     NV_STATUS (*__kbifStatePreLoad__)(POBJGPU, struct KernelBif *, NvU32);
     NV_STATUS (*__kbifStatePostUnload__)(POBJGPU, struct KernelBif *, NvU32);
@@ -415,6 +416,8 @@ NV_STATUS __nvoc_objCreate_KernelBif(KernelBif**, Dynamic*, NvU32);
 #define kbifGetValidEnginesToReset_HAL(pGpu, pKernelBif) kbifGetValidEnginesToReset_DISPATCH(pGpu, pKernelBif)
 #define kbifGetValidDeviceEnginesToReset(pGpu, pKernelBif) kbifGetValidDeviceEnginesToReset_DISPATCH(pGpu, pKernelBif)
 #define kbifGetValidDeviceEnginesToReset_HAL(pGpu, pKernelBif) kbifGetValidDeviceEnginesToReset_DISPATCH(pGpu, pKernelBif)
+#define kbifGetMigrationBandwidth(pGpu, pKernelBif, pBandwidth) kbifGetMigrationBandwidth_DISPATCH(pGpu, pKernelBif, pBandwidth)
+#define kbifGetMigrationBandwidth_HAL(pGpu, pKernelBif, pBandwidth) kbifGetMigrationBandwidth_DISPATCH(pGpu, pKernelBif, pBandwidth)
 #define kbifGetEccCounts(pGpu, pKernelBif) kbifGetEccCounts_DISPATCH(pGpu, pKernelBif)
 #define kbifGetEccCounts_HAL(pGpu, pKernelBif) kbifGetEccCounts_DISPATCH(pGpu, pKernelBif)
 #define kbifStatePreLoad(pGpu, pEngstate, arg0) kbifStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
@@ -975,6 +978,14 @@ static inline NvU32 kbifGetValidDeviceEnginesToReset_DISPATCH(struct OBJGPU *pGp
     return pKernelBif->__kbifGetValidDeviceEnginesToReset__(pGpu, pKernelBif);
 }
 
+NV_STATUS kbifGetMigrationBandwidth_GA100(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU32 *pBandwidth);
+
+NV_STATUS kbifGetMigrationBandwidth_GM107(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU32 *pBandwidth);
+
+static inline NV_STATUS kbifGetMigrationBandwidth_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU32 *pBandwidth) {
+    return pKernelBif->__kbifGetMigrationBandwidth__(pGpu, pKernelBif, pBandwidth);
+}
+
 NvU32 kbifGetEccCounts_GH100(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
 
 static inline NvU32 kbifGetEccCounts_4a4dee(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
@@ -1138,6 +1149,17 @@ static inline NvU32 kbifGetGpuL1PmSubstatesCtrl1(struct OBJGPU *pGpu, struct Ker
 }
 #else //__nvoc_kernel_bif_h_disabled
 #define kbifGetGpuL1PmSubstatesCtrl1(pGpu, pKernelBif) kbifGetGpuL1PmSubstatesCtrl1_IMPL(pGpu, pKernelBif)
+#endif //__nvoc_kernel_bif_h_disabled
+
+NV_STATUS kbifGetPciLinkMaxSpeedByPciGenInfo_IMPL(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU32 pciLinkGenInfo, NvU32 *pciLinkMaxSpeed);
+
+#ifdef __nvoc_kernel_bif_h_disabled
+static inline NV_STATUS kbifGetPciLinkMaxSpeedByPciGenInfo(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU32 pciLinkGenInfo, NvU32 *pciLinkMaxSpeed) {
+    NV_ASSERT_FAILED_PRECOMP("KernelBif was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kernel_bif_h_disabled
+#define kbifGetPciLinkMaxSpeedByPciGenInfo(pGpu, pKernelBif, pciLinkGenInfo, pciLinkMaxSpeed) kbifGetPciLinkMaxSpeedByPciGenInfo_IMPL(pGpu, pKernelBif, pciLinkGenInfo, pciLinkMaxSpeed)
 #endif //__nvoc_kernel_bif_h_disabled
 
 NvBool kbifIsPciBusFamily_IMPL(struct KernelBif *pKernelBif);

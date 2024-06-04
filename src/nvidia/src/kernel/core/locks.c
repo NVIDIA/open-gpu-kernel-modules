@@ -1570,6 +1570,7 @@ static void _gpuLocksReleaseHandleDeferredWork(NvU32 gpuMask)
         // This WAR should be removed once per-GPU locks are implemented.
         //
         osDeferredIsr(pGpu);
+        osRunQueued1HzCallbacksUnderLock(pGpu);
     }
 }
 

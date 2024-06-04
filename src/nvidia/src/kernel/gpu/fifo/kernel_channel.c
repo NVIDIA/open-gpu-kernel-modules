@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -705,6 +705,7 @@ kchannelConstruct_IMPL
     pKernelChannel->runlistId = kfifoGetDefaultRunlist_HAL(pGpu, pKernelFifo, pKernelChannel->engineType);
 
     pKernelChannel->bCCSecureChannel = FLD_TEST_DRF(OS04, _FLAGS, _CC_SECURE, _TRUE, flags);
+    pKernelChannel->bUseScrubKey = FLD_TEST_DRF(OS04, _FLAGS, _CHANNEL_SKIP_SCRUBBER, _TRUE, pChannelGpfifoParams->flags);
     if (pKernelChannel->bCCSecureChannel)
     {
         ConfidentialCompute* pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
@@ -723,7 +724,7 @@ kchannelConstruct_IMPL
             NV_ASSERT_OK_OR_GOTO(status,
                                  confComputeGetKeyPairByChannel(pGpu, pConfCompute, pKernelChannel, &h2dKey, NULL),
                                  cleanup);
-            NV_ASSERT_OK_OR_GOTO(status, 
+            NV_ASSERT_OK_OR_GOTO(status,
                                  confComputeGetKeyRotationStatus(pConfCompute, h2dKey, &state),
                                  cleanup);
             if (state != KEY_ROTATION_STATUS_IDLE)
@@ -849,7 +850,9 @@ kchannelConstruct_IMPL
         cleanup);
 
     // Set up pNotifyActions
-    _kchannelSetupNotifyActions(pKernelChannel, pResourceRef->externalClassId);
+    NV_ASSERT_OK_OR_GOTO(status,
+        _kchannelSetupNotifyActions(pKernelChannel, pResourceRef->externalClassId),
+        cleanup);
     bNotifyActionsSetup = NV_TRUE;
 
     // Initialize the userd length
@@ -981,19 +984,6 @@ kchannelConstruct_IMPL
         (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED)) &&
         (pKernelChannel->bCCSecureChannel))
     {
-        if (!FLD_TEST_DRF(OS04, _FLAGS, _CHANNEL_SKIP_SCRUBBER, _TRUE, pChannelGpfifoParams->flags) &&
-            pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_DUMMY_KEY_ROTATION_ENABLED))
-        {
-            //
-            // If conf compute feature is enabled AND
-            // If key rotation is supported AND
-            // If key rotation callbacks are not enabled yet AND 
-            // If this is a secure channel being created AND
-            // If its not the scrubber channel then increment refcount
-            //
-            pConfCompute->keyRotationChannelRefCount++;
-        }
-
         // Create persistent mapping to key rotation notifier
         NV_ASSERT_OK_OR_GOTO(
             status,
@@ -1108,24 +1098,26 @@ kchannelDestruct_IMPL
     hClient = pCallContext->pClient->hClient;
 
     ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+    NvBool bCheckKeyRotation = NV_FALSE;
+    NvU32 h2dKey, d2hKey;
     if ((pConfCompute != NULL) &&
         (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED)) &&
         (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED)) &&
         (pKernelChannel->bCCSecureChannel))
     {
-        if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_DUMMY_KEY_ROTATION_ENABLED))
-        {
-            if (pConfCompute->keyRotationChannelRefCount > 0)
-            {
-                pConfCompute->keyRotationChannelRefCount--;
-            }
-            if (pConfCompute->keyRotationChannelRefCount == 0)
-            {
-                pConfCompute->keyRotationCallbackCount = 0;
-            }
-        }
         NV_ASSERT_OK(confComputeUpdateFreedChannelStats(pGpu, pConfCompute, pKernelChannel));
-        NV_ASSERT_OK(kchannelSetEncryptionStatsBuffer_HAL(pGpu, pKernelChannel, NV_FALSE));
+
+        // check if we need to trigger key rotation after freeing this channel
+        KEY_ROTATION_STATUS state;
+        NV_ASSERT_OK(confComputeGetKeyPairByChannel(pGpu, pConfCompute, pKernelChannel, &h2dKey, &d2hKey));
+        NV_ASSERT_OK(confComputeGetKeyRotationStatus(pConfCompute, h2dKey, &state));
+        if ((state == KEY_ROTATION_STATUS_PENDING) || 
+            (state == KEY_ROTATION_STATUS_PENDING_TIMER_SUSPENDED))
+        {
+            bCheckKeyRotation = NV_TRUE;
+        }
+
+        NV_ASSERT_OK(kchannelSetEncryptionStatsBuffer_HAL(pGpu, pKernelChannel, NULL, NV_FALSE));
         NV_ASSERT_OK(kchannelSetKeyRotationNotifier_HAL(pGpu, pKernelChannel, NV_FALSE));
     }
 
@@ -1203,6 +1195,16 @@ kchannelDestruct_IMPL
     kchannelFreeMmuExceptionInfo(pKernelChannel);
 
     NV_ASSERT(pKernelChannel->refCount == 1);
+
+    if (bCheckKeyRotation)
+    {
+        //
+        // If key rotation is pending on this key because the channel being freed hasn't reported idle yet then, 
+        // we wait until this channel's SW state is cleared out before triggerring key rotation
+        // so that the key rotation code doesn't try to notify this channel or check its idle state.
+        //
+        NV_ASSERT_OK(confComputeCheckAndPerformKeyRotation(pGpu, pConfCompute, h2dKey, d2hKey));
+    }
 }
 
 NV_STATUS
@@ -1762,6 +1764,9 @@ void kchannelNotifyEvent_IMPL
     // validate notifyIndex
     NV_CHECK_OR_RETURN_VOID(LEVEL_INFO, notifyIndex < classInfo.notifiersMaxCount);
 
+    // Check if we have allocated the channel notifier action table
+    NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR, pKernelChannel->pNotifyActions != NULL);
+
     // handle notification if client wants it
     if (pKernelChannel->pNotifyActions[notifyIndex] != classInfo.eventActionDisable)
     {
@@ -1853,7 +1858,7 @@ NV_STATUS kchannelUpdateNotifierMem_IMPL
     //
     ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
     if ((pConfCompute != NULL) &&
-        (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED)) && 
+        (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED)) &&
         (notifyIndex == NV_CHANNELGPFIFO_NOTIFICATION_TYPE_KEY_ROTATION_STATUS))
     {
         pNotifier = _kchannelGetKeyRotationNotifier(pKernelChannel);
@@ -4598,29 +4603,22 @@ kchannelCtrlCmdGetKmb_KERNEL
 
     if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED))
     {
-        //
-        // If this is the first time GET_KMB is called on a context
-        // then setup the encrypt stats buffer.
-        //
-        if (pKernelChannel->pEncStatsBufMemDesc == NULL)
-        {
-            RsClient          *pRsClient      = NULL;
-            RsResourceRef     *pResourceRef   = NULL;
-            Memory            *pMemory        = NULL;
-            MEMORY_DESCRIPTOR *pMemDesc       = NULL;
-            NvHandle           hClient        = RES_GET_CLIENT_HANDLE(pKernelChannel);
+        RsClient          *pRsClient      = NULL;
+        RsResourceRef     *pResourceRef   = NULL;
+        NvHandle           hClient        = RES_GET_CLIENT_HANDLE(pKernelChannel);
 
-            NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, hClient, &pRsClient));
-            if (clientGetResourceRef(pRsClient, pGetKmbParams->hMemory, &pResourceRef) != NV_OK)
+        NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, hClient, &pRsClient));
+        if (clientGetResourceRef(pRsClient, pGetKmbParams->hMemory, &pResourceRef) == NV_OK)
+        {
+            // If a buffer already exists then replace it with new buffer
+            if (pKernelChannel->pEncStatsBuf != NULL)
             {
-                // TODO: Make this fatal once all cients move to using hMemory
-                return NV_OK;
+                NV_ASSERT_OK_OR_RETURN(kchannelSetEncryptionStatsBuffer_HAL(pGpu, pKernelChannel, NULL, NV_FALSE));
             }
-            pMemory = dynamicCast(pResourceRef->pResource, Memory);
-            pMemDesc = pMemory->pMemDesc;
+            Memory *pMemory = dynamicCast(pResourceRef->pResource, Memory);
+            MEMORY_DESCRIPTOR *pMemDesc = pMemory->pMemDesc;
             NV_ASSERT_OR_RETURN(pMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
-            pKernelChannel->pEncStatsBufMemDesc = pMemDesc;
-            NV_ASSERT_OK_OR_RETURN(kchannelSetEncryptionStatsBuffer_HAL(pGpu, pKernelChannel, NV_TRUE));
+            NV_ASSERT_OK_OR_RETURN(kchannelSetEncryptionStatsBuffer_HAL(pGpu, pKernelChannel, pMemDesc, NV_TRUE));
         }
 
         //
@@ -4659,19 +4657,6 @@ kchannelCtrlRotateSecureChannelIv_KERNEL
     if (!pKernelChannel->bCCSecureChannel)
     {
         return NV_ERR_NOT_SUPPORTED;
-    }
-
-    if (pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED))
-    {
-        KEY_ROTATION_STATUS state;
-        NvU32 h2dKey;
-        NV_ASSERT_OK_OR_RETURN(confComputeGetKeyPairByChannel(pGpu, pCC, pKernelChannel, &h2dKey, NULL));
-        NV_ASSERT_OK_OR_RETURN(confComputeGetKeyRotationStatus(pCC, h2dKey, &state));
-        if ((state != KEY_ROTATION_STATUS_IDLE) ||
-            (kchannelIsDisabledForKeyRotation(pGpu, pKernelChannel)))
-        {
-            return NV_ERR_KEY_ROTATION_IN_PROGRESS;
-        }
     }
 
     NV_PRINTF(LEVEL_INFO, "Rotating IV in CPU-RM.\n");
@@ -4739,7 +4724,7 @@ kchannelCtrlRotateSecureChannelIv_PHYSICAL
 )
 {
     NV_STATUS status;
-    
+
     NV_PRINTF(LEVEL_INFO, "Rotating IV in GSP-RM.\n");
 
     // CPU-side encrypt IV corresponds to GPU-side decrypt IV.
@@ -4876,7 +4861,7 @@ void kchannelEnableAfterKeyRotation
     }
 }
 
-/*! 
+/*!
  * Creates/destroys persistent mappings for key rotation notifier
  */
 NV_STATUS
@@ -4894,7 +4879,6 @@ kchannelSetKeyRotationNotifier_KERNEL
     NV_ASSERT_OR_RETURN(pNotifierMemDesc != NULL, NV_ERR_INVALID_STATE);
     NV_ADDRESS_SPACE addressSpace = memdescGetAddressSpace(pNotifierMemDesc);
     NvU32 notifyIndex = NV_CHANNELGPFIFO_NOTIFICATION_TYPE_KEY_ROTATION_STATUS;
-
     if (bSet)
     {
         NV_ASSERT_OR_RETURN(memdescGetSize(pNotifierMemDesc) >= ((notifyIndex + 1) * sizeof(NvNotification)),
@@ -4946,7 +4930,7 @@ done:
     return status;
 }
 
-/*! 
+/*!
  * Creates/destroys persistent mappings for encryption stats buffer
  */
 NV_STATUS
@@ -4954,6 +4938,7 @@ kchannelSetEncryptionStatsBuffer_KERNEL
 (
     OBJGPU *pGpu,
     KernelChannel *pKernelChannel,
+    MEMORY_DESCRIPTOR *pMemDesc,
     NvBool bSet
 )
 {
@@ -4961,7 +4946,10 @@ kchannelSetEncryptionStatsBuffer_KERNEL
     TRANSFER_SURFACE surf = {0};
     if (bSet)
     {
+        NV_ASSERT_OR_RETURN(pMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
         NV_ASSERT_OR_RETURN(pKernelChannel->pEncStatsBuf == NULL, NV_ERR_INVALID_STATE);
+        NV_ASSERT_OK_OR_RETURN(memdescCreateSubMem(&pKernelChannel->pEncStatsBufMemDesc, pMemDesc, pGpu,
+                                                   0, memdescGetSize(pMemDesc)));
         //
         // we rely on persistent mapping for encryption statistics buffer
         // since these will be used in top half and mappings are not allowed
@@ -4972,8 +4960,12 @@ kchannelSetEncryptionStatsBuffer_KERNEL
         pKernelChannel->pEncStatsBuf = (CC_CRYPTOBUNDLE_STATS*)memmgrMemBeginTransfer(pMemoryManager, &surf,
                                                                                       sizeof(CC_CRYPTOBUNDLE_STATS),
                                                                                       TRANSFER_FLAGS_SHADOW_ALLOC);
-
-        NV_ASSERT_OR_RETURN(pKernelChannel->pEncStatsBuf != NULL, NV_ERR_INVALID_STATE);
+        if (pKernelChannel->pEncStatsBuf == NULL)
+        {
+            memdescDestroy(pKernelChannel->pEncStatsBufMemDesc);
+            pKernelChannel->pEncStatsBufMemDesc = NULL;
+            return NV_ERR_INVALID_STATE;
+        }
         portMemSet(pKernelChannel->pEncStatsBuf, 0, sizeof(CC_CRYPTOBUNDLE_STATS));
     }
     else
@@ -4987,6 +4979,9 @@ kchannelSetEncryptionStatsBuffer_KERNEL
             surf.pMemDesc = pKernelChannel->pEncStatsBufMemDesc;
             surf.offset = 0;
             memmgrMemEndTransfer(pMemoryManager, &surf, sizeof(CC_CRYPTOBUNDLE_STATS), 0);
+            pKernelChannel->pEncStatsBuf = NULL;
+            memdescDestroy(pKernelChannel->pEncStatsBufMemDesc);
+            pKernelChannel->pEncStatsBufMemDesc = NULL;
         }
     }
     return NV_OK;

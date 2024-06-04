@@ -347,20 +347,30 @@ typedef enum
     UVM_TEST_CHANNEL_STRESS_MODE_NOOP_PUSH = 0,
     UVM_TEST_CHANNEL_STRESS_MODE_UPDATE_CHANNELS,
     UVM_TEST_CHANNEL_STRESS_MODE_STREAM,
+    UVM_TEST_CHANNEL_STRESS_MODE_KEY_ROTATION,
 } UVM_TEST_CHANNEL_STRESS_MODE;
+
+typedef enum
+{
+    UVM_TEST_CHANNEL_STRESS_KEY_ROTATION_OPERATION_CPU_TO_GPU,
+    UVM_TEST_CHANNEL_STRESS_KEY_ROTATION_OPERATION_GPU_TO_CPU,
+    UVM_TEST_CHANNEL_STRESS_KEY_ROTATION_OPERATION_ROTATE,
+} UVM_TEST_CHANNEL_STRESS_KEY_ROTATION_OPERATION;
 
 #define UVM_TEST_CHANNEL_STRESS                          UVM_TEST_IOCTL_BASE(15)
 typedef struct
 {
-    NvU32     mode;                   // In
+    NvU32     mode;                   // In, one of UVM_TEST_CHANNEL_STRESS_MODE
 
     // Number of iterations:
     //   mode == NOOP_PUSH: number of noop pushes
     //   mode == UPDATE_CHANNELS: number of updates
     //   mode == STREAM: number of iterations per stream
+    //   mode == ROTATION: number of operations
     NvU32     iterations;
 
-    NvU32     num_streams;            // In, used only for mode == UVM_TEST_CHANNEL_STRESS_MODE_STREAM
+    NvU32     num_streams;            // In, used only if mode == STREAM
+    NvU32     key_rotation_operation; // In, used only if mode == ROTATION
     NvU32     seed;                   // In
     NvU32     verbose;                // In
     NV_STATUS rmStatus;               // Out
@@ -1210,8 +1220,6 @@ typedef struct
 typedef struct
 {
     NvProcessorUuid                 gpu_uuid;                                           // In
-    NvHandle                        client;                                             // In
-    NvHandle                        smc_part_ref;                                       // In
 
     NV_STATUS                       rmStatus;                                           // Out
 } UVM_TEST_NUMA_CHECK_AFFINITY_PARAMS;

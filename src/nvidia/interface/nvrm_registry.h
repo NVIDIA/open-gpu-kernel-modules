@@ -1301,6 +1301,19 @@
 #define NV_REG_STR_RM_WATCHDOG_INTERVAL_HI                    0x0000000C
 #define NV_REG_STR_RM_WATCHDOG_INTERVAL_DEFAULT               NV_REG_STR_RM_WATCHDOG_INTERVAL_LOW
 
+// Enable/Disable watchcat in GSP-Plugin for Guest RPC
+// Default is Enabled
+#define NV_REG_STR_RM_GSP_VGPU_WATCHCAT                     "RmEnableGspPluginWatchcat"
+#define NV_REG_STR_RM_GSP_VGPU_WATCHCAT_ENABLE              0x00000001
+#define NV_REG_STR_RM_GSP_VGPU_WATCHCAT_DISABLE             0x00000000
+#define NV_REG_STR_RM_GSP_VGPU_WATCHCAT_DEFAULT             NV_REG_STR_RM_GSP_VGPU_WATCHCAT_ENABLE
+
+// Set watchcat timeout value in GSP-Plugin for Guest RPC
+// Default is 10 seconds
+#define NV_REG_STR_RM_GSP_VGPU_WATCHCAT_TIMEOUT             "RmGspPluginWatchcatTimeOut"
+#define NV_REG_STR_RM_GSP_VGPU_WATCHCAT_TIMEOUT_MIN         0x0000000A
+#define NV_REG_STR_RM_GSP_VGPU_WATCHCAT_TIMEOUT_DEFAULT     NV_REG_STR_RM_GSP_VGPU_WATCHCAT_TIMEOUT_MIN
+
 #define NV_REG_STR_RM_DO_LOG_RC_EVENTS                      "RmLogonRC"
 // Type Dword
 // Encoding : 0 --> Skip Logging
@@ -1940,54 +1953,57 @@
 #define NV_REG_STR_RM_CONF_COMPUTE_SPDM_POLICY_ENABLED_YES                0x00000001
 
 //
-// Enable/disable dummy key rotation in Confidential Compute. 
-// This is a temp reg key that will be removed once all RM clients
-// support key rotation by default.
+// Enable/disable key rotation in Confidential Compute.
 //
 // 0 - Feature disabled
 // 1 - Feature enabled
 //
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION                    "RmConfComputeDummyKeyRotation"
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_ENABLED            0:0
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_ENABLED_NO         0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_ENABLED_YES        0x00000001
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_SEC2_KEYS          1:1
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_SEC2_KEYS_NO       0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_SEC2_KEYS_YES      0x00000001
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE2_KEYS          2:2
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE2_KEYS_NO       0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE2_KEYS_YES      0x00000001
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE3_KEYS          3:3
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE3_KEYS_NO       0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE3_KEYS_YES      0x00000001
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE4_KEYS          4:4
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE4_KEYS_NO       0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE4_KEYS_YES      0x00000001
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE5_KEYS          5:5
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE5_KEYS_NO       0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE5_KEYS_YES      0x00000001
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE6_KEYS          6:6
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE6_KEYS_NO       0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE6_KEYS_YES      0x00000001
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE7_KEYS          7:7
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE7_KEYS_NO       0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE7_KEYS_YES      0x00000001
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE8_KEYS          8:8
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE8_KEYS_NO       0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE8_KEYS_YES      0x00000001
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE9_KEYS          9:9
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE9_KEYS_NO       0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE9_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION                    "RmConfComputeKeyRotation"
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_ENABLED            0:0
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_ENABLED_NO         0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_ENABLED_YES        0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_SEC2_KEYS          1:1
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_SEC2_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_SEC2_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE2_KEYS          2:2
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE2_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE2_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE3_KEYS          3:3
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE3_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE3_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE4_KEYS          4:4
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE4_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE4_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE5_KEYS          5:5
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE5_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE5_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE6_KEYS          6:6
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE6_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE6_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE7_KEYS          7:7
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE7_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE7_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE8_KEYS          8:8
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE8_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE8_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE9_KEYS          9:9
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE9_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LCE9_KEYS_YES      0x00000001
 
 // if all kernel keys should be considered for key rotation
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_KERNEL_KEYS        10:10
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_KERNEL_KEYS_NO     0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_KERNEL_KEYS_YES    0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_KERNEL_KEYS        10:10
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_KERNEL_KEYS_NO     0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_KERNEL_KEYS_YES    0x00000001
 
 // if all user keys should be considered for key rotation
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_USER_KEYS          11:11
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_USER_KEYS_NO       0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_USER_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_USER_KEYS          11:11
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_USER_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_USER_KEYS_YES      0x00000001
+
+// if internal RM keys should be considered for key rotation
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_INTERNAL_KEYS      12:12
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_INTERNAL_KEYS_NO   0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_INTERNAL_KEYS_YES  0x00000001
 
 //
 // Set period for "keep-alive" heartbeat message sent between SPDM Requester and Responder.
@@ -2005,21 +2021,49 @@
 #define NV_REG_STR_RM_CONF_COMPUTE_HEARTBEAT_PERIOD_SECONDS_MAX          0x000000FF
 
 //
-// Set lower threshold for dummy key rotation. 
-// This is a temp reg key that will be removed once all RM clients
-// support prod key rotation.
-// Value is in seconds.
+// Set the key rotation timeout value for user-mode clients.
+// This is the amount of time in seconds, after the threshold has been crossed, that user-mode clients
+// have to idle their channels before RM RCs the channels for key rotation.
+// This value must be greater than or equal to 2.
 //
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LOWER_THRESHOLD     "RmDummyKeyRotationLowerThreshold"
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_TIMEOUT_IN_SEC "RmKeyRotationTimeout"
 
 //
-// Set upper threshold for dummy key rotation. 
-// This is a temp reg key that will be removed once all RM clients
-// support prod key rotation.
-// Value is in seconds.
+// Set the difference between the lower and upper thresholds.
+// Value is in units of (amount of data encrypted in units of 16 bytes + number of encryption invocations)
+// If this is set then NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LOWER_THRESHOLD and
+// NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_UPPER_THRESHOLD are ignored.
+// This value must be greater than 0.
 //
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_UPPER_THRESHOLD     "RmDummyKeyRotationUpperThreshold"
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_THRESHOLD_DELTA "RmKeyRotationThresholdDelta"
 
+//
+// Set lower threshold for key rotation.
+// Value is in units of (amount of data encrypted in units of 16 bytes + number of encryption invocations)
+// If this is set then RmKeyRotationUpperThreshold must also be set.
+// This value must be less than RmKeyRotationUpperThreshold.
+// Note that setting the attacker advantage via SMI/NVML will overwrite this value.
+//
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_LOWER_THRESHOLD "RmKeyRotationLowerThreshold"
+
+//
+// Set upper threshold for key rotation.
+// Value is in units of (amount of data encrypted in units of 16 bytes + number of encryption invocations)
+// If this is set then RmKeyRotationLowerThreshold must also be set.
+// This value must be greater than RmKeyRotationLowerThreshold.
+// Note that setting the attacker advantage via SMI/NVML will overwrite this value.
+//
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_UPPER_THRESHOLD "RmKeyRotationUpperThreshold"
+
+//
+// Set threshold for rotation of internal (RM only) keys.
+// Value is in units of (amount of data encrypted in units of 16 bytes + number of encryption invocations)
+// Value must be greater than minimum of (0x7FFFFFF).
+// This value cannot be changed at runtime, only via this registry key at boot time.
+//
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_INTERNAL_THRESHOLD "RmKeyRotationInternalThreshold"
+
+//
 // TYPE Dword
 // Encoding boolean
 // Regkey based solution to serialize VBlank Aggressive Handling in Top Half using spinlock

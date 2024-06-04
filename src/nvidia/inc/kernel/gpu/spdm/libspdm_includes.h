@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,6 +34,7 @@
 #include "internal/libspdm_common_lib.h"
 #include "internal/libspdm_secured_message_lib.h"
 #include "library/spdm_requester_lib.h"
+#include "nvspdm_cryptlib_extensions.h"
 
 /* ------------------------ Macros and Defines ----------------------------- */
 //

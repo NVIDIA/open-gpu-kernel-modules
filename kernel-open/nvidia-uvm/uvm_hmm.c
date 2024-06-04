@@ -284,8 +284,10 @@ static void hmm_va_block_unregister_gpu(uvm_va_block_t *va_block,
 
     // Reset preferred location and accessed-by of policy nodes if needed.
     uvm_for_each_va_policy_node_in(node, va_block, va_block->start, va_block->end) {
-        if (uvm_id_equal(node->policy.preferred_location, gpu->id))
+        if (uvm_va_policy_preferred_location_equal(&node->policy, gpu->id, NUMA_NO_NODE)) {
             node->policy.preferred_location = UVM_ID_INVALID;
+            node->policy.preferred_nid = NUMA_NO_NODE;
+        }
 
         uvm_processor_mask_clear(&node->policy.accessed_by, gpu->id);
     }

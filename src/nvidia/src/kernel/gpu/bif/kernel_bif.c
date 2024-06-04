@@ -1351,3 +1351,58 @@ kbifPollDeviceOnBus_IMPL
     return NV_OK;
 }
 
+/*!
+ * @brief To get PCI link max spead from PCI link Gen info
+ *
+ * @param[in]  pGpu        GPU object pointer
+ * @param[in]  pKernelBif  Kernel BIF object pointer
+ * @param[in]  pciLinkGenInfo   PCI link Gen info
+ * @param[in]  pciLinkMaxSpeed  pointer to PCI link max spead
+
+ * @returns NV_OK
+ * @returns NV_ERR_INVALID_STATE
+ */
+NV_STATUS
+kbifGetPciLinkMaxSpeedByPciGenInfo_IMPL
+(
+    OBJGPU     *pGpu,
+    KernelBif  *pKernelBif,
+    NvU32      pciLinkGenInfo,
+    NvU32      *pciLinkMaxSpeed
+)
+{
+    NV_STATUS rmStatus = NV_OK;
+
+    switch (pciLinkGenInfo)
+    {
+        case NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_GEN_GEN1:
+            *pciLinkMaxSpeed = NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_2500MBPS;
+            break;
+
+        case NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_GEN_GEN2:
+            *pciLinkMaxSpeed = NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_5000MBPS;
+            break;
+
+        case NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_GEN_GEN3:
+            *pciLinkMaxSpeed = NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_8000MBPS;
+            break;
+
+        case NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_GEN_GEN4:
+            *pciLinkMaxSpeed = NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_16000MBPS;
+            break;
+
+        case NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_GEN_GEN5:
+            *pciLinkMaxSpeed = NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_32000MBPS;
+            break;
+
+        case NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_GEN_GEN6:
+            *pciLinkMaxSpeed = NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_64000MBPS;
+            break;
+
+        default:
+            rmStatus = NV_ERR_INVALID_STATE;
+            NV_PRINTF(LEVEL_ERROR, "Unknown PCIe Gen Info\n");
+    }
+
+    return rmStatus;
+}

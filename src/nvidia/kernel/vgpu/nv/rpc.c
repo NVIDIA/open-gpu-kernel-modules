@@ -545,8 +545,11 @@ static NV_STATUS _initSysmemPfnRing(OBJGPU *pGpu)
     KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     NvU32 memFlags = 0;
 
-    if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus))
-        memFlags = MEMDESC_FLAGS_CPU_ONLY;
+    if (!pVGpu->bGspPlugin)
+    {
+        if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus))
+            memFlags = MEMDESC_FLAGS_CPU_ONLY;
+    }
 
     status = _allocRpcMemDesc(pGpu,
                               RM_PAGE_SIZE,
@@ -8918,6 +8921,9 @@ NV_STATUS rpcGspSetSystemInfo_v17_00
         rpcInfo->isGridBuild = os_is_grid_supported();
 #endif
         rpcInfo->gridBuildCsp = osGetGridCspSupport();
+
+        // Indicate whether the driver supports NV2080_NOTIFIERS_UCODE_RESET event.
+        rpcInfo->bTdrEventSupported = pGpu->getProperty(pGpu, PDB_PROP_GPU_SUPPORTS_TDR_EVENT);
 
         status = _issueRpcAsync(pGpu, pRpc);
     }

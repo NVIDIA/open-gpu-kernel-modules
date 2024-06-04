@@ -176,7 +176,7 @@ void __nvoc_init_dataField_KernelCE(KernelCE *pThis, RmHalspecOwner *pRmhalspeco
     // Hal field -- bCcFipsSelfTestRequired
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
-        pThis->bCcFipsSelfTestRequired = ((NvBool)(0 == 0));
+        pThis->bCcFipsSelfTestRequired = ((NvBool)(0 != 0));
     }
     // default
     else

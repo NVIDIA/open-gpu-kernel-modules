@@ -327,6 +327,22 @@ _memUtilsChannelAllocatePB_GM107
                                 sizeof(memAllocParams)));
 
     // allocate the physmem for the notifier
+
+    if (gpuIsCCFeatureEnabled(pGpu))
+    {
+        //
+        // Force error notifier to ncoh sysmem when CC is enabled
+        // since key rotation notifier is part of error notifier and
+        // it needs to be in sysmem so we can create persistent mapping for it.
+        // we cannot create mappins on the fly since this notifier is
+        // written as part of 1 sec callback where creating mappings is
+        // not allowed.
+        //
+        hClass = NV01_MEMORY_SYSTEM;
+        attrNotifier   = DRF_DEF(OS32, _ATTR, _LOCATION,  _PCI)        |
+                         DRF_DEF(OS32, _ATTR, _COHERENCY, _UNCACHED);
+    }
+
     portMemSet(&memAllocParams, 0, sizeof(memAllocParams));
     memAllocParams.owner     = HEAP_OWNER_RM_CLIENT_GENERIC;
     memAllocParams.type      = NVOS32_TYPE_IMAGE;

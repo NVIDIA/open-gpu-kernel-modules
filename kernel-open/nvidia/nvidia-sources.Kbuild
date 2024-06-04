@@ -41,6 +41,7 @@ NVIDIA_SOURCES += nvidia/libspdm_rsa.c
 NVIDIA_SOURCES += nvidia/libspdm_aead_aes_gcm.c
 NVIDIA_SOURCES += nvidia/libspdm_sha.c
 NVIDIA_SOURCES += nvidia/libspdm_hmac_sha.c
+NVIDIA_SOURCES += nvidia/libspdm_internal_crypt_lib.c
 NVIDIA_SOURCES += nvidia/libspdm_hkdf_sha.c
 NVIDIA_SOURCES += nvidia/libspdm_ec.c
 NVIDIA_SOURCES += nvidia/libspdm_x509.c

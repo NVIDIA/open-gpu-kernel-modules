@@ -6728,6 +6728,9 @@ _nvswitch_service_nvlipt_lnk_status_ls10
             //
             _nvswitch_clear_deferred_link_errors_ls10(device, link_id);
             chip_device->deferredLinkErrors[link_id].state.lastLinkUpTime = nvswitch_os_get_platform_time();
+        
+            // Reset NV_NPORT_SCRATCH_WARM_PORT_RESET_REQUIRED to 0x0
+            NVSWITCH_LINK_WR32(device, link_id, NPORT, _NPORT, _SCRATCH_WARM, 0);
         }
         else if (mode == NVLINK_LINKSTATE_FAULT)
         {

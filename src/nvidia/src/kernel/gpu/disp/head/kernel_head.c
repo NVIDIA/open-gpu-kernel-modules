@@ -235,7 +235,8 @@ kheadReadVblankIntrState_IMPL
 )
 {
     // Check to make sure that our SW state grooves with the HW state
-    if (kheadReadVblankIntrEnable_HAL(pGpu, pKernelHead))
+    if (kheadReadVblankIntrEnable_HAL(pGpu, pKernelHead) &&
+            kheadGetDisplayInitialized_HAL(pGpu, pKernelHead))
     {
         // HW is enabled, check if SW state is not enabled
         if (pKernelHead->Vblank.IntrState != NV_HEAD_VBLANK_INTR_ENABLED)

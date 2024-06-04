@@ -515,7 +515,7 @@ typedef struct
               NV_NPORT_PORTSTAT_LS10(_block, _reg, _idx, ), _data);                 \
     }
 
-#define NVSWITCH_DEFERRED_LINK_STATE_CHECK_INTERVAL_NS ((device->bModeContinuousALI ? 12 : 30) *\
+#define NVSWITCH_DEFERRED_LINK_STATE_CHECK_INTERVAL_NS ((device->bModeContinuousALI ? 15 : 30) *\
                                                         NVSWITCH_INTERVAL_1SEC_IN_NS)
 #define NVSWITCH_DEFERRED_FAULT_UP_CHECK_INTERVAL_NS   (12 * NVSWITCH_INTERVAL_1MSEC_IN_NS)
 

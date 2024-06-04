@@ -818,6 +818,22 @@ kgspResetHw_TU102
     return NV_OK;
 }
 
+static NvBool kgspCrashCatReportImpactsGspRm(CrashCatReport *pReport)
+{
+    NV_CRASHCAT_CONTAINMENT containment;
+
+    containment = crashcatReportSourceContainment_HAL(pReport);
+    switch (containment)
+    {
+       case NV_CRASHCAT_CONTAINMENT_RISCV_MODE_M:
+       case NV_CRASHCAT_CONTAINMENT_RISCV_HART:
+       case NV_CRASHCAT_CONTAINMENT_UNCONTAINED:
+           return NV_TRUE;
+       default:
+           return NV_FALSE;
+    }
+}
+
 NvBool
 kgspHealthCheck_TU102
 (
@@ -836,7 +852,8 @@ kgspHealthCheck_TU102
 
         while ((pReport = crashcatEngineGetNextCrashReport(pCrashCatEng)) != NULL)
         {
-            bHealthy = NV_FALSE;
+            if (kgspCrashCatReportImpactsGspRm(pReport))
+                bHealthy = NV_FALSE;
 
             NV_PRINTF(LEVEL_ERROR,
                 "****************************** GSP-CrashCat Report *******************************\n");
@@ -884,10 +901,19 @@ kgspHealthCheck_TU102
 exit_health_check:
     if (!bHealthy)
     {
+        NvBool bFirstFatal = !pKernelGsp->bFatalError;
+
         pKernelGsp->bFatalError = NV_TRUE;
 
         if (pKernelGsp->pRpc)
+        {
             kgspLogRpcDebugInfo(pGpu, pKernelGsp->pRpc, GSP_ERROR, pKernelGsp->bPollingForRpcResponse);
+        }
+
+        if (bFirstFatal)
+        {
+            kgspRcAndNotifyAllUserChannels(pGpu, pKernelGsp, GSP_ERROR);
+        }
 
         gpuCheckEccCounts_HAL(pGpu);
 

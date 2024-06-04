@@ -631,6 +631,21 @@ NV_STATUS embeddedParamCopyIn(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmCt
                             ((NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS*)pParams)->busPeerIds,
                             numEntries, sizeof(NvU32));
             paramCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYIN;
+            numEntries = 0;
+
+            if (NvP64_VALUE(((NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS*)pParams)->busEgmPeerIds) != NULL)
+            {
+               // The handler will check gpuCount * gpuCount against overflow
+               numEntries = ((NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS*)pParams)->gpuCount *
+                             ((NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS*)pParams)->gpuCount;
+            }
+
+            RMAPI_PARAM_COPY_INIT(paramCopies[1],
+                                  ((NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS*)pParams)->busEgmPeerIds,
+                                  ((NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS*)pParams)->busEgmPeerIds,
+                                  numEntries, sizeof(NvU32));
+            paramCopies[1].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYIN;
+            paramsCnt++;
             break;
         }
         case NV0080_CTRL_CMD_FB_GET_CAPS:
@@ -1068,9 +1083,18 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmC
 #endif
         case NV0000_CTRL_CMD_SYSTEM_GET_P2P_CAPS:
         {
+            NV_STATUS peerIdsStatus;
             CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS);
-            status = rmapiParamsRelease(&paramCopies[0]);
+
+            peerIdsStatus = rmapiParamsRelease(&paramCopies[0]);
             ((NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS*)pParams)->busPeerIds = paramCopies[0].pUserParams;
+
+            status = rmapiParamsRelease(&paramCopies[1]);
+            ((NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS*)pParams)->busEgmPeerIds = paramCopies[1].pUserParams;
+
+            if (peerIdsStatus != NV_OK)
+                status = peerIdsStatus;
+
             break;
         }
         case NV0080_CTRL_CMD_FB_GET_CAPS:

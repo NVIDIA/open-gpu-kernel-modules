@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1226,21 +1226,14 @@ NV_STATUS kceGetP2PCes_GH100(KernelCE *pKCe, OBJGPU *pGpu, NvU32 gpuMask, NvU32 
         {
             //
             // In the event that the preferred HSHUB's primary LCE is not available,
-            // choose the first available LCE which was found and set that index as
-            // the new preferred hshub.
+            // use the first available LCE and set that index as the new preferred hshub
             //
-            for (i = 0; i < NV_CE_MAX_HSHUBS; i++)
-            {
-                if (maxLcePerHshub[i] != NULL)
-                {
-                    NV_PRINTF(LEVEL_INFO,
-                              "GPU %d Assigning Peer %d to first available LCE %d\n",
-                              gpuGetInstance(pGpu), gpuInstance,
-                              maxLcePerHshub[i]->publicID);
-                    maxConnectedHshubId = i;
-                    break;
-                }
-            }
+            maxLcePerHshub[maxConnectedHshubId] = GPU_GET_KCE(pGpu, maxConnectedHshubId);
+
+            NV_PRINTF(LEVEL_INFO,
+                      "GPU %d Assigning Peer %d to first available LCE %d\n",
+                      gpuGetInstance(pGpu), gpuInstance,
+                      maxLcePerHshub[maxConnectedHshubId]->publicID);
         }
 
         if (maxConnectedHshubId < NV_CE_MAX_HSHUBS)

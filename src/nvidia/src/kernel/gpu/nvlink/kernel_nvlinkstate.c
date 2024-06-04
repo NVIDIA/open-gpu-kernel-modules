@@ -1146,6 +1146,24 @@ knvlinkSetDegradedMode_IMPL
     return;
 }
 
+/*!
+ * @brief Gets degraded mode for current GPU
+ *
+ * @param[in] pGpu           OBJGPU pointer
+ * @param[in] pKernelNvlink  KernelNvlink pointer
+ *
+ * @return Current NVLink degraded mode
+ */
+NvBool
+knvlinkGetDegradedMode_IMPL
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    return pKernelNvlink->bIsGpuDegraded;
+}
+
 void
 knvlinkDestruct_IMPL
 (

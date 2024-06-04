@@ -639,6 +639,7 @@ _nvswitch_tnvl_get_cert_chain_from_fsp_ls10
     NvlStatus status;
     TNVL_GET_ATT_CERTS_CMD_PAYLOAD *pCmdPayload   = nvswitch_os_malloc(sizeof(TNVL_GET_ATT_CERTS_CMD_PAYLOAD));
     TNVL_GET_ATT_CERTS_RSP_PAYLOAD *pRspPayload   = nvswitch_os_malloc(sizeof(TNVL_GET_ATT_CERTS_RSP_PAYLOAD));
+    NVSWITCH_TIMEOUT timeout;
 
     if (pCmdPayload == NULL || pRspPayload == NULL)
     {
@@ -653,9 +654,11 @@ _nvswitch_tnvl_get_cert_chain_from_fsp_ls10
     pCmdPayload->minorVersion = 0;
     pCmdPayload->majorVersion = 1;
 
+    nvswitch_timeout_create(5 * NVSWITCH_INTERVAL_1SEC_IN_NS, &timeout);
+
     status = nvswitch_fsp_send_and_read_message(device,
         (NvU8*) pCmdPayload, sizeof(TNVL_GET_ATT_CERTS_CMD_PAYLOAD), NVDM_TYPE_TNVL,
-        (NvU8*) pRspPayload, sizeof(TNVL_GET_ATT_CERTS_RSP_PAYLOAD));
+        (NvU8*) pRspPayload, sizeof(TNVL_GET_ATT_CERTS_RSP_PAYLOAD), &timeout);
     if (status != NVL_SUCCESS)
     {
         NVSWITCH_PRINT(device, ERROR,
@@ -762,6 +765,10 @@ nvswitch_tnvl_get_attestation_certificate_chain_ls10
         goto ErrorExit;
     }
 
+    certChainLength = certChainLength -
+                      NVSWITCH_IK_HASH_LENGTH -
+                      NVSWITCH_ATT_CERT_SIZE_FIELD_LENGTH -
+                      NVSWITCH_ATT_RSVD1_FIELD_LENGTH;
     //
     // pCertChainBufferEnd represents last valid byte for cert buffer.
     //
@@ -865,6 +872,7 @@ nvswitch_tnvl_get_attestation_report_ls10
     NvlStatus status;
     TNVL_GET_ATT_REPORT_CMD_PAYLOAD *pCmdPayload;
     TNVL_GET_ATT_REPORT_RSP_PAYLOAD *pRspPayload;
+    NVSWITCH_TIMEOUT timeout;
 
     if (!nvswitch_is_tnvl_mode_enabled(device))
     {
@@ -892,9 +900,11 @@ nvswitch_tnvl_get_attestation_report_ls10
     pCmdPayload->majorVersion = 1;
     nvswitch_os_memcpy(pCmdPayload->nonce, params->nonce, NVSWITCH_NONCE_SIZE);
 
+    nvswitch_timeout_create(10 * NVSWITCH_INTERVAL_1SEC_IN_NS, &timeout);
+
     status = nvswitch_fsp_send_and_read_message(device,
         (NvU8*) pCmdPayload, sizeof(TNVL_GET_ATT_REPORT_CMD_PAYLOAD), NVDM_TYPE_TNVL,
-        (NvU8*) pRspPayload, sizeof(TNVL_GET_ATT_REPORT_RSP_PAYLOAD));
+        (NvU8*) pRspPayload, sizeof(TNVL_GET_ATT_REPORT_RSP_PAYLOAD), &timeout);
     if (status != NVL_SUCCESS)
     {
         NVSWITCH_PRINT(device, ERROR,
@@ -970,6 +980,7 @@ nvswitch_tnvl_send_fsp_lock_config_ls10
     NvlStatus status;
     TNVL_LOCK_CONFIG_CMD_PAYLOAD *pCmdPayload;
     TNVL_LOCK_CONFIG_RSP_PAYLOAD *pRspPayload;
+    NVSWITCH_TIMEOUT timeout;
 
     if (!nvswitch_is_tnvl_mode_enabled(device))
     {
@@ -995,9 +1006,11 @@ nvswitch_tnvl_send_fsp_lock_config_ls10
     pCmdPayload->minorVersion = 0;
     pCmdPayload->majorVersion = 1;
 
+    nvswitch_timeout_create(5 * NVSWITCH_INTERVAL_1SEC_IN_NS, &timeout);
+
     status = nvswitch_fsp_send_and_read_message(device,
         (NvU8*) pCmdPayload, sizeof(TNVL_LOCK_CONFIG_CMD_PAYLOAD), NVDM_TYPE_TNVL,
-        (NvU8*) pRspPayload, sizeof(TNVL_LOCK_CONFIG_RSP_PAYLOAD));
+        (NvU8*) pRspPayload, sizeof(TNVL_LOCK_CONFIG_RSP_PAYLOAD), &timeout);
     if (status != NVL_SUCCESS)
     {
         NVSWITCH_PRINT(device, ERROR,

@@ -1041,13 +1041,12 @@ NV_STATUS  NV_API_CALL  nv_vgpu_create_request(nvidia_stack_t *, nv_state_t *, c
 NV_STATUS  NV_API_CALL  nv_vgpu_delete(nvidia_stack_t *, const NvU8 *, NvU16);
 NV_STATUS  NV_API_CALL  nv_vgpu_get_type_ids(nvidia_stack_t *, nv_state_t *, NvU32 *, NvU32 *, NvBool, NvU8, NvBool);
 NV_STATUS  NV_API_CALL  nv_vgpu_get_type_info(nvidia_stack_t *, nv_state_t *, NvU32, char *, int, NvU8);
-NV_STATUS  NV_API_CALL  nv_vgpu_get_bar_info(nvidia_stack_t *, nv_state_t *, const NvU8 *, NvU64 *, NvU32, void *, NvBool *);
+NV_STATUS  NV_API_CALL  nv_vgpu_get_bar_info(nvidia_stack_t *, nv_state_t *, const NvU8 *, NvU64 *,
+                                             NvU64 *, NvU64 *, NvU32 *, NvBool *, NvU8 *);
 NV_STATUS  NV_API_CALL  nv_vgpu_get_hbm_info(nvidia_stack_t *, nv_state_t *, const NvU8 *, NvU64 *, NvU64 *);
-NV_STATUS  NV_API_CALL  nv_vgpu_start(nvidia_stack_t *, const NvU8 *, void *, NvS32 *, NvU8 *, NvU32);
-NV_STATUS  NV_API_CALL  nv_vgpu_get_sparse_mmap(nvidia_stack_t *, nv_state_t *, const NvU8 *, NvU64 **, NvU64 **, NvU32 *);
 NV_STATUS  NV_API_CALL  nv_vgpu_process_vf_info(nvidia_stack_t *, nv_state_t *, NvU8, NvU32, NvU8, NvU8, NvU8, NvBool, void *);
-NV_STATUS  NV_API_CALL  nv_vgpu_update_request(nvidia_stack_t *, const NvU8 *, NvU32, NvU64 *, NvU64 *, const char *);
 NV_STATUS  NV_API_CALL  nv_gpu_bind_event(nvidia_stack_t *);
+NV_STATUS  NV_API_CALL  nv_gpu_unbind_event(nvidia_stack_t *, NvU32, NvBool *);
 
 NV_STATUS NV_API_CALL nv_get_usermap_access_params(nv_state_t*, nv_usermap_access_params_t*);
 nv_soc_irq_type_t NV_API_CALL nv_get_current_irq_type(nv_state_t*);

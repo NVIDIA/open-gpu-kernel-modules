@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -87,7 +87,7 @@ _nvswitch_fsp_poll_for_queue_empty
 
     do
     {
-         bKeepPolling = nvswitch_timeout_check(&timeout) ? NV_FALSE : NV_TRUE;
+        bKeepPolling = nvswitch_timeout_check(&timeout) ? NV_FALSE : NV_TRUE;
 
         bMsgqEmpty = _nvswitch_fsp_is_msgq_empty(device);
         bCmdqEmpty = _nvswitch_fsp_is_queue_empty(device);
@@ -98,7 +98,7 @@ _nvswitch_fsp_poll_for_queue_empty
         //
         if (!bCmdqEmpty && !bMsgqEmpty)
         {
-            nvswitch_fsp_read_message(device,  NULL, 0);
+            nvswitch_fsp_read_message(device,  NULL, 0, &timeout);
             NVSWITCH_PRINT(device, ERROR, "Received error message from FSP while waiting for CMDQ to be empty.\n");
             return -NVL_ERR_GENERIC;
         }
@@ -125,23 +125,22 @@ _nvswitch_fsp_poll_for_queue_empty
  * @brief Poll for response from FSP via RM message queue
  *
  * @param[in] device       nvswitch_device pointer
+ * @param[in] pTimeout     RPC timeout
  *
  * @return NVL_SUCCESS, or NV_ERR_TIMEOUT
  */
 static NvlStatus
 _nvswitch_fsp_poll_for_response
 (
-    nvswitch_device *device
+    nvswitch_device *device,
+    NVSWITCH_TIMEOUT *pTimeout
 )
 {
     NvBool bKeepPolling;
-    NVSWITCH_TIMEOUT timeout;
-
-    nvswitch_timeout_create(10 * NVSWITCH_INTERVAL_1MSEC_IN_NS, &timeout);
 
     do
     {
-        bKeepPolling = nvswitch_timeout_check(&timeout) ? NV_FALSE : NV_TRUE;
+        bKeepPolling = nvswitch_timeout_check(pTimeout) ? NV_FALSE : NV_TRUE;
 
         //
         // Poll for message queue to wait for FSP's reply
@@ -178,6 +177,8 @@ _nvswitch_fsp_poll_for_response
  * @param[in]     device              nvswitch_device pointer
  * @param[in/out] pPayloadBuffer    Buffer in which to return message payload
  * @param[in]     payloadBufferSize Payload buffer size
+ * @param[in]     pTimeout          RPC timeout
+ *
  *
  * @return NVL_SUCCESS, NV_ERR_INVALID_DATA, NV_ERR_INSUFFICIENT_RESOURCES, or errors
  *         from functions called within
@@ -187,7 +188,8 @@ nvswitch_fsp_read_message
 (
     nvswitch_device *device,
     NvU8 *pPayloadBuffer,
-    NvU32 payloadBufferSize
+    NvU32 payloadBufferSize,
+    NVSWITCH_TIMEOUT *pTimeout
 )
 {
     NvU8             *pPacketBuffer;
@@ -206,7 +208,7 @@ nvswitch_fsp_read_message
     if (pPacketBuffer == NULL)
     {
         NVSWITCH_PRINT(device, ERROR,
-            "Failed to allocate memory for GLT!!\n");
+            "%s: Failed to allocate memory!!\n", __FUNCTION__);
         return -NVL_NO_MEM;
     }
 
@@ -219,9 +221,10 @@ nvswitch_fsp_read_message
         NvU8  tag;
 
         // Wait for next packet
-        status = _nvswitch_fsp_poll_for_response(device);
+        status = _nvswitch_fsp_poll_for_response(device, pTimeout);
         if (status != NVL_SUCCESS)
         {
+            NVSWITCH_PRINT(device, ERROR, "%s: Timed out waiting for response from FSP!\n", __FUNCTION__);
             goto done;
         }
 
@@ -353,6 +356,7 @@ nvswitch_fsp_send_packet
  * @param[in] nvdmType           NVDM type of message being sent
  * @param[in] pResponsePayload   Buffer in which to return response payload
  * @param[in] responseBufferSize Response payload buffer size
+ * @param[in] pTimeout           RPC timeout
  *
  * @return NVL_SUCCESS, or NV_ERR_*
  */
@@ -364,7 +368,8 @@ nvswitch_fsp_send_and_read_message
     NvU32 size,
     NvU32 nvdmType,
     NvU8 *pResponsePayload,
-    NvU32 responseBufferSize
+    NvU32 responseBufferSize,
+    NVSWITCH_TIMEOUT *pTimeout
 )
 {
     NvU32 dataSent, dataRemaining;
@@ -443,12 +448,13 @@ nvswitch_fsp_send_and_read_message
         }
     }
 
-    status = _nvswitch_fsp_poll_for_response(device);
+    status = _nvswitch_fsp_poll_for_response(device, pTimeout);
     if (status != NVL_SUCCESS)
     {
+        NVSWITCH_PRINT(device, ERROR, "%s: Timed out waiting for response from FSP!\n", __FUNCTION__);
         goto failed;
     }
-    status = nvswitch_fsp_read_message(device, pResponsePayload, responseBufferSize);
+    status = nvswitch_fsp_read_message(device, pResponsePayload, responseBufferSize, pTimeout);
 
 failed:
     nvswitch_os_free(pBuffer);

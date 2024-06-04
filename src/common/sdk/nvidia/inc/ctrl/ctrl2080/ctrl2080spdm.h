@@ -34,6 +34,8 @@
 
 /*************************** SPDM COMMANDS ************************************/
 
+#include "cc_drv.h"
+
 /*!
  * @brief SPDM Command Types
  *
@@ -43,6 +45,7 @@
 #define RM_GSP_SPDM_CMD_ID_CC_CTRL           (0x3)
 #define RM_GSP_SPDM_CMD_ID_CC_INIT_RM_DATA   (0x4)
 #define RM_GSP_SPDM_CMD_ID_CC_HEARTBEAT_CTRL (0x5)
+#define RM_GSP_SPDM_CMD_ID_FIPS_SELFTEST     (0x6)
 
 
 #define RM_GSP_SPDM_CMD_ID_INVALID_COMMAND   (0xFF)
@@ -114,6 +117,25 @@ typedef struct RM_GSP_SPDM_CMD_CC_HEARTBEAT_CTRL {
 typedef struct RM_GSP_SPDM_CMD_CC_HEARTBEAT_CTRL *PRM_GSP_SPDM_CMD_CC_HEARTBEAT_CTRL;
 
 
+
+/*! 
+ * HCC FIPS Self-test.
+ */
+#define CE_FIPS_SELF_TEST_DATA_SIZE     16
+#define CE_FIPS_SELF_TEST_AUTH_TAG_SIZE 16
+#define CE_FIPS_SELF_TEST_IV_SIZE       12
+
+typedef struct RM_GSP_SPDM_CMD_FIPS_SELFTEST {
+    NvU8   cmdType;
+    NvU8   isEnc;
+    CC_KMB kmb;
+    NvU8   text[CE_FIPS_SELF_TEST_DATA_SIZE];
+    NvU8   authTag[CE_FIPS_SELF_TEST_AUTH_TAG_SIZE];
+} RM_GSP_SPDM_CMD_FIPS_SELFTEST;
+typedef struct RM_GSP_SPDM_CMD_FIPS_SELFTEST *PRM_GSP_SPDM_CMD_FIPS_SELFTEST;
+
+
+
 /*!
  * NOTE : Do not include structure members that have alignment requirement >= 8 to avoid alignment directives 
  * getting added in FINN generated structures / unions as RM_GSP_SPDM_CMD / RM_GSP_SPDM_MSG are pragma packed in 
@@ -132,6 +154,9 @@ typedef union RM_GSP_SPDM_CMD {
     RM_GSP_SPDM_CMD_CC_INIT_RM_DATA   rmDataInitCmd;
     RM_GSP_SPDM_CMD_CC_HEARTBEAT_CTRL ccHeartbeatCtrl;
 
+
+    RM_GSP_SPDM_CMD_FIPS_SELFTEST     ccFipsTest;
+
 } RM_GSP_SPDM_CMD;
 typedef union RM_GSP_SPDM_CMD *PRM_GSP_SPDM_CMD;
 
@@ -149,6 +174,7 @@ typedef union RM_GSP_SPDM_CMD *PRM_GSP_SPDM_CMD;
 #define RM_GSP_SPDM_MSG_ID_CC_CTRL           (0x3)
 #define RM_GSP_SPDM_MSG_ID_CC_INIT_RM_DATA   (0x4)
 #define RM_GSP_SPDM_MSG_ID_CC_HEARTBEAT_CTRL (0x5)
+#define RM_GSP_SPDM_MSG_ID_FIPS_SELFTEST     (0x6)
 
 
 
