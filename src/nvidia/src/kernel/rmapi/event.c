@@ -395,7 +395,6 @@ eventInit_IMPL
         *pppEventNotification = inotifyGetNotificationListPtr(pNotifierShare->pNotifier);
     }
 
-    serverRefShare(&g_resServ, staticCast(pNotifierShare, RsShared));
     pEvent->pNotifierShare = pNotifierShare;
 
     // RS-TODO these can be looked up from share
@@ -427,6 +426,7 @@ notifyGetOrAllocNotifShare_IMPL
     if (pNotifierShare == NULL)
     {
         RsShared *pShare;
+        // serverAllocShare() sets pNotifierShare->refCount to 1.
         status = serverAllocShare(&g_resServ, classInfo(NotifShare), &pShare);
         if (status != NV_OK)
             return status;
@@ -436,6 +436,14 @@ notifyGetOrAllocNotifShare_IMPL
         pNotifierShare->hNotifierClient = hNotifierClient;
         pNotifierShare->hNotifierResource = hNotifierResource;
         inotifySetNotificationShare(staticCast(pNotifier, INotifier), pNotifierShare);
+    }
+    else
+    {
+        // Move serverRefShare() from eventInit_IMPL to here, so that |pNotifierShare|
+        // can be refcounted correctly.
+        //
+        // serverRefShare() increments pNotifierShare->refCount.
+        serverRefShare(&g_resServ, staticCast(pNotifierShare, RsShared));
     }
 
     if (ppNotifierShare)
