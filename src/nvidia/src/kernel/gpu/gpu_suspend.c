@@ -31,6 +31,8 @@
 
 #include "platform/platform.h"
 #include "platform/chipset/chipset.h"
+#include "platform/sli/sli.h"
+#include "kernel/gpu/gr/kernel_graphics.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/fbsr.h"
 #include "gpu/gsp/gsp_init_args.h"
@@ -348,6 +350,10 @@ gpuResumeFromStandby_IMPL(OBJGPU *pGpu)
                   IS_GPU_GC6_STATE_EXITING(pGpu) ? "GC6" : "APM Suspend");
     }
 
+    if (kgraphicsIsBug4208224WARNeeded_HAL(pGpu, GPU_GET_KERNEL_GRAPHICS(pGpu, 0)))
+    {
+        return kgraphicsInitializeBug4208224WAR_HAL(pGpu, GPU_GET_KERNEL_GRAPHICS(pGpu, 0));
+    }
     return resumeStatus;
 }
 
@@ -410,6 +416,9 @@ NV_STATUS gpuResumeFromHibernate_IMPL(OBJGPU *pGpu)
     {
         NV_PRINTF(LEVEL_NOTICE, "End resuming from APM Suspend\n");
     }
-
+    if (kgraphicsIsBug4208224WARNeeded_HAL(pGpu, GPU_GET_KERNEL_GRAPHICS(pGpu, 0)))
+    {
+        return kgraphicsInitializeBug4208224WAR_HAL(pGpu, GPU_GET_KERNEL_GRAPHICS(pGpu, 0));
+    }
     return resumeStatus;
 }

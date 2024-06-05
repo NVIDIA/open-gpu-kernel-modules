@@ -471,6 +471,7 @@ static const PNPVendorId PNPVendorIds[] =
     { "SMC",    _VENDOR_NAME_ENTRY("Standard Microsystems")             },
     { "SMI",    _VENDOR_NAME_ENTRY("Smile")                             },
     { "SML",    _VENDOR_NAME_ENTRY("Smile")                             },
+    { "SMN",    _VENDOR_NAME_ENTRY("Somnium Space Ltd")                 },
     { "SMS",    _VENDOR_NAME_ENTRY("Silicon Multimedia Systems")        },
     { "SNI",    _VENDOR_NAME_ENTRY("Siemens Nixdorf")                   },
     { "SNY",    _VENDOR_NAME_ENTRY("Sony")                              },

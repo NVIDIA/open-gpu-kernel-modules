@@ -3894,7 +3894,7 @@ static NvBool JoinSwapGroup(
     struct NvKmsJoinSwapGroupParams *pParams = pParamsVoid;
     const struct NvKmsJoinSwapGroupRequestOneMember *pMember =
         pParams->request.member;
-    NvU32 i;
+    NvU32 i, j;
     NvBool anySwapGroupsPending = FALSE;
     NVHsJoinSwapGroupWorkArea *pJoinSwapGroupWorkArea;
 
@@ -4009,6 +4009,28 @@ static NvBool JoinSwapGroup(
             }
 
             if (!PerOpenIsValidForUnicastEvent(pEventOpenFd)) {
+                goto fail;
+            }
+        }
+
+        /*
+         * We checked above that pDeferredRequestFifo is not currently a member
+         * of a SwapGroup, and that pEventOpenFd is currently valid to be used
+         * for a unicast event.  However, if either of those were also
+         * specified for an earlier member for this request, then that won't
+         * hold: by the time *this* member is processed, the
+         * pDeferredRequestFifo would already be a member of a swapgroup, or
+         * the pEventOpenFd would already be in use.
+         *
+         * Validate that that doesn't happen.
+         */
+        for (j = 0; j < i; j++) {
+            if (pJoinSwapGroupWorkArea[j].pDeferredRequestFifo ==
+                                          pDeferredRequestFifo) {
+                goto fail;
+            }
+            if (pJoinSwapGroupWorkArea[j].pEventOpenFd ==
+                                          pEventOpenFd) {
                 goto fail;
             }
         }
