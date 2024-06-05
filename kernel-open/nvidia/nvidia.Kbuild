@@ -161,7 +161,7 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += pci_enable_atomic_ops_to_root
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += vga_tryget
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += cc_platform_has
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += seq_read_iter
-NV_CONFTEST_FUNCTION_COMPILE_TESTS += unsafe_follow_pfn
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += follow_pfn
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_gem_object_get
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_gem_object_put_unlocked
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += add_memory_driver_managed
@@ -231,6 +231,7 @@ NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_memory_block_size_b
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_tegra_platform_is_fpga
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_tegra_platform_is_sim
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += crypto
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_follow_pte
 
 NV_CONFTEST_TYPE_COMPILE_TESTS += dma_ops
 NV_CONFTEST_TYPE_COMPILE_TESTS += swiotlb_dma_ops

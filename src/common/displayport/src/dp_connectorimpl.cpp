@@ -179,6 +179,7 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
     this->bReassessMaxLink                 = dpRegkeyDatabase.bReassessMaxLink;
     this->bForceDisableTunnelBwAllocation  = dpRegkeyDatabase.bForceDisableTunnelBwAllocation;
     this->bSkipFakeDeviceDpcdAccess        = dpRegkeyDatabase.bSkipFakeDeviceDpcdAccess;
+    this->bFlushTimeslotWhenDirty          = dpRegkeyDatabase.bFlushTimeslotWhenDirty;
 }
 
 void ConnectorImpl::setPolicyModesetOrderMitigation(bool enabled)
@@ -3689,7 +3690,7 @@ bool ConnectorImpl::assessPCONLinkCapability(PCONLinkControl *pConControl)
     return true;
 }
 
-bool ConnectorImpl::getOuiSink(unsigned &ouiId, char * modelName, size_t modelNameBufferSize, NvU8 & chipRevision)
+bool ConnectorImpl::getOuiSink(unsigned &ouiId, unsigned char * modelName, size_t modelNameBufferSize, NvU8 & chipRevision)
 {
     if (!previousPlugged || !hal->getOuiSupported())
         return false;
@@ -5838,7 +5839,8 @@ void ConnectorImpl::beforeDeleteStream(GroupImpl * group, bool forFlushMode)
         }
     }
 
-    if (linkUseMultistream() && group && group->isHeadAttached() && group->timeslot.count)
+    if (linkUseMultistream() && group && group->isHeadAttached() &&
+        (group->timeslot.count || (this->bFlushTimeslotWhenDirty && group->timeslot.hardwareDirty)))
     {
         // Detach all the panels from payload
         for (Device * d = group->enumDevices(0); d; d = group->enumDevices(d))

@@ -118,12 +118,12 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_VgpuConfigApi =
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_VgpuConfigApi[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) vgpuconfigapiCtrlCmdVgpuConfigSetInfo_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-        /*flags=*/      0x8u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+        /*flags=*/      0x4u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xa0810101u,
         /*paramSize=*/  sizeof(NVA081_CTRL_VGPU_CONFIG_INFO_PARAMS),
@@ -681,7 +681,7 @@ static void __nvoc_init_funcTable_VgpuConfigApi_1(VgpuConfigApi *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
     // vgpuconfigapiCtrlCmdVgpuConfigSetInfo -- exported (id=0xa0810101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
     pThis->__vgpuconfigapiCtrlCmdVgpuConfigSetInfo__ = &vgpuconfigapiCtrlCmdVgpuConfigSetInfo_IMPL;
 #endif
 

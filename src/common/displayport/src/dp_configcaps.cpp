@@ -671,7 +671,7 @@ bool DPCDHALImpl::getOuiSource(unsigned &ouiId, char * modelName,
 bool DPCDHALImpl::getOuiSink
 (
     unsigned &ouiId,
-    char * modelName,
+    unsigned char * modelName,
     size_t modelNameBufferSize,
     NvU8 & chipRevision
 )
@@ -712,7 +712,7 @@ bool DPCDHALImpl::getOuiSink
     // Next 6 bytes are Device Identification String, copy as much as we can (limited buffer case).
     unsigned int i;
     for (i = 0; i < modelNameBufferSize; i++)
-        modelName[i] = ouiBuffer[3+i];
+        modelName[i] = (unsigned char)ouiBuffer[3+i];
 
     chipRevision = ouiBuffer[9];
 

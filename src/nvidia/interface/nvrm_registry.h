@@ -1301,6 +1301,19 @@
 #define NV_REG_STR_RM_WATCHDOG_INTERVAL_HI                    0x0000000C
 #define NV_REG_STR_RM_WATCHDOG_INTERVAL_DEFAULT               NV_REG_STR_RM_WATCHDOG_INTERVAL_LOW
 
+// Enable/Disable watchcat in GSP-Plugin for Guest RPC
+// Default is Enabled
+#define NV_REG_STR_RM_GSP_VGPU_WATCHCAT                     "RmEnableGspPluginWatchcat"
+#define NV_REG_STR_RM_GSP_VGPU_WATCHCAT_ENABLE              0x00000001
+#define NV_REG_STR_RM_GSP_VGPU_WATCHCAT_DISABLE             0x00000000
+#define NV_REG_STR_RM_GSP_VGPU_WATCHCAT_DEFAULT             NV_REG_STR_RM_GSP_VGPU_WATCHCAT_ENABLE
+
+// Set watchcat timeout value in GSP-Plugin for Guest RPC
+// Default is 10 seconds
+#define NV_REG_STR_RM_GSP_VGPU_WATCHCAT_TIMEOUT             "RmGspPluginWatchcatTimeOut"
+#define NV_REG_STR_RM_GSP_VGPU_WATCHCAT_TIMEOUT_MIN         0x0000000A
+#define NV_REG_STR_RM_GSP_VGPU_WATCHCAT_TIMEOUT_DEFAULT     NV_REG_STR_RM_GSP_VGPU_WATCHCAT_TIMEOUT_MIN
+
 #define NV_REG_STR_RM_DO_LOG_RC_EVENTS                      "RmLogonRC"
 // Type Dword
 // Encoding : 0 --> Skip Logging

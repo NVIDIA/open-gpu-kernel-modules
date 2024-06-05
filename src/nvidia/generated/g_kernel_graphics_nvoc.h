@@ -61,6 +61,7 @@ struct KGRAPHICS_STATIC_INFO;
 typedef struct KGRAPHICS_STATIC_INFO KGRAPHICS_STATIC_INFO;
 typedef struct KGRAPHICS_FECS_TRACE_INFO KGRAPHICS_FECS_TRACE_INFO;
 typedef struct KGRAPHICS_GLOBAL_CTX_BUFFERS_INFO KGRAPHICS_GLOBAL_CTX_BUFFERS_INFO;
+typedef struct KGRAPHICS_BUG4208224_CONTEXT_INFO KGRAPHICS_BUG4208224_CONTEXT_INFO;
 
 /*!
  * Static info retrieved from Physical RM detailing the configuration of the
@@ -143,6 +144,25 @@ struct KGRAPHICS_GLOBAL_CTX_BUFFERS_INFO
     GR_BUFFER_ATTR        vfGlobalCtxAttr[GR_GLOBALCTX_BUFFER_COUNT];
 };
 
+#define KGRAPHICS_SCRUBBER_HANDLE_VAS        0xdada0042       
+#define KGRAPHICS_SCRUBBER_HANDLE_PBVIRT     (KGRAPHICS_SCRUBBER_HANDLE_VAS + 1)      
+#define KGRAPHICS_SCRUBBER_HANDLE_PBPHYS     (KGRAPHICS_SCRUBBER_HANDLE_VAS + 2)      
+#define KGRAPHICS_SCRUBBER_HANDLE_CHANNEL    (KGRAPHICS_SCRUBBER_HANDLE_VAS + 3)      
+#define KGRAPHICS_SCRUBBER_HANDLE_3DOBJ      (KGRAPHICS_SCRUBBER_HANDLE_VAS + 4)      
+#define KGRAPHICS_SCRUBBER_HANDLE_USERD      (KGRAPHICS_SCRUBBER_HANDLE_VAS + 5)      
+
+        
+struct KGRAPHICS_BUG4208224_CONTEXT_INFO
+{
+    /* Dynamically allocated client handles */
+    NvHandle hClient;
+    NvHandle hDeviceId;
+    NvHandle hSubdeviceId;
+
+    // Have resources been setup
+    NvBool bConstructed;
+};
+
 // Opaque forward declarations
 typedef struct KGRAPHICS_PRIVATE_DATA KGRAPHICS_PRIVATE_DATA;
 typedef struct KGRAPHICS_FECS_TRACE_INFO KGRAPHICS_FECS_TRACE_INFO;
@@ -179,7 +199,7 @@ struct KernelGraphics {
     struct IntrService *__nvoc_pbase_IntrService;    // intrserv super
     struct KernelGraphics *__nvoc_pbase_KernelGraphics;    // kgraphics
 
-    // Vtable with 24 per-object function pointers
+    // Vtable with 27 per-object function pointers
     NV_STATUS (*__kgraphicsConstructEngine__)(OBJGPU *, struct KernelGraphics * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__kgraphicsStateInitLocked__)(OBJGPU *, struct KernelGraphics * /*this*/);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__kgraphicsStateLoad__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
@@ -190,6 +210,9 @@ struct KernelGraphics {
     NV_STATUS (*__kgraphicsStatePostLoad__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
     void (*__kgraphicsRegisterIntrService__)(OBJGPU *, struct KernelGraphics * /*this*/, IntrServiceRecord *);  // virtual override (intrserv) base (intrserv)
     NV_STATUS (*__kgraphicsServiceNotificationInterrupt__)(OBJGPU *, struct KernelGraphics * /*this*/, IntrServiceServiceNotificationInterruptArguments *);  // virtual override (intrserv) base (intrserv)
+    NV_STATUS (*__kgraphicsCreateBug4208224Channel__)(OBJGPU *, struct KernelGraphics * /*this*/);  // halified (2 hals)
+    NV_STATUS (*__kgraphicsInitializeBug4208224WAR__)(OBJGPU *, struct KernelGraphics * /*this*/);  // halified (3 hals)
+    NvBool (*__kgraphicsIsBug4208224WARNeeded__)(OBJGPU *, struct KernelGraphics * /*this*/);  // halified (3 hals)
     NV_STATUS (*__kgraphicsLoadStaticInfo__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // halified (2 hals)
     NvBool (*__kgraphicsClearInterrupt__)(OBJGPU *, struct KernelGraphics * /*this*/, IntrServiceClearInterruptArguments *);  // virtual halified (singleton optimized) override (intrserv) base (intrserv)
     NvU32 (*__kgraphicsServiceInterrupt__)(OBJGPU *, struct KernelGraphics * /*this*/, IntrServiceServiceInterruptArguments *);  // virtual halified (singleton optimized) override (intrserv) base (intrserv)
@@ -216,6 +239,7 @@ struct KernelGraphics {
     NvBool PRIVATE_FIELD(bUcodeSupportsPrivAccessMap);
     NvBool PRIVATE_FIELD(bRtvCbSupported);
     NvBool PRIVATE_FIELD(bFecsRecordUcodeSeqnoSupported);
+    NvBool PRIVATE_FIELD(bBug4208224WAREnabled);
     NvU32 PRIVATE_FIELD(instance);
     KGRAPHICS_PRIVATE_DATA *PRIVATE_FIELD(pPrivate);
     NvBool PRIVATE_FIELD(bCollectingDeferredStaticData);
@@ -224,6 +248,7 @@ struct KernelGraphics {
     struct CTX_BUF_POOL_INFO *PRIVATE_FIELD(pCtxBufPool);
     CTX_BUF_INFO PRIVATE_FIELD(maxCtxBufSize)[10];
     GR_BUFFER_ATTR PRIVATE_FIELD(ctxAttr)[10];
+    struct KGRAPHICS_BUG4208224_CONTEXT_INFO PRIVATE_FIELD(bug4208224Info);
 };
 
 
@@ -242,7 +267,7 @@ struct KernelGraphics_PRIVATE {
     struct IntrService *__nvoc_pbase_IntrService;    // intrserv super
     struct KernelGraphics *__nvoc_pbase_KernelGraphics;    // kgraphics
 
-    // Vtable with 24 per-object function pointers
+    // Vtable with 27 per-object function pointers
     NV_STATUS (*__kgraphicsConstructEngine__)(OBJGPU *, struct KernelGraphics * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__kgraphicsStateInitLocked__)(OBJGPU *, struct KernelGraphics * /*this*/);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__kgraphicsStateLoad__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
@@ -253,6 +278,9 @@ struct KernelGraphics_PRIVATE {
     NV_STATUS (*__kgraphicsStatePostLoad__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
     void (*__kgraphicsRegisterIntrService__)(OBJGPU *, struct KernelGraphics * /*this*/, IntrServiceRecord *);  // virtual override (intrserv) base (intrserv)
     NV_STATUS (*__kgraphicsServiceNotificationInterrupt__)(OBJGPU *, struct KernelGraphics * /*this*/, IntrServiceServiceNotificationInterruptArguments *);  // virtual override (intrserv) base (intrserv)
+    NV_STATUS (*__kgraphicsCreateBug4208224Channel__)(OBJGPU *, struct KernelGraphics * /*this*/);  // halified (2 hals)
+    NV_STATUS (*__kgraphicsInitializeBug4208224WAR__)(OBJGPU *, struct KernelGraphics * /*this*/);  // halified (3 hals)
+    NvBool (*__kgraphicsIsBug4208224WARNeeded__)(OBJGPU *, struct KernelGraphics * /*this*/);  // halified (3 hals)
     NV_STATUS (*__kgraphicsLoadStaticInfo__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // halified (2 hals)
     NvBool (*__kgraphicsClearInterrupt__)(OBJGPU *, struct KernelGraphics * /*this*/, IntrServiceClearInterruptArguments *);  // virtual halified (singleton optimized) override (intrserv) base (intrserv)
     NvU32 (*__kgraphicsServiceInterrupt__)(OBJGPU *, struct KernelGraphics * /*this*/, IntrServiceServiceInterruptArguments *);  // virtual halified (singleton optimized) override (intrserv) base (intrserv)
@@ -279,6 +307,7 @@ struct KernelGraphics_PRIVATE {
     NvBool bUcodeSupportsPrivAccessMap;
     NvBool bRtvCbSupported;
     NvBool bFecsRecordUcodeSeqnoSupported;
+    NvBool bBug4208224WAREnabled;
     NvU32 instance;
     KGRAPHICS_PRIVATE_DATA *pPrivate;
     NvBool bCollectingDeferredStaticData;
@@ -287,6 +316,7 @@ struct KernelGraphics_PRIVATE {
     struct CTX_BUF_POOL_INFO *pCtxBufPool;
     CTX_BUF_INFO maxCtxBufSize[10];
     GR_BUFFER_ATTR ctxAttr[10];
+    struct KGRAPHICS_BUG4208224_CONTEXT_INFO bug4208224Info;
 };
 
 #ifndef __NVOC_CLASS_KernelGraphics_TYPEDEF__
@@ -343,6 +373,15 @@ NV_STATUS __nvoc_objCreate_KernelGraphics(KernelGraphics**, Dynamic*, NvU32);
 #define kgraphicsRegisterIntrService(arg1, arg_this, arg3) kgraphicsRegisterIntrService_DISPATCH(arg1, arg_this, arg3)
 #define kgraphicsServiceNotificationInterrupt_FNPTR(arg_this) arg_this->__kgraphicsServiceNotificationInterrupt__
 #define kgraphicsServiceNotificationInterrupt(arg1, arg_this, arg3) kgraphicsServiceNotificationInterrupt_DISPATCH(arg1, arg_this, arg3)
+#define kgraphicsCreateBug4208224Channel_FNPTR(arg_this) arg_this->__kgraphicsCreateBug4208224Channel__
+#define kgraphicsCreateBug4208224Channel(arg1, arg_this) kgraphicsCreateBug4208224Channel_DISPATCH(arg1, arg_this)
+#define kgraphicsCreateBug4208224Channel_HAL(arg1, arg_this) kgraphicsCreateBug4208224Channel_DISPATCH(arg1, arg_this)
+#define kgraphicsInitializeBug4208224WAR_FNPTR(arg_this) arg_this->__kgraphicsInitializeBug4208224WAR__
+#define kgraphicsInitializeBug4208224WAR(arg1, arg_this) kgraphicsInitializeBug4208224WAR_DISPATCH(arg1, arg_this)
+#define kgraphicsInitializeBug4208224WAR_HAL(arg1, arg_this) kgraphicsInitializeBug4208224WAR_DISPATCH(arg1, arg_this)
+#define kgraphicsIsBug4208224WARNeeded_FNPTR(arg_this) arg_this->__kgraphicsIsBug4208224WARNeeded__
+#define kgraphicsIsBug4208224WARNeeded(arg1, arg_this) kgraphicsIsBug4208224WARNeeded_DISPATCH(arg1, arg_this)
+#define kgraphicsIsBug4208224WARNeeded_HAL(arg1, arg_this) kgraphicsIsBug4208224WARNeeded_DISPATCH(arg1, arg_this)
 #define kgraphicsLoadStaticInfo_FNPTR(arg_this) arg_this->__kgraphicsLoadStaticInfo__
 #define kgraphicsLoadStaticInfo(arg1, arg_this, swizzId) kgraphicsLoadStaticInfo_DISPATCH(arg1, arg_this, swizzId)
 #define kgraphicsLoadStaticInfo_HAL(arg1, arg_this, swizzId) kgraphicsLoadStaticInfo_DISPATCH(arg1, arg_this, swizzId)
@@ -419,6 +458,18 @@ static inline void kgraphicsRegisterIntrService_DISPATCH(OBJGPU *arg1, struct Ke
 
 static inline NV_STATUS kgraphicsServiceNotificationInterrupt_DISPATCH(OBJGPU *arg1, struct KernelGraphics *arg_this, IntrServiceServiceNotificationInterruptArguments *arg3) {
     return arg_this->__kgraphicsServiceNotificationInterrupt__(arg1, arg_this, arg3);
+}
+
+static inline NV_STATUS kgraphicsCreateBug4208224Channel_DISPATCH(OBJGPU *arg1, struct KernelGraphics *arg_this) {
+    return arg_this->__kgraphicsCreateBug4208224Channel__(arg1, arg_this);
+}
+
+static inline NV_STATUS kgraphicsInitializeBug4208224WAR_DISPATCH(OBJGPU *arg1, struct KernelGraphics *arg_this) {
+    return arg_this->__kgraphicsInitializeBug4208224WAR__(arg1, arg_this);
+}
+
+static inline NvBool kgraphicsIsBug4208224WARNeeded_DISPATCH(OBJGPU *arg1, struct KernelGraphics *arg_this) {
+    return arg_this->__kgraphicsIsBug4208224WARNeeded__(arg1, arg_this);
 }
 
 static inline NV_STATUS kgraphicsLoadStaticInfo_DISPATCH(OBJGPU *arg1, struct KernelGraphics *arg_this, NvU32 swizzId) {
@@ -583,6 +634,24 @@ void kgraphicsRegisterIntrService_IMPL(OBJGPU *arg1, struct KernelGraphics *arg2
 
 NV_STATUS kgraphicsServiceNotificationInterrupt_IMPL(OBJGPU *arg1, struct KernelGraphics *arg2, IntrServiceServiceNotificationInterruptArguments *arg3);
 
+NV_STATUS kgraphicsCreateBug4208224Channel_TU102(OBJGPU *arg1, struct KernelGraphics *arg2);
+
+static inline NV_STATUS kgraphicsCreateBug4208224Channel_56cd7a(OBJGPU *arg1, struct KernelGraphics *arg2) {
+    return NV_OK;
+}
+
+static inline NV_STATUS kgraphicsInitializeBug4208224WAR_56cd7a(OBJGPU *arg1, struct KernelGraphics *arg2) {
+    return NV_OK;
+}
+
+NV_STATUS kgraphicsInitializeBug4208224WAR_TU102(OBJGPU *arg1, struct KernelGraphics *arg2);
+
+static inline NvBool kgraphicsIsBug4208224WARNeeded_491d52(OBJGPU *arg1, struct KernelGraphics *arg2) {
+    return ((NvBool)(0 != 0));
+}
+
+NvBool kgraphicsIsBug4208224WARNeeded_TU102(OBJGPU *arg1, struct KernelGraphics *arg2);
+
 NV_STATUS kgraphicsLoadStaticInfo_VF(OBJGPU *arg1, struct KernelGraphics *arg2, NvU32 swizzId);
 
 NV_STATUS kgraphicsLoadStaticInfo_KERNEL(OBJGPU *arg1, struct KernelGraphics *arg2, NvU32 swizzId);
@@ -704,6 +773,16 @@ static inline NvBool kgraphicsIsRtvCbSupported(OBJGPU *pGpu, struct KernelGraphi
 static inline NvBool kgraphicsIsFecsRecordUcodeSeqnoSupported(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics) {
     struct KernelGraphics_PRIVATE *pKernelGraphics_PRIVATE = (struct KernelGraphics_PRIVATE *)pKernelGraphics;
     return pKernelGraphics_PRIVATE->bFecsRecordUcodeSeqnoSupported;
+}
+
+static inline NvBool kgraphicsGetBug4208224WAREnabled(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics) {
+    struct KernelGraphics_PRIVATE *pKernelGraphics_PRIVATE = (struct KernelGraphics_PRIVATE *)pKernelGraphics;
+    return pKernelGraphics_PRIVATE->bBug4208224WAREnabled;
+}
+
+static inline void kgraphicsSetBug4208224WAREnabled(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics, NvBool bProp) {
+    struct KernelGraphics_PRIVATE *pKernelGraphics_PRIVATE = (struct KernelGraphics_PRIVATE *)pKernelGraphics;
+    pKernelGraphics_PRIVATE->bBug4208224WAREnabled = bProp;
 }
 
 void kgraphicsDestruct_IMPL(struct KernelGraphics *arg1);

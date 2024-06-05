@@ -105,9 +105,9 @@ namespace DisplayPort
         NvU8     cachedSourceChipRevision;
         bool     bOuiCached;
 
-        unsigned ouiId;                                             // Sink ouiId
-        char modelName[NV_DPCD_SOURCE_DEV_ID_STRING__SIZE + 1];     // Device Model-name
-        bool    bIgnoreSrcOuiHandshake;                             // Skip writing source OUI
+        unsigned ouiId;                                              // Sink ouiId
+        unsigned char modelName[NV_DPCD_SOURCE_DEV_ID_STRING__SIZE + 1];  // Device Model-name
+        bool    bIgnoreSrcOuiHandshake;                              // Skip writing source OUI
 
         LinkPolicy    linkPolicy;
 
@@ -316,6 +316,7 @@ namespace DisplayPort
         bool        bDisableSSC;
         bool        bEnableFastLT;
         NvU32       maxLinkRateFromRegkey;
+        bool        bFlushTimeslotWhenDirty;
 
         //
         // Latency(ms) to apply between link-train and FEC enable for bug
@@ -644,7 +645,7 @@ namespace DisplayPort
         void freeTimeslice(GroupImpl * targetGroup);
         void flushTimeslotsToHardware();
         bool getHDCPAbortCodesDP12(NvU32 &hdcpAbortCodesDP12);
-        bool getOuiSink(unsigned &ouiId, char * modelName, size_t modelNameBufferSize, NvU8 & chipRevision);
+        bool getOuiSink(unsigned &ouiId, unsigned char * modelName, size_t modelNameBufferSize, NvU8 & chipRevision);
         bool hdcpValidateKsv(const NvU8 *ksv, NvU32 Size);
         void cancelHdcpCallbacks();
         bool handleCPIRQ();

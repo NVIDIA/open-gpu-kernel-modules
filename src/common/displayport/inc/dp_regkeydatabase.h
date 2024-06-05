@@ -73,14 +73,14 @@
 //
 #define NV_DP_DSC_MST_CAP_BUG_3143315                  "DP_DSC_MST_CAP_BUG_3143315"
 
-//
+
 // Bug 4388987 : This regkey will disable reading PCON caps for MST.
-//
 #define NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED       "DP_BUG_4388987_WAR"
 
-//
+// Bug 4426624: Flush timeslot change to HW when dirty bit is set.
+#define NV_DP_REGKEY_FLUSH_TIMESLOT_INFO_WHEN_DIRTY    "DP_BUG_4426624_WAR"
+
 // Bug 4459839 : This regkey will enable DSC irrespective of LT status.
-//
 #define NV_DP_REGKEY_FORCE_DSC_ON_SINK                 "DP_FORCE_DSC_ON_SINK"
 #define NV_DP_REGKEY_ENABLE_SKIP_DPCD_READS_WAR        "DP_BUG_4478047_WAR"
 #define NV_DP_REGKEY_DISABLE_TUNNEL_BW_ALLOCATION      "DP_DISABLE_TUNNEL_BW_ALLOCATION"
@@ -120,6 +120,7 @@ struct DP_REGKEY_DATABASE
     bool  bMSTPCONCapsReadDisabled;
     bool  bForceDscOnSink;
     bool  bSkipFakeDeviceDpcdAccess;
+    bool  bFlushTimeslotWhenDirty;
     bool  bForceDisableTunnelBwAllocation;
 };
 

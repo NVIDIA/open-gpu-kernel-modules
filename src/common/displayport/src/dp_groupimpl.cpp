@@ -167,6 +167,16 @@ void GroupImpl::remove(Device * dev)
 
     if (isHeadAttached())
     {
+        /*
+         * The device may become lost and free after removal from the active
+         * group. Therefore, also remove the device from the
+         * 'dscEnabledDevices' list and ensure that its dangling pointer is not
+         * left behind.
+         */
+        if (parent->dscEnabledDevices.contains(dev)) {
+            parent->dscEnabledDevices.remove(dev);
+        }
+
         di->activeGroup = 0;
     }
     members.remove(di);
