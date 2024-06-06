@@ -179,6 +179,13 @@ kfifoChidMgrConstruct_IMPL
         pKernelFifo->ppChidMgr[i]->runlistId = i;
 
         pKernelFifo->ppChidMgr[i]->pChanGrpTree = portMemAllocNonPaged(sizeof(KernelChannelGroupMap));
+        if (pKernelFifo->ppChidMgr[i]->pChanGrpTree == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            NV_PRINTF(LEVEL_ERROR, "Failed to allocate pFifo->pChidMgr[%d]->pChanGrpTree\n", i);
+            DBG_BREAKPOINT();
+            goto fail;
+        }
         mapInitIntrusive(pKernelFifo->ppChidMgr[i]->pChanGrpTree);
 
         status = _kfifoChidMgrAllocChidHeaps(pGpu, pKernelFifo, pKernelFifo->ppChidMgr[i]);
@@ -216,8 +223,10 @@ kfifoChidMgrDestruct_IMPL
     {
         if (pKernelFifo->ppChidMgr[i] != NULL)
         {
-            mapDestroy(pKernelFifo->ppChidMgr[i]->pChanGrpTree);
-            portMemFree(pKernelFifo->ppChidMgr[i]->pChanGrpTree);
+            if (pKernelFifo->ppChidMgr[i]->pChanGrpTree != NULL) {
+                mapDestroy(pKernelFifo->ppChidMgr[i]->pChanGrpTree);
+                portMemFree(pKernelFifo->ppChidMgr[i]->pChanGrpTree);
+            }
             _kfifoChidMgrDestroyChidHeaps(pKernelFifo->ppChidMgr[i]);
             _kfifoChidMgrDestroyChannelGroupMgr(pKernelFifo->ppChidMgr[i]);
             portMemFree(pKernelFifo->ppChidMgr[i]);
@@ -1550,6 +1559,7 @@ kfifoGetChannelGroup_IMPL
 )
 {
     CHID_MGR *pChidMgr = kfifoGetChidMgr(pGpu, pKernelFifo, runlistID);
+    NV_ASSERT_OR_RETURN(pChidMgr != NULL, NULL);
 
     return kfifoChidMgrGetKernelChannelGroup(pGpu, pKernelFifo, pChidMgr, grpID);
 }
