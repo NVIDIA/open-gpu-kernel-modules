@@ -141,8 +141,15 @@ NV_STATUS dispswReleaseSemaphoreAndNotifierFill
     NvBool     bFound = NV_FALSE;
     NV_STATUS  status;
 
+#define PRINT_INTERVAL 3600 // At 60Hz, this will emit about once per minute.
+
     if (flags & F_SEMAPHORE_ADDR_VALID)
     {
+        static NvU64 counter;
+        if ((++counter % PRINT_INTERVAL) == 0) {
+            NV_PRINTF(LEVEL_ERROR, "XXXMT: NVRM debugging - F_SEMAPHORE_ADDR_VALID = %llu\n", counter);
+        }
+
         bFound = CliGetDmaMappingInfo(RES_GET_CLIENT(pDevice),
                                       RES_GET_HANDLE(pDevice),
                                       vaSpace,
@@ -154,6 +161,11 @@ NV_STATUS dispswReleaseSemaphoreAndNotifierFill
     }
     else if (flags & F_SEMAPHORE_RELEASE)
     {
+        static NvU64 counter;
+        if ((++counter % PRINT_INTERVAL) == 0) {
+            NV_PRINTF(LEVEL_ERROR, "XXXMT: NVRM debugging - F_SEMAPHORE_RELEASE = %llu\n", counter);
+        }
+
         status =  semaphoreFillGPUVA(pGpu,
                                      pDevice,
                                      vaSpace,
@@ -165,6 +177,11 @@ NV_STATUS dispswReleaseSemaphoreAndNotifierFill
     }
     else if (flags & F_NOTIFIER_FILL)
     {
+        static NvU64 counter;
+        if ((++counter % PRINT_INTERVAL) == 0) {
+            NV_PRINTF(LEVEL_ERROR, "XXXMT: NVRM debugging - F_NOTIFIER_FILL = %llu\n", counter);
+        }
+
         status = notifyFillNotifierGPUVA(pGpu,
                                          pDevice,
                                          vaSpace,
@@ -174,6 +191,12 @@ NV_STATUS dispswReleaseSemaphoreAndNotifierFill
                                          completionStatus,
                                          NV9072_NOTIFIERS_NOTIFY_ON_VBLANK /* Index */);
         return status;
+    }
+    else {
+        static NvU64 counter;
+        if ((++counter % PRINT_INTERVAL) == 0) {
+            NV_PRINTF(LEVEL_ERROR, "XXXMT: NVRM debugging - ??? 0x%08x = %llu\n", flags, counter);
+        }
     }
     return NV9072_NOTIFICATION_STATUS_DONE_SUCCESS;
 }
