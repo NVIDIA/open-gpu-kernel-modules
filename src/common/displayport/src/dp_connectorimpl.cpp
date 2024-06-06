@@ -793,7 +793,7 @@ void ConnectorImpl::populateAllDpConfigs()
     //
     if (numPossibleLnkCfg)
     {
-        DP_LOG(("DP> DPCONN> Rebuild possible link rate confgiurations"));
+        DP_LOG(("DP> DPCONN> Rebuild possible link rate configurations"));
         delete[] allPossibleLinkCfgs;
         numPossibleLnkCfg = 0;
     }
