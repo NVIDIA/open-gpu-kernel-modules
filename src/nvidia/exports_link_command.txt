@@ -1,6 +1,5 @@
 --undefined=rm_disable_adapter
 --undefined=rm_execute_work_item
---undefined=rm_free_os_event
 --undefined=rm_free_private_state
 --undefined=rm_cleanup_file_private
 --undefined=rm_unbind_lock

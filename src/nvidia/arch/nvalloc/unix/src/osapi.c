@@ -25,6 +25,7 @@
 
 #include <nv_ref.h>
 #include <nv.h>
+#include <nv_escape.h>
 #include <nv-priv.h>
 #include <os/os.h>
 #include <osapi.h>
@@ -406,6 +407,39 @@ static void free_os_events(
     portSyncSpinlockRelease(nv->event_spinlock);
 }
 
+static NV_STATUS get_os_event_data(
+    nv_file_private_t  *nvfp,
+    NvP64               pEvent,
+    NvU32              *MoreEvents
+)
+{
+    nv_event_t        nv_event;
+    NvUnixEvent      *nv_unix_event;
+    NV_STATUS         status;
+
+    status = os_alloc_mem((void**)&nv_unix_event, sizeof(NvUnixEvent));
+    if (status != NV_OK)
+        return status;
+
+    status = nv_get_event(nvfp, &nv_event, MoreEvents);
+    if (status != NV_OK)
+    {
+        status = NV_ERR_OPERATING_SYSTEM;
+        goto done;
+    }
+
+    os_mem_set(nv_unix_event, 0, sizeof(NvUnixEvent));
+    nv_unix_event->hObject     = nv_event.hObject;
+    nv_unix_event->NotifyIndex = nv_event.index;
+    nv_unix_event->info32      = nv_event.info32;
+    nv_unix_event->info16      = nv_event.info16;
+
+    status = os_memcpy_to_user(NvP64_VALUE(pEvent), nv_unix_event, sizeof(NvUnixEvent));
+done:
+    os_free_mem(nv_unix_event);
+    return status;
+}
+
 void rm_client_free_os_events(
     NvHandle client
 )
@@ -482,6 +516,12 @@ static NV_STATUS allocate_os_event(
         goto done;
     }
 
+    new_event->hParent  = hParent;
+    new_event->nvfp     = nvfp;
+    new_event->fd       = fd;
+    new_event->active   = NV_TRUE;
+    new_event->refcount = 0;
+
     portSyncSpinlockAcquire(nv->event_spinlock);
     for (event = nv->event_list; event; event = event->next)
     {
@@ -496,43 +536,24 @@ static NV_STATUS allocate_os_event(
 
     new_event->next = nv->event_list;
     nv->event_list = new_event;
+    nvfp->bCleanupRmapi = NV_TRUE;
     portSyncSpinlockRelease(nv->event_spinlock);
 
 done:
     if (status == NV_OK)
     {
-        new_event->hParent  = hParent;
-        new_event->nvfp     = nvfp;
-        new_event->fd       = fd;
-        new_event->active   = NV_TRUE;
-        new_event->refcount = 0;
-
-        nvfp->bCleanupRmapi = NV_TRUE;
-
         NV_PRINTF(LEVEL_INFO, "allocated OS event:\n");
         NV_PRINTF(LEVEL_INFO, "   hParent: 0x%x\n", hParent);
         NV_PRINTF(LEVEL_INFO, "   fd: %d\n", fd);
     }
     else
     {
+        NV_PRINTF(LEVEL_ERROR, "failed to allocate OS event: 0x%08x\n", status);
+        status = NV_ERR_INSUFFICIENT_RESOURCES;
         portMemFree(new_event);
     }
 
     return status;
-}
-
-NV_STATUS RmAllocOsEvent(
-    NvHandle            hParent,
-    nv_file_private_t  *nvfp,
-    NvU32               fd
-)
-{
-    if (NV_OK != allocate_os_event(hParent, nvfp, fd))
-    {
-        NV_PRINTF(LEVEL_ERROR, "failed to allocate OS event\n");
-        return NV_ERR_INSUFFICIENT_RESOURCES;
-    }
-    return NV_OK;
 }
 
 static NV_STATUS free_os_event(
@@ -583,18 +604,6 @@ static NV_STATUS free_os_event(
     }
 
     return result;
-}
-
-NV_STATUS RmFreeOsEvent(
-    NvHandle    hParent,
-    NvU32       fd
-)
-{
-    if (NV_OK != free_os_event(hParent, fd))
-    {
-        return NV_ERR_INVALID_EVENT;
-    }
-    return NV_OK;
 }
 
 static void RmExecuteWorkItem(
@@ -654,40 +663,6 @@ done:
     }
 
     portMemFree((void *)pWi);
-}
-
-static NV_STATUS RmGetEventData(
-    nv_file_private_t *nvfp,
-    NvP64 pEvent,
-    NvU32 *MoreEvents,
-    NvBool bUserModeArgs
-)
-{
-    NV_STATUS         RmStatus;
-    NvUnixEvent      *pKernelEvent = NULL;
-    nv_event_t        nv_event;
-    RMAPI_PARAM_COPY  paramCopy;
-
-    RmStatus = nv_get_event(nvfp, &nv_event, MoreEvents);
-    if (RmStatus != NV_OK)
-        return NV_ERR_OPERATING_SYSTEM;
-
-    // setup for access to client's parameters
-    RMAPI_PARAM_COPY_INIT(paramCopy, pKernelEvent, pEvent, 1, sizeof(NvUnixEvent));
-    RmStatus = rmapiParamsAcquire(&paramCopy, bUserModeArgs);
-    if (RmStatus != NV_OK)
-        return NV_ERR_OPERATING_SYSTEM;
-
-    pKernelEvent->hObject     = nv_event.hObject;
-    pKernelEvent->NotifyIndex = nv_event.index;
-    pKernelEvent->info32      = nv_event.info32;
-    pKernelEvent->info16      = nv_event.info16;
-
-    // release client buffer access, with copyout as needed
-    if (rmapiParamsRelease(&paramCopy) != NV_OK)
-        return NV_ERR_OPERATING_SYSTEM;
-
-    return NV_OK;
 }
 
 static NV_STATUS RmAccessRegistry(
@@ -2738,16 +2713,68 @@ NV_STATUS NV_API_CALL rm_ioctl(
     NvU32               dataSize
 )
 {
-    NV_STATUS rmStatus;
+    NV_STATUS rmStatus = NV_OK;
     THREAD_STATE_NODE threadState;
     void *fp;
 
     NV_ENTER_RM_RUNTIME(sp,fp);
-    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
-    rmStatus = RmIoctl(pNv, nvfp, Command, pData, dataSize);
+    //
+    // Some ioctls are handled entirely inside the OS layer and don't need to
+    // suffer the overhead of calling into RM core.
+    //
+    switch (Command)
+    {
+        case NV_ESC_ALLOC_OS_EVENT:
+        {
+            nv_ioctl_alloc_os_event_t *pApi = pData;
 
-    threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
+            if (dataSize != sizeof(nv_ioctl_alloc_os_event_t))
+            {
+                rmStatus = NV_ERR_INVALID_ARGUMENT;
+                break;
+            }
+
+            pApi->Status = allocate_os_event(pApi->hClient, nvfp, pApi->fd);
+            break;
+        }
+        case NV_ESC_FREE_OS_EVENT:
+        {
+            nv_ioctl_free_os_event_t *pApi = pData;
+
+            if (dataSize != sizeof(nv_ioctl_free_os_event_t))
+            {
+                rmStatus = NV_ERR_INVALID_ARGUMENT;
+                break;
+            }
+
+            pApi->Status = free_os_event(pApi->hClient, pApi->fd);
+            break;
+        }
+        case NV_ESC_RM_GET_EVENT_DATA:
+        {
+            NVOS41_PARAMETERS *pApi = pData;
+
+            if (dataSize != sizeof(NVOS41_PARAMETERS))
+            {
+                rmStatus = NV_ERR_INVALID_ARGUMENT;
+                break;
+            }
+
+            pApi->status = get_os_event_data(nvfp,
+                                             pApi->pEvent,
+                                             &pApi->MoreEvents);
+            break;
+        }
+        default:
+        {
+            threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
+            rmStatus = RmIoctl(pNv, nvfp, Command, pData, dataSize);
+            threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
+            break;
+        }
+    }
+
     NV_EXIT_RM_RUNTIME(sp,fp);
 
     return rmStatus;
@@ -2880,65 +2907,6 @@ void NV_API_CALL rm_unbind_lock(
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
     NV_EXIT_RM_RUNTIME(sp,fp);
-}
-
-NV_STATUS rm_alloc_os_event(
-    NvHandle            hClient,
-    nv_file_private_t  *nvfp,
-    NvU32               fd
-)
-{
-    NV_STATUS RmStatus;
-
-    // LOCK: acquire API lock
-    if ((RmStatus = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_EVENT)) == NV_OK)
-    {
-        RmStatus = RmAllocOsEvent(hClient, nvfp, fd);
-
-        // UNLOCK: release API lock
-        rmapiLockRelease();
-    }
-
-    return RmStatus;
-}
-
-NV_STATUS rm_free_os_event(
-    NvHandle    hClient,
-    NvU32       fd
-)
-{
-    NV_STATUS RmStatus;
-
-    // LOCK: acquire API lock
-    if ((RmStatus = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_EVENT)) == NV_OK)
-    {
-        RmStatus = RmFreeOsEvent(hClient, fd);
-
-        // UNLOCK: release API lock
-        rmapiLockRelease();
-    }
-
-    return RmStatus;
-}
-
-NV_STATUS rm_get_event_data(
-    nv_file_private_t  *nvfp,
-    NvP64               pEvent,
-    NvU32              *MoreEvents
-)
-{
-    NV_STATUS RmStatus;
-
-    // LOCK: acquire API lock
-    if ((RmStatus = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_EVENT)) == NV_OK)
-    {
-        RmStatus = RmGetEventData(nvfp, pEvent, MoreEvents, NV_TRUE);
-
-        // UNLOCK: release API lock
-        rmapiLockRelease();
-    }
-
-    return RmStatus;
 }
 
 NV_STATUS NV_API_CALL rm_read_registry_dword(

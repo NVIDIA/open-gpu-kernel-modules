@@ -121,9 +121,6 @@ NvBool     RmGpuHasIOSpaceEnabled (nv_state_t *);
 void       RmFreeUnusedClients    (nv_state_t *, nv_file_private_t *);
 NV_STATUS  RmIoctl                (nv_state_t *, nv_file_private_t *, NvU32, void *, NvU32);
 
-NV_STATUS  RmAllocOsEvent         (NvHandle, nv_file_private_t *, NvU32);
-NV_STATUS  RmFreeOsEvent          (NvHandle, NvU32);
-
 void       RmI2cAddGpuPorts(nv_state_t *);
 
 NV_STATUS  RmInitX86EmuState(OBJGPU *);
@@ -141,9 +138,6 @@ int        amd_msr_c0011022_incompatible(OBJOS *);
 
 NV_STATUS  rm_get_adapter_status    (nv_state_t *, NvU32 *);
 
-NV_STATUS  rm_alloc_os_event        (NvHandle, nv_file_private_t *, NvU32);
-NV_STATUS  rm_free_os_event         (NvHandle, NvU32);
-NV_STATUS  rm_get_event_data        (nv_file_private_t *, NvP64, NvU32 *);
 void       rm_client_free_os_events (NvHandle);
 
 NV_STATUS  rm_create_mmap_context   (NvHandle, NvHandle, NvHandle, NvP64, NvU64, NvU64, NvU32, NvU32);
