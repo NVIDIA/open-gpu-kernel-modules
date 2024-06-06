@@ -332,6 +332,7 @@ struct KernelGsp {
 
     // Vtable with 82 per-object function pointers
     NV_STATUS (*__kgspConstructEngine__)(struct OBJGPU *, struct KernelGsp * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__kgspStateInitLocked__)(struct OBJGPU *, struct KernelGsp * /*this*/);  // virtual override (engstate) base (engstate)
     void (*__kgspRegisterIntrService__)(struct OBJGPU *, struct KernelGsp * /*this*/, IntrServiceRecord *);  // virtual override (intrserv) base (intrserv)
     NvU32 (*__kgspServiceInterrupt__)(struct OBJGPU *, struct KernelGsp * /*this*/, IntrServiceServiceInterruptArguments *);  // virtual override (intrserv) base (intrserv)
     void (*__kgspConfigureFalcon__)(struct OBJGPU *, struct KernelGsp * /*this*/);  // halified (3 hals) body
@@ -387,7 +388,6 @@ struct KernelGsp {
     void (*__kgspInitMissing__)(POBJGPU, struct KernelGsp * /*this*/);  // virtual inherited (engstate) base (engstate)
     NV_STATUS (*__kgspStatePreInitLocked__)(POBJGPU, struct KernelGsp * /*this*/);  // virtual inherited (engstate) base (engstate)
     NV_STATUS (*__kgspStatePreInitUnlocked__)(POBJGPU, struct KernelGsp * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgspStateInitLocked__)(POBJGPU, struct KernelGsp * /*this*/);  // virtual inherited (engstate) base (engstate)
     NV_STATUS (*__kgspStateInitUnlocked__)(POBJGPU, struct KernelGsp * /*this*/);  // virtual inherited (engstate) base (engstate)
     NV_STATUS (*__kgspStatePreLoad__)(POBJGPU, struct KernelGsp * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
     NV_STATUS (*__kgspStateLoad__)(POBJGPU, struct KernelGsp * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
@@ -512,6 +512,8 @@ NV_STATUS __nvoc_objCreate_KernelGsp(KernelGsp**, Dynamic*, NvU32);
 // Wrapper macros
 #define kgspConstructEngine_FNPTR(pKernelGsp) pKernelGsp->__kgspConstructEngine__
 #define kgspConstructEngine(pGpu, pKernelGsp, arg3) kgspConstructEngine_DISPATCH(pGpu, pKernelGsp, arg3)
+#define kgspStateInitLocked_FNPTR(pKernelGsp) pKernelGsp->__kgspStateInitLocked__
+#define kgspStateInitLocked(pGpu, pKernelGsp) kgspStateInitLocked_DISPATCH(pGpu, pKernelGsp)
 #define kgspRegisterIntrService_FNPTR(pKernelGsp) pKernelGsp->__kgspRegisterIntrService__
 #define kgspRegisterIntrService(pGpu, pKernelGsp, pRecords) kgspRegisterIntrService_DISPATCH(pGpu, pKernelGsp, pRecords)
 #define kgspServiceInterrupt_FNPTR(pKernelGsp) pKernelGsp->__kgspServiceInterrupt__
@@ -672,8 +674,6 @@ NV_STATUS __nvoc_objCreate_KernelGsp(KernelGsp**, Dynamic*, NvU32);
 #define kgspStatePreInitLocked(pGpu, pEngstate) kgspStatePreInitLocked_DISPATCH(pGpu, pEngstate)
 #define kgspStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreInitUnlocked__
 #define kgspStatePreInitUnlocked(pGpu, pEngstate) kgspStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define kgspStateInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__
-#define kgspStateInitLocked(pGpu, pEngstate) kgspStateInitLocked_DISPATCH(pGpu, pEngstate)
 #define kgspStateInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStateInitUnlocked__
 #define kgspStateInitUnlocked(pGpu, pEngstate) kgspStateInitUnlocked_DISPATCH(pGpu, pEngstate)
 #define kgspStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreLoad__
@@ -734,6 +734,10 @@ NV_STATUS __nvoc_objCreate_KernelGsp(KernelGsp**, Dynamic*, NvU32);
 // Dispatch functions
 static inline NV_STATUS kgspConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, ENGDESCRIPTOR arg3) {
     return pKernelGsp->__kgspConstructEngine__(pGpu, pKernelGsp, arg3);
+}
+
+static inline NV_STATUS kgspStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
+    return pKernelGsp->__kgspStateInitLocked__(pGpu, pKernelGsp);
 }
 
 static inline void kgspRegisterIntrService_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, IntrServiceRecord pRecords[175]) {
@@ -956,10 +960,6 @@ static inline NV_STATUS kgspStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct K
     return pEngstate->__kgspStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kgspStateInitLocked_DISPATCH(POBJGPU pGpu, struct KernelGsp *pEngstate) {
-    return pEngstate->__kgspStateInitLocked__(pGpu, pEngstate);
-}
-
 static inline NV_STATUS kgspStateInitUnlocked_DISPATCH(POBJGPU pGpu, struct KernelGsp *pEngstate) {
     return pEngstate->__kgspStateInitUnlocked__(pGpu, pEngstate);
 }
@@ -1061,6 +1061,8 @@ static inline NvU32 kgspGetWFL0Offset_DISPATCH(struct KernelGsp *arg_this) {
 }
 
 NV_STATUS kgspConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, ENGDESCRIPTOR arg3);
+
+NV_STATUS kgspStateInitLocked_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp);
 
 void kgspRegisterIntrService_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, IntrServiceRecord pRecords[175]);
 

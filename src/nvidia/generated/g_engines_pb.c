@@ -194,6 +194,18 @@ const PRB_FIELD_DESC prb_fields_nvdebug_eng_gpu[] = {
         PRB_MAYBE_FIELD_NAME("regs")
         PRB_MAYBE_FIELD_DEFAULT(0)
     },
+    {
+        39,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("rusd_mask")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
 };
 
 // 'Nvd' field defaults
@@ -210,6 +222,36 @@ const PRB_FIELD_DESC prb_fields_nvdebug_eng_nvd[] = {
         REGS_REGSANDMEM,
         0,
         PRB_MAYBE_FIELD_NAME("regs")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+};
+
+// 'KGsp' field defaults
+
+// 'KGsp' field descriptors
+const PRB_FIELD_DESC prb_fields_nvdebug_eng_kgsp[] = {
+    {
+        1,
+        {
+            PRB_REPEATED,
+            PRB_MESSAGE,
+            0,
+        },
+        NVDEBUG_ENG_KGSP_RPCINFO,
+        0,
+        PRB_MAYBE_FIELD_NAME("rpc_history")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        2,
+        {
+            PRB_REPEATED,
+            PRB_MESSAGE,
+            0,
+        },
+        NVDEBUG_ENG_KGSP_RPCINFO,
+        0,
+        PRB_MAYBE_FIELD_NAME("event_history")
         PRB_MAYBE_FIELD_DEFAULT(0)
     },
 };
@@ -262,6 +304,72 @@ const PRB_FIELD_DESC prb_fields_nvdebug_eng_mc_pcibarinfo[] = {
     },
 };
 
+// 'RpcInfo' field defaults
+
+// 'RpcInfo' field descriptors
+const PRB_FIELD_DESC prb_fields_nvdebug_eng_kgsp_rpcinfo[] = {
+    {
+        1,
+        {
+            PRB_REQUIRED,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("function")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        2,
+        {
+            PRB_REQUIRED,
+            PRB_UINT64,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("ts_start")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        3,
+        {
+            PRB_REQUIRED,
+            PRB_UINT64,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("ts_end")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        4,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("data0")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        5,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("data1")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+};
+
 // Message descriptors
 const PRB_MSG_DESC prb_messages_nvdebug_eng[] = {
     {
@@ -270,7 +378,7 @@ const PRB_MSG_DESC prb_messages_nvdebug_eng[] = {
         PRB_MAYBE_MESSAGE_NAME("NvDebug.Eng.Mc")
     },
     {
-        12,
+        13,
         prb_fields_nvdebug_eng_gpu,
         PRB_MAYBE_MESSAGE_NAME("NvDebug.Eng.Gpu")
     },
@@ -278,6 +386,11 @@ const PRB_MSG_DESC prb_messages_nvdebug_eng[] = {
         1,
         prb_fields_nvdebug_eng_nvd,
         PRB_MAYBE_MESSAGE_NAME("NvDebug.Eng.Nvd")
+    },
+    {
+        2,
+        prb_fields_nvdebug_eng_kgsp,
+        PRB_MAYBE_MESSAGE_NAME("NvDebug.Eng.KGsp")
     },
     {
         1,
@@ -288,6 +401,11 @@ const PRB_MSG_DESC prb_messages_nvdebug_eng[] = {
         2,
         prb_fields_nvdebug_eng_mc_pcibarinfo,
         PRB_MAYBE_MESSAGE_NAME("NvDebug.Eng.Mc.PciBarInfo")
+    },
+    {
+        5,
+        prb_fields_nvdebug_eng_kgsp_rpcinfo,
+        PRB_MAYBE_MESSAGE_NAME("NvDebug.Eng.KGsp.RpcInfo")
     },
 };
 

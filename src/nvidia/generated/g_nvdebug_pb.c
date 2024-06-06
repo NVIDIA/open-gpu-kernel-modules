@@ -194,6 +194,18 @@ const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo[] = {
         PRB_MAYBE_FIELD_NAME("bugcheck_count")
         PRB_MAYBE_FIELD_DEFAULT(0)
     },
+    {
+        13,
+        {
+            PRB_OPTIONAL,
+            PRB_MESSAGE,
+            0,
+        },
+        NVDEBUG_SYSTEMINFO_RESOURCESERVER,
+        0,
+        PRB_MAYBE_FIELD_NAME("resserv_info")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
 };
 
 // 'GpuInfo' field defaults
@@ -234,6 +246,18 @@ const PRB_FIELD_DESC prb_fields_nvdebug_gpuinfo[] = {
         NVDEBUG_ENG_NVD,
         0,
         PRB_MAYBE_FIELD_NAME("eng_nvd")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        24,
+        {
+            PRB_REPEATED,
+            PRB_MESSAGE,
+            0,
+        },
+        NVDEBUG_ENG_KGSP,
+        0,
+        PRB_MAYBE_FIELD_NAME("eng_kgsp")
         PRB_MAYBE_FIELD_DEFAULT(0)
     },
 };
@@ -838,15 +862,189 @@ const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_timeinfo[] = {
     },
 };
 
+// 'ResourceServer' field defaults
+
+// 'ResourceServer' field descriptors
+const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_resourceserver[] = {
+    {
+        1,
+        {
+            PRB_REQUIRED,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("num_clients")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        2,
+        {
+            PRB_REQUIRED,
+            PRB_UINT64,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("num_resources")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        3,
+        {
+            PRB_REPEATED,
+            PRB_MESSAGE,
+            0,
+        },
+        NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO,
+        0,
+        PRB_MAYBE_FIELD_NAME("client_info")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+};
+
+// 'ClientInfo' field defaults
+
+// 'ClientInfo' field descriptors
+const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_resourceserver_clientinfo[] = {
+    {
+        1,
+        {
+            PRB_REQUIRED,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("client_handle")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        2,
+        {
+            PRB_REQUIRED,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("process_id")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        3,
+        {
+            PRB_REQUIRED,
+            PRB_STRING,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("process_name")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        4,
+        {
+            PRB_REQUIRED,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("flags")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        5,
+        {
+            PRB_REQUIRED,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("priv_level")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        6,
+        {
+            PRB_REPEATED,
+            PRB_MESSAGE,
+            0,
+        },
+        NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENTALLOCATION,
+        0,
+        PRB_MAYBE_FIELD_NAME("allocations")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+};
+
+// 'ClientAllocation' field defaults
+
+// 'ClientAllocation' field descriptors
+const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_resourceserver_clientinfo_clientallocation[] = {
+    {
+        1,
+        {
+            PRB_REQUIRED,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("object_handle")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        2,
+        {
+            PRB_REQUIRED,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("object_class_id")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        3,
+        {
+            PRB_REQUIRED,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("parent_handle")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+    {
+        4,
+        {
+            PRB_OPTIONAL,
+            PRB_UINT32,
+            0,
+        },
+        0,
+        0,
+        PRB_MAYBE_FIELD_NAME("gpu_instance")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
+};
+
 // Message descriptors
 const PRB_MSG_DESC prb_messages_nvdebug[] = {
     {
-        12,
+        13,
         prb_fields_nvdebug_systeminfo,
         PRB_MAYBE_MESSAGE_NAME("NvDebug.SystemInfo")
     },
     {
-        3,
+        4,
         prb_fields_nvdebug_gpuinfo,
         PRB_MAYBE_MESSAGE_NAME("NvDebug.GpuInfo")
     },
@@ -899,6 +1097,21 @@ const PRB_MSG_DESC prb_messages_nvdebug[] = {
         5,
         prb_fields_nvdebug_systeminfo_timeinfo,
         PRB_MAYBE_MESSAGE_NAME("NvDebug.SystemInfo.TimeInfo")
+    },
+    {
+        3,
+        prb_fields_nvdebug_systeminfo_resourceserver,
+        PRB_MAYBE_MESSAGE_NAME("NvDebug.SystemInfo.ResourceServer")
+    },
+    {
+        6,
+        prb_fields_nvdebug_systeminfo_resourceserver_clientinfo,
+        PRB_MAYBE_MESSAGE_NAME("NvDebug.SystemInfo.ResourceServer.ClientInfo")
+    },
+    {
+        4,
+        prb_fields_nvdebug_systeminfo_resourceserver_clientinfo_clientallocation,
+        PRB_MAYBE_MESSAGE_NAME("NvDebug.SystemInfo.ResourceServer.ClientInfo.ClientAllocation")
     },
 };
 

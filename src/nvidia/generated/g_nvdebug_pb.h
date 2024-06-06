@@ -35,12 +35,15 @@ extern const PRB_MSG_DESC prb_messages_nvdebug[];
 #define NVDEBUG_SYSTEMINFO_CONFIG (&prb_messages_nvdebug[9])
 #define NVDEBUG_SYSTEMINFO_ERRORSTATE (&prb_messages_nvdebug[10])
 #define NVDEBUG_SYSTEMINFO_TIMEINFO (&prb_messages_nvdebug[11])
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER (&prb_messages_nvdebug[12])
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO (&prb_messages_nvdebug[13])
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENTALLOCATION (&prb_messages_nvdebug[14])
 
 // Message maximum lengths
 // Does not include repeated fields, strings and byte arrays.
-#define NVDEBUG_SYSTEMINFO_LEN 275
-#define NVDEBUG_GPUINFO_LEN 164
-#define NVDEBUG_NVDUMP_LEN 1308
+#define NVDEBUG_SYSTEMINFO_LEN 354
+#define NVDEBUG_GPUINFO_LEN 262
+#define NVDEBUG_NVDUMP_LEN 1570
 #define NVDEBUG_SYSTEMINFO_NORTHBRIDGEINFO_LEN 12
 #define NVDEBUG_SYSTEMINFO_SOCINFO_LEN 12
 #define NVDEBUG_SYSTEMINFO_CPUINFO_LEN 24
@@ -50,6 +53,9 @@ extern const PRB_MSG_DESC prb_messages_nvdebug[];
 #define NVDEBUG_SYSTEMINFO_CONFIG_LEN 12
 #define NVDEBUG_SYSTEMINFO_ERRORSTATE_LEN 14
 #define NVDEBUG_SYSTEMINFO_TIMEINFO_LEN 45
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_LEN 75
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_LEN 54
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENTALLOCATION_LEN 24
 
 extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo[];
 
@@ -66,6 +72,7 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo[];
 #define NVDEBUG_SYSTEMINFO_TIME_SINCE_BOOT (&prb_fields_nvdebug_systeminfo[9])
 #define NVDEBUG_SYSTEMINFO_TIME_INFO (&prb_fields_nvdebug_systeminfo[10])
 #define NVDEBUG_SYSTEMINFO_BUGCHECK_COUNT (&prb_fields_nvdebug_systeminfo[11])
+#define NVDEBUG_SYSTEMINFO_RESSERV_INFO (&prb_fields_nvdebug_systeminfo[12])
 
 // 'SystemInfo' field lengths
 #define NVDEBUG_SYSTEMINFO_TIMESTAMP_LEN 10
@@ -80,6 +87,7 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo[];
 #define NVDEBUG_SYSTEMINFO_TIME_SINCE_BOOT_LEN 5
 #define NVDEBUG_SYSTEMINFO_TIME_INFO_LEN 48
 #define NVDEBUG_SYSTEMINFO_BUGCHECK_COUNT_LEN 5
+#define NVDEBUG_SYSTEMINFO_RESSERV_INFO_LEN 78
 
 extern const PRB_FIELD_DESC prb_fields_nvdebug_gpuinfo[];
 
@@ -87,11 +95,13 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_gpuinfo[];
 #define NVDEBUG_GPUINFO_ENG_GPU (&prb_fields_nvdebug_gpuinfo[0])
 #define NVDEBUG_GPUINFO_ENG_MC (&prb_fields_nvdebug_gpuinfo[1])
 #define NVDEBUG_GPUINFO_ENG_NVD (&prb_fields_nvdebug_gpuinfo[2])
+#define NVDEBUG_GPUINFO_ENG_KGSP (&prb_fields_nvdebug_gpuinfo[3])
 
 // 'GpuInfo' field lengths
-#define NVDEBUG_GPUINFO_ENG_GPU_LEN 59
+#define NVDEBUG_GPUINFO_ENG_GPU_LEN 65
 #define NVDEBUG_GPUINFO_ENG_MC_LEN 69
 #define NVDEBUG_GPUINFO_ENG_NVD_LEN 33
+#define NVDEBUG_GPUINFO_ENG_KGSP_LEN 91
 
 extern const PRB_FIELD_DESC prb_fields_nvdebug_nvdump[];
 
@@ -103,11 +113,11 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_nvdump[];
 #define NVDEBUG_NVDUMP_SYSTEM_INFO_GSPRM (&prb_fields_nvdebug_nvdump[4])
 
 // 'NvDump' field lengths
-#define NVDEBUG_NVDUMP_SYSTEM_INFO_LEN 278
-#define NVDEBUG_NVDUMP_DCL_MSG_LEN 570
-#define NVDEBUG_NVDUMP_GPU_INFO_LEN 167
+#define NVDEBUG_NVDUMP_SYSTEM_INFO_LEN 357
+#define NVDEBUG_NVDUMP_DCL_MSG_LEN 576
+#define NVDEBUG_NVDUMP_GPU_INFO_LEN 265
 #define NVDEBUG_NVDUMP_EXCEPTION_ADDRESS_LEN 10
-#define NVDEBUG_NVDUMP_SYSTEM_INFO_GSPRM_LEN 278
+#define NVDEBUG_NVDUMP_SYSTEM_INFO_GSPRM_LEN 357
 
 extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_northbridgeinfo[];
 
@@ -242,6 +252,50 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_timeinfo[];
 #define NVDEBUG_SYSTEMINFO_TIMEINFO_SYSTEM_TIME_DUMP_LEN 10
 #define NVDEBUG_SYSTEMINFO_TIMEINFO_TIME_SINCE_BOOT_US_LEN 5
 #define NVDEBUG_SYSTEMINFO_TIMEINFO_TIME_SINCE_BOOT_SEC_LEN 5
+
+extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_resourceserver[];
+
+// 'ResourceServer' field descriptor pointers
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_NUM_CLIENTS (&prb_fields_nvdebug_systeminfo_resourceserver[0])
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_NUM_RESOURCES (&prb_fields_nvdebug_systeminfo_resourceserver[1])
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENT_INFO (&prb_fields_nvdebug_systeminfo_resourceserver[2])
+
+// 'ResourceServer' field lengths
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_NUM_CLIENTS_LEN 5
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_NUM_RESOURCES_LEN 10
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENT_INFO_LEN 57
+
+extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_resourceserver_clientinfo[];
+
+// 'ClientInfo' field descriptor pointers
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENT_HANDLE (&prb_fields_nvdebug_systeminfo_resourceserver_clientinfo[0])
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_PROCESS_ID (&prb_fields_nvdebug_systeminfo_resourceserver_clientinfo[1])
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_PROCESS_NAME (&prb_fields_nvdebug_systeminfo_resourceserver_clientinfo[2])
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_FLAGS (&prb_fields_nvdebug_systeminfo_resourceserver_clientinfo[3])
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_PRIV_LEVEL (&prb_fields_nvdebug_systeminfo_resourceserver_clientinfo[4])
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_ALLOCATIONS (&prb_fields_nvdebug_systeminfo_resourceserver_clientinfo[5])
+
+// 'ClientInfo' field lengths
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENT_HANDLE_LEN 5
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_PROCESS_ID_LEN 5
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_PROCESS_NAME_LEN 1
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_FLAGS_LEN 5
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_PRIV_LEVEL_LEN 5
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_ALLOCATIONS_LEN 27
+
+extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_resourceserver_clientinfo_clientallocation[];
+
+// 'ClientAllocation' field descriptor pointers
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENTALLOCATION_OBJECT_HANDLE (&prb_fields_nvdebug_systeminfo_resourceserver_clientinfo_clientallocation[0])
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENTALLOCATION_OBJECT_CLASS_ID (&prb_fields_nvdebug_systeminfo_resourceserver_clientinfo_clientallocation[1])
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENTALLOCATION_PARENT_HANDLE (&prb_fields_nvdebug_systeminfo_resourceserver_clientinfo_clientallocation[2])
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENTALLOCATION_GPU_INSTANCE (&prb_fields_nvdebug_systeminfo_resourceserver_clientinfo_clientallocation[3])
+
+// 'ClientAllocation' field lengths
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENTALLOCATION_OBJECT_HANDLE_LEN 5
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENTALLOCATION_OBJECT_CLASS_ID_LEN 5
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENTALLOCATION_PARENT_HANDLE_LEN 5
+#define NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENTALLOCATION_GPU_INSTANCE_LEN 5
 
 extern const PRB_SERVICE_DESC prb_services_nvdebug[];
 
