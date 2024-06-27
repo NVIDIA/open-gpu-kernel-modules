@@ -1272,6 +1272,98 @@ _rcdbGetTimeInfo
     return nvStatus;
 }
 
+static NV_STATUS
+_rcdbGetResourceServerData
+(
+    PRB_ENCODER          *pPrbEnc,
+    NVD_STATE            *pNvDumpState,
+    const PRB_FIELD_DESC *pFieldDesc
+)
+{
+    NV_STATUS nvStatus = NV_OK;
+    NvU8 startingDepth = prbEncNestingLevel(pPrbEnc);
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        prbEncNestedStart(pPrbEnc, pFieldDesc));
+
+    prbEncAddUInt32(pPrbEnc,
+                    NVDEBUG_SYSTEMINFO_RESOURCESERVER_NUM_CLIENTS,
+                    serverGetClientCount(&g_resServ));
+    prbEncAddUInt64(pPrbEnc,
+                    NVDEBUG_SYSTEMINFO_RESOURCESERVER_NUM_RESOURCES,
+                    serverGetResourceCount(&g_resServ));
+
+    for (RmClient **ppClient = serverutilGetFirstClientUnderLock();
+         ppClient;
+         ppClient = serverutilGetNextClientUnderLock(ppClient))
+    {
+        if (*ppClient == NULL)
+            continue;
+
+        RmClient *pRmClient = *ppClient;
+        RsClient *pRsClient = staticCast(pRmClient, RsClient);
+
+        NV_CHECK_OK_OR_GOTO(nvStatus, LEVEL_ERROR,
+            prbEncNestedStart(pPrbEnc, NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENT_INFO),
+            out);
+
+        prbEncAddUInt32(pPrbEnc,
+            NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENT_HANDLE,
+            pRsClient->hClient);
+        prbEncAddUInt32(pPrbEnc,
+            NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_PROCESS_ID,
+            pRmClient->ProcID);
+        prbEncAddString(pPrbEnc,
+            NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_PROCESS_NAME,
+            pRmClient->name);
+        prbEncAddUInt32(pPrbEnc,
+            NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_FLAGS,
+            pRmClient->Flags);
+        prbEncAddUInt32(pPrbEnc,
+            NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_PRIV_LEVEL,
+            (NvU32)pRmClient->cachedPrivilege);
+
+        RS_ITERATOR it = clientRefIter(pRsClient, 0, 0, RS_ITERATE_DESCENDANTS, NV_TRUE);
+        while (clientRefIterNext(it.pClient, &it))
+        {
+            if (it.pResourceRef == NULL || it.pResourceRef->pResource == NULL)
+                continue;
+
+            RsResource *pRes = it.pResourceRef->pResource;
+            RmResource *pRmRes = dynamicCast(pRes, RmResource);
+
+            NV_CHECK_OK_OR_GOTO(nvStatus, LEVEL_ERROR,
+                prbEncNestedStart(pPrbEnc, NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_ALLOCATIONS),
+                out);
+
+            prbEncAddUInt32(pPrbEnc,
+                NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENTALLOCATION_OBJECT_HANDLE,
+                it.pResourceRef->hResource);
+            prbEncAddUInt32(pPrbEnc,
+                NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENTALLOCATION_OBJECT_CLASS_ID,
+                it.pResourceRef->externalClassId);
+            prbEncAddUInt32(pPrbEnc,
+                NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENTALLOCATION_PARENT_HANDLE,
+                ((it.pResourceRef->pParentRef != NULL) ? it.pResourceRef->pParentRef->hResource : 0));
+            prbEncAddUInt32(pPrbEnc,
+                NVDEBUG_SYSTEMINFO_RESOURCESERVER_CLIENTINFO_CLIENTALLOCATION_GPU_INSTANCE,
+                ((pRmRes != NULL) ? pRmRes->rpcGpuInstance : 0xFFFFFFFF));
+
+            prbEncNestedEnd(pPrbEnc);
+        }
+        prbEncNestedEnd(pPrbEnc);
+    }
+
+    prbEncNestedEnd(pPrbEnc);
+
+out:
+    // Unwind the protobuf to the correct depth.
+    NV_CHECK_OK(nvStatus, LEVEL_ERROR,
+        prbEncUnwindNesting(pPrbEnc, startingDepth));
+
+    return nvStatus;
+}
+
 static const char * GPU_NA_UUID = "N/A";
 
 NV_STATUS
@@ -1316,6 +1408,10 @@ rcdbDumpSystemInfo_IMPL
 
     NV_CHECK_OK_OR_GOTO(nvStatus, LEVEL_ERROR,
         _rcdbGetTimeInfo(pPrbEnc, pNvDumpState, NVDEBUG_SYSTEMINFO_TIME_INFO),
+        External_Cleanup);
+
+    NV_CHECK_OK_OR_GOTO(nvStatus, LEVEL_ERROR,
+        _rcdbGetResourceServerData(pPrbEnc, pNvDumpState, NVDEBUG_SYSTEMINFO_RESSERV_INFO),
         External_Cleanup);
 
     prbEncAddUInt32(pPrbEnc,
