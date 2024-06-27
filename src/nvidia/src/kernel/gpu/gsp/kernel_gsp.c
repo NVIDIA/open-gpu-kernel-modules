@@ -325,13 +325,17 @@ _kgspCompleteRpcHistoryEntry
     NvU32 historyIndex;
     NvU32 historyEntry;
 
+    // Complete the current entry (it should be active)
+    // TODO: assert that ts_end == 0 here when continuation record timestamps are fixed
+    NV_ASSERT_OR_RETURN_VOID(pHistory[current].ts_start != 0);
+
     pHistory[current].ts_end = osGetTimestamp();
 
     //
     // Complete any previous entries that aren't marked complete yet, using the same timestamp
     // (we may not have explicitly waited for them)
     //
-    for (historyIndex = 0; historyIndex < RPC_HISTORY_DEPTH; historyIndex++)
+    for (historyIndex = 1; historyIndex < RPC_HISTORY_DEPTH; historyIndex++)
     {
         historyEntry = (current + RPC_HISTORY_DEPTH - historyIndex) % RPC_HISTORY_DEPTH;
         if (pHistory[historyEntry].ts_start != 0 &&
@@ -1669,13 +1673,13 @@ _tsDiffToDuration
     {
         duration /= 1000;
         *pDurationUnitsChar = 'm';
-    }
 
-    // 9999ms then 10s
-    if (duration >= 10000)
-    {
-        duration /= 1000;
-        *pDurationUnitsChar = ' '; // so caller can always just append 's'
+        // 9999ms then 10s
+        if (duration >= 10000)
+        {
+            duration /= 1000;
+            *pDurationUnitsChar = ' '; // so caller can always just append 's'
+        }
     }
 
     return duration;
