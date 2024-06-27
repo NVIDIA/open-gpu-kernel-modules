@@ -29,6 +29,7 @@
 #include "kernel/core/locks.h"
 #include "kernel/diagnostics/gpu_acct.h"
 #include "kernel/diagnostics/journal.h"
+#include "kernel/diagnostics/nv_debug_dump.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/gpu/gsp/gsp_trace_rats_macro.h"
 #include "kernel/gpu/intr/engine_idx.h"
@@ -66,6 +67,8 @@
 #include "core/locks.h"
 #include "kernel/gpu/intr/intr.h"
 #include "kernel/gpu/gr/fecs_event_list.h"
+#include "lib/protobuf/prb_util.h"
+#include "g_nvdebug_pb.h"
 
 #define RPC_STRUCTURES
 #define RPC_GENERIC_UNION
@@ -154,6 +157,8 @@ static NV_STATUS _kgspGetSectionNameForPrefix(OBJGPU *pGpu, KernelGsp *pKernelGs
 
 static NV_STATUS _kgspRpcGspEventFecsError(OBJGPU *, OBJRPC *);
 static void _kgspRpcGspEventHandleFecsBufferError(NvU32, void *);
+
+static NV_STATUS _kgspDumpEngineFunc(OBJGPU*, PRB_ENCODER*, NVD_STATE*, void*);
 
 static void
 _kgspGetActiveRpcDebugData
@@ -320,19 +325,27 @@ _kgspCompleteRpcHistoryEntry
     NvU32 historyIndex;
     NvU32 historyEntry;
 
+    // Complete the current entry (it should be active)
+    // TODO: assert that ts_end == 0 here when continuation record timestamps are fixed
+    NV_ASSERT_OR_RETURN_VOID(pHistory[current].ts_start != 0);
+
     pHistory[current].ts_end = osGetTimestamp();
 
     //
     // Complete any previous entries that aren't marked complete yet, using the same timestamp
     // (we may not have explicitly waited for them)
     //
-    for (historyIndex = 0; historyIndex < RPC_HISTORY_DEPTH; historyIndex++)
+    for (historyIndex = 1; historyIndex < RPC_HISTORY_DEPTH; historyIndex++)
     {
         historyEntry = (current + RPC_HISTORY_DEPTH - historyIndex) % RPC_HISTORY_DEPTH;
         if (pHistory[historyEntry].ts_start != 0 &&
             pHistory[historyEntry].ts_end   == 0)
         {
             pHistory[historyEntry].ts_end = pHistory[current].ts_end;
+        }
+        else
+        {
+            break;
         }
     }
 }
@@ -1660,13 +1673,13 @@ _tsDiffToDuration
     {
         duration /= 1000;
         *pDurationUnitsChar = 'm';
-    }
 
-    // 9999ms then 10s
-    if (duration >= 10000)
-    {
-        duration /= 1000;
-        *pDurationUnitsChar = ' '; // so caller can always just append 's'
+        // 9999ms then 10s
+        if (duration >= 10000)
+        {
+            duration /= 1000;
+            *pDurationUnitsChar = ' '; // so caller can always just append 's'
+        }
     }
 
     return duration;
@@ -1763,6 +1776,7 @@ kgspLogRpcDebugInfo
     NvU32  historyIndex;
     NvU32  historyEntry;
     NvU64  activeData[2];
+    const NvU32 rpcEntriesToLog = (RPC_HISTORY_DEPTH > 8) ? 8 : RPC_HISTORY_DEPTH;
 
     _kgspGetActiveRpcDebugData(pRpc, pMsgHdr->function,
                                &activeData[0], &activeData[1]);
@@ -1777,7 +1791,7 @@ kgspLogRpcDebugInfo
                       gpuGetInstance(pGpu));
     NV_ERROR_LOG_DATA(pGpu, errorNum,
                       "    entry function                   data0              data1              ts_start           ts_end             duration actively_polling\n");
-    for (historyIndex = 0; historyIndex < RPC_HISTORY_DEPTH; historyIndex++)
+    for (historyIndex = 0; historyIndex < rpcEntriesToLog; historyIndex++)
     {
         historyEntry = (pRpc->rpcHistoryCurrent + RPC_HISTORY_DEPTH - historyIndex) % RPC_HISTORY_DEPTH;
         _kgspLogRpcHistoryEntry(pGpu, errorNum, historyIndex, &pRpc->rpcHistory[historyEntry],
@@ -1789,7 +1803,7 @@ kgspLogRpcDebugInfo
                       gpuGetInstance(pGpu));
     NV_ERROR_LOG_DATA(pGpu, errorNum,
                       "    entry function                   data0              data1              ts_start           ts_end             duration during_incomplete_rpc\n");
-    for (historyIndex = 0; historyIndex < RPC_HISTORY_DEPTH; historyIndex++)
+    for (historyIndex = 0; historyIndex < rpcEntriesToLog; historyIndex++)
     {
         historyEntry = (pRpc->rpcEventHistoryCurrent + RPC_HISTORY_DEPTH - historyIndex) % RPC_HISTORY_DEPTH;
         _kgspLogRpcHistoryEntry(pGpu, errorNum, historyIndex, &pRpc->rpcEventHistory[historyEntry],
@@ -2748,6 +2762,28 @@ done:
 
     return nvStatus;
 }
+
+NV_STATUS kgspStateInitLocked_IMPL(OBJGPU *pGpu, KernelGsp *pKernelGsp)
+{
+    NvDebugDump *pNvd = GPU_GET_NVD(pGpu);
+    if (pNvd != NULL)
+    {
+        //
+        // Register as PRIORITY_CRITICAL so it runs sooner and we get more of the
+        // useful RPC history and not too many DUMP_COMPONENT and similar RPCs
+        // invoked by other engines' dump functions
+        //
+        nvdEngineSignUp(pGpu,
+                        pNvd,
+                        _kgspDumpEngineFunc,
+                        NVDUMP_COMPONENT_ENG_KGSP,
+                        REF_DEF(NVD_ENGINE_FLAGS_PRIORITY, _CRITICAL) |
+                        REF_DEF(NVD_ENGINE_FLAGS_SOURCE,   _CPU),
+                        (void *)pGpu);
+    }
+    return NV_OK;
+}
+
 
 /*!
  * Convert VBIOS version containing Version and OemVersion packed together to
@@ -4565,4 +4601,66 @@ NvU64 kgspGetWprEndMargin_IMPL(OBJGPU *pGpu, KernelGsp *pKernelGsp)
     // Normal boot path
     pWprMeta->flags &= ~GSP_FW_FLAGS_RECOVERY_MARGIN_PRESENT;
     return 0;
+}
+
+static NV_STATUS _kgspDumpEngineFunc
+(
+    OBJGPU *pGpu,
+    PRB_ENCODER *pPrbEnc,
+    NVD_STATE *pNvDumpState,
+    void *pvData
+)
+{
+    OBJRPC *pRpc = GPU_GET_RPC(pGpu);
+    NV_STATUS nvStatus = NV_OK;
+    NvU8 startingDepth = prbEncNestingLevel(pPrbEnc);
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        prbEncNestedStart(pPrbEnc, NVDEBUG_GPUINFO_ENG_KGSP));
+
+    for (NvU32 i = 0; i < RPC_HISTORY_DEPTH; i++)
+    {
+        NvU32 entryIdx = (pRpc->rpcHistoryCurrent + RPC_HISTORY_DEPTH - i) % RPC_HISTORY_DEPTH;
+        RpcHistoryEntry *entry = &pRpc->rpcHistory[entryIdx];
+
+        if (entry->function == 0)
+            break;
+
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            prbEncNestedStart(pPrbEnc, NVDEBUG_ENG_KGSP_RPC_HISTORY));
+
+        prbEncAddUInt32(pPrbEnc, NVDEBUG_ENG_KGSP_RPCINFO_FUNCTION, entry->function);
+        prbEncAddUInt64(pPrbEnc, NVDEBUG_ENG_KGSP_RPCINFO_TS_START, entry->ts_start);
+        prbEncAddUInt64(pPrbEnc, NVDEBUG_ENG_KGSP_RPCINFO_TS_END, entry->ts_end);
+        prbEncAddUInt32(pPrbEnc, NVDEBUG_ENG_KGSP_RPCINFO_DATA0, entry->data[0]);
+        prbEncAddUInt32(pPrbEnc, NVDEBUG_ENG_KGSP_RPCINFO_DATA1, entry->data[1]);
+
+        prbEncNestedEnd(pPrbEnc);
+    }
+
+    for (NvU32 i = 0; i < RPC_HISTORY_DEPTH; i++)
+    {
+        NvU32 entryIdx = (pRpc->rpcEventHistoryCurrent + RPC_HISTORY_DEPTH - i) % RPC_HISTORY_DEPTH;
+        RpcHistoryEntry *entry = &pRpc->rpcEventHistory[entryIdx];
+
+        if (entry->function == 0)
+            break;
+
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            prbEncNestedStart(pPrbEnc, NVDEBUG_ENG_KGSP_EVENT_HISTORY));
+
+        prbEncAddUInt32(pPrbEnc, NVDEBUG_ENG_KGSP_RPCINFO_FUNCTION, entry->function);
+        prbEncAddUInt64(pPrbEnc, NVDEBUG_ENG_KGSP_RPCINFO_TS_START, entry->ts_start);
+        prbEncAddUInt64(pPrbEnc, NVDEBUG_ENG_KGSP_RPCINFO_TS_END, entry->ts_end);
+        prbEncAddUInt32(pPrbEnc, NVDEBUG_ENG_KGSP_RPCINFO_DATA0, entry->data[0]);
+        prbEncAddUInt32(pPrbEnc, NVDEBUG_ENG_KGSP_RPCINFO_DATA1, entry->data[1]);
+
+        prbEncNestedEnd(pPrbEnc);
+    }
+
+    // Unwind the protobuf to the correct depth.
+    NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(nvStatus, LEVEL_ERROR,
+        prbEncUnwindNesting(pPrbEnc, startingDepth));
+
+    return nvStatus;
 }

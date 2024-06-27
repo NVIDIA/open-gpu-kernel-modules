@@ -102,11 +102,16 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelGsp =
     /*pExportInfo=*/        &__nvoc_export_info_KernelGsp
 };
 
-// 5 down-thunk(s) defined to bridge methods in KernelGsp from superclasses
+// 6 down-thunk(s) defined to bridge methods in KernelGsp from superclasses
 
 // kgspConstructEngine: virtual override (engstate) base (engstate)
 static NV_STATUS __nvoc_down_thunk_KernelGsp_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelGsp, ENGDESCRIPTOR arg3) {
     return kgspConstructEngine(pGpu, (struct KernelGsp *)(((unsigned char *) pKernelGsp) - __nvoc_rtti_KernelGsp_OBJENGSTATE.offset), arg3);
+}
+
+// kgspStateInitLocked: virtual override (engstate) base (engstate)
+static NV_STATUS __nvoc_down_thunk_KernelGsp_engstateStateInitLocked(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelGsp) {
+    return kgspStateInitLocked(pGpu, (struct KernelGsp *)(((unsigned char *) pKernelGsp) - __nvoc_rtti_KernelGsp_OBJENGSTATE.offset));
 }
 
 // kgspRegisterIntrService: virtual override (intrserv) base (intrserv)
@@ -130,7 +135,7 @@ static void __nvoc_down_thunk_KernelGsp_kcrashcatEngineReadEmem(struct KernelCra
 }
 
 
-// 29 up-thunk(s) defined to bridge methods in KernelGsp to superclasses
+// 28 up-thunk(s) defined to bridge methods in KernelGsp to superclasses
 
 // kgspInitMissing: virtual inherited (engstate) base (engstate)
 static void __nvoc_up_thunk_OBJENGSTATE_kgspInitMissing(POBJGPU pGpu, struct KernelGsp *pEngstate) {
@@ -145,11 +150,6 @@ static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspStatePreInitLocked(POBJGPU pGpu
 // kgspStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
 static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspStatePreInitUnlocked(POBJGPU pGpu, struct KernelGsp *pEngstate) {
     return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset));
-}
-
-// kgspStateInitLocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgspStateInitLocked(POBJGPU pGpu, struct KernelGsp *pEngstate) {
-    return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset));
 }
 
 // kgspStateInitUnlocked: virtual inherited (engstate) base (engstate)
@@ -406,6 +406,10 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
     // kgspConstructEngine -- virtual override (engstate) base (engstate)
     pThis->__kgspConstructEngine__ = &kgspConstructEngine_IMPL;
     pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_down_thunk_KernelGsp_engstateConstructEngine;
+
+    // kgspStateInitLocked -- virtual override (engstate) base (engstate)
+    pThis->__kgspStateInitLocked__ = &kgspStateInitLocked_IMPL;
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__ = &__nvoc_down_thunk_KernelGsp_engstateStateInitLocked;
 
     // kgspRegisterIntrService -- virtual override (intrserv) base (intrserv)
     pThis->__kgspRegisterIntrService__ = &kgspRegisterIntrService_IMPL;
@@ -1272,9 +1276,6 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
     // kgspStatePreInitUnlocked -- virtual inherited (engstate) base (engstate)
     pThis->__kgspStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kgspStatePreInitUnlocked;
 
-    // kgspStateInitLocked -- virtual inherited (engstate) base (engstate)
-    pThis->__kgspStateInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_kgspStateInitLocked;
-
     // kgspStateInitUnlocked -- virtual inherited (engstate) base (engstate)
     pThis->__kgspStateInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kgspStateInitUnlocked;
 
@@ -1349,7 +1350,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
 
     // kgspGetWFL0Offset -- virtual halified (singleton optimized) inherited (kcrashcatEngine) base (kflcn)
     pThis->__kgspGetWFL0Offset__ = &__nvoc_up_thunk_KernelCrashCatEngine_kgspGetWFL0Offset;
-} // End __nvoc_init_funcTable_KernelGsp_1 with approximately 195 basic block(s).
+} // End __nvoc_init_funcTable_KernelGsp_1 with approximately 196 basic block(s).
 
 
 // Initialize vtable(s) for 82 virtual method(s).

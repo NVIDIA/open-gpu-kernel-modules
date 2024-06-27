@@ -53,7 +53,7 @@ TYPEDEF_BITVECTOR(MC_ENGINE_BITVECTOR);
 #define RPC_TIMEOUT_LIMIT_PRINT_RATE_THRESH 3  // rate limit after 3 prints
 #define RPC_TIMEOUT_LIMIT_PRINT_RATE_SKIP   29 // skip 29 of 30 prints
 
-#define RPC_HISTORY_DEPTH 8
+#define RPC_HISTORY_DEPTH 128
 
 typedef struct RpcHistoryEntry
 {

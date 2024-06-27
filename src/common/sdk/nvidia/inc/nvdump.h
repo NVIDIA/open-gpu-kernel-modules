@@ -79,6 +79,7 @@ typedef enum
     NVDUMP_COMPONENT_ENG_GSP,
     NVDUMP_COMPONENT_ENG_INFOROM,
     NVDUMP_COMPONENT_ENG_GCX,
+    NVDUMP_COMPONENT_ENG_KGSP,
     // The following components are global to the system:
     NVDUMP_COMPONENT_SYS_RCDB = 0x400,
     NVDUMP_COMPONENT_SYS_SYSINFO,

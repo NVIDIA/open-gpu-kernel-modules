@@ -88,6 +88,10 @@ _gpuDumpEngine_CommonFields
                   NVDEBUG_ENG_GPU_IS_ACCESSIBLE,
                   pNvDumpState->bGpuAccessible);
 
+    prbEncAddUInt32(pPrbEnc,
+                    NVDEBUG_ENG_GPU_RUSD_MASK,
+                    pGpu->userSharedData.lastPolledDataMask);
+
     return rmStatus;
 }
 
@@ -136,7 +140,7 @@ gpuDumpCallbackRegister_IMPL
                         _gpuDumpEngineFunc,
                         NVDUMP_COMPONENT_ENG_GPU,
                         REF_DEF(NVD_ENGINE_FLAGS_PRIORITY, _MED) |
-                        REF_DEF(NVD_ENGINE_FLAGS_SOURCE,   _GSP),
+                        REF_DEF(NVD_ENGINE_FLAGS_SOURCE,   _BOTH),
                         (void *)pGpu);
     }
 }
