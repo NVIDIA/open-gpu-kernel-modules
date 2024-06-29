@@ -765,7 +765,7 @@ _kmigmgrHandlePostSchedulingEnableCallback
     if ((pKernelMIGManager == NULL) || !kmigmgrIsMIGSupported(pGpu, pKernelMIGManager))
     {
         NV_PRINTF(LEVEL_INFO, "MIG not supported on this GPU.\n");
-        return NV_ERR_NOT_SUPPORTED;
+        return NV_OK;
     }
 
     if (!IS_MIG_ENABLED(pGpu) && !IS_VIRTUAL(pGpu) &&

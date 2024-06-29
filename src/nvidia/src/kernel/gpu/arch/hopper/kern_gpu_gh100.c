@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -480,6 +480,22 @@ gpuIsDevModeEnabledInHw_GH100
 {
     NvU32 val = GPU_REG_RD32(pGpu, NV_PGC6_AON_SECURE_SCRATCH_GROUP_20_CC);
     return FLD_TEST_DRF(_PGC6, _AON_SECURE_SCRATCH_GROUP_20_CC, _DEV_ENABLED, _TRUE, val);
+}
+
+/*!
+ * Check if protected pcie has been set in the scratch register
+ *
+ * @param[in]  pGpu  GPU object pointer
+ */
+NvBool
+gpuIsProtectedPcieEnabledInHw_GH100
+(
+    OBJGPU *pGpu
+)
+{
+    NvU32 val = GPU_REG_RD32(pGpu, NV_PGC6_AON_SECURE_SCRATCH_GROUP_20_CC);
+    return FLD_TEST_DRF(_PGC6, _AON_SECURE_SCRATCH_GROUP_20_CC, _MULTI_GPU_MODE,
+                        _PROTECTED_PCIE, val);
 }
 
 /*!

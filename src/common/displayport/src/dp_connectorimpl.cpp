@@ -176,6 +176,7 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
     this->bReassessMaxLink               = dpRegkeyDatabase.bReassessMaxLink;
     this->bForceDscOnSink                = dpRegkeyDatabase.bForceDscOnSink;
     this->bSkipFakeDeviceDpcdAccess      = dpRegkeyDatabase.bSkipFakeDeviceDpcdAccess;
+    this->bFlushTimeslotWhenDirty        = dpRegkeyDatabase.bFlushTimeslotWhenDirty;
 }
 
 void ConnectorImpl::setPolicyModesetOrderMitigation(bool enabled)
@@ -5611,7 +5612,8 @@ void ConnectorImpl::beforeDeleteStream(GroupImpl * group, bool forFlushMode)
         }
     }
 
-    if (linkUseMultistream() && group && group->isHeadAttached() && group->timeslot.count)
+    if (linkUseMultistream() && group && group->isHeadAttached() &&
+        (group->timeslot.count || (this->bFlushTimeslotWhenDirty && group->timeslot.hardwareDirty)))
     {
         // Detach all the panels from payload
         for (Device * d = group->enumDevices(0); d; d = group->enumDevices(d))

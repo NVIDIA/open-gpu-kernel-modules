@@ -181,6 +181,7 @@ typedef struct GspSystemInfo
     GSP_VF_INFO gspVFInfo;
     NvBool isGridBuild;
     NvU32 gridBuildCsp;
+    NvBool bTdrEventSupported;
 } GspSystemInfo;
 
 

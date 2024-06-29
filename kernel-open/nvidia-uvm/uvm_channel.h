@@ -228,21 +228,65 @@ typedef struct
     // variant is required when the thread holding the pool lock must sleep
     // (ex: acquire another mutex) deeper in the call stack, either in UVM or
     // RM.
-    union {
+    union
+    {
         uvm_spinlock_t spinlock;
         uvm_mutex_t mutex;
     };
 
-    // Secure operations require that uvm_push_begin order matches
-    // uvm_push_end order, because the engine's state is used in its internal
-    // operation and each push may modify this state. push_locks is protected by
-    // the channel pool lock.
-    DECLARE_BITMAP(push_locks, UVM_CHANNEL_MAX_NUM_CHANNELS_PER_POOL);
+    struct
+    {
+        // Secure operations require that uvm_push_begin order matches
+        // uvm_push_end order, because the engine's state is used in its
+        // internal operation and each push may modify this state.
+        // push_locks is protected by the channel pool lock.
+        DECLARE_BITMAP(push_locks, UVM_CHANNEL_MAX_NUM_CHANNELS_PER_POOL);
 
-    // Counting semaphore for available and unlocked channels, it must be
-    // acquired before submitting work to a channel when the Confidential
-    // Computing feature is enabled.
-    uvm_semaphore_t push_sem;
+        // Counting semaphore for available and unlocked channels, it must be
+        // acquired before submitting work to a channel when the Confidential
+        // Computing feature is enabled.
+        uvm_semaphore_t push_sem;
+
+        // Per channel buffers in unprotected sysmem.
+        uvm_rm_mem_t *pool_sysmem;
+
+        // Per channel buffers in protected vidmem.
+        uvm_rm_mem_t *pool_vidmem;
+
+       struct
+       {
+            // Current encryption key version, incremented upon key rotation.
+            // While there are separate keys for encryption and decryption, the
+            // two keys are rotated at once, so the versioning applies to both.
+            NvU32 version;
+
+            // Lock used to ensure mutual exclusion during key rotation.
+            uvm_mutex_t mutex;
+
+            // CSL contexts passed to RM for key rotation. This is usually an
+            // array containing the CSL contexts associated with the channels in
+            // the pool. In the case of the WLC pool, the array also includes
+            // CSL contexts associated with LCIC channels.
+            UvmCslContext **csl_contexts;
+
+            // Number of elements in the CSL context array.
+            unsigned num_csl_contexts;
+
+            // Number of bytes encrypted, or decrypted, on the engine associated
+            // with the pool since the last key rotation. Only used during
+            // testing, to force key rotations after a certain encryption size,
+            // see UVM_CONF_COMPUTING_KEY_ROTATION_LOWER_THRESHOLD.
+            //
+            // Encryptions on a LCIC pool are accounted for in the paired WLC
+            // pool.
+            //
+            // TODO: Bug 4612912: these accounting variables can be removed once
+            // RM exposes an API to set the key rotation lower threshold.
+            atomic64_t encrypted;
+            atomic64_t decrypted;
+        } key_rotation;
+
+    } conf_computing;
 } uvm_channel_pool_t;
 
 struct uvm_channel_struct
@@ -322,43 +366,14 @@ struct uvm_channel_struct
         // work launches to match the order of push end-s that triggered them.
         volatile NvU32 gpu_put;
 
-        // Static pushbuffer for channels with static schedule (WLC/LCIC)
-        uvm_rm_mem_t *static_pb_protected_vidmem;
-
-        // Static pushbuffer staging buffer for WLC
-        uvm_rm_mem_t *static_pb_unprotected_sysmem;
-        void *static_pb_unprotected_sysmem_cpu;
-        void *static_pb_unprotected_sysmem_auth_tag_cpu;
-
-        // The above static locations are required by the WLC (and LCIC)
-        // schedule. Protected sysmem location completes WLC's independence
-        // from the pushbuffer allocator.
+        // Protected sysmem location makes WLC independent from the pushbuffer
+        // allocator. Unprotected sysmem and protected vidmem counterparts
+        // are allocated from the channel pool (sysmem, vidmem).
         void *static_pb_protected_sysmem;
-
-        // Static tracking semaphore notifier values
-        // Because of LCIC's fixed schedule, the secure semaphore release
-        // mechanism uses two additional static locations for incrementing the
-        // notifier values. See:
-        // . channel_semaphore_secure_release()
-        // . setup_lcic_schedule()
-        // . internal_channel_submit_work_wlc()
-        uvm_rm_mem_t *static_notifier_unprotected_sysmem;
-        NvU32 *static_notifier_entry_unprotected_sysmem_cpu;
-        NvU32 *static_notifier_exit_unprotected_sysmem_cpu;
-        uvm_gpu_address_t static_notifier_entry_unprotected_sysmem_gpu_va;
-        uvm_gpu_address_t static_notifier_exit_unprotected_sysmem_gpu_va;
-
-        // Explicit location for push launch tag used by WLC.
-        // Encryption auth tags have to be located in unprotected sysmem.
-        void *launch_auth_tag_cpu;
-        NvU64 launch_auth_tag_gpu_va;
 
         // Used to decrypt the push back to protected sysmem.
         // This happens when profilers register callbacks for migration data.
         uvm_push_crypto_bundle_t *push_crypto_bundles;
-
-        // Accompanying authentication tags for the crypto bundles
-        uvm_rm_mem_t *push_crypto_bundle_auth_tags;
     } conf_computing;
 
     // RM channel information
@@ -418,7 +433,7 @@ struct uvm_channel_manager_struct
     unsigned num_channel_pools;
 
     // Mask containing the indexes of the usable Copy Engines. Each usable CE
-    // has at least one pool associated with it.
+    // has at least one pool of type UVM_CHANNEL_POOL_TYPE_CE associated with it
     DECLARE_BITMAP(ce_mask, UVM_COPY_ENGINE_COUNT_MAX);
 
     struct
@@ -451,6 +466,16 @@ struct uvm_channel_manager_struct
         UVM_BUFFER_LOCATION gpput_loc;
         UVM_BUFFER_LOCATION pushbuffer_loc;
     } conf;
+
+    struct
+    {
+        // Flag indicating that the WLC/LCIC mechanism is ready/setup; should
+        // only be false during (de)initialization.
+        bool wlc_ready;
+
+        // True indicates that key rotation is enabled (UVM-wise).
+        bool key_rotation_enabled;
+    } conf_computing;
 };
 
 // Create a channel manager for the GPU
@@ -501,6 +526,14 @@ uvm_channel_t *uvm_channel_lcic_get_paired_wlc(uvm_channel_t *lcic_channel);
 
 uvm_channel_t *uvm_channel_wlc_get_paired_lcic(uvm_channel_t *wlc_channel);
 
+NvU64 uvm_channel_get_static_pb_protected_vidmem_gpu_va(uvm_channel_t *channel);
+
+NvU64 uvm_channel_get_static_pb_unprotected_sysmem_gpu_va(uvm_channel_t *channel);
+
+char* uvm_channel_get_static_pb_unprotected_sysmem_cpu(uvm_channel_t *channel);
+
+char *uvm_channel_get_push_crypto_bundle_auth_tags_cpu_va(uvm_channel_t *channel, unsigned tag_index);
+
 static bool uvm_channel_pool_is_proxy(uvm_channel_pool_t *pool)
 {
     UVM_ASSERT(uvm_pool_type_is_valid(pool->pool_type));
@@ -531,6 +564,17 @@ static uvm_channel_type_t uvm_channel_proxy_channel_type(void)
 {
     return UVM_CHANNEL_TYPE_MEMOPS;
 }
+
+// Force key rotation in the engine associated with the given channel pool.
+// Rotation may still not happen if RM cannot acquire the necessary locks (in
+// which case the function returns NV_ERR_STATE_IN_USE).
+//
+// This function should be only invoked in pools in which key rotation is
+// enabled.
+NV_STATUS uvm_channel_pool_rotate_key(uvm_channel_pool_t *pool);
+
+// Retrieve the current encryption key version associated with the channel pool.
+NvU32 uvm_channel_pool_key_version(uvm_channel_pool_t *pool);
 
 // Privileged channels support all the Host and engine methods, while
 // non-privileged channels don't support privileged methods.
@@ -579,12 +623,9 @@ NvU32 uvm_channel_manager_update_progress(uvm_channel_manager_t *channel_manager
 // beginning.
 NV_STATUS uvm_channel_manager_wait(uvm_channel_manager_t *manager);
 
-// Check if WLC/LCIC mechanism is ready/setup
-// Should only return false during initialization
 static bool uvm_channel_manager_is_wlc_ready(uvm_channel_manager_t *manager)
 {
-    return (manager->pool_to_use.default_for_type[UVM_CHANNEL_TYPE_WLC] != NULL) &&
-           (manager->pool_to_use.default_for_type[UVM_CHANNEL_TYPE_LCIC] != NULL);
+    return manager->conf_computing.wlc_ready;
 }
 // Get the GPU VA of semaphore_channel's tracking semaphore within the VA space
 // associated with access_channel.

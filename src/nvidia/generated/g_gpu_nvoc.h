@@ -971,6 +971,7 @@ struct OBJGPU {
     NvBool (*__gpuIsSliCapableWithoutDisplay__)(struct OBJGPU *);
     NvBool (*__gpuIsCCEnabledInHw__)(struct OBJGPU *);
     NvBool (*__gpuIsDevModeEnabledInHw__)(struct OBJGPU *);
+    NvBool (*__gpuIsProtectedPcieEnabledInHw__)(struct OBJGPU *);
     NvBool (*__gpuIsCtxBufAllocInPmaSupported__)(struct OBJGPU *);
     NV_STATUS (*__gpuUpdateErrorContainmentState__)(struct OBJGPU *, NV_ERROR_CONT_ERR_ID, NV_ERROR_CONT_LOCATION, NvU32 *);
     NV_STATUS (*__gpuWaitForGfwBootComplete__)(struct OBJGPU *);
@@ -1053,6 +1054,7 @@ struct OBJGPU {
     NvBool PDB_PROP_GPU_SKIP_CE_MAPPINGS_NO_NVLINK;
     NvBool PDB_PROP_GPU_C2C_SYSMEM;
     NvBool PDB_PROP_GPU_IN_TCC_MODE;
+    NvBool PDB_PROP_GPU_SUPPORTS_TDR_EVENT;
     NvBool PDB_PROP_GPU_MSHYBRID_GC6_ACTIVE;
     NvBool PDB_PROP_GPU_VGPU_BIG_PAGE_SIZE_64K;
     NvBool PDB_PROP_GPU_OPTIMIZE_SPARSE_TEXTURE_BY_DEFAULT;
@@ -1132,6 +1134,8 @@ struct OBJGPU {
     NvS32 computeModeRefCount;
     NvHandle hComputeModeReservation;
     NvBool bIsDebugModeEnabled;
+    NvU64 lastCallbackTime;
+    volatile NvU32 bCallbackQueued;
     NvU32 masterFromSLIConfig;
     NvU32 sliStatus;
     struct OBJOS *pOS;
@@ -1444,6 +1448,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGPU;
 #define PDB_PROP_GPU_IN_PM_CODEPATH_BASE_NAME PDB_PROP_GPU_IN_PM_CODEPATH
 #define PDB_PROP_GPU_UPSTREAM_PORT_L1_UNSUPPORTED_BASE_CAST
 #define PDB_PROP_GPU_UPSTREAM_PORT_L1_UNSUPPORTED_BASE_NAME PDB_PROP_GPU_UPSTREAM_PORT_L1_UNSUPPORTED
+#define PDB_PROP_GPU_SUPPORTS_TDR_EVENT_BASE_CAST
+#define PDB_PROP_GPU_SUPPORTS_TDR_EVENT_BASE_NAME PDB_PROP_GPU_SUPPORTS_TDR_EVENT
 #define PDB_PROP_GPU_IS_VGPU_HETEROGENEOUS_MODE_BASE_CAST
 #define PDB_PROP_GPU_IS_VGPU_HETEROGENEOUS_MODE_BASE_NAME PDB_PROP_GPU_IS_VGPU_HETEROGENEOUS_MODE
 #define PDB_PROP_GPU_BEHIND_BR03_BASE_CAST
@@ -1629,6 +1635,8 @@ NV_STATUS __nvoc_objCreate_OBJGPU(OBJGPU**, Dynamic*, NvU32,
 #define gpuIsCCEnabledInHw_HAL(pGpu) gpuIsCCEnabledInHw_DISPATCH(pGpu)
 #define gpuIsDevModeEnabledInHw(pGpu) gpuIsDevModeEnabledInHw_DISPATCH(pGpu)
 #define gpuIsDevModeEnabledInHw_HAL(pGpu) gpuIsDevModeEnabledInHw_DISPATCH(pGpu)
+#define gpuIsProtectedPcieEnabledInHw(pGpu) gpuIsProtectedPcieEnabledInHw_DISPATCH(pGpu)
+#define gpuIsProtectedPcieEnabledInHw_HAL(pGpu) gpuIsProtectedPcieEnabledInHw_DISPATCH(pGpu)
 #define gpuIsCtxBufAllocInPmaSupported(pGpu) gpuIsCtxBufAllocInPmaSupported_DISPATCH(pGpu)
 #define gpuIsCtxBufAllocInPmaSupported_HAL(pGpu) gpuIsCtxBufAllocInPmaSupported_DISPATCH(pGpu)
 #define gpuUpdateErrorContainmentState(pGpu, arg0, arg1, arg2) gpuUpdateErrorContainmentState_DISPATCH(pGpu, arg0, arg1, arg2)
@@ -3145,6 +3153,16 @@ static inline NvBool gpuIsDevModeEnabledInHw_491d52(struct OBJGPU *pGpu) {
 
 static inline NvBool gpuIsDevModeEnabledInHw_DISPATCH(struct OBJGPU *pGpu) {
     return pGpu->__gpuIsDevModeEnabledInHw__(pGpu);
+}
+
+NvBool gpuIsProtectedPcieEnabledInHw_GH100(struct OBJGPU *pGpu);
+
+static inline NvBool gpuIsProtectedPcieEnabledInHw_491d52(struct OBJGPU *pGpu) {
+    return ((NvBool)(0 != 0));
+}
+
+static inline NvBool gpuIsProtectedPcieEnabledInHw_DISPATCH(struct OBJGPU *pGpu) {
+    return pGpu->__gpuIsProtectedPcieEnabledInHw__(pGpu);
 }
 
 NvBool gpuIsCtxBufAllocInPmaSupported_GA100(struct OBJGPU *pGpu);

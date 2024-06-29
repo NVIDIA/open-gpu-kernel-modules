@@ -127,7 +127,7 @@ _vidmemPmaAllocate
     MemoryManager               *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     PMA                         *pPma           = &pHeap->pmaObject;
     NvU64                        size           = 0;
-     NvU32                        pageCount;
+    NvU32                        pageCount      = 0;
     NvU32                        pmaInfoSize;
     NvU64                        pageSize;
     NV_STATUS                    status;
@@ -267,6 +267,9 @@ _vidmemPmaAllocate
 
 
     // Get the number of pages to be allocated by PMA
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+        (NV_DIV_AND_CEIL(size, pageSize) <= NV_U32_MAX),
+        NV_ERR_NO_MEMORY);
     pageCount = (NvU32) NV_DIV_AND_CEIL(size, pageSize);
 
 retry_alloc:
@@ -278,7 +281,12 @@ retry_alloc:
     }
     else
     {
-        pmaInfoSize = sizeof(PMA_ALLOC_INFO) + ((pageCount - 1) * sizeof(NvU64));
+        NV_CHECK_OR_RETURN(LEVEL_ERROR,
+            portSafeMulU32((pageCount - 1), (sizeof(NvU64)), &pmaInfoSize),
+            NV_ERR_NO_MEMORY);
+        NV_CHECK_OR_RETURN(LEVEL_ERROR,
+            portSafeAddU32(pmaInfoSize, (sizeof(PMA_ALLOC_INFO)), &pmaInfoSize),
+            NV_ERR_NO_MEMORY);
     }
 
     // Alloc the tracking structure and store the values in it.

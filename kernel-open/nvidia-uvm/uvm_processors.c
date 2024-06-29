@@ -100,16 +100,8 @@ void uvm_parent_gpus_from_processor_mask(uvm_parent_processor_mask_t *parent_mas
 
 bool uvm_numa_id_eq(int nid0, int nid1)
 {
-    UVM_ASSERT(nid0 == -1 || nid0 < MAX_NUMNODES);
-    UVM_ASSERT(nid1 == -1 || nid1 < MAX_NUMNODES);
-
-    if ((nid0 == NUMA_NO_NODE || nid1 == NUMA_NO_NODE) && nodes_weight(node_possible_map) == 1) {
-        if (nid0 == NUMA_NO_NODE)
-            nid0 = first_node(node_possible_map);
-
-        if (nid1 == NUMA_NO_NODE)
-            nid1 = first_node(node_possible_map);
-    }
+    UVM_ASSERT(nid0 >= NUMA_NO_NODE && nid0 < MAX_NUMNODES);
+    UVM_ASSERT(nid1 >= NUMA_NO_NODE && nid1 < MAX_NUMNODES);
 
     return nid0 == nid1;
 }

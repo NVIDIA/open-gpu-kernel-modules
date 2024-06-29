@@ -124,6 +124,16 @@ static void __nvoc_init_funcTable_CrashCatReport_1(CrashCatReport *pThis) {
     PORT_UNREFERENCED_VARIABLE(reportHal);
     PORT_UNREFERENCED_VARIABLE(reportHal_HalVarIdx);
 
+    // Hal function -- crashcatReportSourceContainment
+    if (( ((reportHal_HalVarIdx >> 5) == 0UL) && ((1UL << (reportHal_HalVarIdx & 0x1f)) & 0x00000004UL) )) /* CrashCatReportHal: V1_LIBOS3 */ 
+    {
+        pThis->__crashcatReportSourceContainment__ = &crashcatReportSourceContainment_V1_LIBOS3;
+    }
+    else
+    {
+        pThis->__crashcatReportSourceContainment__ = &crashcatReportSourceContainment_3e9f29;
+    }
+
     // Hal function -- crashcatReportLogReporter
     if (( ((reportHal_HalVarIdx >> 5) == 0UL) && ((1UL << (reportHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* CrashCatReportHal: V1_LIBOS2 */ 
     {

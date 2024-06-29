@@ -558,7 +558,7 @@ void notifyDestruct_IMPL(struct Notifier *pNotifier);
 #undef PRIVATE_FIELD
 
 
-void CliAddSystemEvent(NvU32, NvU32);
+void CliAddSystemEvent(NvU32, NvU32, NvBool *);
 NvBool CliDelObjectEvents(NvHandle hClient, NvHandle hObject);
 NvBool CliGetEventInfo(NvHandle hClient, NvHandle hEvent, struct Event **ppEvent);
 NV_STATUS CliGetEventNotificationList(NvHandle hClient, NvHandle hObject,

@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -76,6 +76,7 @@ struct ConfidentialComputeApi {
     NV_STATUS (*__confComputeApiCtrlCmdGpuGetNumSecureChannels__)(struct ConfidentialComputeApi *, NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_NUM_SECURE_CHANNELS_PARAMS *);
     NV_STATUS (*__confComputeApiCtrlCmdSystemGetSecurityPolicy__)(struct ConfidentialComputeApi *, NV_CONF_COMPUTE_CTRL_GET_SECURITY_POLICY_PARAMS *);
     NV_STATUS (*__confComputeApiCtrlCmdSystemSetSecurityPolicy__)(struct ConfidentialComputeApi *, NV_CONF_COMPUTE_CTRL_SET_SECURITY_POLICY_PARAMS *);
+    NV_STATUS (*__confComputeApiCtrlCmdGpuGetKeyRotationState__)(struct ConfidentialComputeApi *, NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE_PARAMS *);
     NvBool (*__confComputeApiShareCallback__)(struct ConfidentialComputeApi *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__confComputeApiCheckMemInterUnmap__)(struct ConfidentialComputeApi *, NvBool);
     NV_STATUS (*__confComputeApiControl__)(struct ConfidentialComputeApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -138,6 +139,7 @@ NV_STATUS __nvoc_objCreate_ConfidentialComputeApi(ConfidentialComputeApi**, Dyna
 #define confComputeApiCtrlCmdGpuGetNumSecureChannels(pConfComputeApi, pParams) confComputeApiCtrlCmdGpuGetNumSecureChannels_DISPATCH(pConfComputeApi, pParams)
 #define confComputeApiCtrlCmdSystemGetSecurityPolicy(pConfComputeApi, pParams) confComputeApiCtrlCmdSystemGetSecurityPolicy_DISPATCH(pConfComputeApi, pParams)
 #define confComputeApiCtrlCmdSystemSetSecurityPolicy(pConfComputeApi, pParams) confComputeApiCtrlCmdSystemSetSecurityPolicy_DISPATCH(pConfComputeApi, pParams)
+#define confComputeApiCtrlCmdGpuGetKeyRotationState(pConfComputeApi, pParams) confComputeApiCtrlCmdGpuGetKeyRotationState_DISPATCH(pConfComputeApi, pParams)
 #define confComputeApiShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) confComputeApiShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define confComputeApiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) confComputeApiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define confComputeApiControl(pResource, pCallContext, pParams) confComputeApiControl_DISPATCH(pResource, pCallContext, pParams)
@@ -217,6 +219,12 @@ NV_STATUS confComputeApiCtrlCmdSystemSetSecurityPolicy_IMPL(struct ConfidentialC
 
 static inline NV_STATUS confComputeApiCtrlCmdSystemSetSecurityPolicy_DISPATCH(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_SET_SECURITY_POLICY_PARAMS *pParams) {
     return pConfComputeApi->__confComputeApiCtrlCmdSystemSetSecurityPolicy__(pConfComputeApi, pParams);
+}
+
+NV_STATUS confComputeApiCtrlCmdGpuGetKeyRotationState_IMPL(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE_PARAMS *pParams);
+
+static inline NV_STATUS confComputeApiCtrlCmdGpuGetKeyRotationState_DISPATCH(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE_PARAMS *pParams) {
+    return pConfComputeApi->__confComputeApiCtrlCmdGpuGetKeyRotationState__(pConfComputeApi, pParams);
 }
 
 static inline NvBool confComputeApiShareCallback_DISPATCH(struct ConfidentialComputeApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {

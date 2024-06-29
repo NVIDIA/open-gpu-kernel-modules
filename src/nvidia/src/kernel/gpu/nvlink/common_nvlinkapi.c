@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -716,7 +716,7 @@ subdeviceCtrlCmdBusGetNvlinkStatus_IMPL
         pParams->enabledLinkMask = (bIsNvlinkReady) ? pKernelNvlink->enabledLinks : 0x0;
 
         pTmpData->nvlinkLinkAndClockInfoParams.linkMask = pParams->enabledLinkMask;
-        pTmpData->nvlinkLinkAndClockInfoParams.bSublinkStateInst = pParams->bSublinkStateInst;
+        pTmpData->nvlinkLinkAndClockInfoParams.bSublinkStateInst = NV_TRUE;
 
         status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
                                      NV2080_CTRL_CMD_NVLINK_GET_LINK_AND_CLOCK_INFO,

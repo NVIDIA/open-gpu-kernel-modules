@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -76,7 +76,7 @@ typedef struct _NV_SPDM_DESC_HEADER
 #define NV_SPDM_MAX_TRANSCRIPT_BUFFER_SIZE        (2 * NV_SPDM_MAX_SPDM_PAYLOAD_SIZE)
 
 // Limited by the transport size, do not increase without increasing transport buffer.
-#define NV_SPDM_MAX_RANDOM_MSG_BYTES              (0x80)
+#define NV_SPDM_MAX_RANDOM_MSG_BYTES              (0x0)
 
 #ifdef NVRM
 #include "gpu/mem_mgr/mem_desc.h"

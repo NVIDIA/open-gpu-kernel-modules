@@ -115,6 +115,7 @@ kernelhostvgpudeviceapiConstruct_IMPL
                                    pAllocParams->vgpuDeviceInstanceId,
                                    pAllocParams->bDisableDefaultSmcExecPartRestore,
                                    pAllocParams->placementId,
+                                   pAllocParams->vgpuDevName,
                                    &pKernelHostVgpuDevice);
     if (status != NV_OK)
     {

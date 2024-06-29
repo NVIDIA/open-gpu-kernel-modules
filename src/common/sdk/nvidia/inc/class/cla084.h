@@ -77,6 +77,7 @@ typedef struct NVA084_ALLOC_PARAMETERS {
     NvHandle   hPluginClient;
     NvU32      numGuestFbHandles;
     NvHandle   guestFbHandleList[NVA084_MAX_VMMU_SEGMENTS];
+    NvU8       vgpuDevName[VM_UUID_SIZE];
     NvHandle   hPluginHeapMemory;
     NvHandle   hMigRmHeapMemory;
     NV_DECLARE_ALIGNED(NvU64 ctrlBuffOffset, 8);

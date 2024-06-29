@@ -324,12 +324,27 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Confiden
         /*func=*/       "confComputeApiCtrlCmdGpuGetNumSecureChannels"
 #endif
     },
+    {               /*  [10] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) confComputeApiCtrlCmdGpuGetKeyRotationState_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+        /*flags=*/      0x10u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0xcb33010cu,
+        /*paramSize=*/  sizeof(NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_ConfidentialComputeApi.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "confComputeApiCtrlCmdGpuGetKeyRotationState"
+#endif
+    },
 
 };
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_ConfidentialComputeApi = 
 {
-    /*numEntries=*/     10,
+    /*numEntries=*/     11,
     /*pExportEntries=*/ __nvoc_exported_method_def_ConfidentialComputeApi
 };
 
@@ -404,6 +419,10 @@ static void __nvoc_init_funcTable_ConfidentialComputeApi_1(ConfidentialComputeAp
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
     pThis->__confComputeApiCtrlCmdSystemSetSecurityPolicy__ = &confComputeApiCtrlCmdSystemSetSecurityPolicy_IMPL;
+#endif
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    pThis->__confComputeApiCtrlCmdGpuGetKeyRotationState__ = &confComputeApiCtrlCmdGpuGetKeyRotationState_IMPL;
 #endif
 
     pThis->__confComputeApiShareCallback__ = &__nvoc_thunk_RmResource_confComputeApiShareCallback;

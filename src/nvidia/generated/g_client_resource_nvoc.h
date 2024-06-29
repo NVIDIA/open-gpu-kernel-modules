@@ -176,7 +176,6 @@ struct RmClientResource {
     NV_STATUS (*__cliresCtrlCmdSyncGpuBoostGroupCreate__)(struct RmClientResource *, NV0000_SYNC_GPU_BOOST_GROUP_CREATE_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSyncGpuBoostGroupDestroy__)(struct RmClientResource *, NV0000_SYNC_GPU_BOOST_GROUP_DESTROY_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSyncGpuBoostGroupInfo__)(struct RmClientResource *, NV0000_SYNC_GPU_BOOST_GROUP_INFO_PARAMS *);
-    NV_STATUS (*__cliresCtrlCmdVgpuGetStartData__)(struct RmClientResource *, NV0000_CTRL_VGPU_GET_START_DATA_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdVgpuGetVgpuVersion__)(struct RmClientResource *, NV0000_CTRL_VGPU_GET_VGPU_VERSION_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdVgpuSetVgpuVersion__)(struct RmClientResource *, NV0000_CTRL_VGPU_SET_VGPU_VERSION_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemNVPCFGetPowerModeInfo__)(struct RmClientResource *, NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *);
@@ -335,7 +334,6 @@ NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32,
 #define cliresCtrlCmdSyncGpuBoostGroupCreate(pRmCliRes, pParams) cliresCtrlCmdSyncGpuBoostGroupCreate_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSyncGpuBoostGroupDestroy(pRmCliRes, pParams) cliresCtrlCmdSyncGpuBoostGroupDestroy_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSyncGpuBoostGroupInfo(pRmCliRes, pParams) cliresCtrlCmdSyncGpuBoostGroupInfo_DISPATCH(pRmCliRes, pParams)
-#define cliresCtrlCmdVgpuGetStartData(pRmCliRes, pVgpuStartParams) cliresCtrlCmdVgpuGetStartData_DISPATCH(pRmCliRes, pVgpuStartParams)
 #define cliresCtrlCmdVgpuGetVgpuVersion(pRmCliRes, vgpuVersionInfo) cliresCtrlCmdVgpuGetVgpuVersion_DISPATCH(pRmCliRes, vgpuVersionInfo)
 #define cliresCtrlCmdVgpuSetVgpuVersion(pRmCliRes, vgpuVersionInfo) cliresCtrlCmdVgpuSetVgpuVersion_DISPATCH(pRmCliRes, vgpuVersionInfo)
 #define cliresCtrlCmdSystemNVPCFGetPowerModeInfo(pRmCliRes, pParams) cliresCtrlCmdSystemNVPCFGetPowerModeInfo_DISPATCH(pRmCliRes, pParams)
@@ -947,12 +945,6 @@ NV_STATUS cliresCtrlCmdSyncGpuBoostGroupInfo_IMPL(struct RmClientResource *pRmCl
 
 static inline NV_STATUS cliresCtrlCmdSyncGpuBoostGroupInfo_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_SYNC_GPU_BOOST_GROUP_INFO_PARAMS *pParams) {
     return pRmCliRes->__cliresCtrlCmdSyncGpuBoostGroupInfo__(pRmCliRes, pParams);
-}
-
-NV_STATUS cliresCtrlCmdVgpuGetStartData_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_VGPU_GET_START_DATA_PARAMS *pVgpuStartParams);
-
-static inline NV_STATUS cliresCtrlCmdVgpuGetStartData_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_VGPU_GET_START_DATA_PARAMS *pVgpuStartParams) {
-    return pRmCliRes->__cliresCtrlCmdVgpuGetStartData__(pRmCliRes, pVgpuStartParams);
 }
 
 NV_STATUS cliresCtrlCmdVgpuGetVgpuVersion_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_VGPU_GET_VGPU_VERSION_PARAMS *vgpuVersionInfo);

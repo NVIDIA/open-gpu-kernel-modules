@@ -417,6 +417,28 @@ static void __nvoc_init_funcTable_KernelFifo_1(KernelFifo *pThis, RmHalspecOwner
         pThis->__kfifoRecoverAllChannels__ = &kfifoRecoverAllChannels_92bfc3;
     }
 
+    // Hal function -- kfifoStartChannelHalt
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    {
+        pThis->__kfifoStartChannelHalt__ = &kfifoStartChannelHalt_GA100;
+    }
+    // default
+    else
+    {
+        pThis->__kfifoStartChannelHalt__ = &kfifoStartChannelHalt_b3696a;
+    }
+
+    // Hal function -- kfifoCompleteChannelHalt
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    {
+        pThis->__kfifoCompleteChannelHalt__ = &kfifoCompleteChannelHalt_GA100;
+    }
+    // default
+    else
+    {
+        pThis->__kfifoCompleteChannelHalt__ = &kfifoCompleteChannelHalt_b3696a;
+    }
+
     // Hal function -- kfifoGetEnginePbdmaFaultIds
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
     {

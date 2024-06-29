@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,6 +38,7 @@
 #include "gpu/conf_compute/conf_compute_api.h"
 #include "gpu/subdevice/subdevice.h"
 #include "class/clcb33.h" // NV_CONFIDENTIAL_COMPUTE
+#include "nvrm_registry.h"
 
 NV_STATUS
 confComputeApiConstruct_IMPL
@@ -384,7 +385,14 @@ confComputeApiCtrlCmdSystemGetSecurityPolicy_IMPL
     NV_CONF_COMPUTE_CTRL_GET_SECURITY_POLICY_PARAMS *pParams
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    OBJSYS    *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+
+    pParams->attackerAdvantage = pGpuMgr->ccAttackerAdvantage;
+
+    return NV_OK;
 }
 
 NV_STATUS
@@ -394,6 +402,102 @@ confComputeApiCtrlCmdSystemSetSecurityPolicy_IMPL
     NV_CONF_COMPUTE_CTRL_SET_SECURITY_POLICY_PARAMS *pParams
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    OBJSYS    *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    OBJGPU    *pGpu;
+    NvU32      gpuMask;
+    NvU32      gpuInstance = 0;
+    RM_API    *pRmApi      = NULL;
+    NV_STATUS  status = NV_OK;
+    NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_SECURITY_POLICY_PARAMS params = {0};
+
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+
+    // CC security policy can only be set before GpuReadyState is set.
+    NV_ASSERT_OR_RETURN(pConfComputeApi->pCcCaps->bAcceptClientRequest == NV_FALSE, NV_ERR_INVALID_STATE);
+
+    if ((pParams->attackerAdvantage < SET_SECURITY_POLICY_ATTACKER_ADVANTAGE_MIN) ||
+        (pParams->attackerAdvantage > SET_SECURITY_POLICY_ATTACKER_ADVANTAGE_MAX))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    params.attackerAdvantage = pParams->attackerAdvantage;
+    (void)gpumgrGetGpuAttachInfo(NULL, &gpuMask);
+
+    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+    {
+        pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+        ConfidentialCompute* pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+
+        status = pRmApi->Control(pRmApi,
+                                pGpu->hInternalClient,
+                                pGpu->hInternalSubdevice,
+                                NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_SECURITY_POLICY,
+                                &params,
+                                sizeof(params));
+        if (status != NV_OK)
+            return status;
+
+        NV_ASSERT_OK_OR_RETURN(confComputeSetKeyRotationThreshold(pConfCompute,
+                                                                  pParams->attackerAdvantage));
+    }
+
+    pGpuMgr->ccAttackerAdvantage = pParams->attackerAdvantage;
+
+    return status;
 }
 
+NV_STATUS
+confComputeApiCtrlCmdGpuGetKeyRotationState_IMPL
+(
+    ConfidentialComputeApi                                     *pConfComputeApi,
+    NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE_PARAMS *pParams
+)
+{
+    Subdevice           *pSubdevice;
+    OBJGPU              *pGpu;
+    ConfidentialCompute *pConfCompute;
+    NvBool               bKernelKeyRotation = NV_FALSE;
+    NvBool               bUserKeyRotation = NV_FALSE;
+
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
+        subdeviceGetByHandle(RES_GET_CLIENT(pConfComputeApi),
+        pParams->hSubDevice, &pSubdevice));
+
+    pGpu = GPU_RES_GET_GPU(pSubdevice);
+    pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+
+    if ((pConfCompute == NULL) ||
+        !pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED) ||
+        !pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_ENABLED))
+    {
+        pParams->keyRotationState = NV_CONF_COMPUTE_CTRL_CMD_GPU_KEY_ROTATION_DISABLED;
+        return NV_OK;
+    }
+
+    bKernelKeyRotation = FLD_TEST_DRF(_REG_STR, _RM_CONF_COMPUTE_KEY_ROTATION, _KERNEL_KEYS, _YES,
+                                      pConfCompute->keyRotationEnableMask);
+
+    bUserKeyRotation = FLD_TEST_DRF(_REG_STR, _RM_CONF_COMPUTE_KEY_ROTATION, _USER_KEYS, _YES,
+                                    pConfCompute->keyRotationEnableMask);
+    if (bKernelKeyRotation && bUserKeyRotation)
+    {
+        pParams->keyRotationState = NV_CONF_COMPUTE_CTRL_CMD_GPU_KEY_ROTATION_BOTH_ENABLED;
+    }
+    else if (bKernelKeyRotation && !bUserKeyRotation)
+    {
+        pParams->keyRotationState = NV_CONF_COMPUTE_CTRL_CMD_GPU_KEY_ROTATION_KERN_ENABLED;
+    }
+    else if (!bKernelKeyRotation && bUserKeyRotation)
+    {
+        pParams->keyRotationState = NV_CONF_COMPUTE_CTRL_CMD_GPU_KEY_ROTATION_USER_ENABLED;
+    }
+    else
+    {
+        pParams->keyRotationState = NV_CONF_COMPUTE_CTRL_CMD_GPU_KEY_ROTATION_DISABLED;
+    }
+    return NV_OK;
+}

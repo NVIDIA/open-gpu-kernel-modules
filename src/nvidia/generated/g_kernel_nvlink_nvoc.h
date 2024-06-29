@@ -805,6 +805,20 @@ static inline void knvlinkSetDegradedMode(struct OBJGPU *pGpu, struct KernelNvli
 
 #define knvlinkSetDegradedMode_HAL(pGpu, pKernelNvlink, arg0) knvlinkSetDegradedMode(pGpu, pKernelNvlink, arg0)
 
+NvBool knvlinkGetDegradedMode_IMPL(struct OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink);
+
+
+#ifdef __nvoc_kernel_nvlink_h_disabled
+static inline NvBool knvlinkGetDegradedMode(struct OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink) {
+    NV_ASSERT_FAILED_PRECOMP("KernelNvlink was disabled!");
+    return NV_FALSE;
+}
+#else //__nvoc_kernel_nvlink_h_disabled
+#define knvlinkGetDegradedMode(pGpu, pKernelNvlink) knvlinkGetDegradedMode_IMPL(pGpu, pKernelNvlink)
+#endif //__nvoc_kernel_nvlink_h_disabled
+
+#define knvlinkGetDegradedMode_HAL(pGpu, pKernelNvlink) knvlinkGetDegradedMode(pGpu, pKernelNvlink)
+
 NV_STATUS knvlinkCoreRemoveLink_IMPL(struct OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink, NvU32 arg0);
 
 

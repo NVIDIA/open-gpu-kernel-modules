@@ -37,6 +37,10 @@
 #include <linux/kernfs.h>
 #endif
 
+#if !defined(NV_BUS_TYPE_HAS_IOMMU_OPS)
+#include <linux/iommu.h>
+#endif
+
 static void
 nv_check_and_exclude_gpu(
     nvidia_stack_t *sp,
@@ -530,32 +534,18 @@ nv_pci_probe
     if (pci_dev->is_virtfn)
     {
 #if defined(NV_VGPU_KVM_BUILD)
-        nvl = pci_get_drvdata(pci_dev->physfn);
-        if (!nvl)
+
+#if defined(NV_BUS_TYPE_HAS_IOMMU_OPS)
+        if (pci_dev->dev.bus->iommu_ops == NULL) 
+#else
+        if ((pci_dev->dev.iommu != NULL) && (pci_dev->dev.iommu->iommu_dev != NULL) &&
+            (pci_dev->dev.iommu->iommu_dev->ops == NULL))
+#endif
         {
             nv_printf(NV_DBG_ERRORS, "NVRM: Aborting probe for VF %04x:%02x:%02x.%x "
-                      "since PF is not bound to nvidia driver.\n",
+                      "since IOMMU is not present on the system.\n",
                        NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
                        NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
-            goto failed;
-        }
-
-        if (pci_dev->dev.bus->iommu_ops == NULL) 
-        {
-            nv = NV_STATE_PTR(nvl);
-            if (rm_is_iommu_needed_for_sriov(sp, nv))
-            {
-                nv_printf(NV_DBG_ERRORS, "NVRM: Aborting probe for VF %04x:%02x:%02x.%x "
-                          "since IOMMU is not present on the system.\n",
-                           NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
-                           NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
-                goto failed;
-            }
-        }
-
-        if (nvidia_vgpu_vfio_probe(pci_dev) != NV_OK)
-        {
-            nv_printf(NV_DBG_ERRORS, "NVRM: Failed to register device to vGPU VFIO module");
             goto failed;
         }
 

@@ -603,6 +603,81 @@ _kgspRpcRCTriggered
 }
 
 /*!
+ * This function is called on critical FW crash to RC and notify an error code to
+ * all user mode channels, allowing the user mode apps to fail deterministically.
+ *
+ * @param[in] pGpu        GPU object pointer
+ * @param[in] pKernelGsp  KernelGsp object pointer
+ * @param[in] exceptType  Error code to send to the RC notifiers
+ *
+ */
+void
+kgspRcAndNotifyAllUserChannels
+(
+    OBJGPU    *pGpu,
+    KernelGsp *pKernelGsp,
+    NvU32      exceptType
+)
+{
+    KernelRc         *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
+    KernelChannel    *pKernelChannel;
+    KernelFifo       *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
+    CHANNEL_ITERATOR  chanIt;
+    RMTIMEOUT         timeout;
+
+    NV_PRINTF(LEVEL_ERROR, "RC all user channels for critical error %d.\n", exceptType);
+
+    // Pass 1: halt all user channels.
+    kfifoGetChannelIterator(pGpu, pKernelFifo, &chanIt, INVALID_RUNLIST_ID);
+    while (kfifoGetNextKernelChannel(pGpu, pKernelFifo, &chanIt, &pKernelChannel) == NV_OK)
+    {
+        //
+        // Kernel (uvm) channels are skipped to workaround nvbug 4503046, where
+        // uvm attributes all errors as global and fails operations on all GPUs,
+        // in addition to the current failing GPU.
+        //
+        if (kchannelCheckIsKernel(pKernelChannel))
+        {
+            continue;
+        }
+
+        kfifoStartChannelHalt(pGpu, pKernelFifo, pKernelChannel);
+    }
+
+    //
+    // Pass 2: Wait for the halts to complete, and RC notify the user channels.
+    // The channel halts require a preemption, which may not be able to complete
+    // since the GSP is no longer servicing interrupts. Wait for up to the
+    // default GPU timeout value for the preemptions to complete.
+    //
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+    kfifoGetChannelIterator(pGpu, pKernelFifo, &chanIt, INVALID_RUNLIST_ID);
+    while (kfifoGetNextKernelChannel(pGpu, pKernelFifo, &chanIt, &pKernelChannel) == NV_OK)
+    {
+        // Skip kernel (uvm) channels as only user channel halts are initiated above.
+        if (kchannelCheckIsKernel(pKernelChannel))
+        {
+            continue;
+        }
+
+        kfifoCompleteChannelHalt(pGpu, pKernelFifo, pKernelChannel, &timeout);
+
+        NV_ASSERT_OK(krcErrorSetNotifier(pGpu, pKernelRc,
+                                         pKernelChannel,
+                                         exceptType,
+                                         kchannelGetEngineType(pKernelChannel),
+                                         RC_NOTIFIER_SCOPE_CHANNEL));
+
+        NV_ASSERT_OK(krcErrorSendEventNotifications_HAL(pGpu, pKernelRc,
+            pKernelChannel,
+            kchannelGetEngineType(pKernelChannel),
+            exceptType,
+            RC_NOTIFIER_SCOPE_CHANNEL,
+            0));
+    }
+}
+
+/*!
  * Receive Xid notification from GSP-RM
  *
  * Passes Xid errors that are triggered on GSP-RM to nvErrorLog for OS interactions

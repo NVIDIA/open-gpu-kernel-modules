@@ -824,6 +824,9 @@ ErrorExit:
 
     if (status != NV_OK)
     {
+        NV_PRINTF(LEVEL_ERROR, "SPDM failure most likely due to missing crypto implementation.\n");
+        NV_PRINTF(LEVEL_ERROR, "Are the LKCA modules properly loaded?\n");
+
         // portMemFree() handles NULL.
         portMemFree(pSpdm->pAttestationCertChain);
         pSpdm->pAttestationCertChain    = NULL;

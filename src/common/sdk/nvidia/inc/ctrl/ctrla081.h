@@ -52,6 +52,10 @@
 #define NVA081_PGPU_METADATA_STRING_SIZE     256
 #define NVA081_EXTRA_PARAMETERS_SIZE         1024
 #define NVA081_PLACEMENT_ID_INVALID          0xFFFFU
+#define NVA081_CONFIG_PARAMS_MAX_LENGTH      1024
+
+#define NVA081_MAX_BAR_REGION_COUNT          4
+#define NVA081_MAX_SPARSE_REGION_COUNT       5
 
 /*
  * NVA081_CTRL_CMD_VGPU_CONFIG_SET_INFO
@@ -430,45 +434,9 @@ typedef struct NVA081_CTRL_VGPU_CONFIG_EVENT_SET_NOTIFICATION_PARAMS {
 
 
 /* valid event action values */
-#define NVA081_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE (0x00000000)
-#define NVA081_CTRL_EVENT_SET_NOTIFICATION_ACTION_SINGLE  (0x00000001)
-#define NVA081_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT  (0x00000002)
-
-/*
- * NVA081_CTRL_CMD_VGPU_CONFIG_NOTIFY_START
- *
- * This command notifies the nvidia-vgpu-vfio module with start status.
- * It notifies whether start has been successful or not.
- *
- *   mdevUuid
- *     This parameter specifies the uuid of the mdev device for which start has
- *     been called.
- *   vmUuid
- *     The UUID of VM for which vGPU has been created.
- *   vmName
- *     The name of VM for which vGPU has been created.
- *   returnStatus
- *     This parameter species whether the vGPU plugin is initialized or not.
- *     it specifies the error code in case plugin initialization has failed
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_OBJECT_NOT_FOUND
- */
-#define NVA081_CTRL_CMD_VGPU_CONFIG_NOTIFY_START          (0xa0810107) /* finn: Evaluated from "(FINN_NVA081_VGPU_CONFIG_VGPU_CONFIG_INTERFACE_ID << 8) | NVA081_CTRL_VGPU_CONFIG_NOTIFY_START_PARAMS_MESSAGE_ID" */
-
-/*
- * NVA081_CTRL_VGPU_CONFIG_NOTIFY_START_PARAMS
- * This structure represents information of plugin init status.
- */
-#define NVA081_CTRL_VGPU_CONFIG_NOTIFY_START_PARAMS_MESSAGE_ID (0x7U)
-
-typedef struct NVA081_CTRL_VGPU_CONFIG_NOTIFY_START_PARAMS {
-    NvU8  mdevUuid[VM_UUID_SIZE];
-    NvU8  vmUuid[VM_UUID_SIZE];
-    NvU8  vmName[NVA081_VM_NAME_SIZE];
-    NvU32 returnStatus;
-} NVA081_CTRL_VGPU_CONFIG_NOTIFY_START_PARAMS;
+#define NVA081_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE              (0x00000000)
+#define NVA081_CTRL_EVENT_SET_NOTIFICATION_ACTION_SINGLE               (0x00000001)
+#define NVA081_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT               (0x00000002)
 
 /*
  * NVA081_CTRL_CMD_VGPU_CONFIG_UPDATE_PGPU_INFO
@@ -907,5 +875,103 @@ typedef struct NVA081_CTRL_VGPU_GET_CAPABILITY_PARAMS {
     NvU32  capability;
     NvBool state;
 } NVA081_CTRL_VGPU_GET_CAPABILITY_PARAMS;
+
+/*
+ * NVA081_CTRL_CMD_VGPU_SET_VM_NAME
+ *
+ * This command is to set VM name for KVM.
+ *
+ * vgpuName [IN]
+ *  This param provides the vGPU device name to RM.
+ *
+ * vmName [IN]
+ *  This param provides the VM name of the vGPU device attached.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_OBJECT_NOT_FOUND
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+
+#define NVA081_CTRL_CMD_VGPU_SET_VM_NAME (0xa0810120) /* finn: Evaluated from "(FINN_NVA081_VGPU_CONFIG_VGPU_CONFIG_INTERFACE_ID << 8) | NVA081_CTRL_VGPU_SET_VM_NAME_PARAMS_MESSAGE_ID" */
+
+#define NVA081_CTRL_VGPU_SET_VM_NAME_PARAMS_MESSAGE_ID (0x20U)
+
+typedef struct NVA081_CTRL_VGPU_SET_VM_NAME_PARAMS {
+    NvU8 vgpuName[VM_UUID_SIZE];
+    NvU8 vmName[NVA081_VM_NAME_SIZE];
+} NVA081_CTRL_VGPU_SET_VM_NAME_PARAMS;
+
+/*
+ * NVA081_CTRL_CMD_VGPU_GET_BAR_INFO
+ *
+ * This command is to get the bar info for a vGPU.
+ *
+ * gpuPciId [IN]
+ *  This param specifies the PCI device ID of VF on which VM is running
+ *
+ * vgpuName [IN]
+ *  This param provides the vGPU device name to RM.
+ *
+ * configParams [IN]
+ *  This param provides the vGPU config params to RM
+ *
+ * barSizes [OUT]
+ *  This param provides the BAR size for each region index of the device
+ *
+ * sparseOffsets [OUT]
+ *  This param provides the offset of each sparse mmap region in BAR0
+ *
+ * sparseSizes [OUT]
+ *  This param provides the size of each sparse mmap region in BAR0
+ *
+ * sparseCount [OUT]
+ *  This param provides the number of sparse mmap regions in BAR0
+ *
+ * isBar064bit [OUT]
+ *  This param provides whether the BAR0 is 64bit of the vGPU device
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_OBJECT_NOT_FOUND
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+
+#define NVA081_CTRL_CMD_VGPU_GET_BAR_INFO (0xa0810121) /* finn: Evaluated from "(FINN_NVA081_VGPU_CONFIG_VGPU_CONFIG_INTERFACE_ID << 8) | NVA081_CTRL_VGPU_GET_BAR_INFO_PARAMS_MESSAGE_ID" */
+
+#define NVA081_CTRL_VGPU_GET_BAR_INFO_PARAMS_MESSAGE_ID (0x21U)
+
+typedef struct NVA081_CTRL_VGPU_GET_BAR_INFO_PARAMS {
+    NvU32  gpuPciId;
+    NvU8   vgpuName[VM_UUID_SIZE];
+    NvU8   configParams[NVA081_CONFIG_PARAMS_MAX_LENGTH];
+    NV_DECLARE_ALIGNED(NvU64 barSizes[NVA081_MAX_BAR_REGION_COUNT], 8);
+    NV_DECLARE_ALIGNED(NvU64 sparseOffsets[NVA081_MAX_SPARSE_REGION_COUNT], 8);
+    NV_DECLARE_ALIGNED(NvU64 sparseSizes[NVA081_MAX_SPARSE_REGION_COUNT], 8);
+    NvU32  sparseCount;
+    NvBool isBar064bit;
+} NVA081_CTRL_VGPU_GET_BAR_INFO_PARAMS;
+
+/*
+ * NVA081_CTRL_CMD_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH
+ *
+ * This command is to get the migration bandwidth of the physical GPU.
+ *
+ * migrationBandwidth [OUT]
+ *  This param specifies the migration bandwidth of GPU
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_REQUEST
+ *   NV_ERR_INVALID_STATE
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+#define NVA081_CTRL_CMD_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH (0xa0810122) /* finn: Evaluated from "(FINN_NVA081_VGPU_CONFIG_VGPU_CONFIG_INTERFACE_ID << 8) | NVA081_CTRL_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH_PARAMS_MESSAGE_ID" */
+
+#define NVA081_CTRL_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH_PARAMS_MESSAGE_ID (0x22U)
+
+typedef struct NVA081_CTRL_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH_PARAMS {
+    NvU32 migrationBandwidth;
+} NVA081_CTRL_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH_PARAMS;
 
 /* _ctrlA081vgpuconfig_h_ */

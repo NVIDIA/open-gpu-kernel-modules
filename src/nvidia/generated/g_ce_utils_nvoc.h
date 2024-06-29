@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -59,6 +59,12 @@ typedef struct
     NvU64 length;
     NvU64 flags;
     NvU64 submittedWorkId;   // Payload to poll for async completion
+
+    NvBool bSecureCopy; // The copy encrypts/decrypts when copying to/from unprotected memory
+    NvBool bEncrypt; // Toggle encrypt/decrypt
+    NvU64 authTagAddr; // encryption authTag address. Same aperture as unencrypted operand assumed. 16 byte aligned
+    NvU64 encryptIvAddr; // IV value that was used for ecryption, requirements are the same as for authTagAddr. Required
+
 } CEUTILS_MEMCOPY_PARAMS;
 
 struct KernelChannel;
@@ -90,8 +96,6 @@ struct CeUtils {
     struct Object *__nvoc_pbase_Object;
     struct CeUtils *__nvoc_pbase_CeUtils;
     NvHandle hClient;
-    NvHandle hDevice;
-    NvHandle hSubdevice;
     OBJCHANNEL *pChannel;
     struct OBJGPU *pGpu;
     struct KernelCE *pKCe;

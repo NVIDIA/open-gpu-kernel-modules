@@ -591,7 +591,7 @@ static void fault_buffer_skip_replayable_entry(uvm_parent_gpu_t *parent_gpu, NvU
     // replayable faults still requires manual adjustment so it is kept in sync
     // with the encryption IV on the GSP-RM's side.
     if (g_uvm_global.conf_computing_enabled)
-        uvm_conf_computing_fault_increment_decrypt_iv(parent_gpu, 1);
+        uvm_conf_computing_fault_increment_decrypt_iv(parent_gpu);
 
     parent_gpu->fault_buffer_hal->entry_clear_valid(parent_gpu, index);
 }

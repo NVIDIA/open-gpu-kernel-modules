@@ -161,7 +161,7 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += pci_enable_atomic_ops_to_root
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += vga_tryget
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += cc_platform_has
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += seq_read_iter
-NV_CONFTEST_FUNCTION_COMPILE_TESTS += unsafe_follow_pfn
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += follow_pfn
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_gem_object_get
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += drm_gem_object_put_unlocked
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += add_memory_driver_managed
@@ -228,6 +228,7 @@ NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_tsec_comms_alloc_me
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_tsec_comms_free_gscco_mem
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_memory_block_size_bytes
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += crypto
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_follow_pte
 
 NV_CONFTEST_TYPE_COMPILE_TESTS += dma_ops
 NV_CONFTEST_TYPE_COMPILE_TESTS += swiotlb_dma_ops
@@ -251,6 +252,7 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += pci_driver_has_driver_managed_dma
 NV_CONFTEST_TYPE_COMPILE_TESTS += vm_area_struct_has_const_vm_flags
 NV_CONFTEST_TYPE_COMPILE_TESTS += memory_failure_has_trapno_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += foll_longterm_present
+NV_CONFTEST_TYPE_COMPILE_TESTS += bus_type_has_iommu_ops
 
 NV_CONFTEST_GENERIC_COMPILE_TESTS += dom0_kernel_present
 NV_CONFTEST_GENERIC_COMPILE_TESTS += nvidia_vgpu_kvm_build

@@ -1551,21 +1551,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_RmClient
 #endif
     },
     {               /*  [90] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*pFunc=*/      (void (*)(void)) NULL,
-#else
-        /*pFunc=*/      (void (*)(void)) cliresCtrlCmdVgpuGetStartData_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
-        /*accessRight=*/0x0u,
-        /*methodId=*/   0xc01u,
-        /*paramSize=*/  sizeof(NV0000_CTRL_VGPU_GET_START_DATA_PARAMS),
-        /*pClassInfo=*/ &(__nvoc_class_def_RmClientResource.classInfo),
-#if NV_PRINTF_STRINGS_ALLOWED
-        /*func=*/       "cliresCtrlCmdVgpuGetStartData"
-#endif
-    },
-    {               /*  [91] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x811u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -1580,7 +1565,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_RmClient
         /*func=*/       "cliresCtrlCmdClientGetAddrSpaceType"
 #endif
     },
-    {               /*  [92] */
+    {               /*  [91] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x811u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -1595,7 +1580,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_RmClient
         /*func=*/       "cliresCtrlCmdClientGetHandleInfo"
 #endif
     },
-    {               /*  [93] */
+    {               /*  [92] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x11u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -1610,7 +1595,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_RmClient
         /*func=*/       "cliresCtrlCmdClientGetAccessRights"
 #endif
     },
-    {               /*  [94] */
+    {               /*  [93] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x11u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -1625,7 +1610,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_RmClient
         /*func=*/       "cliresCtrlCmdClientSetInheritedSharePolicy"
 #endif
     },
-    {               /*  [95] */
+    {               /*  [94] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x11u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -1640,7 +1625,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_RmClient
         /*func=*/       "cliresCtrlCmdClientGetChildHandle"
 #endif
     },
-    {               /*  [96] */
+    {               /*  [95] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x11u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -1655,7 +1640,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_RmClient
         /*func=*/       "cliresCtrlCmdClientShareObject"
 #endif
     },
-    {               /*  [97] */
+    {               /*  [96] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x811u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -1670,7 +1655,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_RmClient
         /*func=*/       "cliresCtrlCmdObjectsAreDuplicates"
 #endif
     },
-    {               /*  [98] */
+    {               /*  [97] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x811u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -1685,7 +1670,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_RmClient
         /*func=*/       "cliresCtrlCmdClientSubscribeToImexChannel"
 #endif
     },
-    {               /*  [99] */
+    {               /*  [98] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -1700,7 +1685,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_RmClient
         /*func=*/       "cliresCtrlCmdOsUnixFlushUserCache"
 #endif
     },
-    {               /*  [100] */
+    {               /*  [99] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x11u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -1715,7 +1700,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_RmClient
         /*func=*/       "cliresCtrlCmdOsUnixExportObjectToFd"
 #endif
     },
-    {               /*  [101] */
+    {               /*  [100] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x11u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -1730,7 +1715,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_RmClient
         /*func=*/       "cliresCtrlCmdOsUnixImportObjectFromFd"
 #endif
     },
-    {               /*  [102] */
+    {               /*  [101] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x813u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -1745,7 +1730,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_RmClient
         /*func=*/       "cliresCtrlCmdOsUnixGetExportObjectInfo"
 #endif
     },
-    {               /*  [103] */
+    {               /*  [102] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x11u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -1760,7 +1745,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_RmClient
         /*func=*/       "cliresCtrlCmdOsUnixCreateExportObjectFd"
 #endif
     },
-    {               /*  [104] */
+    {               /*  [103] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x11u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -1775,7 +1760,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_RmClient
         /*func=*/       "cliresCtrlCmdOsUnixExportObjectsToFd"
 #endif
     },
-    {               /*  [105] */
+    {               /*  [104] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x11u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -1795,7 +1780,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_RmClient
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_RmClientResource = 
 {
-    /*numEntries=*/     106,
+    /*numEntries=*/     105,
     /*pExportEntries=*/ __nvoc_exported_method_def_RmClientResource
 };
 
@@ -2224,10 +2209,6 @@ static void __nvoc_init_funcTable_RmClientResource_1(RmClientResource *pThis) {
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x811u)
     pThis->__cliresCtrlCmdSyncGpuBoostGroupInfo__ = &cliresCtrlCmdSyncGpuBoostGroupInfo_IMPL;
-#endif
-
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-    pThis->__cliresCtrlCmdVgpuGetStartData__ = &cliresCtrlCmdVgpuGetStartData_IMPL;
 #endif
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)

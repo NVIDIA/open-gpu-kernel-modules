@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -421,6 +421,44 @@ void tmrEventDestroy_IMPL
 }
 
 /*!
+ * Returns time until next callback for a given event
+ *
+ * @param[in]   pEvent   The event whose remaining time needs to be determined.
+ */
+NV_STATUS
+tmrEventTimeUntilNextCallback_IMPL
+(
+    OBJTMR     *pTmr,
+    TMR_EVENT  *pEventPublic,
+    NvU64      *pTimeUntilCallbackNs
+)
+{
+    NvU64 currentTime;
+    NvU64 nextAlarmTime;
+
+    NV_ASSERT_OK_OR_RETURN(tmrGetCurrentTime(pTmr, &currentTime));
+    TMR_EVENT_PVT *pEvent = (TMR_EVENT_PVT*)pEventPublic;
+
+    if (tmrIsOSTimer(pTmr, pEventPublic))
+    {
+        // timens corresponds to  relative time for OS timer 
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, portSafeAddU64(pEvent->timens, pEvent->startTimeNs, &nextAlarmTime),
+                           NV_ERR_INVALID_ARGUMENT);
+    }
+    else
+    {
+        // timens corresponds to abs time in case of ptimer
+        nextAlarmTime = pEvent->timens;
+    }
+    if (currentTime >= nextAlarmTime)
+        return NV_ERR_INVALID_STATE;
+
+    *pTimeUntilCallbackNs = nextAlarmTime - currentTime;
+    return NV_OK;
+}
+
+
+/*!
  * TODO: document
  */
 static NV_STATUS
@@ -718,7 +756,7 @@ _tmrGetNextFreeCallback
  * Creates and inserts a node into the callback list.
  *
  *  @param[in]  pEvent     Callback memory structure, provided by user.
- *  @param[in]  Time       Absolute nanoseconds at which to call Proc.
+ *  @param[in]  Time       Absolute(for ptimer) or relative (for OS timer) nanoseconds at which to call Proc.
  *
  *  @returns               Status
  */

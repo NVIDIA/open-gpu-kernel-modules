@@ -1108,6 +1108,17 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
         pThis->__gpuIsDevModeEnabledInHw__ = &gpuIsDevModeEnabledInHw_491d52;
     }
 
+    // Hal function -- gpuIsProtectedPcieEnabledInHw
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__gpuIsProtectedPcieEnabledInHw__ = &gpuIsProtectedPcieEnabledInHw_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__gpuIsProtectedPcieEnabledInHw__ = &gpuIsProtectedPcieEnabledInHw_491d52;
+    }
+
     // Hal function -- gpuIsCtxBufAllocInPmaSupported
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
     {

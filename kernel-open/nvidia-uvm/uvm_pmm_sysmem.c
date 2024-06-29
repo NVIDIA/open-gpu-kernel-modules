@@ -126,7 +126,7 @@ NV_STATUS uvm_pmm_sysmem_mappings_add_gpu_mapping(uvm_pmm_sysmem_mappings_t *sys
             NvU64 remove_key;
 
             for (remove_key = base_key; remove_key < key; ++remove_key)
-                (void *)radix_tree_delete(&sysmem_mappings->reverse_map_tree, remove_key);
+                (void)radix_tree_delete(&sysmem_mappings->reverse_map_tree, remove_key);
 
             kmem_cache_free(g_reverse_page_map_cache, new_reverse_map);
             status = errno_to_nv_status(ret);

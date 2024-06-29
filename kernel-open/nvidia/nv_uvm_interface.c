@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1516,16 +1516,23 @@ void nvUvmInterfaceDeinitCslContext(UvmCslContext *uvmCslContext)
 }
 EXPORT_SYMBOL(nvUvmInterfaceDeinitCslContext);
 
-NV_STATUS nvUvmInterfaceCslUpdateContext(UvmCslContext *uvmCslContext)
+NV_STATUS nvUvmInterfaceCslRotateKey(UvmCslContext *contextList[],
+                                     NvU32 contextListCount)
 {
     NV_STATUS status;
-    nvidia_stack_t *sp = uvmCslContext->nvidia_stack;
+    nvidia_stack_t *sp;
 
-    status = rm_gpu_ops_ccsl_context_update(sp, uvmCslContext->ctx);
+    if ((contextList == NULL) || (contextListCount == 0) || (contextList[0] == NULL))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    sp = contextList[0]->nvidia_stack;
+    status = rm_gpu_ops_ccsl_rotate_key(sp, contextList, contextListCount);
 
     return status;
 }
-EXPORT_SYMBOL(nvUvmInterfaceCslUpdateContext);
+EXPORT_SYMBOL(nvUvmInterfaceCslRotateKey);
 
 NV_STATUS nvUvmInterfaceCslRotateIv(UvmCslContext *uvmCslContext,
                                     UvmCslOperation operation)
@@ -1562,6 +1569,7 @@ NV_STATUS nvUvmInterfaceCslDecrypt(UvmCslContext *uvmCslContext,
                                    NvU32 bufferSize,
                                    NvU8 const *inputBuffer,
                                    UvmCslIv const *decryptIv,
+                                   NvU32 keyRotationId,
                                    NvU8 *outputBuffer,
                                    NvU8 const *addAuthData,
                                    NvU32 addAuthDataSize,
@@ -1575,6 +1583,7 @@ NV_STATUS nvUvmInterfaceCslDecrypt(UvmCslContext *uvmCslContext,
                                      bufferSize,
                                      inputBuffer,
                                      (NvU8 *)decryptIv,
+                                     keyRotationId,
                                      outputBuffer,
                                      addAuthData,
                                      addAuthDataSize,
@@ -1625,17 +1634,18 @@ NV_STATUS nvUvmInterfaceCslIncrementIv(UvmCslContext *uvmCslContext,
 }
 EXPORT_SYMBOL(nvUvmInterfaceCslIncrementIv);
 
-NV_STATUS nvUvmInterfaceCslLogExternalEncryption(UvmCslContext *uvmCslContext,
-                                                 NvU32 bufferSize)
+NV_STATUS nvUvmInterfaceCslLogEncryption(UvmCslContext *uvmCslContext,
+                                         UvmCslOperation operation,
+                                         NvU32 bufferSize)
 {
     NV_STATUS status;
     nvidia_stack_t *sp = uvmCslContext->nvidia_stack;
 
-    status = rm_gpu_ops_ccsl_log_device_encryption(sp, uvmCslContext->ctx, bufferSize);
+    status = rm_gpu_ops_ccsl_log_encryption(sp, uvmCslContext->ctx, operation, bufferSize);
 
     return status;
 }
-EXPORT_SYMBOL(nvUvmInterfaceCslLogExternalEncryption);
+EXPORT_SYMBOL(nvUvmInterfaceCslLogEncryption);
 
 #else // NV_UVM_ENABLE
 

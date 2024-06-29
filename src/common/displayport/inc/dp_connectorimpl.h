@@ -313,6 +313,7 @@ namespace DisplayPort
         bool        bDisableSSC;
         bool        bEnableFastLT;
         NvU32       maxLinkRateFromRegkey;
+        bool        bFlushTimeslotWhenDirty;
 
         //
         // Latency(ms) to apply between link-train and FEC enable for bug

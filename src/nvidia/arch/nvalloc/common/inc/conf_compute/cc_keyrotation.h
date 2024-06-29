@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,22 +21,14 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _CE_UTILS_SIZES_H
-#define _CE_UTILS_SIZES_H
+#ifndef CC_KEYROTATION_H
+#define CC_KEYROTATION_H
 
-#define NUM_COPY_BLOCKS                       4096
-#define CHANNEL_HOST_SEMAPHORE_SIZE           4
-#define CHANNEL_ENGINE_SEMAPHORE_SIZE         4
-#define GPFIFO_SIZE                           NV906F_GP_ENTRY__SIZE * NUM_COPY_BLOCKS
-#define CHANNEL_NOTIFIER_SIZE                 (sizeof(NvNotification) *                 \
-                                              NV_CHANNELGPFIFO_NOTIFICATION_TYPE__SIZE_1)
+//
+// Default threshold value derived from SECURITY_POLICY_ATTACKER_ADVANTAGE_DEFAULT
+// Minimum threshold defined based on minimum in confComputeSetKeyRotation.
+//
+#define KEY_ROTATION_MINIMUM_INTERNAL_THRESHOLD (134217727u)
+#define KEY_ROTATION_DEFAULT_INTERNAL_THRESHOLD (24296003999ull)
 
-#define CE_MAX_BYTES_PER_LINE                 0xffffffffULL
-#define CE_METHOD_SIZE_PER_BLOCK              0x64
-#define FAST_SCRUBBER_METHOD_SIZE_PER_BLOCK   0x94
-
-// number of bytes per sec2 method-stream (including host methods)
-#define SEC2_METHOD_SIZE_PER_BLOCK            0x94
-#define SEC2_AUTH_TAG_BUF_SEMAPHORE_SIZE      4
-
-#endif //  _CE_UTILS_SIZES_H
+#endif // CC_KEYROTATION_H

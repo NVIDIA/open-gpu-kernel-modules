@@ -65,8 +65,11 @@ typedef enum
 } uvm_push_flag_t;
 
 struct uvm_push_crypto_bundle_struct {
-    // Initialization vector used to decrypt the push
+    // Initialization vector used to decrypt the push on the CPU
     UvmCslIv iv;
+
+    // Key version used to decrypt the push on the CPU
+    NvU32 key_version;
 
     // Size of the pushbuffer that is encrypted/decrypted
     NvU32 push_size;

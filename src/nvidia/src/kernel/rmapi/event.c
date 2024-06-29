@@ -563,7 +563,8 @@ CliDelObjectEvents
 
 void CliAddSystemEvent(
     NvU32 event,
-    NvU32 status
+    NvU32 status,
+    NvBool *isEventNotified
 )
 {
     NvU32 temp;
@@ -574,6 +575,9 @@ void CliAddSystemEvent(
     RsResourceRef *pCliResRef;
     NV_STATUS      rmStatus = NV_OK;
     Notifier  *pNotifier;
+
+    if (isEventNotified != NULL)
+        *isEventNotified = NV_FALSE;
 
     for (ppClient = serverutilGetFirstClientUnderLock();
          ppClient;
@@ -623,6 +627,8 @@ void CliAddSystemEvent(
                         NV_PRINTF(LEVEL_ERROR, "failed to deliver event 0x%x",
                                   event);
                     }
+                    if (isEventNotified != NULL)
+                        *isEventNotified = NV_TRUE;
                 }
                 pEventNotification = pEventNotification->Next;
             }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -55,8 +55,8 @@ enum
     CC_LKEYID_GSP_CPU_REPLAYABLE_FAULT,
     CC_LKEYID_CPU_GSP_RESERVED2,
     CC_LKEYID_GSP_CPU_NON_REPLAYABLE_FAULT,
-    CC_LKEYID_GSP_SEC2_LOCKED_RPC,
     CC_LKEYID_SEC2_GSP_LOCKED_RPC,
+    CC_LKEYID_GSP_SEC2_LOCKED_RPC,
     CC_KEYSPACE_GSP_SIZE // This is always the last element.
 };
 // The fault buffers only support GPU-to-CPU encryption, so the CPU-to-GPU encryption slot
@@ -75,13 +75,17 @@ enum
     CC_LKEYID_CPU_SEC2_HMAC_USER,
     CC_LKEYID_CPU_SEC2_DATA_KERN,
     CC_LKEYID_CPU_SEC2_HMAC_KERN,
+    CC_LKEYID_CPU_SEC2_DATA_SCRUBBER,
+    CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER,
     CC_KEYSPACE_SEC2_SIZE // This is always the last element.
 };
 
-#define CC_LKEYID_CPU_SEC2_DATA_USER_STR "cpu_sec2_data_user"
-#define CC_LKEYID_CPU_SEC2_HMAC_USER_STR "cpu_sec2_hmac_user"
-#define CC_LKEYID_CPU_SEC2_DATA_KERN_STR "cpu_sec2_data_kernel"
-#define CC_LKEYID_CPU_SEC2_HMAC_KERN_STR "cpu_sec2_hmac_kernel"
+#define CC_LKEYID_CPU_SEC2_DATA_USER_STR     "cpu_sec2_data_user"
+#define CC_LKEYID_CPU_SEC2_HMAC_USER_STR     "cpu_sec2_hmac_user"
+#define CC_LKEYID_CPU_SEC2_DATA_KERN_STR     "cpu_sec2_data_kernel"
+#define CC_LKEYID_CPU_SEC2_HMAC_KERN_STR     "cpu_sec2_hmac_kernel"
+#define CC_LKEYID_CPU_SEC2_DATA_SCRUBBER_STR "cpu_sec2_data_scrubber"
+#define CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER_STR "cpu_sec2_hmac_scrubber"
 
 enum
 {
@@ -188,7 +192,11 @@ enum
         (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_CPU_SEC2_DATA_KERN) ? \
             CC_LKEYID_CPU_SEC2_DATA_KERN_STR : \
         (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_CPU_SEC2_HMAC_KERN) ? \
-            CC_LKEYID_CPU_SEC2_HMAC_KERN_STR : NULL : \
+            CC_LKEYID_CPU_SEC2_HMAC_KERN_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_CPU_SEC2_DATA_SCRUBBER) ? \
+            CC_LKEYID_CPU_SEC2_DATA_SCRUBBER_STR : \
+        (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER) ? \
+            CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER_STR : NULL : \
     (CC_GKEYID_GET_KEYSPACE(a) == CC_KEYSPACE_LCE0) ? \
         (CC_GKEYID_GET_LKEYID(a) == CC_LKEYID_LCE_H2D_USER) ? \
             CC_LKEYID_LCE0_H2D_USER_STR : \

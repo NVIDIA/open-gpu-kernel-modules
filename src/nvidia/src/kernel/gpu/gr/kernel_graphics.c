@@ -100,6 +100,21 @@ static NV_STATUS _kgraphicsPostSchedulingEnableHandler(OBJGPU *, void *);
 static void
 _kgraphicsInitRegistryOverrides(OBJGPU *pGpu, KernelGraphics *pKernelGraphics)
 {
+    {
+        NvU32 data;
+
+        if (osReadRegistryDword(pGpu, NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL, &data) == NV_OK)
+        {
+            if (data == NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL_DISABLE)
+            {
+                kgraphicsSetBug4208224WAREnabled(pGpu, pKernelGraphics, NV_FALSE);
+            }
+            else if (data == NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL_ENABLE)
+            {
+                kgraphicsSetBug4208224WAREnabled(pGpu, pKernelGraphics, NV_TRUE);
+            }
+        }
+    }
     return;
 }
 
@@ -312,6 +327,10 @@ kgraphicsStateInitLocked_IMPL
                                       NULL, NULL));
     }
 
+    pKernelGraphics->bug4208224Info.hClient      = NV01_NULL_OBJECT;
+    pKernelGraphics->bug4208224Info.hDeviceId    = NV01_NULL_OBJECT;
+    pKernelGraphics->bug4208224Info.hSubdeviceId = NV01_NULL_OBJECT;
+    pKernelGraphics->bug4208224Info.bConstructed = NV_FALSE;
     return NV_OK;
 }
 
@@ -362,6 +381,21 @@ kgraphicsStatePreUnload_IMPL
     NvU32 flags
 )
 {
+    if (pKernelGraphics->bug4208224Info.bConstructed)
+    {
+        RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+        NV2080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS params = {0};
+
+        params.bTeardown = NV_TRUE;
+        NV_ASSERT_OK(pRmApi->Control(pRmApi,
+                     pKernelGraphics->bug4208224Info.hClient,
+                     pKernelGraphics->bug4208224Info.hSubdeviceId,
+                     NV2080_CTRL_CMD_INTERNAL_KGR_INIT_BUG4208224_WAR,
+                     &params,
+                     sizeof(params)));
+        NV_ASSERT_OK(pRmApi->Free(pRmApi, pKernelGraphics->bug4208224Info.hClient, pKernelGraphics->bug4208224Info.hClient));
+        pKernelGraphics->bug4208224Info.bConstructed = NV_FALSE;
+    }
 
     fecsBufferUnmap(pGpu, pKernelGraphics);
 
@@ -446,7 +480,7 @@ _kgraphicsPostSchedulingEnableHandler
     const KGRAPHICS_STATIC_INFO *pKernelGraphicsStaticInfo = kgraphicsGetStaticInfo(pGpu, pKernelGraphics);
 
     // Nothing to do for non-GSPCLIENT
-    if (!IS_GSP_CLIENT(pGpu))
+    if (!IS_GSP_CLIENT(pGpu) && !kgraphicsIsBug4208224WARNeeded_HAL(pGpu, pKernelGraphics))
         return NV_OK;
 
     // Defer golden context channel creation to GPU instance configuration
@@ -477,7 +511,13 @@ _kgraphicsPostSchedulingEnableHandler
         }
     }
 
-    return kgraphicsCreateGoldenImageChannel(pGpu, pKernelGraphics);
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kgraphicsCreateGoldenImageChannel(pGpu, pKernelGraphics));
+    if (kgraphicsIsBug4208224WARNeeded_HAL(pGpu, pKernelGraphics))
+    {
+        return kgraphicsInitializeBug4208224WAR_HAL(pGpu, pKernelGraphics);
+    }
+
+    return NV_OK;
 }
 
 void

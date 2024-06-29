@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1044,6 +1044,7 @@ knvlinkGetPeersNvlinkMaskFromHshub_IMPL
 
     portMemSet(&params, 0, sizeof(params));
     params.linkMask = pKernelNvlink->enabledLinks;
+    params.bSublinkStateInst = NV_TRUE;
 
     status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
                                  NV2080_CTRL_CMD_NVLINK_GET_LINK_AND_CLOCK_INFO,

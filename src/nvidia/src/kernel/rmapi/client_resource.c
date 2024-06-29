@@ -4478,46 +4478,6 @@ cliresCtrlCmdSyncGpuBoostGroupInfo_IMPL
 }
 
 NV_STATUS
-cliresCtrlCmdVgpuGetStartData_IMPL
-(
-    RmClientResource *pRmCliRes,
-    NV0000_CTRL_VGPU_GET_START_DATA_PARAMS *pVgpuStartParams
-)
-{
-    NV_STATUS   status = NV_OK;
-    NvHandle    hClient = RES_GET_CLIENT_HANDLE(pRmCliRes);
-    NvU32       event, eventStatus;
-    OBJSYS     *pSys = SYS_GET_INSTANCE();
-    KernelVgpuMgr *pKernelVgpuMgr = SYS_GET_KERNEL_VGPUMGR(pSys);
-    REQUEST_VGPU_INFO_NODE *pRequestVgpu = NULL;
-
-    status = CliGetSystemEventStatus(hClient, &event, &eventStatus);
-    if (status != NV_OK)
-        return status;
-
-    if (event != NV0000_NOTIFIERS_VM_START)
-        return NV_ERR_INVALID_EVENT;
-
-    for (pRequestVgpu = listHead(&pKernelVgpuMgr->listRequestVgpuHead);
-         pRequestVgpu != NULL;
-         pRequestVgpu = listNext(&pKernelVgpuMgr->listRequestVgpuHead, pRequestVgpu))
-    {
-        if (pRequestVgpu->deviceState == NV_VGPU_DEV_OPENED)
-        {
-            portMemCopy(pVgpuStartParams->mdevUuid, VGPU_UUID_SIZE, pRequestVgpu->mdevUuid, VGPU_UUID_SIZE);
-            portMemCopy(pVgpuStartParams->configParams, VGPU_CONFIG_PARAMS_MAX_LENGTH, pRequestVgpu->configParams, VGPU_CONFIG_PARAMS_MAX_LENGTH);
-            pVgpuStartParams->gpuPciId = pRequestVgpu->gpuPciId;
-            pVgpuStartParams->qemuPid = pRequestVgpu->qemuPid;
-            pVgpuStartParams->vgpuId = pRequestVgpu->vgpuId;
-            pVgpuStartParams->gpuPciBdf = pRequestVgpu->gpuPciBdf;
-            return NV_OK;
-        }
-    }
-
-    return NV_ERR_OBJECT_NOT_FOUND;
-}
-
-NV_STATUS
 cliresCtrlCmdVgpuGetVgpuVersion_IMPL
 (
     RmClientResource *pRmCliRes,

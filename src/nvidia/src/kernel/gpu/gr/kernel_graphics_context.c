@@ -3260,19 +3260,16 @@ kgrctxDecObjectCount_IMPL
  * one VGPU configuration.
  */
 GR_GLOBALCTX_BUFFER
-kgrctxGetRegisterAccessMapId_PF
+kgrctxGetRegisterAccessMapId_IMPL
 (
     OBJGPU *pGpu,
     KernelGraphicsContext *pKernelGraphicsContext,
     KernelChannel *pKernelChannel
 )
 {
-    RmClient *pRmClient = dynamicCast(RES_GET_CLIENT(pKernelChannel), RmClient);
-    RS_PRIV_LEVEL privLevel = rmclientGetCachedPrivilege(pRmClient);
-
     // Using cached privilege because this function is called at a raised IRQL.
-    if ((privLevel >= RS_PRIV_LEVEL_USER_ROOT)
-            && !hypervisorIsVgxHyper() && IS_GFID_PF(kchannelGetGfid(pKernelChannel)))
+    if (kchannelCheckIsAdmin(pKernelChannel)
+        && !hypervisorIsVgxHyper() && IS_GFID_PF(kchannelGetGfid(pKernelChannel)))
     {
         return GR_GLOBALCTX_BUFFER_UNRESTRICTED_PRIV_ACCESS_MAP;
     }

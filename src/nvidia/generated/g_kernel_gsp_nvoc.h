@@ -1564,6 +1564,16 @@ static inline NV_STATUS kgspAllocateBooterUnloadUcodeImage(struct OBJGPU *pGpu, 
 #define kgspAllocateBooterUnloadUcodeImage(pGpu, pKernelGsp, ppBooterUnloadUcode) kgspAllocateBooterUnloadUcodeImage_IMPL(pGpu, pKernelGsp, ppBooterUnloadUcode)
 #endif //__nvoc_kernel_gsp_h_disabled
 
+void kgspRcAndNotifyAllUserChannels_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, NvU32 exceptType);
+
+#ifdef __nvoc_kernel_gsp_h_disabled
+static inline void kgspRcAndNotifyAllUserChannels(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, NvU32 exceptType) {
+    NV_ASSERT_FAILED_PRECOMP("KernelGsp was disabled!");
+}
+#else //__nvoc_kernel_gsp_h_disabled
+#define kgspRcAndNotifyAllUserChannels(pGpu, pKernelGsp, exceptType) kgspRcAndNotifyAllUserChannels_IMPL(pGpu, pKernelGsp, exceptType)
+#endif //__nvoc_kernel_gsp_h_disabled
+
 #undef PRIVATE_FIELD
 
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -55,6 +55,7 @@
 
 static NV_STATUS nv_parse_config_params(const char *, const char *, const char, NvU32 *);
 
+
 void hypervisorSetHypervVgpuSupported_IMPL(OBJHYPERVISOR *pHypervisor)
 {
     pHypervisor->bIsHypervVgpuSupported = NV_TRUE;
@@ -73,7 +74,7 @@ NV_STATUS hypervisorInjectInterrupt_IMPL
 {
     NV_STATUS status = NV_ERR_NOT_SUPPORTED;
 
-    if (pVgpuNsIntr->pVgpuVfioRef)
+    if (osIsVgpuVfioPresent() == NV_TRUE)
         return NV_ERR_NOT_SUPPORTED;
     else
     {
@@ -95,135 +96,6 @@ HYPERVISOR_TYPE NV_API_CALL nv_get_hypervisor_type(void)
     return hypervisorGetHypervisorType(pHypervisor);
 }
 
-static NV_STATUS get_available_instances(
-    NvU32 *avail_instances,
-    nv_state_t *pNv,
-    VGPU_TYPE *vgpuTypeInfo,
-    NvU32 pgpuIndex,
-    NvU8 devfn
-)
-{
-    NV_STATUS rmStatus = NV_OK;
-    OBJGPU *pGpu = NULL;
-    OBJSYS *pSys = SYS_GET_INSTANCE();
-    KernelVgpuMgr *pKernelVgpuMgr = SYS_GET_KERNEL_VGPUMGR(pSys);
-    OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
-
-    *avail_instances = 0;
-
-    pGpu = NV_GET_NV_PRIV_PGPU(pNv);
-    if (pGpu == NULL)
-    {
-        NV_PRINTF(LEVEL_ERROR, "%s GPU handle is not valid \n", __FUNCTION__);
-        rmStatus = NV_ERR_INVALID_STATE;
-        goto exit;
-    }
-
-    /* TODO: Needs to have a proper fix this for DriverVM config */
-    if (gpuIsSriovEnabled(pGpu) &&
-        !(pHypervisor->getProperty(pHypervisor, PDB_PROP_HYPERVISOR_DRIVERVM_ENABLED)))
-    {
-        NvU8 fnId = devfn - pGpu->sriovState.firstVFOffset;
-
-        if (fnId > 63)
-        {
-            NV_ASSERT(0);
-            rmStatus = NV_ERR_INVALID_ARGUMENT;
-            goto exit;
-        }
-
-        if (IS_MIG_ENABLED(pGpu))
-        {
-            if (IS_MIG_IN_USE(pGpu)) {
-                NvU64 swizzIdInUseMask = 0;
-                NvU32 partitionFlag = PARTITIONID_INVALID;
-                KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
-                NvU32 id;
-
-                swizzIdInUseMask = kmigmgrGetSwizzIdInUseMask(pGpu, pKernelMIGManager);
-
-                if (!vgpuTypeInfo->gpuInstanceSize)
-                {
-                    // Query for a non MIG vgpuType
-                    NV_PRINTF(LEVEL_INFO, "%s Query for a non MIG vGPU type \n",
-                              __FUNCTION__);
-                    rmStatus = NV_OK;
-                    goto exit;
-                }
-
-                rmStatus = kvgpumgrGetPartitionFlag(vgpuTypeInfo->vgpuTypeId,
-                                                   &partitionFlag);
-                if (rmStatus != NV_OK)
-                {
-                    // Query for a non MIG vgpuType
-                    NV_PRINTF(LEVEL_ERROR, "%s failed to get partition flags.\n",
-                              __FUNCTION__);
-                    goto exit;
-                }
-
-                // Determine valid swizzids not assigned to any vGPU device.
-                FOR_EACH_INDEX_IN_MASK(64, id, swizzIdInUseMask)
-                {
-                    KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance;
-                    NvU64 mask = 0;
-
-                    rmStatus = kmigmgrGetGPUInstanceInfo(pGpu, pKernelMIGManager,
-                                                         id, &pKernelMIGGpuInstance);
-                    if (rmStatus != NV_OK)
-                    {
-                        // Didn't find requested GPU instance
-                        NV_PRINTF(LEVEL_ERROR,
-                                  "No valid GPU instance with SwizzId - %d found\n", id);
-                        goto exit;
-                    }
-
-                    mask = NVBIT64(id);
-
-                    if (pKernelMIGGpuInstance->partitionFlag == partitionFlag)
-                    {
-                        // Validate that same ID is not already set and VF is available
-                        if (!(mask & pKernelVgpuMgr->pgpuInfo[pgpuIndex].assignedSwizzIdMask) &&
-                            !(pKernelVgpuMgr->pgpuInfo[pgpuIndex].createdVfMask & NVBIT64(fnId)))
-                        {
-                            *avail_instances = 1;
-                            break;
-                        }
-                    }
-                }
-                FOR_EACH_INDEX_IN_MASK_END;
-            }
-        }
-        else
-        {
-            if (pKernelVgpuMgr->pgpuInfo[pgpuIndex].numCreatedVgpu < vgpuTypeInfo->maxInstance)
-            {
-                if (vgpuTypeInfo->gpuInstanceSize)
-                {
-                    // Query for a MIG vgpuType
-                    NV_PRINTF(LEVEL_INFO, "%s Query for a MIG vGPU type \n",
-                              __FUNCTION__);
-                    rmStatus = NV_OK;
-                    goto exit;
-                }
-
-                if (!(pKernelVgpuMgr->pgpuInfo[pgpuIndex].createdVfMask & NVBIT64(fnId)))
-                {
-                    if (kvgpumgrCheckVgpuTypeCreatable(pGpu, &pKernelVgpuMgr->pgpuInfo[pgpuIndex], vgpuTypeInfo) == NV_OK)
-                        *avail_instances = 1;
-                }
-            }
-        }
-    }
-    else
-    {
-        if (kvgpumgrCheckVgpuTypeCreatable(pGpu, &pKernelVgpuMgr->pgpuInfo[pgpuIndex], vgpuTypeInfo) == NV_OK)
-            *avail_instances = vgpuTypeInfo->maxInstance - pKernelVgpuMgr->pgpuInfo[pgpuIndex].numCreatedVgpu;
-    }
-
-exit:
-    return rmStatus;
-}
-
 #define MAX_STR_LEN 256
 NV_STATUS  NV_API_CALL nv_vgpu_get_type_info(
     nvidia_stack_t *sp,
@@ -240,6 +112,7 @@ NV_STATUS  NV_API_CALL nv_vgpu_get_type_info(
     NV_STATUS rmStatus = NV_OK;
     VGPU_TYPE *vgpuTypeInfo;
     NvU32 pgpuIndex, i, avail_instances = 0;
+    OBJGPU *pGpu = NULL;
     void *fp;
 
     NV_ENTER_RM_RUNTIME(sp,fp);
@@ -262,24 +135,19 @@ NV_STATUS  NV_API_CALL nv_vgpu_get_type_info(
 
                 switch (type_info)
                 {
-                    case VGPU_TYPE_NAME:
-                        os_snprintf(buffer, VGPU_STRING_BUFFER_SIZE, "%s\n",
-                                    vgpuTypeInfo->vgpuName);
-                        break;
-                    case VGPU_TYPE_DESCRIPTION:
-                         os_snprintf(buffer, MAX_STR_LEN,
-                                     "num_heads=%d, frl_config=%d, "
-                                     "framebuffer=%lluM, max_resolution=%dx%d, max_instance=%d\n",
-                                     vgpuTypeInfo->numHeads, vgpuTypeInfo->frlConfig,
-                                     vgpuTypeInfo->profileSize >> 20,
-                                     vgpuTypeInfo->maxResolutionX,
-                                     vgpuTypeInfo->maxResolutionY,
-                                     vgpuTypeInfo->maxInstance);
-                        break;
                     case VGPU_TYPE_INSTANCES:
-                        rmStatus = get_available_instances(&avail_instances, pNv,
-                                                           vgpuTypeInfo,
-                                                           pgpuIndex, devfn);
+                        pGpu = NV_GET_NV_PRIV_PGPU(pNv);
+                        if (pGpu == NULL)
+                        {
+                            NV_PRINTF(LEVEL_ERROR, "%s GPU handle is not valid \n",
+                                      __FUNCTION__);
+                            rmStatus = NV_ERR_INVALID_STATE;
+                            goto exit;
+                        }
+
+                        rmStatus = kvgpumgrGetAvailableInstances(&avail_instances, pGpu,
+                                                                 vgpuTypeInfo,
+                                                                 pgpuIndex, devfn);
                         if (rmStatus != NV_OK)
                             goto exit;
 
@@ -315,6 +183,7 @@ NV_STATUS NV_API_CALL nv_vgpu_get_type_ids(
 {
     THREAD_STATE_NODE threadState;
     OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPU *pGpu = NULL;
     KernelVgpuMgr *pKernelVgpuMgr = SYS_GET_KERNEL_VGPUMGR(pSys);
     NV_STATUS rmStatus = NV_OK;
     NvU32 pgpuIndex, i, avail_instances = 0;
@@ -355,9 +224,17 @@ NV_STATUS NV_API_CALL nv_vgpu_get_type_ids(
                         continue;
                     }
 
-                    rmStatus = get_available_instances(&avail_instances, pNv,
-                                                       vgpuTypeInfo, pgpuIndex,
-                                                       devfn);
+                    pGpu = NV_GET_NV_PRIV_PGPU(pNv);
+                    if (pGpu == NULL)
+                    {
+                        NV_PRINTF(LEVEL_ERROR, "%s GPU handle is not valid \n",
+                                  __FUNCTION__);
+                        goto exit;
+                    }
+
+                    rmStatus = kvgpumgrGetAvailableInstances(&avail_instances, pGpu,
+                                                             vgpuTypeInfo, pgpuIndex,
+                                                             devfn);
                     if (rmStatus != NV_OK)
                     {
                         NV_PRINTF(LEVEL_ERROR, "Failed to get available instances for vGPU ID: %d, status: 0x%x\n",
@@ -374,6 +251,7 @@ NV_STATUS NV_API_CALL nv_vgpu_get_type_ids(
             }
         }
 
+exit:
         // UNLOCK: release API lock
         rmapiLockRelease();
     }
@@ -517,78 +395,18 @@ exit:
     return rmStatus;
 }
 
-NV_STATUS NV_API_CALL nv_vgpu_get_bar_info(
-    nvidia_stack_t *sp,
-    nv_state_t *pNv,
-    const NvU8 *pMdevUuid,
-    NvU64 *size,
-    NvU32 regionIndex,
-    void *pVgpuVfioRef,
-    NvBool *isBar64bit
-)
+static NV_STATUS
+_nv_vgpu_get_bar_size(OBJGPU *pGpu, KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice,
+                      NvU32 regionIndex, NvU64 *size, NvU8 *configParams)
 {
-    REQUEST_VGPU_INFO_NODE *pRequestVgpu = NULL;
-    THREAD_STATE_NODE threadState;
-    NV_STATUS    rmStatus = NV_OK, status;
-    OBJGPU      *pGpu = NULL;
-    KernelBus   *pKernelBus;
-    KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice;
-    void         *fp = NULL;
-    NvU32        value = 0;
-    OBJSYS      *pSys = SYS_GET_INSTANCE();
-    KernelVgpuMgr * pKernelVgpuMgr = SYS_GET_KERNEL_VGPUMGR(pSys);
-
-    NV_ENTER_RM_RUNTIME(sp,fp);
-    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
-
-    /*
-     * This function can be used to query both BAR 64bit state and/or BAR size
-     * If neither is queried, return with error.
-     */
-    if ((size == NULL) && (isBar64bit == NULL))
-    {
-        rmStatus = NV_ERR_INVALID_ARGUMENT;
-        goto exit;
-    }
-
-    // LOCK: acquire API lock
-    NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_SILENT, rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_HYPERVISOR), exit);
-
-    pGpu = NV_GET_NV_PRIV_PGPU(pNv);
-    if (pGpu == NULL)
-    {
-        NV_PRINTF(LEVEL_ERROR, "%s GPU handle is not valid \n", __FUNCTION__);
-        rmStatus = NV_ERR_INVALID_STATE;
-        goto release_lock;
-    }
-
-    /* Get input BAR index 64bit state */
-    if (isBar64bit != NULL)
-    {
-        NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_SILENT,
-            is_bar_64bit(pGpu, regionIndex, isBar64bit), release_lock);
-
-        /* Query is only for BAR index 64bit state*/
-        if (size == NULL)
-            goto release_lock;
-    }
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    KernelVgpuMgr *pKernelVgpuMgr = SYS_GET_KERNEL_VGPUMGR(pSys);
+    NV_STATUS status;
+    KernelBus *pKernelBus;
+    NvU32 value = 0;
 
     pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     *size = kbusGetPciBarSize(pKernelBus, regionIndex);
-
-    NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_SILENT,
-        kvgpumgrGetHostVgpuDeviceFromMdevUuid(pNv->gpu_id,
-                                             pMdevUuid,
-                                             &pKernelHostVgpuDevice), release_lock);
-
-    pRequestVgpu = pKernelHostVgpuDevice->pRequestVgpuInfoNode;
-    if (pRequestVgpu == NULL)
-    {
-        rmStatus = NV_ERR_INVALID_POINTER;
-        goto release_lock;
-    }
-
-    pKernelHostVgpuDevice->pVgpuVfioRef = pVgpuVfioRef;
 
     if (regionIndex == NV_VFIO_PCI_BAR1_REGION_INDEX)
     {
@@ -597,30 +415,30 @@ NV_STATUS NV_API_CALL nv_vgpu_get_bar_info(
         NvBool    bOverrideBar1Size = NV_FALSE;
 
         // Read BAR1 length from vgpuTypeInfo
-        NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_SILENT,
-            kvgpumgrGetVgpuTypeInfo(pKernelHostVgpuDevice->vgpuType, &vgpuTypeInfo), release_lock);
-        
+        NV_ASSERT_OK_OR_RETURN(kvgpumgrGetVgpuTypeInfo(pKernelHostVgpuDevice->vgpuType,
+                                                       &vgpuTypeInfo));
+
         *size = vgpuTypeInfo->bar1Length << 20;
+        NV_ASSERT_OK_OR_RETURN(kvgpumgrGetPgpuIndex(pKernelVgpuMgr, pGpu->gpuId, &pgpuIndex));
 
-        NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_SILENT,
-            kvgpumgrGetPgpuIndex(pKernelVgpuMgr, pNv->gpu_id, &pgpuIndex), release_lock);
-
-        /* 
+        /*
          * check for 'override_bar1_size' param in vgpuExtraParams list first,
          * if param is missing there then check it in vgpu_params list
          */
         status = nv_parse_config_params((const char*)vgpuTypeInfo->vgpuExtraParams,
                                         "override_bar1_size", ';', &value);
-
-        if (status == NV_OK && value) {
+        if (status == NV_OK && value)
+        {
             bOverrideBar1Size = NV_TRUE;
-        } else if (status == NV_ERR_OBJECT_NOT_FOUND) {
-            status = nv_parse_config_params(pRequestVgpu->configParams,
+        }
+        else if (status == NV_ERR_OBJECT_NOT_FOUND)
+        {
+            status = nv_parse_config_params((const char *)configParams,
                                             "override_bar1_size", ',', &value);
             if (status == NV_OK && value)
                 bOverrideBar1Size = NV_TRUE;
         }
-      
+
         if (gpuIsVfResizableBAR1Supported(pGpu))
         {
             if ((*size > pGpu->sriovState.vfBarSize[1]) ||
@@ -628,13 +446,14 @@ NV_STATUS NV_API_CALL nv_vgpu_get_bar_info(
             {
                 *size = pGpu->sriovState.vfBarSize[1];
             }
-        } 
+        }
 
-        if (bOverrideBar1Size) {
+        if (bOverrideBar1Size)
+        {
             NvU64 bar1SizeInBytes, guestBar1;
             NvU64 gpuBar1LowerLimit = 256 * 1024 * 1024; // bar1 lower limit for override_bar1_length parameter
-
             bar1SizeInBytes = kbusGetPciBarSize(pKernelBus, NV_VFIO_PCI_BAR1_REGION_INDEX);
+
             if (pKernelVgpuMgr->pgpuInfo[pgpuIndex].sriovEnabled)
             {
                 *size = pGpu->sriovState.vfBarSize[1];
@@ -649,7 +468,7 @@ NV_STATUS NV_API_CALL nv_vgpu_get_bar_info(
     else if (regionIndex == NV_VFIO_PCI_BAR2_REGION_INDEX ||
              regionIndex == NV_VFIO_PCI_BAR3_REGION_INDEX)
     {
-        status = nv_parse_config_params(pRequestVgpu->configParams,
+        status = nv_parse_config_params((const char *)configParams,
                                         "address64", ',', &value);
 
         if ((status != NV_OK) || ((status == NV_OK) && (value != 0)))
@@ -661,6 +480,48 @@ NV_STATUS NV_API_CALL nv_vgpu_get_bar_info(
         }
     }
 
+    return NV_OK;
+}
+
+NV_STATUS NV_API_CALL nv_vgpu_get_bar_info
+(
+    nvidia_stack_t *sp,
+    nv_state_t *pNv,
+    const NvU8 *pMdevUuid,
+    NvU64 *barSizes,
+    NvU64 *sparseOffsets,
+    NvU64 *sparseSizes,
+    NvU32 *sparseCount,
+    NvBool *isBar064bit,
+    NvU8 *configParams
+)
+{
+    THREAD_STATE_NODE threadState;
+    NV_STATUS rmStatus = NV_OK;
+    OBJGPU *pGpu = NULL;
+    void *fp = NULL;
+
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
+
+    // LOCK: acquire API lock
+    NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_SILENT,
+                        rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_HYPERVISOR), exit);
+
+    pGpu = NV_GET_NV_PRIV_PGPU(pNv);
+    if (pGpu == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "%s GPU handle is not valid \n", __FUNCTION__);
+        rmStatus = NV_ERR_INVALID_STATE;
+        goto release_lock;
+    }
+
+    NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_SILENT,
+                        nv_vgpu_rm_get_bar_info(pGpu, pMdevUuid, barSizes,
+                                                sparseOffsets, sparseSizes,
+                                                sparseCount, isBar064bit,
+                                                configParams),
+                        release_lock);
 release_lock:
     // UNLOCK: release API lock
     rmapiLockRelease();
@@ -737,48 +598,6 @@ exit:
     return rmStatus;
 }
 
-NV_STATUS osVgpuVfioWake(
-    void *waitQueue
-)
-{
-    vgpu_vfio_info vgpu_info;
-
-    vgpu_info.waitQueue = waitQueue;
-
-    return os_call_vgpu_vfio((void *) &vgpu_info, CMD_VGPU_VFIO_WAKE_WAIT_QUEUE);
-}
-
-NV_STATUS NV_API_CALL nv_vgpu_start(
-    nvidia_stack_t *sp,
-    const NvU8 *pMdevUuid,
-    void *waitQueue,
-    NvS32 *returnStatus,
-    NvU8 *vmName,
-    NvU32 qemuPid
-)
-{
-    THREAD_STATE_NODE threadState;
-    NV_STATUS rmStatus = NV_OK;
-    void *fp = NULL;
-
-    NV_ENTER_RM_RUNTIME(sp,fp);
-    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
-
-    // LOCK: acquire API lock
-    if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_HYPERVISOR)) == NV_OK)
-    {
-        rmStatus = kvgpumgrStart(pMdevUuid, waitQueue, returnStatus,
-                                vmName, qemuPid);
-
-        // UNLOCK: release API lock
-        rmapiLockRelease();
-    }
-    threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
-    NV_EXIT_RM_RUNTIME(sp,fp);
-
-    return rmStatus;
-}
-
 static NV_STATUS nv_parse_config_params(
     const char *config_params,
     const char *key,
@@ -815,216 +634,159 @@ static NV_STATUS nv_parse_config_params(
    return rmStatus;
 }
 
-NV_STATUS  NV_API_CALL  nv_vgpu_get_sparse_mmap(
-    nvidia_stack_t *sp ,
-    nv_state_t *pNv,
-    const NvU8 *pMdevUuid,
-    NvU64 **offsets,
-    NvU64 **sizes,
-    NvU32 *numAreas
+static NV_STATUS _nv_vgpu_get_sparse_mmap(
+    OBJGPU *pGpu,
+    KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice,
+    NvU64 *offsets,
+    NvU64 *sizes,
+    NvU32 *numAreas,
+    NvU8 *configParams
 )
 {
-    THREAD_STATE_NODE threadState;
-    NV_STATUS rmStatus = NV_ERR_INVALID_STATE, status;
-    OBJGPU *pGpu = NULL;
-    OBJTMR *pTmr = NULL;
-    KernelFifo *pKernelFifo = NULL;
-    void *fp = NULL;
-    REQUEST_VGPU_INFO_NODE *pRequestVgpu = NULL;
-    KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice;
-    NvU32 bar0TmrMapSize = 0, bar0FifoMapSize = 0, value = 0;
-    NvU64 bar0TmrMapOffset = 0, bar0FifoMapOffset = 0;
-    NvU64 *vfRegionSizes = NULL;
-    NvU64 *vfRegionOffsets = NULL;
-    KernelBif *pKernelBif = NULL;
+    NV_STATUS rmStatus = NV_OK, status;
+    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);;
+    KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);;
+    KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
+    NvU32 value = 0;
 
-
-    NV_ENTER_RM_RUNTIME(sp,fp);
-    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
-
-    // LOCK: acquire API lock
-    if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_HYPERVISOR)) == NV_OK)
+    *numAreas = 0;
+    if (pKernelHostVgpuDevice->gfid != 0)
     {
-        pGpu = NV_GET_NV_PRIV_PGPU(pNv);
-    
-        if (pGpu == NULL)
-        {
-            rmStatus = NV_ERR_INVALID_STATE;
-            goto cleanup;
-        }
-        pTmr = GPU_GET_TIMER(pGpu);
-        pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
-        pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
-        *numAreas = 0;
-        rmStatus = kvgpumgrGetHostVgpuDeviceFromMdevUuid(pNv->gpu_id, pMdevUuid,
-                                                        &pKernelHostVgpuDevice);
+        rmStatus = kbifGetVFSparseMmapRegions_HAL(pGpu, pKernelBif, pKernelHostVgpuDevice,
+                                                  os_page_size, numAreas, NULL, NULL);
         if (rmStatus == NV_OK)
         {
-            if (pKernelHostVgpuDevice->gfid != 0)
+            if (*numAreas > NVA081_MAX_SPARSE_REGION_COUNT)
             {
-                rmStatus = kbifGetVFSparseMmapRegions_HAL(pGpu, pKernelBif, pKernelHostVgpuDevice, os_page_size,
-                                                          numAreas, NULL, NULL);
-                if (rmStatus == NV_OK)
-                {
-                    rmStatus = os_alloc_mem((void **)&vfRegionOffsets, sizeof(NvU64) * (*numAreas));
-                    if (rmStatus != NV_OK)
-                        goto cleanup;
-
-                    rmStatus = os_alloc_mem((void **)&vfRegionSizes, sizeof (NvU64) * (*numAreas));
-                    if (rmStatus != NV_OK)
-                    {
-                        os_free_mem(vfRegionOffsets);
-                        goto cleanup;
-                    }
-
-                    if (vfRegionOffsets && vfRegionSizes)
-                    {
-                        rmStatus = kbifGetVFSparseMmapRegions_HAL(pGpu, pKernelBif, pKernelHostVgpuDevice, os_page_size,
-                                                                  numAreas, vfRegionOffsets, vfRegionSizes);
-                        if (rmStatus == NV_OK)
-                        {
-                            *offsets = vfRegionOffsets;
-                            *sizes   = vfRegionSizes;
-                        }
-                        else
-                        {
-                            os_free_mem(vfRegionOffsets);
-                            os_free_mem(vfRegionSizes);
-                        }
-                    }
-                    else
-                    {
-                        if (vfRegionOffsets != NULL)
-                            os_free_mem(vfRegionOffsets);
-
-                        if (vfRegionSizes != NULL)
-                            os_free_mem(vfRegionSizes);
-
-                        rmStatus = NV_ERR_INSUFFICIENT_RESOURCES;
-                    }
-                }
+                NV_PRINTF(LEVEL_ERROR, "Not enough space for sparse mmap region info\n");
+                return NV_ERR_INSUFFICIENT_RESOURCES;
             }
-            else
+
+
+            rmStatus = kbifGetVFSparseMmapRegions_HAL(pGpu, pKernelBif, pKernelHostVgpuDevice, os_page_size,
+                                                      numAreas, offsets, sizes);
+            if (rmStatus != NV_OK)
+                return rmStatus;
+        }
+    }
+    else
+    {
+        status = nv_parse_config_params((const char *)configParams,
+                                        "direct_gpu_timer_access", ',', &value);
+        if ((status == NV_OK) && (value != 0))
+        {
+            NvU64 offset = 0;
+            NvU32 size = 0;
+
+            rmStatus = tmrGetTimerBar0MapInfo_HAL(pGpu, pTmr, &offset, &size);
+
+            if (rmStatus == NV_OK)
             {
-                pRequestVgpu = pKernelHostVgpuDevice->pRequestVgpuInfoNode;
-                if (pRequestVgpu == NULL)
-                {
-                    rmStatus = NV_ERR_INVALID_POINTER;
-                    goto cleanup;
-                }
-
-                status = nv_parse_config_params(pRequestVgpu->configParams, "direct_gpu_timer_access", ',', &value);
-                if ((status == NV_OK) && (value != 0))
-                {
-                    rmStatus = tmrGetTimerBar0MapInfo_HAL(pGpu, pTmr,
-                                                          &bar0TmrMapOffset,
-                                                          &bar0TmrMapSize);
-                    if (rmStatus == NV_OK)
-                        (*numAreas)++;
-                    else
-                        NV_PRINTF(LEVEL_ERROR,
-                                  "%s Failed to get NV_PTIMER region \n",
-                                  __FUNCTION__);
-                }
-
-                value = 0;
-                {
-                    status = kfifoGetUsermodeMapInfo_HAL(pGpu, pKernelFifo,
-                                                         &bar0FifoMapOffset,
-                                                         &bar0FifoMapSize);
-                    if (status == NV_OK)
-                        (*numAreas)++;
-                }
-
-                if (*numAreas != 0)
-                {
-                    NvU32 i = 0;
-                    NvU64 *tmpOffset, *tmpSize;
-                    rmStatus = os_alloc_mem((void **)offsets, sizeof(NvU64) * (*numAreas));
-                    if (rmStatus != NV_OK)
-                        goto cleanup;
-
-                    rmStatus = os_alloc_mem((void **)sizes, sizeof (NvU64) * (*numAreas));
-                    if (rmStatus != NV_OK)
-                    {
-                        os_free_mem(*offsets);
-                        goto cleanup;
-                    }
-
-                    tmpOffset = *offsets;
-                    tmpSize   = *sizes;
-
-                    if (bar0TmrMapSize != 0)
-                    {
-                        tmpOffset[i] = bar0TmrMapOffset;
-                        tmpSize[i] = bar0TmrMapSize;
-                        i++;
-                    }
-
-                    if (bar0FifoMapSize != 0)
-                    {
-                        tmpOffset[i] = bar0FifoMapOffset;
-                        tmpSize[i] = bar0FifoMapSize;
-                    }
-                }
+                offsets[*numAreas] = offset;
+                sizes[*numAreas] = size;
+                (*numAreas)++;
             }
         }
 
-cleanup:
-        // UNLOCK: release API lock
-        rmapiLockRelease();
-    }
+        value = 0;
+        {
+            NvU64 offset = 0;
+            NvU32 size = 0;
 
-    threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
-    NV_EXIT_RM_RUNTIME(sp,fp);
+            status = kfifoGetUsermodeMapInfo_HAL(pGpu, pKernelFifo, &offset, &size);
+
+            if (status == NV_OK)
+            {
+                offsets[*numAreas] = offset;
+                sizes[*numAreas] = size;
+                (*numAreas)++;
+            }
+        }
+    }
 
     return rmStatus;
 }
 
-NV_STATUS  NV_API_CALL nv_vgpu_update_request(
-    nvidia_stack_t *sp ,
+NV_STATUS nv_vgpu_rm_get_bar_info
+(
+    OBJGPU     *pGpu,
     const NvU8 *pMdevUuid,
-    VGPU_DEVICE_STATE deviceState,
-    NvU64 *offsets,
-    NvU64 *sizes,
-    const char *configParams
+    NvU64      *barSizes,
+    NvU64      *sparseOffsets,
+    NvU64      *sparseSizes,
+    NvU32      *sparseCount,
+    NvBool     *isBar064bit,
+    NvU8       *configParams
+)
+{
+    KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice;
+    NV_STATUS rmStatus;
+    NvU32 i = 0;
+
+    NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_SILENT,
+                        is_bar_64bit(pGpu, NV_VFIO_PCI_BAR0_REGION_INDEX, isBar064bit),
+                        exit);
+
+    NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_SILENT,
+                        kvgpumgrGetHostVgpuDeviceFromMdevUuid(pGpu->gpuId,
+                                                              pMdevUuid,
+                                                              &pKernelHostVgpuDevice),
+                        exit);
+
+    for (i = 0; i < NVA081_MAX_BAR_REGION_COUNT; i++)
+    {
+        /*
+         * For SRIOV, only VF BAR1 is queried via RM, others BARs are directly
+         * queried via VF config space in vgpu-vfio
+         */
+        if (gpuIsSriovEnabled(pGpu) && (i != NV_VFIO_PCI_BAR1_REGION_INDEX))
+        {
+            barSizes[i] = 0;
+            continue;
+        }
+
+        rmStatus = _nv_vgpu_get_bar_size(pGpu, pKernelHostVgpuDevice, i,
+                                         &barSizes[i], configParams);
+        if (rmStatus != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to query BAR size for index %u 0x%x\n",
+                      i, rmStatus);
+            goto exit;
+        }
+    }
+
+    NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_SILENT,
+                        _nv_vgpu_get_sparse_mmap(pGpu, pKernelHostVgpuDevice,
+                                                 sparseOffsets, sparseSizes,
+                                                 sparseCount, configParams),
+                        exit);
+
+exit:
+    return rmStatus;
+}
+
+NV_STATUS NV_API_CALL nv_gpu_unbind_event
+(
+    nvidia_stack_t *sp,
+    NvU32 gpuId,
+    NvBool *isEventNotified
 )
 {
     THREAD_STATE_NODE threadState;
-    NV_STATUS rmStatus = NV_ERR_OBJECT_NOT_FOUND;
+    NV_STATUS rmStatus = NV_OK;
     void *fp = NULL;
-    REQUEST_VGPU_INFO_NODE *pRequestVgpu = NULL;
-    OBJSYS *pSys = SYS_GET_INSTANCE();
-    KernelVgpuMgr *pKernelVgpuMgr = SYS_GET_KERNEL_VGPUMGR(pSys);
 
     NV_ENTER_RM_RUNTIME(sp,fp);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
-    if (offsets != NULL)
-        os_free_mem(offsets);
-
-    if (sizes != NULL)
-        os_free_mem(sizes);
-
     // LOCK: acquire API lock
     if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_HYPERVISOR)) == NV_OK)
     {
-        for (pRequestVgpu = listHead(&pKernelVgpuMgr->listRequestVgpuHead);
-             pRequestVgpu != NULL;
-             pRequestVgpu = listNext(&pKernelVgpuMgr->listRequestVgpuHead, pRequestVgpu))
-        {
-            if (portMemCmp(pRequestVgpu->mdevUuid, pMdevUuid, VGPU_UUID_SIZE) == 0)
-            {
-
-                if (configParams != NULL)
-                    portStringCopy(pRequestVgpu->configParams,
-                                   sizeof(pRequestVgpu->configParams),
-                                   configParams, (portStringLength(configParams) + 1));
-
-                pRequestVgpu->deviceState = deviceState;
-                rmStatus = NV_OK;
-            }
-        }
+        /*
+         * Send gpu_id in "status" field of the event so that nvidia-vgpu-mgr
+         * daemon knows which GPU is being unbound
+         */
+        CliAddSystemEvent(NV0000_NOTIFIERS_GPU_UNBIND_EVENT, gpuId, isEventNotified);
 
         // UNLOCK: release API lock
         rmapiLockRelease();
@@ -1050,7 +812,7 @@ NV_STATUS NV_API_CALL nv_gpu_bind_event(
     // LOCK: acquire API lock
     if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_HYPERVISOR)) == NV_OK)
     {
-        CliAddSystemEvent(NV0000_NOTIFIERS_GPU_BIND_EVENT, 0);
+        CliAddSystemEvent(NV0000_NOTIFIERS_GPU_BIND_EVENT, 0, NULL);
 
         // UNLOCK: release API lock
         rmapiLockRelease();
@@ -1060,103 +822,6 @@ NV_STATUS NV_API_CALL nv_gpu_bind_event(
     NV_EXIT_RM_RUNTIME(sp,fp);
 
     return rmStatus;
-}
-
-NV_STATUS osVgpuInjectInterrupt(void *vgpuVfioRef)
-{
-    vgpu_vfio_info vgpu_info;
-
-    vgpu_info.vgpuVfioRef = vgpuVfioRef;
-
-    return os_call_vgpu_vfio((void *) &vgpu_info, CMD_VGPU_VFIO_INJECT_INTERRUPT);
-}
-
-NV_STATUS osVgpuRegisterMdev
-(
-    OS_GPU_INFO *pOsGpuInfo
-)
-{
-    NV_STATUS status = NV_OK;
-    vgpu_vfio_info vgpu_info = {0};
-    OBJSYS *pSys = SYS_GET_INSTANCE();
-    KernelVgpuMgr *pKernelVgpuMgr = SYS_GET_KERNEL_VGPUMGR(pSys);
-    KERNEL_PHYS_GPU_INFO *pPhysGpuInfo;
-    NvU32 pgpuIndex, i;
-    OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
-
-    status = kvgpumgrGetPgpuIndex(pKernelVgpuMgr, pOsGpuInfo->gpu_id, &pgpuIndex);
-    if (status != NV_OK)
-        return status;
-
-    pPhysGpuInfo = &(pKernelVgpuMgr->pgpuInfo[pgpuIndex]);
-
-    vgpu_info.numVgpuTypes = pKernelVgpuMgr->pgpuInfo[pgpuIndex].numVgpuTypes;
-
-    status = os_alloc_mem((void **)&vgpu_info.vgpuTypeIds,
-                          ((vgpu_info.numVgpuTypes) * sizeof(NvU32)));
-    if (status != NV_OK)
-        goto free_mem;
-
-    status = os_alloc_mem((void **)&vgpu_info.vgpuNames,
-                          ((vgpu_info.numVgpuTypes) * sizeof(char *)));
-    if (status != NV_OK)
-        goto free_mem;
-
-    vgpu_info.nv = pOsGpuInfo;
-    for (i = 0; i < pPhysGpuInfo->numVgpuTypes; i++)
-    {
-        status = os_alloc_mem((void *)&vgpu_info.vgpuNames[i], (VGPU_STRING_BUFFER_SIZE * sizeof(char)));
-        if (status != NV_OK)
-            goto free_mem;
-
-        vgpu_info.vgpuTypeIds[i] = pPhysGpuInfo->vgpuTypes[i]->vgpuTypeId;
-        os_snprintf((char *) vgpu_info.vgpuNames[i], VGPU_STRING_BUFFER_SIZE, "%s\n", pPhysGpuInfo->vgpuTypes[i]->vgpuName);
-    }
-
-    if ((!pPhysGpuInfo->sriovEnabled) || 
-        (pHypervisor->getProperty(pHypervisor, PDB_PROP_HYPERVISOR_DRIVERVM_ENABLED)))
-    {
-        vgpu_info.is_virtfn = NV_FALSE;
-        status = os_call_vgpu_vfio((void *)&vgpu_info, CMD_VGPU_VFIO_REGISTER_MDEV);
-    }
-    else
-    {
-        for (i = 0; i < MAX_VF_COUNT_PER_GPU; i++)
-        {
-            if (pPhysGpuInfo->vfPciInfo[i].isNvidiaAttached)
-            {
-                vgpu_info.is_virtfn =   NV_TRUE;
-                vgpu_info.domain    =   pPhysGpuInfo->vfPciInfo[i].domain;
-                vgpu_info.bus       =   pPhysGpuInfo->vfPciInfo[i].bus;
-                vgpu_info.slot      =   pPhysGpuInfo->vfPciInfo[i].slot;
-                vgpu_info.function  =   pPhysGpuInfo->vfPciInfo[i].function;
-
-                status = os_call_vgpu_vfio((void *)&vgpu_info, CMD_VGPU_VFIO_REGISTER_MDEV);
-                if (status == NV_OK)
-                {
-                    pPhysGpuInfo->vfPciInfo[i].isMdevAttached = NV_TRUE;
-                }
-            }
-        }
-    }
-
-free_mem:
-    if (vgpu_info.vgpuTypeIds)
-        os_free_mem(vgpu_info.vgpuTypeIds);
-
-    if (vgpu_info.vgpuNames)
-    {
-        for (i = 0; i < pPhysGpuInfo->numVgpuTypes; i++)
-        {
-            if (vgpu_info.vgpuNames[i])
-            {
-                os_free_mem(vgpu_info.vgpuNames[i]);
-            }
-        }
-        os_free_mem(vgpu_info.vgpuNames);
-    }
-
-    return status;
 }
 
 NV_STATUS osIsVgpuVfioPresent(void)
@@ -1172,6 +837,19 @@ NV_STATUS osIsVfioPciCorePresent(void)
 
     return os_call_vgpu_vfio((void *) &vgpu_info, CMD_VFIO_PCI_CORE_PRESENT);
 }
+
+void osWakeRemoveVgpu(NvU32 gpuId, NvU32 returnStatus)
+{
+    vgpu_vfio_info vgpu_info;
+
+    vgpu_info.return_status = returnStatus;
+    vgpu_info.domain = gpuDecodeDomain(gpuId);
+    vgpu_info.bus = gpuDecodeBus(gpuId);
+    vgpu_info.device = gpuDecodeDevice(gpuId);
+
+    os_call_vgpu_vfio((void *)&vgpu_info, CMD_VFIO_WAKE_REMOVE_GPU);
+}
+
 
 NvU32 osGetGridCspSupport(void)
 {

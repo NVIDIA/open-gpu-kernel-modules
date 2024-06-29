@@ -768,6 +768,16 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifGetValidDeviceEnginesToReset__ = &kbifGetValidDeviceEnginesToReset_GA100;
     }
 
+    // Hal function -- kbifGetMigrationBandwidth
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GA100 */ 
+    {
+        pThis->__kbifGetMigrationBandwidth__ = &kbifGetMigrationBandwidth_GA100;
+    }
+    else
+    {
+        pThis->__kbifGetMigrationBandwidth__ = &kbifGetMigrationBandwidth_GM107;
+    }
+
     // Hal function -- kbifGetEccCounts
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
