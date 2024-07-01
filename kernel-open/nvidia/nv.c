@@ -4042,6 +4042,16 @@ int NV_API_CALL nv_get_event(
     nvidia_event_t *nvet;
     unsigned long eflags;
 
+    //
+    // Note that the head read/write is not atomic when done outside of the
+    // spinlock, so this might not be a valid pointer at all. But if we read
+    // NULL here that means that the value indeed was NULL and we can bail
+    // early since there's no events. Otherwise, we have to do a proper read
+    // under a spinlock.
+    //
+    if (nvlfp->event_data_head == NULL)
+        return NV_ERR_GENERIC;
+
     NV_SPIN_LOCK_IRQSAVE(&nvlfp->fp_lock, eflags);
 
     nvet = nvlfp->event_data_head;

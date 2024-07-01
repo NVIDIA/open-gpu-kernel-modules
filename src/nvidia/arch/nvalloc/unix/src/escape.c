@@ -677,52 +677,6 @@ NV_STATUS RmIoctl(
             break;
         }
 
-        case NV_ESC_ALLOC_OS_EVENT:
-        {
-            nv_ioctl_alloc_os_event_t *pApi = data;
-
-            if (dataSize != sizeof(nv_ioctl_alloc_os_event_t))
-            {
-                rmStatus = NV_ERR_INVALID_ARGUMENT;
-                goto done;
-            }
-
-            pApi->Status = rm_alloc_os_event(pApi->hClient,
-                                             nvfp,
-                                             pApi->fd);
-            break;
-        }
-
-        case NV_ESC_FREE_OS_EVENT:
-        {
-            nv_ioctl_free_os_event_t *pApi = data;
-
-            if (dataSize != sizeof(nv_ioctl_free_os_event_t))
-            {
-                rmStatus = NV_ERR_INVALID_ARGUMENT;
-                goto done;
-            }
-
-            pApi->Status = rm_free_os_event(pApi->hClient, pApi->fd);
-            break;
-        }
-
-        case NV_ESC_RM_GET_EVENT_DATA:
-        {
-            NVOS41_PARAMETERS *pApi = data;
-
-            if (dataSize != sizeof(NVOS41_PARAMETERS))
-            {
-                rmStatus = NV_ERR_INVALID_ARGUMENT;
-                goto done;
-            }
-
-            pApi->status = rm_get_event_data(nvfp,
-                                             pApi->pEvent,
-                                             &pApi->MoreEvents);
-            break;
-        }
-
         case NV_ESC_STATUS_CODE:
         {
             nv_state_t *pNv;
