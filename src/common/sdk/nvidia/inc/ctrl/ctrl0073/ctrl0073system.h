@@ -216,6 +216,9 @@ typedef struct NV0073_CTRL_SYSTEM_GET_SCANLINE_PARAMS {
  *     This parameter specifies the head for which the vblank counter
  *     should be retrieved.  This value must be between zero and the
  *     maximum number of heads supported by the subdevice.
+ *   lowLatencyHint
+ *     RM maintains several different vblank counts.  When this parameter is
+ *     NV_TRUE, the command may return the low latency count.
  *   verticalBlankCounter
  *     This parameter returns the vblank counter value for the specified
  *     head. If the display mode is not valid or vblank not active then
@@ -230,9 +233,10 @@ typedef struct NV0073_CTRL_SYSTEM_GET_SCANLINE_PARAMS {
 #define NV0073_CTRL_SYSTEM_GET_VBLANK_COUNTER_PARAMS_MESSAGE_ID (0x05U)
 
 typedef struct NV0073_CTRL_SYSTEM_GET_VBLANK_COUNTER_PARAMS {
-    NvU32 subDeviceInstance;
-    NvU32 head;
-    NvU32 verticalBlankCounter;
+    NvU32  subDeviceInstance;
+    NvU32  head;
+    NvBool lowLatencyHint;
+    NvU32  verticalBlankCounter;
 } NV0073_CTRL_SYSTEM_GET_VBLANK_COUNTER_PARAMS;
 
 /*
