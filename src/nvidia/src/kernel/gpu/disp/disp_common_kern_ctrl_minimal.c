@@ -329,7 +329,14 @@ dispcmnCtrlCmdSystemGetVblankCounter_IMPL
 
     if (IS_GSP_CLIENT(pGpu))
     {
-        pVBCounterParams->verticalBlankCounter = pKernelDisplay->pSharedData->kHeadVblankCount[pKernelHead->PublicId];
+        if (pVBCounterParams->lowLatencyHint)
+        {
+            pVBCounterParams->verticalBlankCounter = kheadGetVblankLowLatencyCounter_HAL(pKernelHead);
+        }
+        else
+        {
+            pVBCounterParams->verticalBlankCounter = pKernelDisplay->pSharedData->kHeadVblankCount[pKernelHead->PublicId];
+        }
     }
     else
     {
