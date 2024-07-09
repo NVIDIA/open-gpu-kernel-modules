@@ -47,7 +47,8 @@ nvlink_core_discover_and_get_remote_end
 (
     nvlink_link  *end,
     nvlink_link **remote_end,
-    NvU32         flags
+    NvU32         flags,
+    NvBool        bForceDiscovery
 )
 {
     nvlink_intranode_conn *conn      = NULL;
@@ -67,7 +68,7 @@ nvlink_core_discover_and_get_remote_end
         return;
     }
 
-    if (nvlinkLibCtx.bNewEndpoints)
+    if (nvlinkLibCtx.bNewEndpoints || bForceDiscovery)
     {
         if (!_nvlink_core_all_links_initialized())
         {

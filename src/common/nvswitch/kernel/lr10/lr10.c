@@ -4071,7 +4071,9 @@ nvswitch_ctrl_get_nvlink_status_lr10
         }
         else
         {
-            nvlink_lib_discover_and_get_remote_conn_info(link, &conn_info, NVLINK_STATE_CHANGE_SYNC);
+            nvlink_lib_discover_and_get_remote_conn_info(link, &conn_info,
+                                                         NVLINK_STATE_CHANGE_SYNC,
+                                                         NV_FALSE);
         }
 
         // Set NVLINK per-link caps

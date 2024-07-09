@@ -2971,8 +2971,91 @@ typedef struct NV2080_CTRL_NVLINK_POST_FAULT_UP_PARAMS {
     NvU32 linkId;
 } NV2080_CTRL_NVLINK_POST_FAULT_UP_PARAMS;
 
-#define NV2080_CTRL_CMD_NVLINK_POST_FAULT_UP (0x20803043U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_POST_FAULT_UP_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_NVLINK_POST_FAULT_UP     (0x20803043U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_POST_FAULT_UP_PARAMS_MESSAGE_ID" */
 
+#define NV2080_CTRL_NVLINK_PORT_EVENT_COUNT_SIZE 64U
+
+/*
+* Structure to store port event information
+*
+*   portEventType
+*       Type of port even that occurred: NVLINK_PORT_EVENT_TYPE*
+*
+*   gpuId
+*       Gpu that port event occurred on
+*
+*   linkId
+*       Link id that port event occurred on
+*
+*   time
+*       Platform time (nsec) when event occurred
+*/
+typedef struct NV2080_CTRL_NVLINK_PORT_EVENT {
+    NvU32 portEventType;
+    NvU32 gpuId;
+    NvU32 linkId;
+    NV_DECLARE_ALIGNED(NvU64 time, 8);
+} NV2080_CTRL_NVLINK_PORT_EVENT;
+
+/*
+* NV2080_CTRL_CMD_NVLINK_GET_PORT_EVENTS
+*
+* This command returns the port up and port down events that have occurred
+*
+* Parameters:
+*
+*   portEventIndex [IN/OUT]
+*      On input: The index of the first port event at which to start reading out of the driver.
+*
+*      On output: The index of the first port event that wasn't reported through the 'port event' array
+*                 in this call to NV2080_CTRL_CMD_NVLINK_GET_PORT_EVENTS. 
+*
+*   nextPortEventIndex[OUT]
+*      The index that will be assigned to the next port event that occurs.
+*      Users of the GET_PORT_EVENTS control call may set 'portEventIndex' to this field on initialization
+*      to bypass port events that have already occurred without making multiple control calls.
+*
+*   portEventCount [OUT]
+*      Number of port events returned by the call. Currently, portEventCount is limited
+*      by NV2080_CTRL_NVLINK_PORT_EVENT_COUNT_SIZE. In order to query all the port events, a
+*      client needs to keep calling the control till portEventCount is zero.
+*
+*   bOverflow [OUT]
+*       True when the port event log is overflowed and no longer contains all the port
+*       events that have occurred, false otherwise.
+*
+*   portEvent [OUT]
+*      The port event entires.
+*/
+#define NV2080_CTRL_NVLINK_GET_PORT_EVENTS_PARAMS_MESSAGE_ID (0x44U)
+
+typedef struct NV2080_CTRL_NVLINK_GET_PORT_EVENTS_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 portEventIndex, 8);
+    NV_DECLARE_ALIGNED(NvU64 nextPortEventIndex, 8);
+    NvU32  portEventCount;
+    NvBool bOverflow;
+    NV_DECLARE_ALIGNED(NV2080_CTRL_NVLINK_PORT_EVENT portEvent[NV2080_CTRL_NVLINK_PORT_EVENT_COUNT_SIZE], 8);
+} NV2080_CTRL_NVLINK_GET_PORT_EVENTS_PARAMS;
+
+#define NV2080_CTRL_CMD_NVLINK_GET_PORT_EVENTS (0x20803044U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_GET_PORT_EVENTS_PARAMS_MESSAGE_ID" */
+
+/*
+* NV2080_CTRL_CMD_NVLINK_CYCLE_LINK
+*
+* This command cycles a link by faulting it and then retraining the link
+*
+* Parameters:
+*
+*   linkId [IN]
+*      The link id of the link to be cycled
+*/
+#define NV2080_CTRL_NVLINK_CYCLE_LINK_PARAMS_MESSAGE_ID (0x45U)
+
+typedef struct NV2080_CTRL_NVLINK_CYCLE_LINK_PARAMS {
+    NvU32 linkId;
+} NV2080_CTRL_NVLINK_CYCLE_LINK_PARAMS;
+
+#define NV2080_CTRL_CMD_NVLINK_CYCLE_LINK (0x20803045U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_CYCLE_LINK_PARAMS_MESSAGE_ID" */
 
 /*
  * NV2080_CTRL_CMD_NVLINK_IS_REDUCED_CONFIG
@@ -2982,13 +3065,13 @@ typedef struct NV2080_CTRL_NVLINK_POST_FAULT_UP_PARAMS {
  * [out] bReducedNvlinkConfig
  *     Link number which the sequence should be triggered
  */
-#define NV2080_CTRL_NVLINK_IS_REDUCED_CONFIG_PARAMS_MESSAGE_ID (0x44U)
+#define NV2080_CTRL_NVLINK_IS_REDUCED_CONFIG_PARAMS_MESSAGE_ID (0x46U)
 
 typedef struct NV2080_CTRL_NVLINK_IS_REDUCED_CONFIG_PARAMS {
     NvBool bReducedNvlinkConfig;
 } NV2080_CTRL_NVLINK_IS_REDUCED_CONFIG_PARAMS;
 
-#define NV2080_CTRL_CMD_NVLINK_IS_REDUCED_CONFIG (0x20803044U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_IS_REDUCED_CONFIG_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_NVLINK_IS_REDUCED_CONFIG (0x20803046U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_IS_REDUCED_CONFIG_PARAMS_MESSAGE_ID" */
 
 
 /* _ctrl2080nvlink_h_ */

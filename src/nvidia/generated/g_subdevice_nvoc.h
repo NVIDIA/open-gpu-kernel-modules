@@ -218,6 +218,8 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdNvlinkSetL1Threshold__)(struct Subdevice *, NV2080_CTRL_NVLINK_SET_L1_THRESHOLD_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdNvlinkDirectConnectCheck__)(struct Subdevice *, NV2080_CTRL_NVLINK_DIRECT_CONNECT_CHECK_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdNvlinkGetL1Threshold__)(struct Subdevice *, NV2080_CTRL_NVLINK_GET_L1_THRESHOLD_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdNvlinkGetPortEvents__)(struct Subdevice *, NV2080_CTRL_NVLINK_GET_PORT_EVENTS_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdNvlinkCycleLink__)(struct Subdevice *, NV2080_CTRL_NVLINK_CYCLE_LINK_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdIsNvlinkReducedConfig__)(struct Subdevice *, NV2080_CTRL_NVLINK_IS_REDUCED_CONFIG_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdI2cReadBuffer__)(struct Subdevice *, NV2080_CTRL_I2C_READ_BUFFER_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdI2cWriteBuffer__)(struct Subdevice *, NV2080_CTRL_I2C_WRITE_BUFFER_PARAMS *);
@@ -812,6 +814,8 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdNvlinkSetL1Threshold(pSubdevice, pParams) subdeviceCtrlCmdNvlinkSetL1Threshold_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdNvlinkDirectConnectCheck(pSubdevice, pParams) subdeviceCtrlCmdNvlinkDirectConnectCheck_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdNvlinkGetL1Threshold(pSubdevice, pParams) subdeviceCtrlCmdNvlinkGetL1Threshold_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdNvlinkGetPortEvents(pSubdevice, pParams) subdeviceCtrlCmdNvlinkGetPortEvents_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdNvlinkCycleLink(pSubdevice, pParams) subdeviceCtrlCmdNvlinkCycleLink_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdIsNvlinkReducedConfig(pSubdevice, pParams) subdeviceCtrlCmdIsNvlinkReducedConfig_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdI2cReadBuffer(pSubdevice, pI2cParams) subdeviceCtrlCmdI2cReadBuffer_DISPATCH(pSubdevice, pI2cParams)
 #define subdeviceCtrlCmdI2cWriteBuffer(pSubdevice, pI2cParams) subdeviceCtrlCmdI2cWriteBuffer_DISPATCH(pSubdevice, pI2cParams)
@@ -1862,6 +1866,18 @@ NV_STATUS subdeviceCtrlCmdNvlinkGetL1Threshold_IMPL(struct Subdevice *pSubdevice
 
 static inline NV_STATUS subdeviceCtrlCmdNvlinkGetL1Threshold_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_GET_L1_THRESHOLD_PARAMS *pParams) {
     return pSubdevice->__subdeviceCtrlCmdNvlinkGetL1Threshold__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdNvlinkGetPortEvents_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_GET_PORT_EVENTS_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdNvlinkGetPortEvents_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_GET_PORT_EVENTS_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdNvlinkGetPortEvents__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdNvlinkCycleLink_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_CYCLE_LINK_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdNvlinkCycleLink_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_CYCLE_LINK_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdNvlinkCycleLink__(pSubdevice, pParams);
 }
 
 NV_STATUS subdeviceCtrlCmdIsNvlinkReducedConfig_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_IS_REDUCED_CONFIG_PARAMS *pParams);

@@ -1481,7 +1481,7 @@ _nvlink_lib_ctrl_device_discover_peer_link
         (linkMode == NVLINK_LINKSTATE_SLEEP))
     {
         nvlink_link   *remoteLink = NULL;
-        nvlink_core_discover_and_get_remote_end(link, &remoteLink, 0);
+        nvlink_core_discover_and_get_remote_end(link, &remoteLink, 0, NV_FALSE);
         if (remoteLink == NULL)
         {
             NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_INFO,
