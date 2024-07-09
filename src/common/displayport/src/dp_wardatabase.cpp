@@ -66,21 +66,15 @@ void ConnectorImpl::applyOuiWARs()
         // Synaptics
         case 0x24CC90:
             if ((modelName[0] == 'S') && (modelName[1] == 'Y') && (modelName[2] == 'N') &&
-                (modelName[3] == 'A') && (modelName[4] == 'S') &&
+                (modelName[3] == 'A') && (((modelName[4] == 'S') &&
                 ((modelName[5] == '1') || (modelName[5] == '2') ||
                  (modelName[5] == '3') || (modelName[5] == '#') ||
-                 (modelName[5] == '\"')))
+                 (modelName[5] == '\"')))||((modelName[4] == 0x84) &&
+                 (modelName[5] == '0'))))
             {
                 //
                 // Extended latency from link-train end to FEC enable pattern
                 // to avoid link lost or blank screen with Synaptics branch.
-                // (Bug 2561206)
-                //
-                // Dock SKU ID:
-                // Dell    Salomon-WD19TB SYNAS1
-                // HP      Hook           SYNAS3
-                // HP      Adira-A        SYNAS#
-                // Lenovo                 SYNAS" / SYNAS2
                 //
                 LT2FecLatencyMs = 57;
 

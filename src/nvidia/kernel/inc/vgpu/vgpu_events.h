@@ -153,6 +153,8 @@ struct _object_vgpu
     VGPU_GSP_CTRL_BUF_RM     *gspCtrlBuf;
     VGPU_GSP_RESPONSE_BUF_RM *gspResponseBuf;
 
+    VGPU_MEM_INFO debugBuff;
+
     NvBool bGspPlugin;
     NvBool bIsBar2Physical;
     // Start offset of FB to use in Physical BAR2 mode

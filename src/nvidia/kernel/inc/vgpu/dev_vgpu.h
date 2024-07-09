@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -230,6 +230,8 @@ typedef union {
         volatile NvU32             guestEccStatus;       // guest ecc status
         volatile NvU64             sysmemBitMapTablePfn; // Root node's pfn value of dirty sysmem tracking table
         volatile NvU32             guestOsType;          // Guest OS type
+        volatile NvU32             requestedGspCaps;     // requested GSP caps
+        volatile VGPU_GSP_BUF_INFO debugBuf;             // Debug buffer address
     } ;
     volatile NvU8 buf[VGPU_GSP_CTRL_BUF_SIZE_V1];
 } VGPU_GSP_CTRL_BUF_V1;
@@ -248,6 +250,8 @@ ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, getEventBuf          ) == 0x048);
 ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, guestEccStatus       ) == 0x04C);
 ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, sysmemBitMapTablePfn ) == 0x050);
 ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, guestOsType          ) == 0x058);
+ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, requestedGspCaps     ) == 0x05C);
+ct_assert(NV_OFFSETOF(VGPU_GSP_CTRL_BUF_V1, debugBuf             ) == 0x060);
 
 /****** Response buffer: written by GSP vGPU plugin and read by guest RM ******/
 
@@ -259,6 +263,7 @@ typedef union {
         volatile NvU32 putEventBuf;         // PUT index in circular event buffer
         volatile NvU32 hostEccStatus;       // host ecc status
         volatile NvU32 usmType;             // Host USM Type
+        volatile NvU32 enabledGspCaps;      // Enabled GSP caps
     };
     volatile NvU8 buf[VGPU_GSP_RESPONSE_BUF_SIZE_V1];
 } VGPU_GSP_RESPONSE_BUF_V1;
@@ -271,6 +276,7 @@ ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, responseId          ) == 0x000);
 ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, putEventBuf         ) == 0x004);
 ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, hostEccStatus       ) == 0x008);
 ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, usmType             ) == 0x00C);
+ct_assert(NV_OFFSETOF(VGPU_GSP_RESPONSE_BUF_V1, enabledGspCaps      ) == 0x010);
 
 /******************************************************************************/
 /* GSP Control buffer format - Version 1 - END                                */
@@ -319,6 +325,11 @@ typedef struct {
     NvU32   padding2;
     NvU64   nodePfns[MAX_PFNS_PER_4K_PAGE - 1];
 } VGPU_GSP_SYSMEM_BITMAP_ROOT_NODE;
+
+#define NV_VGPU_DEBUG_BUFF_DRIVER_SIZE                                        0x7FF
+#define NV_VGPU_GSP_CAPS_DEBUG_BUFF_SUPPORTED                                   0:0
+#define NV_VGPU_GSP_CAPS_DEBUG_BUFF_SUPPORTED_TRUE                       0x00000001
+#define NV_VGPU_GSP_CAPS_DEBUG_BUFF_SUPPORTED_FALSE                      0x00000000
 
 ct_assert(sizeof(VGPU_GSP_SYSMEM_BITMAP_ROOT_NODE) == 0x1000);
 #endif // __vgpu_dev_nv_vgpu_h__

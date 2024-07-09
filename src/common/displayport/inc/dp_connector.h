@@ -688,7 +688,7 @@ namespace DisplayPort
 
         virtual bool getHDCPAbortCodesDP12(NvU32 &hdcpAbortCodesDP12) = 0;
 
-        virtual bool getOuiSink(unsigned &ouiId, char * modelName,
+        virtual bool getOuiSink(unsigned &ouiId, unsigned char * modelName,
                                 size_t modelNameBufferSize, NvU8 & chipRevision) = 0;
 
         virtual bool getIgnoreSourceOuiHandshake() = 0;

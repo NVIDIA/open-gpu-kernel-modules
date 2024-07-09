@@ -512,7 +512,7 @@ _kgraphicsPostSchedulingEnableHandler
     }
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kgraphicsCreateGoldenImageChannel(pGpu, pKernelGraphics));
-    if (kgraphicsIsBug4208224WARNeeded_HAL(pGpu, pKernelGraphics))
+    if (kgraphicsIsBug4208224WARNeeded_HAL(pGpu, pKernelGraphics) && !pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_RESUME_CODEPATH))
     {
         return kgraphicsInitializeBug4208224WAR_HAL(pGpu, pKernelGraphics);
     }
@@ -1029,6 +1029,13 @@ kgraphicsLoadStaticInfo_VF
 
         // Cache legacy GR mask info (i.e. GR0 with MIG disabled) to pKernelGraphicsManager->legacyFsMaskState
         kgrmgrSetLegacyKgraphicsStaticInfo(pGpu, pKernelGraphicsManager, pKernelGraphics);
+    }
+
+    // FECS ctxsw logging is consumed when profiling support is available in guest
+    if (!pVSI->vgpuStaticProperties.bProfilingTracingEnabled)
+    {
+        kgraphicsSetCtxswLoggingSupported(pGpu, pKernelGraphics, NV_FALSE);
+        NV_PRINTF(LEVEL_NOTICE, "Profiling support not requested. Disabling ctxsw logging\n");
     }
 
 cleanup :

@@ -121,6 +121,7 @@ struct KernelCE {
     void (*__kceStateDestroy__)(OBJGPU *, struct KernelCE *);
     void (*__kceRegisterIntrService__)(OBJGPU *, struct KernelCE *, IntrServiceRecord *);
     NV_STATUS (*__kceServiceNotificationInterrupt__)(OBJGPU *, struct KernelCE *, IntrServiceServiceNotificationInterruptArguments *);
+    NvBool (*__kceIsSecureCe__)(OBJGPU *, struct KernelCE *);
     NV_STATUS (*__kceGetP2PCes__)(struct KernelCE *, OBJGPU *, NvU32, NvU32 *);
     NV_STATUS (*__kceGetNvlinkAutoConfigCeValues__)(OBJGPU *, struct KernelCE *, NvU32 *, NvU32 *, NvU32 *);
     NvBool (*__kceGetNvlinkMaxTopoForTable__)(OBJGPU *, struct KernelCE *, struct NVLINK_TOPOLOGY_PARAMS *, void *, NvU32, NvU32 *);
@@ -200,6 +201,8 @@ NV_STATUS __nvoc_objCreate_KernelCE(KernelCE**, Dynamic*, NvU32);
 #define kceStateDestroy(arg0, arg1) kceStateDestroy_DISPATCH(arg0, arg1)
 #define kceRegisterIntrService(arg0, arg1, arg2) kceRegisterIntrService_DISPATCH(arg0, arg1, arg2)
 #define kceServiceNotificationInterrupt(arg0, arg1, arg2) kceServiceNotificationInterrupt_DISPATCH(arg0, arg1, arg2)
+#define kceIsSecureCe(pGpu, pKCe) kceIsSecureCe_DISPATCH(pGpu, pKCe)
+#define kceIsSecureCe_HAL(pGpu, pKCe) kceIsSecureCe_DISPATCH(pGpu, pKCe)
 #define kceGetP2PCes(arg0, pGpu, gpuMask, nvlinkP2PCeMask) kceGetP2PCes_DISPATCH(arg0, pGpu, gpuMask, nvlinkP2PCeMask)
 #define kceGetP2PCes_HAL(arg0, pGpu, gpuMask, nvlinkP2PCeMask) kceGetP2PCes_DISPATCH(arg0, pGpu, gpuMask, nvlinkP2PCeMask)
 #define kceGetNvlinkAutoConfigCeValues(pGpu, pKCe, arg0, arg1, arg2) kceGetNvlinkAutoConfigCeValues_DISPATCH(pGpu, pKCe, arg0, arg1, arg2)
@@ -403,6 +406,16 @@ NV_STATUS kceServiceNotificationInterrupt_IMPL(OBJGPU *arg0, struct KernelCE *ar
 
 static inline NV_STATUS kceServiceNotificationInterrupt_DISPATCH(OBJGPU *arg0, struct KernelCE *arg1, IntrServiceServiceNotificationInterruptArguments *arg2) {
     return arg1->__kceServiceNotificationInterrupt__(arg0, arg1, arg2);
+}
+
+NvBool kceIsSecureCe_GH100(OBJGPU *pGpu, struct KernelCE *pKCe);
+
+static inline NvBool kceIsSecureCe_491d52(OBJGPU *pGpu, struct KernelCE *pKCe) {
+    return ((NvBool)(0 != 0));
+}
+
+static inline NvBool kceIsSecureCe_DISPATCH(OBJGPU *pGpu, struct KernelCE *pKCe) {
+    return pKCe->__kceIsSecureCe__(pGpu, pKCe);
 }
 
 NV_STATUS kceGetP2PCes_GV100(struct KernelCE *arg0, OBJGPU *pGpu, NvU32 gpuMask, NvU32 *nvlinkP2PCeMask);

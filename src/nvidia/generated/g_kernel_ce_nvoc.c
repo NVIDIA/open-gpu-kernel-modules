@@ -236,6 +236,17 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, RmHalspecOwner *pR
 
     pThis->__kceServiceNotificationInterrupt__ = &kceServiceNotificationInterrupt_IMPL;
 
+    // Hal function -- kceIsSecureCe
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__kceIsSecureCe__ = &kceIsSecureCe_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__kceIsSecureCe__ = &kceIsSecureCe_491d52;
+    }
+
     // Hal function -- kceGetP2PCes
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {

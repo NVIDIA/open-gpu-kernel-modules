@@ -3616,7 +3616,7 @@ bool ConnectorImpl::assessPCONLinkCapability(PCONLinkControl *pConControl)
     return true;
 }
 
-bool ConnectorImpl::getOuiSink(unsigned &ouiId, char * modelName, size_t modelNameBufferSize, NvU8 & chipRevision)
+bool ConnectorImpl::getOuiSink(unsigned &ouiId, unsigned char * modelName, size_t modelNameBufferSize, NvU8 & chipRevision)
 {
     if (!previousPlugged || !hal->getOuiSupported())
         return false;

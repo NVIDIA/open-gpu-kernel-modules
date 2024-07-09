@@ -516,7 +516,8 @@ NvlStatus nvlink_lib_get_remote_conn_info(nvlink_link *link, nvlink_conn_info *c
  */
 NvlStatus nvlink_lib_discover_and_get_remote_conn_info(nvlink_link      *end,
                                                        nvlink_conn_info *conn_info,
-                                                       NvU32             flags);
+                                                       NvU32             flags,
+                                                       NvBool            bForceDiscovery);
 
 
 /************************************************************************************************/

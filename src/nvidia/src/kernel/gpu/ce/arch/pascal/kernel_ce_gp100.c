@@ -43,36 +43,15 @@ NV_STATUS kceStateLoad_GP100(OBJGPU *pGpu, KernelCE *pKCe, NvU32 flags)
     }
     if (gpuIsCCFeatureEnabled(pGpu))
     {
-        ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
-
-        switch (pKCe->publicID)
+        if (kceIsSecureCe_HAL(pGpu, pKCe))
         {
-            case 2:
-                NV_ASSERT_OK_OR_RETURN(confComputeDeriveSecrets(pCC, MC_ENGINE_IDX_CE2));
-                break;
-            case 3:
-                NV_ASSERT_OK_OR_RETURN(confComputeDeriveSecrets(pCC, MC_ENGINE_IDX_CE3));
-                break;
-            case 4:
-                NV_ASSERT_OK_OR_RETURN(confComputeDeriveSecrets(pCC, MC_ENGINE_IDX_CE4));
-                break;
-            case 5:
-                NV_ASSERT_OK_OR_RETURN(confComputeDeriveSecrets(pCC, MC_ENGINE_IDX_CE5));
-                break;
-            case 6:
-                NV_ASSERT_OK_OR_RETURN(confComputeDeriveSecrets(pCC, MC_ENGINE_IDX_CE6));
-                break;
-            case 7:
-                NV_ASSERT_OK_OR_RETURN(confComputeDeriveSecrets(pCC, MC_ENGINE_IDX_CE7));
-                break;
-            case 8:
-                NV_ASSERT_OK_OR_RETURN(confComputeDeriveSecrets(pCC, MC_ENGINE_IDX_CE8));
-                break;
-            case 9:
-                NV_ASSERT_OK_OR_RETURN(confComputeDeriveSecrets(pCC, MC_ENGINE_IDX_CE9));
-                break;
-            default:
-                break;
+            ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
+
+            NvU32 mcEngineIdx = MC_ENGINE_IDX_CE(pKCe->publicID);
+
+            NV_ASSERT_OR_RETURN(mcEngineIdx <= MC_ENGINE_IDX_CE_MAX, NV_ERR_NOT_SUPPORTED);
+
+            NV_ASSERT_OK_OR_RETURN(confComputeDeriveSecrets(pCC, mcEngineIdx));
         }
     }
     return NV_OK;

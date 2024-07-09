@@ -54,6 +54,7 @@ static NvBool    _knvlinkUpdateSwitchLinkMasks(OBJGPU *, KernelNvlink *, NvU32);
 static NvBool    _knvlinkUpdateSwitchLinkMasksGpuDegraded(OBJGPU *, KernelNvlink *);
 static void      _knvlinkUpdatePeerConfigs(OBJGPU *, KernelNvlink *);
 static void      _knvlinkPrintTopologySummary(OBJGPU *, KernelNvlink *);
+static NvU32     _knvlinkGetNumPortEvents(OBJGPU *pGpu, KernelNvlink *pKernelNvlink);
 
 #endif
 
@@ -83,6 +84,7 @@ knvlinkCoreGetRemoteDeviceInfo_IMPL
     NvBool  bNvswitchProxyPresent = NV_FALSE;
     NvBool  bUpdateConnStatus     = NV_FALSE;
     NvBool  bCheckDegradedMode    = NV_FALSE;
+    NvBool  bForceDiscovery       = NV_FALSE;
     nvlink_conn_info conn_info    = {0};
     NvU32   linkId;
     NvU32     numActiveLinksPerIoctrl = 0;
@@ -152,6 +154,12 @@ knvlinkCoreGetRemoteDeviceInfo_IMPL
                 {
                     if (gpuFabricProbeIsSupported(pGpu))
                     {
+                        NvU32 numPortEvents = _knvlinkGetNumPortEvents(pGpu, pKernelNvlink);
+                        if (pKernelNvlink->numPortEvents < numPortEvents)
+                        {
+                            bForceDiscovery = NV_TRUE;
+                        }
+
                         //
                         // If FM doesn't talk to NVLink driver using control calls
                         // (i.e. uses NVLink inband comm instread) such as
@@ -159,7 +167,13 @@ knvlinkCoreGetRemoteDeviceInfo_IMPL
                         // discover remote information explicitly.
                         //
                         nvlink_lib_discover_and_get_remote_conn_info(
-                            pKernelNvlink->nvlinkLinks[linkId].core_link, &conn_info, flags);
+                            pKernelNvlink->nvlinkLinks[linkId].core_link, &conn_info,
+                            flags, bForceDiscovery);
+
+                        if (bForceDiscovery)
+                        {
+                            pKernelNvlink->numPortEvents = numPortEvents;
+                        }
                     }
                     else
                     {
@@ -205,7 +219,7 @@ knvlinkCoreGetRemoteDeviceInfo_IMPL
                     }
 
                     nvlink_lib_discover_and_get_remote_conn_info(
-                            pKernelNvlink->nvlinkLinks[linkId].core_link, &conn_info, flags);
+                            pKernelNvlink->nvlinkLinks[linkId].core_link, &conn_info, flags, NV_FALSE);
                 }
 
                 // RPC into GSP-RM to update the link connected status only if its required
@@ -1355,7 +1369,7 @@ knvlinkFloorSweep_IMPL
     FOR_EACH_INDEX_IN_MASK(32, linkId, pKernelNvlink->enabledLinks)
     {
         nvlink_lib_discover_and_get_remote_conn_info(
-                    pKernelNvlink->nvlinkLinks[linkId].core_link, &conn_info, 0);
+                    pKernelNvlink->nvlinkLinks[linkId].core_link, &conn_info, 0, NV_FALSE);
     }
     FOR_EACH_INDEX_IN_MASK_END;
 
@@ -2504,6 +2518,32 @@ _knvlinkPrintTopologySummary
     }
 
 #endif
+}
+
+static NvU32
+_knvlinkGetNumPortEvents
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    NV_STATUS status;
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NV2080_CTRL_NVLINK_GET_PORT_EVENTS_PARAMS params = {0};
+
+    status = pRmApi->Control(pRmApi,
+                             pGpu->hInternalClient,
+                             pGpu->hInternalSubdevice,
+                             NV2080_CTRL_CMD_NVLINK_GET_PORT_EVENTS,
+                             &params,
+                             sizeof(NV2080_CTRL_NVLINK_GET_PORT_EVENTS_PARAMS));
+    if (status != NV_OK)
+    {
+        // If this call fails, force discovery in knvlinkCoreGetRemoteDeviceInfo
+        return 0;
+    }
+
+    return params.portEventCount;
 }
 
 #endif

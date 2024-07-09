@@ -865,7 +865,7 @@ struct DPCDHALImpl : DPCDHAL
         return true;
     }
 
-    virtual bool getOuiSink(unsigned &ouiId, char * modelName, size_t modelNameBufferSize, NvU8 & chipRevision)
+    virtual bool getOuiSink(unsigned &ouiId, unsigned char * modelName, size_t modelNameBufferSize, NvU8 & chipRevision)
     {
         NvU8 ouiBuffer[16];
         int address = NV_DPCD_SINK_IEEE_OUI;
@@ -903,7 +903,7 @@ struct DPCDHALImpl : DPCDHAL
         // Next 6 bytes are Device Identification String, copy as much as we can (limited buffer case).
         unsigned int i;
         for (i = 0; i < modelNameBufferSize; i++)
-            modelName[i] = ouiBuffer[3+i];
+            modelName[i] = (unsigned char)ouiBuffer[3+i];
 
         chipRevision = ouiBuffer[9];
 

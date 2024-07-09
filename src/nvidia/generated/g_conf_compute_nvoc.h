@@ -103,10 +103,14 @@ struct ConfidentialCompute {
     void (*__confComputeSetErrorState__)(struct OBJGPU *, struct ConfidentialCompute *);
     NV_STATUS (*__confComputeKeyStoreRetrieveViaChannel__)(struct ConfidentialCompute *, struct KernelChannel *, ROTATE_IV_TYPE, NvBool, CC_KMB *);
     NV_STATUS (*__confComputeKeyStoreRetrieveViaKeyId__)(struct ConfidentialCompute *, NvU32, ROTATE_IV_TYPE, NvBool, CC_KMB *);
+    NV_STATUS (*__confComputeDeriveSecretsForCEKeySpace__)(struct ConfidentialCompute *, RM_ENGINE_TYPE, NvU32);
     NV_STATUS (*__confComputeDeriveSecrets__)(struct ConfidentialCompute *, NvU32);
     NV_STATUS (*__confComputeUpdateSecrets__)(struct ConfidentialCompute *, NvU32);
     NvBool (*__confComputeIsSpdmEnabled__)(struct OBJGPU *, struct ConfidentialCompute *);
     RM_ENGINE_TYPE (*__confComputeGetEngineIdFromKeySpace__)(struct ConfidentialCompute *, NvU32);
+    NV_STATUS (*__confComputeGetKeySpaceFromKChannel__)(struct ConfidentialCompute *, struct KernelChannel *, NvU16 *);
+    NV_STATUS (*__confComputeGetLceKeyIdFromKChannel__)(struct ConfidentialCompute *, struct KernelChannel *, ROTATE_IV_TYPE, NvU16 *);
+    NvU32 (*__confComputeGetMaxCeKeySpaceIdx__)(struct ConfidentialCompute *);
     NvBool (*__confComputeGlobalKeyIsKernelPriv__)(struct ConfidentialCompute *, NvU32);
     NvBool (*__confComputeGlobalKeyIsUvmKey__)(struct ConfidentialCompute *, NvU32);
     NV_STATUS (*__confComputeGetKeyPairByChannel__)(struct OBJGPU *, struct ConfidentialCompute *, struct KernelChannel *, NvU32 *, NvU32 *);
@@ -240,6 +244,8 @@ NV_STATUS __nvoc_objCreate_ConfidentialCompute(ConfidentialCompute**, Dynamic*, 
 #define confComputeKeyStoreRetrieveViaChannel_HAL(pConfCompute, pKernelChannel, rotateOperation, bIncludeIvOrNonce, keyMaterialBundle) confComputeKeyStoreRetrieveViaChannel_DISPATCH(pConfCompute, pKernelChannel, rotateOperation, bIncludeIvOrNonce, keyMaterialBundle)
 #define confComputeKeyStoreRetrieveViaKeyId(pConfCompute, globalKeyId, rotateOperation, bIncludeIvOrNonce, keyMaterialBundle) confComputeKeyStoreRetrieveViaKeyId_DISPATCH(pConfCompute, globalKeyId, rotateOperation, bIncludeIvOrNonce, keyMaterialBundle)
 #define confComputeKeyStoreRetrieveViaKeyId_HAL(pConfCompute, globalKeyId, rotateOperation, bIncludeIvOrNonce, keyMaterialBundle) confComputeKeyStoreRetrieveViaKeyId_DISPATCH(pConfCompute, globalKeyId, rotateOperation, bIncludeIvOrNonce, keyMaterialBundle)
+#define confComputeDeriveSecretsForCEKeySpace(pConfCompute, ceRmEngineTypeIdx, ccKeyspaceIndex) confComputeDeriveSecretsForCEKeySpace_DISPATCH(pConfCompute, ceRmEngineTypeIdx, ccKeyspaceIndex)
+#define confComputeDeriveSecretsForCEKeySpace_HAL(pConfCompute, ceRmEngineTypeIdx, ccKeyspaceIndex) confComputeDeriveSecretsForCEKeySpace_DISPATCH(pConfCompute, ceRmEngineTypeIdx, ccKeyspaceIndex)
 #define confComputeDeriveSecrets(pConfCompute, engine) confComputeDeriveSecrets_DISPATCH(pConfCompute, engine)
 #define confComputeDeriveSecrets_HAL(pConfCompute, engine) confComputeDeriveSecrets_DISPATCH(pConfCompute, engine)
 #define confComputeUpdateSecrets(pConfCompute, globalKeyId) confComputeUpdateSecrets_DISPATCH(pConfCompute, globalKeyId)
@@ -248,6 +254,12 @@ NV_STATUS __nvoc_objCreate_ConfidentialCompute(ConfidentialCompute**, Dynamic*, 
 #define confComputeIsSpdmEnabled_HAL(pGpu, pConfCompute) confComputeIsSpdmEnabled_DISPATCH(pGpu, pConfCompute)
 #define confComputeGetEngineIdFromKeySpace(pConfCompute, keySpace) confComputeGetEngineIdFromKeySpace_DISPATCH(pConfCompute, keySpace)
 #define confComputeGetEngineIdFromKeySpace_HAL(pConfCompute, keySpace) confComputeGetEngineIdFromKeySpace_DISPATCH(pConfCompute, keySpace)
+#define confComputeGetKeySpaceFromKChannel(pConfCompute, pKernelChannel, keyspace) confComputeGetKeySpaceFromKChannel_DISPATCH(pConfCompute, pKernelChannel, keyspace)
+#define confComputeGetKeySpaceFromKChannel_HAL(pConfCompute, pKernelChannel, keyspace) confComputeGetKeySpaceFromKChannel_DISPATCH(pConfCompute, pKernelChannel, keyspace)
+#define confComputeGetLceKeyIdFromKChannel(pConfCompute, pKernelChannel, rotateOperation, pKeyId) confComputeGetLceKeyIdFromKChannel_DISPATCH(pConfCompute, pKernelChannel, rotateOperation, pKeyId)
+#define confComputeGetLceKeyIdFromKChannel_HAL(pConfCompute, pKernelChannel, rotateOperation, pKeyId) confComputeGetLceKeyIdFromKChannel_DISPATCH(pConfCompute, pKernelChannel, rotateOperation, pKeyId)
+#define confComputeGetMaxCeKeySpaceIdx(pConfCompute) confComputeGetMaxCeKeySpaceIdx_DISPATCH(pConfCompute)
+#define confComputeGetMaxCeKeySpaceIdx_HAL(pConfCompute) confComputeGetMaxCeKeySpaceIdx_DISPATCH(pConfCompute)
 #define confComputeGlobalKeyIsKernelPriv(pConfCompute, keyId) confComputeGlobalKeyIsKernelPriv_DISPATCH(pConfCompute, keyId)
 #define confComputeGlobalKeyIsKernelPriv_HAL(pConfCompute, keyId) confComputeGlobalKeyIsKernelPriv_DISPATCH(pConfCompute, keyId)
 #define confComputeGlobalKeyIsUvmKey(pConfCompute, keyId) confComputeGlobalKeyIsUvmKey_DISPATCH(pConfCompute, keyId)
@@ -391,6 +403,16 @@ static inline NV_STATUS confComputeKeyStoreRetrieveViaKeyId_DISPATCH(struct Conf
     return pConfCompute->__confComputeKeyStoreRetrieveViaKeyId__(pConfCompute, globalKeyId, rotateOperation, bIncludeIvOrNonce, keyMaterialBundle);
 }
 
+NV_STATUS confComputeDeriveSecretsForCEKeySpace_GH100(struct ConfidentialCompute *pConfCompute, RM_ENGINE_TYPE ceRmEngineTypeIdx, NvU32 ccKeyspaceIndex);
+
+static inline NV_STATUS confComputeDeriveSecretsForCEKeySpace_46f6a7(struct ConfidentialCompute *pConfCompute, RM_ENGINE_TYPE ceRmEngineTypeIdx, NvU32 ccKeyspaceIndex) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS confComputeDeriveSecretsForCEKeySpace_DISPATCH(struct ConfidentialCompute *pConfCompute, RM_ENGINE_TYPE ceRmEngineTypeIdx, NvU32 ccKeyspaceIndex) {
+    return pConfCompute->__confComputeDeriveSecretsForCEKeySpace__(pConfCompute, ceRmEngineTypeIdx, ccKeyspaceIndex);
+}
+
 NV_STATUS confComputeDeriveSecrets_GH100(struct ConfidentialCompute *pConfCompute, NvU32 engine);
 
 static inline NV_STATUS confComputeDeriveSecrets_46f6a7(struct ConfidentialCompute *pConfCompute, NvU32 engine) {
@@ -431,6 +453,38 @@ static inline RM_ENGINE_TYPE confComputeGetEngineIdFromKeySpace_78ac8b(struct Co
 
 static inline RM_ENGINE_TYPE confComputeGetEngineIdFromKeySpace_DISPATCH(struct ConfidentialCompute *pConfCompute, NvU32 keySpace) {
     return pConfCompute->__confComputeGetEngineIdFromKeySpace__(pConfCompute, keySpace);
+}
+
+NV_STATUS confComputeGetKeySpaceFromKChannel_GH100(struct ConfidentialCompute *pConfCompute, struct KernelChannel *pKernelChannel, NvU16 *keyspace);
+
+static inline NV_STATUS confComputeGetKeySpaceFromKChannel_46f6a7(struct ConfidentialCompute *pConfCompute, struct KernelChannel *pKernelChannel, NvU16 *keyspace) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS confComputeGetKeySpaceFromKChannel_DISPATCH(struct ConfidentialCompute *pConfCompute, struct KernelChannel *pKernelChannel, NvU16 *keyspace) {
+    return pConfCompute->__confComputeGetKeySpaceFromKChannel__(pConfCompute, pKernelChannel, keyspace);
+}
+
+NV_STATUS confComputeGetLceKeyIdFromKChannel_GH100(struct ConfidentialCompute *pConfCompute, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvU16 *pKeyId);
+
+static inline NV_STATUS confComputeGetLceKeyIdFromKChannel_46f6a7(struct ConfidentialCompute *pConfCompute, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvU16 *pKeyId) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS confComputeGetLceKeyIdFromKChannel_DISPATCH(struct ConfidentialCompute *pConfCompute, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvU16 *pKeyId) {
+    return pConfCompute->__confComputeGetLceKeyIdFromKChannel__(pConfCompute, pKernelChannel, rotateOperation, pKeyId);
+}
+
+static inline NvU32 confComputeGetMaxCeKeySpaceIdx_6c58cf(struct ConfidentialCompute *pConfCompute) {
+    return CC_KEYSPACE_LCE7;
+}
+
+static inline NvU32 confComputeGetMaxCeKeySpaceIdx_4a4dee(struct ConfidentialCompute *pConfCompute) {
+    return 0;
+}
+
+static inline NvU32 confComputeGetMaxCeKeySpaceIdx_DISPATCH(struct ConfidentialCompute *pConfCompute) {
+    return pConfCompute->__confComputeGetMaxCeKeySpaceIdx__(pConfCompute);
 }
 
 NvBool confComputeGlobalKeyIsKernelPriv_GH100(struct ConfidentialCompute *pConfCompute, NvU32 keyId);

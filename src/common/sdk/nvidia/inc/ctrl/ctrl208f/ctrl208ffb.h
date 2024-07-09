@@ -460,11 +460,20 @@ typedef struct NV208F_CTRL_FB_ECC_SET_WRITE_KILL_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 address, 8);
 } NV208F_CTRL_FB_ECC_SET_WRITE_KILL_PARAMS;
 
+typedef struct NV208F_CTRL_FB_REMAPPING_RBC_ADDRESS_INFO {
+    NvU32 bank;
+    NvU32 stackId;
+    NvU32 row;
+    NvU32 partition;
+    NvU32 sublocation;
+} NV208F_CTRL_FB_REMAPPING_RBC_ADDRESS_INFO;
+
+#define NV208F_CTRL_FB_REMAP_ROW_ADDRESS_TYPE_PHYSICAL 0x0
+#define NV208F_CTRL_FB_REMAP_ROW_ADDRESS_TYPE_RBC      0x1
+
 /*
  * NV208F_CTRL_FB_REMAPPING_ADDRESS_INFO
  *
- *   physicalAddress
- *     Physical address to be remapped
  *   source
  *     The reason for retirement. Valid values for this parameter are
  *     from NV2080_CTRL_FB_REMAPPED_ROW_SOURCE_*
@@ -480,11 +489,23 @@ typedef struct NV208F_CTRL_FB_ECC_SET_WRITE_KILL_PARAMS {
  *         Attempting to remap a reserved row
  *       NV208F_CTRL_FB_REMAP_ROW_STATUS_INTERNAL_ERROR
  *         Some other RM failure
+ *   addressType
+ *     Type of address passed. Valid values are:
+ *       NV208F_CTRL_FB_REMAP_ROW_ADDRESS_TYPE_PHYSICAL
+ *         The specified address is physical address.
+ *       NV208F_CTRL_FB_REMAP_ROW_ADDRESS_TYPE_RBC
+ *         The specified address is DRAM Row Bank Column address.
+ *   address
+ *     Union of physicalAddress and rbcAddress. Set the appropriate one based on the address type.
  */
 typedef struct NV208F_CTRL_FB_REMAPPING_ADDRESS_INFO {
-    NV_DECLARE_ALIGNED(NvU64 physicalAddress, 8);
     NvU8  source;
     NvU32 status;
+    NvU8  addressType;
+    union {
+        NV_DECLARE_ALIGNED(NvU64 physicalAddress, 8);
+        NV208F_CTRL_FB_REMAPPING_RBC_ADDRESS_INFO rbcAddress;
+    } address;
 } NV208F_CTRL_FB_REMAPPING_ADDRESS_INFO;
 
 /* valid values for status */
