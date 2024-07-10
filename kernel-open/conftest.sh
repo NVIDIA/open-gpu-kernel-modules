@@ -71,7 +71,8 @@ test_header_presence() {
     TEST_CFLAGS="-E -M $CFLAGS"
 
     file="$1"
-    file_define=NV_`echo $file | tr '/.\-a-z' '___A-Z'`_PRESENT
+    # Replace '.', '/', '-' with '_'
+    file_define=NV_`echo $file | awk '{ gsub(/\.|\/|-/, "_", $1); print toupper($0) }'`_PRESENT
 
     CODE="#include <$file>"
 
