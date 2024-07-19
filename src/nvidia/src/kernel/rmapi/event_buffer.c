@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,7 +41,7 @@
 #include "gpu/gsp/gsp_trace_rats_macro.h"
 
 static NV_STATUS _allocAndMapMemory(CALL_CONTEXT *pCallContext, NvP64 pAddress, MEMORY_DESCRIPTOR** ppMemDesc, NvU64 size, NvBool bKernel,
-    NvP64* pKernelAddr, NvP64* pKernelPriv, NvP64* pUserAddr, NvP64* pUserPriv);
+    NvP64* pKernelAddr, NvP64* pKernelPriv, NvP64* pUserAddr, NvP64* pUserPriv, Subdevice *pSubdevice);
 
 static void _unmapAndFreeMemory(MEMORY_DESCRIPTOR *pMemDesc, NvBool bKernel, NvP64 kernelAddr,
     NvP64 kernelPriv, NvP64 userAddr, NvP64 userPriv);
@@ -401,7 +401,8 @@ eventbufferConstruct_IMPL
                                     &pKernelMap->headerAddr,
                                     &pKernelMap->headerPriv,
                                     &pClientMap->headerAddr,
-                                    &pClientMap->headerPriv);
+                                    &pClientMap->headerPriv,
+                                    pSubdevice);
         if (status != NV_OK)
             goto cleanup;
 
@@ -413,7 +414,8 @@ eventbufferConstruct_IMPL
                                     &pKernelMap->recordBuffAddr,
                                     &pKernelMap->recordBuffPriv,
                                     &pClientMap->recordBuffAddr,
-                                    &pClientMap->recordBuffPriv);
+                                    &pClientMap->recordBuffPriv,
+                                    pSubdevice);
         if (status != NV_OK)
             goto cleanup;
     }
@@ -439,7 +441,8 @@ eventbufferConstruct_IMPL
                     &pKernelMap->vardataBuffAddr,
                     &pKernelMap->vardataBuffPriv,
                     &pClientMap->vardataBuffAddr,
-                    &pClientMap->vardataBuffPriv);
+                    &pClientMap->vardataBuffPriv,
+                    pSubdevice);
 
             if (status != NV_OK)
                 goto cleanup;
@@ -526,15 +529,22 @@ _allocAndMapMemory
     NvP64* pKernelAddr,
     NvP64* pKernelPriv,
     NvP64* pUserAddr,
-    NvP64* pUserPriv
+    NvP64* pUserPriv,
+    Subdevice *pSubdevice
 )
 {
     NV_STATUS           status;
     MEMORY_DESCRIPTOR*  pMemDesc = NULL;
+    OBJGPU*             pGpu     = NULL;
 
     NV_ASSERT_OR_RETURN(pAddress == NvP64_NULL, NV_ERR_NOT_SUPPORTED);
 
-    status = memdescCreate(ppMemDesc, NULL, size, 0, NV_MEMORY_CONTIGUOUS,
+    if (pSubdevice != NULL)
+        pGpu = GPU_RES_GET_GPU(pSubdevice);
+
+    NV_ASSERT_OR_RETURN(pSubdevice != NULL && pGpu != NULL, NV_ERR_INVALID_STATE);
+ 
+    status = memdescCreate(ppMemDesc, pGpu, size, 0, NV_MEMORY_CONTIGUOUS,
             ADDR_SYSMEM, NV_MEMORY_WRITECOMBINED, MEMDESC_FLAGS_CPU_ONLY);
     if (status != NV_OK)
         return status;

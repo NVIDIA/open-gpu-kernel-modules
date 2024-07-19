@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2021-2023 NVIDIA Corporation
+    Copyright (c) 2021-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -72,6 +72,14 @@ NvU8 uvm_hal_maxwell_fault_buffer_get_ve_id_unsupported(NvU16 mmu_engine_id, uvm
 {
     UVM_ASSERT_MSG(false, "fault_buffer_get_ve_id is not supported on Maxwell GPUs.\n");
     return 0;
+}
+
+uvm_mmu_engine_type_t uvm_hal_maxwell_fault_buffer_get_mmu_engine_type_unsupported(NvU16 mmu_engine_id,
+                                                                                   uvm_fault_client_type_t client_type,
+                                                                                   NvU16 client_id)
+{
+    UVM_ASSERT_MSG(false, "fault_buffer_get_mmu_engine_type is not supported on Maxwell GPUs.\n");
+    return UVM_MMU_ENGINE_TYPE_GRAPHICS;
 }
 
 uvm_fault_type_t uvm_hal_maxwell_fault_buffer_get_fault_type_unsupported(const NvU32 *fault_entry)

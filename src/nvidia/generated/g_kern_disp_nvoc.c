@@ -121,42 +121,42 @@ static NvU32 __nvoc_down_thunk_KernelDisplay_intrservServiceInterrupt(OBJGPU *pG
 // 10 up-thunk(s) defined to bridge methods in KernelDisplay to superclasses
 
 // kdispInitMissing: virtual inherited (engstate) base (engstate)
-static void __nvoc_up_thunk_OBJENGSTATE_kdispInitMissing(POBJGPU pGpu, struct KernelDisplay *pEngstate) {
+static void __nvoc_up_thunk_OBJENGSTATE_kdispInitMissing(struct OBJGPU *pGpu, struct KernelDisplay *pEngstate) {
     engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelDisplay_OBJENGSTATE.offset));
 }
 
 // kdispStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kdispStatePreInitUnlocked(POBJGPU pGpu, struct KernelDisplay *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kdispStatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelDisplay *pEngstate) {
     return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelDisplay_OBJENGSTATE.offset));
 }
 
 // kdispStateInitUnlocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kdispStateInitUnlocked(POBJGPU pGpu, struct KernelDisplay *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kdispStateInitUnlocked(struct OBJGPU *pGpu, struct KernelDisplay *pEngstate) {
     return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelDisplay_OBJENGSTATE.offset));
 }
 
 // kdispStatePreLoad: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kdispStatePreLoad(POBJGPU pGpu, struct KernelDisplay *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kdispStatePreLoad(struct OBJGPU *pGpu, struct KernelDisplay *pEngstate, NvU32 arg3) {
     return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelDisplay_OBJENGSTATE.offset), arg3);
 }
 
 // kdispStatePostLoad: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kdispStatePostLoad(POBJGPU pGpu, struct KernelDisplay *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kdispStatePostLoad(struct OBJGPU *pGpu, struct KernelDisplay *pEngstate, NvU32 arg3) {
     return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelDisplay_OBJENGSTATE.offset), arg3);
 }
 
 // kdispStatePreUnload: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kdispStatePreUnload(POBJGPU pGpu, struct KernelDisplay *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kdispStatePreUnload(struct OBJGPU *pGpu, struct KernelDisplay *pEngstate, NvU32 arg3) {
     return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelDisplay_OBJENGSTATE.offset), arg3);
 }
 
 // kdispStatePostUnload: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kdispStatePostUnload(POBJGPU pGpu, struct KernelDisplay *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kdispStatePostUnload(struct OBJGPU *pGpu, struct KernelDisplay *pEngstate, NvU32 arg3) {
     return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelDisplay_OBJENGSTATE.offset), arg3);
 }
 
 // kdispIsPresent: virtual inherited (engstate) base (engstate)
-static NvBool __nvoc_up_thunk_OBJENGSTATE_kdispIsPresent(POBJGPU pGpu, struct KernelDisplay *pEngstate) {
+static NvBool __nvoc_up_thunk_OBJENGSTATE_kdispIsPresent(struct OBJGPU *pGpu, struct KernelDisplay *pEngstate) {
     return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelDisplay_OBJENGSTATE.offset));
 }
 
@@ -213,16 +213,17 @@ void __nvoc_init_dataField_KernelDisplay(KernelDisplay *pThis, RmHalspecOwner *p
     }
 
     // NVOC Property Hal field -- PDB_PROP_KDISP_IMP_ENABLE
-    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */  && (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000003UL) )) /* RmVariantHal: VF | PF_KERNEL_ONLY */ ))
+    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */  && (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000003UL) )) /* RmVariantHal: VF | PF_KERNEL_ONLY */ ))
     {
         pThis->setProperty(pThis, PDB_PROP_KDISP_IMP_ENABLE, ((NvBool)(0 == 0)));
     }
 
     // NVOC Property Hal field -- PDB_PROP_KDISP_BUG_2089053_SERIALIZE_AGGRESSIVE_VBLANK_ALWAYS
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
         pThis->setProperty(pThis, PDB_PROP_KDISP_BUG_2089053_SERIALIZE_AGGRESSIVE_VBLANK_ALWAYS, ((NvBool)(0 == 0)));
     }
+    pThis->setProperty(pThis, PDB_PROP_KDISP_FEATURE_STRETCH_VBLANK_CAPABLE, (0));
 
     pThis->pStaticInfo = ((void *)0);
 
@@ -320,7 +321,7 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
     }
 
     // kdispGetDisplayCapsBaseAndSize -- halified (2 hals) body
-    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000400UL) )) /* ChipHal: GA100 | GH100 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00040000UL) )) /* DispIpHal: DISPv0000 */ ))
+    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000400UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00040000UL) )) /* DispIpHal: DISPv0000 */ ))
     {
         pThis->__kdispGetDisplayCapsBaseAndSize__ = &kdispGetDisplayCapsBaseAndSize_b3696a;
     }
@@ -350,7 +351,7 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
     }
 
     // kdispGetVgaWorkspaceBase -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000400UL) )) /* ChipHal: GA100 | GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000400UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 */ 
     {
         pThis->__kdispGetVgaWorkspaceBase__ = &kdispGetVgaWorkspaceBase_491d52;
     }
@@ -371,7 +372,7 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
     }
 
     // kdispRestoreOriginalLsrMinTime -- halified (2 hals) body
-    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000400UL) )) /* ChipHal: GA100 | GH100 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00040000UL) )) /* DispIpHal: DISPv0000 */ ))
+    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000400UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00040000UL) )) /* DispIpHal: DISPv0000 */ ))
     {
         pThis->__kdispRestoreOriginalLsrMinTime__ = &kdispRestoreOriginalLsrMinTime_b3696a;
     }
@@ -391,7 +392,7 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
     }
 
     // kdispSetSwapBarrierLsrMinTime -- halified (2 hals) body
-    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000400UL) )) /* ChipHal: GA100 | GH100 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00040000UL) )) /* DispIpHal: DISPv0000 */ ))
+    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000400UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00040000UL) )) /* DispIpHal: DISPv0000 */ ))
     {
         pThis->__kdispSetSwapBarrierLsrMinTime__ = &kdispSetSwapBarrierLsrMinTime_b3696a;
     }
@@ -423,7 +424,7 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
     }
 
     // kdispInitRegistryOverrides -- halified (2 hals) body
-    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000400UL) )) /* ChipHal: GA100 | GH100 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00040000UL) )) /* DispIpHal: DISPv0000 */ ))
+    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000400UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00040000UL) )) /* DispIpHal: DISPv0000 */ ))
     {
         pThis->__kdispInitRegistryOverrides__ = &kdispInitRegistryOverrides_b3696a;
     }

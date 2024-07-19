@@ -192,6 +192,7 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_INTEL,       0x7A8A, CS_INTEL_1B81,      "Intel-SapphireRapids", NULL},
     {PCI_VENDOR_ID_INTEL,       0x18DC, CS_INTEL_18DC,      "Intel-IceLake",        NULL},
     {PCI_VENDOR_ID_INTEL,       0x7A04, CS_INTEL_7A04,      "Intel-RaptorLake",     Intel_7A04_setupFunc},
+    {PCI_VENDOR_ID_INTEL,       0x5795, CS_INTEL_5795,      "Intel-GraniteRapids",  NULL},
 
     {PCI_VENDOR_ID_NVIDIA,      0x0FAE, CS_NVIDIA_T210,      "T210",      Nvidia_T210_setupFunc},
     {PCI_VENDOR_ID_NVIDIA,      0x0FAF, CS_NVIDIA_T210,      "T210",      Nvidia_T210_setupFunc},
@@ -279,6 +280,7 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_AMPERE,      0xE205, CS_AMPERE_AMPEREONE, "Ampere AmpereOne", Ampere_AmpereOne_setupFunc},
     {PCI_VENDOR_ID_AMPERE,      0xE206, CS_AMPERE_AMPEREONE, "Ampere AmpereOne", Ampere_AmpereOne_setupFunc},
     {PCI_VENDOR_ID_AMPERE,      0xE207, CS_AMPERE_AMPEREONE, "Ampere AmpereOne", Ampere_AmpereOne_setupFunc},
+    {PCI_VENDOR_ID_PHYTIUM,     0x5C16, CS_PHYTIUM_S5000,    "Phytium S5000", NULL},
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -316,6 +318,7 @@ VENDORNAME vendorName[] =
     {PCI_VENDOR_ID_ALIBABA,     "Alibaba"},
     {PCI_VENDOR_ID_SIFIVE,      "SiFive"},
     {PCI_VENDOR_ID_PLDA,        "PLDA"},
+    {PCI_VENDOR_ID_PHYTIUM,     "Phytium"},
     {0,                         "Unknown"} // Indicates end of the table
 };
 
@@ -360,7 +363,8 @@ ARMCSALLOWLISTINFO armChipsetAllowListInfo[] =
     {PCI_VENDOR_ID_MELLANOX,    0xA2D0, CS_MELLANOX_BLUEFIELD}, // Mellanox BlueField
     {PCI_VENDOR_ID_MELLANOX,    0xA2D4, CS_MELLANOX_BLUEFIELD2},// Mellanox BlueField 2
     {PCI_VENDOR_ID_MELLANOX,    0xA2D5, CS_MELLANOX_BLUEFIELD2},// Mellanox BlueField 2 Crypto disabled
-    {PCI_VENDOR_ID_MELLANOX,    0xA2DB, CS_MELLANOX_BLUEFIELD3},// Mellanox BlueField 3
+    {PCI_VENDOR_ID_MELLANOX,    0xA2DB, CS_MELLANOX_BLUEFIELD3},// Mellanox BlueField 3 Crypto disabled
+    {PCI_VENDOR_ID_MELLANOX,    0xA2DA, CS_MELLANOX_BLUEFIELD3},// Mellanox BlueField 3 Crypto enabled
     {PCI_VENDOR_ID_AMAZON,      0x0200, CS_AMAZON_GRAVITRON2},  // Amazon Gravitron2
     {PCI_VENDOR_ID_FUJITSU,     0x1952, CS_FUJITSU_A64FX},      // Fujitsu A64FX
     {PCI_VENDOR_ID_CADENCE,     0xDC01, CS_PHYTIUM_S2500},      // Phytium S2500
@@ -387,6 +391,7 @@ ARMCSALLOWLISTINFO armChipsetAllowListInfo[] =
     {PCI_VENDOR_ID_AMPERE,      0xE205, CS_AMPERE_AMPEREONE},   // Ampere AmpereOne
     {PCI_VENDOR_ID_AMPERE,      0xE206, CS_AMPERE_AMPEREONE},   // Ampere AmpereOne
     {PCI_VENDOR_ID_AMPERE,      0xE207, CS_AMPERE_AMPEREONE},   // Ampere AmpereOne
+    {PCI_VENDOR_ID_PHYTIUM,     0x5C16, CS_PHYTIUM_S5000},      // Phytium S5000
 
     // last element must have chipset CS_UNKNOWN (zero)
     {0,                         0,      CS_UNKNOWN}

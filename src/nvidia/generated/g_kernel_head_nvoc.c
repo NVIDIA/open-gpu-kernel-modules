@@ -188,16 +188,13 @@ static void __nvoc_init_funcTable_KernelHead_1(KernelHead *pThis, RmHalspecOwner
     }
 
     // kheadReadPendingVblank -- halified (2 hals) body
-    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* DispIpHal: DISPv0400 */ ) ||
-        ((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000800UL) )) /* DispIpHal: DISPv0401 */ ) ||
-        ((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f00000UL) )) /* ChipHal: AD102 | AD103 | AD104 | AD106 | AD107 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004000UL) )) /* DispIpHal: DISPv0404 */ ))
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00040000UL) )) /* DispIpHal: DISPv0000 */ 
     {
-        pThis->__kheadReadPendingVblank__ = &kheadReadPendingVblank_KERNEL;
+        pThis->__kheadReadPendingVblank__ = &kheadReadPendingVblank_ceaee8;
     }
-    // default
     else
     {
-        pThis->__kheadReadPendingVblank__ = &kheadReadPendingVblank_108313;
+        pThis->__kheadReadPendingVblank__ = &kheadReadPendingVblank_v03_00;
     }
 
     // kheadGetLoadVCounter -- halified (2 hals) body
@@ -209,13 +206,46 @@ static void __nvoc_init_funcTable_KernelHead_1(KernelHead *pThis, RmHalspecOwner
     {
         pThis->__kheadGetLoadVCounter__ = &kheadGetLoadVCounter_v03_00;
     }
-} // End __nvoc_init_funcTable_KernelHead_1 with approximately 14 basic block(s).
+
+    // kheadReadPendingRgLineIntr -- halified (2 hals) body
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00040000UL) )) /* DispIpHal: DISPv0000 */ 
+    {
+        pThis->__kheadReadPendingRgLineIntr__ = &kheadReadPendingRgLineIntr_4a4dee;
+    }
+    else
+    {
+        pThis->__kheadReadPendingRgLineIntr__ = &kheadReadPendingRgLineIntr_v03_00;
+    }
+
+    // kheadResetRgLineIntrMask -- halified (2 hals) body
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00040000UL) )) /* DispIpHal: DISPv0000 */ 
+    {
+        pThis->__kheadResetRgLineIntrMask__ = &kheadResetRgLineIntrMask_b3696a;
+    }
+    else
+    {
+        pThis->__kheadResetRgLineIntrMask__ = &kheadResetRgLineIntrMask_v03_00;
+    }
+
+    // kheadProcessRgLineCallbacks -- halified (2 hals) body
+    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* DispIpHal: DISPv0400 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00000800UL) )) /* DispIpHal: DISPv0401 */ ) ||
+        ((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f00000UL) )) /* ChipHal: AD102 | AD103 | AD104 | AD106 | AD107 */  && (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004000UL) )) /* DispIpHal: DISPv0404 */ ))
+    {
+        pThis->__kheadProcessRgLineCallbacks__ = &kheadProcessRgLineCallbacks_KERNEL;
+    }
+    // default
+    else
+    {
+        pThis->__kheadProcessRgLineCallbacks__ = &kheadProcessRgLineCallbacks_ca557d;
+    }
+} // End __nvoc_init_funcTable_KernelHead_1 with approximately 20 basic block(s).
 
 
-// Initialize vtable(s) for 7 virtual method(s).
+// Initialize vtable(s) for 10 virtual method(s).
 void __nvoc_init_funcTable_KernelHead(KernelHead *pThis, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 7 per-object function pointer(s).
+    // Initialize vtable(s) with 10 per-object function pointer(s).
     __nvoc_init_funcTable_KernelHead_1(pThis, pRmhalspecowner);
 }
 

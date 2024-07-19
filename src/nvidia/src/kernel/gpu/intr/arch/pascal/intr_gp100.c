@@ -26,7 +26,7 @@
 #include "gpu/gpu.h"
 #include "core/thread_state.h"
 #include "kernel/gpu/intr/engine_idx.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "vgpu/vgpu_events.h"
 
 #include "published/pascal/gp100/dev_boot.h"

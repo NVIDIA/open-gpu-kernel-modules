@@ -81,20 +81,20 @@ struct SwIntr {
     // Vtable with 18 per-object function pointers
     void (*__swintrRegisterIntrService__)(OBJGPU *, struct SwIntr * /*this*/, IntrServiceRecord *);  // virtual override (intrserv) base (intrserv)
     NvU32 (*__swintrServiceInterrupt__)(OBJGPU *, struct SwIntr * /*this*/, IntrServiceServiceInterruptArguments *);  // virtual override (intrserv) base (intrserv)
-    NV_STATUS (*__swintrConstructEngine__)(POBJGPU, struct SwIntr * /*this*/, ENGDESCRIPTOR);  // virtual inherited (engstate) base (engstate)
-    void (*__swintrInitMissing__)(POBJGPU, struct SwIntr * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__swintrStatePreInitLocked__)(POBJGPU, struct SwIntr * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__swintrStatePreInitUnlocked__)(POBJGPU, struct SwIntr * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__swintrStateInitLocked__)(POBJGPU, struct SwIntr * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__swintrStateInitUnlocked__)(POBJGPU, struct SwIntr * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__swintrStatePreLoad__)(POBJGPU, struct SwIntr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__swintrStateLoad__)(POBJGPU, struct SwIntr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__swintrStatePostLoad__)(POBJGPU, struct SwIntr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__swintrStatePreUnload__)(POBJGPU, struct SwIntr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__swintrStateUnload__)(POBJGPU, struct SwIntr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__swintrStatePostUnload__)(POBJGPU, struct SwIntr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    void (*__swintrStateDestroy__)(POBJGPU, struct SwIntr * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__swintrIsPresent__)(POBJGPU, struct SwIntr * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swintrConstructEngine__)(struct OBJGPU *, struct SwIntr * /*this*/, ENGDESCRIPTOR);  // virtual inherited (engstate) base (engstate)
+    void (*__swintrInitMissing__)(struct OBJGPU *, struct SwIntr * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swintrStatePreInitLocked__)(struct OBJGPU *, struct SwIntr * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swintrStatePreInitUnlocked__)(struct OBJGPU *, struct SwIntr * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swintrStateInitLocked__)(struct OBJGPU *, struct SwIntr * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swintrStateInitUnlocked__)(struct OBJGPU *, struct SwIntr * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swintrStatePreLoad__)(struct OBJGPU *, struct SwIntr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swintrStateLoad__)(struct OBJGPU *, struct SwIntr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swintrStatePostLoad__)(struct OBJGPU *, struct SwIntr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swintrStatePreUnload__)(struct OBJGPU *, struct SwIntr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swintrStateUnload__)(struct OBJGPU *, struct SwIntr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swintrStatePostUnload__)(struct OBJGPU *, struct SwIntr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    void (*__swintrStateDestroy__)(struct OBJGPU *, struct SwIntr * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__swintrIsPresent__)(struct OBJGPU *, struct SwIntr * /*this*/);  // virtual inherited (engstate) base (engstate)
     NvBool (*__swintrClearInterrupt__)(OBJGPU *, struct SwIntr * /*this*/, IntrServiceClearInterruptArguments *);  // virtual inherited (intrserv) base (intrserv)
     NV_STATUS (*__swintrServiceNotificationInterrupt__)(OBJGPU *, struct SwIntr * /*this*/, IntrServiceServiceNotificationInterruptArguments *);  // virtual inherited (intrserv) base (intrserv)
 };
@@ -179,59 +179,59 @@ static inline NvU32 swintrServiceInterrupt_DISPATCH(OBJGPU *pGpu, struct SwIntr 
     return pSwIntr->__swintrServiceInterrupt__(pGpu, pSwIntr, pParams);
 }
 
-static inline NV_STATUS swintrConstructEngine_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate, ENGDESCRIPTOR arg3) {
+static inline NV_STATUS swintrConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate, ENGDESCRIPTOR arg3) {
     return pEngstate->__swintrConstructEngine__(pGpu, pEngstate, arg3);
 }
 
-static inline void swintrInitMissing_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate) {
+static inline void swintrInitMissing_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate) {
     pEngstate->__swintrInitMissing__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS swintrStatePreInitLocked_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate) {
+static inline NV_STATUS swintrStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate) {
     return pEngstate->__swintrStatePreInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS swintrStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate) {
+static inline NV_STATUS swintrStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate) {
     return pEngstate->__swintrStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS swintrStateInitLocked_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate) {
+static inline NV_STATUS swintrStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate) {
     return pEngstate->__swintrStateInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS swintrStateInitUnlocked_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate) {
+static inline NV_STATUS swintrStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate) {
     return pEngstate->__swintrStateInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS swintrStatePreLoad_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
+static inline NV_STATUS swintrStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
     return pEngstate->__swintrStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS swintrStateLoad_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
+static inline NV_STATUS swintrStateLoad_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
     return pEngstate->__swintrStateLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS swintrStatePostLoad_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
+static inline NV_STATUS swintrStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
     return pEngstate->__swintrStatePostLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS swintrStatePreUnload_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
+static inline NV_STATUS swintrStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
     return pEngstate->__swintrStatePreUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS swintrStateUnload_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
+static inline NV_STATUS swintrStateUnload_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
     return pEngstate->__swintrStateUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS swintrStatePostUnload_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
+static inline NV_STATUS swintrStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate, NvU32 arg3) {
     return pEngstate->__swintrStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline void swintrStateDestroy_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate) {
+static inline void swintrStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate) {
     pEngstate->__swintrStateDestroy__(pGpu, pEngstate);
 }
 
-static inline NvBool swintrIsPresent_DISPATCH(POBJGPU pGpu, struct SwIntr *pEngstate) {
+static inline NvBool swintrIsPresent_DISPATCH(struct OBJGPU *pGpu, struct SwIntr *pEngstate) {
     return pEngstate->__swintrIsPresent__(pGpu, pEngstate);
 }
 

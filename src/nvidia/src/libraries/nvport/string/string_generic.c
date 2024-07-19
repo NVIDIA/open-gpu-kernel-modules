@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -270,5 +270,74 @@ portStringBufferToHexGroups
 
     str[written] = 0;
     return written;
+}
+#endif
+
+#ifndef NVPORT_STRING_DONT_DEFINE_portStringTok
+static const char *portStringChr(const char *s, int c)
+{
+    while (s && *s != 0 && *s != c)
+    {
+        s++;
+    }
+
+    if (*s == 0)
+    {
+        return NULL;
+    }
+
+    return s;
+}
+
+char *portStringTok(char *str, const char *delim, char **saveptr)
+{
+    char *cp, *start;
+    start = cp = str ? str : *saveptr;
+
+    if (cp == NULL)
+    {
+        return NULL;
+    }
+
+    while (*cp && !portStringChr(delim, *cp))
+    {
+        ++cp;
+    }
+
+    if (!*cp)
+    {
+        if (cp == start)
+        {
+            return NULL;
+        }
+        *saveptr = NULL;
+        return start;
+    }
+    else
+    {
+        *cp++ = '\0';
+        *saveptr = cp;
+        return start;
+    }
+
+}
+#endif
+
+#ifndef NVPORT_STRING_DONT_DEFINE_portStringStrStr
+char *portStringStrStr(char *str, char *substr)
+{
+    char* ptr;
+
+    ptr = str;
+
+    while (*ptr)
+    {
+        if (portStringCompare(ptr, substr, portStringLength(substr)) == 0)
+        {
+            return ptr;
+        }
+        ptr++;
+    }
+    return NULL;
 }
 #endif

@@ -418,7 +418,7 @@ struct uvm_channel_manager_struct
     unsigned num_channel_pools;
 
     // Mask containing the indexes of the usable Copy Engines. Each usable CE
-    // has at least one pool associated with it.
+    // has at least one pool of type UVM_CHANNEL_POOL_TYPE_CE associated with it
     DECLARE_BITMAP(ce_mask, UVM_COPY_ENGINE_COUNT_MAX);
 
     struct

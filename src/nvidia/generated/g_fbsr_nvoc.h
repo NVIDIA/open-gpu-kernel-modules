@@ -86,19 +86,6 @@ typedef struct
     NvU64              size;            // Size of region being saved/restored
 } FBSR_REGION_RECORD;
 
-typedef struct OBJFBSR *POBJFBSR;
-
-#ifndef __NVOC_CLASS_OBJFBSR_TYPEDEF__
-#define __NVOC_CLASS_OBJFBSR_TYPEDEF__
-typedef struct OBJFBSR OBJFBSR;
-#endif /* __NVOC_CLASS_OBJFBSR_TYPEDEF__ */
-
-#ifndef __nvoc_class_id_OBJFBSR
-#define __nvoc_class_id_OBJFBSR 0xa30fe6
-#endif /* __nvoc_class_id_OBJFBSR */
-
-
-
 
 // Private field names are wrapped in PRIVATE_FIELD, which does nothing for
 // the matching C source file, but causes diagnostics to be issued if another

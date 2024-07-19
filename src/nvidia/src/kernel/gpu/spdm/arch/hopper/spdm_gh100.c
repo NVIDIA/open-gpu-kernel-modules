@@ -31,7 +31,7 @@
 #include "gpu/spdm/spdm.h"
 #include "spdm/rmspdmtransport.h"
 #include "spdm/rmspdmvendordef.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "gpu/gsp/kernel_gsp.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/mem_mgr/mem_mgr.h"
@@ -90,7 +90,7 @@ static SPDM_ALGO_CHECK_ENTRY g_SpdmAlgoCheckTable_GH100[] =
 
 /* ------------------------ Static Function Prototypes --------------------- */
 static void _spdmSendHeartbeat(NvU32 gpuInstance, void *pArgs);
-static NV_STATUS _spdmTriggerHeartbeat(OBJGPU *pGpu, OBJTMR *pTmr, PTMR_EVENT pTmrEvent);
+static NV_STATUS _spdmTriggerHeartbeat(OBJGPU *pGpu, OBJTMR *pTmr, TMR_EVENT *pTmrEvent);
 
 //
 // Static transport layer functions which we pass to libspdm as function pointers.
@@ -221,7 +221,7 @@ _spdmTriggerHeartbeat
 (
     OBJGPU     *pGpu,
     OBJTMR     *pTmr,
-    PTMR_EVENT  pTmrEvent
+    TMR_EVENT *pTmrEvent
 )
 {
     NV_STATUS  status = NV_OK;

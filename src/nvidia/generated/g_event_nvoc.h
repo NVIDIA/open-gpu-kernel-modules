@@ -50,7 +50,6 @@ extern "C" {
 #include "kernel/gpu/gpu_engine_type.h"
 
 // Opaque callback memory type for interfacing the scheduling API
-typedef struct TMR_EVENT *PTMR_EVENT;
 typedef struct TMR_EVENT TMR_EVENT;
 
 typedef struct _def_system_event_queue      SYSTEM_EVENTS_QUEUE;

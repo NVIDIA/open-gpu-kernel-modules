@@ -22,6 +22,7 @@ static inline void _get_chip_id_for_alias_pgpu(NvU32 *dev_id, NvU32 *subdev_id)
         { 0x2330, 0x16C0, 0x2330, 0x16C1 },
         { 0x2336, 0x16C2, 0x2330, 0x16C1 },
         { 0x26BA, 0x1990, 0x26BA, 0x1957 },
+
     };
 
     for (NvU32 i = 0; i < (sizeof(vgpu_aliases) / sizeof(struct vgpu_alias_details)); ++i) {

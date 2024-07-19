@@ -42,6 +42,7 @@ extern "C" {
 #ifndef INTR_H
 #define INTR_H
 
+
 #include "kernel/gpu/eng_state.h"
 #include "kernel/gpu/gpu.h"
 #include "kernel/gpu/intr/engine_idx.h"
@@ -309,13 +310,13 @@ struct Intr {
     NV_STATUS (*__intrSetIntrMask__)(OBJGPU *, struct Intr * /*this*/, union MC_ENGINE_BITVECTOR *, struct THREAD_STATE_NODE *);  // halified (2 hals) body
     void (*__intrSetIntrEnInHw__)(OBJGPU *, struct Intr * /*this*/, NvU32, struct THREAD_STATE_NODE *);  // halified (2 hals) body
     NvU32 (*__intrGetIntrEnFromHw__)(OBJGPU *, struct Intr * /*this*/, struct THREAD_STATE_NODE *);  // halified (2 hals) body
-    void (*__intrInitMissing__)(POBJGPU, struct Intr * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__intrStatePreInitUnlocked__)(POBJGPU, struct Intr * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__intrStatePreLoad__)(POBJGPU, struct Intr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__intrStatePostLoad__)(POBJGPU, struct Intr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__intrStatePreUnload__)(POBJGPU, struct Intr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__intrStatePostUnload__)(POBJGPU, struct Intr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__intrIsPresent__)(POBJGPU, struct Intr * /*this*/);  // virtual inherited (engstate) base (engstate)
+    void (*__intrInitMissing__)(struct OBJGPU *, struct Intr * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__intrStatePreInitUnlocked__)(struct OBJGPU *, struct Intr * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__intrStatePreLoad__)(struct OBJGPU *, struct Intr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__intrStatePostLoad__)(struct OBJGPU *, struct Intr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__intrStatePreUnload__)(struct OBJGPU *, struct Intr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__intrStatePostUnload__)(struct OBJGPU *, struct Intr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__intrIsPresent__)(struct OBJGPU *, struct Intr * /*this*/);  // virtual inherited (engstate) base (engstate)
 
     // 8 PDB properties
     NvBool PDB_PROP_INTR_ENABLE_DETAILED_LOGS;
@@ -593,31 +594,31 @@ static inline NvU32 intrGetIntrEnFromHw_DISPATCH(OBJGPU *pGpu, struct Intr *pInt
     return pIntr->__intrGetIntrEnFromHw__(pGpu, pIntr, arg3);
 }
 
-static inline void intrInitMissing_DISPATCH(POBJGPU pGpu, struct Intr *pEngstate) {
+static inline void intrInitMissing_DISPATCH(struct OBJGPU *pGpu, struct Intr *pEngstate) {
     pEngstate->__intrInitMissing__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS intrStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct Intr *pEngstate) {
+static inline NV_STATUS intrStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct Intr *pEngstate) {
     return pEngstate->__intrStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS intrStatePreLoad_DISPATCH(POBJGPU pGpu, struct Intr *pEngstate, NvU32 arg3) {
+static inline NV_STATUS intrStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct Intr *pEngstate, NvU32 arg3) {
     return pEngstate->__intrStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS intrStatePostLoad_DISPATCH(POBJGPU pGpu, struct Intr *pEngstate, NvU32 arg3) {
+static inline NV_STATUS intrStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct Intr *pEngstate, NvU32 arg3) {
     return pEngstate->__intrStatePostLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS intrStatePreUnload_DISPATCH(POBJGPU pGpu, struct Intr *pEngstate, NvU32 arg3) {
+static inline NV_STATUS intrStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct Intr *pEngstate, NvU32 arg3) {
     return pEngstate->__intrStatePreUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS intrStatePostUnload_DISPATCH(POBJGPU pGpu, struct Intr *pEngstate, NvU32 arg3) {
+static inline NV_STATUS intrStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct Intr *pEngstate, NvU32 arg3) {
     return pEngstate->__intrStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NvBool intrIsPresent_DISPATCH(POBJGPU pGpu, struct Intr *pEngstate) {
+static inline NvBool intrIsPresent_DISPATCH(struct OBJGPU *pGpu, struct Intr *pEngstate) {
     return pEngstate->__intrIsPresent__(pGpu, pEngstate);
 }
 
@@ -1195,6 +1196,8 @@ static inline NV_STATUS intrRouteInterruptsToSystemFirmware_56cd7a(OBJGPU *pGpu,
 }
 
 NV_STATUS intrRouteInterruptsToSystemFirmware_GH100(OBJGPU *pGpu, struct Intr *pIntr, NvBool bEnable);
+
+NV_STATUS intrRouteInterruptsToSystemFirmware_GB100(OBJGPU *pGpu, struct Intr *pIntr, NvBool bEnable);
 
 
 #ifdef __nvoc_intr_h_disabled

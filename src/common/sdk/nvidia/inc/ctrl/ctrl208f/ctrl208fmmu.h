@@ -68,6 +68,7 @@ typedef struct NV208F_CTRL_MMU_ECC_INJECT_ERROR_PARAMS {
     NvU32 sublocation;
     NvU8  unit;
     NvU8  errorType;
+    NvU8  instance;
 
 } NV208F_CTRL_MMU_ECC_INJECT_ERROR_PARAMS;
 
@@ -125,6 +126,26 @@ typedef struct NV208F_CTRL_MMU_ECC_INJECTION_SUPPORTED_PARAMS {
 typedef struct NV208F_CTRL_MMU_GET_NUM_HSHUBMMUS_PARAMS {
     NvU32 numHshubmmus;
 } NV208F_CTRL_MMU_GET_NUM_HSHUBMMUS_PARAMS;
+
+    /*
+    * NV208F_CTRL_CMD_MMU_GET_NUM_HUBMMUS
+    *
+    * Returns the number of ECC Capable HUBMMUS.
+    *
+    * numHubmmus [out]
+    *   Number of Hubmmus
+    *
+    * Possible status values returned are:
+    *   NV_OK
+    *   NV_ERR_NOT_SUPPORTED
+    */
+#define NV208F_CTRL_CMD_MMU_GET_NUM_HUBMMUS (0x208f0b04) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_MMU_INTERFACE_ID << 8) | NV208F_CTRL_MMU_GET_NUM_HUBMMUS_PARAMS_MESSAGE_ID" */
+
+#define NV208F_CTRL_MMU_GET_NUM_HUBMMUS_PARAMS_MESSAGE_ID (0x4U)
+
+typedef struct NV208F_CTRL_MMU_GET_NUM_HUBMMUS_PARAMS {
+    NvU32 numHubmmus;
+} NV208F_CTRL_MMU_GET_NUM_HUBMMUS_PARAMS;
 
 
 

@@ -48,6 +48,20 @@
 #define DP2HDMI_DONGLE_DDC_BUFFER_ID_LEN                16
 #define DP2HDMI_DONGLE_CAP_BUFFER_LEN                   32
 
+// For 8b/10b link rate to data rate, linkRate * 8/10 * 1/8 * 10M -> (linkRate * 1000000)
+// For 8b/10b data rate to link rate, dataRate * 10/8 * 8 * 1/10M ->  (dataRate / 1000000)
+#define LINK_RATE_TO_DATA_RATE_8B_10B(linkRate)         (linkRate * 1000000UL)
+#define DATA_RATE_8B_10B_TO_LINK_RATE(dataRate)         (dataRate / 1000000UL)
+
+// To calculate the effective link rate with channel encoding accounted
+#define OVERHEAD_8B_10B(linkRate)        ((linkRate * 8) * 1/10)
+
+// Convert data rate to link rate in bps
+#define DATA_RATE_8B_10B_TO_LINK_RATE_BPS(dataRate) (dataRate * 10)
+
+// Convert data rate to link rate in bps
+#define LINK_RATE_BPS_TO_DATA_RATE_8B_10B(linkRate) (linkRate / 10)
+
 // Offset to read the dongle identifier
 #define NV_DP2HDMI_DONGLE_IDENTIFIER                    (0x00000010)
 #define NV_DP2HDMI_DONGLE_IDENTIFIER_ADAPTER_REV                2:0
@@ -115,6 +129,20 @@ typedef enum
     linkBW_8_10Gbps                = 0x1E,
     linkBW_Supported
 } DP_LINK_BANDWIDTH;
+typedef enum
+{
+    // enum value unit = 10M
+    dp2LinkRate_1_62Gbps          = 0x00A2,   //  162
+    dp2LinkRate_2_16Gbps          = 0x00D8,   //  216
+    dp2LinkRate_2_43Gbps          = 0x00F3,   //  243
+    dp2LinkRate_2_50Gbps          = 0x00FA,   //  250
+    dp2LinkRate_2_70Gbps          = 0x010E,   //  270
+    dp2LinkRate_3_24Gbps          = 0x0144,   //  324
+    dp2LinkRate_4_32Gbps          = 0x01B0,   //  432
+    dp2LinkRate_5_40Gbps          = 0x021C,   //  540
+    dp2LinkRate_8_10Gbps          = 0x032A,   //  810
+    dp2LinkRate_Supported
+} DP2X_LINKRATE_10M;
 
 typedef enum
 {
@@ -528,12 +556,29 @@ typedef struct
 // Multiplier constant to get link rate table's in KHZ
 #define DP_LINK_RATE_TABLE_MULTIPLIER_KHZ 200
 
+// Macro to convert link rate table to 10M convention
+#define LINK_RATE_200KHZ_TO_10MHZ(linkRate) (linkRate / 50)
+
+//
+// Get link rate in multiplier of 10MHz from KHz:
+// a * 1000(KHz) / 10 * 1000 * 1000(10Mhz)
+//
+#define LINK_RATE_KHZ_TO_10MHZ(a)     ((a) / 10000)
+#define LINK_RATE_270MHZ_TO_10MHZ(a)  ((a) * 27)
+#define LINK_RATE_10MHZ_TO_270MHZ(a)  ((a) / 27)
+
 //
 // Multiplier constant to get link frequency (multiplier of 270MHz) in MBps
 // a * 270 * 1000 * 1000(270Mhz) * (8 / 10)(8b/10b) / 8(Byte)
 // = a * 27000000
 //
 #define DP_LINK_BW_FREQ_MULTI_MBPS 27000000
+
+// Convert link rate in 10M to its value in bps
+#define DP_LINK_RATE_10M_TO_BPS(linkRate) (linkRate * 10000000)
+
+// Convert link rate from bps to Bps
+#define DP_LINK_RATE_BITSPS_TO_BYTESPS(linkRate) (linkRate / 8)
 
 //
 // Get link rate in multiplier of 270MHz from KHz:
@@ -604,6 +649,9 @@ typedef struct
 #define IS_VALID_LINKBW(val) (IS_STANDARD_LINKBW(val)     || \
                               IS_INTERMEDIATE_LINKBW(val))
 
+#define IS_VALID_LINKBW_10M(val)         IS_VALID_LINKBW(LINK_RATE_10MHZ_TO_270MHZ(val))
+#define IS_INTERMEDIATE_LINKBW_10M(val)  IS_INTERMEDIATE_LINKBW(LINK_RATE_10MHZ_TO_270MHZ(val))
+#define IS_STANDARD_LINKBW_10M(val)      IS_STANDARD_LINKBW(LINK_RATE_10MHZ_TO_270MHZ(val))
 //
 // Phy Repeater count read from DPCD offset F0002h is an
 // 8 bit value where each bit represents the total count

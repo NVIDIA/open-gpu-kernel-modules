@@ -184,7 +184,6 @@ NV_STATUS threadStateGlobalAlloc(void)
     }
 
     mapInitIntrusive(&threadStateDatabase.dbRoot);
-    mapInitIntrusive(&threadStateDatabase.dbRootPreempted);
 
     return rmStatus;
 }
@@ -208,7 +207,6 @@ void threadStateGlobalFree(void)
     }
 
     mapDestroy(&threadStateDatabase.dbRoot);
-    mapDestroy(&threadStateDatabase.dbRootPreempted);
 
     tlsShutdown();
 }
@@ -558,21 +556,10 @@ void threadStateInit(THREAD_STATE_NODE *pThreadNode, NvU32 flags)
     portSyncSpinlockAcquire(threadStateDatabase.spinlock);
     if (!mapInsertExisting(&threadStateDatabase.dbRoot, (NvU64)pThreadNode->threadId, pThreadNode))
     {
-        rmStatus = NV_ERR_OBJECT_NOT_FOUND;
-        // Place in the Preempted List if threadId is already present in the API list
-        if (mapInsertExisting(&threadStateDatabase.dbRootPreempted, (NvU64)pThreadNode->threadId, pThreadNode))
-        {
-            pThreadNode->flags |= THREAD_STATE_FLAGS_PLACED_ON_PREEMPT_LIST;
-            pThreadNode->bValid = NV_TRUE;
-            rmStatus = NV_OK;
-        }
-        else
-        {
-            // Reset the threadId as insertion failed on both maps. bValid is already NV_FALSE
-            pThreadNode->threadId = 0;
-            portSyncSpinlockRelease(threadStateDatabase.spinlock);
-            return;
-        }
+        // Reset the threadId as insertion failed. bValid is already NV_FALSE
+        pThreadNode->threadId = 0;
+        portSyncSpinlockRelease(threadStateDatabase.spinlock);
+        return;
     }
     else
     {
@@ -816,14 +803,7 @@ void threadStateFree(THREAD_STATE_NODE *pThreadNode, NvU32 flags)
     }
 
     portSyncSpinlockAcquire(threadStateDatabase.spinlock);
-    if (pThreadNode->flags & THREAD_STATE_FLAGS_PLACED_ON_PREEMPT_LIST)
-    {
-        pMap = &threadStateDatabase.dbRootPreempted;
-    }
-    else
-    {
-        pMap = &threadStateDatabase.dbRoot;
-    }
+    pMap = &threadStateDatabase.dbRoot;
 
     pNode = mapFind(pMap, (NvU64)pThreadNode->threadId);
 
@@ -988,14 +968,8 @@ static NV_STATUS _threadStateGet
         }
     }
 
-    // Try the Preempted list first before trying the API list
     portSyncSpinlockAcquire(threadStateDatabase.spinlock);
-    pNode = mapFind(&threadStateDatabase.dbRootPreempted, (NvU64) threadId);
-    if (pNode == NULL)
-    {
-        // Not found on the Preempted, try the API list
-        pNode = mapFind(&threadStateDatabase.dbRoot, (NvU64) threadId);
-    }
+    pNode = mapFind(&threadStateDatabase.dbRoot, (NvU64) threadId);
     portSyncSpinlockRelease(threadStateDatabase.spinlock);
 
     *ppThreadNode = pNode;

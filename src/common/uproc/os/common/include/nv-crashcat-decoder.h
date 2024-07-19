@@ -193,6 +193,13 @@ NV_CRASHCAT_CAUSE_TYPE crashcatReportV1SourceCauseType(NvCrashCatReport_V1 *pRep
                                              pReport->sourceCause);
 }
 
+static NV_INLINE
+NV_CRASHCAT_CONTAINMENT crashcatReportV1SourceCauseContainment(NvCrashCatReport_V1 *pReport)
+{
+    return (NV_CRASHCAT_CONTAINMENT)DRF_VAL64(_CRASHCAT, _REPORT_V1_SOURCE_CAUSE, _CONTAINMENT,
+                                              pReport->sourceCause);
+}
+
 //
 // CrashCat RISC-V 64-bit CSR State V1 Bitfield Accessors
 //

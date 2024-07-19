@@ -103,19 +103,19 @@ struct KernelRc {
     // Vtable with 15 per-object function pointers
     NV_STATUS (*__krcConstructEngine__)(struct OBJGPU *, struct KernelRc * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
     void (*__krcWatchdogRecovery__)(struct OBJGPU *, struct KernelRc * /*this*/);  // halified (2 hals) body
-    void (*__krcInitMissing__)(POBJGPU, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__krcStatePreInitLocked__)(POBJGPU, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__krcStatePreInitUnlocked__)(POBJGPU, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__krcStateInitLocked__)(POBJGPU, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__krcStateInitUnlocked__)(POBJGPU, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__krcStatePreLoad__)(POBJGPU, struct KernelRc * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__krcStateLoad__)(POBJGPU, struct KernelRc * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__krcStatePostLoad__)(POBJGPU, struct KernelRc * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__krcStatePreUnload__)(POBJGPU, struct KernelRc * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__krcStateUnload__)(POBJGPU, struct KernelRc * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__krcStatePostUnload__)(POBJGPU, struct KernelRc * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    void (*__krcStateDestroy__)(POBJGPU, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__krcIsPresent__)(POBJGPU, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
+    void (*__krcInitMissing__)(struct OBJGPU *, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__krcStatePreInitLocked__)(struct OBJGPU *, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__krcStatePreInitUnlocked__)(struct OBJGPU *, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__krcStateInitLocked__)(struct OBJGPU *, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__krcStateInitUnlocked__)(struct OBJGPU *, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__krcStatePreLoad__)(struct OBJGPU *, struct KernelRc * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__krcStateLoad__)(struct OBJGPU *, struct KernelRc * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__krcStatePostLoad__)(struct OBJGPU *, struct KernelRc * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__krcStatePreUnload__)(struct OBJGPU *, struct KernelRc * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__krcStateUnload__)(struct OBJGPU *, struct KernelRc * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__krcStatePostUnload__)(struct OBJGPU *, struct KernelRc * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    void (*__krcStateDestroy__)(struct OBJGPU *, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__krcIsPresent__)(struct OBJGPU *, struct KernelRc * /*this*/);  // virtual inherited (engstate) base (engstate)
 
     // Data members
     NvBool bRobustChannelsEnabled;
@@ -204,55 +204,55 @@ static inline void krcWatchdogRecovery_DISPATCH(struct OBJGPU *pGpu, struct Kern
     pKernelRc->__krcWatchdogRecovery__(pGpu, pKernelRc);
 }
 
-static inline void krcInitMissing_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate) {
+static inline void krcInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
     pEngstate->__krcInitMissing__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS krcStatePreInitLocked_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate) {
+static inline NV_STATUS krcStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
     return pEngstate->__krcStatePreInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS krcStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate) {
+static inline NV_STATUS krcStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
     return pEngstate->__krcStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS krcStateInitLocked_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate) {
+static inline NV_STATUS krcStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
     return pEngstate->__krcStateInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS krcStateInitUnlocked_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate) {
+static inline NV_STATUS krcStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
     return pEngstate->__krcStateInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS krcStatePreLoad_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
+static inline NV_STATUS krcStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
     return pEngstate->__krcStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS krcStateLoad_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
+static inline NV_STATUS krcStateLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
     return pEngstate->__krcStateLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS krcStatePostLoad_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
+static inline NV_STATUS krcStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
     return pEngstate->__krcStatePostLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS krcStatePreUnload_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
+static inline NV_STATUS krcStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
     return pEngstate->__krcStatePreUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS krcStateUnload_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
+static inline NV_STATUS krcStateUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
     return pEngstate->__krcStateUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS krcStatePostUnload_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
+static inline NV_STATUS krcStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
     return pEngstate->__krcStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline void krcStateDestroy_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate) {
+static inline void krcStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
     pEngstate->__krcStateDestroy__(pGpu, pEngstate);
 }
 
-static inline NvBool krcIsPresent_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate) {
+static inline NvBool krcIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
     return pEngstate->__krcIsPresent__(pGpu, pEngstate);
 }
 

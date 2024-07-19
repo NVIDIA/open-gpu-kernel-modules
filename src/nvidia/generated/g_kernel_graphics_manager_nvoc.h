@@ -96,19 +96,19 @@ struct KernelGraphicsManager {
     // Vtable with 15 per-object function pointers
     NV_STATUS (*__kgrmgrConstructEngine__)(OBJGPU *, struct KernelGraphicsManager * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
     void (*__kgrmgrStateDestroy__)(OBJGPU *, struct KernelGraphicsManager * /*this*/);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrGetVeidsFromGpcCount__)(OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32, NvU32 *);  // halified (2 hals)
-    void (*__kgrmgrInitMissing__)(POBJGPU, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStatePreInitLocked__)(POBJGPU, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStatePreInitUnlocked__)(POBJGPU, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStateInitLocked__)(POBJGPU, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStateInitUnlocked__)(POBJGPU, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStatePreLoad__)(POBJGPU, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStateLoad__)(POBJGPU, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStatePostLoad__)(POBJGPU, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStatePreUnload__)(POBJGPU, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStateUnload__)(POBJGPU, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStatePostUnload__)(POBJGPU, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__kgrmgrIsPresent__)(POBJGPU, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgrmgrGetVeidsFromGpcCount__)(OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32, NvU32 *);  // halified (3 hals)
+    void (*__kgrmgrInitMissing__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgrmgrStatePreInitLocked__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgrmgrStatePreInitUnlocked__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgrmgrStateInitLocked__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgrmgrStateInitUnlocked__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgrmgrStatePreLoad__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgrmgrStateLoad__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgrmgrStatePostLoad__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgrmgrStatePreUnload__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgrmgrStateUnload__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgrmgrStatePostUnload__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__kgrmgrIsPresent__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
 
     // Data members
     GRMGR_LEGACY_KGRAPHICS_STATIC_INFO PRIVATE_FIELD(legacyKgraphicsStaticInfo);
@@ -136,19 +136,19 @@ struct KernelGraphicsManager_PRIVATE {
     // Vtable with 15 per-object function pointers
     NV_STATUS (*__kgrmgrConstructEngine__)(OBJGPU *, struct KernelGraphicsManager * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
     void (*__kgrmgrStateDestroy__)(OBJGPU *, struct KernelGraphicsManager * /*this*/);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrGetVeidsFromGpcCount__)(OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32, NvU32 *);  // halified (2 hals)
-    void (*__kgrmgrInitMissing__)(POBJGPU, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStatePreInitLocked__)(POBJGPU, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStatePreInitUnlocked__)(POBJGPU, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStateInitLocked__)(POBJGPU, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStateInitUnlocked__)(POBJGPU, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStatePreLoad__)(POBJGPU, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStateLoad__)(POBJGPU, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStatePostLoad__)(POBJGPU, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStatePreUnload__)(POBJGPU, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStateUnload__)(POBJGPU, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgrmgrStatePostUnload__)(POBJGPU, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__kgrmgrIsPresent__)(POBJGPU, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgrmgrGetVeidsFromGpcCount__)(OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32, NvU32 *);  // halified (3 hals)
+    void (*__kgrmgrInitMissing__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgrmgrStatePreInitLocked__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgrmgrStatePreInitUnlocked__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgrmgrStateInitLocked__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgrmgrStateInitUnlocked__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgrmgrStatePreLoad__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgrmgrStateLoad__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgrmgrStatePostLoad__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgrmgrStatePreUnload__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgrmgrStateUnload__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgrmgrStatePostUnload__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__kgrmgrIsPresent__)(struct OBJGPU *, struct KernelGraphicsManager * /*this*/);  // virtual inherited (engstate) base (engstate)
 
     // Data members
     GRMGR_LEGACY_KGRAPHICS_STATIC_INFO legacyKgraphicsStaticInfo;
@@ -238,51 +238,51 @@ static inline NV_STATUS kgrmgrGetVeidsFromGpcCount_DISPATCH(OBJGPU *arg1, struct
     return arg_this->__kgrmgrGetVeidsFromGpcCount__(arg1, arg_this, gpcCount, pVeidCount);
 }
 
-static inline void kgrmgrInitMissing_DISPATCH(POBJGPU pGpu, struct KernelGraphicsManager *pEngstate) {
+static inline void kgrmgrInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate) {
     pEngstate->__kgrmgrInitMissing__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kgrmgrStatePreInitLocked_DISPATCH(POBJGPU pGpu, struct KernelGraphicsManager *pEngstate) {
+static inline NV_STATUS kgrmgrStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate) {
     return pEngstate->__kgrmgrStatePreInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kgrmgrStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct KernelGraphicsManager *pEngstate) {
+static inline NV_STATUS kgrmgrStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate) {
     return pEngstate->__kgrmgrStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kgrmgrStateInitLocked_DISPATCH(POBJGPU pGpu, struct KernelGraphicsManager *pEngstate) {
+static inline NV_STATUS kgrmgrStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate) {
     return pEngstate->__kgrmgrStateInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kgrmgrStateInitUnlocked_DISPATCH(POBJGPU pGpu, struct KernelGraphicsManager *pEngstate) {
+static inline NV_STATUS kgrmgrStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate) {
     return pEngstate->__kgrmgrStateInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kgrmgrStatePreLoad_DISPATCH(POBJGPU pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
+static inline NV_STATUS kgrmgrStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
     return pEngstate->__kgrmgrStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS kgrmgrStateLoad_DISPATCH(POBJGPU pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
+static inline NV_STATUS kgrmgrStateLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
     return pEngstate->__kgrmgrStateLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS kgrmgrStatePostLoad_DISPATCH(POBJGPU pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
+static inline NV_STATUS kgrmgrStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
     return pEngstate->__kgrmgrStatePostLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS kgrmgrStatePreUnload_DISPATCH(POBJGPU pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
+static inline NV_STATUS kgrmgrStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
     return pEngstate->__kgrmgrStatePreUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS kgrmgrStateUnload_DISPATCH(POBJGPU pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
+static inline NV_STATUS kgrmgrStateUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
     return pEngstate->__kgrmgrStateUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS kgrmgrStatePostUnload_DISPATCH(POBJGPU pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
+static inline NV_STATUS kgrmgrStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg3) {
     return pEngstate->__kgrmgrStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NvBool kgrmgrIsPresent_DISPATCH(POBJGPU pGpu, struct KernelGraphicsManager *pEngstate) {
+static inline NvBool kgrmgrIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphicsManager *pEngstate) {
     return pEngstate->__kgrmgrIsPresent__(pGpu, pEngstate);
 }
 
@@ -291,6 +291,8 @@ NV_STATUS kgrmgrConstructEngine_IMPL(OBJGPU *arg1, struct KernelGraphicsManager 
 void kgrmgrStateDestroy_IMPL(OBJGPU *arg1, struct KernelGraphicsManager *arg2);
 
 NV_STATUS kgrmgrGetVeidsFromGpcCount_GA100(OBJGPU *arg1, struct KernelGraphicsManager *arg2, NvU32 gpcCount, NvU32 *pVeidCount);
+
+NV_STATUS kgrmgrGetVeidsFromGpcCount_GB100(OBJGPU *arg1, struct KernelGraphicsManager *arg2, NvU32 gpcCount, NvU32 *pVeidCount);
 
 static inline NV_STATUS kgrmgrGetVeidsFromGpcCount_46f6a7(OBJGPU *arg1, struct KernelGraphicsManager *arg2, NvU32 gpcCount, NvU32 *pVeidCount) {
     return NV_ERR_NOT_SUPPORTED;

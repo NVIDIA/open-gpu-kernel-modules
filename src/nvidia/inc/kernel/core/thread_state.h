@@ -138,7 +138,6 @@ typedef struct THREAD_STATE_DB
     NvU32   gspIsrThreadSeqCntr;
     PORT_SPINLOCK *spinlock;
     ThreadStateNodeMap  dbRoot;
-    ThreadStateNodeMap  dbRootPreempted;
     THREAD_STATE_NODE **ppISRDeferredIntHandlerThreadNode;
     PTHREAD_STATE_ISR_LOCKLESS pIsrlocklessThreadNode;
     THREAD_STATE_DB_TIMEOUT timeout;
@@ -180,7 +179,6 @@ typedef struct THREAD_STATE_DB
 #define THREAD_STATE_FLAGS_IS_DEFERRED_INT_HANDLER      NVBIT(2)
 #define THREAD_STATE_FLAGS_IS_ISR_LOCKLESS              NVBIT(3)
 #define THREAD_STATE_FLAGS_TIMEOUT_INITED               NVBIT(5)
-#define THREAD_STATE_FLAGS_PLACED_ON_PREEMPT_LIST       NVBIT(6)
 #define THREAD_STATE_FLAGS_DEVICE_INIT                  NVBIT(7)
 #define THREAD_STATE_FLAGS_STATE_FREE_CB_ENABLED        NVBIT(8)
 

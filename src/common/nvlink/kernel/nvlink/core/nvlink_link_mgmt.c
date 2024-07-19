@@ -55,6 +55,8 @@ nvlink_core_check_link_state
     {
         case NVLINK_LINKSTATE_RESET:
         case NVLINK_LINKSTATE_SAFE:
+        if (link->version >= NVLINK_DEVICE_VERSION_50)
+            return NVL_SUCCESS;
 
             // fall-through
         case NVLINK_LINKSTATE_OFF:
@@ -292,6 +294,23 @@ nvlink_core_poll_link_state
         return NVL_BAD_ARGS;
     }
 
+    if (link->version >= NVLINK_DEVICE_VERSION_50)
+    {
+        switch (linkState)
+        {
+        case NVLINK_LINKSTATE_RESET:
+        case NVLINK_LINKSTATE_SAFE:
+            return NVL_SUCCESS;
+        case NVLINK_LINKSTATE_OFF:
+        case NVLINK_LINKSTATE_HS:
+        case NVLINK_LINKSTATE_ALI:
+        case NVLINK_LINKSTATE_SLEEP:
+        case NVLINK_LINKSTATE_ACTIVE_PENDING:
+        default:
+            break;
+        }
+    }
+
     link->link_handlers->get_dl_link_mode(link, &currentLinkState);
 
     while (currentLinkState != linkState)
@@ -355,6 +374,9 @@ nvlink_core_poll_sublink_state
         return NVL_BAD_ARGS;
     }
 
+    if (localTxSubLink->version >= NVLINK_DEVICE_VERSION_50)
+        return NVL_SUCCESS;
+
     // check for tx sublink if a valid link is specified
     if (localTxSubLink)
     {
@@ -412,6 +434,9 @@ nvlink_core_poll_tx_sublink_state
     {
         return NVL_BAD_ARGS;
     }
+
+    if (link->version >= NVLINK_DEVICE_VERSION_50)
+        return NVL_SUCCESS;
 
     link->link_handlers->get_tx_mode(link,
                                      &currentTxSublinkState,
@@ -475,6 +500,9 @@ nvlink_core_poll_rx_sublink_state
     {
         return NVL_BAD_ARGS;
     }
+
+    if (link->version >= NVLINK_DEVICE_VERSION_50)
+        return NVL_SUCCESS;
 
     link->link_handlers->get_rx_mode(link,
                                      &currentRxSublinkState,

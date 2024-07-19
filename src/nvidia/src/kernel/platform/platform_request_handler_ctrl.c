@@ -34,7 +34,7 @@
 #include "platform/acpi_common.h"
 #include "diagnostics/tracer.h"
 #include "os/os.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "core/locks.h"
 #include "gps.h"
 #include "rmapi/client_resource.h"

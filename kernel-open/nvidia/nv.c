@@ -24,9 +24,9 @@
 #include <linux/module.h>  // for MODULE_FIRMWARE
 
 // must precede "nv.h" and "nv-firmware.h" includes
-#define NV_FIRMWARE_PATH_FOR_FILENAME(filename)  "nvidia/" NV_VERSION_STRING "/" filename
-#define NV_FIRMWARE_DECLARE_GSP_FILENAME(filename) \
-    MODULE_FIRMWARE(NV_FIRMWARE_PATH_FOR_FILENAME(filename));
+#define NV_FIRMWARE_FOR_NAME(name)  "nvidia/" NV_VERSION_STRING "/" name ".bin"
+#define NV_FIRMWARE_DECLARE_GSP(name) \
+    MODULE_FIRMWARE(NV_FIRMWARE_FOR_NAME(name));
 #include "nv-firmware.h"
 
 #include "nvmisc.h"
@@ -3945,7 +3945,9 @@ const void* NV_API_CALL nv_get_firmware(
 
     // path is relative to /lib/firmware
     // if this fails it will print an error to dmesg
-    if (request_firmware(&fw, nv_firmware_path(fw_type, fw_chip_family), nvl->dev) != 0)
+    if (request_firmware(&fw,
+                         nv_firmware_for_chip_family(fw_type, fw_chip_family),
+                         nvl->dev) != 0)
         return NULL;
 
     *fw_size = fw->size;
@@ -4041,6 +4043,16 @@ int NV_API_CALL nv_get_event(
     nv_linux_file_private_t *nvlfp = nv_get_nvlfp_from_nvfp(nvfp);
     nvidia_event_t *nvet;
     unsigned long eflags;
+
+    //
+    // Note that the head read/write is not atomic when done outside of the
+    // spinlock, so this might not be a valid pointer at all. But if we read
+    // NULL here that means that the value indeed was NULL and we can bail
+    // early since there's no events. Otherwise, we have to do a proper read
+    // under a spinlock.
+    //
+    if (nvlfp->event_data_head == NULL)
+        return NV_ERR_GENERIC;
 
     NV_SPIN_LOCK_IRQSAVE(&nvlfp->fp_lock, eflags);
 
@@ -5923,11 +5935,6 @@ void NV_API_CALL nv_disallow_runtime_suspend
 #endif
 }
 
-NvU32 NV_API_CALL nv_get_os_type(void)
-{
-    return OS_TYPE_LINUX;
-}
-
 void NV_API_CALL nv_flush_coherent_cpu_cache_range(nv_state_t *nv, NvU64 cpu_virtual, NvU64 size)
 {
 #if NVCPU_IS_PPC64LE
@@ -6082,14 +6089,16 @@ void NV_API_CALL nv_get_screen_info(
     NvU64       *pFbSize
 )
 {
+    nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
+    struct pci_dev *pci_dev = nvl->pci_dev;
+    int i;
+
     *pPhysicalAddress = 0;
     *pFbWidth = *pFbHeight = *pFbDepth = *pFbPitch = *pFbSize = 0;
 
 #if defined(CONFIG_FB) && defined(NV_NUM_REGISTERED_FB_PRESENT)
     if (num_registered_fb > 0)
     {
-        int i;
-
         for (i = 0; i < num_registered_fb; i++)
         {
             if (!registered_fb[i])
@@ -6154,17 +6163,17 @@ void NV_API_CALL nv_get_screen_info(
             *pFbDepth = screen_info.lfb_depth;
             *pFbPitch = screen_info.lfb_linelength;
             *pFbSize = (NvU64)(*pFbHeight) * (NvU64)(*pFbPitch);
+            return;
         }
     }
-#else
+#endif
+
+    /*
+     * If screen info can't be fetched with previous methods, then try
+     * to get the base address and size from the memory resource tree.
+     */
+    if (pci_dev != NULL)
     {
-        nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
-        struct pci_dev *pci_dev = nvl->pci_dev;
-        int i;
-
-        if (pci_dev == NULL)
-            return;
-
         BUILD_BUG_ON(NV_GPU_BAR_INDEX_IMEM != NV_GPU_BAR_INDEX_FB + 1);
         for (i = NV_GPU_BAR_INDEX_FB; i <= NV_GPU_BAR_INDEX_IMEM; i++)
         {
@@ -6197,7 +6206,6 @@ void NV_API_CALL nv_get_screen_info(
             }
         }
     }
-#endif
 }
 
 

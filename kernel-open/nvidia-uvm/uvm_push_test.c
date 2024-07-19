@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -560,20 +560,12 @@ static NV_STATUS test_push_exactly_max_push(uvm_gpu_t *gpu,
 
 static NvU32 test_count_idle_chunks(uvm_pushbuffer_t *pushbuffer)
 {
-    NvU32 i;
-    NvU32 count = 0;
-    for (i = 0; i < UVM_PUSHBUFFER_CHUNKS; ++i)
-        count += test_bit(i, pushbuffer->idle_chunks) ? 1 : 0;
-    return count;
+    return bitmap_weight(pushbuffer->idle_chunks, UVM_PUSHBUFFER_CHUNKS);
 }
 
 static NvU32 test_count_available_chunks(uvm_pushbuffer_t *pushbuffer)
 {
-    NvU32 i;
-    NvU32 count = 0;
-    for (i = 0; i < UVM_PUSHBUFFER_CHUNKS; ++i)
-        count += test_bit(i, pushbuffer->available_chunks) ? 1 : 0;
-    return count;
+    return bitmap_weight(pushbuffer->available_chunks, UVM_PUSHBUFFER_CHUNKS);
 }
 
 // Reuse the whole pushbuffer 4 times, one UVM_MAX_PUSH_SIZE at a time
@@ -858,10 +850,6 @@ static bool can_do_peer_copies(uvm_va_space_t *va_space, uvm_gpu_t *gpu_a, uvm_g
         return false;
 
     UVM_ASSERT(uvm_processor_mask_test(&va_space->can_copy_from[uvm_id_value(gpu_b->id)], gpu_a->id));
-
-    // TODO: Bug 2028875. Indirect peers are not supported for now.
-    if (uvm_gpus_are_indirect_peers(gpu_a, gpu_b))
-        return false;
 
     return true;
 }

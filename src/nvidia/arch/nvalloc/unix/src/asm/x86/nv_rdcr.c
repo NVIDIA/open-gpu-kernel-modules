@@ -27,7 +27,7 @@
 
 #if defined(NVCPU_X86_64)
 
-NvU32 nv_rdcr4(OBJOS *pOS)
+NvU32 osNv_rdcr4(void)
 {
     NvU64 val;
     asm volatile ("movq %%cr4,%0" : "=r" (val));

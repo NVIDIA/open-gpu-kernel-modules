@@ -28,7 +28,7 @@
 \***************************************************************************/
 
 #include "gpu_mgr/gpu_mgr.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "nvBldVer.h"
 #include "nvVer.h"
 #include "os/os.h"
@@ -3762,20 +3762,29 @@ _rcdbSendNocatJournalNotification
     OBJGPU *pGpu,
     Journal *pRcdb,
     NvU32    posted,
-    RmRCCommonJournal_RECORD *pCommon,      // todo: pass in timestamp instead of common.
+    NvU64    timeStamp,
     NvU32 type
 )
 {
-    if ((pCommon == NULL) || (pRcdb == NULL))
+    if (pRcdb == NULL)
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
+    if (pRcdb->nvDumpState.bDumpInProcess)
+    {
+        // we can't reliably do an ETW when we are in the process of collecting data for a dump.
+        // (it can throw an exception)
+        // so bail w/o sending the notification.
+        pRcdb->nocatJournalDescriptor.nocatEventCounters[NV2080_NOCAT_JOURNAL_REPORT_ACTIVITY_NOTIFICATION_FAIL_IDX]++;
+        return NV_OK;
+    }
+
     RMTRACE_NOCAT(_REPORT_PENDING, (pGpu ? pGpu->gpuId : RMTRACE_UNKNOWN_GPUID),
         RmNocatReport,
         posted,
         type,
         rcdbGetNocatOutstandingCount(pRcdb),
-        pCommon->timeStamp);
+        timeStamp);
 
     // count the number of notifications.
     pRcdb->nocatJournalDescriptor.nocatEventCounters[NV2080_NOCAT_JOURNAL_REPORT_ACTIVITY_NOTIFICATIONS_IDX]++;
@@ -4113,7 +4122,7 @@ rcdbNocatInsertNocatError(
     }
 
     // no matter what happened, trigger the event to indicate a record was processed.
-    _rcdbSendNocatJournalNotification(pGpu, pRcdb, postRecord, pCommon, pNewEntry->recType);
+    _rcdbSendNocatJournalNotification(pGpu, pRcdb, postRecord, pNewEntry->timestamp, pNewEntry->recType);
 
     return id;
 }

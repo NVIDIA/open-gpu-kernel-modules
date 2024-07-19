@@ -114,6 +114,7 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += mempolicy_has_unified_nodes
 NV_CONFTEST_TYPE_COMPILE_TESTS += mempolicy_has_home_node
 NV_CONFTEST_TYPE_COMPILE_TESTS += mpol_preferred_many_present
 NV_CONFTEST_TYPE_COMPILE_TESTS += mmu_interval_notifier
+NV_CONFTEST_TYPE_COMPILE_TESTS += fault_flag_remote_present
 
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_int_active_memcg
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_migrate_vma_setup

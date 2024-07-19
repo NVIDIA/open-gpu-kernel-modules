@@ -150,7 +150,7 @@ struct KernelChannelGroup {
     RM_ENGINE_TYPE engineType;
     struct OBJVASPACE *pVAS;
     NvU32 gfid;
-    struct OBJEHEAP *pSubctxIdHeap;
+    OBJEHEAP *pSubctxIdHeap;
     CHANNEL_LIST *pChanList;
     NvU64 timesliceUs;
     ENGINE_CTX_DESCRIPTOR **ppEngCtxDesc;

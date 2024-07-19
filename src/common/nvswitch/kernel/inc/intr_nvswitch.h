@@ -196,7 +196,7 @@
         else                                                        \
         {                                                           \
             NVSWITCH_LOG_NONFATAL_DATA(device, _HW, _logenum, link, \
-                                       0, NV_FALSE, &data);         \
+                                       0, NV_FALSE, &_data);        \
         }                                                           \
     } while(0)
 

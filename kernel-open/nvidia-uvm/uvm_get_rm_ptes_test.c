@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2023 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -119,10 +119,6 @@ static NV_STATUS verify_mapping_info(uvm_va_space_t *va_space,
     if (memory_owning_gpu == NULL)
         return NV_ERR_INVALID_DEVICE;
 
-    // TODO: Bug 1903234: Once RM supports indirect peer mappings, we'll need to
-    //       update this test since the aperture will be SYS. Depending on how
-    //       RM implements things, we might not be able to compare the physical
-    //       addresses either.
     aperture = get_aperture(va_space, memory_owning_gpu, memory_mapping_gpu, memory_info, sli_supported);
 
     if (is_cacheable(ext_mapping_info, aperture))

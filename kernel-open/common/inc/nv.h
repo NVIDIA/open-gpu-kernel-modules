@@ -110,15 +110,15 @@ typedef enum _TEGRASOC_WHICH_CLK
     TEGRASOC_WHICH_CLK_DSIPLL_CLKOUTPN,
     TEGRASOC_WHICH_CLK_DSIPLL_CLKOUTA,
     TEGRASOC_WHICH_CLK_SPPLL0_VCO,
-    TEGRASOC_WHICH_CLK_SPPLL0_CLKOUTPN,
     TEGRASOC_WHICH_CLK_SPPLL0_CLKOUTA,
     TEGRASOC_WHICH_CLK_SPPLL0_CLKOUTB,
+    TEGRASOC_WHICH_CLK_SPPLL0_CLKOUTPN,
+    TEGRASOC_WHICH_CLK_SPPLL1_CLKOUTPN,
+    TEGRASOC_WHICH_CLK_SPPLL0_DIV27,
+    TEGRASOC_WHICH_CLK_SPPLL1_DIV27,
     TEGRASOC_WHICH_CLK_SPPLL0_DIV10,
     TEGRASOC_WHICH_CLK_SPPLL0_DIV25,
-    TEGRASOC_WHICH_CLK_SPPLL0_DIV27,
     TEGRASOC_WHICH_CLK_SPPLL1_VCO,
-    TEGRASOC_WHICH_CLK_SPPLL1_CLKOUTPN,
-    TEGRASOC_WHICH_CLK_SPPLL1_DIV27,
     TEGRASOC_WHICH_CLK_VPLL0_REF,
     TEGRASOC_WHICH_CLK_VPLL0,
     TEGRASOC_WHICH_CLK_VPLL1,
@@ -132,7 +132,7 @@ typedef enum _TEGRASOC_WHICH_CLK
     TEGRASOC_WHICH_CLK_DSI_PIXEL,
     TEGRASOC_WHICH_CLK_PRE_SOR0,
     TEGRASOC_WHICH_CLK_PRE_SOR1,
-    TEGRASOC_WHICH_CLK_DP_LINK_REF,
+    TEGRASOC_WHICH_CLK_DP_LINKA_REF,
     TEGRASOC_WHICH_CLK_SOR_LINKA_INPUT,
     TEGRASOC_WHICH_CLK_SOR_LINKA_AFIFO,
     TEGRASOC_WHICH_CLK_SOR_LINKA_AFIFO_M,
@@ -143,7 +143,7 @@ typedef enum _TEGRASOC_WHICH_CLK
     TEGRASOC_WHICH_CLK_PLLHUB,
     TEGRASOC_WHICH_CLK_SOR0,
     TEGRASOC_WHICH_CLK_SOR1,
-    TEGRASOC_WHICH_CLK_SOR_PAD_INPUT,
+    TEGRASOC_WHICH_CLK_SOR_PADA_INPUT,
     TEGRASOC_WHICH_CLK_PRE_SF0,
     TEGRASOC_WHICH_CLK_SF0,
     TEGRASOC_WHICH_CLK_SF1,
@@ -332,7 +332,9 @@ typedef struct nv_soc_irq_info_s {
 
 #define NV_MAX_SOC_IRQS              6
 #define NV_MAX_DPAUX_NUM_DEVICES     4
-#define NV_MAX_SOC_DPAUX_NUM_DEVICES 2 // From SOC_DEV_MAPPING
+
+#define NV_MAX_SOC_DPAUX_NUM_DEVICES 2
+
 
 #define NV_IGPU_LEGACY_STALL_IRQ     70
 #define NV_IGPU_MAX_STALL_IRQS       3
@@ -494,12 +496,6 @@ typedef struct nv_state_t
         NvU32 dispNisoStreamId;
     } iommus;
 } nv_state_t;
-
-// These define need to be in sync with defines in system.h
-#define OS_TYPE_LINUX   0x1
-#define OS_TYPE_FREEBSD 0x2
-#define OS_TYPE_SUNOS   0x3
-#define OS_TYPE_VMWARE  0x4
 
 #define NVFP_TYPE_NONE       0x0
 #define NVFP_TYPE_REFCOUNTED 0x1
@@ -893,8 +889,6 @@ void      NV_API_CALL nv_cap_drv_exit(void);
 NvBool    NV_API_CALL nv_is_gpu_accessible(nv_state_t *);
 NvBool    NV_API_CALL nv_match_gpu_os_info(nv_state_t *, void *);
 
-NvU32     NV_API_CALL nv_get_os_type(void);
-
 void      NV_API_CALL nv_get_updated_emu_seg(NvU32 *start, NvU32 *end);
 void      NV_API_CALL nv_get_screen_info(nv_state_t *, NvU64 *, NvU32 *, NvU32 *, NvU32 *, NvU32 *, NvU64 *);
 
@@ -1084,6 +1078,9 @@ void        NV_API_CALL nv_start_nano_timer(nv_state_t *nv, nv_nano_timer_t *, N
 NV_STATUS   NV_API_CALL rm_run_nano_timer_callback(nvidia_stack_t *, nv_state_t *, void *pTmrEvent);
 void        NV_API_CALL nv_cancel_nano_timer(nv_state_t *, nv_nano_timer_t *);
 void        NV_API_CALL nv_destroy_nano_timer(nv_state_t *nv, nv_nano_timer_t *);
+
+// Host1x specific functions.
+NV_STATUS NV_API_CALL nv_get_syncpoint_aperture(NvU32, NvU64 *, NvU64 *, NvU32 *);
 
 #if defined(NVCPU_X86_64)
 

@@ -1353,7 +1353,15 @@ nvswitch_ctrl_blacklist_device(
     if (status != NVL_SUCCESS)
         return status;
 
-    nvswitch_lib_disable_interrupts(device);
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+    }
+    else
+    {
+        nvswitch_lib_disable_interrupts(device);
+    }
 
     // Unregister links from NVLinkCoreLib, so that link training is not
     // attempted

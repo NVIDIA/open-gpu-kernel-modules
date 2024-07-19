@@ -82,62 +82,62 @@ static void __nvoc_down_thunk_KernelFsp_engstateStateDestroy(OBJGPU *pGpu, struc
 // 12 up-thunk(s) defined to bridge methods in KernelFsp to superclasses
 
 // kfspInitMissing: virtual inherited (engstate) base (engstate)
-static void __nvoc_up_thunk_OBJENGSTATE_kfspInitMissing(POBJGPU pGpu, struct KernelFsp *pEngstate) {
+static void __nvoc_up_thunk_OBJENGSTATE_kfspInitMissing(struct OBJGPU *pGpu, struct KernelFsp *pEngstate) {
     engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelFsp_OBJENGSTATE.offset));
 }
 
 // kfspStatePreInitLocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kfspStatePreInitLocked(POBJGPU pGpu, struct KernelFsp *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kfspStatePreInitLocked(struct OBJGPU *pGpu, struct KernelFsp *pEngstate) {
     return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelFsp_OBJENGSTATE.offset));
 }
 
 // kfspStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kfspStatePreInitUnlocked(POBJGPU pGpu, struct KernelFsp *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kfspStatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelFsp *pEngstate) {
     return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelFsp_OBJENGSTATE.offset));
 }
 
 // kfspStateInitLocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kfspStateInitLocked(POBJGPU pGpu, struct KernelFsp *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kfspStateInitLocked(struct OBJGPU *pGpu, struct KernelFsp *pEngstate) {
     return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelFsp_OBJENGSTATE.offset));
 }
 
 // kfspStateInitUnlocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kfspStateInitUnlocked(POBJGPU pGpu, struct KernelFsp *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kfspStateInitUnlocked(struct OBJGPU *pGpu, struct KernelFsp *pEngstate) {
     return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelFsp_OBJENGSTATE.offset));
 }
 
 // kfspStatePreLoad: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kfspStatePreLoad(POBJGPU pGpu, struct KernelFsp *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kfspStatePreLoad(struct OBJGPU *pGpu, struct KernelFsp *pEngstate, NvU32 arg3) {
     return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelFsp_OBJENGSTATE.offset), arg3);
 }
 
 // kfspStateLoad: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kfspStateLoad(POBJGPU pGpu, struct KernelFsp *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kfspStateLoad(struct OBJGPU *pGpu, struct KernelFsp *pEngstate, NvU32 arg3) {
     return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelFsp_OBJENGSTATE.offset), arg3);
 }
 
 // kfspStatePostLoad: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kfspStatePostLoad(POBJGPU pGpu, struct KernelFsp *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kfspStatePostLoad(struct OBJGPU *pGpu, struct KernelFsp *pEngstate, NvU32 arg3) {
     return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelFsp_OBJENGSTATE.offset), arg3);
 }
 
 // kfspStatePreUnload: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kfspStatePreUnload(POBJGPU pGpu, struct KernelFsp *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kfspStatePreUnload(struct OBJGPU *pGpu, struct KernelFsp *pEngstate, NvU32 arg3) {
     return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelFsp_OBJENGSTATE.offset), arg3);
 }
 
 // kfspStateUnload: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kfspStateUnload(POBJGPU pGpu, struct KernelFsp *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kfspStateUnload(struct OBJGPU *pGpu, struct KernelFsp *pEngstate, NvU32 arg3) {
     return engstateStateUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelFsp_OBJENGSTATE.offset), arg3);
 }
 
 // kfspStatePostUnload: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kfspStatePostUnload(POBJGPU pGpu, struct KernelFsp *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kfspStatePostUnload(struct OBJGPU *pGpu, struct KernelFsp *pEngstate, NvU32 arg3) {
     return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelFsp_OBJENGSTATE.offset), arg3);
 }
 
 // kfspIsPresent: virtual inherited (engstate) base (engstate)
-static NvBool __nvoc_up_thunk_OBJENGSTATE_kfspIsPresent(POBJGPU pGpu, struct KernelFsp *pEngstate) {
+static NvBool __nvoc_up_thunk_OBJENGSTATE_kfspIsPresent(struct OBJGPU *pGpu, struct KernelFsp *pEngstate) {
     return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelFsp_OBJENGSTATE.offset));
 }
 
@@ -167,7 +167,7 @@ void __nvoc_init_dataField_KernelFsp(KernelFsp *pThis, RmHalspecOwner *pRmhalspe
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
     // NVOC Property Hal field -- PDB_PROP_KFSP_IS_MISSING
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->setProperty(pThis, PDB_PROP_KFSP_IS_MISSING, ((NvBool)(0 != 0)));
     }
@@ -177,10 +177,54 @@ void __nvoc_init_dataField_KernelFsp(KernelFsp *pThis, RmHalspecOwner *pRmhalspe
         pThis->setProperty(pThis, PDB_PROP_KFSP_IS_MISSING, ((NvBool)(0 == 0)));
     }
 
+    // NVOC Property Hal field -- PDB_PROP_KFSP_FSP_FUSE_ERROR_CHECK_ENABLED
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
+    {
+        pThis->setProperty(pThis, PDB_PROP_KFSP_FSP_FUSE_ERROR_CHECK_ENABLED, ((NvBool)(0 == 0)));
+    }
+    // default
+    else
+    {
+        pThis->setProperty(pThis, PDB_PROP_KFSP_FSP_FUSE_ERROR_CHECK_ENABLED, ((NvBool)(0 != 0)));
+    }
+
     // NVOC Property Hal field -- PDB_PROP_KFSP_DISABLE_FRTS_SYSMEM
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000003UL) )) /* RmVariantHal: VF | PF_KERNEL_ONLY */ 
     {
         pThis->setProperty(pThis, PDB_PROP_KFSP_DISABLE_FRTS_SYSMEM, ((NvBool)(0 == 0)));
+    }
+
+    // Hal field -- cotPayloadSignatureSize
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
+    {
+        pThis->cotPayloadSignatureSize = 96;
+    }
+    // default
+    else
+    {
+        pThis->cotPayloadSignatureSize = 384;
+    }
+
+    // Hal field -- cotPayloadPublicKeySize
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
+    {
+        pThis->cotPayloadPublicKeySize = 97;
+    }
+    // default
+    else
+    {
+        pThis->cotPayloadPublicKeySize = 384;
+    }
+
+    // Hal field -- cotPayloadVersion
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
+    {
+        pThis->cotPayloadVersion = 2;
+    }
+    // default
+    else
+    {
+        pThis->cotPayloadVersion = 1;
     }
 }
 
@@ -223,7 +267,7 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
     pThis->__kfspSendAndReadMessageAsync__ = &kfspSendAndReadMessageAsync_IMPL;
 
     // kfspGspFmcIsEnforced -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspGspFmcIsEnforced__ = &kfspGspFmcIsEnforced_GH100;
     }
@@ -234,7 +278,7 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
     }
 
     // kfspPrepareBootCommands -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspPrepareBootCommands__ = &kfspPrepareBootCommands_GH100;
     }
@@ -244,7 +288,7 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
     }
 
     // kfspSendBootCommands -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspSendBootCommands__ = &kfspSendBootCommands_GH100;
     }
@@ -254,7 +298,7 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
     }
 
     // kfspPrepareAndSendBootCommands -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspPrepareAndSendBootCommands__ = &kfspPrepareAndSendBootCommands_GH100;
     }
@@ -263,10 +307,14 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
         pThis->__kfspPrepareAndSendBootCommands__ = &kfspPrepareAndSendBootCommands_ac1694;
     }
 
-    // kfspWaitForSecureBoot -- halified (2 hals) body
+    // kfspWaitForSecureBoot -- halified (3 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kfspWaitForSecureBoot__ = &kfspWaitForSecureBoot_GH100;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
+    {
+        pThis->__kfspWaitForSecureBoot__ = &kfspWaitForSecureBoot_GB100;
     }
     // default
     else
@@ -275,7 +323,7 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
     }
 
     // kfspGetRmChannelSize -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspGetRmChannelSize__ = &kfspGetRmChannelSize_GH100;
     }
@@ -285,7 +333,7 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
     }
 
     // kfspConfigEmemc -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspConfigEmemc__ = &kfspConfigEmemc_GH100;
     }
@@ -295,7 +343,7 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
     }
 
     // kfspUpdateQueueHeadTail -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspUpdateQueueHeadTail__ = &kfspUpdateQueueHeadTail_GH100;
     }
@@ -305,7 +353,7 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
     }
 
     // kfspGetQueueHeadTail -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspGetQueueHeadTail__ = &kfspGetQueueHeadTail_GH100;
     }
@@ -315,7 +363,7 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
     }
 
     // kfspUpdateMsgQueueHeadTail -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspUpdateMsgQueueHeadTail__ = &kfspUpdateMsgQueueHeadTail_GH100;
     }
@@ -325,7 +373,7 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
     }
 
     // kfspGetMsgQueueHeadTail -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspGetMsgQueueHeadTail__ = &kfspGetMsgQueueHeadTail_GH100;
     }
@@ -335,7 +383,7 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
     }
 
     // kfspNvdmToSeid -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspNvdmToSeid__ = &kfspNvdmToSeid_GH100;
     }
@@ -345,7 +393,7 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
     }
 
     // kfspCreateMctpHeader -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspCreateMctpHeader__ = &kfspCreateMctpHeader_GH100;
     }
@@ -355,7 +403,7 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
     }
 
     // kfspCreateNvdmHeader -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspCreateNvdmHeader__ = &kfspCreateNvdmHeader_GH100;
     }
@@ -365,7 +413,7 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
     }
 
     // kfspWriteToEmem -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspWriteToEmem__ = &kfspWriteToEmem_GH100;
     }
@@ -375,7 +423,7 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
     }
 
     // kfspReadFromEmem -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspReadFromEmem__ = &kfspReadFromEmem_GH100;
     }
@@ -385,7 +433,7 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
     }
 
     // kfspGetPacketInfo -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspGetPacketInfo__ = &kfspGetPacketInfo_GH100;
     }
@@ -395,7 +443,7 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
     }
 
     // kfspValidateMctpPayloadHeader -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspValidateMctpPayloadHeader__ = &kfspValidateMctpPayloadHeader_GH100;
     }
@@ -405,7 +453,7 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
     }
 
     // kfspProcessNvdmMessage -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspProcessNvdmMessage__ = &kfspProcessNvdmMessage_GH100;
     }
@@ -415,7 +463,7 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
     }
 
     // kfspProcessCommandResponse -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspProcessCommandResponse__ = &kfspProcessCommandResponse_GH100;
     }
@@ -425,17 +473,18 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
     }
 
     // kfspDumpDebugState -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspDumpDebugState__ = &kfspDumpDebugState_GH100;
     }
+    // default
     else
     {
-        pThis->__kfspDumpDebugState__ = &kfspDumpDebugState_d44104;
+        pThis->__kfspDumpDebugState__ = &kfspDumpDebugState_b3696a;
     }
 
     // kfspErrorCode2NvStatusMap -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspErrorCode2NvStatusMap__ = &kfspErrorCode2NvStatusMap_GH100;
     }
@@ -455,19 +504,8 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
         pThis->__kfspGetExtraReservedMemorySize__ = &kfspGetExtraReservedMemorySize_4a4dee;
     }
 
-    // kfspCheckGspSecureScratch -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
-    {
-        pThis->__kfspCheckGspSecureScratch__ = &kfspCheckGspSecureScratch_GH100;
-    }
-    // default
-    else
-    {
-        pThis->__kfspCheckGspSecureScratch__ = &kfspCheckGspSecureScratch_491d52;
-    }
-
     // kfspWaitForGspTargetMaskReleased -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspWaitForGspTargetMaskReleased__ = &kfspWaitForGspTargetMaskReleased_GH100;
     }
@@ -488,7 +526,7 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
     }
 
     // kfspFrtsSysmemLocationProgram -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspFrtsSysmemLocationProgram__ = &kfspFrtsSysmemLocationProgram_GH100;
     }
@@ -498,13 +536,35 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
     }
 
     // kfspFrtsSysmemLocationClear -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kfspFrtsSysmemLocationClear__ = &kfspFrtsSysmemLocationClear_GH100;
     }
     else
     {
         pThis->__kfspFrtsSysmemLocationClear__ = &kfspFrtsSysmemLocationClear_d44104;
+    }
+
+    // kfspCheckForClockBoostCapability -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
+    {
+        pThis->__kfspCheckForClockBoostCapability__ = &kfspCheckForClockBoostCapability_GB100;
+    }
+    // default
+    else
+    {
+        pThis->__kfspCheckForClockBoostCapability__ = &kfspCheckForClockBoostCapability_b3696a;
+    }
+
+    // kfspSendClockBoostRpc -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
+    {
+        pThis->__kfspSendClockBoostRpc__ = &kfspSendClockBoostRpc_GB100;
+    }
+    // default
+    else
+    {
+        pThis->__kfspSendClockBoostRpc__ = &kfspSendClockBoostRpc_56cd7a;
     }
 
     // kfspInitMissing -- virtual inherited (engstate) base (engstate)
@@ -542,13 +602,13 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
 
     // kfspIsPresent -- virtual inherited (engstate) base (engstate)
     pThis->__kfspIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_kfspIsPresent;
-} // End __nvoc_init_funcTable_KernelFsp_1 with approximately 73 basic block(s).
+} // End __nvoc_init_funcTable_KernelFsp_1 with approximately 76 basic block(s).
 
 
-// Initialize vtable(s) for 43 virtual method(s).
+// Initialize vtable(s) for 44 virtual method(s).
 void __nvoc_init_funcTable_KernelFsp(KernelFsp *pThis, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 43 per-object function pointer(s).
+    // Initialize vtable(s) with 44 per-object function pointer(s).
     __nvoc_init_funcTable_KernelFsp_1(pThis, pRmhalspecowner);
 }
 

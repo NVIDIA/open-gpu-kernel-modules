@@ -24,19 +24,6 @@
 #ifndef __v04_00_dev_disp_h__
 #define __v04_00_dev_disp_h__
 
-#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING(i)                                           (0x00611800+(i)*4) /* RW-4A */
-#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_LAST_DATA                                                   1:1 /* RWIVF */
-#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_LAST_DATA_NOT_PENDING                                0x00000000 /* R---V */
-#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_LAST_DATA_PENDING                                    0x00000001 /* R---V */
-#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_LAST_DATA_RESET                                      0x00000001 /* -W--V */
-#define NV_PDISP_FE_RM_INTR_STAT_HEAD_TIMING(i)                                       (0x00611C00+(i)*4) /* R--4A */
-#define NV_PDISP_FE_RM_INTR_STAT_HEAD_TIMING_LAST_DATA                                               1:1 /* R-IVF */
-#define NV_PDISP_FE_RM_INTR_STAT_HEAD_TIMING_LAST_DATA_NOT_PENDING                            0x00000000 /* R-I-V */
-#define NV_PDISP_FE_RM_INTR_STAT_HEAD_TIMING_LAST_DATA_PENDING                                0x00000001 /* R---V */
-#define NV_PDISP_FE_RM_INTR_DISPATCH                                                          0x00611EC0 /* R--4R */
-#define NV_PDISP_FE_RM_INTR_DISPATCH_HEAD_TIMING(i)                                      (0+(i)):(0+(i)) /* R--VF */
-#define NV_PDISP_FE_RM_INTR_DISPATCH_HEAD_TIMING_NOT_PENDING                                  0x00000000 /* R---V */
-#define NV_PDISP_FE_RM_INTR_DISPATCH_HEAD_TIMING_PENDING                                      0x00000001 /* R---V */
 #define NV_PDISP_VGA_WORKSPACE_BASE                                                           0x00625F04 /* RW-4R */
 #define NV_PDISP_VGA_WORKSPACE_BASE_STATUS                                                           3:3 /* RWIVF */
 #define NV_PDISP_VGA_WORKSPACE_BASE_STATUS_VALID                                              0x00000001 /* RW--V */

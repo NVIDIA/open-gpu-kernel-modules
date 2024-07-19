@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -48,6 +48,7 @@
 #include "rmapi/rs_utils.h"
 #include "vgpu/vgpu_events.h"
 #include "mem_mgr/virt_mem_mgr.h"
+#include "compute/fabric.h"
 
 #include "published/ampere/ga100/dev_mmu.h"
 #include "vgpu/rpc.h"
@@ -337,6 +338,11 @@ fabricvaspaceAlloc_IMPL
     NvU64           *pAddr
 )
 {
+    Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
+
+    if (fabricIsMemAllocDisabled(pFabric))
+        return NV_ERR_INVALID_STATE;
+
     //
     // TODO: If needed, can call into fabricvaspaceAllocNonContiguous_IMPL()
     // by forcing contig flag.
@@ -364,6 +370,10 @@ fabricvaspaceAllocNonContiguous_IMPL
     NvU64     addr;
     NvU32     idx;
     NvBool    bDefaultAllocMode;
+    Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
+
+    if (fabricIsMemAllocDisabled(pFabric))
+        return NV_ERR_INVALID_STATE;
 
     // Sanity check the input parameters.
     NV_ASSERT_OR_RETURN(pFabricVAS->pGVAS != NULL,     NV_ERR_OBJECT_NOT_FOUND);
@@ -825,6 +835,11 @@ fabricvaspaceAllocMulticast_IMPL
     NvU64 rangeHi;
     NvU64 addr = 0;
     NV_STATUS status;
+
+    Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
+
+    if (fabricIsMemAllocDisabled(pFabric))
+        return NV_ERR_INVALID_STATE;
 
     NV_ASSERT_OR_RETURN(pFabricVAS->pGVAS != NULL, NV_ERR_OBJECT_NOT_FOUND);
     NV_ASSERT_OR_RETURN(pageSize >= RM_PAGE_SIZE_HUGE, NV_ERR_INVALID_ARGUMENT);

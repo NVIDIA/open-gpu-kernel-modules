@@ -331,6 +331,8 @@ nvlink_core_check_intranode_conn_state
 
         case NVLINK_LINKSTATE_RESET:
         {
+            if (conn->end0->version >= NVLINK_DEVICE_VERSION_50)
+                return NVL_ERR_GENERIC;
 
             if ((nvlink_core_check_link_state(conn->end0, NVLINK_LINKSTATE_RESET)) &&
                 (nvlink_core_check_link_state(conn->end1, NVLINK_LINKSTATE_RESET)))
@@ -358,6 +360,8 @@ nvlink_core_check_intranode_conn_state
 
         case NVLINK_LINKSTATE_SAFE:
         {
+            if (conn->end0->version >= NVLINK_DEVICE_VERSION_50)
+                return NVL_SUCCESS;
 
             // Check if both ends and their sublinks are already in SAFE mode
             if ((nvlink_core_check_link_state(conn->end0, NVLINK_LINKSTATE_SAFE)) &&

@@ -33,6 +33,7 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "mem_mgr/io_vaspace.h"
 #include "vgpu/vgpu_events.h"
+#include "containers/eheap_old.h"
 
 // Prototypes for static functions
 static NV_STATUS _kbusConstructVirtualBar2Heaps(KernelBus *pKernelBus, NvU32 gfid);

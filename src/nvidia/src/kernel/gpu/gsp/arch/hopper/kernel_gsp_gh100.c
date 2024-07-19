@@ -903,6 +903,7 @@ kgspGetGspRmBootUcodeStorage_GH100
 
             return;
         }
+
     kgspGetGspRmBootUcodeStorage_GA102(pGpu, pKernelGsp, ppBinStorageImage, ppBinStorageDesc);
 }
 

@@ -96,12 +96,11 @@ chandesConstruct_IMPL
     // so engineType from channel gets first priority while determining class
     // descriptor. For legacy chips, we will fall back to user-allocated params
     // or default engine determination based on classId
-    // TO-DO - Restrict this for MIG and Ampere only however these checks should
-    // be removed once we move to per engine chid management.
     //
     if (kfifoIsHostEngineExpansionSupported(pKernelFifo) &&
         RM_ENGINE_TYPE_IS_VALID(kchannelGetEngineType(pKernelChannel)) &&
-       (gpuIsCCorApmFeatureEnabled(pGpu) || bMIGInUse))
+       ((gpuIsCCorApmFeatureEnabled(pGpu) || bMIGInUse) ||
+        kfifoIsPerRunlistChramEnabled(pKernelFifo)))
     {
         if (rmapiutilIsExternalClassIdInternalOnly(pParams->externalClassId))
         {

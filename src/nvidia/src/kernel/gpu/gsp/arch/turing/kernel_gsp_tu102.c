@@ -35,7 +35,6 @@
 #include "core/thread_state.h"
 #include "os/os.h"
 #include "nverror.h"
-#include "gsp/gsp_error.h"
 #include "nvrm_registry.h"
 #include "crashcat/crashcat_report.h"
 
@@ -827,7 +826,7 @@ kgspHealthCheck_TU102
 {
     NvBool bHealthy = NV_TRUE;
 
-    // If enabled, CrashCat is the primary reporting interface for GSP issues
+    // CrashCat is the primary reporting interface for GSP issues
     KernelCrashCatEngine *pKernelCrashCatEng = staticCast(pKernelGsp, KernelCrashCatEngine);
     if (kcrashcatEngineConfigured(pKernelCrashCatEng))
     {
@@ -836,6 +835,7 @@ kgspHealthCheck_TU102
 
         while ((pReport = crashcatEngineGetNextCrashReport(pCrashCatEng)) != NULL)
         {
+
             bHealthy = NV_FALSE;
 
             NV_PRINTF(LEVEL_ERROR,
@@ -848,46 +848,22 @@ kgspHealthCheck_TU102
         goto exit_health_check;
     }
 
-    NvU32 mb0 = GPU_REG_RD32(pGpu, NV_PGSP_MAILBOX(0));
-
-    //
-    // Check for an error message in the GSP mailbox.  Any error reported here is
-    // almost certainly fatal.
-    //
-    if (FLD_TEST_DRF(_GSP, _ERROR, _TAG, _VAL, mb0))
-    {
-        NvU32 mb1 = GPU_REG_RD32(pGpu, NV_PGSP_MAILBOX(1));
-        NvU32 skipped = DRF_VAL(_GSP, _ERROR, _SKIPPED, mb0);
-
-        bHealthy = NV_FALSE;
-
-        // Clear the mailbox
-        GPU_REG_WR32(pGpu, NV_PGSP_MAILBOX(0), 0);
-
-        NV_PRINTF(LEVEL_ERROR,
-                  "********************************* GSP Failure **********************************\n");
-
-        NV_ERROR_LOG(pGpu, GSP_ERROR,
-                     "GSP Error: Task %d raised error code 0x%x for reason 0x%x at 0x%x.  The GPU likely needs to be reset.",
-                     DRF_VAL(_GSP, _ERROR, _TASK, mb0),
-                     DRF_VAL(_GSP, _ERROR, _CODE, mb0),
-                     DRF_VAL(_GSP, _ERROR, _REASON, mb0),
-                     mb1);
-
-        // Check if GSP had more errors to report (unlikely)
-        if (skipped)
-        {
-            NV_PRINTF(LEVEL_ERROR, "%d more errors skipped\n", skipped);
-        }
-    }
-
 exit_health_check:
     if (!bHealthy)
     {
+        NvBool bFirstFatal = !pKernelGsp->bFatalError;
+
         pKernelGsp->bFatalError = NV_TRUE;
 
         if (pKernelGsp->pRpc)
+        {
             kgspLogRpcDebugInfo(pGpu, pKernelGsp->pRpc, GSP_ERROR, pKernelGsp->bPollingForRpcResponse);
+        }
+
+        if (bFirstFatal)
+        {
+            kgspRcAndNotifyAllUserChannels(pGpu, pKernelGsp, GSP_ERROR);
+        }
 
         gpuCheckEccCounts_HAL(pGpu);
 
@@ -950,7 +926,7 @@ kgspService_TU102
     if (intrStatus & DRF_DEF(_PFALCON, _FALCON_IRQSTAT, _SWGEN0, _TRUE))
     {
         //
-        // Clear edge triggered interupt BEFORE (and never after)
+        // Clear edge triggered interrupt BEFORE (and never after)
         // servicing it to avoid race conditions.
         //
         kflcnRegWrite_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_IRQSCLR,

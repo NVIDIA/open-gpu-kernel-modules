@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -62,13 +62,13 @@ vaspaceFillAllocParams_IMPL
 )
 {
     NvBool bRestrictedVaRange = NV_FALSE;
-    NvBool bEnforce32bitPtr = NV_FALSE;
-    NvU32 vasFlags =  vaspaceGetFlags(pVAS);
+    NvBool bEnforce32bitPtr   = NV_FALSE;
+    NvU32 vasFlags            =  vaspaceGetFlags(pVAS);
 
     OBJGPU             *pGpu     = gpumgrGetGpu(gpumgrGetDefaultPrimaryGpu(pVAS->gpuMask));
     VirtMemAllocator   *pDma     = GPU_GET_DMA(pGpu);
-    bRestrictedVaRange = !!(pDma->getProperty(pDma, PDB_PROP_DMA_RESTRICT_VA_RANGE));
-    bEnforce32bitPtr = !!(pDma->getProperty(pDma, PDB_PROP_DMA_ENFORCE_32BIT_POINTER));
+    bRestrictedVaRange           = pDma->bDmaRestrictVaRange;
+    bEnforce32bitPtr             = !!(pDma->getProperty(pDma, PDB_PROP_DMA_ENFORCE_32BIT_POINTER));
 
     // Apply default alignment policies to offset alignment and size.
     NV_ASSERT_OK_OR_RETURN(

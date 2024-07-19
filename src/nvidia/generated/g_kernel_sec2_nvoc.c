@@ -133,62 +133,62 @@ static NV_STATUS __nvoc_down_thunk_KernelSec2_engstateStateLoad(struct OBJGPU *p
 // 29 up-thunk(s) defined to bridge methods in KernelSec2 to superclasses
 
 // ksec2InitMissing: virtual inherited (engstate) base (engstate)
-static void __nvoc_up_thunk_OBJENGSTATE_ksec2InitMissing(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
+static void __nvoc_up_thunk_OBJENGSTATE_ksec2InitMissing(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate) {
     engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset));
 }
 
 // ksec2StatePreInitLocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePreInitLocked(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePreInitLocked(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate) {
     return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset));
 }
 
 // ksec2StatePreInitUnlocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePreInitUnlocked(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate) {
     return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset));
 }
 
 // ksec2StateInitLocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StateInitLocked(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StateInitLocked(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate) {
     return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset));
 }
 
 // ksec2StateInitUnlocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StateInitUnlocked(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StateInitUnlocked(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate) {
     return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset));
 }
 
 // ksec2StatePreLoad: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePreLoad(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePreLoad(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
     return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset), arg3);
 }
 
 // ksec2StatePostLoad: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePostLoad(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePostLoad(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
     return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset), arg3);
 }
 
 // ksec2StatePreUnload: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePreUnload(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePreUnload(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
     return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset), arg3);
 }
 
 // ksec2StateUnload: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StateUnload(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StateUnload(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
     return engstateStateUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset), arg3);
 }
 
 // ksec2StatePostUnload: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePostUnload(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_ksec2StatePostUnload(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
     return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset), arg3);
 }
 
 // ksec2StateDestroy: virtual inherited (engstate) base (engstate)
-static void __nvoc_up_thunk_OBJENGSTATE_ksec2StateDestroy(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
+static void __nvoc_up_thunk_OBJENGSTATE_ksec2StateDestroy(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate) {
     engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset));
 }
 
 // ksec2IsPresent: virtual inherited (engstate) base (engstate)
-static NvBool __nvoc_up_thunk_OBJENGSTATE_ksec2IsPresent(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
+static NvBool __nvoc_up_thunk_OBJENGSTATE_ksec2IsPresent(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate) {
     return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset));
 }
 
@@ -389,7 +389,7 @@ static void __nvoc_init_funcTable_KernelSec2_1(KernelSec2 *pThis, RmHalspecOwner
     }
     else
     {
-        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
         {
             pThis->__ksec2StateLoad__ = &ksec2StateLoad_GH100;
         }
@@ -425,7 +425,7 @@ static void __nvoc_init_funcTable_KernelSec2_1(KernelSec2 *pThis, RmHalspecOwner
     }
     else
     {
-        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f00000UL) )) /* ChipHal: AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f00000UL) )) /* ChipHal: AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
         {
             pThis->__ksec2GetBinArchiveBlUcode__ = &ksec2GetBinArchiveBlUcode_80f438;
         }
@@ -442,7 +442,7 @@ static void __nvoc_init_funcTable_KernelSec2_1(KernelSec2 *pThis, RmHalspecOwner
     }
     else
     {
-        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f00000UL) )) /* ChipHal: AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f00000UL) )) /* ChipHal: AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
         {
             pThis->__ksec2GetGenericBlUcode__ = &ksec2GetGenericBlUcode_5baef9;
         }

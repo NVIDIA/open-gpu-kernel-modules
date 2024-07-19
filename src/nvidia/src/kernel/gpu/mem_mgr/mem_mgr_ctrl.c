@@ -125,6 +125,12 @@ memmgrGetDeviceCaps
         RMCTRL_SET_CAP(tempCaps, NV0080_CTRL_FB_CAPS, _PLC_BUG_3046774);
     }
 
+    if (!IS_VIRTUAL(pGpu) || IS_VIRTUAL_WITH_FULL_SRIOV(pGpu))
+    {
+        // Legacy SRIOV modes lack the partial unmap plumbing
+        RMCTRL_SET_CAP(tempCaps, NV0080_CTRL_FB_CAPS, _PARTIAL_UNMAP);
+    }
+
     // If we don't have existing caps with which to reconcile, then just return
     if (!bCapsInitialized)
     {
@@ -169,6 +175,8 @@ memmgrGetDeviceCaps
                    NV0080_CTRL_FB_CAPS, _DISABLE_PLC_GLOBALLY);
     RMCTRL_OR_CAP(pFbCaps, tempCaps, temp,
                    NV0080_CTRL_FB_CAPS, _PLC_BUG_3046774);
+    RMCTRL_AND_CAP(pFbCaps, tempCaps, temp,
+                   NV0080_CTRL_FB_CAPS, _PARTIAL_UNMAP);
 
     return;
 }

@@ -235,10 +235,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_INotifier;
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Notifier;
 
-void __nvoc_init_KernelSMDebuggerSession(KernelSMDebuggerSession*);
-void __nvoc_init_funcTable_KernelSMDebuggerSession(KernelSMDebuggerSession*);
-NV_STATUS __nvoc_ctor_KernelSMDebuggerSession(KernelSMDebuggerSession*, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
-void __nvoc_init_dataField_KernelSMDebuggerSession(KernelSMDebuggerSession*);
+void __nvoc_init_KernelSMDebuggerSession(KernelSMDebuggerSession*, RmHalspecOwner* );
+void __nvoc_init_funcTable_KernelSMDebuggerSession(KernelSMDebuggerSession*, RmHalspecOwner* );
+NV_STATUS __nvoc_ctor_KernelSMDebuggerSession(KernelSMDebuggerSession*, RmHalspecOwner* , struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+void __nvoc_init_dataField_KernelSMDebuggerSession(KernelSMDebuggerSession*, RmHalspecOwner* );
 void __nvoc_dtor_KernelSMDebuggerSession(KernelSMDebuggerSession*);
 extern const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelSMDebuggerSession;
 
@@ -326,12 +326,12 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelSMDebuggerSession =
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelSMDebuggerSession[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) ksmdbgssnCtrlCmdSMDebugModeEnable_fcf1ac,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
-        /*flags=*/      0x248u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+        /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x83de0301u,
         /*paramSize=*/  0,
@@ -341,12 +341,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelSM
 #endif
     },
     {               /*  [1] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) ksmdbgssnCtrlCmdSMDebugModeDisable_fcf1ac,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
-        /*flags=*/      0x248u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+        /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x83de0302u,
         /*paramSize=*/  0,
@@ -476,12 +476,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelSM
 #endif
     },
     {               /*  [10] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) ksmdbgssnCtrlCmdDebugSetSingleStepInterruptHandling_fcf1ac,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
-        /*flags=*/      0x248u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+        /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x83de0314u,
         /*paramSize=*/  sizeof(NV83DE_CTRL_DEBUG_SET_SINGLE_STEP_INTERRUPT_HANDLING_PARAMS),
@@ -626,12 +626,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelSM
 #endif
     },
     {               /*  [20] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) ksmdbgssnCtrlCmdDebugGetModeErrbarDebug_fcf1ac,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
-        /*flags=*/      0x248u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+        /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x83de0320u,
         /*paramSize=*/  sizeof(NV83DE_CTRL_DEBUG_GET_MODE_ERRBAR_DEBUG_PARAMS),
@@ -656,12 +656,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelSM
 #endif
     },
     {               /*  [22] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) ksmdbgssnCtrlCmdDebugSetSingleSmStopTrigger_fcf1ac,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
-        /*flags=*/      0x248u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+        /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x83de0322u,
         /*paramSize=*/  sizeof(NV83DE_CTRL_DEBUG_SET_SINGLE_SM_STOP_TRIGGER_PARAMS),
@@ -671,12 +671,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelSM
 #endif
     },
     {               /*  [23] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) ksmdbgssnCtrlCmdDebugSetSingleSmRunTrigger_fcf1ac,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
-        /*flags=*/      0x248u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+        /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x83de0323u,
         /*paramSize=*/  sizeof(NV83DE_CTRL_DEBUG_SET_SINGLE_SM_RUN_TRIGGER_PARAMS),
@@ -686,12 +686,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelSM
 #endif
     },
     {               /*  [24] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) ksmdbgssnCtrlCmdDebugSetSingleSmSkipIdleWarpDetect_fcf1ac,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
-        /*flags=*/      0x248u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+        /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x83de0324u,
         /*paramSize=*/  sizeof(NV83DE_CTRL_DEBUG_SET_SINGLE_SM_SKIP_IDLE_WARP_DETECT_PARAMS),
@@ -701,12 +701,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelSM
 #endif
     },
     {               /*  [25] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) ksmdbgssnCtrlCmdDebugGetSingleSmDebuggerStatus_fcf1ac,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
-        /*flags=*/      0x248u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+        /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x83de0325u,
         /*paramSize=*/  sizeof(NV83DE_CTRL_DEBUG_GET_SINGLE_SM_DEBUGGER_STATUS_PARAMS),
@@ -749,7 +749,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelSM
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_IMPL,
+        /*pFunc=*/      (void (*)(void)) ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_DISPATCH,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -934,19 +934,24 @@ void __nvoc_dtor_KernelSMDebuggerSession(KernelSMDebuggerSession *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-void __nvoc_init_dataField_KernelSMDebuggerSession(KernelSMDebuggerSession *pThis) {
+void __nvoc_init_dataField_KernelSMDebuggerSession(KernelSMDebuggerSession *pThis, RmHalspecOwner *pRmhalspecowner) {
+    RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
+    const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
+    PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(rmVariantHal);
+    PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 }
 
 NV_STATUS __nvoc_ctor_GpuResource(GpuResource* , struct CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
 NV_STATUS __nvoc_ctor_Notifier(Notifier* , struct CALL_CONTEXT *);
-NV_STATUS __nvoc_ctor_KernelSMDebuggerSession(KernelSMDebuggerSession *pThis, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_ctor_KernelSMDebuggerSession(KernelSMDebuggerSession *pThis, RmHalspecOwner *pRmhalspecowner, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
     NV_STATUS status = NV_OK;
     status = __nvoc_ctor_GpuResource(&pThis->__nvoc_base_GpuResource, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_ctor_KernelSMDebuggerSession_fail_GpuResource;
     status = __nvoc_ctor_Notifier(&pThis->__nvoc_base_Notifier, arg_pCallContext);
     if (status != NV_OK) goto __nvoc_ctor_KernelSMDebuggerSession_fail_Notifier;
-    __nvoc_init_dataField_KernelSMDebuggerSession(pThis);
+    __nvoc_init_dataField_KernelSMDebuggerSession(pThis, pRmhalspecowner);
 
     status = __nvoc_ksmdbgssnConstruct(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_ctor_KernelSMDebuggerSession_fail__init;
@@ -963,8 +968,13 @@ __nvoc_ctor_KernelSMDebuggerSession_exit:
 }
 
 // Vtable initialization
-static void __nvoc_init_funcTable_KernelSMDebuggerSession_1(KernelSMDebuggerSession *pThis) {
+static void __nvoc_init_funcTable_KernelSMDebuggerSession_1(KernelSMDebuggerSession *pThis, RmHalspecOwner *pRmhalspecowner) {
+    RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
+    const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
+    PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(rmVariantHal);
+    PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
     // ksmdbgssnInternalControlForward -- virtual override (gpures) base (gpures)
     pThis->__ksmdbgssnInternalControlForward__ = &ksmdbgssnInternalControlForward_IMPL;
@@ -975,12 +985,12 @@ static void __nvoc_init_funcTable_KernelSMDebuggerSession_1(KernelSMDebuggerSess
     pThis->__nvoc_base_GpuResource.__gpuresGetInternalObjectHandle__ = &__nvoc_down_thunk_KernelSMDebuggerSession_gpuresGetInternalObjectHandle;
 
     // ksmdbgssnCtrlCmdSMDebugModeEnable -- inline exported (id=0x83de0301) body
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
     pThis->__ksmdbgssnCtrlCmdSMDebugModeEnable__ = &ksmdbgssnCtrlCmdSMDebugModeEnable_fcf1ac;
 #endif
 
     // ksmdbgssnCtrlCmdSMDebugModeDisable -- inline exported (id=0x83de0302) body
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
     pThis->__ksmdbgssnCtrlCmdSMDebugModeDisable__ = &ksmdbgssnCtrlCmdSMDebugModeDisable_fcf1ac;
 #endif
 
@@ -1000,7 +1010,7 @@ static void __nvoc_init_funcTable_KernelSMDebuggerSession_1(KernelSMDebuggerSess
 #endif
 
     // ksmdbgssnCtrlCmdDebugGetModeErrbarDebug -- inline exported (id=0x83de0320) body
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
     pThis->__ksmdbgssnCtrlCmdDebugGetModeErrbarDebug__ = &ksmdbgssnCtrlCmdDebugGetModeErrbarDebug_fcf1ac;
 #endif
 
@@ -1060,7 +1070,7 @@ static void __nvoc_init_funcTable_KernelSMDebuggerSession_1(KernelSMDebuggerSess
 #endif
 
     // ksmdbgssnCtrlCmdDebugSetSingleStepInterruptHandling -- inline exported (id=0x83de0314) body
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
     pThis->__ksmdbgssnCtrlCmdDebugSetSingleStepInterruptHandling__ = &ksmdbgssnCtrlCmdDebugSetSingleStepInterruptHandling_fcf1ac;
 #endif
 
@@ -1085,22 +1095,22 @@ static void __nvoc_init_funcTable_KernelSMDebuggerSession_1(KernelSMDebuggerSess
 #endif
 
     // ksmdbgssnCtrlCmdDebugSetSingleSmStopTrigger -- inline exported (id=0x83de0322) body
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
     pThis->__ksmdbgssnCtrlCmdDebugSetSingleSmStopTrigger__ = &ksmdbgssnCtrlCmdDebugSetSingleSmStopTrigger_fcf1ac;
 #endif
 
     // ksmdbgssnCtrlCmdDebugSetSingleSmRunTrigger -- inline exported (id=0x83de0323) body
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
     pThis->__ksmdbgssnCtrlCmdDebugSetSingleSmRunTrigger__ = &ksmdbgssnCtrlCmdDebugSetSingleSmRunTrigger_fcf1ac;
 #endif
 
     // ksmdbgssnCtrlCmdDebugSetSingleSmSkipIdleWarpDetect -- inline exported (id=0x83de0324) body
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
     pThis->__ksmdbgssnCtrlCmdDebugSetSingleSmSkipIdleWarpDetect__ = &ksmdbgssnCtrlCmdDebugSetSingleSmSkipIdleWarpDetect_fcf1ac;
 #endif
 
     // ksmdbgssnCtrlCmdDebugGetSingleSmDebuggerStatus -- inline exported (id=0x83de0325) body
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
     pThis->__ksmdbgssnCtrlCmdDebugGetSingleSmDebuggerStatus__ = &ksmdbgssnCtrlCmdDebugGetSingleSmDebuggerStatus_fcf1ac;
 #endif
 
@@ -1114,10 +1124,15 @@ static void __nvoc_init_funcTable_KernelSMDebuggerSession_1(KernelSMDebuggerSess
     pThis->__ksmdbgssnCtrlCmdDebugWriteBatchMemory__ = &ksmdbgssnCtrlCmdDebugWriteBatchMemory_IMPL;
 #endif
 
-    // ksmdbgssnCtrlCmdDebugReadMMUFaultInfo -- exported (id=0x83de0328)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__ksmdbgssnCtrlCmdDebugReadMMUFaultInfo__ = &ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_IMPL;
-#endif
+    // ksmdbgssnCtrlCmdDebugReadMMUFaultInfo -- halified (2 hals) exported (id=0x83de0328)
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__ksmdbgssnCtrlCmdDebugReadMMUFaultInfo__ = &ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_46f6a7;
+    }
+    else
+    {
+        pThis->__ksmdbgssnCtrlCmdDebugReadMMUFaultInfo__ = &ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_IMPL;
+    }
 
     // ksmdbgssnControl -- virtual inherited (gpures) base (gpures)
     pThis->__ksmdbgssnControl__ = &__nvoc_up_thunk_GpuResource_ksmdbgssnControl;
@@ -1202,19 +1217,19 @@ static void __nvoc_init_funcTable_KernelSMDebuggerSession_1(KernelSMDebuggerSess
 
     // ksmdbgssnGetOrAllocNotifShare -- virtual inherited (notify) base (notify)
     pThis->__ksmdbgssnGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_ksmdbgssnGetOrAllocNotifShare;
-} // End __nvoc_init_funcTable_KernelSMDebuggerSession_1 with approximately 61 basic block(s).
+} // End __nvoc_init_funcTable_KernelSMDebuggerSession_1 with approximately 62 basic block(s).
 
 
 // Initialize vtable(s) for 59 virtual method(s).
-void __nvoc_init_funcTable_KernelSMDebuggerSession(KernelSMDebuggerSession *pThis) {
+void __nvoc_init_funcTable_KernelSMDebuggerSession(KernelSMDebuggerSession *pThis, RmHalspecOwner *pRmhalspecowner) {
 
     // Initialize vtable(s) with 59 per-object function pointer(s).
-    __nvoc_init_funcTable_KernelSMDebuggerSession_1(pThis);
+    __nvoc_init_funcTable_KernelSMDebuggerSession_1(pThis, pRmhalspecowner);
 }
 
 void __nvoc_init_GpuResource(GpuResource*);
 void __nvoc_init_Notifier(Notifier*);
-void __nvoc_init_KernelSMDebuggerSession(KernelSMDebuggerSession *pThis) {
+void __nvoc_init_KernelSMDebuggerSession(KernelSMDebuggerSession *pThis, RmHalspecOwner *pRmhalspecowner) {
     pThis->__nvoc_pbase_KernelSMDebuggerSession = pThis;
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;
     pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource;
@@ -1225,7 +1240,7 @@ void __nvoc_init_KernelSMDebuggerSession(KernelSMDebuggerSession *pThis) {
     pThis->__nvoc_pbase_Notifier = &pThis->__nvoc_base_Notifier;
     __nvoc_init_GpuResource(&pThis->__nvoc_base_GpuResource);
     __nvoc_init_Notifier(&pThis->__nvoc_base_Notifier);
-    __nvoc_init_funcTable_KernelSMDebuggerSession(pThis);
+    __nvoc_init_funcTable_KernelSMDebuggerSession(pThis, pRmhalspecowner);
 }
 
 NV_STATUS __nvoc_objCreate_KernelSMDebuggerSession(KernelSMDebuggerSession **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
@@ -1233,6 +1248,7 @@ NV_STATUS __nvoc_objCreate_KernelSMDebuggerSession(KernelSMDebuggerSession **ppT
     NV_STATUS status;
     Object *pParentObj = NULL;
     KernelSMDebuggerSession *pThis;
+    RmHalspecOwner *pRmhalspecowner;
 
     // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(KernelSMDebuggerSession), (void**)&pThis, (void**)ppThis);
@@ -1247,8 +1263,11 @@ NV_STATUS __nvoc_objCreate_KernelSMDebuggerSession(KernelSMDebuggerSession **ppT
 
     pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
-    // Link the child into the parent if there is one unless flagged not to do so.
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    // pParent must be a valid object that derives from a halspec owner class.
+    NV_ASSERT_OR_RETURN(pParent != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    // Link the child into the parent unless flagged not to do so.
+    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
         objAddChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
@@ -1258,8 +1277,12 @@ NV_STATUS __nvoc_objCreate_KernelSMDebuggerSession(KernelSMDebuggerSession **ppT
         pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_KernelSMDebuggerSession(pThis);
-    status = __nvoc_ctor_KernelSMDebuggerSession(pThis, arg_pCallContext, arg_pParams);
+    if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
+        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
+    NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    __nvoc_init_KernelSMDebuggerSession(pThis, pRmhalspecowner);
+    status = __nvoc_ctor_KernelSMDebuggerSession(pThis, pRmhalspecowner, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_KernelSMDebuggerSession_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.

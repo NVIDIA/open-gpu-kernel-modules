@@ -141,9 +141,6 @@ namespace DisplayPort
         // Return if Internal panel is Dynamic Mux capable
         virtual bool isInternalPanelDynamicMuxCapable() = 0;
 
-        // Return if MDM is enabled on internal panel
-        virtual bool isMDMEnabled() = 0;
-
         // Check if we should skip power down eDP when head detached.
         virtual bool skipPowerdownEdpPanelWhenHeadDetach() = 0;
 

@@ -468,14 +468,30 @@ static NvBool ConstructDpLibIsModesetPossibleParamsOneHead(
     }
 
     pParams->head[head].pDscParams->bCheckWithDsc = true;
-    pParams->head[head].pDscParams->forceDsc = pModeValidationParams->forceDsc ?
-        DisplayPort::DSC_FORCE_ENABLE :
-        DisplayPort::DSC_DEFAULT;
+    pParams->head[head].pDscParams->forceDsc = DisplayPort::DSC_DEFAULT;
+    switch (pModeValidationParams->dscMode) {
+        case NVKMS_DSC_MODE_FORCE_ENABLE:
+            pParams->head[head].pDscParams->forceDsc =
+                DisplayPort::DSC_FORCE_ENABLE;
+            break;
+        case NVKMS_DSC_MODE_FORCE_DISABLE:
+            pParams->head[head].pDscParams->forceDsc =
+                DisplayPort::DSC_FORCE_DISABLE;
+            break;
+        default:
+            pParams->head[head].pDscParams->forceDsc =
+                DisplayPort::DSC_DEFAULT;
+            break;
+    }
+
     /*
      * 2Heads1Or requires either YUV420 or DSC; if b2Heads1Or is enabled
      * but YUV420 is not, force DSC.
      */
     if (b2Heads1Or && (pTimings->yuv420Mode != NV_YUV420_MODE_HW)) {
+        if (pModeValidationParams->dscMode == NVKMS_DSC_MODE_FORCE_DISABLE) {
+            goto failed;
+        }
         pParams->head[head].pDscParams->forceDsc = DisplayPort::DSC_FORCE_ENABLE;
     }
 

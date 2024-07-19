@@ -77,67 +77,67 @@ static NV_STATUS __nvoc_down_thunk_KernelRc_engstateConstructEngine(struct OBJGP
 // 13 up-thunk(s) defined to bridge methods in KernelRc to superclasses
 
 // krcInitMissing: virtual inherited (engstate) base (engstate)
-static void __nvoc_up_thunk_OBJENGSTATE_krcInitMissing(POBJGPU pGpu, struct KernelRc *pEngstate) {
+static void __nvoc_up_thunk_OBJENGSTATE_krcInitMissing(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
     engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelRc_OBJENGSTATE.offset));
 }
 
 // krcStatePreInitLocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePreInitLocked(POBJGPU pGpu, struct KernelRc *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePreInitLocked(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
     return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelRc_OBJENGSTATE.offset));
 }
 
 // krcStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePreInitUnlocked(POBJGPU pGpu, struct KernelRc *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
     return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelRc_OBJENGSTATE.offset));
 }
 
 // krcStateInitLocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStateInitLocked(POBJGPU pGpu, struct KernelRc *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStateInitLocked(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
     return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelRc_OBJENGSTATE.offset));
 }
 
 // krcStateInitUnlocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStateInitUnlocked(POBJGPU pGpu, struct KernelRc *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStateInitUnlocked(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
     return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelRc_OBJENGSTATE.offset));
 }
 
 // krcStatePreLoad: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePreLoad(POBJGPU pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePreLoad(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
     return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelRc_OBJENGSTATE.offset), arg3);
 }
 
 // krcStateLoad: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStateLoad(POBJGPU pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStateLoad(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
     return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelRc_OBJENGSTATE.offset), arg3);
 }
 
 // krcStatePostLoad: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePostLoad(POBJGPU pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePostLoad(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
     return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelRc_OBJENGSTATE.offset), arg3);
 }
 
 // krcStatePreUnload: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePreUnload(POBJGPU pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePreUnload(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
     return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelRc_OBJENGSTATE.offset), arg3);
 }
 
 // krcStateUnload: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStateUnload(POBJGPU pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStateUnload(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
     return engstateStateUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelRc_OBJENGSTATE.offset), arg3);
 }
 
 // krcStatePostUnload: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePostUnload(POBJGPU pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_krcStatePostUnload(struct OBJGPU *pGpu, struct KernelRc *pEngstate, NvU32 arg3) {
     return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelRc_OBJENGSTATE.offset), arg3);
 }
 
 // krcStateDestroy: virtual inherited (engstate) base (engstate)
-static void __nvoc_up_thunk_OBJENGSTATE_krcStateDestroy(POBJGPU pGpu, struct KernelRc *pEngstate) {
+static void __nvoc_up_thunk_OBJENGSTATE_krcStateDestroy(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
     engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelRc_OBJENGSTATE.offset));
 }
 
 // krcIsPresent: virtual inherited (engstate) base (engstate)
-static NvBool __nvoc_up_thunk_OBJENGSTATE_krcIsPresent(POBJGPU pGpu, struct KernelRc *pEngstate) {
+static NvBool __nvoc_up_thunk_OBJENGSTATE_krcIsPresent(struct OBJGPU *pGpu, struct KernelRc *pEngstate) {
     return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelRc_OBJENGSTATE.offset));
 }
 

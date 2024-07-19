@@ -382,24 +382,16 @@ NV_STATUS serverUpdateLockFlagsForCopy(RsServer *pServer, RS_RES_DUP_PARAMS *pPa
     if (pParams->pSrcRef == NULL)
         return NV_ERR_INVALID_STATE;
 
-    // Special cases; TODO move these to resource_list.h
-    if (pParams->pSrcRef->externalClassId == NV01_MEMORY_SYSTEM_OS_DESCRIPTOR)
-    {
-        // Lock all GPUs
-        return NV_OK;
-    }
-
     pResDesc = RsResInfoByExternalClassId(pParams->pSrcRef->externalClassId);
     if (pResDesc == NULL)
         return NV_ERR_INVALID_OBJECT;
 
-    // Use the same flags from alloc. These should be split out in the future.
-    if (!(pResDesc->flags & RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_ALLOC))
+    if (!(pResDesc->flags & RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_DUP))
     {
         pLockInfo->flags |= RM_LOCK_FLAGS_NO_GPUS_LOCK;
     }
 
-    if (pResDesc->flags & RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_ALLOC)
+    if (pResDesc->flags & RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_DUP)
     {
         pLockInfo->flags |= RM_LOCK_FLAGS_GPU_GROUP_LOCK;
     }

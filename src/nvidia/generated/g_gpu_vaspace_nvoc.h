@@ -62,7 +62,8 @@ extern "C" {
 MAKE_MAP(GVAS_CHANGRP_MAP, NvU32);
 typedef GVAS_CHANGRP_MAPIter GVAS_CHANGRP_MAP_ITER;
 
-typedef struct OBJGVASPACE *POBJGVASPACE;
+
+struct OBJGVASPACE;
 
 #ifndef __NVOC_CLASS_OBJGVASPACE_TYPEDEF__
 #define __NVOC_CLASS_OBJGVASPACE_TYPEDEF__
@@ -251,8 +252,8 @@ struct OBJGVASPACE {
     NV_STATUS (*__gvaspaceIncAllocRefCnt__)(struct OBJGVASPACE * /*this*/, NvU64);  // virtual override (vaspace) base (vaspace)
     NV_STATUS (*__gvaspaceMap__)(struct OBJGVASPACE * /*this*/, struct OBJGPU *, const NvU64, const NvU64, const MMU_MAP_TARGET *, const VAS_MAP_FLAGS);  // virtual override (vaspace) base (vaspace)
     void (*__gvaspaceUnmap__)(struct OBJGVASPACE * /*this*/, struct OBJGPU *, const NvU64, const NvU64);  // virtual override (vaspace) base (vaspace)
-    struct OBJEHEAP * (*__gvaspaceGetHeap__)(struct OBJGVASPACE * /*this*/);  // virtual override (vaspace) base (vaspace)
-    NvU64 (*__gvaspaceGetMapPageSize__)(struct OBJGVASPACE * /*this*/, struct OBJGPU *, struct EMEMBLOCK *);  // virtual override (vaspace) base (vaspace)
+    OBJEHEAP * (*__gvaspaceGetHeap__)(struct OBJGVASPACE * /*this*/);  // virtual override (vaspace) base (vaspace)
+    NvU64 (*__gvaspaceGetMapPageSize__)(struct OBJGVASPACE * /*this*/, struct OBJGPU *, EMEMBLOCK *);  // virtual override (vaspace) base (vaspace)
     NvU64 (*__gvaspaceGetBigPageSize__)(struct OBJGVASPACE * /*this*/);  // virtual override (vaspace) base (vaspace)
     NvU32 (*__gvaspaceGetFlags__)(struct OBJGVASPACE * /*this*/);  // virtual override (vaspace) base (vaspace)
     NvBool (*__gvaspaceIsMirrored__)(struct OBJGVASPACE * /*this*/);  // virtual override (vaspace) base (vaspace)
@@ -274,7 +275,7 @@ struct OBJGVASPACE {
     NvU64 (*__gvaspaceGetVaLimit__)(struct OBJGVASPACE * /*this*/);  // virtual inherited (vaspace) base (vaspace)
 
     // Data members
-    struct OBJEHEAP *pHeap;
+    OBJEHEAP *pHeap;
     NvU64 bigPageSize;
     NvU64 compPageSize;
     NvU64 extManagedAlign;
@@ -421,11 +422,11 @@ static inline void gvaspaceUnmap_DISPATCH(struct OBJGVASPACE *pVAS, struct OBJGP
     pVAS->__gvaspaceUnmap__(pVAS, pGpu, vaLo, vaHi);
 }
 
-static inline struct OBJEHEAP * gvaspaceGetHeap_DISPATCH(struct OBJGVASPACE *pVAS) {
+static inline OBJEHEAP * gvaspaceGetHeap_DISPATCH(struct OBJGVASPACE *pVAS) {
     return pVAS->__gvaspaceGetHeap__(pVAS);
 }
 
-static inline NvU64 gvaspaceGetMapPageSize_DISPATCH(struct OBJGVASPACE *pVAS, struct OBJGPU *pGpu, struct EMEMBLOCK *pMemBlock) {
+static inline NvU64 gvaspaceGetMapPageSize_DISPATCH(struct OBJGVASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock) {
     return pVAS->__gvaspaceGetMapPageSize__(pVAS, pGpu, pMemBlock);
 }
 
@@ -521,9 +522,9 @@ NV_STATUS gvaspaceMap_IMPL(struct OBJGVASPACE *pVAS, struct OBJGPU *pGpu, const 
 
 void gvaspaceUnmap_IMPL(struct OBJGVASPACE *pVAS, struct OBJGPU *pGpu, const NvU64 vaLo, const NvU64 vaHi);
 
-struct OBJEHEAP *gvaspaceGetHeap_IMPL(struct OBJGVASPACE *pVAS);
+OBJEHEAP *gvaspaceGetHeap_IMPL(struct OBJGVASPACE *pVAS);
 
-NvU64 gvaspaceGetMapPageSize_IMPL(struct OBJGVASPACE *pVAS, struct OBJGPU *pGpu, struct EMEMBLOCK *pMemBlock);
+NvU64 gvaspaceGetMapPageSize_IMPL(struct OBJGVASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock);
 
 NvU64 gvaspaceGetBigPageSize_IMPL(struct OBJGVASPACE *pVAS);
 

@@ -12,7 +12,6 @@
 
 typedef struct DISP_HAL_IFACES    *PDISP_HAL_IFACES;
 typedef struct DPU_HAL_IFACES     *PDPU_HAL_IFACES;
-typedef struct GPIO_HAL_IFACES    *PGPIO_HAL_IFACES;
 typedef struct RPC_HAL_IFACES     *PRPC_HAL_IFACES;
 typedef struct RPCSTRUCTURECOPY_HAL_IFACES *PRPCSTRUCTURECOPY_HAL_IFACES;
 
@@ -125,6 +124,8 @@ typedef enum
     HAL_IMPL_AD107,
     HAL_IMPL_GH100,
     HAL_IMPL_GH202,
+    HAL_IMPL_GB100,
+    HAL_IMPL_GB102,
     HAL_IMPL_T001_FERMI_NOT_EXIST,
     HAL_IMPL_T124,
     HAL_IMPL_T132,
@@ -162,7 +163,9 @@ typedef enum
     { HAL_IMPL_AD104, "AD104" }, \
     { HAL_IMPL_AD106, "AD106" }, \
     { HAL_IMPL_AD107, "AD107" }, \
-    { HAL_IMPL_GH100, "GH100" }
+    { HAL_IMPL_GH100, "GH100" }, \
+    { HAL_IMPL_GB100, "GB100" }, \
+    { HAL_IMPL_GB102, "GB102" }
 
 
 #endif  // _G_RMCFG_HAL_H_

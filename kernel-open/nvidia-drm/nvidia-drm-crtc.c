@@ -42,12 +42,6 @@
 #include <drm/drm_atomic.h>
 #include <drm/drm_atomic_helper.h>
 
-#if defined(NV_LINUX_NVHOST_H_PRESENT) && defined(CONFIG_TEGRA_GRHOST)
-#include <linux/nvhost.h>
-#elif defined(NV_LINUX_HOST1X_NEXT_H_PRESENT)            
-#include <linux/host1x-next.h>
-#endif
-
 #if defined(NV_DRM_DRM_COLOR_MGMT_H_PRESENT)
 #include <drm/drm_color_mgmt.h>
 #endif
@@ -264,7 +258,6 @@ plane_req_config_update(struct drm_plane *plane,
 {
     struct nv_drm_plane *nv_plane = to_nv_plane(plane);
     struct NvKmsKapiLayerConfig old_config = req_config->config;
-    struct nv_drm_device *nv_dev = to_nv_device(plane->dev);
     struct nv_drm_plane_state *nv_drm_plane_state =
         to_nv_drm_plane_state(plane_state);
 
@@ -392,49 +385,16 @@ plane_req_config_update(struct drm_plane *plane,
     req_config->config.inputColorSpace =
         nv_drm_plane_state->input_colorspace;
 
-    req_config->config.syncptParams.preSyncptSpecified = false;
-    req_config->config.syncptParams.postSyncptRequested = false;
+    req_config->config.syncParams.preSyncptSpecified = false;
+    req_config->config.syncParams.postSyncptRequested = false;
+    req_config->config.syncParams.semaphoreSpecified = false;
 
-    if (plane_state->fence != NULL || nv_drm_plane_state->fd_user_ptr) {
-        if (!nv_dev->supportsSyncpts) {
+    if (nv_drm_plane_state->fd_user_ptr) {
+        if (to_nv_device(plane->dev)->supportsSyncpts) {
+            req_config->config.syncParams.postSyncptRequested = true;
+        } else {
             return -1;
         }
-
-#if defined(NV_LINUX_NVHOST_H_PRESENT) && defined(CONFIG_TEGRA_GRHOST)
-#if defined(NV_NVHOST_DMA_FENCE_UNPACK_PRESENT)
-        if (plane_state->fence != NULL) {
-            int ret = nvhost_dma_fence_unpack(
-                          plane_state->fence,
-                          &req_config->config.syncptParams.preSyncptId,
-                          &req_config->config.syncptParams.preSyncptValue);
-            if (ret != 0) {
-                return ret;
-            }
-            req_config->config.syncptParams.preSyncptSpecified = true;
-        }
-#endif
-
-        if (nv_drm_plane_state->fd_user_ptr) {
-            req_config->config.syncptParams.postSyncptRequested = true;
-        }           
-#elif defined(NV_LINUX_HOST1X_NEXT_H_PRESENT)            
-        if (plane_state->fence != NULL) {            
-            int ret = host1x_fence_extract(            
-                      plane_state->fence,            
-                      &req_config->config.syncptParams.preSyncptId,            
-                      &req_config->config.syncptParams.preSyncptValue);            
-            if (ret != 0) {            
-                return ret;            
-            }            
-            req_config->config.syncptParams.preSyncptSpecified = true;            
-        }            
-
-        if (nv_drm_plane_state->fd_user_ptr) {            
-            req_config->config.syncptParams.postSyncptRequested = true;            
-        }
-#else
-        return -1;
-#endif
     }
 
 #if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
@@ -857,7 +817,7 @@ __nv_drm_atomic_helper_crtc_destroy_state(struct drm_crtc *crtc,
 #endif
 }
 
-static inline void nv_drm_crtc_duplicate_req_head_modeset_config(
+static inline bool nv_drm_crtc_duplicate_req_head_modeset_config(
     const struct NvKmsKapiHeadRequestedConfig *old,
     struct NvKmsKapiHeadRequestedConfig *new)
 {
@@ -876,6 +836,34 @@ static inline void nv_drm_crtc_duplicate_req_head_modeset_config(
         new->layerRequestedConfig[i].config =
             old->layerRequestedConfig[i].config;
     }
+
+    if (old->modeSetConfig.lut.input.pRamps) {
+        new->modeSetConfig.lut.input.pRamps =
+            nv_drm_calloc(1, sizeof(*new->modeSetConfig.lut.input.pRamps));
+
+        if (!new->modeSetConfig.lut.input.pRamps) {
+            return false;
+        }
+        *new->modeSetConfig.lut.input.pRamps =
+            *old->modeSetConfig.lut.input.pRamps;
+    }
+    if (old->modeSetConfig.lut.output.pRamps) {
+        new->modeSetConfig.lut.output.pRamps =
+            nv_drm_calloc(1, sizeof(*new->modeSetConfig.lut.output.pRamps));
+
+        if (!new->modeSetConfig.lut.output.pRamps) {
+            /*
+             * new->modeSetConfig.lut.input.pRamps is either NULL or it was
+             * just allocated
+             */
+            nv_drm_free(new->modeSetConfig.lut.input.pRamps);
+            new->modeSetConfig.lut.input.pRamps = NULL;
+            return false;
+        }
+        *new->modeSetConfig.lut.output.pRamps =
+            *old->modeSetConfig.lut.output.pRamps;
+    }
+    return true;
 }
 
 static inline struct nv_drm_crtc_state *nv_drm_crtc_state_alloc(void)
@@ -947,17 +935,24 @@ nv_drm_atomic_crtc_duplicate_state(struct drm_crtc *crtc)
         return NULL;
     }
 
-    __drm_atomic_helper_crtc_duplicate_state(crtc, &nv_state->base);
-
     INIT_LIST_HEAD(&nv_state->nv_flip->list_entry);
     INIT_LIST_HEAD(&nv_state->nv_flip->deferred_flip_list);
 
-    nv_drm_crtc_duplicate_req_head_modeset_config(
-        &(to_nv_crtc_state(crtc->state)->req_config),
-        &nv_state->req_config);
+    /*
+     * nv_drm_crtc_duplicate_req_head_modeset_config potentially allocates
+     * nv_state->req_config.modeSetConfig.lut.{in,out}put.pRamps, so they should
+     * be freed in any following failure paths.
+     */
+    if (!nv_drm_crtc_duplicate_req_head_modeset_config(
+             &(to_nv_crtc_state(crtc->state)->req_config),
+             &nv_state->req_config)) {
 
-    nv_state->ilut_ramps = NULL;
-    nv_state->olut_ramps = NULL;
+        nv_drm_free(nv_state->nv_flip);
+        nv_drm_free(nv_state);
+        return NULL;
+    }
+
+    __drm_atomic_helper_crtc_duplicate_state(crtc, &nv_state->base);
 
     return &nv_state->base;
 }
@@ -982,8 +977,8 @@ static void nv_drm_atomic_crtc_destroy_state(struct drm_crtc *crtc,
 
     __nv_drm_atomic_helper_crtc_destroy_state(crtc, &nv_state->base);
 
-    nv_drm_free(nv_state->ilut_ramps);
-    nv_drm_free(nv_state->olut_ramps);
+    nv_drm_free(nv_state->req_config.modeSetConfig.lut.input.pRamps);
+    nv_drm_free(nv_state->req_config.modeSetConfig.lut.output.pRamps);
 
     nv_drm_free(nv_state);
 }
@@ -1066,94 +1061,82 @@ static int color_mgmt_config_set_luts(struct nv_drm_crtc_state *nv_crtc_state,
      * According to the comment in the Linux kernel's
      * drivers/gpu/drm/drm_color_mgmt.c, if either property is NULL, that LUT
      * needs to be changed to a linear LUT
+     *
+     * On failure, any LUT ramps allocated in this function are freed when the
+     * subsequent atomic state cleanup calls nv_drm_atomic_crtc_destroy_state.
      */
 
-    req_config->flags.lutChanged = NV_TRUE;
     if (crtc_state->degamma_lut) {
         struct drm_color_lut *degamma_lut = NULL;
         uint64_t degamma_len = 0;
 
-        nv_crtc_state->ilut_ramps = nv_drm_calloc(1, sizeof(*nv_crtc_state->ilut_ramps));
-        if (!nv_crtc_state->ilut_ramps) {
-            ret = -ENOMEM;
-            goto fail;
+        if (!modeset_config->lut.input.pRamps) {
+            modeset_config->lut.input.pRamps =
+                nv_drm_calloc(1, sizeof(*modeset_config->lut.input.pRamps));
+            if (!modeset_config->lut.input.pRamps) {
+                return -ENOMEM;
+            }
         }
 
         degamma_lut = (struct drm_color_lut *)crtc_state->degamma_lut->data;
         degamma_len = crtc_state->degamma_lut->length /
                       sizeof(struct drm_color_lut);
 
-        if ((ret = color_mgmt_config_copy_lut(nv_crtc_state->ilut_ramps,
+        if ((ret = color_mgmt_config_copy_lut(modeset_config->lut.input.pRamps,
                                               degamma_lut,
                                               degamma_len)) != 0) {
-            goto fail;
+            return ret;
         }
 
-        modeset_config->lut.input.specified = NV_TRUE;
         modeset_config->lut.input.depth     = 30; /* specify the full LUT */
         modeset_config->lut.input.start     = 0;
         modeset_config->lut.input.end       = degamma_len - 1;
-        modeset_config->lut.input.pRamps    = nv_crtc_state->ilut_ramps;
     } else {
         /* setting input.end to 0 is equivalent to disabling the LUT, which
          * should be equivalent to a linear LUT */
-        modeset_config->lut.input.specified = NV_TRUE;
         modeset_config->lut.input.depth     = 30; /* specify the full LUT */
         modeset_config->lut.input.start     = 0;
         modeset_config->lut.input.end       = 0;
-        modeset_config->lut.input.pRamps    = NULL;
 
+        nv_drm_free(modeset_config->lut.input.pRamps);
+        modeset_config->lut.input.pRamps    = NULL;
     }
+    req_config->flags.ilutChanged = NV_TRUE;
 
     if (crtc_state->gamma_lut) {
         struct drm_color_lut *gamma_lut = NULL;
         uint64_t gamma_len = 0;
 
-        nv_crtc_state->olut_ramps = nv_drm_calloc(1, sizeof(*nv_crtc_state->olut_ramps));
-        if (!nv_crtc_state->olut_ramps) {
-            ret = -ENOMEM;
-            goto fail;
+        if (!modeset_config->lut.output.pRamps) {
+            modeset_config->lut.output.pRamps =
+                nv_drm_calloc(1, sizeof(*modeset_config->lut.output.pRamps));
+            if (!modeset_config->lut.output.pRamps) {
+                return -ENOMEM;
+            }
         }
 
         gamma_lut = (struct drm_color_lut *)crtc_state->gamma_lut->data;
         gamma_len = crtc_state->gamma_lut->length /
                     sizeof(struct drm_color_lut);
 
-        if ((ret = color_mgmt_config_copy_lut(nv_crtc_state->olut_ramps,
+        if ((ret = color_mgmt_config_copy_lut(modeset_config->lut.output.pRamps,
                                               gamma_lut,
                                               gamma_len)) != 0) {
-            goto fail;
+            return ret;
         }
 
-        modeset_config->lut.output.specified = NV_TRUE;
         modeset_config->lut.output.enabled   = NV_TRUE;
-        modeset_config->lut.output.pRamps    = nv_crtc_state->olut_ramps;
     } else {
         /* disabling the output LUT should be equivalent to setting a linear
          * LUT */
-        modeset_config->lut.output.specified = NV_TRUE;
         modeset_config->lut.output.enabled   = NV_FALSE;
+
+        nv_drm_free(modeset_config->lut.output.pRamps);
         modeset_config->lut.output.pRamps    = NULL;
     }
+    req_config->flags.olutChanged = NV_TRUE;
 
     return 0;
-
-fail:
-    /* free allocated state */
-    nv_drm_free(nv_crtc_state->ilut_ramps);
-    nv_drm_free(nv_crtc_state->olut_ramps);
-
-    /* remove dangling pointers */
-    nv_crtc_state->ilut_ramps = NULL;
-    nv_crtc_state->olut_ramps = NULL;
-    modeset_config->lut.input.pRamps = NULL;
-    modeset_config->lut.output.pRamps = NULL;
-
-    /* prevent attempts at reading NULLs */
-    modeset_config->lut.input.specified = NV_FALSE;
-    modeset_config->lut.output.specified = NV_FALSE;
-
-    return ret;
 }
 #endif /* NV_DRM_COLOR_MGMT_AVAILABLE */
 
@@ -1178,9 +1161,6 @@ static int nv_drm_crtc_atomic_check(struct drm_crtc *crtc,
     struct NvKmsKapiHeadRequestedConfig *req_config =
         &nv_crtc_state->req_config;
     int ret = 0;
-#if defined(NV_DRM_COLOR_MGMT_AVAILABLE)
-    struct nv_drm_device *nv_dev = to_nv_device(crtc_state->crtc->dev);
-#endif
 
     if (crtc_state->mode_changed) {
         drm_mode_to_nvkms_display_mode(&crtc_state->mode,
@@ -1224,13 +1204,6 @@ static int nv_drm_crtc_atomic_check(struct drm_crtc *crtc,
 #endif
 
 #if defined(NV_DRM_COLOR_MGMT_AVAILABLE)
-    if (nv_dev->drmMasterChangedSinceLastAtomicCommit &&
-        (crtc_state->degamma_lut ||
-         crtc_state->ctm ||
-         crtc_state->gamma_lut)) {
-
-        crtc_state->color_mgmt_changed = NV_TRUE;
-    }
     if (crtc_state->color_mgmt_changed) {
         if ((ret = color_mgmt_config_set_luts(nv_crtc_state, req_config)) != 0) {
             return ret;
@@ -1256,7 +1229,7 @@ static const struct drm_crtc_helper_funcs nv_crtc_helper_funcs = {
 
 static void nv_drm_plane_install_properties(
     struct drm_plane *plane,
-    NvBool supportsHDR)
+    NvBool supportsICtCp)
 {
     struct nv_drm_device *nv_dev = to_nv_device(plane->dev);
 
@@ -1272,7 +1245,7 @@ static void nv_drm_plane_install_properties(
     }
 
 #if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
-    if (supportsHDR && nv_dev->nv_hdr_output_metadata_property) {
+    if (supportsICtCp && nv_dev->nv_hdr_output_metadata_property) {
         drm_object_attach_property(
             &plane->base, nv_dev->nv_hdr_output_metadata_property, 0);
     }
@@ -1458,7 +1431,7 @@ nv_drm_plane_create(struct drm_device *dev,
     if (plane_type != DRM_PLANE_TYPE_CURSOR) {
         nv_drm_plane_install_properties(
                 plane,
-                pResInfo->supportsHDR[layer_idx]);
+                pResInfo->supportsICtCp[layer_idx]);
     }
 
     __nv_drm_plane_create_alpha_blending_properties(
@@ -1681,7 +1654,7 @@ int nv_drm_get_crtc_crc32_v2_ioctl(struct drm_device *dev,
     struct NvKmsKapiCrcs crc32;
 
     if (!drm_core_check_feature(dev, DRIVER_MODESET)) {
-        return -ENOENT;
+        return -EOPNOTSUPP;
     }
 
     crtc = nv_drm_crtc_find(dev, filep, params->crtc_id);
@@ -1709,7 +1682,7 @@ int nv_drm_get_crtc_crc32_ioctl(struct drm_device *dev,
     struct NvKmsKapiCrcs crc32;
 
     if (!drm_core_check_feature(dev, DRIVER_MODESET)) {
-        return -ENOENT;
+        return -EOPNOTSUPP;
     }
 
     crtc = nv_drm_crtc_find(dev, filep, params->crtc_id);

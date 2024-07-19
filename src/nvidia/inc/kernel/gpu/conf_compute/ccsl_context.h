@@ -27,9 +27,18 @@
 #include "nvtypes.h"
 #include "cc_drv.h"
 
+struct decryptBundle_t
+{
+    NvU8 keyIn[CC_AES_256_GCM_KEY_SIZE_BYTES];
+    NvU8 ivMaskIn[CC_AES_256_GCM_IV_SIZE_BYTES];
+};
+
+typedef struct decryptBundle_t *pDecryptBundle;
+
 struct ccslContext_t
 {
     NvHandle hClient;
+    NvHandle hSubdevice;
     NvHandle hChannel;
 
     enum {CSL_MSG_CTR_32, CSL_MSG_CTR_64} msgCounterSize;
@@ -51,11 +60,19 @@ struct ccslContext_t
 
     NvU64 keyHandleIn;
     NvU64 keyHandleOut;
+    NvU64 keyHandleOutFallback;
+
+    NvU32 globalKeyIdIn;
+    NvU32 globalKeyIdOut;
 
     void *openrmCtx;
+    void *pConfCompute;
 
     MEMORY_DESCRIPTOR *pMemDesc;
     volatile CC_CRYPTOBUNDLE_STATS *pEncStatsBuffer;
+
+    pDecryptBundle pDecryptBundles;
+    NvU32 currDecryptBundle;
 };
 
 typedef struct ccslContext_t *pCcslContext;

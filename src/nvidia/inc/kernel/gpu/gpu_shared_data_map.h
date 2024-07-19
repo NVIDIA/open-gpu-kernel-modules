@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,7 +28,7 @@
 #include "gpu/mem_mgr/mem_desc.h"
 #include "class/cl00de.h"
 
-#include "tmr.h"
+#include "gpu/timer/tmr.h"
 
 // ****************************************************************************
 //                          Type definitions
@@ -52,15 +52,23 @@ typedef struct GpuSharedDataMap {
 } GpuSharedDataMap;
 
 /**
- * Start data write, returns data struct to write into
+ * Start data write, updates seq to indicate write in progress and returns data struct to write into
  *
  * After updating data in the returned NV00DE_SHARED_DATA struct,
- * call gpushareddataWriteFinish to push the new data into the user mapping
+ * call gpushareddataWriteFinish to mark data as valid.
  */
-NV00DE_SHARED_DATA * gpushareddataWriteStart(OBJGPU *pGpu);
+NV00DE_SHARED_DATA * gpushareddataWriteStart_INTERNAL(OBJGPU *pGpu, NvU64 offset);
 
-// Finish data write, pushes data cached by above into mapped data
-void gpushareddataWriteFinish(OBJGPU *pGpu);
+#define gpushareddataWriteStart(pGpu, field) \
+    &(gpushareddataWriteStart_INTERNAL(pGpu, NV_OFFSETOF(NV00DE_SHARED_DATA, field))->field)
+
+/**
+ * Finish data write, updates seq to indicate write is finished and data is valid.
+ */
+void gpushareddataWriteFinish_INTERNAL(OBJGPU *pGpu, NvU64 offset);
+
+#define gpushareddataWriteFinish(pGpu, field) \
+    gpushareddataWriteFinish_INTERNAL(pGpu, NV_OFFSETOF(NV00DE_SHARED_DATA, field))
 
 #endif /* GPU_SHARED_DATA_MAP_H */
 

@@ -28,9 +28,13 @@
 *
 ****************************************************************************/
 
+#include "rmconfig.h"
 #include "gpu/pmu/kern_pmu.h"
 #include "gpu/fsp/kern_fsp.h"
 #include "gpu/mem_mgr/mem_mgr.h"
+
+#include "nvrm_registry.h"
+#include "kernel/os/os.h"
 
 NV_STATUS
 kpmuConstructEngine_IMPL(OBJGPU *pGpu, KernelPmu *pKernelPmu, ENGDESCRIPTOR engDesc)
@@ -75,6 +79,14 @@ kpmuReservedMemoryBackingStoreSizeGet_IMPL
     KernelPmu *pKernelPmu
 )
 {
+    if (kpmuGetIsSelfInit(pKernelPmu))
+    {
+        //
+        // MMINTS-TODO: cross-reference with this when reserving memory
+        // in pmu_20.c
+        //
+        return 0x800000;
+    }
 
     return 0U;
 }
@@ -85,6 +97,10 @@ kpmuReservedMemorySurfacesSizeGet_IMPL
     KernelPmu *pKernelPmu
 )
 {
+    if (kpmuGetIsSelfInit(pKernelPmu))
+    {
+        return PMU_RESERVED_MEMORY_SURFACES_SIZE;
+    }
 
     return 0U;
 }
@@ -95,6 +111,10 @@ kpmuReservedMemoryMiscSizeGet_IMPL
     KernelPmu *pKernelPmu
 )
 {
+    if (kpmuGetIsSelfInit(pKernelPmu))
+    {
+        return (4U * (1U << 10U));
+    }
 
     return 0U;
 }
@@ -105,9 +125,46 @@ NvU64 kpmuReservedMemoryOffsetGet_IMPL
     KernelPmu *pKernelPmu
 )
 {
+    if (kpmuGetIsSelfInit(pKernelPmu))
+    {
+        MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+        const NvU64 fbTotalMemSize = (pMemoryManager->Ram.fbTotalMemSizeMb << 20U);
+
+        KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
+
+        if ((pKernelFsp != NULL) && !pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM))
+        {
+            // This value should have been populated already
+            NV_ASSERT(pKernelFsp->pCotPayload->frtsVidmemOffset > 0U);
+
+            //
+            // Note: frtsVidmemOffset is an offset of the end of FRTS from the
+            // end of FB. If FRTS is enabled and placed in FB (in WPR2) by FSP,
+            // we want to directly use its offset to place PMU, since the offset
+            // calculation is not always straightforward.
+            // Note that we ensure, in kfspPrepareBootCommands_HAL, that we have
+            // enough space to place PMU after FRTS, so this FRTS offset should
+            // definitely have that accounted for.
+            //
+            // Note that we have to add back in the ExtraReservedMemorySize
+            // because the FSP allocation may extend beyond where the
+            // frtsVidmemOffset claims it stops.
+            //
+            const NvU64 pmuRsvdOffset = fbTotalMemSize -
+                pKernelFsp->pCotPayload->frtsVidmemOffset +
+                kfspGetExtraReservedMemorySize_HAL(pGpu, pKernelFsp);
+            return pmuRsvdOffset;
+        }
+        else
+        {
+            const NvU64 pmuRsvdOffset = fbTotalMemSize -
+                memmgrGetFBEndReserveSizeEstimate_HAL(pGpu, pMemoryManager) -
+                kpmuReservedMemorySizeGet(pKernelPmu);
+            return pmuRsvdOffset;
+        }
+    }
     return 0U;
 }
-
 
 /*!
  * Init libos PMU logging

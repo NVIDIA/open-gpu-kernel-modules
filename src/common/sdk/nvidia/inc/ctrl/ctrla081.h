@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -660,6 +660,9 @@ typedef struct NVA081_CTRL_PGPU_GET_MULTI_VGPU_SUPPORT_INFO_PARAMS {
  *
  * heterogeneousMultiVgpuSupported [OUT]
  *  This param specifies whether heterogeneous multi-vGPU is supported
+ * warmUpdateSupported [OUT]
+ *  This param specifies FSR / warm driver update operation is supported
+ *  ie. supports FSR and warm update of vGPU host driver without terminating the running guest VM
  *
  * Possible status values returned are:
  *   NV_OK
@@ -674,6 +677,7 @@ typedef struct NVA081_CTRL_PGPU_GET_MULTI_VGPU_SUPPORT_INFO_PARAMS {
 
 typedef struct NVA081_CTRL_GET_VGPU_DRIVER_CAPS_PARAMS {
     NvU32 heterogeneousMultiVgpuSupported;
+    NvU32 warmUpdateSupported;
 } NVA081_CTRL_GET_VGPU_DRIVER_CAPS_PARAMS;
 
 /*
@@ -823,6 +827,7 @@ typedef struct NVA081_CTRL_PGPU_GET_VGPU_STREAMING_CAPABILITY_PARAMS {
 /* vGPU capabilities */
 #define NVA081_CTRL_VGPU_CAPABILITY_MINI_QUARTER_GPU         0
 #define NVA081_CTRL_VGPU_CAPABILITY_COMPUTE_MEDIA_ENGINE_GPU 1
+#define NVA081_CTRL_VGPU_CAPABILITY_WARM_UPDATE              2
 
 /*
  * NVA081_CTRL_CMD_VGPU_SET_CAPABILITY

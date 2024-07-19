@@ -67,6 +67,7 @@ static const NvU64 pageSizes[] = {
     RM_PAGE_SIZE_64K,
     RM_PAGE_SIZE_HUGE,
     RM_PAGE_SIZE_512M
+    , RM_PAGE_SIZE_256G
 };
 
 static const NvU32 pageSizeCount = NV_ARRAY_ELEMENTS(pageSizes);
@@ -1897,6 +1898,12 @@ gvaspaceApplyDefaultAlignment_IMPL
                 pageSizeMask |= RM_PAGE_SIZE_512M;
                 maxPageSize   = RM_PAGE_SIZE_512M;
                 break;
+            case RM_ATTR_PAGE_SIZE_256GB:
+                NV_ASSERT_OR_RETURN(kgmmuIsPageSize256gbSupported(pKernelGmmu),
+                                  NV_ERR_NOT_SUPPORTED);
+                pageSizeMask |= RM_PAGE_SIZE_256G;
+                maxPageSize   = RM_PAGE_SIZE_256G;
+                break;
             case RM_ATTR_PAGE_SIZE_INVALID:
                 NV_PRINTF(LEVEL_ERROR, "Invalid page size attr\n");
                 return NV_ERR_INVALID_ARGUMENT;
@@ -2374,6 +2381,9 @@ gvaspaceGetVasInfo_IMPL
     if (kgmmuIsPageSize512mbSupported(pKernelGmmu))
         pParams->supportedPageSizeMask |= RM_PAGE_SIZE_512M;
 
+    if (kgmmuIsPageSize256gbSupported(pKernelGmmu))
+        pParams->supportedPageSizeMask |= RM_PAGE_SIZE_256G;
+
     // Dual Page Table is supported for all Fermi-and-later chips
     pParams->dualPageTableSupported = (NvU32)NV_TRUE;
 
@@ -2771,6 +2781,7 @@ gvaspaceSetPteInfo_IMPL
             if (!(pGVAS->bigPageSize == pParams->pteBlocks[i].pageSize ||
                   RM_PAGE_SIZE_HUGE == pParams->pteBlocks[i].pageSize ||
                   RM_PAGE_SIZE_512M == pParams->pteBlocks[i].pageSize ||
+                  RM_PAGE_SIZE_256G == pParams->pteBlocks[i].pageSize ||
                   RM_PAGE_SIZE == pParams->pteBlocks[i].pageSize))
             {
                 continue;

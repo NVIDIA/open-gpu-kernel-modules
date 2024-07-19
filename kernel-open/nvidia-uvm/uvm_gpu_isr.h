@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2023 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -192,5 +192,11 @@ void uvm_parent_gpu_access_counters_intr_disable(uvm_parent_gpu_t *parent_gpu);
 //
 // parent_gpu->isr.interrupts_lock must be held to call this function.
 void uvm_parent_gpu_access_counters_intr_enable(uvm_parent_gpu_t *parent_gpu);
+
+// Return the first valid GPU given the parent GPU or NULL if no MIG instances
+// are registered. This should only be called from bottom halves or if the
+// g_uvm_global.global_lock is held so that the returned pointer remains valid.
+//
+uvm_gpu_t *uvm_parent_gpu_find_first_valid_gpu(uvm_parent_gpu_t *parent_gpu);
 
 #endif // __UVM_GPU_ISR_H__

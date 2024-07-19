@@ -44,6 +44,8 @@
 #include "clc7b5.h"
 #include "clc86f.h"
 #include "clc8b5.h"
+#include "clc96f.h"
+#include "clc9b5.h"
 
 static int uvm_downgrade_force_membar_sys = 1;
 module_param(uvm_downgrade_force_membar_sys, uint, 0644);
@@ -163,6 +165,11 @@ static uvm_hal_class_ops_t ce_table[] =
             .encrypt = uvm_hal_hopper_ce_encrypt,
             .decrypt = uvm_hal_hopper_ce_decrypt,
         },
+    },
+    {
+        .id = BLACKWELL_DMA_COPY_A,
+        .parent_id = HOPPER_DMA_COPY_A,
+        .u.ce_ops = {},
     },
 };
 
@@ -286,6 +293,15 @@ static uvm_hal_class_ops_t host_table[] =
             .set_gpfifo_pushbuffer_segment_base = uvm_hal_hopper_host_set_gpfifo_pushbuffer_segment_base,
         }
     },
+    {
+        .id = BLACKWELL_CHANNEL_GPFIFO_A,
+        .parent_id = HOPPER_CHANNEL_GPFIFO_A,
+        .u.host_ops = {
+            .tlb_invalidate_all = uvm_hal_blackwell_host_tlb_invalidate_all,
+            .tlb_invalidate_va = uvm_hal_blackwell_host_tlb_invalidate_va,
+            .tlb_invalidate_test = uvm_hal_blackwell_host_tlb_invalidate_test,
+        }
+    },
 };
 
 static uvm_hal_class_ops_t arch_table[] =
@@ -297,7 +313,6 @@ static uvm_hal_class_ops_t arch_table[] =
             .mmu_mode_hal = uvm_hal_mmu_mode_maxwell,
             .enable_prefetch_faults = uvm_hal_maxwell_mmu_enable_prefetch_faults_unsupported,
             .disable_prefetch_faults = uvm_hal_maxwell_mmu_disable_prefetch_faults_unsupported,
-            .mmu_engine_id_to_type = uvm_hal_maxwell_mmu_engine_id_to_type_unsupported,
             .mmu_client_id_to_utlb_id = uvm_hal_maxwell_mmu_client_id_to_utlb_id_unsupported,
         }
     },
@@ -323,7 +338,6 @@ static uvm_hal_class_ops_t arch_table[] =
         .u.arch_ops = {
             .init_properties = uvm_hal_volta_arch_init_properties,
             .mmu_mode_hal = uvm_hal_mmu_mode_volta,
-            .mmu_engine_id_to_type = uvm_hal_volta_mmu_engine_id_to_type,
             .mmu_client_id_to_utlb_id = uvm_hal_volta_mmu_client_id_to_utlb_id,
         },
     },
@@ -333,7 +347,6 @@ static uvm_hal_class_ops_t arch_table[] =
         .u.arch_ops = {
             .init_properties = uvm_hal_turing_arch_init_properties,
             .mmu_mode_hal = uvm_hal_mmu_mode_turing,
-            .mmu_engine_id_to_type = uvm_hal_turing_mmu_engine_id_to_type,
         },
     },
     {
@@ -342,7 +355,6 @@ static uvm_hal_class_ops_t arch_table[] =
         .u.arch_ops = {
             .init_properties = uvm_hal_ampere_arch_init_properties,
             .mmu_mode_hal = uvm_hal_mmu_mode_ampere,
-            .mmu_engine_id_to_type = uvm_hal_ampere_mmu_engine_id_to_type,
             .mmu_client_id_to_utlb_id = uvm_hal_ampere_mmu_client_id_to_utlb_id,
         },
     },
@@ -359,9 +371,17 @@ static uvm_hal_class_ops_t arch_table[] =
         .u.arch_ops = {
             .init_properties = uvm_hal_hopper_arch_init_properties,
             .mmu_mode_hal = uvm_hal_mmu_mode_hopper,
-            .mmu_engine_id_to_type = uvm_hal_hopper_mmu_engine_id_to_type,
             .mmu_client_id_to_utlb_id = uvm_hal_hopper_mmu_client_id_to_utlb_id,
         },
+    },
+    {
+        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB100,
+        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GH100,
+        .u.arch_ops = {
+            .init_properties = uvm_hal_blackwell_arch_init_properties,
+            .mmu_mode_hal = uvm_hal_mmu_mode_blackwell,
+            .mmu_client_id_to_utlb_id = uvm_hal_blackwell_mmu_client_id_to_utlb_id,
+        }
     },
 };
 
@@ -377,6 +397,7 @@ static uvm_hal_class_ops_t fault_buffer_table[] =
             .read_get = uvm_hal_maxwell_fault_buffer_read_get_unsupported,
             .write_get = uvm_hal_maxwell_fault_buffer_write_get_unsupported,
             .get_ve_id = uvm_hal_maxwell_fault_buffer_get_ve_id_unsupported,
+            .get_mmu_engine_type = uvm_hal_maxwell_fault_buffer_get_mmu_engine_type_unsupported,
             .parse_replayable_entry = uvm_hal_maxwell_fault_buffer_parse_replayable_entry_unsupported,
             .entry_is_valid = uvm_hal_maxwell_fault_buffer_entry_is_valid_unsupported,
             .entry_clear_valid = uvm_hal_maxwell_fault_buffer_entry_clear_valid_unsupported,
@@ -415,6 +436,7 @@ static uvm_hal_class_ops_t fault_buffer_table[] =
             .read_get = uvm_hal_volta_fault_buffer_read_get,
             .write_get = uvm_hal_volta_fault_buffer_write_get,
             .get_ve_id = uvm_hal_volta_fault_buffer_get_ve_id,
+            .get_mmu_engine_type = uvm_hal_volta_fault_buffer_get_mmu_engine_type,
             .parse_replayable_entry = uvm_hal_volta_fault_buffer_parse_replayable_entry,
             .parse_non_replayable_entry = uvm_hal_volta_fault_buffer_parse_non_replayable_entry,
             .get_fault_type = uvm_hal_volta_fault_buffer_get_fault_type,
@@ -426,12 +448,15 @@ static uvm_hal_class_ops_t fault_buffer_table[] =
         .u.fault_buffer_ops = {
             .disable_replayable_faults = uvm_hal_turing_disable_replayable_faults,
             .clear_replayable_faults = uvm_hal_turing_clear_replayable_faults,
+            .get_mmu_engine_type = uvm_hal_turing_fault_buffer_get_mmu_engine_type,
         }
     },
     {
         .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GA100,
         .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_TU100,
-        .u.fault_buffer_ops = {}
+        .u.fault_buffer_ops = {
+            .get_mmu_engine_type = uvm_hal_ampere_fault_buffer_get_mmu_engine_type,
+        }
     },
     {
         .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_AD100,
@@ -443,6 +468,15 @@ static uvm_hal_class_ops_t fault_buffer_table[] =
         .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_AD100,
         .u.fault_buffer_ops = {
             .get_ve_id = uvm_hal_hopper_fault_buffer_get_ve_id,
+            .get_mmu_engine_type = uvm_hal_hopper_fault_buffer_get_mmu_engine_type,
+        }
+    },
+    {
+        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB100,
+        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GH100,
+        .u.fault_buffer_ops = {
+            .get_fault_type = uvm_hal_blackwell_fault_buffer_get_fault_type,
+            .get_mmu_engine_type = uvm_hal_blackwell_fault_buffer_get_mmu_engine_type,
         }
     },
 };
@@ -507,6 +541,11 @@ static uvm_hal_class_ops_t access_counter_buffer_table[] =
         .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_AD100,
         .u.access_counter_buffer_ops = {}
     },
+    {
+        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB100,
+        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GH100,
+        .u.access_counter_buffer_ops = {}
+    },
 };
 
 static uvm_hal_class_ops_t sec2_table[] =
@@ -559,6 +598,11 @@ static uvm_hal_class_ops_t sec2_table[] =
             .semaphore_timestamp = uvm_hal_hopper_sec2_semaphore_timestamp_unsupported,
             .decrypt = uvm_hal_hopper_sec2_decrypt,
         }
+    },
+    {
+        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB100,
+        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GH100,
+        .u.sec2_ops = {}
     },
 };
 
@@ -787,6 +831,9 @@ void uvm_hal_tlb_invalidate_membar(uvm_push_t *push, uvm_membar_t membar)
 
     gpu = uvm_push_get_gpu(push);
 
+    // TLB invalidate on Blackwell+ GPUs should not use a standalone membar.
+    UVM_ASSERT(gpu->parent->rm_info.gpuArch < NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GB100);
+
     for (i = 0; i < gpu->parent->num_hshub_tlb_invalidate_membars; i++)
         gpu->parent->host_hal->membar_gpu(push);
 
@@ -892,7 +939,7 @@ const char *uvm_fault_access_type_string(uvm_fault_access_type_t fault_access_ty
 
 const char *uvm_fault_type_string(uvm_fault_type_t fault_type)
 {
-    BUILD_BUG_ON(UVM_FAULT_TYPE_COUNT != 16);
+    BUILD_BUG_ON(UVM_FAULT_TYPE_COUNT != 17);
 
     switch (fault_type) {
         UVM_ENUM_STRING_CASE(UVM_FAULT_TYPE_INVALID_PDE);
@@ -911,6 +958,7 @@ const char *uvm_fault_type_string(uvm_fault_type_t fault_type)
         UVM_ENUM_STRING_CASE(UVM_FAULT_TYPE_UNSUPPORTED_KIND);
         UVM_ENUM_STRING_CASE(UVM_FAULT_TYPE_REGION_VIOLATION);
         UVM_ENUM_STRING_CASE(UVM_FAULT_TYPE_POISONED);
+        UVM_ENUM_STRING_CASE(UVM_FAULT_TYPE_CC_VIOLATION);
         UVM_ENUM_STRING_DEFAULT();
     }
 }

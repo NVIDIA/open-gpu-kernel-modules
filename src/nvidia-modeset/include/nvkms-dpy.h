@@ -83,7 +83,8 @@ NvBool nvDpyIsAdaptiveSyncDefaultlisted(const NVDpyEvoRec *pDpyEvo);
 enum NvKmsDpyAttributeDigitalSignalValue
 nvGetDefaultDpyAttributeDigitalSignalValue(const NVConnectorEvoRec *pConnectorEvo);
 
-NVColorFormatInfoRec nvGetColorFormatInfo(const NVDpyEvoRec *pDpyEvo);
+NvKmsDpyOutputColorFormatInfo nvDpyGetOutputColorFormatInfo(
+    const NVDpyEvoRec *pDpyEvo);
 
 NvU32 nvDpyGetPossibleApiHeadsMask(const NVDpyEvoRec *pDpyEvo);
 

@@ -237,6 +237,7 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info_OsDescMemory =
 
 void __nvoc_dtor_Memory(Memory*);
 void __nvoc_dtor_OsDescMemory(OsDescMemory *pThis) {
+    __nvoc_osdescDestruct(pThis);
     __nvoc_dtor_Memory(&pThis->__nvoc_base_Memory);
     PORT_UNREFERENCED_VARIABLE(pThis);
 }

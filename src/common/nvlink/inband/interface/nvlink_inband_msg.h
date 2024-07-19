@@ -208,7 +208,6 @@ typedef struct
 typedef struct
 {
     NvU64 mcTeamHandle;          /* Unique handle assigned for this Multicast team */
-                                 /* Should be zero if the response is sent to the importer nodes */
     NvU32 flags;                 /* For future use. Must be initialized to zero */
     NvU8  reserved[8];           /* For future use. Must be initialized to zero */
     NvU64 mcAddressBase;         /* FLA starting address assigned for the Multicast slot */

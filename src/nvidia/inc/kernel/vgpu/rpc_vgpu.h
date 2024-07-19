@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -180,5 +180,15 @@ static NV_INLINE void NV_RM_RPC_UPDATE_GPU_PDES(OBJGPU *pGpu, ...) { }
         } else if (pRpc == NULL)                                                        \
             status = NV_ERR_INSUFFICIENT_RESOURCES;                                     \
     } while (0)
+
+#define NV_RM_RPC_UPDATE_GPM_GUEST_BUFFER_INFO(pGpu, status, gpfn, swizzId, computeId,      \
+                                               bufSize, bMap)                               \
+    do                                                                                      \
+    {                                                                                       \
+        OBJRPC *pRpc = GPU_GET_RPC(pGpu);                                                   \
+        if ((status == NV_OK) && (pRpc != NULL))                                            \
+            status = rpcUpdateGpmGuestBufferInfo_HAL(pGpu, pRpc, gpfn, swizzId, computeId,  \
+                                                     bufSize, bMap);                        \
+    } while(0)
 
 #endif // __vgpu_dev_nv_rpc_vgpu_h__

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,6 +32,7 @@
 #include "gpu/bif/kernel_bif.h"
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/disp/kern_disp.h"
+#include "gpu/disp/head/kernel_head.h"
 #include <nv_sriov_defines.h>
 
 static NvBool osInterruptPending(
@@ -251,12 +252,41 @@ static NvBool osInterruptPending(
                 {
                     if (pKernelDisplay != NULL)
                     {
+                        NvU32 head = 0;
+                        NvU32 headIntrMask = 0;
                         MC_ENGINE_BITVECTOR intrDispPending;
 
                         kdispServiceVblank_HAL(pGpu, pKernelDisplay, 0,
                                                (VBLANK_STATE_PROCESS_LOW_LATENCY |
                                                 VBLANK_STATE_PROCESS_CALLED_FROM_ISR),
                                                &threadState);
+
+                        // handle RG line interrupt, if it is forwared from GSP.
+                        if (IS_GSP_CLIENT(pGpu))
+                        {
+                            for (head = 0; head < kdispGetNumHeads(pKernelDisplay); ++head)
+                            {
+                                KernelHead *pKernelHead = KDISP_GET_HEAD(pKernelDisplay, head);
+
+                                headIntrMask = kheadReadPendingRgLineIntr_HAL(pGpu, pKernelHead, &threadState);
+                                if (headIntrMask != 0)
+                                {
+                                    NvU32 clearIntrMask = 0;
+
+                                    kheadProcessRgLineCallbacks_HAL(pGpu,
+                                                                    pKernelHead,
+                                                                    head,
+                                                                    &headIntrMask,
+                                                                    &clearIntrMask,
+                                                                    osIsISR());
+                                    if (clearIntrMask != 0)
+                                    {
+                                        kheadResetRgLineIntrMask_HAL(pGpu, pKernelHead, clearIntrMask, &threadState);
+                                    }
+                                }
+                            }
+                        }
+
                         *serviced = NV_TRUE;
                         bitVectorClr(&intr0Pending, MC_ENGINE_IDX_DISP);
 

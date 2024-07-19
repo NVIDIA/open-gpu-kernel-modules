@@ -38,7 +38,7 @@
 #include "resserv/rs_access_map.h"
 #include "nvBldVer.h"
 #include "nvVer.h"
-#include "nvpcf.h"
+#include "platform/nvpcf.h"
 #include "mem_mgr/mem.h"
 #include "nvsecurityinfo.h"
 #include "kernel/gpu/rc/kernel_rc.h"
@@ -795,14 +795,28 @@ cliresCtrlCmdSystemGetFeatures_IMPL
 )
 {
     OBJSYS    *pSys         = SYS_GET_INSTANCE();
+    OBJGPU    *pGpu            = NULL;
     NvU32      featuresMask = 0;
+    NvU32      gpuMask  = 0U;
+    NvU32      gpuIndex = 0U;
+    NvBool     bIsEfiInit = NV_FALSE;
 
     NV_ASSERT_OR_RETURN(pSys != NULL, NV_ERR_INVALID_STATE);
 
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
-    // Don't update EFI init on non Display system
-    if (pSys->getProperty(pSys, PDB_PROP_SYS_IS_EFI_INIT))
+    gpumgrGetGpuAttachInfo(NULL, &gpuMask);
+    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuIndex)) != NULL)
+    {
+        // Don't update EFI init on non Display system
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_EFI_INIT))
+        {
+            bIsEfiInit = NV_TRUE;
+            break;
+        }
+    }
+
+    if (bIsEfiInit)
     {
         featuresMask = FLD_SET_DRF(0000, _CTRL_SYSTEM_GET_FEATURES,
             _IS_EFI_INIT, _TRUE, featuresMask);
@@ -812,6 +826,12 @@ cliresCtrlCmdSystemGetFeatures_IMPL
     {
         featuresMask = FLD_SET_DRF(0000, _CTRL_SYSTEM_GET_FEATURES,
             _UUID_BASED_MEM_SHARING, _TRUE, featuresMask);
+    }
+
+    if (pSys->getProperty(pSys, PDB_PROP_SYS_ENABLE_RM_TEST_ONLY_CODE))
+    {
+        featuresMask = FLD_SET_DRF(0000, _CTRL_SYSTEM_GET_FEATURES,
+            _RM_TEST_ONLY_CODE_ENABLED, _TRUE, featuresMask);
     }
 
     pFeaturesParams->featuresMask = featuresMask;
@@ -838,6 +858,7 @@ cliresCtrlCmdSystemGetBuildVersionV2_IMPL
     ct_assert(sizeof(NV_VERSION_STRING) <= sizeof(pParams->driverVersionBuffer));
     ct_assert(sizeof(NV_BUILD_BRANCH_VERSION) <= sizeof(pParams->versionBuffer));
     ct_assert(sizeof(NV_DISPLAY_DRIVER_TITLE) <= sizeof(pParams->titleBuffer));
+    ct_assert(sizeof(STRINGIZE(NV_BUILD_BRANCH)) <= sizeof(pParams->driverBranch));
 
     portMemCopy(pParams->driverVersionBuffer, sizeof(pParams->driverVersionBuffer),
                 NV_VERSION_STRING, sizeof(NV_VERSION_STRING));
@@ -845,6 +866,8 @@ cliresCtrlCmdSystemGetBuildVersionV2_IMPL
                 NV_BUILD_BRANCH_VERSION, sizeof(NV_BUILD_BRANCH_VERSION));
     portMemCopy(pParams->titleBuffer, sizeof(pParams->titleBuffer),
                 NV_DISPLAY_DRIVER_TITLE, sizeof(NV_DISPLAY_DRIVER_TITLE));
+    portMemCopy(pParams->driverBranch, sizeof(pParams->driverBranch),
+                STRINGIZE(NV_BUILD_BRANCH), sizeof(STRINGIZE(NV_BUILD_BRANCH)));
 
     pParams->changelistNumber = NV_BUILD_CHANGELIST_NUM;
     pParams->officialChangelistNumber = NV_LAST_OFFICIAL_CHANGELIST_NUM;
@@ -2838,6 +2861,13 @@ cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL
             header.entrySize  = NVPCF_DYNAMIC_PARAMS_2X_ENTRY_SIZE_1C;
             header.entryCount = 0;
 
+            pParams->bRequireDcSysPowerLimitsTable =
+                (pParams->version >= NVPCF_CONTROLLER_STATIC_TABLE_VERSION_22);
+            pParams->bAllowDcRestOfSystemReserveOverride =
+                (pParams->version >= NVPCF_CONTROLLER_STATIC_TABLE_VERSION_23);
+            pParams->bSupportDcTsp =
+                (pParams->version >= NVPCF_CONTROLLER_STATIC_TABLE_VERSION_24);
+
             common.param0 = FLD_SET_DRF(PCF_DYNAMIC_PARAMS_COMMON_2X,
                 _INPUT_PARAM0, _CMD, _GET, common.param0);
 
@@ -2919,6 +2949,10 @@ cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL
                 configReadStructure(pData, (void *)&entriesOut,
                      dataOffset, pSzEntryFmt);
 
+                // Enable/disable Dynamic Boost (SBIOS uses 1 = disable)
+                pParams->bEnableForAC = !DRF_VAL(PCF_DYNAMIC_PARAMS_ENTRY_2X,
+                     _OUTPUT_PARAM0, _CMD0_DISABLE_AC, entriesOut.param0);
+
                 // Configurable TGP is from common
                 pParams->ctgpOffsetmW = (NvS32)NVPCF_DYNAMIC_PARAMS_2X_POWER_UNIT_MW *
                     (NvS16)DRF_VAL(PCF_DYNAMIC_PARAMS_COMMON_2X,
@@ -2935,6 +2969,36 @@ cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL
                     (NvS16)DRF_VAL(PCF_DYNAMIC_PARAMS_ENTRY_2X,
                         _OUTPUT_PARAM2, _CMD0_SIGNED0, entriesOut.param3);
 
+                // DC_ENABLE command
+                pParams->bEnableForDC = !DRF_VAL(PCF_DYNAMIC_PARAMS_ENTRY_2X,
+                    _OUTPUT_PARAM0, _CMD0_DISABLE_DC, entriesOut.param0);
+
+                if (!pParams->bRequireDcSysPowerLimitsTable)
+                {
+                    // DC CTGP offset
+                    pParams->ctgpBattOffsetmW = (NvS32)NVPCF_DYNAMIC_PARAMS_2X_POWER_UNIT_MW *
+                        (NvS16)DRF_VAL(PCF_DYNAMIC_PARAMS_COMMON_2X,
+                            _OUTPUT_PARAM0, _CMD0_CTGP_DC_OFFSET, common.param0);
+
+                    // DC TPP target offset
+                    pParams->targetTppBattOffsetmW = (NvS32)NVPCF_DYNAMIC_PARAMS_2X_POWER_UNIT_MW *
+                        (NvS16)DRF_VAL(PCF_DYNAMIC_PARAMS_ENTRY_2X,
+                            _OUTPUT_PARAM1, _CMD0_SIGNED1, entriesOut.param1);
+                }
+
+                if (pParams->bAllowDcRestOfSystemReserveOverride)
+                {
+                    pParams->dcRosReserveOverridemW = (NvU32)DRF_VAL(PCF_DYNAMIC_PARAMS_ENTRY_2X,
+                            _OUTPUT_PARAM4, _CMD0_UNSIGNED, entriesOut.param4);
+                }
+
+                if (pParams->bSupportDcTsp)
+                {
+                    pParams->dcTspLongTimescaleLimitmA = (NvU32)DRF_VAL(PCF_DYNAMIC_PARAMS_ENTRY_2X,
+                            _OUTPUT_PARAM5, _CMD0_UNSIGNED, entriesOut.param5);
+                    pParams->dcTspShortTimescaleLimitmA = (NvU32)DRF_VAL(PCF_DYNAMIC_PARAMS_ENTRY_2X,
+                            _OUTPUT_PARAM6, _CMD0_UNSIGNED, entriesOut.param6);
+                }
             }
 
 nvpcf2xGetDynamicParams_exit:
@@ -5204,5 +5268,37 @@ cliresCtrlCmdSystemGetExtendedPerfSensorCounters_IMPL
     NV0000_CTRL_SYSTEM_GPS_GET_PERF_SENSOR_COUNTERS_PARAMS *pParams
 )
 {
+    return NV_OK;
+}
+
+NV_STATUS
+cliresCtrlCmdSystemGetVrrCookiePresent_IMPL
+(
+    RmClientResource *pRmCliRes,
+    NV0000_CTRL_SYSTEM_GET_VRR_COOKIE_PRESENT_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu          = NULL;
+    NvU32   gpuCount      = 0;
+    NvU32   gpuAttachMask = 0;
+
+    NvU32        objSize = 0;
+    NvU8        *pObjData = NULL;
+    NV_STATUS    status;
+
+    // Get the master GPU to query the cookies
+    gpumgrGetGpuAttachInfo(&gpuCount, &gpuAttachMask);
+    pGpu = gpumgrGetGpu(gpumgrGetDefaultPrimaryGpu(gpuAttachMask));
+
+    if (pGpu == NULL)
+    {
+        return NV_ERR_INVALID_REQUEST;
+    }
+
+    status = getAcpiDsmObjectData(pGpu, &pObjData, &objSize,
+                                  ACPI_DSM_FUNCTION_CURRENT, NBSI_VALKEY, NBSI_VALIDATE_ALL);
+
+    pParams->bIsPresent = ((status == NV_ERR_BUFFER_TOO_SMALL) && (objSize != 0));
+
     return NV_OK;
 }

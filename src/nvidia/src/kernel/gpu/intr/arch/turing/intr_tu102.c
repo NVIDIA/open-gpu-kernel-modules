@@ -26,7 +26,7 @@
 #include "gpu/gpu.h"
 #include "kernel/gpu/intr/engine_idx.h"
 #include "gpu/bif/kernel_bif.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "gpu/uvm/uvm.h"
 #include "os/os.h"
 #include "vgpu/vgpu_events.h"

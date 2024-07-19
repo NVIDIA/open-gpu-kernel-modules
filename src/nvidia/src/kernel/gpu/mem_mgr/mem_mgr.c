@@ -37,7 +37,7 @@
 #include "virtualization/kernel_vgpu_mgr.h"
 #include "vgpu/rpc.h"
 #include "core/thread_state.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "gpu/fsp/kern_fsp.h"
 #include "gpu/pmu/kern_pmu.h"
 #include "gpu/mem_mgr/phys_mem_allocator/numa.h"
@@ -55,6 +55,7 @@
 #include "virtualization/hypervisor/hypervisor.h"
 
 #include "class/cl0050.h"
+#include "containers/eheap_old.h"
 
 static NV_STATUS _memmgrCreateFBSR(MemoryManager *pMemoryManager, NvU32);
 static NV_STATUS _memmgrCreateChildObjects(MemoryManager *pMemoryManager);
@@ -388,7 +389,7 @@ memmgrInitInternalChannels_IMPL
         pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB) ||
         gpuIsCacheOnlyModeEnabled(pGpu) ||
         (IS_VIRTUAL(pGpu) && !IS_VIRTUAL_WITH_FULL_SRIOV(pGpu)) ||
-        !IS_SILICON(pGpu) ||
+        IS_SIMULATION(pGpu) ||
         IsDFPGA(pGpu))
     {
         NV_PRINTF(LEVEL_INFO, "Skipping global CeUtils creation (unsupported platform)\n");
@@ -524,15 +525,6 @@ memmgrStateInitLocked_IMPL
         else
         {
             pMemoryManager->fbsrStartMode = FBSR_TYPE_PERSISTENT;
-        }
-
-        // TODO: Remove this once BUG 4401261 is fixed
-        // FBSR_TYPE_WDDM_FAST_DMA_DEFERRED_NONPAGED and FBSR_TYPE_WDDM_SLOW_CPU_PAGED are broken
-        // on Windows with GSP enabled. FBSR_TYPE_DMA mostly works, but may fail if the requested
-        // non paged memory is unavailable
-        if (RMCFG_FEATURE_PLATFORM_WINDOWS && IS_GSP_CLIENT(pGpu))
-        {
-            pMemoryManager->fbsrStartMode = FBSR_TYPE_DMA;
         }
 
         for (i = pMemoryManager->fbsrStartMode; i < NUM_FBSR_TYPES; i++)
@@ -1362,10 +1354,10 @@ memmgrAllocGetAddrSpace_IMPL
    return addrSpace;
 }
 
-NvU32
+NvU64
 memmgrGetMappableRamSizeMb_IMPL(MemoryManager *pMemoryManager)
 {
-    return NvU64_LO32(pMemoryManager->Ram.mapRamSizeMb);
+    return pMemoryManager->Ram.mapRamSizeMb;
 }
 //
 // ZBC clear create/destroy routines.
@@ -1539,10 +1531,11 @@ memmgrDeterminePageSize_IMPL
         {
             if (RM_ATTR_PAGE_SIZE_BIG == pageSizeAttr ||
                 RM_ATTR_PAGE_SIZE_HUGE == pageSizeAttr ||
+                RM_ATTR_PAGE_SIZE_256GB == pageSizeAttr ||
                 RM_ATTR_PAGE_SIZE_512MB == pageSizeAttr)
             {
                 NV_PRINTF(LEVEL_ERROR,
-                          "Big/Huge/512MB page size not supported in sysmem.\n");
+                          "Big/Huge/512MB/256GB page size not supported in sysmem.\n");
 
                 NV_ASSERT_OR_RETURN(0, 0);
             }
@@ -1613,6 +1606,16 @@ memmgrDeterminePageSize_IMPL
                     }
                     break;
 
+                case RM_ATTR_PAGE_SIZE_256GB:
+                    if (kgmmuIsPageSize256gbSupported(pKernelGmmu))
+                    {
+                        pageSize = RM_PAGE_SIZE_256G;
+                    }
+                    else
+                    {
+                        NV_ASSERT_OR_RETURN(0, 0);
+                    }
+                    break;
                 default:
                     NV_ASSERT(0);
             }
@@ -1640,6 +1643,10 @@ memmgrDeterminePageSize_IMPL
             *pRetAttr2 = FLD_SET_DRF(OS32, _ATTR2, _PAGE_SIZE_HUGE, _512MB,  *pRetAttr2);
             break;
 
+        case RM_PAGE_SIZE_256G:
+            *pRetAttr = FLD_SET_DRF(OS32, _ATTR, _PAGE_SIZE, _HUGE, *pRetAttr);
+            *pRetAttr2 = FLD_SET_DRF(OS32, _ATTR2, _PAGE_SIZE_HUGE, _256GB,  *pRetAttr2);
+            break;
         default:
             NV_ASSERT(0);
     }
@@ -2325,7 +2332,7 @@ memmgrSetPartitionableMem_IMPL
     NV_ASSERT_OR_RETURN(!rangeIsEmpty(pMemoryManager->MIGMemoryPartitioningInfo.partitionableMemoryRange),
                         NV_ERR_INVALID_STATE);
 
-    if (!KBUS_CPU_VISIBLE_BAR12_DISABLED(pGpu))
+    if (!kbusIsBar1Disabled(GPU_GET_KERNEL_BUS(pGpu)))
     {
         NV_ASSERT_OK_OR_RETURN(memmgrSetMIGPartitionableBAR1Range(pGpu, pMemoryManager));
     }
@@ -2985,15 +2992,13 @@ _memmgrPmaStatsUpdateCb
 )
 {
     OBJGPU *pGpu = (OBJGPU *) pCtx;
-    NV00DE_SHARED_DATA *pSharedData;
+    RUSD_PMA_MEMORY_INFO *pSharedData;
 
     NV_ASSERT_OR_RETURN_VOID(pGpu != NULL);
 
-    pSharedData = gpushareddataWriteStart(pGpu);
-
+    pSharedData = gpushareddataWriteStart(pGpu, pmaMemoryInfo);
     pSharedData->freePmaMemory = freeFrames << PMA_PAGE_SHIFT;
-
-    gpushareddataWriteFinish(pGpu);
+    gpushareddataWriteFinish(pGpu, pmaMemoryInfo);
 }
 
 static void
@@ -3003,7 +3008,7 @@ _memmgrInitRUSDHeapSize
     MemoryManager *pMemoryManager
 )
 {
-    NV00DE_SHARED_DATA  *pSharedData;
+    RUSD_PMA_MEMORY_INFO  *pSharedData;
     KernelMemorySystem  *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
     NvU64                bytesTotal = 0;
     PMA                 *pPma;
@@ -3014,9 +3019,9 @@ _memmgrInitRUSDHeapSize
     pmaGetTotalMemory(pPma, &bytesTotal);
     bytesTotal -= ((NvU64)pKernelMemorySystem->fbOverrideStartKb << 10);
 
-    pSharedData = gpushareddataWriteStart(pGpu);
+    pSharedData = gpushareddataWriteStart(pGpu, pmaMemoryInfo);
     pSharedData->totalPmaMemory = bytesTotal;
-    gpushareddataWriteFinish(pGpu);
+    gpushareddataWriteFinish(pGpu, pmaMemoryInfo);
 }
 
 /*!

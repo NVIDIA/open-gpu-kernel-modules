@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -51,11 +51,12 @@ extern "C" {
 
 #include "core/core.h"
 #include "resserv/rs_client.h"
-#include "containers/eheap_old.h"
+#include "containers/btree.h"
 #include "gpu/mem_mgr/heap_base.h"
 #include "gpu/mem_mgr/mem_desc.h"
 
-
+typedef struct OBJEHEAP OBJEHEAP;
+typedef struct EMEMBLOCK EMEMBLOCK;
 typedef struct OBJVASPACE *POBJVASPACE;
 typedef struct VASPACE VASPACE, *PVASPACE;
 
@@ -286,8 +287,8 @@ struct OBJVASPACE {
     NV_STATUS (*__vaspaceMap__)(struct OBJVASPACE * /*this*/, struct OBJGPU *, const NvU64, const NvU64, const MMU_MAP_TARGET *, const VAS_MAP_FLAGS);  // inline virtual body
     void (*__vaspaceUnmap__)(struct OBJVASPACE * /*this*/, struct OBJGPU *, const NvU64, const NvU64);  // inline virtual body
     NV_STATUS (*__vaspaceReserveMempool__)(struct OBJVASPACE * /*this*/, struct OBJGPU *, struct Device *, NvU64, NvU64, NvU32);  // inline virtual body
-    struct OBJEHEAP * (*__vaspaceGetHeap__)(struct OBJVASPACE * /*this*/);  // inline virtual body
-    NvU64 (*__vaspaceGetMapPageSize__)(struct OBJVASPACE * /*this*/, struct OBJGPU *, struct EMEMBLOCK *);  // inline virtual body
+    OBJEHEAP * (*__vaspaceGetHeap__)(struct OBJVASPACE * /*this*/);  // inline virtual body
+    NvU64 (*__vaspaceGetMapPageSize__)(struct OBJVASPACE * /*this*/, struct OBJGPU *, EMEMBLOCK *);  // inline virtual body
     NvU64 (*__vaspaceGetBigPageSize__)(struct OBJVASPACE * /*this*/);  // inline virtual body
     NvBool (*__vaspaceIsMirrored__)(struct OBJVASPACE * /*this*/);  // inline virtual body
     NvBool (*__vaspaceIsFaultCapable__)(struct OBJVASPACE * /*this*/);  // inline virtual body
@@ -451,11 +452,11 @@ static inline NV_STATUS vaspaceReserveMempool_DISPATCH(struct OBJVASPACE *pVAS, 
     return pVAS->__vaspaceReserveMempool__(pVAS, pGpu, pDevice, size, pageSizeLockMask, flags);
 }
 
-static inline struct OBJEHEAP * vaspaceGetHeap_DISPATCH(struct OBJVASPACE *pVAS) {
+static inline OBJEHEAP * vaspaceGetHeap_DISPATCH(struct OBJVASPACE *pVAS) {
     return pVAS->__vaspaceGetHeap__(pVAS);
 }
 
-static inline NvU64 vaspaceGetMapPageSize_DISPATCH(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu, struct EMEMBLOCK *pMemBlock) {
+static inline NvU64 vaspaceGetMapPageSize_DISPATCH(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock) {
     return pVAS->__vaspaceGetMapPageSize__(pVAS, pGpu, pMemBlock);
 }
 
@@ -545,12 +546,12 @@ static inline NV_STATUS vaspaceReserveMempool_ac1694(struct OBJVASPACE *pVAS, st
     return NV_OK;
 }
 
-static inline struct OBJEHEAP *vaspaceGetHeap_128d6d(struct OBJVASPACE *pVAS) {
+static inline OBJEHEAP *vaspaceGetHeap_128d6d(struct OBJVASPACE *pVAS) {
     NV_ASSERT_PRECOMP(((NvBool)(0 != 0)));
     return ((void *)0);
 }
 
-static inline NvU64 vaspaceGetMapPageSize_07238a(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu, struct EMEMBLOCK *pMemBlock) {
+static inline NvU64 vaspaceGetMapPageSize_07238a(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock) {
     NV_ASSERT_PRECOMP(((NvBool)(0 != 0)));
     return 0U;
 }

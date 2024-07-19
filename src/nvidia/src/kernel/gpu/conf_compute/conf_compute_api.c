@@ -38,6 +38,7 @@
 #include "gpu/conf_compute/conf_compute_api.h"
 #include "gpu/subdevice/subdevice.h"
 #include "class/clcb33.h" // NV_CONFIDENTIAL_COMPUTE
+#include "nvrm_registry.h"
 
 NV_STATUS
 confComputeApiConstruct_IMPL
@@ -445,4 +446,58 @@ confComputeApiCtrlCmdSystemSetSecurityPolicy_IMPL
     pGpuMgr->ccAttackerAdvantage = pParams->attackerAdvantage;
 
     return status;
+}
+
+NV_STATUS
+confComputeApiCtrlCmdGpuGetKeyRotationState_IMPL
+(
+    ConfidentialComputeApi                                     *pConfComputeApi,
+    NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE_PARAMS *pParams
+)
+{
+    Subdevice           *pSubdevice;
+    OBJGPU              *pGpu;
+    ConfidentialCompute *pConfCompute;
+    NvBool               bKernelKeyRotation = NV_FALSE;
+    NvBool               bUserKeyRotation = NV_FALSE;
+
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
+        subdeviceGetByHandle(RES_GET_CLIENT(pConfComputeApi),
+        pParams->hSubDevice, &pSubdevice));
+
+    pGpu = GPU_RES_GET_GPU(pSubdevice);
+    pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+
+    if ((pConfCompute == NULL) ||
+        !pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED) ||
+        !pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_ENABLED))
+    {
+        pParams->keyRotationState = NV_CONF_COMPUTE_CTRL_CMD_GPU_KEY_ROTATION_DISABLED;
+        return NV_OK;
+    }
+
+    bKernelKeyRotation = FLD_TEST_DRF(_REG_STR, _RM_CONF_COMPUTE_KEY_ROTATION, _KERNEL_KEYS, _YES,
+                                      pConfCompute->keyRotationEnableMask);
+
+    bUserKeyRotation = FLD_TEST_DRF(_REG_STR, _RM_CONF_COMPUTE_KEY_ROTATION, _USER_KEYS, _YES,
+                                    pConfCompute->keyRotationEnableMask);
+    if (bKernelKeyRotation && bUserKeyRotation)
+    {
+        pParams->keyRotationState = NV_CONF_COMPUTE_CTRL_CMD_GPU_KEY_ROTATION_BOTH_ENABLED;
+    }
+    else if (bKernelKeyRotation && !bUserKeyRotation)
+    {
+        pParams->keyRotationState = NV_CONF_COMPUTE_CTRL_CMD_GPU_KEY_ROTATION_KERN_ENABLED;
+    }
+    else if (!bKernelKeyRotation && bUserKeyRotation)
+    {
+        pParams->keyRotationState = NV_CONF_COMPUTE_CTRL_CMD_GPU_KEY_ROTATION_USER_ENABLED;
+    }
+    else
+    {
+        pParams->keyRotationState = NV_CONF_COMPUTE_CTRL_CMD_GPU_KEY_ROTATION_DISABLED;
+    }
+    return NV_OK;
 }

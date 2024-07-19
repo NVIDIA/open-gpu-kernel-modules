@@ -1300,6 +1300,7 @@ typedef struct
 #define NVOS32_ATTR2_PAGE_SIZE_HUGE_DEFAULT              0x00000000
 #define NVOS32_ATTR2_PAGE_SIZE_HUGE_2MB                  0x00000001
 #define NVOS32_ATTR2_PAGE_SIZE_HUGE_512MB                0x00000002
+#define NVOS32_ATTR2_PAGE_SIZE_HUGE_256GB                0x00000003
 
 // Allow read-only or read-write user CPU mappings
 #define NVOS32_ATTR2_PROTECTION_USER                          22:22
@@ -2847,85 +2848,6 @@ typedef struct
 
 // NV_TIMEOUT_CONTROL_CMD_RESET_DEVICE_TIMEOUT resets the device timeout to its
 // default value. It uses 'deviceInstance' as the target device.
-
-/**
- * @brief GspTestGetRpcMessageData parameters
- *
- * This API is used by the user-mode GSP firmware RM to get RPC message data
- * from the kernel-mode GSP client RM.
- *
- * This API is only supported in the GSP testbed environment.
- *
- *  blockNum
- *    Specifies block number of message data to return.  A value of 0
- *    indicates that the (default) message header and body should be returned
- *    in the buffer.  If additional RPC-specific data is required it can
- *    be read by continually incrementing the block number and reading the
- *    next block in sequence.
- *  msgBufferSize
- *    Size (in bytes) of buffer pointed to by pMsgBuffer.
- *  pMsgBuffer
- *    Address of user-buffer into  which RPC message data will be copied.
- *  status
- *    Returns status of call.
- **/
-typedef struct
-{
-    NvU32 blockNum;                      // [IN] block # of data to get
-    NvU32 bufferSize;                    // [IN] size of pBuffer
-    NvP64 pBuffer NV_ALIGN_BYTES(8);     // [OUT] buffer returning data
-    NvV32 status;                        // [OUT] status of call
-} NV_GSP_TEST_GET_MSG_BLOCK_PARAMETERS;
-
-/**
- * @brief GspTestSendRpcMessageResponse parameters
- *
- * This API is used to by the user-mode GSP firmware RM to send an RPC message
- * response to the kernel-mode GSP client RM.
- *
- * This API is only supported in the GSP testbed environment.
- *
- *  bufferSize
- *    Size (in bytes) of buffer pointed to by pBuffer.
- *  pBuffer
- *    Address of user-buffer from which RPC response data will be copied.
- *  status
- *    Returns status of call.
- **/
-typedef struct
-{
-    NvU32 bufferSize;                   // [IN] size of response data buffer
-    NvP64 pBuffer NV_ALIGN_BYTES(8);    // [IN] response data buffer
-    NvV32 status;                       // [OUT] status of call
-} NV_GSP_TEST_SEND_MSG_RESPONSE_PARAMETERS;
-
-/**
- * @brief GspTestSendEventNotification parameters
- *
- * This API is used by the user-mode GSP firmware RM to send an event
- * notification to the kernel-mode GSP client RM.
- *
- * This API is only supported in the GSP testbed environment.
- *
- *  hParentClient
- *    Specifies handle of client that owns object associated with event.
- *  hSrcResource
- *    Specifies handle of object associated with event.
- *  hClass
- *    Specifies class number (type) of event.
- *  notifyIndex
- *    Specifies notifier index associated with event.
- *  status
- *    Returns status of call.
- **/
-typedef struct
-{
-    NvHandle hParentClient;             // [IN] handle of client
-    NvHandle hSrcResource;              // [IN] handle of object
-    NvU32 hClass;                       // [IN] class number of event
-    NvU32 notifyIndex;                  // [IN] notifier index
-    NvV32 status;                       // [OUT] status of call
-} NV_GSP_TEST_SEND_EVENT_NOTIFICATION_PARAMETERS;
 
 /*
  * NV_VIDMEM_ACCESS_BIT_BUFFER_ADDR_SPACE_COH

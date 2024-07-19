@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -133,6 +133,7 @@ struct Fabric {
     NvP64 PRIVATE_FIELD(pOsImexEvent);
     NvU16 PRIVATE_FIELD(nodeId);
     volatile NvU64 PRIVATE_FIELD(eventId);
+    NvBool PRIVATE_FIELD(bAllowFabricMemAlloc);
     FabricCache PRIVATE_FIELD(fabricMulticastCache);
     PORT_RWLOCK *PRIVATE_FIELD(pMulticastFabriCacheLock);
 };
@@ -194,6 +195,37 @@ static inline NvU32 fabricGetFmSessionFlags(struct Fabric *pFabric) {
 }
 #else //__nvoc_fabric_h_disabled
 #define fabricGetFmSessionFlags(pFabric) fabricGetFmSessionFlags_IMPL(pFabric)
+#endif //__nvoc_fabric_h_disabled
+
+NvBool fabricIsMemAllocDisabled_IMPL(struct Fabric *pFabric);
+
+#ifdef __nvoc_fabric_h_disabled
+static inline NvBool fabricIsMemAllocDisabled(struct Fabric *pFabric) {
+    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
+    return NV_FALSE;
+}
+#else //__nvoc_fabric_h_disabled
+#define fabricIsMemAllocDisabled(pFabric) fabricIsMemAllocDisabled_IMPL(pFabric)
+#endif //__nvoc_fabric_h_disabled
+
+void fabricDisableMemAlloc_IMPL(struct Fabric *pFabric);
+
+#ifdef __nvoc_fabric_h_disabled
+static inline void fabricDisableMemAlloc(struct Fabric *pFabric) {
+    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
+}
+#else //__nvoc_fabric_h_disabled
+#define fabricDisableMemAlloc(pFabric) fabricDisableMemAlloc_IMPL(pFabric)
+#endif //__nvoc_fabric_h_disabled
+
+void fabricEnableMemAlloc_IMPL(struct Fabric *pFabric);
+
+#ifdef __nvoc_fabric_h_disabled
+static inline void fabricEnableMemAlloc(struct Fabric *pFabric) {
+    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
+}
+#else //__nvoc_fabric_h_disabled
+#define fabricEnableMemAlloc(pFabric) fabricEnableMemAlloc_IMPL(pFabric)
 #endif //__nvoc_fabric_h_disabled
 
 NV_STATUS fabricSetImexEvent_IMPL(struct Fabric *pFabric, NvP64 pOsEvent);

@@ -45,119 +45,81 @@
 #define NV_NVLDL_TOP_LINK_STATE_DBG_SUBSTATE                  31:16           /* R-XVF */
 #define NV_NVLDL_TOP_INTR                                     0x00000050      /* RW-4R */
 #define NV_NVLDL_TOP_INTR_TX_REPLAY                           0:0             /* RWEVF */
-#define NV_NVLDL_TOP_INTR_TX_REPLAY__ONWRITE                  "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_TX_REPLAY_INIT                      0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_TX_RECOVERY_SHORT                   1:1             /* RWEVF */
-#define NV_NVLDL_TOP_INTR_TX_RECOVERY_SHORT__ONWRITE          "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_TX_RECOVERY_SHORT_INIT              0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_TX_FAULT_RAM                        4:4             /* RWEVF */
-#define NV_NVLDL_TOP_INTR_TX_FAULT_RAM__ONWRITE               "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_TX_FAULT_RAM_INIT                   0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_TX_FAULT_INTERFACE                  5:5             /* RWEVF */
-#define NV_NVLDL_TOP_INTR_TX_FAULT_INTERFACE__ONWRITE         "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_TX_FAULT_INTERFACE_INIT             0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_TX_FAULT_SUBLINK_CHANGE             8:8             /* RWEVF */
-#define NV_NVLDL_TOP_INTR_TX_FAULT_SUBLINK_CHANGE__ONWRITE    "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_TX_FAULT_SUBLINK_CHANGE_INIT        0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_TX_PL_ERROR                         9:9             /* RWEVF */
-#define NV_NVLDL_TOP_INTR_TX_PL_ERROR__ONWRITE                "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_TX_PL_ERROR_INIT                    0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_PHY_A                               12:12           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_PHY_A__ONWRITE                      "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_PHY_A_INIT                          0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_PHY_B                               13:13           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_PHY_B__ONWRITE                      "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_PHY_B_INIT                          0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_RX_FAULT_SUBLINK_CHANGE             16:16           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_RX_FAULT_SUBLINK_CHANGE__ONWRITE    "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_RX_FAULT_SUBLINK_CHANGE_INIT        0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_RX_PL_ERROR                         17:17           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_RX_PL_ERROR__ONWRITE                "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_RX_PL_ERROR_INIT                    0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_RX_FAULT_DL_PROTOCOL                20:20           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_RX_FAULT_DL_PROTOCOL__ONWRITE       "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_RX_FAULT_DL_PROTOCOL_INIT           0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_RX_SHORT_ERROR_RATE                 21:21           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_RX_SHORT_ERROR_RATE__ONWRITE        "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_RX_SHORT_ERROR_RATE_INIT            0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_RX_LONG_ERROR_RATE                  22:22           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_RX_LONG_ERROR_RATE__ONWRITE         "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_RX_LONG_ERROR_RATE_INIT             0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_RX_ILA_TRIGGER                      23:23           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_RX_ILA_TRIGGER__ONWRITE             "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_RX_ILA_TRIGGER_INIT                 0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_RX_CRC_COUNTER                      24:24           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_RX_CRC_COUNTER__ONWRITE             "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_RX_CRC_COUNTER_INIT                 0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_LTSSM_FAULT_DOWN                    27:27           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_LTSSM_FAULT_DOWN__ONWRITE           "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_LTSSM_FAULT_DOWN_INIT               0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_LTSSM_FAULT_UP                      28:28           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_LTSSM_FAULT_UP__ONWRITE             "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_LTSSM_FAULT_UP_INIT                 0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_LTSSM_PROTOCOL                      29:29           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_LTSSM_PROTOCOL__ONWRITE             "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_LTSSM_PROTOCOL_INIT                 0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_MINION_REQUEST                      30:30           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_MINION_REQUEST__ONWRITE             "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_MINION_REQUEST_INIT                 0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_SW2                                 0x00000054      /* RW-4R */
 #define NV_NVLDL_TOP_INTR_SW2_TX_REPLAY                       0:0             /* RWEVF */
-#define NV_NVLDL_TOP_INTR_SW2_TX_REPLAY__ONWRITE              "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_SW2_TX_REPLAY_INIT                  0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_SW2_TX_RECOVERY_SHORT               1:1             /* RWEVF */
-#define NV_NVLDL_TOP_INTR_SW2_TX_RECOVERY_SHORT__ONWRITE      "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_SW2_TX_RECOVERY_SHORT_INIT          0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_SW2_TX_FAULT_RAM                    4:4             /* RWEVF */
-#define NV_NVLDL_TOP_INTR_SW2_TX_FAULT_RAM__ONWRITE           "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_SW2_TX_FAULT_RAM_INIT               0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_SW2_TX_FAULT_INTERFACE              5:5             /* RWEVF */
-#define NV_NVLDL_TOP_INTR_SW2_TX_FAULT_INTERFACE__ONWRITE     "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_SW2_TX_FAULT_INTERFACE_INIT         0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_SW2_TX_FAULT_SUBLINK_CHANGE         8:8             /* RWEVF */
-#define NV_NVLDL_TOP_INTR_SW2_TX_FAULT_SUBLINK_CHANGE__ONWRITE "oneToClear"   /*       */
 #define NV_NVLDL_TOP_INTR_SW2_TX_FAULT_SUBLINK_CHANGE_INIT    0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_SW2_TX_PL_ERROR                     9:9             /* RWEVF */
-#define NV_NVLDL_TOP_INTR_SW2_TX_PL_ERROR__ONWRITE            "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_SW2_TX_PL_ERROR_INIT                0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_SW2_PHY_A                           12:12           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_SW2_PHY_A__ONWRITE                  "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_SW2_PHY_A_INIT                      0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_SW2_PHY_B                           13:13           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_SW2_PHY_B__ONWRITE                  "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_SW2_PHY_B_INIT                      0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_SW2_RX_FAULT_SUBLINK_CHANGE         16:16           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_SW2_RX_FAULT_SUBLINK_CHANGE__ONWRITE "oneToClear"   /*       */
 #define NV_NVLDL_TOP_INTR_SW2_RX_FAULT_SUBLINK_CHANGE_INIT    0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_SW2_RX_PL_ERROR                     17:17           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_SW2_RX_PL_ERROR__ONWRITE            "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_SW2_RX_PL_ERROR_INIT                0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_SW2_RX_FAULT_DL_PROTOCOL            20:20           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_SW2_RX_FAULT_DL_PROTOCOL__ONWRITE   "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_SW2_RX_FAULT_DL_PROTOCOL_INIT       0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_SW2_RX_SHORT_ERROR_RATE             21:21           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_SW2_RX_SHORT_ERROR_RATE__ONWRITE    "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_SW2_RX_SHORT_ERROR_RATE_INIT        0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_SW2_RX_LONG_ERROR_RATE              22:22           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_SW2_RX_LONG_ERROR_RATE__ONWRITE     "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_SW2_RX_LONG_ERROR_RATE_INIT         0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_SW2_RX_ILA_TRIGGER                  23:23           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_SW2_RX_ILA_TRIGGER__ONWRITE         "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_SW2_RX_ILA_TRIGGER_INIT             0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_SW2_RX_CRC_COUNTER                  24:24           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_SW2_RX_CRC_COUNTER__ONWRITE         "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_SW2_RX_CRC_COUNTER_INIT             0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_SW2_LTSSM_FAULT_DOWN                27:27           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_SW2_LTSSM_FAULT_DOWN__ONWRITE       "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_SW2_LTSSM_FAULT_DOWN_INIT           0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_SW2_LTSSM_FAULT_UP                  28:28           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_SW2_LTSSM_FAULT_UP__ONWRITE         "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_SW2_LTSSM_FAULT_UP_INIT             0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_SW2_LTSSM_PROTOCOL                  29:29           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_SW2_LTSSM_PROTOCOL__ONWRITE         "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_SW2_LTSSM_PROTOCOL_INIT             0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_SW2_MINION_REQUEST                  30:30           /* RWEVF */
-#define NV_NVLDL_TOP_INTR_SW2_MINION_REQUEST__ONWRITE         "oneToClear"    /*       */
 #define NV_NVLDL_TOP_INTR_SW2_MINION_REQUEST_INIT             0x00000000      /* RWE-V */
 #define NV_NVLDL_TOP_INTR_STALL_EN                            0x00000058      /* RW-4R */
 #define NV_NVLDL_TOP_INTR_STALL_EN_TX_REPLAY                  0:0             /* RWEVF */
@@ -363,107 +325,81 @@
 #define NV_NVLDL_RX_SLSM_STATUS_RX_FENCE_STATUS_ON            0x00000001      /* R---V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL                           0x00003028      /* RW-4R */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_CONST_DET_ERR             1:1             /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_CONST_DET_ERR__ONWRITE    "oneToClear"    /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_CONST_DET_ERR_OFF         0x00000000      /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_CONST_DET_ERR_ON          0x00000001      /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_OFF2SAFE_LINK_DET_ERR     2:2             /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_OFF2SAFE_LINK_DET_ERR__ONWRITE "oneToClear" /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_OFF2SAFE_LINK_DET_ERR_OFF 0x00000000      /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_OFF2SAFE_LINK_DET_ERR_ON  0x00000001      /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_SAFE_FINISH_ERR           3:3             /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_SAFE_FINISH_ERR__ONWRITE  "oneToClear"    /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_SAFE_FINISH_ERR_OFF       0x00000000      /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_SAFE_FINISH_ERR_ON        0x00000001      /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_SCRAM_LOCK_ERR            4:4             /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_SCRAM_LOCK_ERR__ONWRITE   "oneToClear"    /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_SCRAM_LOCK_ERR_OFF        0x00000000      /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_SCRAM_LOCK_ERR_ON         0x00000001      /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_SYM_LOCK_ERR              5:5             /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_SYM_LOCK_ERR__ONWRITE     "oneToClear"    /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_SYM_LOCK_ERR_OFF          0x00000000      /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_SYM_LOCK_ERR_ON           0x00000001      /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_SYM_ALIGN_END_ERR         6:6             /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_SYM_ALIGN_END_ERR__ONWRITE "oneToClear"   /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_SYM_ALIGN_END_ERR_OFF     0x00000000      /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_SYM_ALIGN_END_ERR_ON      0x00000001      /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_FIFO_SKEW_ERR             7:7             /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_FIFO_SKEW_ERR__ONWRITE    "oneToClear"    /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_FIFO_SKEW_ERR_OFF         0x00000000      /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_FIFO_SKEW_ERR_ON          0x00000001      /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_TRAIN2SAFE_LINK_DET_ERR   8:8             /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_TRAIN2SAFE_LINK_DET_ERR__ONWRITE "oneToClear" /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_TRAIN2SAFE_LINK_DET_ERR_OFF 0x00000000    /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_TRAIN2SAFE_LINK_DET_ERR_ON 0x00000001     /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_HS2SAFE_LINK_DET_ERR      9:9             /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_HS2SAFE_LINK_DET_ERR__ONWRITE "oneToClear" /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_HS2SAFE_LINK_DET_ERR_OFF  0x00000000      /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_HS2SAFE_LINK_DET_ERR_ON   0x00000001      /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_FENCE_ERR                 10:10           /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_FENCE_ERR__ONWRITE        "oneToClear"    /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_FENCE_ERR_OFF             0x00000000      /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_FENCE_ERR_ON              0x00000001      /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_FAULT2SAFE_LINK_DET_ERR   11:11           /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_FAULT2SAFE_LINK_DET_ERR__ONWRITE "oneToClear" /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_FAULT2SAFE_LINK_DET_ERR_OFF 0x00000000    /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_FAULT2SAFE_LINK_DET_ERR_ON 0x00000001     /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_FAULT2SAFE_SAFE_DET_ERR   12:12           /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_FAULT2SAFE_SAFE_DET_ERR__ONWRITE "oneToClear" /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_FAULT2SAFE_SAFE_DET_ERR_OFF 0x00000000    /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_FAULT2SAFE_SAFE_DET_ERR_ON 0x00000001     /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_SAFE_RETRY_ERR            13:13           /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_SAFE_RETRY_ERR__ONWRITE   "oneToClear"    /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_SAFE_RETRY_ERR_OFF        0x00000000      /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_SAFE_RETRY_ERR_ON         0x00000001      /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_RC_DEADLINE_ERR           15:15           /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_RC_DEADLINE_ERR__ONWRITE  "oneToClear"    /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_RC_DEADLINE_ERR_OFF       0x00000000      /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_RC_DEADLINE_ERR_ON        0x00000001      /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_IOBIST_ECC_ALIGN_DONE_ERR 16:16           /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_IOBIST_ECC_ALIGN_DONE_ERR__ONWRITE "oneToClear" /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_IOBIST_ECC_ALIGN_DONE_ERR_OFF 0x00000000  /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_IOBIST_ECC_ALIGN_DONE_ERR_ON 0x00000001   /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_O2S_SD_NO_LD_ERR          18:18           /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_O2S_SD_NO_LD_ERR__ONWRITE "oneToClear"    /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_O2S_SD_NO_LD_ERR_OFF      0x00000000      /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_O2S_SD_NO_LD_ERR_ON       0x00000001      /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_H2S_SD_NO_LD_ERR          19:19           /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_H2S_SD_NO_LD_ERR__ONWRITE "oneToClear"    /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_H2S_SD_NO_LD_ERR_OFF      0x00000000      /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_H2S_SD_NO_LD_ERR_ON       0x00000001      /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_O2S_STROBE_NO_SD_ERR      21:21           /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_O2S_STROBE_NO_SD_ERR__ONWRITE "oneToClear" /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_O2S_STROBE_NO_SD_ERR_OFF  0x00000000      /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_O2S_STROBE_NO_SD_ERR_ON   0x00000001      /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_H2S_STROBE_NO_SD_ERR      22:22           /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_H2S_STROBE_NO_SD_ERR__ONWRITE "oneToClear" /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_H2S_STROBE_NO_SD_ERR_OFF  0x00000000      /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_H2S_STROBE_NO_SD_ERR_ON   0x00000001      /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_HS2SAFE_SAFE_DET_ERR      24:24           /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_HS2SAFE_SAFE_DET_ERR__ONWRITE "oneToClear" /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_HS2SAFE_SAFE_DET_ERR_OFF  0x00000000      /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_HS2SAFE_SAFE_DET_ERR_ON   0x00000001      /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_TRAIN2SAFE_SAFE_DET_ERR   25:25           /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_TRAIN2SAFE_SAFE_DET_ERR__ONWRITE "oneToClear" /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_TRAIN2SAFE_SAFE_DET_ERR_OFF 0x00000000    /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_TRAIN2SAFE_SAFE_DET_ERR_ON 0x00000001     /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_S2S_SAFE_DET_ERR          26:26           /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_S2S_SAFE_DET_ERR__ONWRITE "oneToClear"    /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_S2S_SAFE_DET_ERR_OFF      0x00000000      /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_S2S_SAFE_DET_ERR_ON       0x00000001      /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_OFF2SAFE_SAFE_DET_ERR     27:27           /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_OFF2SAFE_SAFE_DET_ERR__ONWRITE "oneToClear" /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_OFF2SAFE_SAFE_DET_ERR_OFF 0x00000000      /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_OFF2SAFE_SAFE_DET_ERR_ON  0x00000001      /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_L2_FENCE_ERR              29:29           /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_L2_FENCE_ERR__ONWRITE     "oneToClear"    /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_L2_FENCE_ERR_OFF          0x00000000      /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_L2_FENCE_ERR_ON           0x00000001      /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_IOBIST_ECC_SCRAM_LOCK_ERR 30:30           /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_IOBIST_ECC_SCRAM_LOCK_ERR__ONWRITE "oneToClear" /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_IOBIST_ECC_SCRAM_LOCK_ERR_OFF 0x00000000  /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_IOBIST_ECC_SCRAM_LOCK_ERR_ON 0x00000001   /* RW--V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_IOBIST_ECC_ALIGN_LOCK_ERR 31:31           /* RWEVF */
-#define NV_NVLDL_RX_RXSLSM_ERR_CNTL_IOBIST_ECC_ALIGN_LOCK_ERR__ONWRITE "oneToClear" /*       */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_IOBIST_ECC_ALIGN_LOCK_ERR_OFF 0x00000000  /* RWE-V */
 #define NV_NVLDL_RX_RXSLSM_ERR_CNTL_IOBIST_ECC_ALIGN_LOCK_ERR_ON 0x00000001   /* RW--V */
 #define NV_NVLDL_RX_ERROR_COUNT_CTRL                          0x00003280      /* RW-4R */

@@ -2288,6 +2288,13 @@ nvswitch_ctrl_get_routing_id_lr10
     NvU32 gsize;
     NvU32 ram_size;
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
     if (!NVSWITCH_IS_LINK_ENG_VALID_LR10(device, NPORT, params->portNum))
     {
         NVSWITCH_PRINT(device, ERROR,
@@ -2421,6 +2428,13 @@ nvswitch_ctrl_set_routing_id_valid_lr10
     NvU32 ram_size;
     NvlStatus retval;
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
     if (!NVSWITCH_IS_LINK_ENG_VALID_LR10(device, NPORT, p->portNum))
     {
         NVSWITCH_PRINT(device, ERROR,
@@ -2503,6 +2517,13 @@ nvswitch_ctrl_set_routing_id_lr10
     NvU32 i, j;
     NvlStatus retval = NVL_SUCCESS;
     NvU32 ram_size;
+
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
 
     if (!NVSWITCH_IS_LINK_ENG_VALID_LR10(device, NPORT, p->portNum))
     {
@@ -2681,6 +2702,13 @@ nvswitch_ctrl_set_routing_lan_lr10
     NvlStatus retval = NVL_SUCCESS;
     NvU32 ram_size;
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
     if (!NVSWITCH_IS_LINK_ENG_VALID_LR10(device, NPORT, p->portNum))
     {
         NVSWITCH_PRINT(device, ERROR,
@@ -2775,6 +2803,13 @@ nvswitch_ctrl_get_routing_lan_lr10
     NvU32 rlan_tab_data[NVSWITCH_NUM_RLANTABDATA_REGS_LR10]; // 6 RLAN tables
     NvU32 rlan_count;
     NvU32 ram_size;
+
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
 
     if (!NVSWITCH_IS_LINK_ENG_VALID_LR10(device, NPORT, params->portNum))
     {
@@ -2962,6 +2997,13 @@ nvswitch_ctrl_set_routing_lan_valid_lr10
     NvU32 i;
     NvU32 ram_size;
     NvlStatus retval;
+
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
 
     if (!NVSWITCH_IS_LINK_ENG_VALID_LR10(device, NPORT, p->portNum))
     {
@@ -4148,7 +4190,9 @@ nvswitch_ctrl_get_nvlink_status_lr10
         }
         else
         {
-            nvlink_lib_discover_and_get_remote_conn_info(link, &conn_info, NVLINK_STATE_CHANGE_SYNC);
+            nvlink_lib_discover_and_get_remote_conn_info(link, &conn_info,
+                                                         NVLINK_STATE_CHANGE_SYNC,
+                                                         NV_FALSE);
         }
 
         // Set NVLINK per-link caps

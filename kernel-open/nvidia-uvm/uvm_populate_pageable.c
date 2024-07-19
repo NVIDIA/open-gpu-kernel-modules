@@ -53,7 +53,7 @@ static bool is_write_populate(struct vm_area_struct *vma, uvm_populate_permissio
     }
 }
 
-NV_STATUS uvm_handle_fault(struct vm_area_struct *vma, unsigned long start, unsigned long vma_num_pages, bool write)
+static NV_STATUS handle_fault(struct vm_area_struct *vma, unsigned long start, unsigned long vma_num_pages, bool write)
 {
     NV_STATUS status = NV_OK;
 
@@ -61,7 +61,7 @@ NV_STATUS uvm_handle_fault(struct vm_area_struct *vma, unsigned long start, unsi
     unsigned int ret = 0;
     unsigned int fault_flags = write ? FAULT_FLAG_WRITE : 0;
 
-#ifdef FAULT_FLAG_REMOTE
+#if defined(NV_MM_HAS_FAULT_FLAG_REMOTE)
     fault_flags |= (FAULT_FLAG_REMOTE);
 #endif
 
@@ -133,7 +133,7 @@ NV_STATUS uvm_populate_pageable_vma(struct vm_area_struct *vma,
     if (uvm_managed_vma)
         uvm_record_unlock_mmap_lock_read(mm);
 
-    status = uvm_handle_fault(vma, start, vma_num_pages, !!(gup_flags & FOLL_WRITE));
+    status = handle_fault(vma, start, vma_num_pages, !!(gup_flags & FOLL_WRITE));
     if (status != NV_OK)
         goto out;
 

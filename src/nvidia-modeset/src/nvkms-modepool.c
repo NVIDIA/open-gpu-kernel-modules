@@ -1672,7 +1672,8 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
     NvU32 head;
     NvBool ret = FALSE;
 
-    const NVColorFormatInfoRec supportedColorFormats = nvGetColorFormatInfo(pDpyEvo);
+    const NvKmsDpyOutputColorFormatInfo supportedColorFormats =
+        nvDpyGetOutputColorFormatInfo(pDpyEvo);
     NVDpyAttributeColor dpyColor;
 
     if (modeName[0] == '\0') {

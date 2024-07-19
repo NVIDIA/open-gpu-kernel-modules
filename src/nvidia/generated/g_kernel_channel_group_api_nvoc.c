@@ -265,12 +265,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
 #endif
     },
     {               /*  [11] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) kchangrpapiCtrlCmdProgramVidmemPromote_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
-        /*flags=*/      0x248u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+        /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xa06c0109u,
         /*paramSize=*/  sizeof(NVA06C_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS),
@@ -310,12 +310,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
 #endif
     },
     {               /*  [14] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2c8u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) kchangrpapiCtrlCmdInternalGpFifoSchedule_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2c8u)
-        /*flags=*/      0x2c8u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc8u)
+        /*flags=*/      0xc8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xa06c0201u,
         /*paramSize=*/  sizeof(NVA06C_CTRL_GPFIFO_SCHEDULE_PARAMS),
@@ -325,12 +325,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
 #endif
     },
     {               /*  [15] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2c8u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) kchangrpapiCtrlCmdInternalSetTimeslice_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2c8u)
-        /*flags=*/      0x2c8u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc8u)
+        /*flags=*/      0xc8u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xa06c0202u,
         /*paramSize=*/  sizeof(NVA06C_CTRL_TIMESLICE_PARAMS),
@@ -557,7 +557,7 @@ static void __nvoc_init_funcTable_KernelChannelGroupApi_1(KernelChannelGroupApi 
 #endif
 
     // kchangrpapiCtrlCmdProgramVidmemPromote -- exported (id=0xa06c0109)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
     pThis->__kchangrpapiCtrlCmdProgramVidmemPromote__ = &kchangrpapiCtrlCmdProgramVidmemPromote_IMPL;
 #endif
 
@@ -572,12 +572,12 @@ static void __nvoc_init_funcTable_KernelChannelGroupApi_1(KernelChannelGroupApi 
 #endif
 
     // kchangrpapiCtrlCmdInternalGpFifoSchedule -- exported (id=0xa06c0201)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2c8u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc8u)
     pThis->__kchangrpapiCtrlCmdInternalGpFifoSchedule__ = &kchangrpapiCtrlCmdInternalGpFifoSchedule_IMPL;
 #endif
 
     // kchangrpapiCtrlCmdInternalSetTimeslice -- exported (id=0xa06c0202)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2c8u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc8u)
     pThis->__kchangrpapiCtrlCmdInternalSetTimeslice__ = &kchangrpapiCtrlCmdInternalSetTimeslice_IMPL;
 #endif
 

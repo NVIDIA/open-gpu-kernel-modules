@@ -1415,8 +1415,6 @@ void nvDpyUpdateHdmiVRRCaps(NVDpyEvoPtr pDpyEvo)
         }
 
         pDpyEvo->vrr.needsSwFramePacing = TRUE;
-
-        pDpyEvo->vrr.edidTimeoutMicroseconds = 1000000 / edidVrrMin;
     }
 }
 
@@ -2311,7 +2309,7 @@ static NvBool nvHdmiFrlQueryConfigOneBpc(
 
     clientControl.option = HDMI_QUERY_FRL_HIGHEST_PIXEL_QUALITY;
 
-    if (pValidationParams->forceDsc) {
+    if (pValidationParams->dscMode == NVKMS_DSC_MODE_FORCE_ENABLE) {
         clientControl.enableDSC = TRUE;
     }
 
@@ -2320,6 +2318,9 @@ static NvBool nvHdmiFrlQueryConfigOneBpc(
      * but YUV420 is not, force DSC.
      */
     if (b2Heads1Or && (pHwTimings->yuv420Mode != NV_YUV420_MODE_HW)) {
+        if (pValidationParams->dscMode == NVKMS_DSC_MODE_FORCE_DISABLE) {
+            return FALSE;
+        }
         clientControl.enableDSC = TRUE;
     }
 
@@ -2357,6 +2358,13 @@ static NvBool nvHdmiFrlQueryConfigOneBpc(
             if ((pConfig->frlRate != HDMI_FRL_DATA_RATE_NONE) &&
                     pConfig->dscInfo.bEnableDSC &&
                     (hdmiLinkRate != 0)) {
+
+                if (pValidationParams->dscMode ==
+                        NVKMS_DSC_MODE_FORCE_DISABLE) {
+                    ret = NVHDMIPKT_FAIL;
+                    goto done;
+                }
+
                 pDscInfo->type = NV_DSC_INFO_EVO_TYPE_HDMI;
                 pDscInfo->hdmi.dscMode = b2Heads1Or ?
                     NV_DSC_EVO_MODE_DUAL : NV_DSC_EVO_MODE_SINGLE;
@@ -2385,6 +2393,7 @@ static NvBool nvHdmiFrlQueryConfigOneBpc(
         }
     }
 
+done:
     return ret == NVHDMIPKT_SUCCESS;
 }
 
@@ -2410,6 +2419,8 @@ NvBool nvHdmiFrlQueryConfig(
     HDMI_FRL_CONFIG *pConfig,
     NVDscInfoEvoRec *pDscInfo)
 {
+    const NvKmsDpyOutputColorFormatInfo supportedColorFormats =
+        nvDpyGetOutputColorFormatInfo(pDpyEvo);
     NVDpyAttributeColor dpyColor = *pDpyColor;
     do {
         if (nvHdmiFrlQueryConfigOneBpc(pDpyEvo,
@@ -2423,7 +2434,7 @@ NvBool nvHdmiFrlQueryConfig(
             *pDpyColor = dpyColor;
             return TRUE;
         }
-    } while(nvDowngradeColorBpc(&dpyColor) &&
+    } while(nvDowngradeColorBpc(&supportedColorFormats, &dpyColor) &&
                 (dpyColor.bpc >= NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8));
     return FALSE;
 }

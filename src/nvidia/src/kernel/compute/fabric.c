@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -326,6 +326,33 @@ fabricGetNodeId_IMPL
 )
 {
     return pFabric->nodeId;
+}
+
+NvBool
+fabricIsMemAllocDisabled_IMPL
+(
+    Fabric *pFabric
+)
+{
+    return !pFabric->bAllowFabricMemAlloc;
+}
+
+void
+fabricDisableMemAlloc_IMPL
+(
+    Fabric *pFabric
+)
+{
+    pFabric->bAllowFabricMemAlloc = NV_FALSE;
+}
+
+void
+fabricEnableMemAlloc_IMPL
+(
+    Fabric *pFabric
+)
+{
+    pFabric->bAllowFabricMemAlloc = NV_TRUE;
 }
 
 NV_STATUS
@@ -842,6 +869,8 @@ fabricConstruct_IMPL
     }
 
     pFabric->nodeId = NV_FABRIC_INVALID_NODE_ID;
+
+    pFabric->bAllowFabricMemAlloc = NV_TRUE;
 
     pFabric->pMulticastFabricModuleLock =
         portSyncRwLockCreate(portMemAllocatorGetGlobalNonPaged());

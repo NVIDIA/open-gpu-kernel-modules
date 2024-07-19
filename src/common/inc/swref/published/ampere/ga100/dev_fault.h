@@ -161,6 +161,8 @@
 #define NV_PFAULT_CLIENT_HUB_PTP_X3      0x0000002E /*       */
 #define NV_PFAULT_CLIENT_HUB_PTP_X4      0x0000002F /*       */
 #define NV_PFAULT_CLIENT_HUB_PTP_X5      0x00000030 /*       */
+#define NV_PFAULT_CLIENT_HUB_PTP_X6      0x00000031 /*       */
+#define NV_PFAULT_CLIENT_HUB_PTP_X7      0x00000032 /*       */
 #define NV_PFAULT_CLIENT_HUB_NVENC2      0x00000033 /*       */
 #define NV_PFAULT_CLIENT_HUB_VPR_SCRUBBER0 0x00000034 /*       */
 #define NV_PFAULT_CLIENT_HUB_VPR_SCRUBBER1 0x00000035 /*       */

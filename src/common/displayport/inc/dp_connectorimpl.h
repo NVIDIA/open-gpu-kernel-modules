@@ -105,9 +105,9 @@ namespace DisplayPort
         NvU8     cachedSourceChipRevision;
         bool     bOuiCached;
 
-        unsigned ouiId;                                              // Sink ouiId
+        unsigned ouiId;                                                   // Sink ouiId
         unsigned char modelName[NV_DPCD_SOURCE_DEV_ID_STRING__SIZE + 1];  // Device Model-name
-        bool    bIgnoreSrcOuiHandshake;                              // Skip writing source OUI
+        bool    bIgnoreSrcOuiHandshake;                                   // Skip writing source OUI
 
         LinkPolicy    linkPolicy;
 
@@ -214,6 +214,7 @@ namespace DisplayPort
         // this is the link config requested by a client.
         // can be set and reset by the client for a given operation.
         LinkConfiguration preferredLinkConfig;
+        bool forcePreferredLinkConfig;
 
         //
         // Desired link configuration of single head multiple sst secondary connector.
@@ -361,13 +362,9 @@ namespace DisplayPort
         // the stale messages from previous discovery.
         //
         bool        bForceClearPendingMsg;
-        bool        bSkipFakeDeviceDpcdAccess;
-
         NvU64       allocatedDpTunnelBw;
         NvU64       allocatedDpTunnelBwShadow;
         bool        bForceDisableTunnelBwAllocation;
-        bool        bClientRequestedDpTunnelBwAllocation;
-        bool        bIsDpTunnelBwAllocationEnabled;
 
         Group *perHeadAttachedGroup[NV_MAX_HEADS];
         NvU32 inTransitionHeadMask;
@@ -379,16 +376,16 @@ namespace DisplayPort
         void setPolicyAssessLinkSafely(bool enabled);
 
         void discoveryDetectComplete();
-        void discoveryNewDevice(const DiscoveryManager::Device & device);
-        void discoveryLostDevice(const Address & address);
-        void processNewDevice(const DiscoveryManager::Device & device,
-            const Edid & edid,
+        void discoveryNewDevice(const DiscoveryManager::Device &device);
+        void discoveryLostDevice(const Address &address);
+        void processNewDevice(const DiscoveryManager::Device &device,
+            const Edid &edid,
             bool isMultistream,
             DwnStreamPortType portType,
             DwnStreamPortAttribute portAttribute,
             bool isCompliance = false);
 
-        void applyEdidWARs(Edid & edid, DiscoveryManager::Device device);
+        void applyEdidWARs(Edid &edid, DiscoveryManager::Device device);
         void applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatabase);
 
         ResStatusNotifyMessage ResStatus;
@@ -566,24 +563,19 @@ namespace DisplayPort
         virtual void notifyAttachEnd(bool modesetCancelled);
         virtual void notifyDetachBegin(Group * target);
         virtual void notifyDetachEnd(bool bKeepOdAlive = false);
+        virtual bool willLinkSupportModeSST(const LinkConfiguration &linkConfig, const ModesetInfo &modesetInfo);
 
         bool performIeeeOuiHandshake();
         void setIgnoreSourceOuiHandshake(bool bIgnore);
         bool getIgnoreSourceOuiHandshake();
-        bool willLinkSupportModeSST(const LinkConfiguration & linkConfig, const ModesetInfo & modesetInfo);
         void forceLinkTraining();
 
         bool     updateDpTunnelBwAllocation();
-        void     configureDpTunnelBwAllocation();
         TriState requestDpTunnelBw(NvU8 requestedBw);
         bool     allocateDpTunnelBw(NvU64 bandwidth);
         bool     allocateMaxDpTunnelBw();
         NvU64    getMaxTunnelBw();
-
-        void enableDpTunnelingBwAllocationSupport()
-        {
-            bClientRequestedDpTunnelBwAllocation = true;
-        }
+        void     enableDpTunnelingBwAllocationSupport();
 
         void assessLink(LinkTrainingType trainType = NORMAL_LINK_TRAINING);
 
@@ -606,7 +598,7 @@ namespace DisplayPort
         }
         bool trainLinkOptimized(LinkConfiguration lConfig);
         bool trainLinkOptimizedSingleHeadMultipleSST(GroupImpl * group);
-        bool getValidLowestLinkConfig(LinkConfiguration & lConfig, LinkConfiguration & lowestSelected, ModesetInfo queryModesetInfo);
+        bool getValidLowestLinkConfig(LinkConfiguration &lConfig, LinkConfiguration &lowestSelected, ModesetInfo queryModesetInfo);
         bool postLTAdjustment(const LinkConfiguration &, bool force);
         void populateUpdatedLaneSettings(NvU8* voltageSwingLane, NvU8* preemphasisLane, NvU32 *data);
         void populateDscCaps(DSC_INFO* dscInfo, DeviceImpl * dev, DSC_INFO::FORCED_DSC_PARAMS* forcedParams);
@@ -616,8 +608,8 @@ namespace DisplayPort
         void populateDscBranchCaps(DSC_INFO* dscInfo, DeviceImpl * dev);
         void populateDscModesetInfo(MODESET_INFO * pModesetInfo, const DpModesetParams * pModesetParams);
 
-        virtual bool train(const LinkConfiguration & lConfig, bool force, LinkTrainingType trainType = NORMAL_LINK_TRAINING);
-        virtual bool validateLinkConfiguration(const LinkConfiguration & lConfig);
+        virtual bool train(const LinkConfiguration &lConfig, bool force, LinkTrainingType trainType = NORMAL_LINK_TRAINING);
+        virtual bool validateLinkConfiguration(const LinkConfiguration &lConfig);
 
         virtual bool assessPCONLinkCapability(PCONLinkControl *params);
         bool trainPCONFrlLink(PCONLinkControl *pConControl);
@@ -626,7 +618,7 @@ namespace DisplayPort
         bool setDeviceDscState(Device * dev, bool bEnableDsc);
 
         // the lowest level function(nearest to the hal) for the connector.
-        bool rawTrain(const LinkConfiguration & lConfig, bool force, LinkTrainingType linkTrainingType);
+        bool rawTrain(const LinkConfiguration &lConfig, bool force, LinkTrainingType linkTrainingType);
 
         virtual bool enableFlush();
         virtual bool beforeAddStream(GroupImpl * group, bool force=false, bool forFlushMode = false);
@@ -645,7 +637,7 @@ namespace DisplayPort
         void freeTimeslice(GroupImpl * targetGroup);
         void flushTimeslotsToHardware();
         bool getHDCPAbortCodesDP12(NvU32 &hdcpAbortCodesDP12);
-        bool getOuiSink(unsigned &ouiId, unsigned char * modelName, size_t modelNameBufferSize, NvU8 & chipRevision);
+        bool getOuiSink(unsigned &ouiId, unsigned char * modelName, size_t modelNameBufferSize, NvU8 &chipRevision);
         bool hdcpValidateKsv(const NvU8 *ksv, NvU32 Size);
         void cancelHdcpCallbacks();
         bool handleCPIRQ();
@@ -657,7 +649,7 @@ namespace DisplayPort
         void configInit();
         void handlePanelReplayError();
 
-        virtual DeviceImpl* findDeviceInList(const Address & address);
+        virtual DeviceImpl* findDeviceInList(const Address &address);
         virtual void disconnectDeviceList();
         void notifyLongPulseInternal(bool statusConnected);
         virtual void notifyLongPulse(bool status);
@@ -673,7 +665,10 @@ namespace DisplayPort
         virtual bool isFECSupported();
         virtual bool isFECCapable();
         virtual NvU32 maxLinkRateSupported();
-        virtual bool setPreferredLinkConfig(LinkConfiguration & lc, bool commit, bool force = false, LinkTrainingType trainType = NORMAL_LINK_TRAINING);
+        bool setPreferredLinkConfig(LinkConfiguration &lc, bool commit, 
+                                    bool force = false,
+                                    LinkTrainingType trainType = NORMAL_LINK_TRAINING,
+                                    bool forcePreferredLinkConfig = false);
         virtual bool resetPreferredLinkConfig(bool force = false);
         virtual void setAllowMultiStreaming(bool bAllowMST);
         virtual bool getAllowMultiStreaming(void);
@@ -693,7 +688,7 @@ namespace DisplayPort
         bool setTestPattern(NV0073_CTRL_DP_TESTPATTERN testPattern, NvU8 laneMask, NV0073_CTRL_DP_CSTM cstm, NvBool bIsHBR2, NvBool bSkipLaneDataOverride = false);
         bool getLaneConfig(NvU32 *numLanes, NvU32 *data);    // "data" is an array of NV0073_CTRL_MAX_LANES unsigned ints
         bool setLaneConfig(NvU32 numLanes, NvU32 *data);    // "data" is an array of NV0073_CTRL_MAX_LANES unsigned ints
-        void getCurrentLinkConfig(unsigned & laneCount, NvU64 & linkRate);  // CurrentLink Configuration
+        void getCurrentLinkConfig(unsigned &laneCount, NvU64 &linkRate);  // CurrentLink Configuration
         unsigned getPanelDataClockMultiplier();
         unsigned getGpuDataClockMultiplier();
         void configurePowerState(bool bPowerUp);

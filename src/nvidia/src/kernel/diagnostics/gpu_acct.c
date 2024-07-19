@@ -23,7 +23,7 @@
 
 
 #include "diagnostics/gpu_acct.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "containers/map.h"
 #include "containers/list.h"

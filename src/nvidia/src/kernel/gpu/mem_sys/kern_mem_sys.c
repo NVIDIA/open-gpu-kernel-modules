@@ -26,12 +26,12 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "virtualization/hypervisor/hypervisor.h"
 #include "vgpu/vgpu_events.h"
-#include "objrpc.h"
+#include "gpu/rpc/objrpc.h"
 #include "gpu/bif/kernel_bif.h"
 #include "gpu/bus/kern_bus.h"
 #include "os/os.h"
 #include "platform/sli/sli.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "gpu/gsp/gsp_static_config.h"
 
 static void
@@ -138,6 +138,7 @@ NV_STATUS kmemsysStateInitLocked_IMPL
 )
 {
     NV_STATUS status = NV_OK;
+    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
 
     NV_ASSERT_OK_OR_GOTO(status, kmemsysEnsureSysmemFlushBufferInitialized(pGpu, pKernelMemorySystem), fail);
 
@@ -193,6 +194,17 @@ NV_STATUS kmemsysStateInitLocked_IMPL
         // KernelMemorySystem for C2C, NUMA functionality.
         //
         NV_ASSERT_OK_OR_GOTO(status, kmemsysSetupCoherentCpuLink(pGpu, pKernelMemorySystem, NV_FALSE), fail);
+
+        if (gpuIsSelfHosted(pGpu) && pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING))
+        {
+            //Disable BAR1 only for Hopper as Blackwell+ supports simultaneous BAR1 access to FB.
+            if (IsHOPPER(pGpu))
+            {
+                pKernelBus->bBar1Disabled = NV_TRUE;
+            }
+            // In self-hosted systems Disable BAR2 when C2C is up.
+            pKernelBus->bCpuVisibleBar2Disabled = NV_TRUE;
+        }
     }
 
     {

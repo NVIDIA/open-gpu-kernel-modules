@@ -29,7 +29,7 @@
 *                                                                           *
 ****************************************************************************/
 
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "core/core.h"
 #include "os/os.h"
 #include "platform/platform.h"
@@ -38,7 +38,7 @@
 #include "nvpcie.h"
 #include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "gpu/bif/kernel_bif.h"
 #include "gpu/gsp/gsp_static_config.h"
 #include "virtualization/hypervisor/hypervisor.h"
@@ -978,6 +978,11 @@ clUpdatePcieConfig_IMPL(OBJGPU *pGpu, OBJCL *pCl)
     // discovery to build the allow list for enabling PCIe atomics feature.
     //
     kbifProbePcieReqAtomicCaps_HAL(pGpu, pKernelBif);
+    //
+    // Read device atomic completer capabilities early so they can be
+    // passed to GSP.
+    //
+    kbifProbePcieCplAtomicCaps_HAL(pGpu, pKernelBif);
 
     //
     // Passthrough configurations do not typically present the upstream
@@ -3204,7 +3209,6 @@ NV_STATUS Intel_RP0C0X_setupFunc(OBJGPU *pGpu, OBJCL *pCl)
 NV_STATUS Intel_RP2F0X_setupFunc(OBJGPU *pGpu, OBJCL *pCl)
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();
-    OBJOS *pOS = SYS_GET_OS(pSys);
     OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
     NvU32 domain;
     // Socket 0 default PCIE location is bus = 0x7f, device = 0x1e, func = 0x3
@@ -3218,7 +3222,7 @@ NV_STATUS Intel_RP2F0X_setupFunc(OBJGPU *pGpu, OBJCL *pCl)
     NvBool bC0orC1CPUID = NV_FALSE;
 
     // Determine if CPU is C0/C1 Stepping by CPUID
-    if (pOS->osNv_cpuid(pOS, 1, 0, &eax, &ebx, &ecx, &edx))
+    if (osNv_cpuid(1, 0, &eax, &ebx, &ecx, &edx))
     {
         // CPUID is returned to eax
         bC0orC1CPUID = (eax == INTEL_C0_OR_C1_CPUID);

@@ -109,12 +109,12 @@ static void __nvoc_down_thunk_OBJGVASPACE_vaspaceUnmap(struct OBJVASPACE *pVAS, 
 }
 
 // gvaspaceGetHeap: virtual override (vaspace) base (vaspace)
-static struct OBJEHEAP * __nvoc_down_thunk_OBJGVASPACE_vaspaceGetHeap(struct OBJVASPACE *pVAS) {
+static OBJEHEAP * __nvoc_down_thunk_OBJGVASPACE_vaspaceGetHeap(struct OBJVASPACE *pVAS) {
     return gvaspaceGetHeap((struct OBJGVASPACE *)(((unsigned char *) pVAS) - __nvoc_rtti_OBJGVASPACE_OBJVASPACE.offset));
 }
 
 // gvaspaceGetMapPageSize: virtual override (vaspace) base (vaspace)
-static NvU64 __nvoc_down_thunk_OBJGVASPACE_vaspaceGetMapPageSize(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu, struct EMEMBLOCK *pMemBlock) {
+static NvU64 __nvoc_down_thunk_OBJGVASPACE_vaspaceGetMapPageSize(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock) {
     return gvaspaceGetMapPageSize((struct OBJGVASPACE *)(((unsigned char *) pVAS) - __nvoc_rtti_OBJGVASPACE_OBJVASPACE.offset), pGpu, pMemBlock);
 }
 

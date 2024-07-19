@@ -32,6 +32,7 @@
 #include "gpu/disp/kern_disp.h"
 #include "gpu/disp/inst_mem/disp_inst_mem.h"
 #include "gpu/subdevice/subdevice.h"
+#include "gpu/gsp/gsp_trace_rats_macro.h"
 #include "gpu/eng_desc.h"
 #include "nv_ref.h"
 #include "os/os.h"
@@ -48,6 +49,7 @@
 #include "core/hal_mgr.h"
 #include "vgpu/rpc.h"
 #include "jt.h"
+#include "kernel/gpu/nvlink/kernel_nvlink.h"
 
 #include "nvmisc.h"
 
@@ -87,6 +89,9 @@ static void      gpuSetupVirtualGuestOwnedHW(OBJHYPERVISOR *, OBJGPU *);
 
 static NV_STATUS gpuDetermineVirtualMode(OBJGPU *);
 
+#include "gpu/fsp/kern_fsp.h"
+#include "fsp/fsp_clock_boost_rpc.h"
+
 #include "g_odb.h"
 
 #define  RMTRACE_ENGINE_PROFILE_EVENT(EventName, EngineId, ReadCount, WriteCount)           \
@@ -108,9 +113,8 @@ static NV_STATUS gpuStatePreLoad(OBJGPU *, NvU32);
 static NV_STATUS gpuStatePostLoad(OBJGPU *, NvU32);
 static NV_STATUS gpuStatePreUnload(OBJGPU *, NvU32);
 static NV_STATUS gpuStatePostUnload(OBJGPU *, NvU32);
-static void      gpuXlateHalImplToArchImpl(OBJGPU *, HAL_IMPLEMENTATION, NvU32 *, NvU32 *);
+static void      gpuXlateHalImplToArchImpl(HAL_IMPLEMENTATION, NvU32 *, NvU32 *);
 static NvBool    gpuSatisfiesTemporalOrder(OBJGPU *, HAL_IMPLEMENTATION);
-static NvBool    gpuSatisfiesTemporalOrderMaskRev(OBJGPU *, HAL_IMPLEMENTATION, NvU32, NvU32, NvU32);
 static NvBool    gpuShouldCreateObject(OBJGPU *pGpu, NvU32 classId, NvU32 instance);
 
 static void gpuDestroyMissingEngine(OBJGPU *, OBJENGSTATE *);
@@ -557,6 +561,10 @@ NV_STATUS gpuConstruct_IMPL
 
     multimapInit(&pGpu->videoEventBufferBindingsUid, portMemAllocatorGetGlobalNonPaged());
 
+#if KERNEL_GSP_TRACING_RATS_ENABLED
+    multimapInit(&pGpu->gspTraceEventBufferBindingsUid, portMemAllocatorGetGlobalNonPaged());
+#endif
+
     // Initialize the i2c port via which external devices will be connected.
     pGpu->i2cPortForExtdev = NV402C_CTRL_NUM_I2C_PORTS;
 
@@ -932,7 +940,7 @@ static void _gpuFreeInternalObjects
         pRmApi->Free(pRmApi, pGpu->hInternalLockStressClient,
             pGpu->hInternalLockStressClient);
     }
-    
+
     if (IS_GSP_CLIENT(pGpu))
     {
         rmapiControlCacheFreeObjectEntry(pGpu->hInternalClient, pGpu->hInternalSubdevice);
@@ -1146,7 +1154,7 @@ _gpuChildNvocClassInfoGet
  * @param[in] pGpu     OBJGPU pointer
  * @param[in] engDesc  ENGDESCRIPTOR
  */
-POBJENGSTATE
+OBJENGSTATE *
 gpuGetEngstateNoShare_IMPL(OBJGPU *pGpu, ENGDESCRIPTOR engDesc)
 {
     switch (ENGDESC_FIELD(engDesc, _CLASS))
@@ -1172,7 +1180,7 @@ gpuGetEngstateNoShare_IMPL(OBJGPU *pGpu, ENGDESCRIPTOR engDesc)
  * @param[in] pGpu     OBJGPU pointer
  * @param[in] engDesc  ENGDESCRIPTOR
  */
-POBJENGSTATE
+OBJENGSTATE *
 gpuGetEngstate_IMPL(OBJGPU *pGpu, ENGDESCRIPTOR engDesc)
 {
     if (ENGDESC_FIELD(engDesc, _CLASS) == classId(KernelFifo))
@@ -1205,7 +1213,7 @@ gpuGetKernelFifoShared_IMPL(OBJGPU *pGpu)
 }
 
 /*!
- * @brief Iterates over pGpu's children, returning those that inherit given classId 
+ * @brief Iterates over pGpu's children, returning those that inherit given classId
  *
  * @param[in]      pGpu           OBJGPU pointer
  * @param[in,out]  pIt            Iterator
@@ -1457,6 +1465,10 @@ gpuDestruct_IMPL
 
     multimapDestroy(&pGpu->videoEventBufferBindingsUid);
 
+#if KERNEL_GSP_TRACING_RATS_ENABLED
+    multimapDestroy(&pGpu->gspTraceEventBufferBindingsUid);
+#endif
+
     gpuDestructPhysical(pGpu);
 }
 
@@ -1528,7 +1540,7 @@ gpuShouldCreateObject
     // Let the HAL confirm that we should create an object for this engine.
     for (childIdx = 0; childIdx < pGpu->numChildrenPresent; childIdx++)
     {
-        if ((classId == pGpu->pChildrenPresent[childIdx].classId))
+        if (classId == pGpu->pChildrenPresent[childIdx].classId)
         {
             return (instance < pGpu->pChildrenPresent[childIdx].instances);
         }
@@ -1954,9 +1966,6 @@ gpuStatePreInit_IMPL
 
     // Quadro, Geforce SMB, Tesla, VGX, Titan GPU detection
     NV_ASSERT_OK_OR_RETURN(gpuInitBranding(pGpu));
-
-    // Set PDB properties as per data from GSP.
-    gpuInitProperties(pGpu);
 
     // Set GC6 specific values in OBJGPU, as per static data from GSP.
     gpuGetRtd3GC6Data(pGpu);
@@ -3210,7 +3219,7 @@ gpuStateDestroy_IMPL
     engDescriptorList = gpuGetDestroyEngineDescriptors(pGpu);
     numEngDescriptors = gpuGetNumEngDescriptors(pGpu);
 
-    // remove all video event bind points before destroying gsp engine state below 
+    // remove all video event bind points before destroying gsp engine state below
     videoRemoveAllBindpointsForGpu(pGpu);
 
     // Order is determined by gpuGetChildrenOrder_HAL pulling gpuChildOrderList array
@@ -3275,34 +3284,20 @@ gpuStateDestroy_IMPL
 
 //
 // Logic: If arch = requested AND impl = requested --> NV_TRUE
-//        OR If arch = requested AND impl = requested AND maskRev = requested --> NV_TRUE
-//        OR If arch = requested AND impl = requested AND rev = requested --> NV_TRUE
 //
 NvBool
 gpuIsImplementation_IMPL
 (
     OBJGPU *pGpu,
-    HAL_IMPLEMENTATION halImpl,
-    NvU32 maskRevision,
-    NvU32 revision
+    HAL_IMPLEMENTATION halImpl
 )
 {
     NvU32 gpuArch, gpuImpl;
-    NvBool result = NV_FALSE;
 
-    NV_ASSERT(revision == GPU_NO_REVISION);
+    gpuXlateHalImplToArchImpl(halImpl, &gpuArch, &gpuImpl);
 
-    gpuXlateHalImplToArchImpl(pGpu, halImpl, &gpuArch, &gpuImpl);
-
-    result = ((gpuGetChipArch(pGpu) == gpuArch) &&
-              (gpuGetChipImpl(pGpu) == gpuImpl));
-
-    if (maskRevision != GPU_NO_MASK_REVISION)
-    {
-        result = result && (GPU_GET_MASKREVISION(pGpu) == maskRevision);
-    }
-
-    return result;
+    return ((gpuGetChipArch(pGpu) == gpuArch) &&
+            (gpuGetChipImpl(pGpu) == gpuImpl));
 }
 
 /*!
@@ -3556,44 +3551,30 @@ NvBool
 gpuIsImplementationOrBetter_IMPL
 (
     OBJGPU *pGpu,
-    HAL_IMPLEMENTATION halImpl,
-    NvU32 maskRevision,
-    NvU32 revision
+    HAL_IMPLEMENTATION halImpl
 )
 {
     NvU32 gpuArch, gpuImpl;
     NvU32 chipArch;
-    NvBool result = NV_FALSE;
 
-    NV_ASSERT(revision == GPU_NO_REVISION);
-
-    gpuXlateHalImplToArchImpl(pGpu, halImpl, &gpuArch, &gpuImpl);
+    gpuXlateHalImplToArchImpl(halImpl, &gpuArch, &gpuImpl);
 
     // "is implementation or better" is only defined between 2 gpus within
     // the same "gpu series" as defined in config/Chips.pm and nv_arch.h
     chipArch = gpuGetChipArch(pGpu);
 
-    if (DRF_VAL(GPU, _ARCHITECTURE, _SERIES, chipArch) == DRF_VAL(GPU, _ARCHITECTURE, _SERIES, gpuArch))
+    if (DRF_VAL(GPU, _ARCHITECTURE, _SERIES, chipArch) != DRF_VAL(GPU, _ARCHITECTURE, _SERIES, gpuArch))
     {
-        if (maskRevision != GPU_NO_MASK_REVISION)
-        {
-            result = gpuSatisfiesTemporalOrderMaskRev(pGpu, halImpl, gpuArch,
-                                                      gpuImpl, maskRevision);
-        }
-        else
-        {
-            // In case there is a temporal ordering we need to account for
-            result = gpuSatisfiesTemporalOrder(pGpu, halImpl);
-        }
+        return NV_FALSE;
     }
 
-    return result;
+    // In case there is a temporal ordering we need to account for
+    return gpuSatisfiesTemporalOrder(pGpu, halImpl);
 }
 
 static void
 gpuXlateHalImplToArchImpl
 (
-    OBJGPU *pGpu,
     HAL_IMPLEMENTATION halImpl,
     NvU32 *gpuArch,
     NvU32 *gpuImpl
@@ -3861,6 +3842,20 @@ gpuXlateHalImplToArchImpl
             break;
         }
 
+        case HAL_IMPL_GB100:
+        {
+            *gpuArch = GPU_ARCHITECTURE_BLACKWELL;
+            *gpuImpl = GPU_IMPLEMENTATION_GB100;
+            break;
+        }
+
+        case HAL_IMPL_GB102:
+        {
+            *gpuArch = GPU_ARCHITECTURE_BLACKWELL;
+            *gpuImpl = GPU_IMPLEMENTATION_GB102;
+            break;
+        }
+
         default:
         {
             *gpuArch = 0;
@@ -3971,29 +3966,6 @@ gpuSetupVirtualGuestOwnedHW
     }
 }
 
-//
-// default Logic: If arch = requested AND impl = requested AND
-//                 maskRev is >= requested --> NV_TRUE
-//
-static NvBool
-gpuSatisfiesTemporalOrderMaskRev
-(
-    OBJGPU *pGpu,
-    HAL_IMPLEMENTATION halImpl,
-    NvU32 gpuArch,
-    NvU32 gpuImpl,
-    NvU32 maskRevision
-)
-{
-    NvBool result = NV_FALSE;
-
-    result = ((gpuGetChipArch(pGpu)== gpuArch) &&
-              (gpuGetChipImpl(pGpu) == gpuImpl) &&
-              (GPU_GET_MASKREVISION(pGpu) >= maskRevision));
-
-    return result;
-}
-
 // =============== Engine Database ==============================
 
 typedef struct {
@@ -4023,6 +3995,17 @@ static const EXTERN_TO_INTERNAL_ENGINE_ID rmClientEngineTable[] =
     { RM_ENGINE_TYPE_COPY7,      classId(OBJCE)      , 7,  NV_TRUE },
     { RM_ENGINE_TYPE_COPY8,      classId(OBJCE)      , 8,  NV_TRUE },
     { RM_ENGINE_TYPE_COPY9,      classId(OBJCE)      , 9,  NV_TRUE },
+// removal tracking bug: 3748354
+    { RM_ENGINE_TYPE_COPY10,     classId(OBJCE)      , 10, NV_TRUE },
+    { RM_ENGINE_TYPE_COPY11,     classId(OBJCE)      , 11, NV_TRUE },
+    { RM_ENGINE_TYPE_COPY12,     classId(OBJCE)      , 12, NV_TRUE },
+    { RM_ENGINE_TYPE_COPY13,     classId(OBJCE)      , 13, NV_TRUE },
+    { RM_ENGINE_TYPE_COPY14,     classId(OBJCE)      , 14, NV_TRUE },
+    { RM_ENGINE_TYPE_COPY15,     classId(OBJCE)      , 15, NV_TRUE },
+    { RM_ENGINE_TYPE_COPY16,     classId(OBJCE)      , 16, NV_TRUE },
+    { RM_ENGINE_TYPE_COPY17,     classId(OBJCE)      , 17, NV_TRUE },
+    { RM_ENGINE_TYPE_COPY18,     classId(OBJCE)      , 18, NV_TRUE },
+    { RM_ENGINE_TYPE_COPY19,     classId(OBJCE)      , 19, NV_TRUE },
     { RM_ENGINE_TYPE_NVDEC0,     classId(OBJBSP)     , 0,  NV_TRUE },
     { RM_ENGINE_TYPE_NVDEC1,     classId(OBJBSP)     , 1,  NV_TRUE },
     { RM_ENGINE_TYPE_NVDEC2,     classId(OBJBSP)     , 2,  NV_TRUE },
@@ -4046,6 +4029,8 @@ static const EXTERN_TO_INTERNAL_ENGINE_ID rmClientEngineTable[] =
     { RM_ENGINE_TYPE_NVJPEG6,    classId(OBJNVJPG)   , 6,  NV_TRUE },
     { RM_ENGINE_TYPE_NVJPEG7,    classId(OBJNVJPG)   , 7,  NV_TRUE },
     { RM_ENGINE_TYPE_OFA0,       classId(OBJOFA)     , 0,  NV_TRUE },
+// removal tracking bug: 3748354
+    { RM_ENGINE_TYPE_OFA1,       classId(OBJOFA)     , 1,  NV_TRUE },
     { RM_ENGINE_TYPE_DPU,        classId(OBJDPU)     , 0,  NV_FALSE },
     { RM_ENGINE_TYPE_PMU,        classId(Pmu)        , 0,  NV_FALSE },
     { RM_ENGINE_TYPE_FBFLCN,     classId(OBJFBFLCN)  , 0,  NV_FALSE },
@@ -5090,12 +5075,12 @@ gpuInitChipInfo_IMPL
     // them to figure out which chip it is and how to wire up the HALs.
     //
     pGpu->chipInfo.pmcBoot0.impl          = DRF_VAL(_PMC, _BOOT_0, _IMPLEMENTATION, pGpu->chipId0);
-    pGpu->chipInfo.pmcBoot0.arch          = DRF_VAL(_PMC, _BOOT_0, _ARCHITECTURE, pGpu->chipId0) << GPU_ARCH_SHIFT;
+    pGpu->chipInfo.pmcBoot0.arch          = gpuGetArchitectureFromPmcBoot0(pGpu->chipId0) << GPU_ARCH_SHIFT;
     pGpu->chipInfo.pmcBoot0.majorRev      = DRF_VAL(_PMC, _BOOT_0, _MAJOR_REVISION, pGpu->chipId0);
     pGpu->chipInfo.pmcBoot0.minorRev      = DRF_VAL(_PMC, _BOOT_0, _MINOR_REVISION, pGpu->chipId0);
     pGpu->chipInfo.pmcBoot0.minorExtRev   = NV2080_CTRL_GPU_INFO_MINOR_REVISION_EXT_NONE;
     pGpu->chipInfo.pmcBoot42.impl         = DRF_VAL(_PMC, _BOOT_42, _IMPLEMENTATION, pGpu->chipId1);
-    pGpu->chipInfo.pmcBoot42.arch         = DRF_VAL(_PMC, _BOOT_42, _ARCHITECTURE, pGpu->chipId1) << GPU_ARCH_SHIFT;
+    pGpu->chipInfo.pmcBoot42.arch         = gpuGetArchitectureFromPmcBoot42(pGpu->chipId1) << GPU_ARCH_SHIFT;
     pGpu->chipInfo.pmcBoot42.majorRev     = DRF_VAL(_PMC, _BOOT_42, _MAJOR_REVISION, pGpu->chipId1);
     pGpu->chipInfo.pmcBoot42.minorRev     = DRF_VAL(_PMC, _BOOT_42, _MINOR_REVISION, pGpu->chipId1);
     pGpu->chipInfo.pmcBoot42.minorExtRev  = DRF_VAL(_PMC, _BOOT_42, _MINOR_EXTENDED_REVISION, pGpu->chipId1);
@@ -5616,3 +5601,30 @@ gpuDetectVgxBranding_IMPL(OBJGPU *pGpu)
     return BRANDING_TYPE_NONE;
 }
 
+/*!
+ * @brief returns a boolean indicating if an SLI bridge is supported by the specified GPU.
+ *
+ * @param[In]   pGpu    The GPU to check for SLI bridge support
+ *
+ * @return      a boolean indicating if the specified GPU supports an SLI bridge.
+ *              the bridge may be a Video bridge or NvLink.
+.*/
+NvBool
+gpuIsSliLinkSupported_IMPL
+(
+    OBJGPU  *pGpu
+)
+{
+    NvBool   bIsSupported = NV_FALSE;
+
+    if (!bIsSupported)
+    {
+        KernelNvlink * pKernelNvLink =  GPU_GET_KERNEL_NVLINK(pGpu);
+        if (pKernelNvLink != NULL)
+        {
+           bIsSupported = (knvlinkGetConnectedLinksMask_HAL(pGpu, pKernelNvLink) != 0U);
+        }
+    }
+
+    return bIsSupported;
+}

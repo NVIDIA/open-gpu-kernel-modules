@@ -34,7 +34,7 @@
 
 #include "core/locks.h"
 #include "gpu/subdevice/subdevice.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "rmapi/client.h"
 
 #include "kernel/gpu/intr/intr.h"

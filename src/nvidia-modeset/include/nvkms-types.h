@@ -680,19 +680,6 @@ typedef struct {
     } maxDownscaleFactors;
 } NVFlipChannelEvoHwState;
 
-enum NvKmsDpyAttributeColorBpcValue {
-    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN = 0,
-    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10 = 10,
-    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8  =  8,
-    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6  =  6,
-};
-
-typedef struct _NVColorFormatInfoRec {
-    struct {
-        enum NvKmsDpyAttributeColorBpcValue maxBpc;
-    } rgb444, yuv444, yuv422;
-} NVColorFormatInfoRec;
-
 typedef struct {
     struct NvKmsPoint viewPortPointIn;
     NVFlipCursorEvoHwState cursor;
@@ -1961,6 +1948,9 @@ typedef struct _NVDispEvoRec {
     NVDpyIdList       muxDisplays;
 
     struct {
+        // Indicates whether a VRR cookie was detected
+        NvBool hasPlatformCookie;
+
         nvkms_timer_handle_t *unstallTimer;
     } vrr;
 
@@ -2151,6 +2141,7 @@ typedef struct _NVDpyEvoRec {
 
         NvU8 laneCount; // NV0073_CTRL_DP_DATA_SET_LANE_COUNT
         NvU8 linkRate; // NV0073_CTRL_DP_DATA_SET_LINK_BW
+        NvU32 linkRate10MHz;
         enum NvKmsDpyAttributeDisplayportConnectorTypeValue connectorType;
         NvBool sinkIsAudioCapable;
 
@@ -2192,7 +2183,6 @@ typedef struct _NVDpyEvoRec {
 
     struct {
         enum NvKmsDpyVRRType type;
-        NvU32 edidTimeoutMicroseconds;
         NvBool needsSwFramePacing;
     } vrr;
 } NVDpyEvoRec;
@@ -2431,6 +2421,12 @@ static inline NvBool nvIsEmulationEvo(const NVDevEvoRec *pDevEvo)
 {
     return pDevEvo->simulationType !=
         NV2080_CTRL_GPU_GET_SIMULATION_INFO_TYPE_NONE;
+}
+
+static inline NvBool nvIsDfpgaEvo(const NVDevEvoRec *pDevEvo)
+{
+    return pDevEvo->simulationType ==
+        NV2080_CTRL_GPU_GET_SIMULATION_INFO_TYPE_DFPGA;
 }
 
 static inline NvBool nvIs3DVisionStereoEvo(const enum NvKmsStereoMode stereo)

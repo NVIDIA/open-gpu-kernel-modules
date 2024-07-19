@@ -247,6 +247,7 @@ GetColorSpaceAndColorRange(
 {
     enum NvKmsOutputColorimetry colorimetry;
     enum NvKmsDpyAttributeColorRangeValue requestedColorRange;
+    enum NvKmsDpyAttributeColorBpcValue requestedColorBpc;
     enum NvKmsDpyAttributeRequestedColorSpaceValue requestedColorSpace;
     NVDpyEvoRec *pOneArbitraryDpyEvo =
         nvGetOneArbitraryDpyEvo(pRequestHead->dpyIdList, pDispEvo);
@@ -275,6 +276,12 @@ GetColorSpaceAndColorRange(
         requestedColorRange = pOneArbitraryDpyEvo->requestedColorRange;
     }
 
+    if (pRequestHead->colorBpcSpecified) {
+        requestedColorBpc = pRequestHead->colorBpc;
+    } else {
+        requestedColorBpc = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN;
+    }
+
     if (pRequestHead->flip.colorimetry.specified) {
         colorimetry = pRequestHead->flip.colorimetry.val;
     } else {
@@ -290,6 +297,7 @@ GetColorSpaceAndColorRange(
                                               pRequestHead->mode.timings.yuv420Mode,
                                               colorimetry,
                                               requestedColorSpace,
+                                              requestedColorBpc,
                                               requestedColorRange,
                                               &pDpyColor->format,
                                               &pDpyColor->bpc,
@@ -333,6 +341,15 @@ static NvBool AssignProposedModeSetColorSpaceAndColorRangeSpecified(
     }
 
     /*
+     * When color bpc is specified in modeset request, it should
+     * match the proposed color bpc.
+     */
+    if (pRequestHead->colorBpcSpecified &&
+        (pProposedApiHead->attributes.color.bpc != pRequestHead->colorBpc)) {
+        return FALSE;
+    }
+
+    /*
      * When color range is specified in modeset request, it should
      * match the proposed color range.
      */
@@ -342,6 +359,7 @@ static NvBool AssignProposedModeSetColorSpaceAndColorRangeSpecified(
     }
 
     pProposedApiHead->colorSpaceSpecified = pRequestHead->colorSpaceSpecified;
+    pProposedApiHead->colorBpcSpecified = pRequestHead->colorBpcSpecified;
     pProposedApiHead->colorRangeSpecified = pRequestHead->colorRangeSpecified;
     return TRUE;
 }
@@ -417,11 +435,11 @@ static void AdjustHwModeTimingsForVrr(const NVDispEvoRec *pDispEvo,
                                allowGsync,
                                allowAdaptiveSync);
 
-    nvAdjustHwModeTimingsForVrrEvo(pTimings,
+    nvAdjustHwModeTimingsForVrrEvo(pDpyEvo,
                                    vrrType,
-                                   pDpyEvo->vrr.edidTimeoutMicroseconds,
                                    vrrOverrideMinRefreshRate,
-                                   pDpyEvo->vrr.needsSwFramePacing);
+                                   pDpyEvo->vrr.needsSwFramePacing,
+                                   pTimings);
 }
 
 /*
@@ -1539,8 +1557,8 @@ static NvBool DowngradeColorSpaceAndBpcOneHead(
     NVDpyEvoRec *pDpyEvo =
         nvGetOneArbitraryDpyEvo(pProposedApiHead->dpyIdList,
                                 pDispEvo);
-    const NVColorFormatInfoRec supportedColorFormats =
-        nvGetColorFormatInfo(pDpyEvo);
+    const NvKmsDpyOutputColorFormatInfo supportedColorFormats =
+        nvDpyGetOutputColorFormatInfo(pDpyEvo);
 
     if (!nvDowngradeColorSpaceAndBpc(&supportedColorFormats, &dpyColor)) {
         return FALSE;
@@ -1548,6 +1566,11 @@ static NvBool DowngradeColorSpaceAndBpcOneHead(
 
     if (pProposedApiHead->colorRangeSpecified &&
         (dpyColor.range != pProposedApiHead->attributes.color.range)) {
+        return FALSE;
+    }
+
+    if (pProposedApiHead->colorBpcSpecified &&
+        (dpyColor.bpc != pProposedApiHead->attributes.color.bpc)) {
         return FALSE;
     }
 

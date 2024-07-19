@@ -180,10 +180,12 @@ NvBool nvConstructHwModeTimingsImpCheckEvo(
     NvU32                                  *pNumHeads,
     NVEvoInfoStringPtr                      pInfoString);
 
-NvBool nvDowngradeColorBpc(NVDpyAttributeColor *pDpyColor);
+NvBool nvDowngradeColorBpc(
+    const NvKmsDpyOutputColorFormatInfo *pSupportedColorFormats,
+    NVDpyAttributeColor *pDpyColor);
 
 NvBool nvDowngradeColorSpaceAndBpc(
-    const NVColorFormatInfoRec *pSupportedColorFormats,
+    const NvKmsDpyOutputColorFormatInfo *pSupportedColorFormats,
     NVDpyAttributeColor *pDpyColor);
 
 NvBool nvDPValidateModeEvo(NVDpyEvoPtr pDpyEvo,
@@ -259,6 +261,7 @@ NvBool nvChooseCurrentColorSpaceAndRangeEvo(
     const enum NvYuv420Mode yuv420Mode,
     enum NvKmsOutputColorimetry colorimetry,
     const enum NvKmsDpyAttributeRequestedColorSpaceValue requestedColorSpace,
+    const enum NvKmsDpyAttributeColorBpcValue requestedColorBpc,
     const enum NvKmsDpyAttributeColorRangeValue requestedColorRange,
     enum NvKmsDpyAttributeCurrentColorSpaceValue *pCurrentColorSpace,
     enum NvKmsDpyAttributeColorBpcValue *pCurrentColorBpc,
@@ -347,8 +350,9 @@ enum nvKmsPixelDepth nvEvoDpyColorToPixelDepth(
 void nvSuspendDevEvo(NVDevEvoRec *pDevEvo);
 NvBool nvResumeDevEvo(NVDevEvoRec *pDevEvo);
 
-NvBool nvGetDefaultDpyColor(const NVColorFormatInfoRec *pColorFormatsInfo,
-                            NVDpyAttributeColor *pDpyColor);
+NvBool nvGetDefaultDpyColor(
+    const NvKmsDpyOutputColorFormatInfo *pColorFormatsInfo,
+    NVDpyAttributeColor *pDpyColor);
 
 static inline void nvEvoSetFlipOccurredEvent(const NVDispEvoRec *pDispEvo,
                                              const NvU32 head,

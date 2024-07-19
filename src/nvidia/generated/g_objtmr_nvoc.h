@@ -50,7 +50,7 @@ extern "C" {
 #include "core/core.h"
 #include "gpu/eng_state.h"
 #include "gpu/gpu.h"
-#include "tmr.h"
+#include "gpu/timer/tmr.h"
 #include "lib/ref_count.h"
 #include "os/os.h"
 #include "nvoc/utility.h"
@@ -135,7 +135,7 @@ struct TMR_EVENT
  * Casted from public user datatype, so they have access to some fields only.
  * Internal Use only, will be hidden in time.c when obsolete tasks have migrated.
  */
-typedef struct TMR_EVENT_PVT TMR_EVENT_PVT, *PTMR_EVENT_PVT;
+typedef struct TMR_EVENT_PVT TMR_EVENT_PVT;
 struct TMR_EVENT_PVT
 {
     // Public interface, must come first, don't declare anything above this field.
@@ -149,7 +149,7 @@ struct TMR_EVENT_PVT
     NvBool              bInUse;      //<! Marks this as currently used
     NvU64               timens;      //<! Absolute time to perform callback
     NvU64               startTimeNs; //<! Store system time at timer callback schedule
-    PTMR_EVENT_PVT      pNext;       //<! Next element in the list
+    TMR_EVENT_PVT      *pNext;       //<! Next element in the list
 };
 
 /*!
@@ -232,14 +232,14 @@ struct OBJTMR {
     NV_STATUS (*__tmrSetCountdown__)(OBJGPU *, struct OBJTMR * /*this*/, NvU32, NvU32, struct THREAD_STATE_NODE *);  // halified (2 hals) body
     NV_STATUS (*__tmrGrTickFreqChange__)(OBJGPU *, struct OBJTMR * /*this*/, NvBool);  // halified (2 hals) body
     NV_STATUS (*__tmrGetGpuPtimerOffset__)(OBJGPU *, struct OBJTMR * /*this*/, NvU32 *, NvU32 *);  // halified (2 hals) body
-    void (*__tmrInitMissing__)(POBJGPU, struct OBJTMR * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__tmrStatePreInitUnlocked__)(POBJGPU, struct OBJTMR * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__tmrStateInitLocked__)(POBJGPU, struct OBJTMR * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__tmrStatePreLoad__)(POBJGPU, struct OBJTMR * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__tmrStatePostLoad__)(POBJGPU, struct OBJTMR * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__tmrStatePreUnload__)(POBJGPU, struct OBJTMR * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__tmrStatePostUnload__)(POBJGPU, struct OBJTMR * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__tmrIsPresent__)(POBJGPU, struct OBJTMR * /*this*/);  // virtual inherited (engstate) base (engstate)
+    void (*__tmrInitMissing__)(struct OBJGPU *, struct OBJTMR * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__tmrStatePreInitUnlocked__)(struct OBJGPU *, struct OBJTMR * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__tmrStateInitLocked__)(struct OBJGPU *, struct OBJTMR * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__tmrStatePreLoad__)(struct OBJGPU *, struct OBJTMR * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__tmrStatePostLoad__)(struct OBJGPU *, struct OBJTMR * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__tmrStatePreUnload__)(struct OBJGPU *, struct OBJTMR * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__tmrStatePostUnload__)(struct OBJGPU *, struct OBJTMR * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__tmrIsPresent__)(struct OBJGPU *, struct OBJTMR * /*this*/);  // virtual inherited (engstate) base (engstate)
     NV_STATUS (*__tmrServiceNotificationInterrupt__)(OBJGPU *, struct OBJTMR * /*this*/, IntrServiceServiceNotificationInterruptArguments *);  // virtual inherited (intrserv) base (intrserv)
 
     // 6 PDB properties
@@ -251,9 +251,9 @@ struct OBJTMR {
     NvBool PDB_PROP_TMR_USE_SECOND_COUNTDOWN_TIMER_FOR_SWRL;
 
     // Data members
-    PTMR_EVENT_PVT pRmActiveEventList;
-    PTMR_EVENT_PVT pRmActiveOSTimerEventList;
-    PTMR_EVENT_PVT pRmCallbackFreeList_OBSOLETE;
+    struct TMR_EVENT_PVT *pRmActiveEventList;
+    struct TMR_EVENT_PVT *pRmActiveOSTimerEventList;
+    struct TMR_EVENT_PVT *pRmCallbackFreeList_OBSOLETE;
     struct TMR_EVENT_PVT rmCallbackTable_OBSOLETE[96];
     POS1HZTIMERENTRY pOs1HzCallbackList;
     POS1HZTIMERENTRY pOs1HzCallbackFreeList;
@@ -454,35 +454,35 @@ static inline NV_STATUS tmrGetGpuPtimerOffset_DISPATCH(OBJGPU *pGpu, struct OBJT
     return pTmr->__tmrGetGpuPtimerOffset__(pGpu, pTmr, arg3, arg4);
 }
 
-static inline void tmrInitMissing_DISPATCH(POBJGPU pGpu, struct OBJTMR *pEngstate) {
+static inline void tmrInitMissing_DISPATCH(struct OBJGPU *pGpu, struct OBJTMR *pEngstate) {
     pEngstate->__tmrInitMissing__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS tmrStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct OBJTMR *pEngstate) {
+static inline NV_STATUS tmrStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct OBJTMR *pEngstate) {
     return pEngstate->__tmrStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS tmrStateInitLocked_DISPATCH(POBJGPU pGpu, struct OBJTMR *pEngstate) {
+static inline NV_STATUS tmrStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct OBJTMR *pEngstate) {
     return pEngstate->__tmrStateInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS tmrStatePreLoad_DISPATCH(POBJGPU pGpu, struct OBJTMR *pEngstate, NvU32 arg3) {
+static inline NV_STATUS tmrStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJTMR *pEngstate, NvU32 arg3) {
     return pEngstate->__tmrStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS tmrStatePostLoad_DISPATCH(POBJGPU pGpu, struct OBJTMR *pEngstate, NvU32 arg3) {
+static inline NV_STATUS tmrStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJTMR *pEngstate, NvU32 arg3) {
     return pEngstate->__tmrStatePostLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS tmrStatePreUnload_DISPATCH(POBJGPU pGpu, struct OBJTMR *pEngstate, NvU32 arg3) {
+static inline NV_STATUS tmrStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJTMR *pEngstate, NvU32 arg3) {
     return pEngstate->__tmrStatePreUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS tmrStatePostUnload_DISPATCH(POBJGPU pGpu, struct OBJTMR *pEngstate, NvU32 arg3) {
+static inline NV_STATUS tmrStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJTMR *pEngstate, NvU32 arg3) {
     return pEngstate->__tmrStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NvBool tmrIsPresent_DISPATCH(POBJGPU pGpu, struct OBJTMR *pEngstate) {
+static inline NvBool tmrIsPresent_DISPATCH(struct OBJGPU *pGpu, struct OBJTMR *pEngstate) {
     return pEngstate->__tmrIsPresent__(pGpu, pEngstate);
 }
 
@@ -790,11 +790,11 @@ static inline void tmrResetTimerRegistersForVF(OBJGPU *pGpu, struct OBJTMR *pTmr
 
 #define tmrResetTimerRegistersForVF_HAL(pGpu, pTmr, gfid) tmrResetTimerRegistersForVF(pGpu, pTmr, gfid)
 
-NV_STATUS tmrEventCreateOSTimer_OSTIMER(struct OBJTMR *pTmr, PTMR_EVENT pEvent);
+NV_STATUS tmrEventCreateOSTimer_OSTIMER(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent);
 
 
 #ifdef __nvoc_objtmr_h_disabled
-static inline NV_STATUS tmrEventCreateOSTimer(struct OBJTMR *pTmr, PTMR_EVENT pEvent) {
+static inline NV_STATUS tmrEventCreateOSTimer(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent) {
     NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -804,11 +804,11 @@ static inline NV_STATUS tmrEventCreateOSTimer(struct OBJTMR *pTmr, PTMR_EVENT pE
 
 #define tmrEventCreateOSTimer_HAL(pTmr, pEvent) tmrEventCreateOSTimer(pTmr, pEvent)
 
-NV_STATUS tmrEventScheduleRelOSTimer_OSTIMER(struct OBJTMR *pTmr, PTMR_EVENT pEvent, NvU64 timeRelNs);
+NV_STATUS tmrEventScheduleRelOSTimer_OSTIMER(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent, NvU64 timeRelNs);
 
 
 #ifdef __nvoc_objtmr_h_disabled
-static inline NV_STATUS tmrEventScheduleRelOSTimer(struct OBJTMR *pTmr, PTMR_EVENT pEvent, NvU64 timeRelNs) {
+static inline NV_STATUS tmrEventScheduleRelOSTimer(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent, NvU64 timeRelNs) {
     NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -818,11 +818,11 @@ static inline NV_STATUS tmrEventScheduleRelOSTimer(struct OBJTMR *pTmr, PTMR_EVE
 
 #define tmrEventScheduleRelOSTimer_HAL(pTmr, pEvent, timeRelNs) tmrEventScheduleRelOSTimer(pTmr, pEvent, timeRelNs)
 
-NV_STATUS tmrEventServiceOSTimerCallback_OSTIMER(OBJGPU *pGpu, struct OBJTMR *pTmr, PTMR_EVENT pEvent);
+NV_STATUS tmrEventServiceOSTimerCallback_OSTIMER(OBJGPU *pGpu, struct OBJTMR *pTmr, struct TMR_EVENT *pEvent);
 
 
 #ifdef __nvoc_objtmr_h_disabled
-static inline NV_STATUS tmrEventServiceOSTimerCallback(OBJGPU *pGpu, struct OBJTMR *pTmr, PTMR_EVENT pEvent) {
+static inline NV_STATUS tmrEventServiceOSTimerCallback(OBJGPU *pGpu, struct OBJTMR *pTmr, struct TMR_EVENT *pEvent) {
     NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -832,11 +832,11 @@ static inline NV_STATUS tmrEventServiceOSTimerCallback(OBJGPU *pGpu, struct OBJT
 
 #define tmrEventServiceOSTimerCallback_HAL(pGpu, pTmr, pEvent) tmrEventServiceOSTimerCallback(pGpu, pTmr, pEvent)
 
-NV_STATUS tmrEventCancelOSTimer_OSTIMER(struct OBJTMR *pTmr, PTMR_EVENT pEvent);
+NV_STATUS tmrEventCancelOSTimer_OSTIMER(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent);
 
 
 #ifdef __nvoc_objtmr_h_disabled
-static inline NV_STATUS tmrEventCancelOSTimer(struct OBJTMR *pTmr, PTMR_EVENT pEvent) {
+static inline NV_STATUS tmrEventCancelOSTimer(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent) {
     NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -846,11 +846,11 @@ static inline NV_STATUS tmrEventCancelOSTimer(struct OBJTMR *pTmr, PTMR_EVENT pE
 
 #define tmrEventCancelOSTimer_HAL(pTmr, pEvent) tmrEventCancelOSTimer(pTmr, pEvent)
 
-NV_STATUS tmrEventDestroyOSTimer_OSTIMER(struct OBJTMR *pTmr, PTMR_EVENT pEvent);
+NV_STATUS tmrEventDestroyOSTimer_OSTIMER(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent);
 
 
 #ifdef __nvoc_objtmr_h_disabled
-static inline NV_STATUS tmrEventDestroyOSTimer(struct OBJTMR *pTmr, PTMR_EVENT pEvent) {
+static inline NV_STATUS tmrEventDestroyOSTimer(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent) {
     NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -951,10 +951,10 @@ static inline NvBool tmrServiceSwrlWrapper(OBJGPU *pGpu, struct OBJTMR *pTmr, st
 void tmrDestruct_IMPL(struct OBJTMR *pTmr);
 
 #define __nvoc_tmrDestruct(pTmr) tmrDestruct_IMPL(pTmr)
-NV_STATUS tmrEventCreate_IMPL(struct OBJTMR *pTmr, PTMR_EVENT *ppEvent, TIMEPROC callbackFn, void *pUserData, NvU32 flags);
+NV_STATUS tmrEventCreate_IMPL(struct OBJTMR *pTmr, struct TMR_EVENT **ppEvent, TIMEPROC callbackFn, void *pUserData, NvU32 flags);
 
 #ifdef __nvoc_objtmr_h_disabled
-static inline NV_STATUS tmrEventCreate(struct OBJTMR *pTmr, PTMR_EVENT *ppEvent, TIMEPROC callbackFn, void *pUserData, NvU32 flags) {
+static inline NV_STATUS tmrEventCreate(struct OBJTMR *pTmr, struct TMR_EVENT **ppEvent, TIMEPROC callbackFn, void *pUserData, NvU32 flags) {
     NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -962,20 +962,20 @@ static inline NV_STATUS tmrEventCreate(struct OBJTMR *pTmr, PTMR_EVENT *ppEvent,
 #define tmrEventCreate(pTmr, ppEvent, callbackFn, pUserData, flags) tmrEventCreate_IMPL(pTmr, ppEvent, callbackFn, pUserData, flags)
 #endif //__nvoc_objtmr_h_disabled
 
-void tmrEventCancel_IMPL(struct OBJTMR *pTmr, PTMR_EVENT pEvent);
+void tmrEventCancel_IMPL(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent);
 
 #ifdef __nvoc_objtmr_h_disabled
-static inline void tmrEventCancel(struct OBJTMR *pTmr, PTMR_EVENT pEvent) {
+static inline void tmrEventCancel(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent) {
     NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
 }
 #else //__nvoc_objtmr_h_disabled
 #define tmrEventCancel(pTmr, pEvent) tmrEventCancel_IMPL(pTmr, pEvent)
 #endif //__nvoc_objtmr_h_disabled
 
-void tmrEventDestroy_IMPL(struct OBJTMR *pTmr, PTMR_EVENT pEvent);
+void tmrEventDestroy_IMPL(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent);
 
 #ifdef __nvoc_objtmr_h_disabled
-static inline void tmrEventDestroy(struct OBJTMR *pTmr, PTMR_EVENT pEvent) {
+static inline void tmrEventDestroy(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent) {
     NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
 }
 #else //__nvoc_objtmr_h_disabled
@@ -1056,10 +1056,10 @@ static inline NvBool tmrDiffExceedsTime(struct OBJTMR *pTmr, PDAYMSECTIME pFutur
 #define tmrDiffExceedsTime(pTmr, pFutureTime, pPastTime, time) tmrDiffExceedsTime_IMPL(pTmr, pFutureTime, pPastTime, time)
 #endif //__nvoc_objtmr_h_disabled
 
-NV_STATUS tmrEventScheduleAbs_IMPL(struct OBJTMR *pTmr, PTMR_EVENT pEvent, NvU64 timeAbs);
+NV_STATUS tmrEventScheduleAbs_IMPL(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent, NvU64 timeAbs);
 
 #ifdef __nvoc_objtmr_h_disabled
-static inline NV_STATUS tmrEventScheduleAbs(struct OBJTMR *pTmr, PTMR_EVENT pEvent, NvU64 timeAbs) {
+static inline NV_STATUS tmrEventScheduleAbs(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent, NvU64 timeAbs) {
     NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -1078,10 +1078,10 @@ static inline NV_STATUS tmrScheduleCallbackAbs(struct OBJTMR *pTmr, TIMEPROC_OBS
 #define tmrScheduleCallbackAbs(pTmr, arg2, arg3, arg4, arg5, arg6) tmrScheduleCallbackAbs_IMPL(pTmr, arg2, arg3, arg4, arg5, arg6)
 #endif //__nvoc_objtmr_h_disabled
 
-NV_STATUS tmrEventScheduleRel_IMPL(struct OBJTMR *pTmr, PTMR_EVENT pEvent, NvU64 timeRel);
+NV_STATUS tmrEventScheduleRel_IMPL(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent, NvU64 timeRel);
 
 #ifdef __nvoc_objtmr_h_disabled
-static inline NV_STATUS tmrEventScheduleRel(struct OBJTMR *pTmr, PTMR_EVENT pEvent, NvU64 timeRel) {
+static inline NV_STATUS tmrEventScheduleRel(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent, NvU64 timeRel) {
     NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -1111,10 +1111,10 @@ static inline NV_STATUS tmrScheduleCallbackRelSec(struct OBJTMR *pTmr, TIMEPROC_
 #define tmrScheduleCallbackRelSec(pTmr, arg2, arg3, arg4, arg5, arg6) tmrScheduleCallbackRelSec_IMPL(pTmr, arg2, arg3, arg4, arg5, arg6)
 #endif //__nvoc_objtmr_h_disabled
 
-NvBool tmrEventOnList_IMPL(struct OBJTMR *pTmr, PTMR_EVENT pEvent);
+NvBool tmrEventOnList_IMPL(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent);
 
 #ifdef __nvoc_objtmr_h_disabled
-static inline NvBool tmrEventOnList(struct OBJTMR *pTmr, PTMR_EVENT pEvent) {
+static inline NvBool tmrEventOnList(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent) {
     NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
     return NV_FALSE;
 }
@@ -1122,10 +1122,10 @@ static inline NvBool tmrEventOnList(struct OBJTMR *pTmr, PTMR_EVENT pEvent) {
 #define tmrEventOnList(pTmr, pEvent) tmrEventOnList_IMPL(pTmr, pEvent)
 #endif //__nvoc_objtmr_h_disabled
 
-NV_STATUS tmrEventServiceTimer_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr, PTMR_EVENT pEvent);
+NV_STATUS tmrEventServiceTimer_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr, struct TMR_EVENT *pEvent);
 
 #ifdef __nvoc_objtmr_h_disabled
-static inline NV_STATUS tmrEventServiceTimer(OBJGPU *pGpu, struct OBJTMR *pTmr, PTMR_EVENT pEvent) {
+static inline NV_STATUS tmrEventServiceTimer(OBJGPU *pGpu, struct OBJTMR *pTmr, struct TMR_EVENT *pEvent) {
     NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -1173,6 +1173,17 @@ static inline NV_STATUS tmrTimeUntilNextCallback(OBJGPU *pGpu, struct OBJTMR *pT
 }
 #else //__nvoc_objtmr_h_disabled
 #define tmrTimeUntilNextCallback(pGpu, pTmr, pTimeUntilCallbackNs) tmrTimeUntilNextCallback_IMPL(pGpu, pTmr, pTimeUntilCallbackNs)
+#endif //__nvoc_objtmr_h_disabled
+
+NV_STATUS tmrEventTimeUntilNextCallback_IMPL(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent, NvU64 *pTimeUntilCallbackNs);
+
+#ifdef __nvoc_objtmr_h_disabled
+static inline NV_STATUS tmrEventTimeUntilNextCallback(struct OBJTMR *pTmr, struct TMR_EVENT *pEvent, NvU64 *pTimeUntilCallbackNs) {
+    NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_objtmr_h_disabled
+#define tmrEventTimeUntilNextCallback(pTmr, pEvent, pTimeUntilCallbackNs) tmrEventTimeUntilNextCallback_IMPL(pTmr, pEvent, pTimeUntilCallbackNs)
 #endif //__nvoc_objtmr_h_disabled
 
 NvBool tmrCallExpiredCallbacks_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr);

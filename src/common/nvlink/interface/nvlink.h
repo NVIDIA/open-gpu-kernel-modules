@@ -67,6 +67,7 @@ extern "C" {
 #define NVLINK_DEVICE_VERSION_30           0x00000005
 #define NVLINK_DEVICE_VERSION_31           0x00000006
 #define NVLINK_DEVICE_VERSION_40           0x00000007
+#define NVLINK_DEVICE_VERSION_50           0x00000008
 
 // Link Transition Timeouts in miliseconds
 #define NVLINK_TRANSITION_OFF_TIMEOUT        1
@@ -516,7 +517,8 @@ NvlStatus nvlink_lib_get_remote_conn_info(nvlink_link *link, nvlink_conn_info *c
  */
 NvlStatus nvlink_lib_discover_and_get_remote_conn_info(nvlink_link      *end,
                                                        nvlink_conn_info *conn_info,
-                                                       NvU32             flags);
+                                                       NvU32             flags,
+                                                       NvBool            bForceDiscovery);
 
 
 /************************************************************************************************/

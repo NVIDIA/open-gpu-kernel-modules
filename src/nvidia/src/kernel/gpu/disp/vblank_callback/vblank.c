@@ -25,10 +25,9 @@
 
 #include "kernel/gpu/disp/head/kernel_head.h"
 #include "kernel/gpu/disp/kern_disp.h"
+#include "kernel/gpu/timer/objtmr.h"
 #include "kernel/gpu/gpu.h"
 #include "kernel/os/os.h"
-
-#include "objtmr.h"
 
 void
 kheadAddVblankCallback_IMPL

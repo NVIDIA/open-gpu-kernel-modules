@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -58,7 +58,7 @@ extern "C" {
 typedef struct OBJMEMSCRUB OBJMEMSCRUB;
 typedef struct SCRUB_NODE SCRUB_NODE;
 
-#define PMA_REGION_SIZE 64
+#define PMA_REGION_SIZE 32
 #define PMA_ADDR2FRAME(addr, base)  (((addr) - (base)) >> PMA_PAGE_SHIFT)
 #define PMA_FRAME2ADDR(frame, base) ((base) + ((frame) << PMA_PAGE_SHIFT))
 
@@ -189,9 +189,11 @@ typedef void  (*pmaMapChangeBlockStateAttrib_t)(void *pMap, NvU64 frameNum, NvU6
 typedef PMA_PAGESTATUS (*pmaMapRead_t)(void *pMap, NvU64 frameNum, NvBool readAttrib);
 typedef NV_STATUS (*pmaMapScanContiguous_t)(void *pMap, NvU64 addrBase, NvU64 rangeStart, NvU64 rangeEnd,
                                             NvU64 numPages, NvU64 *freelist, NvU64 pageSize, NvU64 alignment,
+                                            NvU64 stride, NvU32 strideStart,
                                             NvU64 *pagesAllocated, NvBool bSkipEvict, NvBool bReverseAlloc);
 typedef NV_STATUS (*pmaMapScanDiscontiguous_t)(void *pMap, NvU64 addrBase, NvU64 rangeStart, NvU64 rangeEnd,
                                                NvU64 numPages, NvU64 *freelist, NvU64 pageSize, NvU64 alignment,
+                                               NvU64 stride, NvU32 strideStart,
                                                NvU64 *pagesAllocated, NvBool bSkipEvict, NvBool bReverseAlloc);
 typedef void (*pmaMapGetSize_t)(void *pMap, NvU64 *pBytesTotal);
 typedef void (*pmaMapGetLargestFree_t)(void *pMap, NvU64 *pLargestFree);

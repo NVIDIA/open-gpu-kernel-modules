@@ -149,6 +149,7 @@
 #define PCI_VENDOR_ID_ALIBABA       0x1DED
 #define PCI_VENDOR_ID_SIFIVE        0xF15E
 #define PCI_VENDOR_ID_PLDA          0x1556
+#define PCI_VENDOR_ID_PHYTIUM       0x1DB7
 
 #define NV_PCI_DEVID_DEVICE                    31:16  /* RW--F */
 #define NV_PCI_SUBID_DEVICE                    31:16  /* RW--F */
@@ -194,6 +195,10 @@
 
 //Tylersburg Congurations
 #define TYLERSBURG_DEVID                    0x3406
+
+// Intel Barlow Ridge TB5 device IDs
+#define DEVICE_ID_INTEL_BARLOW_RIDGE_5786_EGPU     0x5786
+#define DEVICE_ID_INTEL_BARLOW_RIDGE_57A4_EGPU     0x57A4
 
 // Intel Grantsdale definitions
 #define DEVICE_ID_INTEL_2580_HOST_BRIDGE    0x2580
@@ -632,9 +637,11 @@ enum {
 ,     CS_INTEL_1B81
 ,     CS_INTEL_18DC
 ,     CS_INTEL_7A04
+,     CS_INTEL_5795
 ,     CS_SIFIVE_FU740_C000
 ,     CS_PLDA_XPRESSRICH_AXI_REF
 ,     CS_AMPERE_AMPEREONE
+,     CS_PHYTIUM_S5000
 ,     CS_MAX_PCIE
 };
 

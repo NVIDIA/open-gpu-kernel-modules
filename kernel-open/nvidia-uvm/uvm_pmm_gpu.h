@@ -304,45 +304,7 @@ typedef struct uvm_gpu_root_chunk_struct
     //
     // Protected by the corresponding root chunk bit lock.
     uvm_tracker_t tracker;
-
-    // Indirect peers which have IOMMU mappings to this root chunk. The mapped
-    // addresses are stored in this root chunk's index in
-    // uvm_pmm_gpu_t::root_chunks.indirect_peer[id].dma_addrs.
-    //
-    // Protected by the corresponding root chunk bit lock.
-    //
-    // We can use a regular processor id because indirect peers are not allowed
-    // between partitioned GPUs when SMC is enabled.
-    uvm_processor_mask_t indirect_peers_mapped;
 } uvm_gpu_root_chunk_t;
-
-typedef struct
-{
-    // Indirect peers are GPUs which can coherently access this GPU's memory,
-    // but are routed through an intermediate processor. Indirect peers access
-    // each others' memory with the SYS aperture rather then a PEER aperture,
-    // meaning they need IOMMU mappings:
-    //
-    // accessing_gpu ==> IOMMU ==> CPU ==> owning_gpu (this GPU)
-    //
-    // This array has one entry per root chunk on this GPU. Each entry
-    // contains the IOMMU address accessing_gpu needs to use in order to
-    // access this GPU's root chunk. The root chunks are mapped as whole
-    // regions both for tracking simplicity and to allow GPUs to map with
-    // large PTEs.
-    //
-    // An array entry is valid iff accessing_gpu's ID is set in the
-    // corresponding root chunk's indirect_peers_mapped mask.
-    //
-    // Management of these addresses would be simpler if they were stored
-    // in the root chunks themselves, but in the common case there are only
-    // a small number of indirect peers in a system. Dynamic array
-    // allocation per indirect peer wastes less memory.
-    NvU64 *dma_addrs;
-
-    // Number of this GPU's root chunks mapped for each indirect peer.
-    atomic64_t map_count;
-} uvm_gpu_root_chunk_indirect_peer_t;
 
 typedef struct uvm_pmm_gpu_struct
 {
@@ -388,8 +350,6 @@ typedef struct uvm_pmm_gpu_struct
         // or workqueue.
         struct list_head va_block_lazy_free;
         nv_kthread_q_item_t va_block_lazy_free_q_item;
-
-        uvm_gpu_root_chunk_indirect_peer_t indirect_peer[UVM_ID_MAX_GPUS];
     } root_chunks;
 
 #if UVM_IS_CONFIG_HMM()
@@ -591,31 +551,6 @@ void uvm_pmm_gpu_sync(uvm_pmm_gpu_t *pmm);
 
 // Mark an allocated chunk as evicted
 void uvm_pmm_gpu_mark_chunk_evicted(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk);
-
-// Initialize indirect peer state so accessing_gpu is ready to create mappings
-// to pmm's root chunks.
-//
-// Locking: The global lock must be held.
-NV_STATUS uvm_pmm_gpu_indirect_peer_init(uvm_pmm_gpu_t *pmm, uvm_gpu_t *accessing_gpu);
-
-// Tear down indirect peer state from other_gpu to pmm's GPU. Any existing IOMMU
-// mappings from other_gpu to this GPU are torn down.
-//
-// Locking: The global lock must be held.
-void uvm_pmm_gpu_indirect_peer_destroy(uvm_pmm_gpu_t *pmm, uvm_gpu_t *other_gpu);
-
-// Create an IOMMU mapping to allow accessing_gpu to access chunk on pmm's GPU.
-// chunk can be any size, and can be mapped more than once (the address will not
-// change). The address can be retrieved using uvm_pmm_gpu_indirect_peer_addr.
-//
-// Note that there is no corresponding unmap call. The mappings will be removed
-// automatically as necessary when the chunk is freed. This allows mappings to
-// be reused as much as possible.
-NV_STATUS uvm_pmm_gpu_indirect_peer_map(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk, uvm_gpu_t *accessing_gpu);
-
-// Retrieve the system address accessing_gpu must use to access this chunk.
-// uvm_pmm_gpu_indirect_peer_map must have been called first.
-NvU64 uvm_pmm_gpu_indirect_peer_addr(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk, uvm_gpu_t *accessing_gpu);
 
 // Returns the physical address for use by accessing_gpu of a vidmem allocation
 // on the peer pmm->gpu. This address can be used for making PTEs on

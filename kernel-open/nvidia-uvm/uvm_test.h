@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2021 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -132,7 +132,6 @@ NV_STATUS uvm_test_pma_alloc_free(UVM_TEST_PMA_ALLOC_FREE_PARAMS *params, struct
 NV_STATUS uvm_test_pma_get_batch_size(UVM_TEST_PMA_GET_BATCH_SIZE_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_pmm_alloc_free_root(UVM_TEST_PMM_ALLOC_FREE_ROOT_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_pmm_inject_pma_evict_error(UVM_TEST_PMM_INJECT_PMA_EVICT_ERROR_PARAMS *params, struct file *filp);
-NV_STATUS uvm_test_pmm_indirect_peers(UVM_TEST_PMM_INDIRECT_PEERS_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_pmm_query_pma_stats(UVM_TEST_PMM_QUERY_PMA_STATS_PARAMS *params, struct file *filp);
 
 NV_STATUS uvm_test_perf_events_sanity(UVM_TEST_PERF_EVENTS_SANITY_PARAMS *params, struct file *filp);

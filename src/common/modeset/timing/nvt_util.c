@@ -30,6 +30,7 @@
 #include "nvBinSegment.h"
 
 #include "nvtiming_pvt.h"
+#include "nvmisc.h" // NV_MAX
 
 PUSH_SEGMENTS
 
@@ -365,6 +366,99 @@ NvU16 NvTiming_MaxFrameWidth(NvU16 HVisible, NvU16 repMask)
     }
 
     return (HVisible / minPixelRepeat);
+}
+
+CODE_SEGMENT(PAGE_DD_CODE)
+NvU32 NvTiming_GetVrrFmin(
+    const NVT_EDID_INFO *pEdidInfo,
+    const NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo,
+    NvU32 nominalRefreshRateHz,
+    NVT_PROTOCOL sinkProtocol)
+{
+    NvU32 fmin = 0;
+
+    // DP Adaptive Sync
+    if (sinkProtocol == NVT_PROTOCOL_DP)
+    {
+        if (pEdidInfo)
+        {
+            if (pEdidInfo->ext_displayid.version)
+            {
+                fmin = pEdidInfo->ext_displayid.range_limits[0].vfreq_min;
+            }
+
+            if (pEdidInfo->ext_displayid20.version && pEdidInfo->ext_displayid20.range_limits.seamless_dynamic_video_timing_change)
+            {
+                fmin = pEdidInfo->ext_displayid20.range_limits.vfreq_min;
+            }
+
+            // DisplayID 2.0 extension
+            if (pEdidInfo->ext_displayid20.version && pEdidInfo->ext_displayid20.total_adaptive_sync_descriptor != 0)
+            {
+                // Go through all the Adaptive Sync Data Blocks and pick the right frequency based on nominalRR
+                NvU32 i;
+                for (i = 0; i < pEdidInfo->ext_displayid20.total_adaptive_sync_descriptor; i++)
+                {
+                    if ((pEdidInfo->ext_displayid20.adaptive_sync_descriptor[i].max_rr == nominalRefreshRateHz) ||
+                        (nominalRefreshRateHz == 0))
+                    {
+                        fmin = pEdidInfo->ext_displayid20.adaptive_sync_descriptor[i].min_rr;
+                        break;
+                    }
+                }
+            }
+
+            if (!fmin)
+            {
+                NvU32 i;
+                for (i = 0; i < NVT_EDID_MAX_LONG_DISPLAY_DESCRIPTOR; i++)
+                {
+                    if (pEdidInfo->ldd[i].tag == NVT_EDID_DISPLAY_DESCRIPTOR_DRL)
+                    {
+                        fmin = pEdidInfo->ldd[i].u.range_limit.min_v_rate;
+                    }
+                }
+            }
+
+            // Gsync
+            if (pEdidInfo->nvdaVsdbInfo.valid)
+            {
+                fmin = NV_MAX(pEdidInfo->nvdaVsdbInfo.vrrData.v1.minRefreshRate, 10);
+            }
+        }
+
+        // Display ID 2.0 Standalone
+        if (pDisplayIdInfo)
+        {
+            // Go through all the Adaptive Sync Data Blocks and pick the right frequency based on nominalRR
+            NvU32 i;
+            for (i = 0; i < pDisplayIdInfo->total_adaptive_sync_descriptor; i++)
+            {
+                if ((pDisplayIdInfo->adaptive_sync_descriptor[i].max_rr == nominalRefreshRateHz) ||
+                    (nominalRefreshRateHz == 0))
+                {
+                    fmin = pDisplayIdInfo->adaptive_sync_descriptor[i].min_rr;
+                    break;
+                }
+            }
+            // If unable to find the value, choose a fallback from DisplayId
+            if (!fmin)
+            {
+                fmin = pDisplayIdInfo->range_limits.vfreq_min;
+            }
+        }
+    }
+
+    // HDMI 2.1 VRR
+    else if (sinkProtocol == NVT_PROTOCOL_HDMI)
+    {
+        if (pEdidInfo)
+        {
+            fmin = pEdidInfo->hdmiForumInfo.vrr_min;
+        }
+    }
+
+    return fmin;
 }
 
 POP_SEGMENTS

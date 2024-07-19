@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018-2023 NVIDIA Corporation
+    Copyright (c) 2018-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -52,10 +52,6 @@ static NV_STATUS migrate_vma_page_copy_address(struct page *page,
     uvm_gpu_t *owning_gpu = UVM_ID_IS_CPU(resident_id)? NULL: uvm_va_space_get_gpu(va_space, resident_id);
     const bool can_copy_from = uvm_processor_mask_test(&va_space->can_copy_from[uvm_id_value(copying_gpu->id)],
                                                        resident_id);
-    const bool direct_peer = owning_gpu &&
-                             (owning_gpu != copying_gpu) &&
-                             can_copy_from &&
-                             !uvm_gpu_peer_caps(owning_gpu, copying_gpu)->is_indirect_peer;
 
     UVM_ASSERT(page_index < state->num_pages);
 
@@ -65,15 +61,13 @@ static NV_STATUS migrate_vma_page_copy_address(struct page *page,
         // Local vidmem address
         *gpu_addr = uvm_gpu_address_copy(owning_gpu, uvm_gpu_page_to_phys_address(owning_gpu, page));
     }
-    else if (direct_peer) {
-        // Direct GPU peer
+    else if (owning_gpu && can_copy_from) {
         uvm_gpu_identity_mapping_t *gpu_peer_mappings = uvm_gpu_get_peer_mapping(copying_gpu, owning_gpu->id);
         uvm_gpu_phys_address_t phys_addr = uvm_gpu_page_to_phys_address(owning_gpu, page);
 
         *gpu_addr = uvm_gpu_address_virtual(gpu_peer_mappings->base + phys_addr.address);
     }
     else {
-        // Sysmem/Indirect Peer
         NV_STATUS status = uvm_parent_gpu_map_cpu_page(copying_gpu->parent, page, &state->dma.addrs[page_index]);
 
         if (status != NV_OK)
@@ -507,7 +501,7 @@ static NV_STATUS migrate_vma_copy_pages(struct vm_area_struct *vma,
     return NV_OK;
 }
 
-void migrate_vma_cleanup_pages(unsigned long *dst, unsigned long npages)
+static void migrate_vma_cleanup_pages(unsigned long *dst, unsigned long npages)
 {
     unsigned long i;
 
@@ -523,7 +517,7 @@ void migrate_vma_cleanup_pages(unsigned long *dst, unsigned long npages)
     }
 }
 
-void uvm_migrate_vma_alloc_and_copy(struct migrate_vma *args, migrate_vma_state_t *state)
+static void migrate_vma_alloc_and_copy(struct migrate_vma *args, migrate_vma_state_t *state)
 {
     struct vm_area_struct *vma = args->vma;
     unsigned long start = args->start;
@@ -553,12 +547,13 @@ void uvm_migrate_vma_alloc_and_copy(struct migrate_vma *args, migrate_vma_state_
         migrate_vma_cleanup_pages(args->dst, state->num_pages);
 }
 
-void uvm_migrate_vma_alloc_and_copy_helper(struct vm_area_struct *vma,
-                                const unsigned long *src,
-                                unsigned long *dst,
-                                unsigned long start,
-                                unsigned long end,
-                                void *private)
+#if defined(CONFIG_MIGRATE_VMA_HELPER)
+static void migrate_vma_alloc_and_copy_helper(struct vm_area_struct *vma,
+                                              const unsigned long *src,
+                                              unsigned long *dst,
+                                              unsigned long start,
+                                              unsigned long end,
+                                              void *private)
 {
     struct migrate_vma args =
     {
@@ -569,10 +564,11 @@ void uvm_migrate_vma_alloc_and_copy_helper(struct vm_area_struct *vma,
         .end = end,
     };
 
-    uvm_migrate_vma_alloc_and_copy(&args, (migrate_vma_state_t *) private);
+    migrate_vma_alloc_and_copy(&args, (migrate_vma_state_t *) private);
 }
+#endif
 
-void uvm_migrate_vma_finalize_and_map(struct migrate_vma *args, migrate_vma_state_t *state)
+static void uvm_migrate_vma_finalize_and_map(struct migrate_vma *args, migrate_vma_state_t *state)
 {
     unsigned long i;
 
@@ -642,12 +638,13 @@ void uvm_migrate_vma_finalize_and_map(struct migrate_vma *args, migrate_vma_stat
     UVM_ASSERT(!bitmap_intersects(state->populate_pages_mask, state->allocation_failed_mask, state->num_pages));
 }
 
-void uvm_migrate_vma_finalize_and_map_helper(struct vm_area_struct *vma,
-                                             const unsigned long *src,
-                                             const unsigned long *dst,
-                                             unsigned long start,
-                                             unsigned long end,
-                                             void *private)
+#if defined(CONFIG_MIGRATE_VMA_HELPER)
+static void migrate_vma_finalize_and_map_helper(struct vm_area_struct *vma,
+                                                const unsigned long *src,
+                                                const unsigned long *dst,
+                                                unsigned long start,
+                                                unsigned long end,
+                                                void *private)
 {
     struct migrate_vma args =
     {
@@ -660,6 +657,7 @@ void uvm_migrate_vma_finalize_and_map_helper(struct vm_area_struct *vma,
 
     uvm_migrate_vma_finalize_and_map(&args, (migrate_vma_state_t *) private);
 }
+#endif
 
 static NV_STATUS nv_migrate_vma(struct migrate_vma *args, migrate_vma_state_t *state)
 {
@@ -668,8 +666,8 @@ static NV_STATUS nv_migrate_vma(struct migrate_vma *args, migrate_vma_state_t *s
 #if defined(CONFIG_MIGRATE_VMA_HELPER)
     static const struct migrate_vma_ops uvm_migrate_vma_ops =
     {
-        .alloc_and_copy = uvm_migrate_vma_alloc_and_copy_helper,
-        .finalize_and_map = uvm_migrate_vma_finalize_and_map_helper,
+        .alloc_and_copy = migrate_vma_alloc_and_copy_helper,
+        .finalize_and_map = migrate_vma_finalize_and_map_helper,
     };
 
     ret = migrate_vma(&uvm_migrate_vma_ops, args->vma, args->start, args->end, args->src, args->dst, state);
@@ -685,7 +683,7 @@ static NV_STATUS nv_migrate_vma(struct migrate_vma *args, migrate_vma_state_t *s
     if (ret < 0)
         return errno_to_nv_status(ret);
 
-    uvm_migrate_vma_alloc_and_copy(args, state);
+    migrate_vma_alloc_and_copy(args, state);
     if (state->status == NV_OK) {
         migrate_vma_pages(args);
         uvm_migrate_vma_finalize_and_map(args, state);

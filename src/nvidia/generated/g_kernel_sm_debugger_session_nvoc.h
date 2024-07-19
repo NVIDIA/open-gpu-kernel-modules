@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -229,7 +229,7 @@ struct KernelSMDebuggerSession {
     NV_STATUS (*__ksmdbgssnCtrlCmdDebugGetSingleSmDebuggerStatus__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_GET_SINGLE_SM_DEBUGGER_STATUS_PARAMS *);  // inline exported (id=0x83de0325) body
     NV_STATUS (*__ksmdbgssnCtrlCmdDebugReadBatchMemory__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS *);  // exported (id=0x83de0326)
     NV_STATUS (*__ksmdbgssnCtrlCmdDebugWriteBatchMemory__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS *);  // exported (id=0x83de0327)
-    NV_STATUS (*__ksmdbgssnCtrlCmdDebugReadMMUFaultInfo__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_PARAMS *);  // exported (id=0x83de0328)
+    NV_STATUS (*__ksmdbgssnCtrlCmdDebugReadMMUFaultInfo__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_PARAMS *);  // halified (2 hals) exported (id=0x83de0328)
     NV_STATUS (*__ksmdbgssnControl__)(struct KernelSMDebuggerSession * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__ksmdbgssnMap__)(struct KernelSMDebuggerSession * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__ksmdbgssnUnmap__)(struct KernelSMDebuggerSession * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
@@ -366,6 +366,7 @@ NV_STATUS __nvoc_objCreate_KernelSMDebuggerSession(KernelSMDebuggerSession**, Dy
 #define ksmdbgssnCtrlCmdDebugWriteBatchMemory(arg_this, arg2) ksmdbgssnCtrlCmdDebugWriteBatchMemory_DISPATCH(arg_this, arg2)
 #define ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_FNPTR(arg_this) arg_this->__ksmdbgssnCtrlCmdDebugReadMMUFaultInfo__
 #define ksmdbgssnCtrlCmdDebugReadMMUFaultInfo(arg_this, arg2) ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_DISPATCH(arg_this, arg2)
+#define ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_HAL(arg_this, arg2) ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_DISPATCH(arg_this, arg2)
 #define ksmdbgssnControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresControl__
 #define ksmdbgssnControl(pGpuResource, pCallContext, pParams) ksmdbgssnControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define ksmdbgssnMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresMap__
@@ -755,6 +756,10 @@ static inline NV_STATUS ksmdbgssnCtrlCmdDebugGetSingleSmDebuggerStatus_fcf1ac(st
 NV_STATUS ksmdbgssnCtrlCmdDebugReadBatchMemory_IMPL(struct KernelSMDebuggerSession *arg1, NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS *arg2);
 
 NV_STATUS ksmdbgssnCtrlCmdDebugWriteBatchMemory_IMPL(struct KernelSMDebuggerSession *arg1, NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS *arg2);
+
+static inline NV_STATUS ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_46f6a7(struct KernelSMDebuggerSession *arg1, NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_PARAMS *arg2) {
+    return NV_ERR_NOT_SUPPORTED;
+}
 
 NV_STATUS ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_IMPL(struct KernelSMDebuggerSession *arg1, NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_PARAMS *arg2);
 

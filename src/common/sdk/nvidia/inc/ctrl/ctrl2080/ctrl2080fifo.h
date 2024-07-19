@@ -905,6 +905,34 @@ typedef struct NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_PARAMS {
     NvBool   bEnableAfterKeyRotation;
 } NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_PARAMS;
 
+/*
+ * NV2080_CTRL_CMD_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_V2
+ *
+ * This command does the same thing as @ref NV2080_CTRL_CMD_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION.
+ * The difference is that it doesn't take a list of clients and instead all channels belong
+ * to the client on which this control call is made.
+ *
+ *  numChannels
+ *      The number of valid entries in hChannelList array.
+ *  hChannelList
+ *      An array of NvHandle listing the channel handles
+ *      to be stopped.
+ *  bEnableAfterKeyRotation
+ *      This determines if channel is enabled by RM after it completes key rotation.
+ * Possible status values returned are:
+ *    NV_OK
+ *    NVOS_INVALID_STATE
+ */
+#define NV2080_CTRL_CMD_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_V2 (0x2080111b) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FIFO_INTERFACE_ID << 8) | NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_V2_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_V2_PARAMS_MESSAGE_ID (0x1BU)
+
+typedef struct NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_V2_PARAMS {
+    NvU32    numChannels;
+    NvHandle hChannelList[NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_MAX_ENTRIES];
+    NvBool   bEnableAfterKeyRotation;
+} NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_V2_PARAMS;
+
 
 
 /*

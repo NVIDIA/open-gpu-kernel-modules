@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -953,27 +953,18 @@ ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_IMPL
 
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
-    //
-    // SR-IOV vGPU
-    //
-    // MMU fault info is to be managed from within the guest, since host is
-    // not aware of MMU fault info about the VF.
-    // SM exception info is still fetched from host via the RPC above.
-    //
-    if (IS_GSP_CLIENT(pGpu) || IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
+    if (IS_GSP_CLIENT(pGpu))
     {
-        NV_STATUS status = NV_OK;
+        RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
         CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
-        RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
+        RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams->pLegacyParams;
 
-        NV_RM_RPC_CONTROL(pGpu,
-                          pRmCtrlParams->hClient,
-                          pRmCtrlParams->hObject,
-                          pRmCtrlParams->cmd,
-                          pRmCtrlParams->pParams,
-                          pRmCtrlParams->paramsSize,
-                          status);
-        return status;
+        return pRmApi->Control(pRmApi,
+                                pRmCtrlParams->hClient,
+                                pRmCtrlParams->hObject,
+                                pRmCtrlParams->cmd,
+                                pRmCtrlParams->pParams,
+                                pRmCtrlParams->paramsSize);
     }
 
     NV_ASSERT_OK_OR_RETURN(

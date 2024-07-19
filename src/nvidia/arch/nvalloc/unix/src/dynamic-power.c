@@ -88,7 +88,7 @@
 #include <gpu/mem_sys/kern_mem_sys.h>
 #include <gpu/subdevice/subdevice.h>
 #include <ctrl/ctrl2080/ctrl2080unix.h>
-#include <objtmr.h>
+#include <gpu/timer/objtmr.h>
 
 //
 // Schedule timer based callback, to check for the complete GPU Idleness.
@@ -732,7 +732,7 @@ rmReadAndParseDynamicPowerRegkey
         return NV_OK;
     }
 
-    chipId = DRF_VAL(_PMC, _BOOT_42, _CHIP_ID, pNvp->pmc_boot_42);
+    chipId = gpuGetChipIdFromPmcBoot42(pNvp->pmc_boot_42);
 
     // From GA102+, we enable RTD3 only if system is found to be Notebook
     if ((chipId >= NV_PMC_BOOT_42_CHIP_ID_GA102) &&
@@ -1258,7 +1258,7 @@ static NvBool RmCheckForGcxSupportOnCurrentState(
  * finished.
  *
  * Queue with lock flags:
- *     OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW
+ *     OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE
  *
  * @param[in]   gpuInstance     GPU instance ID.
  * @param[in]   pArgs           Unused callback closure.
@@ -1297,12 +1297,20 @@ static void timerCallbackToRemoveIdleHoldoff(
     void *pCallbackData
 )
 {
-    OBJGPU *pGpu   = reinterpretCast(pCallbackData, OBJGPU *);
+    NV_STATUS  status = NV_OK;
+    OBJGPU    *pGpu   = reinterpretCast(pCallbackData, OBJGPU *);
 
-    osQueueWorkItemWithFlags(pGpu,
-                             RmRemoveIdleHoldoff,
-                             NULL,
-                             OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW);
+    status = osQueueWorkItemWithFlags(pGpu,
+                                      RmRemoveIdleHoldoff,
+                                      NULL,
+                                      OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE);
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Queuing of remove idle holdoff work item failed with status : 0x%x\n",
+                  status);
+    }
 }
 
 /*!
@@ -1852,7 +1860,9 @@ static void RmScheduleCallbackToRemoveIdleHoldoff(
  * @param[in]   pGpu    OBJGPU pointer.
  */
 static NvBool RmCheckRtd3GcxSupport(
-    nv_state_t *pNv
+    nv_state_t *pNv,
+    NvBool     *bGC6Support,
+    NvBool     *bGCOFFSupport
 )
 {
     nv_priv_t *nvp = NV_GET_NV_PRIV(pNv);
@@ -1860,31 +1870,21 @@ static NvBool RmCheckRtd3GcxSupport(
     RM_API    *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     NV_STATUS  status;
     NV0080_CTRL_GPU_GET_VIRTUALIZATION_MODE_PARAMS virtModeParams = { 0 };
-    NvBool     bGC6Support   = NV_FALSE;
-    NvBool     bGCOFFSupport = NV_FALSE;
-
     if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_UNIX_DYNAMIC_POWER_SUPPORTED))
     {
-        NV_PRINTF(LEVEL_NOTICE, "RTD3/GC6 is not supported for this arch\n");
+        NV_PRINTF(LEVEL_NOTICE, "RTD3 is not supported for this arch\n");
         return NV_FALSE;
     }
 
-    if (nvp->b_mobile_config_enabled)
-    {
-        bGC6Support = pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GC6_SUPPORTED);
-        bGCOFFSupport = bGC6Support;
-    }
-    else
-    {
-        bGC6Support = pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GC6_SUPPORTED);
-        bGCOFFSupport = pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GCOFF_SUPPORTED);
-    }
+    *bGC6Support = pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GC6_SUPPORTED);
+    *bGCOFFSupport = nvp->b_mobile_config_enabled ? *bGC6Support :
+                     pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GCOFF_SUPPORTED);
 
-    if (!bGC6Support && !bGCOFFSupport)
+    if (!(*bGC6Support) && !(*bGCOFFSupport))
     {
         NV_PRINTF(LEVEL_NOTICE,
                   "Disabling RTD3. [GC6 support=%d GCOFF support=%d]\n",
-                  bGC6Support, bGCOFFSupport);
+                  *bGC6Support, *bGCOFFSupport);
         return NV_FALSE;
     }
 
@@ -1903,7 +1903,7 @@ static NvBool RmCheckRtd3GcxSupport(
     if ((virtModeParams.virtualizationMode != NV0080_CTRL_GPU_VIRTUALIZATION_MODE_NONE) &&
         (virtModeParams.virtualizationMode != NV0080_CTRL_GPU_VIRTUALIZATION_MODE_NMOS))
     {
-        NV_PRINTF(LEVEL_NOTICE, "RTD3/GC6 is not supported on VM\n");
+        NV_PRINTF(LEVEL_NOTICE, "RTD3 is not supported on VM\n");
         return NV_FALSE;
     }
 
@@ -1916,47 +1916,42 @@ static NvBool RmCheckRtd3GcxSupport(
  *
  * @param[in]   nv      nv_state_t pointer.
  */
-void RmInitDeferredDynamicPowerManagement(
-    nv_state_t *nv
+static void RmInitDeferredDynamicPowerManagement(
+    nv_state_t *nv,
+    NvBool      bRtd3Support
 )
 {
     NV_STATUS  status;
     nv_priv_t *nvp  = NV_GET_NV_PRIV(nv);
 
-    // LOCK: acquire GPUs lock
-    if ((status = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DYN_POWER)) == NV_OK)
+    if (nvp->dynamic_power.mode == NV_DYNAMIC_PM_FINE)
     {
-        if (nvp->dynamic_power.mode == NV_DYNAMIC_PM_FINE)
+        OBJGPU *pGpu = NV_GET_NV_PRIV_PGPU(nv);
+
+        if (!bRtd3Support)
         {
-            OBJGPU *pGpu = NV_GET_NV_PRIV_PGPU(nv);
-
-            if (!RmCheckRtd3GcxSupport(nv))
-            {
-                 nvp->dynamic_power.mode = NV_DYNAMIC_PM_NEVER;
-                 nvp->dynamic_power.b_fine_not_supported = NV_TRUE;
-                 NV_PRINTF(LEVEL_NOTICE, "RTD3/GC6 is not supported\n");
-                 goto unlock;
-            }
-            osAddGpuDynPwrSupported(gpuGetInstance(pGpu));
-            nvp->dynamic_power.b_fine_not_supported = NV_FALSE;
-            status = CreateDynamicPowerCallbacks(pGpu);
-
-            if (status == NV_OK)
-            {
-                RmScheduleCallbackForIdlePreConditionsUnderGpuLock(pGpu);
-
-                nvp->dynamic_power.deferred_idle_enabled = NV_TRUE;
-                // RM's default is GCOFF allow
-                nvp->dynamic_power.clients_gcoff_disallow_refcount = 0;
-            }
+             nvp->dynamic_power.mode = NV_DYNAMIC_PM_NEVER;
+             nvp->dynamic_power.b_fine_not_supported = NV_TRUE;
+             NV_PRINTF(LEVEL_NOTICE, "RTD3 is not supported.\n");
+             return;
         }
-unlock:
-        // UNLOCK: release GPUs lock
-        rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
-    }
+        osAddGpuDynPwrSupported(gpuGetInstance(pGpu));
+        nvp->dynamic_power.b_fine_not_supported = NV_FALSE;
+        status = CreateDynamicPowerCallbacks(pGpu);
 
-    if (status != NV_OK)
-       NV_PRINTF(LEVEL_ERROR, "Failed to register for dynamic power callbacks\n");
+        if (status == NV_OK)
+        {
+            RmScheduleCallbackForIdlePreConditionsUnderGpuLock(pGpu);
+
+            nvp->dynamic_power.deferred_idle_enabled = NV_TRUE;
+            // RM's default is GCOFF allow
+            nvp->dynamic_power.clients_gcoff_disallow_refcount = 0;
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to register for dynamic power callbacks\n");
+        }
+    }
 }
 
 /*!
@@ -2610,7 +2605,7 @@ static void RmQueueIdleSustainedWorkitem(
         status = osQueueWorkItemWithFlags(pGpu,
                                           RmHandleIdleSustained,
                                           NULL,
-                                          OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW);
+                                          OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE);
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_WARNING,
@@ -2625,28 +2620,20 @@ static void RmQueueIdleSustainedWorkitem(
 /*
  * Allocate resources needed for S0ix-based system power management.
  */
-void
+static void
 RmInitS0ixPowerManagement(
-    nv_state_t *nv
+    nv_state_t *nv,
+    NvBool bRtd3Support,
+    NvBool bGC6Support
 )
 {
     nv_priv_t  *nvp = NV_GET_NV_PRIV(nv);
     NvU32       data;
-    NvBool      bRtd3Gc6Support = NV_FALSE;
 
     // S0ix-based S2Idle, on desktops, is not supported yet. Return early for desktop SKUs
     if (!nvp->b_mobile_config_enabled)
     {
         return;
-    }
-
-    // LOCK: acquire GPUs lock
-    if (rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_INIT) == NV_OK)
-    {
-        bRtd3Gc6Support = RmCheckRtd3GcxSupport(nv);
-
-        // UNLOCK: release GPUs lock
-        rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
     }
 
     /*
@@ -2657,7 +2644,7 @@ RmInitS0ixPowerManagement(
      * 2. The platform has support for s0ix.
      * 3. Feature regkey EnableS0ixPowerManagement is enabled.
      */
-    if (bRtd3Gc6Support &&
+    if (bRtd3Support && bGC6Support &&
         nv_platform_supports_s0ix() &&
         (osReadRegistryDword(NULL, NV_REG_ENABLE_S0IX_POWER_MANAGEMENT,
                              &data) == NV_OK) && (data == 1))
@@ -2676,6 +2663,32 @@ RmInitS0ixPowerManagement(
             nvp->s0ix_gcoff_max_fb_size = (NvU64)data * 1024 * 1024;
         }
     }
+}
+
+void RmInitPowerManagement(
+    nv_state_t *nv
+)
+{
+    // LOCK: acquire GPUs lock
+    if (rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_INIT) == NV_OK)
+    {
+        NvBool bGC6Support   = NV_FALSE;
+        NvBool bGCOFFSupport = NV_FALSE;
+        NvBool bRtd3Support  = RmCheckRtd3GcxSupport(nv, &bGC6Support, &bGCOFFSupport);
+
+        RmInitDeferredDynamicPowerManagement(nv, bRtd3Support);
+        RmInitS0ixPowerManagement(nv, bRtd3Support, bGC6Support);
+
+        // UNLOCK: release GPUs lock
+        rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
+    }
+}
+
+void RmDestroyPowerManagement(
+    nv_state_t *nv
+)
+{
+    RmDestroyDeferredDynamicPowerManagement(nv);
 }
 
 void NV_API_CALL rm_get_power_info(

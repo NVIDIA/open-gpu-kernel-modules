@@ -42,6 +42,16 @@
 #include <drm/drm_atomic_helper.h>
 #include <drm/drm_crtc.h>
 
+#if defined(NV_LINUX_NVHOST_H_PRESENT) && defined(CONFIG_TEGRA_GRHOST)
+#include <linux/nvhost.h>
+#elif defined(NV_LINUX_HOST1X_NEXT_H_PRESENT)            
+#include <linux/host1x-next.h>
+#endif
+
+#if defined(NV_DRM_FENCE_AVAILABLE)
+#include "nvidia-dma-fence-helper.h"
+#endif
+
 struct nv_drm_atomic_state {
     struct NvKmsKapiRequestedModeSetConfig config;
     struct drm_atomic_state base;
@@ -145,6 +155,159 @@ static int __nv_drm_put_back_post_fence_fd(
 
     return ret;
 }
+
+#if defined(NV_DRM_FENCE_AVAILABLE)
+struct nv_drm_plane_fence_cb_data {
+    nv_dma_fence_cb_t dma_fence_cb;
+    struct nv_drm_device *nv_dev;
+    NvU32 semaphore_index;
+};
+
+static void
+__nv_drm_plane_fence_cb(
+    nv_dma_fence_t *fence,
+    nv_dma_fence_cb_t *cb_data
+)
+{
+    struct nv_drm_plane_fence_cb_data *fence_data =
+        container_of(cb_data, typeof(*fence_data), dma_fence_cb);
+    struct nv_drm_device *nv_dev = fence_data->nv_dev;
+
+    nv_dma_fence_put(fence);
+    nvKms->signalDisplaySemaphore(nv_dev->pDevice, fence_data->semaphore_index);
+    nv_drm_free(fence_data);
+}
+
+static int __nv_drm_convert_in_fences(
+    struct nv_drm_device *nv_dev,
+    struct drm_atomic_state *state,
+    struct drm_crtc *crtc,
+    struct drm_crtc_state *crtc_state)
+{
+    struct drm_plane *plane = NULL;
+    struct drm_plane_state *plane_state = NULL;
+    struct nv_drm_plane *nv_plane = NULL;
+    struct NvKmsKapiLayerRequestedConfig *plane_req_config = NULL;
+    struct NvKmsKapiHeadRequestedConfig *head_req_config =
+        &to_nv_crtc_state(crtc_state)->req_config;
+    struct nv_drm_plane_fence_cb_data *fence_data;
+    uint32_t semaphore_index;
+    int ret, i;
+
+    if (!crtc_state->active) {
+        return 0;
+    }
+
+    nv_drm_for_each_new_plane_in_state(state, plane, plane_state, i) {
+        if ((plane->type == DRM_PLANE_TYPE_CURSOR) ||
+            (plane_state->crtc != crtc) ||
+            (plane_state->fence == NULL)) {
+            continue;
+        }
+
+        nv_plane = to_nv_plane(plane);
+        plane_req_config =
+            &head_req_config->layerRequestedConfig[nv_plane->layer_idx];
+
+        if (nv_dev->supportsSyncpts) {
+#if defined(NV_LINUX_NVHOST_H_PRESENT) && defined(CONFIG_TEGRA_GRHOST)
+#if defined(NV_NVHOST_DMA_FENCE_UNPACK_PRESENT)
+            int ret =
+                nvhost_dma_fence_unpack(
+                    plane_state->fence,
+                    &plane_req_config->config.syncParams.u.syncpt.preSyncptId,
+                    &plane_req_config->config.syncParams.u.syncpt.preSyncptValue);
+            if (ret == 0) {
+                plane_req_config->config.syncParams.preSyncptSpecified = true;
+                continue;
+            }
+#endif
+#elif defined(NV_LINUX_HOST1X_NEXT_H_PRESENT)
+            int ret =
+                host1x_fence_extract(
+                    plane_state->fence,
+                    &plane_req_config->config.syncParams.u.syncpt.preSyncptId,
+                    &plane_req_config->config.syncParams.u.syncpt.preSyncptValue);
+            if (ret == 0) {
+                plane_req_config->config.syncParams.preSyncptSpecified = true;
+                continue;
+            }
+#endif
+        }
+
+        /*
+         * Syncpt extraction failed, or syncpts are not supported.
+         * Use general DRM fence support with semaphores instead.
+         */
+        if (plane_req_config->config.syncParams.postSyncptRequested) {
+            // Can't mix Syncpts and semaphores in a given request.
+            return -EINVAL;
+        }
+
+        semaphore_index = nv_drm_next_display_semaphore(nv_dev);
+
+        if (!nvKms->resetDisplaySemaphore(nv_dev->pDevice, semaphore_index)) {
+            NV_DRM_DEV_LOG_ERR(
+                nv_dev,
+                "Failed to initialize semaphore for plane fence");
+            /*
+             * This should only happen if the semaphore pool was somehow
+             * exhausted. Waiting a bit and retrying may help in that case.
+             */
+            return -EAGAIN;
+        }
+
+        plane_req_config->config.syncParams.semaphoreSpecified = true;
+        plane_req_config->config.syncParams.u.semaphore.index = semaphore_index;
+
+        fence_data = nv_drm_calloc(1, sizeof(*fence_data));
+
+        if (!fence_data) {
+            NV_DRM_DEV_LOG_ERR(
+                nv_dev,
+                "Failed to allocate callback data for plane fence");
+            nvKms->cancelDisplaySemaphore(nv_dev->pDevice, semaphore_index);
+            return -ENOMEM;
+        }
+
+        fence_data->nv_dev = nv_dev;
+        fence_data->semaphore_index = semaphore_index;
+
+        ret = nv_dma_fence_add_callback(plane_state->fence,
+                                        &fence_data->dma_fence_cb,
+                                        __nv_drm_plane_fence_cb);
+
+        switch (ret) {
+        case -ENOENT:
+            /* The fence is already signaled */
+            __nv_drm_plane_fence_cb(plane_state->fence,
+                                    &fence_data->dma_fence_cb);
+#if defined(fallthrough)
+            fallthrough;
+#else
+            /* Fallthrough */
+#endif
+        case 0:
+            /*
+             * The plane state's fence reference has either been consumed or
+             * belongs to the outstanding callback now.
+             */
+            plane_state->fence = NULL;
+            break;
+        default:
+            NV_DRM_DEV_LOG_ERR(
+                nv_dev,
+                "Failed plane fence callback registration");
+            /* Fence callback registration failed */
+            nvKms->cancelDisplaySemaphore(nv_dev->pDevice, semaphore_index);
+            nv_drm_free(fence_data);
+            return ret;
+        }
+    }
+
+    return 0;
+}
+#endif /* defined(NV_DRM_FENCE_AVAILABLE) */
 
 static int __nv_drm_get_syncpt_data(
     struct nv_drm_device *nv_dev,
@@ -258,11 +421,6 @@ nv_drm_atomic_apply_modeset_config(struct drm_device *dev,
                                commit ? crtc->state : crtc_state;
         struct nv_drm_crtc *nv_crtc = to_nv_crtc(crtc);
 
-        requested_config->headRequestedConfig[nv_crtc->head] =
-            to_nv_crtc_state(new_crtc_state)->req_config;
-
-        requested_config->headsMask |= 1 << nv_crtc->head;
-
         if (commit) {
             struct drm_crtc_state *old_crtc_state = crtc_state;
             struct nv_drm_crtc_state *nv_new_crtc_state =
@@ -282,7 +440,27 @@ nv_drm_atomic_apply_modeset_config(struct drm_device *dev,
 
                 nv_new_crtc_state->nv_flip = NULL;
             }
+
+#if defined(NV_DRM_FENCE_AVAILABLE)
+            ret = __nv_drm_convert_in_fences(nv_dev,
+                                             state,
+                                             crtc,
+                                             new_crtc_state);
+
+            if (ret != 0) {
+                return ret;
+            }
+#endif /* defined(NV_DRM_FENCE_AVAILABLE) */
         }
+
+        /*
+         * Do this deep copy after calling __nv_drm_convert_in_fences,
+         * which modifies the new CRTC state's req_config member
+         */
+        requested_config->headRequestedConfig[nv_crtc->head] =
+            to_nv_crtc_state(new_crtc_state)->req_config;
+
+        requested_config->headsMask |= 1 << nv_crtc->head;
     }
 
     if (commit && nvKms->systemInfo.bAllowWriteCombining) {
@@ -311,6 +489,10 @@ nv_drm_atomic_apply_modeset_config(struct drm_device *dev,
                 return ret;
             }
         }
+    }
+
+    if (commit && nv_dev->requiresVrrSemaphores && reply_config.vrrFlip) {
+        nvKms->signalVrrSemaphore(nv_dev->pDevice, reply_config.vrrSemaphoreIndex);
     }
 
     return 0;
@@ -506,7 +688,6 @@ int nv_drm_atomic_commit(struct drm_device *dev,
 
         goto done;
     }
-    nv_dev->drmMasterChangedSinceLastAtomicCommit = NV_FALSE;
 
     nv_drm_for_each_crtc_in_state(state, crtc, crtc_state, i) {
         struct nv_drm_crtc *nv_crtc = to_nv_crtc(crtc);

@@ -5,6 +5,7 @@
 
 #include "g_regs_pb.h"
 #include "g_gr_pb.h"
+#include "g_engines_pb.h"
 
 extern const PRB_ENUM_DESC prb_enums_rc_robustchannelerror;
 
@@ -44,12 +45,14 @@ extern const PRB_MSG_DESC prb_messages_rc[];
 #define RC_GENERICDATA (&prb_messages_rc[0])
 #define RC_RCCOUNTER (&prb_messages_rc[1])
 #define RC_RCDIAGRECORD (&prb_messages_rc[2])
+#define RC_GREXCEPTION (&prb_messages_rc[3])
 
 // Message maximum lengths
 // Does not include repeated fields, strings and byte arrays.
 #define RC_GENERICDATA_LEN 67
 #define RC_RCCOUNTER_LEN 61
 #define RC_RCDIAGRECORD_LEN 39
+#define RC_GREXCEPTION_LEN 120
 
 extern const PRB_FIELD_DESC prb_fields_rc_genericdata[];
 
@@ -118,6 +121,24 @@ extern const PRB_FIELD_DESC prb_fields_rc_rcdiagrecord[];
 #define RC_RCDIAGRECORD_RECORD_TYPE_LEN 2
 #define RC_RCDIAGRECORD_RECORD_ID_LEN 5
 #define RC_RCDIAGRECORD_REGS_LEN 29
+
+extern const PRB_FIELD_DESC prb_fields_rc_grexception[];
+
+// 'GrException' field descriptor pointers
+#define RC_GREXCEPTION_FIRST_FRAGMENT (&prb_fields_rc_grexception[0])
+#define RC_GREXCEPTION_FRAGMENT_COUNT (&prb_fields_rc_grexception[1])
+#define RC_GREXCEPTION_MC (&prb_fields_rc_grexception[2])
+#define RC_GREXCEPTION_PMC_BOOT1 (&prb_fields_rc_grexception[3])
+#define RC_GREXCEPTION_FRAGMENT_TAG (&prb_fields_rc_grexception[4])
+#define RC_GREXCEPTION_GR_REGS (&prb_fields_rc_grexception[5])
+
+// 'GrException' field lengths
+#define RC_GREXCEPTION_FIRST_FRAGMENT_LEN 1
+#define RC_GREXCEPTION_FRAGMENT_COUNT_LEN 5
+#define RC_GREXCEPTION_MC_LEN 69
+#define RC_GREXCEPTION_PMC_BOOT1_LEN 5
+#define RC_GREXCEPTION_FRAGMENT_TAG_LEN 5
+#define RC_GREXCEPTION_GR_REGS_LEN 29
 
 extern const PRB_SERVICE_DESC prb_services_rc[];
 

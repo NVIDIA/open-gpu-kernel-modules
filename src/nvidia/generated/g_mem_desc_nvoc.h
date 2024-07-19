@@ -384,6 +384,7 @@ typedef enum
     NV_FB_ALLOC_RM_INTERNAL_OWNER_GSP_NOTIFY_OP_SURFACE = 177U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_FAKE_WPR_RSVD         = 178U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_GR_SCRUB_CHANNEL      = 179U,
+
     //
     // Unused tags from here, for any new use-case it's required 
     // to replace the below tags with known verbose strings

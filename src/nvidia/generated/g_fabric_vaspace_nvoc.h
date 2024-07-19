@@ -114,8 +114,8 @@ struct FABRIC_VASPACE {
     NvU64 (*__fabricvaspaceGetVaLimit__)(struct FABRIC_VASPACE * /*this*/);  // virtual inherited (vaspace) base (vaspace)
     NvU32 (*__fabricvaspaceGetFlags__)(struct FABRIC_VASPACE * /*this*/);  // inline virtual inherited (vaspace) base (vaspace) body
     NV_STATUS (*__fabricvaspaceReserveMempool__)(struct FABRIC_VASPACE * /*this*/, struct OBJGPU *, struct Device *, NvU64, NvU64, NvU32);  // inline virtual inherited (vaspace) base (vaspace) body
-    struct OBJEHEAP * (*__fabricvaspaceGetHeap__)(struct FABRIC_VASPACE * /*this*/);  // inline virtual inherited (vaspace) base (vaspace) body
-    NvU64 (*__fabricvaspaceGetMapPageSize__)(struct FABRIC_VASPACE * /*this*/, struct OBJGPU *, struct EMEMBLOCK *);  // inline virtual inherited (vaspace) base (vaspace) body
+    OBJEHEAP * (*__fabricvaspaceGetHeap__)(struct FABRIC_VASPACE * /*this*/);  // inline virtual inherited (vaspace) base (vaspace) body
+    NvU64 (*__fabricvaspaceGetMapPageSize__)(struct FABRIC_VASPACE * /*this*/, struct OBJGPU *, EMEMBLOCK *);  // inline virtual inherited (vaspace) base (vaspace) body
     NvU64 (*__fabricvaspaceGetBigPageSize__)(struct FABRIC_VASPACE * /*this*/);  // inline virtual inherited (vaspace) base (vaspace) body
     NvBool (*__fabricvaspaceIsMirrored__)(struct FABRIC_VASPACE * /*this*/);  // inline virtual inherited (vaspace) base (vaspace) body
     NvBool (*__fabricvaspaceIsFaultCapable__)(struct FABRIC_VASPACE * /*this*/);  // inline virtual inherited (vaspace) base (vaspace) body
@@ -293,11 +293,11 @@ static inline NV_STATUS fabricvaspaceReserveMempool_DISPATCH(struct FABRIC_VASPA
     return pVAS->__fabricvaspaceReserveMempool__(pVAS, pGpu, pDevice, size, pageSizeLockMask, flags);
 }
 
-static inline struct OBJEHEAP * fabricvaspaceGetHeap_DISPATCH(struct FABRIC_VASPACE *pVAS) {
+static inline OBJEHEAP * fabricvaspaceGetHeap_DISPATCH(struct FABRIC_VASPACE *pVAS) {
     return pVAS->__fabricvaspaceGetHeap__(pVAS);
 }
 
-static inline NvU64 fabricvaspaceGetMapPageSize_DISPATCH(struct FABRIC_VASPACE *pVAS, struct OBJGPU *pGpu, struct EMEMBLOCK *pMemBlock) {
+static inline NvU64 fabricvaspaceGetMapPageSize_DISPATCH(struct FABRIC_VASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock) {
     return pVAS->__fabricvaspaceGetMapPageSize__(pVAS, pGpu, pMemBlock);
 }
 

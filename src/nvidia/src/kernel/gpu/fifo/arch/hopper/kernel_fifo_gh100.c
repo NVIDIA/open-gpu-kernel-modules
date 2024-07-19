@@ -409,6 +409,10 @@ kfifoGetClientIdStringCommon_GH100
                 return "HUBCLIENT_PTP_X4";
             case NV_PFAULT_CLIENT_HUB_PTP_X5:
                 return "HUBCLIENT_PTP_X5";
+            case NV_PFAULT_CLIENT_HUB_PTP_X6:
+                return "HUBCLIENT_PTP_X6";
+            case NV_PFAULT_CLIENT_HUB_PTP_X7:
+                return "HUBCLIENT_PTP_X7";
             case NV_PFAULT_CLIENT_HUB_NVENC2:
                 return "HUBCLIENT_NVENC2";
             case NV_PFAULT_CLIENT_HUB_VPR_SCRUBBER0:

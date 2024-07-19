@@ -31,6 +31,7 @@
 #include "class/clc7fa.h" // NVC7FA_VIDEO_OFA
 #include "class/clc6fa.h" // NVC6FA_VIDEO_OFA
 #include "class/clc9fa.h" // NVC9FA_VIDEO_OFA
+#include "class/clcdfa.h" // NVCDFA_VIDEO_OFA
 
 /*
  * This function returns an engine descriptor corresponding to the class
@@ -73,6 +74,7 @@ ofaGetEngineDescFromAllocParams
         case NVC9FA_VIDEO_OFA:
             engineInstance = 0;
             break;
+        case NVCDFA_VIDEO_OFA:
             engineInstance = pOfaAllocParams->engineInstance;
             break;
         default:

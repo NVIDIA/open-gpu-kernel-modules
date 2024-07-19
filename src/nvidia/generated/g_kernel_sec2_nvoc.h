@@ -93,18 +93,18 @@ struct KernelSec2 {
     const BINDATA_ARCHIVE * (*__ksec2GetBinArchiveBlUcode__)(struct OBJGPU *, struct KernelSec2 * /*this*/);  // halified (3 hals) body
     NV_STATUS (*__ksec2GetGenericBlUcode__)(struct OBJGPU *, struct KernelSec2 * /*this*/, const RM_FLCN_BL_DESC **, const NvU8 **);  // halified (3 hals) body
     const BINDATA_ARCHIVE * (*__ksec2GetBinArchiveSecurescrubUcode__)(struct OBJGPU *, struct KernelSec2 * /*this*/);  // halified (3 hals) body
-    void (*__ksec2InitMissing__)(POBJGPU, struct KernelSec2 * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__ksec2StatePreInitLocked__)(POBJGPU, struct KernelSec2 * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__ksec2StatePreInitUnlocked__)(POBJGPU, struct KernelSec2 * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__ksec2StateInitLocked__)(POBJGPU, struct KernelSec2 * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__ksec2StateInitUnlocked__)(POBJGPU, struct KernelSec2 * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__ksec2StatePreLoad__)(POBJGPU, struct KernelSec2 * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__ksec2StatePostLoad__)(POBJGPU, struct KernelSec2 * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__ksec2StatePreUnload__)(POBJGPU, struct KernelSec2 * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__ksec2StateUnload__)(POBJGPU, struct KernelSec2 * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__ksec2StatePostUnload__)(POBJGPU, struct KernelSec2 * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    void (*__ksec2StateDestroy__)(POBJGPU, struct KernelSec2 * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__ksec2IsPresent__)(POBJGPU, struct KernelSec2 * /*this*/);  // virtual inherited (engstate) base (engstate)
+    void (*__ksec2InitMissing__)(struct OBJGPU *, struct KernelSec2 * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__ksec2StatePreInitLocked__)(struct OBJGPU *, struct KernelSec2 * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__ksec2StatePreInitUnlocked__)(struct OBJGPU *, struct KernelSec2 * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__ksec2StateInitLocked__)(struct OBJGPU *, struct KernelSec2 * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__ksec2StateInitUnlocked__)(struct OBJGPU *, struct KernelSec2 * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__ksec2StatePreLoad__)(struct OBJGPU *, struct KernelSec2 * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__ksec2StatePostLoad__)(struct OBJGPU *, struct KernelSec2 * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__ksec2StatePreUnload__)(struct OBJGPU *, struct KernelSec2 * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__ksec2StateUnload__)(struct OBJGPU *, struct KernelSec2 * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__ksec2StatePostUnload__)(struct OBJGPU *, struct KernelSec2 * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    void (*__ksec2StateDestroy__)(struct OBJGPU *, struct KernelSec2 * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__ksec2IsPresent__)(struct OBJGPU *, struct KernelSec2 * /*this*/);  // virtual inherited (engstate) base (engstate)
     NvBool (*__ksec2ClearInterrupt__)(struct OBJGPU *, struct KernelSec2 * /*this*/, IntrServiceClearInterruptArguments *);  // virtual inherited (intrserv) base (intrserv)
     NvU32 (*__ksec2ServiceInterrupt__)(struct OBJGPU *, struct KernelSec2 * /*this*/, IntrServiceServiceInterruptArguments *);  // virtual inherited (intrserv) base (intrserv)
     NvU32 (*__ksec2RegRead__)(struct OBJGPU *, struct KernelSec2 * /*this*/, NvU32);  // virtual halified (2 hals) inherited (kflcn) base (kflcn) body
@@ -299,51 +299,51 @@ static inline const BINDATA_ARCHIVE * ksec2GetBinArchiveSecurescrubUcode_DISPATC
     return pKernelSec2->__ksec2GetBinArchiveSecurescrubUcode__(pGpu, pKernelSec2);
 }
 
-static inline void ksec2InitMissing_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
+static inline void ksec2InitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate) {
     pEngstate->__ksec2InitMissing__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS ksec2StatePreInitLocked_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
+static inline NV_STATUS ksec2StatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate) {
     return pEngstate->__ksec2StatePreInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS ksec2StatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
+static inline NV_STATUS ksec2StatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate) {
     return pEngstate->__ksec2StatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS ksec2StateInitLocked_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
+static inline NV_STATUS ksec2StateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate) {
     return pEngstate->__ksec2StateInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS ksec2StateInitUnlocked_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
+static inline NV_STATUS ksec2StateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate) {
     return pEngstate->__ksec2StateInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS ksec2StatePreLoad_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
+static inline NV_STATUS ksec2StatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
     return pEngstate->__ksec2StatePreLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS ksec2StatePostLoad_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
+static inline NV_STATUS ksec2StatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
     return pEngstate->__ksec2StatePostLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS ksec2StatePreUnload_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
+static inline NV_STATUS ksec2StatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
     return pEngstate->__ksec2StatePreUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS ksec2StateUnload_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
+static inline NV_STATUS ksec2StateUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
     return pEngstate->__ksec2StateUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS ksec2StatePostUnload_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
+static inline NV_STATUS ksec2StatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate, NvU32 arg3) {
     return pEngstate->__ksec2StatePostUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline void ksec2StateDestroy_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
+static inline void ksec2StateDestroy_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate) {
     pEngstate->__ksec2StateDestroy__(pGpu, pEngstate);
 }
 
-static inline NvBool ksec2IsPresent_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
+static inline NvBool ksec2IsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pEngstate) {
     return pEngstate->__ksec2IsPresent__(pGpu, pEngstate);
 }
 

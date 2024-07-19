@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -296,6 +296,9 @@ NvBool osdescCanCopy_IMPL(struct OsDescMemory *pOsDescMemory);
 NV_STATUS osdescConstruct_IMPL(struct OsDescMemory *arg_pOsDescMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 
 #define __nvoc_osdescConstruct(arg_pOsDescMemory, arg_pCallContext, arg_pParams) osdescConstruct_IMPL(arg_pOsDescMemory, arg_pCallContext, arg_pParams)
+void osdescDestruct_IMPL(struct OsDescMemory *pOsDescMemory);
+
+#define __nvoc_osdescDestruct(pOsDescMemory) osdescDestruct_IMPL(pOsDescMemory)
 #undef PRIVATE_FIELD
 
 

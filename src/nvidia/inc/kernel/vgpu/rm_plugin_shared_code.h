@@ -272,6 +272,26 @@ return_t deserialize_NV9096_CTRL_SET_ZBC_DEPTH_CLEAR_PARAMS_v03_00(NV9096_CTRL_S
 }
 
 static
+return_t deserialize_NV9096_CTRL_SET_ZBC_STENCIL_CLEAR_PARAMS_v27_06(NV9096_CTRL_SET_ZBC_STENCIL_CLEAR_PARAMS *pParams,
+                                                                     NvU8 *buffer,
+                                                                     NvU32 bufferSize,
+                                                                     NvU32 *offset)
+{
+    NV9096_CTRL_SET_ZBC_STENCIL_CLEAR_PARAMS_v27_06 *src = (void*)(buffer);
+    NV9096_CTRL_SET_ZBC_STENCIL_CLEAR_PARAMS        *dest = pParams;
+
+    if (src && dest) {
+        dest->stencil      = src->stencil;
+        dest->format       = src->format;
+        dest->bSkipL2Table = src->bSkipL2Table;
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
+
+static
 return_t deserialize_NVA06F_CTRL_GPFIFO_SCHEDULE_PARAMS_v03_00(NVA06F_CTRL_GPFIFO_SCHEDULE_PARAMS *pParams,
                                                                NvU8 *buffer,
                                                                NvU32 bufferSize,
@@ -2917,6 +2937,26 @@ return_t serialize_NV9096_CTRL_SET_ZBC_DEPTH_CLEAR_PARAMS_v03_00(NV9096_CTRL_SET
 }
 
 static
+return_t serialize_NV9096_CTRL_SET_ZBC_STENCIL_CLEAR_PARAMS_v27_06(NV9096_CTRL_SET_ZBC_STENCIL_CLEAR_PARAMS *pParams,
+                                                                   NvU8 *buffer,
+                                                                   NvU32 bufferSize,
+                                                                   NvU32 *offset)
+{
+    NV9096_CTRL_SET_ZBC_STENCIL_CLEAR_PARAMS        *src = pParams;
+    NV9096_CTRL_SET_ZBC_STENCIL_CLEAR_PARAMS_v27_06 *dest = (void*)(buffer);
+
+    if (src && dest) {
+        dest->stencil      = src->stencil;
+        dest->format       = src->format;
+        dest->bSkipL2Table = src->bSkipL2Table;
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
+
+static
 return_t serialize_NVA06F_CTRL_GPFIFO_SCHEDULE_PARAMS_v03_00(NVA06F_CTRL_GPFIFO_SCHEDULE_PARAMS *pParams,
                                                              NvU8 *buffer,
                                                              NvU32 bufferSize,
@@ -5416,6 +5456,68 @@ return_t deserialize_NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v25_0A(NV2080_CTRL_FB_GET
 
     return SUCCESS_T;
 }
+
+static
+return_t serialize_NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v27_00(NV2080_CTRL_FB_GET_INFO_V2_PARAMS *pParams,
+                                                            NvU8 *buffer,
+                                                            NvU32 bufferSize,
+                                                            NvU32 *offset)
+{
+    NV2080_CTRL_FB_GET_INFO_V2_PARAMS        *src = pParams;
+    NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v27_00 *dest = (void*)(buffer);
+
+    if (src && dest)
+    {
+        NvU32 i;
+
+        if ((src->fbInfoListSize == 0) ||
+            (src->fbInfoListSize > NV2080_CTRL_FB_INFO_MAX_LIST_SIZE_27_00)) {
+            return FAILURE_T;
+        }
+
+        dest->fbInfoListSize = src->fbInfoListSize;
+
+        for (i = 0; i < src->fbInfoListSize; i++) {
+            dest->fbInfoList[i].index = src->fbInfoList[i].index;
+            dest->fbInfoList[i].data = src->fbInfoList[i].data;
+        }
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
+
+static
+return_t deserialize_NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v27_00(NV2080_CTRL_FB_GET_INFO_V2_PARAMS *pParams,
+                                                              NvU8 *buffer,
+                                                              NvU32 bufferSize,
+                                                              NvU32 *offset)
+{
+    NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v27_00 *src = (void*)(buffer);
+    NV2080_CTRL_FB_GET_INFO_V2_PARAMS        *dest = pParams;
+
+    if (src && dest)
+    {
+        NvU32 i;
+
+        if ((src->fbInfoListSize == 0) ||
+            (src->fbInfoListSize > NV2080_CTRL_FB_INFO_MAX_LIST_SIZE_27_00)) {
+            return FAILURE_T;
+        }
+
+        dest->fbInfoListSize = src->fbInfoListSize;
+
+        for (i = 0; i < src->fbInfoListSize; i++) {
+            dest->fbInfoList[i].index = src->fbInfoList[i].index;
+            dest->fbInfoList[i].data = src->fbInfoList[i].data;
+        }
+    }
+    else
+        return FAILURE_T;
+
+    return SUCCESS_T;
+}
 #endif // defined(BUILD_COMMON_RPCS)
 
 #ifdef BUILD_COMMON_RPCS
@@ -6079,21 +6181,6 @@ NvU32 serialize_engineType(NvU32 inEngineType)
         return NV2080_ENGINE_TYPE_NULL;
     }
     return host_to_guest_enginetype_v1A_00[inEngineType].outType;
-}
-
-// Convert a host engineList to a guest engineList.
-NvU64 searilize_engineCap(NvU64 inEngineCap)
-{
-
-    if (vgx_internal_version_curr.major_number >= 0x1B) {
-        return inEngineCap;
-    }
-    NvU64 outEngineCap= 0, i = 0;
-    FOR_EACH_INDEX_IN_MASK(64, i, inEngineCap)
-    {
-        outEngineCap = outEngineCap | NVBIT64(serialize_engineType(i));
-    } FOR_EACH_INDEX_IN_MASK_END;
-    return outEngineCap;
 }
 
 // Convert a host notifier index to a guest notifier index.

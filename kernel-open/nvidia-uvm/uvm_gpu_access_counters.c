@@ -734,9 +734,18 @@ static int cmp_sort_virt_notifications_by_instance_ptr(const void *_a, const voi
     return cmp_access_counter_instance_ptr(a, b);
 }
 
+// Compare two GPUs
+static inline int cmp_gpu(const uvm_gpu_t *a, const uvm_gpu_t *b)
+{
+    NvU32 id_a = a ? uvm_id_value(a->id) : 0;
+    NvU32 id_b = b ? uvm_id_value(b->id) : 0;
+
+    return UVM_CMP_DEFAULT(id_a, id_b);
+}
+
 // Sort comparator for pointers to GVA access counter notification buffer
-// entries that sorts by va_space, and fault address.
-static int cmp_sort_virt_notifications_by_va_space_address(const void *_a, const void *_b)
+// entries that sorts by va_space, GPU ID, and fault address.
+static int cmp_sort_virt_notifications_by_va_space_gpu_address(const void *_a, const void *_b)
 {
     const uvm_access_counter_buffer_entry_t **a = (const uvm_access_counter_buffer_entry_t **)_a;
     const uvm_access_counter_buffer_entry_t **b = (const uvm_access_counter_buffer_entry_t **)_b;
@@ -744,6 +753,10 @@ static int cmp_sort_virt_notifications_by_va_space_address(const void *_a, const
     int result;
 
     result = UVM_CMP_DEFAULT((*a)->virtual_info.va_space, (*b)->virtual_info.va_space);
+    if (result != 0)
+        return result;
+
+    result = cmp_gpu((*a)->gpu, (*b)->gpu);
     if (result != 0)
         return result;
 
@@ -774,7 +787,7 @@ typedef enum
     NOTIFICATION_FETCH_MODE_ALL,
 } notification_fetch_mode_t;
 
-static NvU32 fetch_access_counter_buffer_entries(uvm_gpu_t *gpu,
+static NvU32 fetch_access_counter_buffer_entries(uvm_parent_gpu_t *parent_gpu,
                                                  uvm_access_counter_service_batch_context_t *batch_context,
                                                  notification_fetch_mode_t fetch_mode)
 {
@@ -783,12 +796,12 @@ static NvU32 fetch_access_counter_buffer_entries(uvm_gpu_t *gpu,
     NvU32 notification_index;
     uvm_access_counter_buffer_entry_t *notification_cache;
     uvm_spin_loop_t spin;
-    uvm_access_counter_buffer_info_t *access_counters = &gpu->parent->access_counter_buffer_info;
+    uvm_access_counter_buffer_info_t *access_counters = &parent_gpu->access_counter_buffer_info;
     NvU32 last_instance_ptr_idx = 0;
     uvm_aperture_t last_aperture = UVM_APERTURE_PEER_MAX;
 
-    UVM_ASSERT(uvm_sem_is_locked(&gpu->parent->isr.access_counters.service_lock));
-    UVM_ASSERT(gpu->parent->access_counters_supported);
+    UVM_ASSERT(uvm_sem_is_locked(&parent_gpu->isr.access_counters.service_lock));
+    UVM_ASSERT(parent_gpu->access_counters_supported);
 
     notification_cache = batch_context->notification_cache;
 
@@ -819,7 +832,7 @@ static NvU32 fetch_access_counter_buffer_entries(uvm_gpu_t *gpu,
 
         // We cannot just wait for the last entry (the one pointed by put) to become valid, we have to do it
         // individually since entries can be written out of order
-        UVM_SPIN_WHILE(!gpu->parent->access_counter_buffer_hal->entry_is_valid(gpu->parent, get), &spin) {
+        UVM_SPIN_WHILE(!parent_gpu->access_counter_buffer_hal->entry_is_valid(parent_gpu, get), &spin) {
             // We have some entry to work on. Let's do the rest later.
             if (fetch_mode != NOTIFICATION_FETCH_MODE_ALL && notification_index > 0)
                 goto done;
@@ -829,7 +842,7 @@ static NvU32 fetch_access_counter_buffer_entries(uvm_gpu_t *gpu,
         smp_mb__after_atomic();
 
         // Got valid bit set. Let's cache.
-        gpu->parent->access_counter_buffer_hal->parse_entry(gpu->parent, get, current_entry);
+        parent_gpu->access_counter_buffer_hal->parse_entry(parent_gpu, get, current_entry);
 
         if (current_entry->address.is_virtual) {
             batch_context->virt.notifications[batch_context->virt.num_notifications++] = current_entry;
@@ -845,26 +858,38 @@ static NvU32 fetch_access_counter_buffer_entries(uvm_gpu_t *gpu,
             }
         }
         else {
-            const NvU64 translation_size = get_config_for_type(access_counters, current_entry->counter_type)->translation_size;
+            NvU64 translation_size;
+            uvm_gpu_t *gpu;
+
+            translation_size = get_config_for_type(access_counters,
+                                                   current_entry->counter_type)->translation_size;
             current_entry->address.address = UVM_ALIGN_DOWN(current_entry->address.address, translation_size);
 
             batch_context->phys.notifications[batch_context->phys.num_notifications++] = current_entry;
 
-            current_entry->physical_info.resident_id =
-                uvm_gpu_get_processor_id_by_address(gpu, uvm_gpu_phys_address(current_entry->address.aperture,
-                                                                              current_entry->address.address));
-
-            if (batch_context->phys.is_single_aperture) {
-                if (batch_context->phys.num_notifications == 1)
-                    last_aperture = current_entry->address.aperture;
-                else if (current_entry->address.aperture != last_aperture)
-                    batch_context->phys.is_single_aperture = false;
+            gpu = uvm_parent_gpu_find_first_valid_gpu(parent_gpu);
+            if (!gpu) {
+                current_entry->physical_info.resident_id = UVM_ID_INVALID;
+                current_entry->gpu = NULL;
             }
+            else {
+                current_entry->gpu = gpu;
+                current_entry->physical_info.resident_id =
+                    uvm_gpu_get_processor_id_by_address(gpu, uvm_gpu_phys_address(current_entry->address.aperture,
+                                                                                  current_entry->address.address));
 
-            if (current_entry->counter_type == UVM_ACCESS_COUNTER_TYPE_MOMC)
-                UVM_ASSERT(uvm_id_equal(current_entry->physical_info.resident_id, gpu->id));
-            else
-                UVM_ASSERT(!uvm_id_equal(current_entry->physical_info.resident_id, gpu->id));
+                if (batch_context->phys.is_single_aperture) {
+                    if (batch_context->phys.num_notifications == 1)
+                        last_aperture = current_entry->address.aperture;
+                    else if (current_entry->address.aperture != last_aperture)
+                        batch_context->phys.is_single_aperture = false;
+                }
+
+                if (current_entry->counter_type == UVM_ACCESS_COUNTER_TYPE_MOMC)
+                    UVM_ASSERT(uvm_id_equal(current_entry->physical_info.resident_id, gpu->id));
+                else
+                    UVM_ASSERT(!uvm_id_equal(current_entry->physical_info.resident_id, gpu->id));
+            }
         }
 
         ++notification_index;
@@ -874,7 +899,7 @@ static NvU32 fetch_access_counter_buffer_entries(uvm_gpu_t *gpu,
     }
 
 done:
-    write_get(gpu->parent, get);
+    write_get(parent_gpu, get);
 
     return notification_index;
 }
@@ -895,12 +920,16 @@ static void translate_virt_notifications_instance_ptrs(uvm_parent_gpu_t *parent_
             // simply be ignored in subsequent processing.
             status = uvm_parent_gpu_access_counter_entry_to_va_space(parent_gpu,
                                                                      current_entry,
-                                                                     &current_entry->virtual_info.va_space);
-            if (status != NV_OK)
+                                                                     &current_entry->virtual_info.va_space,
+                                                                     &current_entry->gpu);
+            if (status != NV_OK) {
                 UVM_ASSERT(current_entry->virtual_info.va_space == NULL);
+                UVM_ASSERT(current_entry->gpu == NULL);
+            }
         }
         else {
             current_entry->virtual_info.va_space = batch_context->virt.notifications[i - 1]->virtual_info.va_space;
+            current_entry->gpu = batch_context->virt.notifications[i - 1]->gpu;
         }
     }
 }
@@ -924,7 +953,7 @@ static void preprocess_virt_notifications(uvm_parent_gpu_t *parent_gpu,
     sort(batch_context->virt.notifications,
          batch_context->virt.num_notifications,
          sizeof(*batch_context->virt.notifications),
-         cmp_sort_virt_notifications_by_va_space_address,
+         cmp_sort_virt_notifications_by_va_space_gpu_address,
          NULL);
 }
 
@@ -942,12 +971,16 @@ static void preprocess_phys_notifications(uvm_access_counter_service_batch_conte
     }
 }
 
-static NV_STATUS notify_tools_and_process_flags(uvm_gpu_t *gpu,
-                                                uvm_access_counter_buffer_entry_t **notification_start,
-                                                NvU32 num_entries,
-                                                NvU32 flags)
+static NV_STATUS notify_tools_broadcast_and_process_flags(uvm_parent_gpu_t *parent_gpu,
+                                                          uvm_access_counter_buffer_entry_t **notification_start,
+                                                          NvU32 num_entries,
+                                                          NvU32 flags)
 {
+    uvm_gpu_t *gpu = uvm_parent_gpu_find_first_valid_gpu(parent_gpu);
     NV_STATUS status = NV_OK;
+
+    if (!gpu)
+        return NV_OK;
 
     if (uvm_enable_builtin_tests) {
         // TODO: Bug 4310744: [UVM][TOOLS] Attribute access counter tools events
@@ -956,6 +989,31 @@ static NV_STATUS notify_tools_and_process_flags(uvm_gpu_t *gpu,
 
         for (i = 0; i < num_entries; i++)
             uvm_tools_broadcast_access_counter(gpu, notification_start[i], flags & UVM_ACCESS_COUNTER_PHYS_ON_MANAGED);
+    }
+
+    if (flags & UVM_ACCESS_COUNTER_ACTION_CLEAR)
+        status = access_counter_clear_notifications(gpu, notification_start, num_entries);
+
+    return status;
+}
+
+static NV_STATUS notify_tools_and_process_flags(uvm_va_space_t *va_space,
+                                                uvm_gpu_t *gpu,
+                                                uvm_access_counter_buffer_entry_t **notification_start,
+                                                NvU32 num_entries,
+                                                NvU32 flags)
+{
+    NV_STATUS status = NV_OK;
+
+    if (uvm_enable_builtin_tests) {
+        NvU32 i;
+
+        for (i = 0; i < num_entries; i++) {
+            uvm_tools_record_access_counter(va_space,
+                                            gpu->id,
+                                            notification_start[i],
+                                            flags & UVM_ACCESS_COUNTER_PHYS_ON_MANAGED);
+        }
     }
 
     if (flags & UVM_ACCESS_COUNTER_ACTION_CLEAR)
@@ -1169,13 +1227,13 @@ static void reverse_mappings_to_va_block_page_mask(uvm_va_block_t *va_block,
     }
 }
 
-static NV_STATUS service_phys_single_va_block(uvm_gpu_t *gpu,
-                                              uvm_access_counter_service_batch_context_t *batch_context,
+static NV_STATUS service_phys_single_va_block(uvm_access_counter_service_batch_context_t *batch_context,
                                               const uvm_access_counter_buffer_entry_t *current_entry,
                                               const uvm_reverse_map_t *reverse_mappings,
                                               size_t num_reverse_mappings,
                                               NvU32 *out_flags)
 {
+    uvm_gpu_t *gpu = current_entry->gpu;
     size_t index;
     uvm_va_block_t *va_block = reverse_mappings[0].va_block;
     uvm_va_space_t *va_space = NULL;
@@ -1262,8 +1320,7 @@ done:
     return status;
 }
 
-static NV_STATUS service_phys_va_blocks(uvm_gpu_t *gpu,
-                                        uvm_access_counter_service_batch_context_t *batch_context,
+static NV_STATUS service_phys_va_blocks(uvm_access_counter_service_batch_context_t *batch_context,
                                         const uvm_access_counter_buffer_entry_t *current_entry,
                                         const uvm_reverse_map_t *reverse_mappings,
                                         size_t num_reverse_mappings,
@@ -1276,8 +1333,7 @@ static NV_STATUS service_phys_va_blocks(uvm_gpu_t *gpu,
 
     for (index = 0; index < num_reverse_mappings; ++index) {
         NvU32 out_flags_local = 0;
-        status = service_phys_single_va_block(gpu,
-                                              batch_context,
+        status = service_phys_single_va_block(batch_context,
                                               current_entry,
                                               reverse_mappings + index,
                                               1,
@@ -1326,8 +1382,7 @@ static bool are_reverse_mappings_on_single_block(const uvm_reverse_map_t *revers
 // Service the given translation range. It will return the count of the reverse
 // mappings found during servicing in num_reverse_mappings, even if the function
 // doesn't return NV_OK.
-static NV_STATUS service_phys_notification_translation(uvm_gpu_t *gpu,
-                                                       uvm_gpu_t *resident_gpu,
+static NV_STATUS service_phys_notification_translation(uvm_gpu_t *resident_gpu,
                                                        uvm_access_counter_service_batch_context_t *batch_context,
                                                        const uvm_gpu_access_counter_type_config_t *config,
                                                        const uvm_access_counter_buffer_entry_t *current_entry,
@@ -1336,6 +1391,7 @@ static NV_STATUS service_phys_notification_translation(uvm_gpu_t *gpu,
                                                        size_t *num_reverse_mappings,
                                                        NvU32 *out_flags)
 {
+    uvm_gpu_t *gpu = current_entry->gpu;
     NV_STATUS status;
     NvU32 region_start, region_end;
 
@@ -1373,16 +1429,14 @@ static NV_STATUS service_phys_notification_translation(uvm_gpu_t *gpu,
 
     // Service all the translations
     if (are_reverse_mappings_on_single_block(batch_context->phys.translations, *num_reverse_mappings)) {
-        status = service_phys_single_va_block(gpu,
-                                              batch_context,
+        status = service_phys_single_va_block(batch_context,
                                               current_entry,
                                               batch_context->phys.translations,
                                               *num_reverse_mappings,
                                               out_flags);
     }
     else {
-        status = service_phys_va_blocks(gpu,
-                                        batch_context,
+        status = service_phys_va_blocks(batch_context,
                                         current_entry,
                                         batch_context->phys.translations,
                                         *num_reverse_mappings,
@@ -1392,14 +1446,14 @@ static NV_STATUS service_phys_notification_translation(uvm_gpu_t *gpu,
     return status;
 }
 
-static NV_STATUS service_phys_notification(uvm_gpu_t *gpu,
-                                           uvm_access_counter_service_batch_context_t *batch_context,
-                                           const uvm_access_counter_buffer_entry_t *current_entry,
-                                           NvU32 *out_flags)
+static NV_STATUS service_phys_notification(uvm_access_counter_service_batch_context_t *batch_context,
+                                           uvm_access_counter_buffer_entry_t *current_entry)
 {
     NvU64 address;
     NvU64 translation_index;
-    uvm_access_counter_buffer_info_t *access_counters = &gpu->parent->access_counter_buffer_info;
+    uvm_gpu_t *gpu = current_entry->gpu;
+    uvm_parent_gpu_t *parent_gpu = gpu->parent;
+    uvm_access_counter_buffer_info_t *access_counters = &parent_gpu->access_counter_buffer_info;
     uvm_access_counter_type_t counter_type = current_entry->counter_type;
     const uvm_gpu_access_counter_type_config_t *config = get_config_for_type(access_counters, counter_type);
     unsigned long sub_granularity;
@@ -1429,14 +1483,13 @@ static NV_STATUS service_phys_notification(uvm_gpu_t *gpu,
         // fall outside of the allocatable address range. We just drop
         // them.
         if (address >= resident_gpu->mem_info.max_allocatable_address)
-            return NV_OK;
+            goto out;
     }
 
     for (translation_index = 0; translation_index < config->translations_per_counter; ++translation_index) {
         size_t num_reverse_mappings;
         NvU32 out_flags_local = 0;
-        status = service_phys_notification_translation(gpu,
-                                                       resident_gpu,
+        status = service_phys_notification_translation(resident_gpu,
                                                        batch_context,
                                                        config,
                                                        current_entry,
@@ -1457,37 +1510,32 @@ static NV_STATUS service_phys_notification(uvm_gpu_t *gpu,
     }
 
     if (uvm_enable_builtin_tests)
-        *out_flags |= ((total_reverse_mappings != 0) ? UVM_ACCESS_COUNTER_PHYS_ON_MANAGED : 0);
+        flags |= ((total_reverse_mappings != 0) ? UVM_ACCESS_COUNTER_PHYS_ON_MANAGED : 0);
 
-    if (status == NV_OK && (flags & UVM_ACCESS_COUNTER_ACTION_CLEAR))
-        *out_flags |= UVM_ACCESS_COUNTER_ACTION_CLEAR;
-
+out:
+    notify_tools_broadcast_and_process_flags(parent_gpu, &current_entry, 1, flags);
     return status;
 }
 
 // TODO: Bug 2018899: Add statistics for dropped access counter notifications
-static NV_STATUS service_phys_notifications(uvm_gpu_t *gpu,
+static NV_STATUS service_phys_notifications(uvm_parent_gpu_t *parent_gpu,
                                             uvm_access_counter_service_batch_context_t *batch_context)
 {
     NvU32 i;
     uvm_access_counter_buffer_entry_t **notifications = batch_context->phys.notifications;
 
-    UVM_ASSERT(gpu->parent->access_counters_can_use_physical_addresses);
+    UVM_ASSERT(parent_gpu->access_counters_can_use_physical_addresses);
 
     preprocess_phys_notifications(batch_context);
 
     for (i = 0; i < batch_context->phys.num_notifications; ++i) {
         NV_STATUS status;
         uvm_access_counter_buffer_entry_t *current_entry = notifications[i];
-        NvU32 flags = 0;
 
         if (!UVM_ID_IS_VALID(current_entry->physical_info.resident_id))
             continue;
 
-        status = service_phys_notification(gpu, batch_context, current_entry, &flags);
-
-        notify_tools_and_process_flags(gpu, &notifications[i], 1, flags);
-
+        status = service_phys_notification(batch_context, current_entry);
         if (status != NV_OK)
             return status;
     }
@@ -1624,16 +1672,14 @@ static NV_STATUS service_virt_notifications_in_block(uvm_gpu_va_space_t *gpu_va_
         uvm_access_counter_buffer_entry_t *current_entry = notifications[i];
         NvU64 address = current_entry->address.address;
 
-        if ((current_entry->virtual_info.va_space == va_space) && (address <= va_block->end)) {
-            expand_notification_block(gpu_va_space,
-                                      va_block,
-                                      batch_context->block_service_context.block_context,
-                                      accessed_pages,
-                                      current_entry);
-        }
-        else {
+        if (current_entry->virtual_info.va_space != va_space || current_entry->gpu != gpu || address > va_block->end)
             break;
-        }
+
+        expand_notification_block(gpu_va_space,
+                                  va_block,
+                                  batch_context->block_service_context.block_context,
+                                  accessed_pages,
+                                  current_entry);
     }
 
     *out_index = i;
@@ -1648,7 +1694,7 @@ static NV_STATUS service_virt_notifications_in_block(uvm_gpu_va_space_t *gpu_va_
     if (status == NV_OK)
         flags |= UVM_ACCESS_COUNTER_ACTION_CLEAR;
 
-    flags_status = notify_tools_and_process_flags(gpu, &notifications[index], *out_index - index, flags);
+    flags_status = notify_tools_and_process_flags(va_space, gpu, &notifications[index], *out_index - index, flags);
 
     if ((status == NV_OK) && (flags_status != NV_OK))
         status = flags_status;
@@ -1687,7 +1733,7 @@ static NV_STATUS service_virt_notification_ats(uvm_gpu_va_space_t *gpu_va_space,
     if (!vma) {
         // Clear the notification entry to continue receiving access counter
         // notifications when a new VMA is allocated in this range.
-        status = notify_tools_and_process_flags(gpu, &notifications[index], 1, flags);
+        status = notify_tools_and_process_flags(va_space, gpu, &notifications[index], 1, flags);
         *out_index = index + 1;
         return status;
     }
@@ -1701,10 +1747,10 @@ static NV_STATUS service_virt_notification_ats(uvm_gpu_va_space_t *gpu_va_space,
         uvm_access_counter_buffer_entry_t *current_entry = notifications[i];
         address = current_entry->address.address;
 
-        if ((current_entry->virtual_info.va_space == va_space) && (address < end))
-            uvm_page_mask_set(&ats_context->accessed_mask, (address - base) / PAGE_SIZE);
-        else
+        if (current_entry->virtual_info.va_space != va_space || current_entry->gpu != gpu || address >= end)
             break;
+
+        uvm_page_mask_set(&ats_context->accessed_mask, (address - base) / PAGE_SIZE);
     }
 
     *out_index = i;
@@ -1719,7 +1765,7 @@ static NV_STATUS service_virt_notification_ats(uvm_gpu_va_space_t *gpu_va_space,
     if (status != NV_OK)
         flags &= ~UVM_ACCESS_COUNTER_ACTION_CLEAR;
 
-    flags_status = notify_tools_and_process_flags(gpu, &notifications[index], *out_index - index, flags);
+    flags_status = notify_tools_and_process_flags(va_space, gpu, &notifications[index], *out_index - index, flags);
     if ((status == NV_OK) && (flags_status != NV_OK))
         status = flags_status;
 
@@ -1771,7 +1817,7 @@ static NV_STATUS service_virt_notifications_batch(uvm_gpu_va_space_t *gpu_va_spa
             status = service_virt_notifications_in_block(gpu_va_space, mm, va_block, batch_context, index, out_index);
         }
         else {
-            status = notify_tools_and_process_flags(gpu_va_space->gpu, batch_context->virt.notifications, 1, flags);
+            status = notify_tools_and_process_flags(va_space, gpu_va_space->gpu, batch_context->virt.notifications, 1, flags);
             *out_index = index + 1;
         }
     }
@@ -1801,7 +1847,11 @@ static NV_STATUS service_virt_notifications_batch(uvm_gpu_va_space_t *gpu_va_spa
 
         // Clobber status to continue processing the rest of the notifications
         // in the batch.
-        status = notify_tools_and_process_flags(gpu_va_space->gpu, batch_context->virt.notifications, 1, flags);
+        status = notify_tools_and_process_flags(va_space,
+                                                gpu_va_space->gpu,
+                                                batch_context->virt.notifications,
+                                                1,
+                                                flags);
 
         *out_index = index + 1;
     }
@@ -1809,7 +1859,7 @@ static NV_STATUS service_virt_notifications_batch(uvm_gpu_va_space_t *gpu_va_spa
     return status;
 }
 
-static NV_STATUS service_virt_notifications(uvm_gpu_t *gpu,
+static NV_STATUS service_virt_notifications(uvm_parent_gpu_t *parent_gpu,
                                             uvm_access_counter_service_batch_context_t *batch_context)
 {
     NvU32 i = 0;
@@ -1817,18 +1867,19 @@ static NV_STATUS service_virt_notifications(uvm_gpu_t *gpu,
     struct mm_struct *mm = NULL;
     uvm_va_space_t *va_space = NULL;
     uvm_va_space_t *prev_va_space = NULL;
+    uvm_gpu_t *prev_gpu = NULL;
     uvm_gpu_va_space_t *gpu_va_space = NULL;
 
     // TODO: Bug 4299018 : Add support for virtual access counter migrations on
     //                     4K page sizes.
     if (PAGE_SIZE == UVM_PAGE_SIZE_4K) {
-        return notify_tools_and_process_flags(gpu,
-                                              batch_context->virt.notifications,
-                                              batch_context->virt.num_notifications,
-                                              0);
+        return notify_tools_broadcast_and_process_flags(parent_gpu,
+                                                        batch_context->virt.notifications,
+                                                        batch_context->virt.num_notifications,
+                                                        0);
     }
 
-    preprocess_virt_notifications(gpu->parent, batch_context);
+    preprocess_virt_notifications(parent_gpu, batch_context);
 
     while (i < batch_context->virt.num_notifications) {
         uvm_access_counter_buffer_entry_t *current_entry = batch_context->virt.notifications[i];
@@ -1842,25 +1893,38 @@ static NV_STATUS service_virt_notifications(uvm_gpu_t *gpu,
                 uvm_va_space_mm_release_unlock(prev_va_space, mm);
 
                 mm = NULL;
-                gpu_va_space = NULL;
+                prev_gpu = NULL;
             }
 
             // Acquire locks for the new va_space.
             if (va_space) {
                 mm = uvm_va_space_mm_retain_lock(va_space);
                 uvm_va_space_down_read(va_space);
-
-                gpu_va_space = uvm_gpu_va_space_get_by_parent_gpu(va_space, gpu->parent);
             }
 
             prev_va_space = va_space;
         }
 
-        if (va_space && gpu_va_space && uvm_va_space_has_access_counter_migrations(va_space)) {
-            status = service_virt_notifications_batch(gpu_va_space, mm, batch_context, i, &i);
+        if (va_space) {
+            if (prev_gpu != current_entry->gpu) {
+                prev_gpu = current_entry->gpu;
+                gpu_va_space = uvm_gpu_va_space_get(va_space, current_entry->gpu);
+            }
+
+            if (gpu_va_space && uvm_va_space_has_access_counter_migrations(va_space)) {
+                status = service_virt_notifications_batch(gpu_va_space, mm, batch_context, i, &i);
+            }
+            else {
+                status = notify_tools_and_process_flags(va_space,
+                                                        current_entry->gpu,
+                                                        &batch_context->virt.notifications[i],
+                                                        1,
+                                                        0);
+                i++;
+            }
         }
         else {
-            status = notify_tools_and_process_flags(gpu, &batch_context->virt.notifications[i], 1, 0);
+            status = notify_tools_broadcast_and_process_flags(parent_gpu, &batch_context->virt.notifications[i], 1, 0);
             i++;
         }
 
@@ -1876,19 +1940,18 @@ static NV_STATUS service_virt_notifications(uvm_gpu_t *gpu,
     return status;
 }
 
-
-void uvm_gpu_service_access_counters(uvm_gpu_t *gpu)
+void uvm_parent_gpu_service_access_counters(uvm_parent_gpu_t *parent_gpu)
 {
     NV_STATUS status = NV_OK;
-    uvm_access_counter_service_batch_context_t *batch_context = &gpu->parent->access_counter_buffer_info.batch_service_context;
+    uvm_access_counter_service_batch_context_t *batch_context = &parent_gpu->access_counter_buffer_info.batch_service_context;
 
-    UVM_ASSERT(gpu->parent->access_counters_supported);
+    UVM_ASSERT(parent_gpu->access_counters_supported);
 
-    if (gpu->parent->access_counter_buffer_info.notifications_ignored_count > 0)
+    if (parent_gpu->access_counter_buffer_info.notifications_ignored_count > 0)
         return;
 
     while (1) {
-        batch_context->num_cached_notifications = fetch_access_counter_buffer_entries(gpu,
+        batch_context->num_cached_notifications = fetch_access_counter_buffer_entries(parent_gpu,
                                                                                       batch_context,
                                                                                       NOTIFICATION_FETCH_MODE_BATCH_READY);
         if (batch_context->num_cached_notifications == 0)
@@ -1897,13 +1960,13 @@ void uvm_gpu_service_access_counters(uvm_gpu_t *gpu)
         ++batch_context->batch_id;
 
         if (batch_context->virt.num_notifications) {
-            status = service_virt_notifications(gpu, batch_context);
+            status = service_virt_notifications(parent_gpu, batch_context);
             if (status != NV_OK)
                 break;
         }
 
         if (batch_context->phys.num_notifications) {
-            status = service_phys_notifications(gpu, batch_context);
+            status = service_phys_notifications(parent_gpu, batch_context);
             if (status != NV_OK)
                 break;
         }
@@ -1912,7 +1975,7 @@ void uvm_gpu_service_access_counters(uvm_gpu_t *gpu)
     if (status != NV_OK) {
         UVM_DBG_PRINT("Error %s servicing access counter notifications on GPU: %s\n",
                       nvstatusToString(status),
-                      uvm_gpu_name(gpu));
+                      uvm_parent_gpu_name(parent_gpu));
     }
 }
 

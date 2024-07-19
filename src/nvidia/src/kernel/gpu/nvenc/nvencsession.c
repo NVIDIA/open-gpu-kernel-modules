@@ -34,7 +34,7 @@
 
 static NvU32 sessionCounter = 0x01;
 
-static void _gpuNvEncSessionDataProcessingCallback(POBJGPU pGpu, void *data);
+static void _gpuNvEncSessionDataProcessingCallback(OBJGPU *pGpu, void *data);
 
 NV_STATUS
 nvencsessionConstruct_IMPL
@@ -232,7 +232,7 @@ nvencsessionDestruct_IMPL
 }
 
 static void
-_gpuNvEncSessionProcessBuffer(POBJGPU pGpu, NvencSession *pNvencSession)
+_gpuNvEncSessionProcessBuffer(OBJGPU *pGpu, NvencSession *pNvencSession)
 {
     NvU32 frameCount;
     NvU32 currIndex;
@@ -241,7 +241,6 @@ _gpuNvEncSessionProcessBuffer(POBJGPU pGpu, NvencSession *pNvencSession)
     NvU64 latestFrameEndTS;
     NvU64 processedFrameCount;
     NvU64 timeTakenToEncodeNs;
-    NvS64 timeDiffFrameTS;
     NVENC_SESSION_INFO_V1 *pSessionInfoBuffer;
     NVENC_SESSION_INFO_V1 *pLocalSessionInfoBuffer;
     NVENC_SESSION_INFO_ENTRY_V1 *pSubmissionTSEntry;
@@ -322,6 +321,9 @@ _gpuNvEncSessionProcessBuffer(POBJGPU pGpu, NvencSession *pNvencSession)
             break;
         }
 
+        // Update latest processed frame index.
+        latestFrameIndex = currIndex;
+
         // Validation : Check if submission-start-end frame ids match.
         if ((pSubmissionTSEntry->frameId != pStartTSEntry->frameId) || (pStartTSEntry->frameId != pEndTSEntry->frameId))
         {
@@ -332,9 +334,6 @@ _gpuNvEncSessionProcessBuffer(POBJGPU pGpu, NvencSession *pNvencSession)
         {
             continue;
         }
-
-        // Update latest processed frame index.
-        latestFrameIndex = currIndex;
 
         // Add the difference of end timestamp and submission timestamp to total time taken.
         timeTakenToEncodeNs += (pEndTSEntry->timestamp - pSubmissionTSEntry->timestamp);
@@ -356,11 +355,11 @@ _gpuNvEncSessionProcessBuffer(POBJGPU pGpu, NvencSession *pNvencSession)
         // Find time difference between latest processed frame end TS and last processed frame end TS in last callback.
         // Same is done for findng processed frame count.
         // This would provide a better average FPS value.
-        timeDiffFrameTS = latestFrameEndTS - pNvencSession->lastProcessedFrameTS;
-        if (timeDiffFrameTS > 0)
+        timeTakenToEncodeNs = latestFrameEndTS - pNvencSession->lastProcessedFrameTS;
+        if (timeTakenToEncodeNs > 0)
         {
             processedFrameCount = latestFrameId - pNvencSession->lastProcessedFrameId;
-            pNvencSession->nvencSessionEntry.averageEncodeFps = ((processedFrameCount * 1000 * 1000 * 1000) / timeDiffFrameTS);
+            pNvencSession->nvencSessionEntry.averageEncodeFps = ((processedFrameCount * 1000 * 1000 * 1000) / timeTakenToEncodeNs);
         }
         else
         {
@@ -434,7 +433,7 @@ static void _gpuNvEncSessionDataProcessingWorkItem(NvU32 gpuInstance, void *pArg
 }
 
 static void
-_gpuNvEncSessionDataProcessingCallback(POBJGPU pGpu, void *data)
+_gpuNvEncSessionDataProcessingCallback(OBJGPU *pGpu, void *data)
 {
     NV_STATUS   status;
 
@@ -444,7 +443,7 @@ _gpuNvEncSessionDataProcessingCallback(POBJGPU pGpu, void *data)
                                           _gpuNvEncSessionDataProcessingWorkItem,
                                           NULL,
                                           OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA
-                                          | OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE_RW);
+                                          | OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE);
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,

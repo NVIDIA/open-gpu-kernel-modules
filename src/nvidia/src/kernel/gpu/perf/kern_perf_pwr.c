@@ -76,6 +76,14 @@ subdeviceCtrlCmdPerfRatedTdpSetControl_KERNEL
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
     }
 
+    if ((!rmclientIsAdminByHandle(hClient, pCallContext->secInfo.privLevel)) &&
+        (gpuIsRmProfilingPrivileged(pGpu) && (pControlParams->vPstateType == NV2080_CTRL_PERF_VPSTATE_TURBO_BOOST)))
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                "Non-Privileged clients are not allowed to use Turbo Boost clock controls.\n");
+        return NV_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
     //
     // Redirect to Physical RM in case of the GSP CLIENT or
     // host RM in case of the vGPU

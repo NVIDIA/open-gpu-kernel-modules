@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -133,7 +133,7 @@
 //
 // - PMM root chunk bit locks
 //   Each bit lock protects the corresponding root chunk's allocation, freeing
-//   from/to PMA, root chunk trackers, and root chunk indirect_peer mappings.
+//   from/to PMA, and root chunk trackers.
 //
 // - PMA allocation/eviction lock
 //   A read-write semaphore used by the eviction path to flush any pending
@@ -1183,216 +1183,15 @@ void uvm_pmm_gpu_merge_chunk(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
     uvm_mutex_unlock(&pmm->lock);
 }
 
-static void root_chunk_unmap_indirect_peer(uvm_pmm_gpu_t *pmm, uvm_gpu_root_chunk_t *root_chunk, uvm_gpu_t *other_gpu)
-{
-    uvm_gpu_root_chunk_indirect_peer_t *indirect_peer;
-    size_t index = root_chunk_index(pmm, root_chunk);
-    long long new_count;
-    NV_STATUS status;
-
-    indirect_peer = &pmm->root_chunks.indirect_peer[uvm_id_gpu_index(other_gpu->id)];
-
-    uvm_assert_root_chunk_locked(pmm, root_chunk);
-    UVM_ASSERT(indirect_peer->dma_addrs);
-    UVM_ASSERT(root_chunk->chunk.state != UVM_PMM_GPU_CHUNK_STATE_PMA_OWNED);
-    UVM_ASSERT(uvm_processor_mask_test(&root_chunk->indirect_peers_mapped, other_gpu->id));
-
-    // The tracker could have work which requires the indirect peer mappings to
-    // remain until finished, such as PTE unmaps of this chunk from indirect
-    // peers, so we need to wait. We also need to wait on the entire tracker,
-    // not just other_gpu's entries, because there might be implicit chained
-    // dependencies in the tracker.
-    //
-    // We know there can't be any other work which requires these mappings:
-    // - If we're freeing the root chunk back to PMA or switching types of the
-    //   root chunk, nothing else can reference the chunk.
-    //
-    // - If the chunk is still allocated then global peer access must be in the
-    //   process of being disabled, say because one of the GPUs is being
-    //   unregistered. We know that all VA spaces must have already called
-    //   disable_peers and have waited on those PTE unmaps. The chunk could be
-    //   freed concurrently with this indirect peer unmap, but that will be
-    //   serialized by the root chunk lock.
-    status = uvm_tracker_wait(&root_chunk->tracker);
-    if (status != NV_OK)
-        UVM_ASSERT(uvm_global_get_status() != NV_OK);
-
-    uvm_parent_gpu_unmap_cpu_pages(other_gpu->parent, indirect_peer->dma_addrs[index], UVM_CHUNK_SIZE_MAX);
-    uvm_processor_mask_clear(&root_chunk->indirect_peers_mapped, other_gpu->id);
-    new_count = atomic64_dec_return(&indirect_peer->map_count);
-    UVM_ASSERT(new_count >= 0);
-}
-
-static void root_chunk_unmap_indirect_peers(uvm_pmm_gpu_t *pmm, uvm_gpu_root_chunk_t *root_chunk)
-{
-    uvm_gpu_id_t other_gpu_id;
-
-    // Root chunks should use a global processor mask as they are not bound to
-    // a specific VA space. However, indirect peers are not supported when SMC
-    // partitioning is enabled and, therefore, we can obtain the uvm_gpu_t
-    // object directly from the uvm_parent_gpu_t object's id.
-    for_each_gpu_id_in_mask(other_gpu_id, &root_chunk->indirect_peers_mapped) {
-        uvm_gpu_t *other_gpu = uvm_gpu_get(other_gpu_id);
-        root_chunk_unmap_indirect_peer(pmm, root_chunk, other_gpu);
-    }
-}
-
-NV_STATUS uvm_pmm_gpu_indirect_peer_init(uvm_pmm_gpu_t *pmm, uvm_gpu_t *accessing_gpu)
-{
-    uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
-    NvU64 *dma_addrs;
-    uvm_gpu_root_chunk_indirect_peer_t *indirect_peer;
-    NV_STATUS status = NV_OK;
-
-    indirect_peer = &pmm->root_chunks.indirect_peer[uvm_id_gpu_index(accessing_gpu->id)];
-
-    uvm_assert_mutex_locked(&g_uvm_global.global_lock);
-    UVM_ASSERT(uvm_gpus_are_indirect_peers(gpu, accessing_gpu));
-    UVM_ASSERT(!indirect_peer->dma_addrs);
-    UVM_ASSERT(atomic64_read(&indirect_peer->map_count) == 0);
-
-    // Each root chunk tracks whether it has a mapping to a given indirect peer,
-    // so we don't need to initialize this array.
-    dma_addrs = uvm_kvmalloc(pmm->root_chunks.count * sizeof(dma_addrs[0]));
-    if (!dma_addrs)
-        status = NV_ERR_NO_MEMORY;
-    else
-        indirect_peer->dma_addrs = dma_addrs;
-
-    return status;
-}
-
-static bool check_indirect_peer_empty(uvm_pmm_gpu_t *pmm, uvm_gpu_t *other_gpu)
-{
-    uvm_gpu_root_chunk_indirect_peer_t *indirect_peer;
-    size_t i;
-
-    indirect_peer = &pmm->root_chunks.indirect_peer[uvm_id_gpu_index(other_gpu->id)];
-
-    for (i = 0; i < pmm->root_chunks.count; i++) {
-        uvm_gpu_root_chunk_t *root_chunk = &pmm->root_chunks.array[i];
-
-        // This doesn't take the root chunk lock because checking the mask is an
-        // atomic operation.
-        if (uvm_processor_mask_test(&root_chunk->indirect_peers_mapped, other_gpu->id)) {
-            UVM_ASSERT(atomic64_read(&indirect_peer->map_count) > 0);
-            return false;
-        }
-    }
-
-    UVM_ASSERT(atomic64_read(&indirect_peer->map_count) == 0);
-    return true;
-}
-
-void uvm_pmm_gpu_indirect_peer_destroy(uvm_pmm_gpu_t *pmm, uvm_gpu_t *other_gpu)
-{
-    uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
-    uvm_gpu_root_chunk_indirect_peer_t *indirect_peer;
-    size_t i;
-
-    indirect_peer = &pmm->root_chunks.indirect_peer[uvm_id_gpu_index(other_gpu->id)];
-
-    uvm_assert_mutex_locked(&g_uvm_global.global_lock);
-    UVM_ASSERT(uvm_gpus_are_indirect_peers(gpu, other_gpu));
-
-    if (!indirect_peer->dma_addrs) {
-        UVM_ASSERT(check_indirect_peer_empty(pmm, other_gpu));
-        return;
-    }
-
-    // Just go over all root chunks and unmap them. This is slow, but it is not
-    // a frequent operation.
-    for (i = 0; i < pmm->root_chunks.count && atomic64_read(&indirect_peer->map_count); i++) {
-        uvm_gpu_root_chunk_t *root_chunk = &pmm->root_chunks.array[i];
-
-        // Take the root chunk lock to prevent chunks from transitioning in or
-        // out of the PMA_OWNED state, and to serialize updates to the tracker
-        // and indirect_peers_mapped mask. Note that indirect peers besides
-        // other_gpu could be trying to create mappings concurrently.
-        root_chunk_lock(pmm, root_chunk);
-
-        if (root_chunk->chunk.state == UVM_PMM_GPU_CHUNK_STATE_PMA_OWNED)
-            UVM_ASSERT(uvm_processor_mask_empty(&root_chunk->indirect_peers_mapped));
-        else if (uvm_processor_mask_test(&root_chunk->indirect_peers_mapped, other_gpu->id))
-            root_chunk_unmap_indirect_peer(pmm, root_chunk, other_gpu);
-
-        root_chunk_unlock(pmm, root_chunk);
-    }
-
-    UVM_ASSERT(check_indirect_peer_empty(pmm, other_gpu));
-
-    uvm_kvfree(indirect_peer->dma_addrs);
-    indirect_peer->dma_addrs = NULL;
-}
-
-NV_STATUS uvm_pmm_gpu_indirect_peer_map(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk, uvm_gpu_t *accessing_gpu)
-{
-    uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
-    uvm_gpu_root_chunk_indirect_peer_t *indirect_peer;
-    uvm_gpu_root_chunk_t *root_chunk = root_chunk_from_chunk(pmm, chunk);
-    size_t index = root_chunk_index(pmm, root_chunk);
-    NV_STATUS status = NV_OK;
-
-    indirect_peer = &pmm->root_chunks.indirect_peer[uvm_id_gpu_index(accessing_gpu->id)];
-
-    UVM_ASSERT(chunk->state == UVM_PMM_GPU_CHUNK_STATE_TEMP_PINNED ||
-               chunk->state == UVM_PMM_GPU_CHUNK_STATE_ALLOCATED);
-
-    UVM_ASSERT(uvm_gpus_are_indirect_peers(gpu, accessing_gpu));
-    UVM_ASSERT(indirect_peer->dma_addrs);
-
-    // Serialize:
-    //  - Concurrent mappings to this root chunk (same or different GPUs)
-    //  - Concurrent unmappings of this root chunk (must be a different GPU)
-    root_chunk_lock(pmm, root_chunk);
-
-    if (!uvm_processor_mask_test(&root_chunk->indirect_peers_mapped, accessing_gpu->id)) {
-        status = uvm_parent_gpu_map_cpu_pages(accessing_gpu->parent,
-                                              uvm_gpu_chunk_to_page(pmm, &root_chunk->chunk),
-                                              UVM_CHUNK_SIZE_MAX,
-                                              &indirect_peer->dma_addrs[index]);
-        if (status == NV_OK) {
-            uvm_processor_mask_set(&root_chunk->indirect_peers_mapped, accessing_gpu->id);
-            atomic64_inc(&indirect_peer->map_count);
-        }
-    }
-
-    root_chunk_unlock(pmm, root_chunk);
-    return status;
-}
-
-NvU64 uvm_pmm_gpu_indirect_peer_addr(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk, uvm_gpu_t *accessing_gpu)
-{
-    uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
-    uvm_gpu_root_chunk_indirect_peer_t *indirect_peer;
-    uvm_gpu_root_chunk_t *root_chunk = root_chunk_from_chunk(pmm, chunk);
-    size_t index = root_chunk_index(pmm, root_chunk);
-    NvU64 chunk_offset = chunk->address - root_chunk->chunk.address;
-
-    indirect_peer = &pmm->root_chunks.indirect_peer[uvm_id_gpu_index(accessing_gpu->id)];
-
-    UVM_ASSERT(uvm_gpus_are_indirect_peers(gpu, accessing_gpu));
-    UVM_ASSERT(indirect_peer->dma_addrs);
-    UVM_ASSERT(uvm_processor_mask_test(&root_chunk->indirect_peers_mapped, accessing_gpu->id));
-    UVM_ASSERT(chunk->state == UVM_PMM_GPU_CHUNK_STATE_TEMP_PINNED ||
-               chunk->state == UVM_PMM_GPU_CHUNK_STATE_ALLOCATED ||
-               chunk->state == UVM_PMM_GPU_CHUNK_STATE_IS_SPLIT);
-
-    return indirect_peer->dma_addrs[index] + chunk_offset;
-}
-
 uvm_gpu_phys_address_t uvm_pmm_gpu_peer_phys_address(uvm_pmm_gpu_t *pmm,
                                                      uvm_gpu_chunk_t *chunk,
                                                      uvm_gpu_t *accessing_gpu)
 {
     uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
-    uvm_gpu_peer_t *peer_caps = uvm_gpu_peer_caps(accessing_gpu, gpu);
     uvm_aperture_t aperture = uvm_gpu_peer_aperture(accessing_gpu, gpu);
     NvU64 addr;
 
-    if (peer_caps->is_indirect_peer)
-        addr = uvm_pmm_gpu_indirect_peer_addr(pmm, chunk, accessing_gpu);
-    else if (uvm_gpus_are_nvswitch_connected(accessing_gpu, gpu))
+    if (uvm_gpus_are_nvswitch_connected(accessing_gpu, gpu))
         addr = chunk->address + gpu->parent->nvswitch_info.fabric_memory_window_start;
     else
         addr = chunk->address;
@@ -1405,15 +1204,10 @@ uvm_gpu_address_t uvm_pmm_gpu_peer_copy_address(uvm_pmm_gpu_t *pmm,
                                                 uvm_gpu_t *accessing_gpu)
 {
     uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
-    uvm_gpu_peer_t *peer_caps = uvm_gpu_peer_caps(accessing_gpu, gpu);
     uvm_gpu_identity_mapping_t *gpu_peer_mapping;
 
-    if (peer_caps->is_indirect_peer ||
-        (accessing_gpu->parent->peer_copy_mode == UVM_GPU_PEER_COPY_MODE_PHYSICAL)) {
-        // Indirect peers are accessed as sysmem addresses, so they don't need
-        // to use identity mappings.
+    if (accessing_gpu->parent->peer_copy_mode == UVM_GPU_PEER_COPY_MODE_PHYSICAL)
         return uvm_gpu_address_from_phys(uvm_pmm_gpu_peer_phys_address(pmm, chunk, accessing_gpu));
-    }
 
     UVM_ASSERT(accessing_gpu->parent->peer_copy_mode == UVM_GPU_PEER_COPY_MODE_VIRTUAL);
     gpu_peer_mapping = uvm_gpu_get_peer_mapping(accessing_gpu, gpu->id);
@@ -1799,12 +1593,6 @@ static NV_STATUS pick_and_evict_root_chunk(uvm_pmm_gpu_t *pmm,
                        "pmaPinPages(root_chunk=0x%llx) failed unexpectedly: %s\n",
                        chunk->address,
                        nvstatusToString(status));
-
-        // Unmap any indirect peer physical mappings for this chunk, since
-        // kernel chunks generally don't need them.
-        root_chunk_lock(pmm, root_chunk);
-        root_chunk_unmap_indirect_peers(pmm, root_chunk);
-        root_chunk_unlock(pmm, root_chunk);
 
         uvm_spin_lock(&pmm->list_lock);
         chunk->type = type;
@@ -2273,8 +2061,6 @@ void free_root_chunk(uvm_pmm_gpu_t *pmm, uvm_gpu_root_chunk_t *root_chunk, free_
 
     root_chunk_lock(pmm, root_chunk);
 
-    root_chunk_unmap_indirect_peers(pmm, root_chunk);
-
     status = uvm_tracker_wait_deinit(&root_chunk->tracker);
     if (status != NV_OK) {
         // TODO: Bug 1766184: Handle RC/ECC. For now just go ahead and free the chunk anyway.
@@ -2465,30 +2251,6 @@ static bool check_chunk(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
     }
     else {
         UVM_ASSERT(chunk_size == uvm_chunk_find_last_size(chunk_sizes));
-    }
-
-    if (uvm_pmm_sysmem_mappings_indirect_supported()) {
-        uvm_gpu_root_chunk_t *root_chunk = root_chunk_from_chunk(pmm, chunk);
-        uvm_gpu_id_t other_gpu_id;
-
-        root_chunk_lock(pmm, root_chunk);
-
-        // See root_chunk_unmap_indirect_peers for the usage of uvm_gpu_get
-        for_each_gpu_id_in_mask(other_gpu_id, &root_chunk->indirect_peers_mapped) {
-            uvm_gpu_t *other_gpu = uvm_gpu_get(other_gpu_id);
-            NvU64 peer_addr = uvm_pmm_gpu_indirect_peer_addr(pmm, chunk, other_gpu);
-            uvm_reverse_map_t reverse_map;
-            size_t num_mappings;
-
-            num_mappings = uvm_pmm_sysmem_mappings_dma_to_virt(&other_gpu->pmm_reverse_sysmem_mappings,
-                                                               peer_addr,
-                                                               uvm_gpu_chunk_get_size(chunk),
-                                                               &reverse_map,
-                                                               1);
-            UVM_ASSERT(num_mappings == 0);
-        }
-
-        root_chunk_unlock(pmm, root_chunk);
     }
 
     return true;
@@ -3734,11 +3496,6 @@ void uvm_pmm_gpu_deinit(uvm_pmm_gpu_t *pmm)
 
     uvm_bit_locks_deinit(&pmm->root_chunks.bitlocks);
 
-    for (i = 0; i < ARRAY_SIZE(pmm->root_chunks.indirect_peer); i++) {
-        UVM_ASSERT(pmm->root_chunks.indirect_peer[i].dma_addrs == NULL);
-        UVM_ASSERT(atomic64_read(&pmm->root_chunks.indirect_peer[i].map_count) == 0);
-    }
-
     if (pmm->root_chunks.array) {
         // Make sure that all chunks have been returned to PMA
         for (i = 0; i < pmm->root_chunks.count; ++i) {
@@ -3918,7 +3675,7 @@ static NV_STATUS test_check_pma_allocated_chunks(uvm_pmm_gpu_t *pmm,
         root_chunk = root_chunk_from_address(pmm, address);
 
         if (!IS_ALIGNED(address, params->page_size)) {
-            UVM_TEST_PRINT("Returned unaligned address 0x%llx page size %u\n", address, params->page_size);
+            UVM_TEST_PRINT("Returned unaligned address 0x%llx page size %llu\n", address, params->page_size);
             status = NV_ERR_INVALID_STATE;
         }
 

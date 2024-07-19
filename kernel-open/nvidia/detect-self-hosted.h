@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,9 +25,21 @@
 #define __DETECT_SELF_HOSTED_H__
 
 // PCI devIds 0x2340-0x237f are for Self-Hosted Hopper
-static inline int pci_devid_is_self_hosted(unsigned short devid)
+static inline int pci_devid_is_self_hosted_hopper(unsigned short devid)
 {
     return devid >= 0x2340 && devid <= 0x237f;
+}
+
+// PCI devIds 0x2940-0x297f are for Self-Hosted Blackwell
+static inline int pci_devid_is_self_hosted_blackwell(unsigned short devid)
+{
+    return devid >= 0x2940 && devid <= 0x297f;
+}
+
+static inline int pci_devid_is_self_hosted(unsigned short devid)
+{
+    return pci_devid_is_self_hosted_hopper(devid) ||
+           pci_devid_is_self_hosted_blackwell(devid);
 }
 
 #endif

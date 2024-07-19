@@ -147,21 +147,17 @@ struct nv_drm_device {
     NvBool hasVideoMemory;
 
     NvBool supportsSyncpts;
+    NvBool requiresVrrSemaphores;
     NvBool subOwnershipGranted;
     NvBool hasFramebufferConsole;
 
-    /**
-     * @drmMasterChangedSinceLastAtomicCommit:
-     *
-     * This flag is set in nv_drm_master_set and reset after a completed atomic
-     * commit. It is used to restore or recommit state that is lost by the
-     * NvKms modeset owner change, such as the CRTC color management
-     * properties.
-     */
-    NvBool drmMasterChangedSinceLastAtomicCommit;
-
     struct drm_property *nv_out_fence_property;
     struct drm_property *nv_input_colorspace_property;
+
+    struct {
+        NvU32 count;
+        NvU32 next_index;
+    } display_semaphores;
 
 #if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
     struct drm_property *nv_hdr_output_metadata_property;
@@ -169,6 +165,19 @@ struct nv_drm_device {
 
     struct nv_drm_device *next;
 };
+
+static inline NvU32 nv_drm_next_display_semaphore(
+    struct nv_drm_device *nv_dev)
+{
+    NvU32 current_index = nv_dev->display_semaphores.next_index++;
+
+    if (nv_dev->display_semaphores.next_index >=
+        nv_dev->display_semaphores.count) {
+        nv_dev->display_semaphores.next_index = 0;
+    }
+
+    return current_index;
+}
 
 static inline struct nv_drm_device *to_nv_device(
     struct drm_device *dev)

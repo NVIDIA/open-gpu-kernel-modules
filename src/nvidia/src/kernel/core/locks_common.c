@@ -163,18 +163,16 @@ workItemLocksAcquire(NvU32 gpuInstance, NvU32 flags, NvU32 *pReleaseLocks, NvU32
     }
 
     if ((flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS) ||
-        (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE_RW) ||
-        (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE_RO) ||
-        (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW) ||
-        (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RO))
+        (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE) ||
+        (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE))
     {
         NvU32 gpuLockFlags = GPUS_LOCK_FLAGS_NONE;
 
         if (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS)
             grp = GPU_LOCK_GRP_ALL;
-        else if (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE_RW)
+        else if (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE)
             grp = GPU_LOCK_GRP_DEVICE;
-        else // (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW)
+        else // (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE)
             grp = GPU_LOCK_GRP_SUBDEVICE;
 
         status = rmGpuGroupLockAcquire(gpuInstance, grp, gpuLockFlags,

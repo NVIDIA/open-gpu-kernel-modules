@@ -11,7 +11,7 @@
 #include "os/os.h"
 #include "gpu/gpu.h"
 
-#include "objrpcstructurecopy.h"
+#include "gpu/rpc/objrpcstructurecopy.h"
 
 #include "g_rpcstructurecopy_private.h"
 

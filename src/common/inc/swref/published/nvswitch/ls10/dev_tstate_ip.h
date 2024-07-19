@@ -34,35 +34,27 @@
 #define NV_TSTATE_ATO_TIMER_LIMIT_LIMIT_INIT               0x00000355      /* RWE-V */
 #define NV_TSTATE_ERR_STATUS_0                             0x00003400      /* RW-4R */
 #define NV_TSTATE_ERR_STATUS_0_TAGPOOLBUFERR               0:0             /* RWDVF */
-#define NV_TSTATE_ERR_STATUS_0_TAGPOOLBUFERR__ONWRITE      "oneToClear"    /*       */
 #define NV_TSTATE_ERR_STATUS_0_TAGPOOLBUFERR_NONE          0x00000000      /* RWD-V */
 #define NV_TSTATE_ERR_STATUS_0_TAGPOOLBUFERR_CLEAR         0x00000001      /* RW--V */
 #define NV_TSTATE_ERR_STATUS_0_TAGPOOL_ECC_LIMIT_ERR       1:1             /* RWDVF */
-#define NV_TSTATE_ERR_STATUS_0_TAGPOOL_ECC_LIMIT_ERR__ONWRITE "oneToClear" /*       */
 #define NV_TSTATE_ERR_STATUS_0_TAGPOOL_ECC_LIMIT_ERR_NONE  0x00000000      /* RWD-V */
 #define NV_TSTATE_ERR_STATUS_0_TAGPOOL_ECC_LIMIT_ERR_CLEAR 0x00000001      /* RW--V */
 #define NV_TSTATE_ERR_STATUS_0_TAGPOOL_ECC_DBE_ERR         2:2             /* RWDVF */
-#define NV_TSTATE_ERR_STATUS_0_TAGPOOL_ECC_DBE_ERR__ONWRITE "oneToClear"   /*       */
 #define NV_TSTATE_ERR_STATUS_0_TAGPOOL_ECC_DBE_ERR_NONE    0x00000000      /* RWD-V */
 #define NV_TSTATE_ERR_STATUS_0_TAGPOOL_ECC_DBE_ERR_CLEAR   0x00000001      /* RW--V */
 #define NV_TSTATE_ERR_STATUS_0_CRUMBSTOREBUFERR            3:3             /* RWDVF */
-#define NV_TSTATE_ERR_STATUS_0_CRUMBSTOREBUFERR__ONWRITE   "oneToClear"    /*       */
 #define NV_TSTATE_ERR_STATUS_0_CRUMBSTOREBUFERR_NONE       0x00000000      /* RWD-V */
 #define NV_TSTATE_ERR_STATUS_0_CRUMBSTOREBUFERR_CLEAR      0x00000001      /* RW--V */
 #define NV_TSTATE_ERR_STATUS_0_CRUMBSTORE_ECC_LIMIT_ERR    4:4             /* RWDVF */
-#define NV_TSTATE_ERR_STATUS_0_CRUMBSTORE_ECC_LIMIT_ERR__ONWRITE "oneToClear" /*       */
 #define NV_TSTATE_ERR_STATUS_0_CRUMBSTORE_ECC_LIMIT_ERR_NONE 0x00000000    /* RWD-V */
 #define NV_TSTATE_ERR_STATUS_0_CRUMBSTORE_ECC_LIMIT_ERR_CLEAR 0x00000001   /* RW--V */
 #define NV_TSTATE_ERR_STATUS_0_CRUMBSTORE_ECC_DBE_ERR      5:5             /* RWDVF */
-#define NV_TSTATE_ERR_STATUS_0_CRUMBSTORE_ECC_DBE_ERR__ONWRITE "oneToClear" /*       */
 #define NV_TSTATE_ERR_STATUS_0_CRUMBSTORE_ECC_DBE_ERR_NONE 0x00000000      /* RWD-V */
 #define NV_TSTATE_ERR_STATUS_0_CRUMBSTORE_ECC_DBE_ERR_CLEAR 0x00000001     /* RW--V */
 #define NV_TSTATE_ERR_STATUS_0_ATO_ERR                     6:6             /* RWDVF */
-#define NV_TSTATE_ERR_STATUS_0_ATO_ERR__ONWRITE            "oneToClear"    /*       */
 #define NV_TSTATE_ERR_STATUS_0_ATO_ERR_NONE                0x00000000      /* RWD-V */
 #define NV_TSTATE_ERR_STATUS_0_ATO_ERR_CLEAR               0x00000001      /* RW--V */
 #define NV_TSTATE_ERR_STATUS_0_CAMRSP_ERR                  7:7             /* RWDVF */
-#define NV_TSTATE_ERR_STATUS_0_CAMRSP_ERR__ONWRITE         "oneToClear"    /*       */
 #define NV_TSTATE_ERR_STATUS_0_CAMRSP_ERR_NONE             0x00000000      /* RWD-V */
 #define NV_TSTATE_ERR_STATUS_0_CAMRSP_ERR_CLEAR            0x00000001      /* RW--V */
 #define NV_TSTATE_ERR_LOG_EN_0                             0x00003404      /* RW-4R */
@@ -190,35 +182,27 @@
 #define NV_TSTATE_ERR_CONTAIN_EN_0_CAMRSP_ERR_ENABLE       0x00000001      /* RW--V */
 #define NV_TSTATE_ERR_FIRST_0                              0x0000341c      /* RW-4R */
 #define NV_TSTATE_ERR_FIRST_0_TAGPOOLBUFERR                0:0             /* RWDVF */
-#define NV_TSTATE_ERR_FIRST_0_TAGPOOLBUFERR__ONWRITE       "oneToClear"    /*       */
 #define NV_TSTATE_ERR_FIRST_0_TAGPOOLBUFERR_NONE           0x00000000      /* RWD-V */
 #define NV_TSTATE_ERR_FIRST_0_TAGPOOLBUFERR_CLEAR          0x00000001      /* RW--V */
 #define NV_TSTATE_ERR_FIRST_0_TAGPOOL_ECC_LIMIT_ERR        1:1             /* RWDVF */
-#define NV_TSTATE_ERR_FIRST_0_TAGPOOL_ECC_LIMIT_ERR__ONWRITE "oneToClear"  /*       */
 #define NV_TSTATE_ERR_FIRST_0_TAGPOOL_ECC_LIMIT_ERR_NONE   0x00000000      /* RWD-V */
 #define NV_TSTATE_ERR_FIRST_0_TAGPOOL_ECC_LIMIT_ERR_CLEAR  0x00000001      /* RW--V */
 #define NV_TSTATE_ERR_FIRST_0_TAGPOOL_ECC_DBE_ERR          2:2             /* RWDVF */
-#define NV_TSTATE_ERR_FIRST_0_TAGPOOL_ECC_DBE_ERR__ONWRITE "oneToClear"    /*       */
 #define NV_TSTATE_ERR_FIRST_0_TAGPOOL_ECC_DBE_ERR_NONE     0x00000000      /* RWD-V */
 #define NV_TSTATE_ERR_FIRST_0_TAGPOOL_ECC_DBE_ERR_CLEAR    0x00000001      /* RW--V */
 #define NV_TSTATE_ERR_FIRST_0_CRUMBSTOREBUFERR             3:3             /* RWDVF */
-#define NV_TSTATE_ERR_FIRST_0_CRUMBSTOREBUFERR__ONWRITE    "oneToClear"    /*       */
 #define NV_TSTATE_ERR_FIRST_0_CRUMBSTOREBUFERR_NONE        0x00000000      /* RWD-V */
 #define NV_TSTATE_ERR_FIRST_0_CRUMBSTOREBUFERR_CLEAR       0x00000001      /* RW--V */
 #define NV_TSTATE_ERR_FIRST_0_CRUMBSTORE_ECC_LIMIT_ERR     4:4             /* RWDVF */
-#define NV_TSTATE_ERR_FIRST_0_CRUMBSTORE_ECC_LIMIT_ERR__ONWRITE "oneToClear" /*       */
 #define NV_TSTATE_ERR_FIRST_0_CRUMBSTORE_ECC_LIMIT_ERR_NONE 0x00000000     /* RWD-V */
 #define NV_TSTATE_ERR_FIRST_0_CRUMBSTORE_ECC_LIMIT_ERR_CLEAR 0x00000001    /* RW--V */
 #define NV_TSTATE_ERR_FIRST_0_CRUMBSTORE_ECC_DBE_ERR       5:5             /* RWDVF */
-#define NV_TSTATE_ERR_FIRST_0_CRUMBSTORE_ECC_DBE_ERR__ONWRITE "oneToClear" /*       */
 #define NV_TSTATE_ERR_FIRST_0_CRUMBSTORE_ECC_DBE_ERR_NONE  0x00000000      /* RWD-V */
 #define NV_TSTATE_ERR_FIRST_0_CRUMBSTORE_ECC_DBE_ERR_CLEAR 0x00000001      /* RW--V */
 #define NV_TSTATE_ERR_FIRST_0_ATO_ERR                      6:6             /* RWDVF */
-#define NV_TSTATE_ERR_FIRST_0_ATO_ERR__ONWRITE             "oneToClear"    /*       */
 #define NV_TSTATE_ERR_FIRST_0_ATO_ERR_NONE                 0x00000000      /* RWD-V */
 #define NV_TSTATE_ERR_FIRST_0_ATO_ERR_CLEAR                0x00000001      /* RW--V */
 #define NV_TSTATE_ERR_FIRST_0_CAMRSP_ERR                   7:7             /* RWDVF */
-#define NV_TSTATE_ERR_FIRST_0_CAMRSP_ERR__ONWRITE          "oneToClear"    /*       */
 #define NV_TSTATE_ERR_FIRST_0_CAMRSP_ERR_NONE              0x00000000      /* RWD-V */
 #define NV_TSTATE_ERR_FIRST_0_CAMRSP_ERR_CLEAR             0x00000001      /* RW--V */
 #define NV_TSTATE_ERR_DEBUG                                0x00003420      /* R--4R */

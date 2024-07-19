@@ -35,7 +35,6 @@
 
 #include "gpu/gpu.h"
 #include <gpu_mgr/gpu_mgr.h>
-#include <osfuncs.h>
 #include <platform/chipset/chipset.h>
 
 #include "nverror.h"
@@ -62,6 +61,8 @@
 #include "os/dce_rm_client_ipc.h"
 #include "mem_mgr/mem.h"
 #include "gpu/mem_mgr/virt_mem_allocator_common.h"
+
+#include "vgpu/vgpu_util.h"
 
 #include <acpidsmguids.h>
 #include <pex.h>
@@ -742,10 +743,10 @@ NV_STATUS osQueueWorkItemWithFlags(
         pWi->flags |= OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW;
     if (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS)
         pWi->flags |= OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS;
-    if (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE_RW)
-        pWi->flags |= OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE_RW;
-    if (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW)
-        pWi->flags |= OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW;
+    if (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE)
+        pWi->flags |= OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE;
+    if (flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE)
+        pWi->flags |= OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE;
 
     if (flags & OS_QUEUE_WORKITEM_FLAGS_FULL_GPU_SANITY)
         pWi->flags |= OS_QUEUE_WORKITEM_FLAGS_FULL_GPU_SANITY;
@@ -941,6 +942,9 @@ NV_STATUS osAllocPagesInternal(
 
     memdescSetMemData(pMemDesc, pMemData, NULL);
 
+    if ((pGpu != NULL) && IS_VIRTUAL(pGpu))
+        NV_ASSERT_OK_OR_RETURN(vgpuUpdateGuestSysmemPfnBitMap(pGpu, pMemDesc, NV_TRUE));
+
     return status;
 }
 
@@ -950,6 +954,9 @@ void osFreePagesInternal(
 {
     OBJGPU *pGpu = pMemDesc->pGpu;
     NV_STATUS rmStatus;
+
+    if ((pGpu != NULL) && IS_VIRTUAL(pGpu))
+        NV_ASSERT_OR_RETURN_VOID(vgpuUpdateGuestSysmemPfnBitMap(pGpu, pMemDesc, NV_FALSE) == NV_OK);
 
     if (NV_RM_PAGE_SIZE < os_page_size &&
         !memdescGetContiguity(pMemDesc, AT_CPU))
@@ -2698,7 +2705,6 @@ NV_STATUS  osCallACPI_NVHG_ROM
 void osInitSystemStaticConfig(SYS_STATIC_CONFIG *pConfig)
 {
     pConfig->bIsNotebook = rm_is_system_notebook();
-    pConfig->osType = nv_get_os_type();
     pConfig->bOsCCEnabled = os_cc_enabled;
     pConfig->bOsCCTdxEnabled = os_cc_tdx_enabled;
 }
@@ -2869,6 +2875,11 @@ NV_STATUS osGetVersion(NvU32 *majorVer, NvU32 *minorVer, NvU32 *buildNum, NvU16 
     }
 
     return rmStatus;
+}
+
+NV_STATUS osGetIsOpenRM(NvBool *bOpenRm)
+{
+    return os_get_is_openrm(bOpenRm);
 }
 
 NV_STATUS
@@ -5213,7 +5224,7 @@ osGetSyncpointAperture
     NvU32 *offset
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    return nv_get_syncpoint_aperture(syncpointId, physAddr, limit, offset);
 }
 
 /*!

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -46,6 +46,7 @@
 #include "class/cl50a0.h" // NV50_MEMORY_VIRTUAL
 #include "class/clc56f.h" // AMPERE_CHANNEL_GPFIFO_A
 #include "class/clc86f.h" // HOPPER_CHANNEL_GPFIFO_A
+#include "class/clc96f.h" // BLACKWELL_CHANNEL_GPFIFO_A
 #include "class/clc361.h" // VOLTA_USERMODE_A
 #include "class/clc661.h" // HOPPER_USERMODE_A
 
@@ -498,6 +499,7 @@ static NvBool nvDmaAllocUserD(
 {
     NvPushDevicePtr pDevice = p->pDevice;
     int deviceIndex;
+    NvBool bHasFB = pDevice->hasFb;
 
     if (!pDevice->hal.caps.clientAllocatesUserD) {
         return TRUE;
@@ -507,14 +509,27 @@ static NvBool nvDmaAllocUserD(
          deviceIndex < __nvPushGetNumDevices(pDevice);
          deviceIndex++) {
         NV_MEMORY_ALLOCATION_PARAMS memAllocParams = { 0 };
-        const NvU32 attr =
-            DRF_DEF(OS32, _ATTR, _LOCATION, _VIDMEM) |
-            DRF_DEF(OS32, _ATTR, _PAGE_SIZE, _4KB) |
-            DRF_DEF(OS32, _ATTR, _COHERENCY, _UNCACHED);
-        const NvU32 flags =
-            NVOS32_ALLOC_FLAGS_ALIGNMENT_FORCE |
-            NVOS32_ALLOC_FLAGS_PERSISTENT_VIDMEM;
         NvU32 ret;
+
+        /* For GPUs which do not have framebuffer memory, use allocation from
+         * system memory instead.
+         */
+        const NvU32 hClass = bHasFB ? NV01_MEMORY_LOCAL_USER : NV01_MEMORY_SYSTEM;
+        const NvU32 attr =
+            bHasFB ?
+                    DRF_DEF(OS32, _ATTR, _LOCATION, _VIDMEM) |
+                    DRF_DEF(OS32, _ATTR, _PAGE_SIZE, _4KB) |
+                    DRF_DEF(OS32, _ATTR, _COHERENCY, _UNCACHED)
+                :
+                    DRF_DEF(OS32, _ATTR, _LOCATION, _PCI) |
+                    DRF_DEF(OS32, _ATTR, _PAGE_SIZE, _4KB) |
+                    DRF_DEF(OS32, _ATTR, _COHERENCY, _UNCACHED);
+        const NvU32 flags =
+            bHasFB ?
+                    NVOS32_ALLOC_FLAGS_ALIGNMENT_FORCE |
+                    NVOS32_ALLOC_FLAGS_PERSISTENT_VIDMEM
+                :
+                    NVOS32_ALLOC_FLAGS_ALIGNMENT_FORCE;
 
         NvU32 hMemory = GetChannelHandle(pParams, pUsedHandleBitmask);
 
@@ -528,7 +543,7 @@ static NvBool nvDmaAllocUserD(
         ret = nvPushImportRmApiAlloc(pDevice,
                                      pDevice->subDevice[deviceIndex].deviceHandle,
                                      hMemory,
-                                     NV01_MEMORY_LOCAL_USER,
+                                     hClass,
                                      &memAllocParams);
         if (ret != NV_OK) {
             return FALSE;
@@ -540,13 +555,26 @@ static NvBool nvDmaAllocUserD(
     return TRUE;
 }
 
+static NvBool IsClassSupported(
+    const NvPushDeviceRec *pDevice,
+    NvU32 classNumber)
+{
+    unsigned int j;
+    for (j = 0; j < pDevice->numClasses; j++) {
+        if (classNumber == pDevice->supportedClasses[j]) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
 int nvPushGetSupportedClassIndex(
     NvPushDevicePtr pDevice,
     const void *pClassTable,
     size_t classTableStride,
     size_t classTableLength)
 {
-    unsigned int i, j;
+    unsigned int i;
 
     for (i = 0; i < classTableLength; i++) {
 
@@ -562,10 +590,8 @@ int nvPushGetSupportedClassIndex(
             continue;
         }
 
-        for (j = 0; j < pDevice->numClasses; j++) {
-            if (pClass->classNumber == pDevice->supportedClasses[j]) {
-                return i;
-            }
+        if (IsClassSupported(pDevice, pClass->classNumber)) {
+            return i;
         }
     }
     return -1;
@@ -579,6 +605,11 @@ static NvBool GetChannelClassAndUserDSize(
         NvPushSupportedClass base;
         size_t gpFifoSize;
     } gpFifoDmaClasses[] = {
+    {
+        { BLACKWELL_CHANNEL_GPFIFO_A,
+          NV_AMODEL_BLACKWELL },
+        sizeof(BlackwellAControlGPFifo)
+    },
     {
         { HOPPER_CHANNEL_GPFIFO_A,
           NV_AMODEL_HOPPER },
@@ -1484,6 +1515,8 @@ NvBool nvPushAllocDevice(
 
     pDevice->numClasses       = pParams->numClasses;
     pDevice->supportedClasses = pParams->supportedClasses;
+
+    pDevice->hasFb            = IsClassSupported(pDevice, NV01_MEMORY_LOCAL_USER);
 
     pDevice->confidentialComputeMode  = pParams->confidentialComputeMode;
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -236,10 +236,21 @@ kernelhostvgpudeviceapiConstruct_IMPL
                 goto done;
             }
 
+            if ((pAllocParams->kernelLogBuffOffset + pAllocParams->kernelLogBuffSize) >=
+                pBootloadParams->pluginHeapMemoryLength)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Invalid vgpu kernel log buffer\n");
+                status = NV_ERR_INVALID_ARGUMENT;
+                goto done;
+            }
+
+
             pBootloadParams->initTaskLogBuffOffset = pAllocParams->initTaskLogBuffOffset + pBootloadParams->pluginHeapMemoryPhysAddr;
             pBootloadParams->initTaskLogBuffSize = pAllocParams->initTaskLogBuffSize;
             pBootloadParams->vgpuTaskLogBuffOffset = pAllocParams->vgpuTaskLogBuffOffset + pBootloadParams->pluginHeapMemoryPhysAddr;
             pBootloadParams->vgpuTaskLogBuffSize = pAllocParams->vgpuTaskLogBuffSize;
+            pBootloadParams->kernelLogBuffOffset = pAllocParams->kernelLogBuffOffset + pBootloadParams->pluginHeapMemoryPhysAddr;
+            pBootloadParams->kernelLogBuffSize = pAllocParams->kernelLogBuffSize;
 
             NV_CHECK_OK_OR_GOTO(status,
                                 LEVEL_ERROR,
@@ -247,7 +258,9 @@ kernelhostvgpudeviceapiConstruct_IMPL
                                                                  pBootloadParams->initTaskLogBuffOffset,
                                                                  pBootloadParams->initTaskLogBuffSize,
                                                                  pBootloadParams->vgpuTaskLogBuffOffset,
-                                                                 pBootloadParams->vgpuTaskLogBuffSize),
+                                                                 pBootloadParams->vgpuTaskLogBuffSize,
+                                                                 pBootloadParams->kernelLogBuffOffset,
+                                                                 pBootloadParams->kernelLogBuffSize),
                                 done);
         }
 
@@ -259,15 +272,15 @@ kernelhostvgpudeviceapiConstruct_IMPL
         pBootloadParams->bDeviceProfilingEnabled           = pAllocParams->bDeviceProfilingEnabled;
 
         // Populate chidOffset for all engines to reserve same chid in GSP-RM
-        for (i = 0; i < RM_ENGINE_TYPE_LAST; i++)
+        for (i = 0; i < NV2080_ENGINE_TYPE_LAST; i++)
         {
-            NvU32 nv2080EngineType = gpuGetNv2080EngineType(i);
+            NvU32 rmEngineType = gpuGetRmEngineType(i);
 
             //
             // pHostVgpuDevice->chidOffset is in RM_ENGINE_TYPE order
             // pBootloadParams->chidOffset is in NV2080_ENGINE_TYPE order
             //
-            pBootloadParams->chidOffset[nv2080EngineType] = pKernelHostVgpuDevice->chidOffset[i];
+            pBootloadParams->chidOffset[i] = pKernelHostVgpuDevice->chidOffset[rmEngineType];
         }
 
         status = pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,

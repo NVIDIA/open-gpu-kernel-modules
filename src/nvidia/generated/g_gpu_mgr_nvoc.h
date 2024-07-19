@@ -170,7 +170,7 @@ typedef struct NVLINK_TOPOLOGY_PARAMS
     NvU32   numPeers;
     NvBool  bSwitchConfig;
     // Ampere +
-    NvU32   pceAvailableMaskPerHshub[NV2080_CTRL_CE_MAX_HSHUBS];
+    NvU32   pceAvailableMaskPerConnectingHub[NV2080_CTRL_CE_MAX_HSHUBS];
     NvU32   fbhubPceMask;
     NvU32   maxPceLceMap[NV2080_CTRL_MAX_PCES];
     NvU32   maxGrceConfig[NV2080_CTRL_MAX_GRCES];
@@ -540,10 +540,10 @@ NV_STATUS   gpumgrGetGpuUuidInfo(NvU32 gpuId, NvU8 **ppUuidStr, NvU32 *pUuidStrL
 void        gpumgrGetRmFirmwarePolicy(NvU32 pmcBoot42, NvBool bIsSoc,
                                       NvU32 enableFirmwareRegVal, NvBool *pbRequestFirmware,
                                       NvBool *pbAllowFallbackToMonolithicRm,
-                                      NvBool bIsMcdm);
+                                      NvBool bIsTccOrMcdm);
 NvBool      gpumgrGetRmFirmwareLogsEnabled(NvU32 enableFirmwareLogsRegVal);
 NvBool      gpumgrIsDeviceRmFirmwareCapable(NvU32 pmcBoot42,
-                                            NvBool bIsSoc, NvBool *pbEnableByDefault, NvBool bIsMcdm);
+                                            NvBool bIsSoc, NvBool *pbEnableByDefault, NvBool bIsTccOrMcdm);
 NvBool      gpumgrIsVgxRmFirmwareCapableChip(NvU32 pmcBoot42);
 NV_STATUS   gpumgrAttachGpu(NvU32 deviceInstance, GPUATTACHARG *);
 NV_STATUS   gpumgrDetachGpu(NvU32 deviceInstance);

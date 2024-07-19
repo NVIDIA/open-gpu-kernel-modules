@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -285,15 +285,12 @@ NV_STATUS nvGpuOpsFlushReplayableFaultBuffer(gpuFaultInfo *pFaultInfo,
 NV_STATUS nvGpuOpsTogglePrefetchFaults(gpuFaultInfo *pFaultInfo,
                                        NvBool bEnable);
 
-NV_STATUS nvGpuOpsKeyRotationChannelDisable(struct gpuChannel *channelList[],
-                                            NvU32 channelListCount);
-
 // Interface used for CCSL
 NV_STATUS nvGpuOpsCcslContextInit(struct ccslContext_t **ctx,
                                   gpuChannelHandle channel);
 NV_STATUS nvGpuOpsCcslContextClear(struct ccslContext_t *ctx);
-NV_STATUS nvGpuOpsCcslContextUpdate(UvmCslContext *contextList[],
-                                    NvU32 contextListCount);
+NV_STATUS nvGpuOpsCcslRotateKey(UvmCslContext *contextList[],
+                                NvU32 contextListCount);
 NV_STATUS nvGpuOpsCcslRotateIv(struct ccslContext_t *ctx,
                                NvU8 direction);
 NV_STATUS nvGpuOpsCcslEncrypt(struct ccslContext_t *ctx,
@@ -311,6 +308,7 @@ NV_STATUS nvGpuOpsCcslDecrypt(struct ccslContext_t *ctx,
                               NvU32 bufferSize,
                               NvU8 const *inputBuffer,
                               NvU8 const *decryptIv,
+                              NvU32 keyRotationId,
                               NvU8 *outputBuffer,
                               NvU8 const *addAuthData,
                               NvU32 addAuthDataSize,
@@ -326,7 +324,8 @@ NV_STATUS nvGpuOpsIncrementIv(struct ccslContext_t *ctx,
                               NvU8 direction,
                               NvU64 increment,
                               NvU8 *iv);
-NV_STATUS nvGpuOpsLogDeviceEncryption(struct ccslContext_t *ctx,
-                                      NvU32 bufferSize);
+NV_STATUS nvGpuOpsLogEncryption(struct ccslContext_t *ctx,
+                                NvU8 direction,
+                                NvU32 bufferSize);
 
 #endif /* _NV_GPU_OPS_H_*/

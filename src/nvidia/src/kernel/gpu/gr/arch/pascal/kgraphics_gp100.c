@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,14 +23,87 @@
 
 #define NVOC_KERNEL_GRAPHICS_H_PRIVATE_ACCESS_ALLOWED
 
+#include "core/prelude.h"
 #include "kernel/gpu/gr/kernel_graphics.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/intr/engine_idx.h"
 #include "kernel/gpu/bus/kern_bus.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
+
+#include "published/pascal/gp100/dev_ctxsw_prog.h"
+#include "published/pascal/gp100/dev_graphics_nobundle.h"
 
 #include "ctrl/ctrl0080/ctrl0080fifo.h"
+
+NvU32
+kgraphicsGetFecsTraceRdOffset_GP100
+(
+    OBJGPU *pGpu,
+    KernelGraphics *pKernelGraphics
+)
+{
+    NV_ASSERT(!IS_VIRTUAL(pGpu));
+
+    NvU32 data = GPU_REG_RD32(pGpu, NV_PGRAPH_PRI_FECS_FALCON_MAILBOX1);
+
+    return DRF_VAL(_CTXSW, _TIMESTAMP_BUFFER, _RD_WR_POINTER, data);
+}
+
+void
+kgraphicsSetFecsTraceRdOffset_GP100
+(
+    OBJGPU *pGpu,
+    KernelGraphics *pKernelGraphics,
+    NvU32 rdOffset
+)
+{
+    NV_ASSERT(!IS_VIRTUAL(pGpu));
+
+    NvU32 data = 0;
+
+    data = FLD_SET_DRF_NUM(_CTXSW, _TIMESTAMP_BUFFER, _RD_WR_POINTER, rdOffset, data);
+
+    if (pKernelGraphics->bCtxswLoggingEnabled)
+        data = FLD_SET_DRF(_CTXSW, _TIMESTAMP_BUFFER, _MAILBOX1_TRACE_FEATURE, _ENABLED, data);
+
+    GPU_REG_WR32(pGpu, NV_PGRAPH_PRI_FECS_FALCON_MAILBOX1, data);
+}
+
+void
+kgraphicsSetFecsTraceWrOffset_GP100
+(
+    OBJGPU *pGpu,
+    KernelGraphics *pKernelGraphics,
+    NvU32 wrOffset
+)
+{
+    NV_ASSERT(!IS_VIRTUAL(pGpu));
+
+    GPU_REG_WR32(pGpu, NV_PGRAPH_PRI_FECS_FALCON_MAILBOX0, wrOffset);
+}
+
+void
+kgraphicsSetFecsTraceHwEnable_GP100
+(
+    OBJGPU *pGpu,
+    KernelGraphics *pKernelGraphics,
+    NvBool bEnable
+)
+{
+    NvU32 data = 0;
+    NvU32 rdOffset = kgraphicsGetFecsTraceRdOffset_HAL(pGpu, pKernelGraphics);
+
+    NV_ASSERT(!IS_VIRTUAL(pGpu));
+
+    data = FLD_SET_DRF_NUM(_CTXSW, _TIMESTAMP_BUFFER, _RD_WR_POINTER, rdOffset, data);
+
+    if (bEnable)
+        data = FLD_SET_DRF(_CTXSW, _TIMESTAMP_BUFFER, _MAILBOX1_TRACE_FEATURE, _ENABLED, data);
+
+    GPU_REG_WR32(pGpu, NV_PGRAPH_PRI_FECS_FALCON_MAILBOX1, data);
+    pKernelGraphics->bCtxswLoggingEnabled = bEnable;
+}
 
 void
 kgraphicsInitFecsRegistryOverrides_GP100
@@ -215,7 +288,7 @@ kgraphicsAllocGlobalCtxBuffers_GP100
                           pCtxAttr[GR_GLOBALCTX_BUFFER_FECS_EVENT].cpuAttr,
                           allocFlags | MEMDESC_FLAGS_PHYSICALLY_CONTIGUOUS | MEMDESC_FLAGS_GPU_PRIVILEGED));
 
-        if ((*ppMemDesc)->_addressSpace == ADDR_FBMEM)
+        if (kgraphicsIsOverrideContextBuffersToGpuCached(pGpu, pKernelGraphics) || (*ppMemDesc)->_addressSpace == ADDR_FBMEM)
             memdescSetGpuCacheAttrib(*ppMemDesc, NV_MEMORY_CACHED);
 
         if ((allocFlags & MEMDESC_FLAGS_OWNED_BY_CTX_BUF_POOL) != 0)
@@ -226,7 +299,7 @@ kgraphicsAllocGlobalCtxBuffers_GP100
             NV_ASSERT_OK_OR_RETURN(memdescSetCtxBufPool(*ppMemDesc, pCtxBufPool));
         }
 
-        memdescTagAllocList(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_108, 
+        memdescTagAllocList(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_108,
                     (*ppMemDesc), (pCtxAttr[GR_GLOBALCTX_BUFFER_FECS_EVENT].pAllocList));
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
     }
@@ -294,4 +367,3 @@ kgraphicsClearInterrupt_GP100
 
     return NV_TRUE;
 }
-

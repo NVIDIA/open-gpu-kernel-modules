@@ -32,6 +32,7 @@
 #include "gpu/device/device.h"
 #include "vgpu/rpc.h"
 #include "os/os.h"
+#include "core/locks.h"
 
 #include "virtualization/kernel_vgpu_mgr.h"
 
@@ -112,6 +113,9 @@ OBJRPC *initRpcObject(OBJGPU *pGpu)
 NV_STATUS rpcWriteCommonHeader(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 func, NvU32 paramLength)
 {
     NV_STATUS status = NV_OK;
+
+    NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT(rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
 
     if (!pRpc)
     {

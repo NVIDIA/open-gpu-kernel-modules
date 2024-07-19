@@ -3774,6 +3774,7 @@ _heapAllocNoncontig
     {
         case RM_ATTR_PAGE_SIZE_DEFAULT:
         case RM_ATTR_PAGE_SIZE_INVALID:
+        case RM_ATTR_PAGE_SIZE_256GB:
             NV_PRINTF(LEVEL_ERROR, "Invalid page size attribute!\n");
             return NV_ERR_INVALID_ARGUMENT;
         case RM_ATTR_PAGE_SIZE_4KB:

@@ -106,6 +106,7 @@
 #define NV_PMC_BOOT_0                                    0x00000000 /* R--4R */
 #define NV_PMC_BOOT_0_MINOR_REVISION                            3:0 /* R--VF */
 #define NV_PMC_BOOT_0_MAJOR_REVISION                            7:4 /* R--VF */
+#define NV_PMC_BOOT_0_ARCHITECTURE_1                            8:8 /* R--VF */
 #define NV_PMC_BOOT_0_IMPLEMENTATION                          23:20 /* R--VF */
 #define NV_PMC_BOOT_0_IMPLEMENTATION_0                   0x00000000 /* R---V */
 #define NV_PMC_BOOT_0_IMPLEMENTATION_1                   0x00000001 /* R---V */
@@ -123,12 +124,13 @@
 #define NV_PMC_BOOT_0_IMPLEMENTATION_D                   0x0000000D /* R---V */
 #define NV_PMC_BOOT_0_IMPLEMENTATION_E                   0x0000000E /* R---V */
 #define NV_PMC_BOOT_0_IMPLEMENTATION_F                   0x0000000F /* R---V */
-#define NV_PMC_BOOT_0_ARCHITECTURE                            28:24 /* R--VF */
+#define NV_PMC_BOOT_0_ARCHITECTURE_0                          28:24 /* R--VF */
 #define NV_PMC_BOOT_0_ARCHITECTURE_TU100                 0x00000016 /* R---V */
 #define NV_PMC_BOOT_0_ARCHITECTURE_TU110                 0x00000016 /* R---V */
 #define NV_PMC_BOOT_0_ARCHITECTURE_GA100                 0x00000017 /* R---V */
 #define NV_PMC_BOOT_0_ARCHITECTURE_GH100                 0x00000018 /* R---V */
 #define NV_PMC_BOOT_0_ARCHITECTURE_AD100                 0x00000019 /* R---V */
+#define NV_PMC_BOOT_0_ARCHITECTURE_GB100                 0x0000001A /* R---V */
 
 #define NV_PMC_BOOT_1                                    0x00000004 /* R--4R */
 #define NV_PMC_BOOT_1_VGPU8                                     8:8 /* R--VF */
@@ -146,13 +148,24 @@
 #define NV_PMC_BOOT_42_MINOR_REVISION                         15:12 /* R-XVF */
 #define NV_PMC_BOOT_42_MAJOR_REVISION                         19:16 /* R-XVF */
 #define NV_PMC_BOOT_42_IMPLEMENTATION                         23:20 /*       */
-#define NV_PMC_BOOT_42_ARCHITECTURE                           28:24 /*       */
-#define NV_PMC_BOOT_42_CHIP_ID                                28:20 /* R-XVF */
-
+//
+// temporary #define until HW updates bitwidth - bug 4574714/73
+// TODO: once HW update is in, #define BUG_4574714_TEMPORARY_WAR 0 and
+// remove this #if
+//
+#define BUG_4574714_TEMPORARY_WAR 1
+#if BUG_4574714_TEMPORARY_WAR
+#define NV_PMC_BOOT_42_ARCHITECTURE_NEW                       29:24 /*       */
+#define NV_PMC_BOOT_42_CHIP_ID_NEW                            29:20 /* R-XVF */
+#else
+#define NV_PMC_BOOT_42_ARCHITECTURE                           29:24 /*       */
+#define NV_PMC_BOOT_42_CHIP_ID                                29:20 /* R-XVF */
+#endif
 #define NV_PMC_BOOT_42_ARCHITECTURE_TU100                0x00000016 /*       */
 #define NV_PMC_BOOT_42_ARCHITECTURE_GA100                0x00000017 /*       */
 #define NV_PMC_BOOT_42_ARCHITECTURE_GH100                0x00000018 /*       */
 #define NV_PMC_BOOT_42_ARCHITECTURE_AD100                0x00000019 /*       */
+#define NV_PMC_BOOT_42_ARCHITECTURE_GB100                0x0000001A /*       */
 #define NV_PMC_BOOT_42_ARCHITECTURE_AMODEL               0x0000001F /*       */
 
 #define NV_PMC_BOOT_42_CHIP_ID_GA100                     0x00000170 /*       */
@@ -160,5 +173,25 @@
 /* dev_arapb_misc.h */
 #define NV_PAPB_MISC_GP_HIDREV_CHIPID                    15:8 /* ----F */
 #define NV_PAPB_MISC_GP_HIDREV_MAJORREV                   7:4 /* ----F */
+
+//
+// Helper to return BOOT_0 architecture, which is split across fields:
+// ARCHITECTURE_1 (msb) and ARCHITECTURE_0 (lsb)
+//
+#define gpuGetArchitectureFromPmcBoot0(regVal) ( (DRF_VAL(_PMC, _BOOT_0, _ARCHITECTURE_1, regVal) << DRF_SIZE(NV_PMC_BOOT_0_ARCHITECTURE_0)) | DRF_VAL(_PMC, _BOOT_0, _ARCHITECTURE_0, regVal) )
+
+// Helper to return BOOT_42 architecture and chip ID
+//
+// temporary #define until HW updates bitwidth - bug 4574714/73
+// TODO: once HW update is in, #define BUG_4574714_TEMPORARY_WAR 0 and
+// remove this #if
+//
+#if BUG_4574714_TEMPORARY_WAR
+#define gpuGetArchitectureFromPmcBoot42(regVal)   DRF_VAL(_PMC, _BOOT_42, _ARCHITECTURE_NEW, regVal)
+#define gpuGetChipIdFromPmcBoot42(regVal)         DRF_VAL(_PMC, _BOOT_42, _CHIP_ID_NEW, regVal)
+#else
+#define gpuGetArchitectureFromPmcBoot42(regVal)   DRF_VAL(_PMC, _BOOT_42, _ARCHITECTURE, regVal)
+#define gpuGetChipIdFromPmcBoot42(regVal)         DRF_VAL(_PMC, _BOOT_42, _CHIP_ID, regVal)
+#endif
 
 #endif // NV_REF_PUBLISHED_H

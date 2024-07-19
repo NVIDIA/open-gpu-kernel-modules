@@ -49,7 +49,7 @@ extern "C" {
 
 #include "gpu/eng_state.h"
 #include "core/core.h"
-#include "objrpc.h"
+#include "gpu/rpc/objrpc.h"
 #include "os/dce_rm_client_ipc.h"
 
 /*!
@@ -90,16 +90,16 @@ struct OBJDCECLIENTRM {
     void (*__dceclientStateDestroy__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__dceclientStateLoad__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__dceclientStateUnload__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
-    void (*__dceclientInitMissing__)(POBJGPU, struct OBJDCECLIENTRM * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dceclientStatePreInitLocked__)(POBJGPU, struct OBJDCECLIENTRM * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dceclientStatePreInitUnlocked__)(POBJGPU, struct OBJDCECLIENTRM * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dceclientStateInitLocked__)(POBJGPU, struct OBJDCECLIENTRM * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dceclientStateInitUnlocked__)(POBJGPU, struct OBJDCECLIENTRM * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dceclientStatePreLoad__)(POBJGPU, struct OBJDCECLIENTRM * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dceclientStatePostLoad__)(POBJGPU, struct OBJDCECLIENTRM * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dceclientStatePreUnload__)(POBJGPU, struct OBJDCECLIENTRM * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dceclientStatePostUnload__)(POBJGPU, struct OBJDCECLIENTRM * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__dceclientIsPresent__)(POBJGPU, struct OBJDCECLIENTRM * /*this*/);  // virtual inherited (engstate) base (engstate)
+    void (*__dceclientInitMissing__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__dceclientStatePreInitLocked__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__dceclientStatePreInitUnlocked__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__dceclientStateInitLocked__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__dceclientStateInitUnlocked__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__dceclientStatePreLoad__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__dceclientStatePostLoad__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__dceclientStatePreUnload__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__dceclientStatePostUnload__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__dceclientIsPresent__)(struct OBJGPU *, struct OBJDCECLIENTRM * /*this*/);  // virtual inherited (engstate) base (engstate)
 
     // Data members
     struct OBJRPC *pRpc;
@@ -187,43 +187,43 @@ static inline NV_STATUS dceclientStateUnload_DISPATCH(struct OBJGPU *arg1, struc
     return arg_this->__dceclientStateUnload__(arg1, arg_this, arg3);
 }
 
-static inline void dceclientInitMissing_DISPATCH(POBJGPU pGpu, struct OBJDCECLIENTRM *pEngstate) {
+static inline void dceclientInitMissing_DISPATCH(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate) {
     pEngstate->__dceclientInitMissing__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS dceclientStatePreInitLocked_DISPATCH(POBJGPU pGpu, struct OBJDCECLIENTRM *pEngstate) {
+static inline NV_STATUS dceclientStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate) {
     return pEngstate->__dceclientStatePreInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS dceclientStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct OBJDCECLIENTRM *pEngstate) {
+static inline NV_STATUS dceclientStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate) {
     return pEngstate->__dceclientStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS dceclientStateInitLocked_DISPATCH(POBJGPU pGpu, struct OBJDCECLIENTRM *pEngstate) {
+static inline NV_STATUS dceclientStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate) {
     return pEngstate->__dceclientStateInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS dceclientStateInitUnlocked_DISPATCH(POBJGPU pGpu, struct OBJDCECLIENTRM *pEngstate) {
+static inline NV_STATUS dceclientStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate) {
     return pEngstate->__dceclientStateInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS dceclientStatePreLoad_DISPATCH(POBJGPU pGpu, struct OBJDCECLIENTRM *pEngstate, NvU32 arg3) {
+static inline NV_STATUS dceclientStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate, NvU32 arg3) {
     return pEngstate->__dceclientStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS dceclientStatePostLoad_DISPATCH(POBJGPU pGpu, struct OBJDCECLIENTRM *pEngstate, NvU32 arg3) {
+static inline NV_STATUS dceclientStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate, NvU32 arg3) {
     return pEngstate->__dceclientStatePostLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS dceclientStatePreUnload_DISPATCH(POBJGPU pGpu, struct OBJDCECLIENTRM *pEngstate, NvU32 arg3) {
+static inline NV_STATUS dceclientStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate, NvU32 arg3) {
     return pEngstate->__dceclientStatePreUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS dceclientStatePostUnload_DISPATCH(POBJGPU pGpu, struct OBJDCECLIENTRM *pEngstate, NvU32 arg3) {
+static inline NV_STATUS dceclientStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate, NvU32 arg3) {
     return pEngstate->__dceclientStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NvBool dceclientIsPresent_DISPATCH(POBJGPU pGpu, struct OBJDCECLIENTRM *pEngstate) {
+static inline NvBool dceclientIsPresent_DISPATCH(struct OBJGPU *pGpu, struct OBJDCECLIENTRM *pEngstate) {
     return pEngstate->__dceclientIsPresent__(pGpu, pEngstate);
 }
 

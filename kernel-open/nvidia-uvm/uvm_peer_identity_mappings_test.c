@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2019 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -152,9 +152,7 @@ NV_STATUS uvm_test_peer_identity_mappings(UVM_TEST_PEER_IDENTITY_MAPPINGS_PARAMS
         goto done;
     }
 
-    // Indirect peers don't use identity mappings
-    if (!uvm_processor_mask_test(&va_space->can_access[uvm_id_value(gpu_a->id)], gpu_b->id) ||
-        uvm_processor_mask_test(&va_space->indirect_peers[uvm_id_value(gpu_a->id)], gpu_b->id)) {
+    if (!uvm_processor_mask_test(&va_space->can_access[uvm_id_value(gpu_a->id)], gpu_b->id)) {
         status = NV_ERR_INVALID_DEVICE;
         goto done;
     }

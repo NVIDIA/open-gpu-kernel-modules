@@ -30,7 +30,6 @@
  */
 
 #include <os-interface.h>
-#include <osfuncs.h>
 
 // File modes, added for NVIDIA capabilities.
 #define OS_RUSR 00400                         // read permission, owner

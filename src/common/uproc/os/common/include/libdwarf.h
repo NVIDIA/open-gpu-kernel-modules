@@ -34,6 +34,7 @@ typedef struct
 {
     NvU8 *debugLineStart, *debugLineEnd;
     NvU8 *debugARangesStart, *debugARangesEnd;
+    NvU8 *debugLineStrStart, *debugLineStrEnd;
     NvU8 *symtabStart, *symtabEnd;
     NvU8 *strtabStart, *strtabEnd;
     struct DwarfARangeTuple *arangeTable;

@@ -53,7 +53,7 @@ extern "C" {
 #include "gpu/eng_state.h"
 #include "gpu_mgr/gpu_mgr.h" // GPUMGR_MAX_GPU_INSTANCES
 #include "rmapi/rmapi.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "ctrl/ctrlcbca.h"
 #include "ctrl/ctrl2080/ctrl2080internal.h"
 
@@ -137,18 +137,18 @@ struct KernelCcu {
     NV_STATUS (*__kccuStateLoad__)(OBJGPU *, struct KernelCcu * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__kccuStateUnload__)(OBJGPU *, struct KernelCcu * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__kccuMigShrBufHandler__)(OBJGPU *, struct KernelCcu * /*this*/, NvBool);  // halified (2 hals)
-    NV_STATUS (*__kccuGetBufSize__)(OBJGPU *, struct KernelCcu * /*this*/);  // halified (2 hals)
-    void (*__kccuInitMissing__)(POBJGPU, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kccuStatePreInitLocked__)(POBJGPU, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kccuStatePreInitUnlocked__)(POBJGPU, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kccuStateInitLocked__)(POBJGPU, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kccuStateInitUnlocked__)(POBJGPU, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kccuStatePreLoad__)(POBJGPU, struct KernelCcu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kccuStatePostLoad__)(POBJGPU, struct KernelCcu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kccuStatePreUnload__)(POBJGPU, struct KernelCcu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kccuStatePostUnload__)(POBJGPU, struct KernelCcu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    void (*__kccuStateDestroy__)(POBJGPU, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__kccuIsPresent__)(POBJGPU, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kccuGetBufSize__)(OBJGPU *, struct KernelCcu * /*this*/);  // halified (3 hals)
+    void (*__kccuInitMissing__)(struct OBJGPU *, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kccuStatePreInitLocked__)(struct OBJGPU *, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kccuStatePreInitUnlocked__)(struct OBJGPU *, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kccuStateInitLocked__)(struct OBJGPU *, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kccuStateInitUnlocked__)(struct OBJGPU *, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kccuStatePreLoad__)(struct OBJGPU *, struct KernelCcu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kccuStatePostLoad__)(struct OBJGPU *, struct KernelCcu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kccuStatePreUnload__)(struct OBJGPU *, struct KernelCcu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kccuStatePostUnload__)(struct OBJGPU *, struct KernelCcu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    void (*__kccuStateDestroy__)(struct OBJGPU *, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__kccuIsPresent__)(struct OBJGPU *, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
 
     // 1 PDB property
 
@@ -253,47 +253,47 @@ static inline NV_STATUS kccuGetBufSize_DISPATCH(OBJGPU *arg1, struct KernelCcu *
     return arg_this->__kccuGetBufSize__(arg1, arg_this);
 }
 
-static inline void kccuInitMissing_DISPATCH(POBJGPU pGpu, struct KernelCcu *pEngstate) {
+static inline void kccuInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelCcu *pEngstate) {
     pEngstate->__kccuInitMissing__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kccuStatePreInitLocked_DISPATCH(POBJGPU pGpu, struct KernelCcu *pEngstate) {
+static inline NV_STATUS kccuStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelCcu *pEngstate) {
     return pEngstate->__kccuStatePreInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kccuStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct KernelCcu *pEngstate) {
+static inline NV_STATUS kccuStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelCcu *pEngstate) {
     return pEngstate->__kccuStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kccuStateInitLocked_DISPATCH(POBJGPU pGpu, struct KernelCcu *pEngstate) {
+static inline NV_STATUS kccuStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelCcu *pEngstate) {
     return pEngstate->__kccuStateInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kccuStateInitUnlocked_DISPATCH(POBJGPU pGpu, struct KernelCcu *pEngstate) {
+static inline NV_STATUS kccuStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelCcu *pEngstate) {
     return pEngstate->__kccuStateInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kccuStatePreLoad_DISPATCH(POBJGPU pGpu, struct KernelCcu *pEngstate, NvU32 arg3) {
+static inline NV_STATUS kccuStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelCcu *pEngstate, NvU32 arg3) {
     return pEngstate->__kccuStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS kccuStatePostLoad_DISPATCH(POBJGPU pGpu, struct KernelCcu *pEngstate, NvU32 arg3) {
+static inline NV_STATUS kccuStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelCcu *pEngstate, NvU32 arg3) {
     return pEngstate->__kccuStatePostLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS kccuStatePreUnload_DISPATCH(POBJGPU pGpu, struct KernelCcu *pEngstate, NvU32 arg3) {
+static inline NV_STATUS kccuStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelCcu *pEngstate, NvU32 arg3) {
     return pEngstate->__kccuStatePreUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS kccuStatePostUnload_DISPATCH(POBJGPU pGpu, struct KernelCcu *pEngstate, NvU32 arg3) {
+static inline NV_STATUS kccuStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelCcu *pEngstate, NvU32 arg3) {
     return pEngstate->__kccuStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline void kccuStateDestroy_DISPATCH(POBJGPU pGpu, struct KernelCcu *pEngstate) {
+static inline void kccuStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct KernelCcu *pEngstate) {
     pEngstate->__kccuStateDestroy__(pGpu, pEngstate);
 }
 
-static inline NvBool kccuIsPresent_DISPATCH(POBJGPU pGpu, struct KernelCcu *pEngstate) {
+static inline NvBool kccuIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelCcu *pEngstate) {
     return pEngstate->__kccuIsPresent__(pGpu, pEngstate);
 }
 
@@ -308,6 +308,8 @@ static inline NV_STATUS kccuMigShrBufHandler_46f6a7(OBJGPU *arg1, struct KernelC
 }
 
 NV_STATUS kccuMigShrBufHandler_GH100(OBJGPU *arg1, struct KernelCcu *arg2, NvBool bMigEnabled);
+
+NV_STATUS kccuGetBufSize_GB100(OBJGPU *arg1, struct KernelCcu *arg2);
 
 NV_STATUS kccuGetBufSize_GH100(OBJGPU *arg1, struct KernelCcu *arg2);
 
@@ -400,6 +402,28 @@ static inline NV_STATUS kccuMemDescGetForComputeInst(OBJGPU *arg1, struct Kernel
 }
 #else //__nvoc_kernel_ccu_h_disabled
 #define kccuMemDescGetForComputeInst(arg1, arg2, swizzId, computeId, arg5) kccuMemDescGetForComputeInst_IMPL(arg1, arg2, swizzId, computeId, arg5)
+#endif //__nvoc_kernel_ccu_h_disabled
+
+NV_STATUS kccuInitVgpuMigSharedBuffer_IMPL(OBJGPU *arg1, struct KernelCcu *arg2, NvU32 swizzId, NvU32 computeId);
+
+#ifdef __nvoc_kernel_ccu_h_disabled
+static inline NV_STATUS kccuInitVgpuMigSharedBuffer(OBJGPU *arg1, struct KernelCcu *arg2, NvU32 swizzId, NvU32 computeId) {
+    NV_ASSERT_FAILED_PRECOMP("KernelCcu was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kernel_ccu_h_disabled
+#define kccuInitVgpuMigSharedBuffer(arg1, arg2, swizzId, computeId) kccuInitVgpuMigSharedBuffer_IMPL(arg1, arg2, swizzId, computeId)
+#endif //__nvoc_kernel_ccu_h_disabled
+
+NV_STATUS kccuDeInitVgpuMigSharedBuffer_IMPL(OBJGPU *arg1, struct KernelCcu *arg2, NvU32 swizzId, NvU32 computeId);
+
+#ifdef __nvoc_kernel_ccu_h_disabled
+static inline NV_STATUS kccuDeInitVgpuMigSharedBuffer(OBJGPU *arg1, struct KernelCcu *arg2, NvU32 swizzId, NvU32 computeId) {
+    NV_ASSERT_FAILED_PRECOMP("KernelCcu was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kernel_ccu_h_disabled
+#define kccuDeInitVgpuMigSharedBuffer(arg1, arg2, swizzId, computeId) kccuDeInitVgpuMigSharedBuffer_IMPL(arg1, arg2, swizzId, computeId)
 #endif //__nvoc_kernel_ccu_h_disabled
 
 #undef PRIVATE_FIELD

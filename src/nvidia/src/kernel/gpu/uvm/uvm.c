@@ -26,7 +26,7 @@
 #include "gpu/uvm/uvm.h"
 #include "gpu/uvm/access_cntr_buffer.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "rmapi/control.h"
 #include "rmapi/rmapi_utils.h"
 #include "kernel/gpu/intr/engine_idx.h"

@@ -50,78 +50,16 @@
 #include "kernel/gpu/rc/kernel_rc.h"
 #include "platform/nbsi/nbsi_read.h"
 
-//
-// Functions to fill function stubs
-//
-static void initOSFunctionPointers(OBJOS *);
-
-//
-// Helper functions to assist the above functions
-//
-static void initMiscOSFunctionPointers(OBJOS *);
-static void initCommonMiscOSFunctionPointers(OBJOS *);
-static void initStubMiscOSFunctionPointers(OBJOS *);
-static void initWinNTStubOSFunctionPointers(OBJOS *);
-static void initMacOSCoreOSFunctionPointers(OBJOS *);
-static void initAPIOSFunctionPointers(OBJOS *);
-
 // Bug check code string common to all OS
 const char *ppOsBugCheckBugcodeStr[] = OS_BUG_CHECK_BUGCODE_STR;
 
 NV_STATUS
 constructObjOS(OBJOS *pOS)
 {
-    // Stub out function pointers
-    initOSFunctionPointers(pOS);
-
     // Now call the OS specific initialization
     osInitObjOS(pOS);
 
     return NV_OK;
-}
-
-static void
-initOSFunctionPointers(OBJOS *pOS)
-{
-    initMiscOSFunctionPointers(pOS);
-    initWinNTStubOSFunctionPointers(pOS);
-    initMacOSCoreOSFunctionPointers(pOS);
-    initAPIOSFunctionPointers(pOS);
-}
-
-static void
-initMiscOSFunctionPointers(OBJOS *pOS)
-{
-    initCommonMiscOSFunctionPointers(pOS);
-    initStubMiscOSFunctionPointers(pOS);
-}
-
-static void
-initCommonMiscOSFunctionPointers(OBJOS *pOS)
-{
-}
-
-static void
-initStubMiscOSFunctionPointers(OBJOS *pOS)
-{
-}
-
-static void
-initWinNTStubOSFunctionPointers(OBJOS *pOS)
-{
-}
-
-static void
-initMacOSCoreOSFunctionPointers(OBJOS *pOS)
-{
-    pOS->osNv_rdcr4                      = stubOsnv_rdcr4;
-    pOS->osNv_rdxcr0                     = stubOsnv_rdxcr0;
-    pOS->osNv_cpuid                      = stubOsnv_cpuid;
-}
-
-static void
-initAPIOSFunctionPointers(OBJOS *pOS)
-{
 }
 
 //

@@ -2725,7 +2725,7 @@ void nvEnableMidFrameAndDWCFWatermark(NVDevEvoPtr pDevEvo,
 }
 
 static NvBool GetDefaultColorSpace(
-    const NVColorFormatInfoRec *pColorFormatsInfo,
+    const NvKmsDpyOutputColorFormatInfo *pColorFormatsInfo,
     enum NvKmsDpyAttributeCurrentColorSpaceValue *pColorSpace,
     enum NvKmsDpyAttributeColorBpcValue *pColorBpc)
 {
@@ -2753,8 +2753,9 @@ static NvBool GetDefaultColorSpace(
     return FALSE;
 }
 
-NvBool nvGetDefaultDpyColor(const NVColorFormatInfoRec *pColorFormatsInfo,
-                            NVDpyAttributeColor *pDpyColor)
+NvBool nvGetDefaultDpyColor(
+    const NvKmsDpyOutputColorFormatInfo *pColorFormatsInfo,
+    NVDpyAttributeColor *pDpyColor)
 {
     nvkms_memset(pDpyColor, 0, sizeof(*pDpyColor));
 
@@ -2806,6 +2807,23 @@ NvBool nvChooseColorRangeEvo(
     return TRUE;
 }
 
+static enum NvKmsDpyAttributeColorBpcValue ChooseColorBpc(
+    const enum NvKmsDpyAttributeColorBpcValue requested,
+    const enum NvKmsDpyAttributeColorBpcValue max,
+    const enum NvKmsDpyAttributeColorBpcValue min)
+{
+    if ((requested == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN) ||
+            (requested > max)) {
+        return max;
+    }
+
+    if (requested < min) {
+        return min;
+    }
+
+    return requested;
+}
+
 /*!
  * Choose current colorSpace and colorRange for the given dpy based on
  * the dpy's color format capailities, the given modeset parameters (YUV420
@@ -2823,6 +2841,7 @@ NvBool nvChooseCurrentColorSpaceAndRangeEvo(
     const enum NvYuv420Mode yuv420Mode,
     enum NvKmsOutputColorimetry colorimetry,
     const enum NvKmsDpyAttributeRequestedColorSpaceValue requestedColorSpace,
+    const enum NvKmsDpyAttributeColorBpcValue requestedColorBpc,
     const enum NvKmsDpyAttributeColorRangeValue requestedColorRange,
     enum NvKmsDpyAttributeCurrentColorSpaceValue *pCurrentColorSpace,
     enum NvKmsDpyAttributeColorBpcValue *pCurrentColorBpc,
@@ -2834,8 +2853,8 @@ NvBool nvChooseCurrentColorSpaceAndRangeEvo(
         NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
     enum NvKmsDpyAttributeColorRangeValue newColorRange =
         NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_FULL;
-    const NVColorFormatInfoRec colorFormatsInfo =
-        nvGetColorFormatInfo(pDpyEvo);
+    const NvKmsDpyOutputColorFormatInfo colorFormatsInfo =
+        nvDpyGetOutputColorFormatInfo(pDpyEvo);
 
     // XXX HDR TODO: Handle other colorimetries
     // XXX HDR TODO: Handle YUV
@@ -2870,15 +2889,21 @@ NvBool nvChooseCurrentColorSpaceAndRangeEvo(
         switch (requestedColorSpace) {
         case NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_SPACE_RGB:
             newColorSpace = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB;
-            newColorBpc = colorFormatsInfo.rgb444.maxBpc;
+            newColorBpc = ChooseColorBpc(requestedColorBpc,
+                                         colorFormatsInfo.rgb444.maxBpc,
+                                         colorFormatsInfo.rgb444.minBpc);
             break;
         case NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_SPACE_YCbCr422:
             newColorSpace = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr422;
-            newColorBpc = colorFormatsInfo.yuv422.maxBpc;
+            newColorBpc = ChooseColorBpc(requestedColorBpc,
+                                         colorFormatsInfo.yuv422.maxBpc,
+                                         colorFormatsInfo.yuv422.minBpc);
             break;
         case NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_SPACE_YCbCr444:
             newColorSpace = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr444;
-            newColorBpc = colorFormatsInfo.yuv444.maxBpc;
+            newColorBpc = ChooseColorBpc(requestedColorBpc,
+                                         colorFormatsInfo.yuv444.maxBpc,
+                                         colorFormatsInfo.yuv444.minBpc);
             break;
         default:
             nvAssert(!"Invalid Requested ColorSpace");
@@ -6653,8 +6678,9 @@ ConstructHwModeTimingsViewPort(const NVDispEvoRec *pDispEvo,
 }
 
 
-static NvBool GetDefaultFrlDpyColor(const NVColorFormatInfoRec *pColorFormatsInfo,
-                                    NVDpyAttributeColor *pDpyColor)
+static NvBool GetDefaultFrlDpyColor(
+    const NvKmsDpyOutputColorFormatInfo *pColorFormatsInfo,
+    NVDpyAttributeColor *pDpyColor)
 {
     nvkms_memset(pDpyColor, 0, sizeof(*pDpyColor));
     pDpyColor->colorimetry = NVKMS_OUTPUT_COLORIMETRY_DEFAULT;
@@ -6686,8 +6712,8 @@ static NvBool GetDfpHdmiProtocol(const NVDpyEvoRec *pDpyEvo,
 {
     NVConnectorEvoPtr pConnectorEvo = pDpyEvo->pConnectorEvo;
     const NvU32 rmProtocol = pConnectorEvo->or.protocol;
-    const NVColorFormatInfoRec colorFormatsInfo =
-        nvGetColorFormatInfo(pDpyEvo);
+    const NvKmsDpyOutputColorFormatInfo colorFormatsInfo =
+        nvDpyGetOutputColorFormatInfo(pDpyEvo);
     const NvBool forceHdmiFrlIsSupported = FALSE;
 
     nvAssert(rmProtocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_A ||
@@ -6888,18 +6914,55 @@ static NvBool ConstructHwModeTimingsEvoDfp(const NVDpyEvoRec *pDpyEvo,
                                           pViewPortOut);
 }
 
-NvBool nvDowngradeColorBpc(NVDpyAttributeColor *pDpyColor)
+static NvBool IsColorBpcSupported(
+    const NvKmsDpyOutputColorFormatInfo *pSupportedColorFormats,
+    const enum NvKmsDpyAttributeCurrentColorSpaceValue format,
+    const enum NvKmsDpyAttributeColorBpcValue bpc)
+{
+    switch (format) {
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB:
+            return (bpc <= pSupportedColorFormats->rgb444.maxBpc) &&
+                        (bpc >= pSupportedColorFormats->rgb444.minBpc);
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr422:
+            return (bpc <= pSupportedColorFormats->yuv422.maxBpc) &&
+                        (bpc >= pSupportedColorFormats->yuv422.minBpc);
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr444:
+            return (bpc <= pSupportedColorFormats->yuv444.maxBpc) &&
+                        (bpc >= pSupportedColorFormats->yuv444.minBpc);
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420:
+            return (bpc == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8);
+    }
+
+    return FALSE;
+}
+
+NvBool nvDowngradeColorBpc(
+    const NvKmsDpyOutputColorFormatInfo *pSupportedColorFormats,
+    NVDpyAttributeColor *pDpyColor)
 {
     switch (pDpyColor->bpc) {
         case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10:
             if (pDpyColor->colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100) {
                 return FALSE;
             }
+
+            if (!IsColorBpcSupported(pSupportedColorFormats,
+                                     pDpyColor->format,
+                                     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8)) {
+                return FALSE;
+            }
+
             pDpyColor->bpc = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
             break;
         case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8:
             /* At depth 18 only RGB and full range are allowed */
             if (pDpyColor->format == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB) {
+                if (!IsColorBpcSupported(pSupportedColorFormats,
+                                         pDpyColor->format,
+                                         NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6)) {
+                    return FALSE;
+                }
+
                 pDpyColor->bpc = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6;
                 pDpyColor->range = NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_FULL;
             } else {
@@ -6915,10 +6978,10 @@ NvBool nvDowngradeColorBpc(NVDpyAttributeColor *pDpyColor)
 }
 
 NvBool nvDowngradeColorSpaceAndBpc(
-    const NVColorFormatInfoRec *pSupportedColorFormats,
+    const NvKmsDpyOutputColorFormatInfo *pSupportedColorFormats,
     NVDpyAttributeColor *pDpyColor)
 {
-    if (nvDowngradeColorBpc(pDpyColor)) {
+    if (nvDowngradeColorBpc(pSupportedColorFormats, pDpyColor)) {
         return TRUE;
     }
 
@@ -6961,8 +7024,8 @@ NvBool nvDPValidateModeEvo(NVDpyEvoPtr pDpyEvo,
 {
     NVConnectorEvoPtr pConnectorEvo = pDpyEvo->pConnectorEvo;
     NVDpyAttributeColor dpyColor = *pDpyColor;
-    const NVColorFormatInfoRec supportedColorFormats =
-        nvGetColorFormatInfo(pDpyEvo);
+    const NvKmsDpyOutputColorFormatInfo supportedColorFormats =
+        nvDpyGetOutputColorFormatInfo(pDpyEvo);
 
     /* Only do this for DP devices. */
     if (!nvConnectorUsesDPLib(pConnectorEvo)) {

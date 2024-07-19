@@ -71,7 +71,7 @@ test_header_presence() {
     TEST_CFLAGS="-E -M $CFLAGS"
 
     file="$1"
-    file_define=NV_`echo $file | tr '/.\-a-z' '___A-Z'`_PRESENT
+    file_define=NV_`echo $file | tr '/.-' '___' | tr 'a-z' 'A-Z'`_PRESENT
 
     CODE="#include <$file>"
 
@@ -6900,6 +6900,94 @@ compile_test() {
             int flags = DRM_UNLOCKED;"
 
             compile_check_conftest "$CODE" "NV_DRM_UNLOCKED_IOCTL_FLAG_PRESENT" "" "types"
+        ;;
+
+        fault_flag_remote_present)
+            # Determine if FAULT_FLAG_REMOTE is present in the kernel, either
+            # as a define or an enum
+            #
+            # FAULT_FLAG_REMOTE define added by Kernel commit 1b2ee1266ea6
+            # ("mm/core: Do not enforce PKEY permissions on remote mm access")
+            # in v4.6
+            # FAULT_FLAG_REMOTE changed from define to enum by Kernel commit
+            # da2f5eb3d344 ("mm/doc: turn fault flags into an enum") in v5.13
+            # FAULT_FLAG_REMOTE moved from `mm.h` to `mm_types.h` by Kernel
+            # commit 36090def7bad ("mm: move tlb_flush_pending inline helpers
+            # to mm_inline.h") in v5.17
+            #
+            CODE="
+            #include <linux/mm.h>
+            int fault_flag_remote = FAULT_FLAG_REMOTE;
+            "
+
+            compile_check_conftest "$CODE" "NV_MM_HAS_FAULT_FLAG_REMOTE" "" "types"
+        ;;
+
+        drm_framebuffer_obj_present)
+            #
+            # Determine if the drm_framebuffer struct has an obj member.
+            #
+            # Added by commit 4c3dbb2c312c ("drm: Add GEM backed framebuffer
+            # library") in v4.14.
+            #
+            CODE="
+            #if defined(NV_DRM_DRMP_H_PRESENT)
+            #include <drm/drmP.h>
+            #endif
+
+            #if defined(NV_DRM_DRM_FRAMEBUFFER_H_PRESENT)
+            #include <drm/drm_framebuffer.h>
+            #endif
+
+            int conftest_drm_framebuffer_obj_present(void) {
+                return offsetof(struct drm_framebuffer, obj);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_FRAMEBUFFER_OBJ_PRESENT" "" "types"
+        ;;
+
+        drm_color_ctm_3x4_present)
+            # Determine if struct drm_color_ctm_3x4 is present.
+            #
+            # struct drm_color_ctm_3x4 was added by commit 6872a189be50
+            # ("drm/amd/display: Add 3x4 CTM support for plane CTM") in v6.8.
+            CODE="
+            #include <uapi/drm/drm_mode.h>
+            struct drm_color_ctm_3x4 ctm;"
+
+            compile_check_conftest "$CODE" "NV_DRM_COLOR_CTM_3X4_PRESENT" "" "types"
+        ;;
+
+        drm_color_lut)
+            # Determine if struct drm_color_lut is present.
+            #
+            # struct drm_color_lut was added by commit 5488dc16fde7
+            # ("drm: introduce pipe color correction properties") in v4.6.
+            CODE="
+            #include <uapi/drm/drm_mode.h>
+            struct drm_color_lut lut;"
+
+            compile_check_conftest "$CODE" "NV_DRM_COLOR_LUT_PRESENT" "" "types"
+        ;;
+
+        drm_property_blob_put)
+            #
+            # Determine if function drm_property_blob_put() is present.
+            #
+            # Added by commit 6472e5090be7 ("drm: Introduce
+            # drm_property_blob_{get,put}()") v4.12, when it replaced
+            # drm_property_unreference_blob().
+            #
+
+            CODE="
+            #if defined(NV_DRM_DRM_PROPERTY_H_PRESENT)
+            #include <drm/drm_property.h>
+            #endif
+            void conftest_drm_property_blob_put(void) {
+                drm_property_blob_put();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_PROPERTY_BLOB_PUT_PRESENT" "" "functions"
         ;;
 
         # When adding a new conftest entry, please use the correct format for

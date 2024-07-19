@@ -565,13 +565,7 @@ NV_STATUS uvm_test_pmm_sysmem(UVM_TEST_PMM_SYSMEM_PARAMS *params, struct file *f
     uvm_mutex_lock(&g_uvm_global.global_lock);
     uvm_va_space_down_write(va_space);
 
-    if (uvm_pmm_sysmem_mappings_indirect_supported()) {
-        status = test_pmm_sysmem_reverse_map(va_space, params->range_address1, params->range_address2);
-    }
-    else {
-        UVM_TEST_PRINT("Skipping kernel_driver_pmm_sysmem test due to lack of support for radix_tree_replace_slot in Linux 4.10");
-        status = NV_OK;
-    }
+    status = test_pmm_sysmem_reverse_map(va_space, params->range_address1, params->range_address2);
 
     uvm_va_space_up_write(va_space);
     uvm_mutex_unlock(&g_uvm_global.global_lock);
@@ -1220,9 +1214,9 @@ done:
     return status;
 }
 
-NV_STATUS do_test_cpu_chunk_free(uvm_cpu_chunk_t *chunk,
-                                 uvm_va_space_t *va_space,
-                                 const uvm_processor_mask_t *test_gpus)
+static NV_STATUS do_test_cpu_chunk_free(uvm_cpu_chunk_t *chunk,
+                                        uvm_va_space_t *va_space,
+                                        const uvm_processor_mask_t *test_gpus)
 {
     NV_STATUS status = NV_OK;
     uvm_cpu_chunk_t **split_chunks;
@@ -1318,8 +1312,8 @@ done_free:
     return status;
 }
 
-NV_STATUS test_cpu_chunk_free(uvm_va_space_t *va_space,
-                              const uvm_processor_mask_t *test_gpus)
+static NV_STATUS test_cpu_chunk_free(uvm_va_space_t *va_space,
+                                     const uvm_processor_mask_t *test_gpus)
 {
     uvm_cpu_chunk_t *chunk;
     uvm_chunk_sizes_mask_t alloc_sizes = uvm_cpu_chunk_get_allocation_sizes();

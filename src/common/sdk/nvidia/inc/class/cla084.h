@@ -85,5 +85,7 @@ typedef struct NVA084_ALLOC_PARAMETERS {
     NV_DECLARE_ALIGNED(NvU64 initTaskLogBuffSize, 8);
     NV_DECLARE_ALIGNED(NvU64 vgpuTaskLogBuffOffset, 8);
     NV_DECLARE_ALIGNED(NvU64 vgpuTaskLogBuffSize, 8);
+    NV_DECLARE_ALIGNED(NvU64 kernelLogBuffOffset, 8);
+    NV_DECLARE_ALIGNED(NvU64 kernelLogBuffSize, 8);
     NvBool     bDeviceProfilingEnabled;
 } NVA084_ALLOC_PARAMETERS;

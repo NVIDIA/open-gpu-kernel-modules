@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 555.58.02.
+version 560.28.03.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-555.58.02 driver release.  This can be achieved by installing
+560.28.03 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -179,16 +179,13 @@ software applications.
 
 ## Compatible GPUs
 
-The NVIDIA open kernel modules can be used on any Turing or later GPU
-(see the table below). However, in the __DRIVER_VERION__ release, GeForce and
-Workstation support is considered to be Beta quality. The open kernel modules
-are suitable for broad usage, and NVIDIA requests feedback on any issues
-encountered specific to them.
+The NVIDIA open kernel modules can be used on any Turing or later GPU (see the
+table below).
 
 For details on feature support and limitations, see the NVIDIA GPU driver
 end user README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/555.58.02/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/560.28.03/README/kernel_open.html
 
 For vGPU support, please refer to the README.vgpu packaged in the vGPU Host
 Package for more details.
@@ -913,6 +910,7 @@ Subsystem Device ID.
 | NVIDIA GeForce RTX 4060 Ti                      | 2805           |
 | NVIDIA GeForce RTX 4060                         | 2808           |
 | NVIDIA GeForce RTX 4070 Laptop GPU              | 2820           |
+| NVIDIA GeForce RTX 3050 A Laptop GPU            | 2822           |
 | NVIDIA RTX 3000 Ada Generation Laptop GPU       | 2838           |
 | NVIDIA GeForce RTX 4070 Laptop GPU              | 2860           |
 | NVIDIA GeForce RTX 4060                         | 2882           |

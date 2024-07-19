@@ -255,16 +255,83 @@ nvGetAllowedDpyVrrType(const NVDpyEvoRec *pDpyEvo,
     return NVKMS_DPY_VRR_TYPE_NONE;
 }
 
+static NvBool GetEdidTimeoutMicroseconds(
+    const NVDpyEvoRec *pDpyEvo,
+    const NVHwModeTimingsEvo *pTimings,
+    NvU32 *pEdidTimeoutMicroseconds)
+{
+    const NvU32 rr10kHz = nvGetRefreshRate10kHz(pTimings);
+    const NVParsedEdidEvoRec *pParsedEdid = &pDpyEvo->parsedEdid;
+    const NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo = NULL;
+    const NvU32 nominalRefreshRateHz = rr10kHz / 10000; // XXX round?
+    NVT_PROTOCOL sinkProtocol = NVT_PROTOCOL_UNKNOWN;
+    NvU32 fmin;
+
+    if (!pParsedEdid->valid) {
+        return FALSE;
+    }
+
+    // XXX not sufficient; see what DD does in changelist 34157172
+    if (nvDpyUsesDPLib(pDpyEvo)) {
+        sinkProtocol = NVT_PROTOCOL_DP;
+    } else if (nvDpyIsHdmiEvo(pDpyEvo)) {
+        sinkProtocol = NVT_PROTOCOL_HDMI;
+    }
+
+    fmin = NvTiming_GetVrrFmin(&pParsedEdid->info,
+                               pDisplayIdInfo,
+                               nominalRefreshRateHz,
+                               sinkProtocol);
+
+    if (fmin == 0) {
+        if (pDpyEvo->internal && pDpyEvo->pDispEvo->vrr.hasPlatformCookie) {
+
+            /*
+             * An internal notebook VRR panel must have a non-zero fmin.  The
+             * recommendation from hardware is to use a default of fmin =
+             * rr/2.4.  So, compute timeoutUsec as:
+             *
+             * timeoutUsec = 10^6 / fmin
+             *             = 10^6 / (rr/2.4)
+             *             = 10^6 * (2.4/rr)
+             *             = 10^5 * 24 / rr
+             */
+            *pEdidTimeoutMicroseconds = 2400000 / nominalRefreshRateHz;
+            return TRUE;
+        }
+
+        if (pDpyEvo->vrr.type == NVKMS_DPY_VRR_TYPE_GSYNC) {
+            /* GSYNC can have fmin==0; i.e., the panel is self-refreshing. */
+            *pEdidTimeoutMicroseconds = 0;
+            return TRUE;
+        }
+
+        /* Otherwise, VRR is not possible. */
+        return FALSE;
+    }
+
+    *pEdidTimeoutMicroseconds = 1000000 / fmin;
+
+    return TRUE;
+}
+
 /*! Adjust mode timings as necessary for VRR. */
-void nvAdjustHwModeTimingsForVrrEvo(NVHwModeTimingsEvoPtr pTimings,
+void nvAdjustHwModeTimingsForVrrEvo(const NVDpyEvoRec *pDpyEvo,
                                     const enum NvKmsDpyVRRType vrrType,
-                                    const NvU32 edidTimeoutMicroseconds,
                                     const NvU32 vrrOverrideMinRefreshRate,
-                                    const NvBool needsSwFramePacing)
+                                    const NvBool needsSwFramePacing,
+                                    NVHwModeTimingsEvoPtr pTimings)
 {
     NvU32 timeoutMicroseconds;
+    NvU32 edidTimeoutMicroseconds;
 
     if (vrrType == NVKMS_DPY_VRR_TYPE_NONE) {
+        return;
+    }
+
+    if (!GetEdidTimeoutMicroseconds(pDpyEvo,
+                                    pTimings,
+                                    &edidTimeoutMicroseconds)) {
         return;
     }
 
@@ -395,7 +462,7 @@ static void SetTimeoutPerFrame(void *dataPtr, NvU32 dataU32)
                             &(pInputHeadState->vrrFramePacingInfo);
     const NvU32 headsMask = pInputHeadState->mergeModeVrrSecondaryHeadMask |
         NVBIT(inputHead);
-    volatile NV0073_CTRL_RM_VRR_SHARED_DATA *pData = pInputVrrFramePacingInfo->pData; 
+    volatile NV0073_CTRL_RM_VRR_SHARED_DATA *pData = pInputVrrFramePacingInfo->pData;
 
     /*
      * XXX[2Heads1OR] Implement per api-head frame pacing and remove this
@@ -1078,7 +1145,7 @@ void nvTrackAndDelayFlipForVrrSwFramePacing(NVDispEvoPtr pDispEvo,
     const struct NvKmsVrrFramePacingInfo *pVrrFramePacingInfo,
     NVFlipChannelEvoHwState *pFlip)
 {
-    volatile NV0073_CTRL_RM_VRR_SHARED_DATA *pData = pVrrFramePacingInfo->pData; 
+    volatile NV0073_CTRL_RM_VRR_SHARED_DATA *pData = pVrrFramePacingInfo->pData;
     NvU32 retryCount = MAX_VRR_FLIP_DELAY_TIME_RETRY_COUNT;
     NvU64 flipTimeStamp = 0;
     NvU64 dataTimeStamp1 = 0, dataTimeStamp2 = 0;
@@ -1216,8 +1283,7 @@ NvS32 nvIncVrrSemaphoreIndex(NVDevEvoPtr pDevEvo)
 
     if (pDevEvo->vrr.active && !pDevEvo->hal->caps.supportsDisplayRate) {
         vrrSemaphoreIndex = pDevEvo->vrr.flipCounter++;
-        if (pDevEvo->vrr.flipCounter >=
-            NVKMS_VRR_SEMAPHORE_SURFACE_SIZE / sizeof(NvU32)) {
+        if (pDevEvo->vrr.flipCounter >= NVKMS_VRR_SEMAPHORE_SURFACE_COUNT) {
             pDevEvo->vrr.flipCounter = 0;
         }
     }
@@ -1302,3 +1368,21 @@ void nvTriggerVrrUnstallSetCursorImage(NVDispEvoPtr pDispEvo,
     }
 }
 
+void nvVrrSignalSemaphore(NVDevEvoPtr pDevEvo, NvS32 vrrSemaphoreIndex)
+{
+    NvU32* pVrrSemaphores = (NvU32*)pDevEvo->vrr.pSemaphores;
+
+    if (!pDevEvo->vrr.pSemaphores) {
+        return;
+    }
+
+    if (vrrSemaphoreIndex < 0) {
+        return;
+    }
+
+    if (vrrSemaphoreIndex >= NVKMS_VRR_SEMAPHORE_SURFACE_COUNT) {
+        return;
+    }
+
+    pVrrSemaphores[vrrSemaphoreIndex] = 1;
+}

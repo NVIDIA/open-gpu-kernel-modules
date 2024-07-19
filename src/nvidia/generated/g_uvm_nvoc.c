@@ -101,62 +101,62 @@ static NvU32 __nvoc_down_thunk_OBJUVM_intrservServiceInterrupt(OBJGPU *arg1, str
 // 14 up-thunk(s) defined to bridge methods in OBJUVM to superclasses
 
 // uvmConstructEngine: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_uvmConstructEngine(POBJGPU pGpu, struct OBJUVM *pEngstate, ENGDESCRIPTOR arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_uvmConstructEngine(OBJGPU *pGpu, struct OBJUVM *pEngstate, ENGDESCRIPTOR arg3) {
     return engstateConstructEngine(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJUVM_OBJENGSTATE.offset), arg3);
 }
 
 // uvmInitMissing: virtual inherited (engstate) base (engstate)
-static void __nvoc_up_thunk_OBJENGSTATE_uvmInitMissing(POBJGPU pGpu, struct OBJUVM *pEngstate) {
+static void __nvoc_up_thunk_OBJENGSTATE_uvmInitMissing(OBJGPU *pGpu, struct OBJUVM *pEngstate) {
     engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJUVM_OBJENGSTATE.offset));
 }
 
 // uvmStatePreInitLocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_uvmStatePreInitLocked(POBJGPU pGpu, struct OBJUVM *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_uvmStatePreInitLocked(OBJGPU *pGpu, struct OBJUVM *pEngstate) {
     return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJUVM_OBJENGSTATE.offset));
 }
 
 // uvmStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_uvmStatePreInitUnlocked(POBJGPU pGpu, struct OBJUVM *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_uvmStatePreInitUnlocked(OBJGPU *pGpu, struct OBJUVM *pEngstate) {
     return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJUVM_OBJENGSTATE.offset));
 }
 
 // uvmStateInitLocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_uvmStateInitLocked(POBJGPU pGpu, struct OBJUVM *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_uvmStateInitLocked(OBJGPU *pGpu, struct OBJUVM *pEngstate) {
     return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJUVM_OBJENGSTATE.offset));
 }
 
 // uvmStatePreLoad: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_uvmStatePreLoad(POBJGPU pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_uvmStatePreLoad(OBJGPU *pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
     return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJUVM_OBJENGSTATE.offset), arg3);
 }
 
 // uvmStateLoad: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_uvmStateLoad(POBJGPU pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_uvmStateLoad(OBJGPU *pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
     return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJUVM_OBJENGSTATE.offset), arg3);
 }
 
 // uvmStatePostLoad: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_uvmStatePostLoad(POBJGPU pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_uvmStatePostLoad(OBJGPU *pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
     return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJUVM_OBJENGSTATE.offset), arg3);
 }
 
 // uvmStatePreUnload: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_uvmStatePreUnload(POBJGPU pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_uvmStatePreUnload(OBJGPU *pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
     return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJUVM_OBJENGSTATE.offset), arg3);
 }
 
 // uvmStateUnload: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_uvmStateUnload(POBJGPU pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_uvmStateUnload(OBJGPU *pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
     return engstateStateUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJUVM_OBJENGSTATE.offset), arg3);
 }
 
 // uvmStatePostUnload: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_uvmStatePostUnload(POBJGPU pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_uvmStatePostUnload(OBJGPU *pGpu, struct OBJUVM *pEngstate, NvU32 arg3) {
     return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJUVM_OBJENGSTATE.offset), arg3);
 }
 
 // uvmIsPresent: virtual inherited (engstate) base (engstate)
-static NvBool __nvoc_up_thunk_OBJENGSTATE_uvmIsPresent(POBJGPU pGpu, struct OBJUVM *pEngstate) {
+static NvBool __nvoc_up_thunk_OBJENGSTATE_uvmIsPresent(OBJGPU *pGpu, struct OBJUVM *pEngstate) {
     return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJUVM_OBJENGSTATE.offset));
 }
 
@@ -186,19 +186,27 @@ void __nvoc_dtor_OBJUVM(OBJUVM *pThis) {
 }
 
 void __nvoc_init_dataField_OBJUVM(OBJUVM *pThis, RmHalspecOwner *pRmhalspecowner) {
-    RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
-    const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     ChipHal *chipHal = &pRmhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
+    RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
+    const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
-    PORT_UNREFERENCED_VARIABLE(rmVariantHal);
-    PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
+    PORT_UNREFERENCED_VARIABLE(rmVariantHal);
+    PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
     // Hal field -- accessCounterBufferCount
-    pThis->accessCounterBufferCount = 1;
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x40000000UL) )) /* ChipHal: GB100 */ 
+    {
+        pThis->accessCounterBufferCount = 2;
+    }
+    // default
+    else
+    {
+        pThis->accessCounterBufferCount = 1;
+    }
 }
 
 NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE* );
@@ -222,16 +230,16 @@ __nvoc_ctor_OBJUVM_exit:
 
 // Vtable initialization
 static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhalspecowner) {
-    RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
-    const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     ChipHal *chipHal = &pRmhalspecowner->chipHal;
     const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
+    RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
+    const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
-    PORT_UNREFERENCED_VARIABLE(rmVariantHal);
-    PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
+    PORT_UNREFERENCED_VARIABLE(rmVariantHal);
+    PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
     // uvmStateDestroy -- virtual override (engstate) base (engstate)
     pThis->__uvmStateDestroy__ = &uvmStateDestroy_IMPL;
@@ -261,6 +269,16 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
         pThis->__uvmAccessCntrBufferRegister__ = &uvmAccessCntrBufferRegister_ac1694;
     }
 
+    // uvmAccessCntrSetCounterLimit -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
+    {
+        pThis->__uvmAccessCntrSetCounterLimit__ = &uvmAccessCntrSetCounterLimit_395e98;
+    }
+    else
+    {
+        pThis->__uvmAccessCntrSetCounterLimit__ = &uvmAccessCntrSetCounterLimit_GV100;
+    }
+
     // uvmRegisterIntrService -- virtual override (intrserv) base (intrserv)
     pThis->__uvmRegisterIntrService__ = &uvmRegisterIntrService_IMPL;
     pThis->__nvoc_base_IntrService.__intrservRegisterIntrService__ = &__nvoc_down_thunk_OBJUVM_intrservRegisterIntrService;
@@ -268,6 +286,76 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
     // uvmServiceInterrupt -- virtual override (intrserv) base (intrserv)
     pThis->__uvmServiceInterrupt__ = &uvmServiceInterrupt_IMPL;
     pThis->__nvoc_base_IntrService.__intrservServiceInterrupt__ = &__nvoc_down_thunk_OBJUVM_intrservServiceInterrupt;
+
+    // uvmGetRegOffsetAccessCntrBufferPut -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x40000000UL) )) /* ChipHal: GB100 */ 
+    {
+        pThis->__uvmGetRegOffsetAccessCntrBufferPut__ = &uvmGetRegOffsetAccessCntrBufferPut_GB100;
+    }
+    else
+    {
+        pThis->__uvmGetRegOffsetAccessCntrBufferPut__ = &uvmGetRegOffsetAccessCntrBufferPut_TU102;
+    }
+
+    // uvmGetRegOffsetAccessCntrBufferGet -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x40000000UL) )) /* ChipHal: GB100 */ 
+    {
+        pThis->__uvmGetRegOffsetAccessCntrBufferGet__ = &uvmGetRegOffsetAccessCntrBufferGet_GB100;
+    }
+    else
+    {
+        pThis->__uvmGetRegOffsetAccessCntrBufferGet__ = &uvmGetRegOffsetAccessCntrBufferGet_TU102;
+    }
+
+    // uvmGetRegOffsetAccessCntrBufferHi -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x40000000UL) )) /* ChipHal: GB100 */ 
+    {
+        pThis->__uvmGetRegOffsetAccessCntrBufferHi__ = &uvmGetRegOffsetAccessCntrBufferHi_GB100;
+    }
+    else
+    {
+        pThis->__uvmGetRegOffsetAccessCntrBufferHi__ = &uvmGetRegOffsetAccessCntrBufferHi_TU102;
+    }
+
+    // uvmGetRegOffsetAccessCntrBufferLo -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x40000000UL) )) /* ChipHal: GB100 */ 
+    {
+        pThis->__uvmGetRegOffsetAccessCntrBufferLo__ = &uvmGetRegOffsetAccessCntrBufferLo_GB100;
+    }
+    else
+    {
+        pThis->__uvmGetRegOffsetAccessCntrBufferLo__ = &uvmGetRegOffsetAccessCntrBufferLo_TU102;
+    }
+
+    // uvmGetRegOffsetAccessCntrBufferConfig -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x40000000UL) )) /* ChipHal: GB100 */ 
+    {
+        pThis->__uvmGetRegOffsetAccessCntrBufferConfig__ = &uvmGetRegOffsetAccessCntrBufferConfig_GB100;
+    }
+    else
+    {
+        pThis->__uvmGetRegOffsetAccessCntrBufferConfig__ = &uvmGetRegOffsetAccessCntrBufferConfig_TU102;
+    }
+
+    // uvmGetRegOffsetAccessCntrBufferInfo -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x40000000UL) )) /* ChipHal: GB100 */ 
+    {
+        pThis->__uvmGetRegOffsetAccessCntrBufferInfo__ = &uvmGetRegOffsetAccessCntrBufferInfo_GB100;
+    }
+    else
+    {
+        pThis->__uvmGetRegOffsetAccessCntrBufferInfo__ = &uvmGetRegOffsetAccessCntrBufferInfo_TU102;
+    }
+
+    // uvmGetRegOffsetAccessCntrBufferSize -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x40000000UL) )) /* ChipHal: GB100 */ 
+    {
+        pThis->__uvmGetRegOffsetAccessCntrBufferSize__ = &uvmGetRegOffsetAccessCntrBufferSize_GB100;
+    }
+    else
+    {
+        pThis->__uvmGetRegOffsetAccessCntrBufferSize__ = &uvmGetRegOffsetAccessCntrBufferSize_TU102;
+    }
 
     // uvmConstructEngine -- virtual inherited (engstate) base (engstate)
     pThis->__uvmConstructEngine__ = &__nvoc_up_thunk_OBJENGSTATE_uvmConstructEngine;
@@ -310,13 +398,13 @@ static void __nvoc_init_funcTable_OBJUVM_1(OBJUVM *pThis, RmHalspecOwner *pRmhal
 
     // uvmServiceNotificationInterrupt -- virtual inherited (intrserv) base (intrserv)
     pThis->__uvmServiceNotificationInterrupt__ = &__nvoc_up_thunk_IntrService_uvmServiceNotificationInterrupt;
-} // End __nvoc_init_funcTable_OBJUVM_1 with approximately 26 basic block(s).
+} // End __nvoc_init_funcTable_OBJUVM_1 with approximately 42 basic block(s).
 
 
-// Initialize vtable(s) for 20 virtual method(s).
+// Initialize vtable(s) for 28 virtual method(s).
 void __nvoc_init_funcTable_OBJUVM(OBJUVM *pThis, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 20 per-object function pointer(s).
+    // Initialize vtable(s) with 28 per-object function pointer(s).
     __nvoc_init_funcTable_OBJUVM_1(pThis, pRmhalspecowner);
 }
 

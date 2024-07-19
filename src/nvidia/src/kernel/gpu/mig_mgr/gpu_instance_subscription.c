@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -688,6 +688,7 @@ gisubscriptionCtrlCmdExecPartitionsGet_IMPL
         pOutInfo->gpcCount = pMIGComputeInstance->resourceAllocation.gpcCount;
         pOutInfo->gfxGpcCount = pMIGComputeInstance->resourceAllocation.gfxGpcCount;
         pOutInfo->veidCount = pMIGComputeInstance->resourceAllocation.veidCount;
+
         pOutInfo->ceCount = kmigmgrCountEnginesOfType(&pMIGComputeInstance->resourceAllocation.engines,
                                                       RM_ENGINE_TYPE_COPY(0));
         pOutInfo->nvEncCount = kmigmgrCountEnginesOfType(&pMIGComputeInstance->resourceAllocation.engines,
@@ -819,6 +820,7 @@ gisubscriptionCtrlCmdExecPartitionsExport_IMPL
     portMemCopy(pParams->info.uuid, sizeof(pParams->info.uuid),
                 pMIGComputeInstance->uuid.uuid, sizeof(pMIGComputeInstance->uuid.uuid));
     pParams->info.sharedEngFlags = pMIGComputeInstance->sharedEngFlag;
+    pParams->info.gfxGpcCount    = pMIGComputeInstance->resourceAllocation.gfxGpcCount;
     pParams->info.veidOffset     = pMIGComputeInstance->resourceAllocation.veidOffset;
     pParams->info.veidCount      = pMIGComputeInstance->resourceAllocation.veidCount;
     pParams->info.smCount        = pMIGComputeInstance->resourceAllocation.smCount;
@@ -1218,7 +1220,7 @@ gisubscriptionCtrlCmdGetUuid_IMPL
     NV_CHECK_OR_RETURN(LEVEL_ERROR, !pGPUInstanceSubscription->bDeviceProfiling,
                        NV_ERR_NOT_SUPPORTED);
 
-    portMemCopy(pParams->uuid, sizeof(pParams->uuid), 
+    portMemCopy(pParams->uuid, sizeof(pParams->uuid),
                 pGPUInstanceSubscription->pKernelMIGGpuInstance->uuid.uuid,
                 sizeof(pGPUInstanceSubscription->pKernelMIGGpuInstance->uuid.uuid));
 

@@ -82,13 +82,13 @@ dmaAllocBar1P2PMapping_GH100
     // Step 2:
     // Create BAR1 mapping with MAP_BAR1_P2P flag on the target GPU.
     //
-    status = kbusMapFbAperture_HAL(pPeerGpu, pPeerKernelBus,
-                                   pBar1P2PPhysMemDesc,
-                                   0,
-                                   &phyAddr,
-                                   &bar1ApertureLen,
-                                   BUS_MAP_FB_FLAGS_MAP_UNICAST,
-                                   NULL);
+    status = kbusMapFbApertureSingle(pPeerGpu, pPeerKernelBus,
+                                     pBar1P2PPhysMemDesc,
+                                     0,
+                                     &phyAddr,
+                                     &bar1ApertureLen,
+                                     BUS_MAP_FB_FLAGS_MAP_UNICAST,
+                                     NULL);
     if (status != NV_OK)
         goto cleanup;
 
@@ -147,11 +147,11 @@ dmaAllocBar1P2PMapping_GH100
 cleanup:
     if (phyAddr != 0)
     {
-        kbusUnmapFbAperture_HAL(pPeerGpu, pPeerKernelBus,
-                                params->pPeerMemDesc,
-                                phyAddr,
-                                bar1ApertureLen,
-                                BUS_MAP_FB_FLAGS_MAP_UNICAST);
+        kbusUnmapFbApertureSingle(pPeerGpu, pPeerKernelBus,
+                                  params->pPeerMemDesc,
+                                  phyAddr,
+                                  bar1ApertureLen,
+                                  BUS_MAP_FB_FLAGS_MAP_UNICAST);
     }
 
     memdescDestroy(pBar1P2PPhysMemDesc);
@@ -188,11 +188,11 @@ dmaFreeBar1P2PMapping_GH100
         NvU64   bar1MapSize  = memdescGetSize(pDmaMappingInfo->pBar1P2PVirtMemDesc);
 
         // Unmap the BAR1 mapping
-        kbusUnmapFbAperture_HAL(pPeerGpu, pPeerKernelBus,
-                                pDmaMappingInfo->pBar1P2PPhysMemDesc,
-                                bar1PhysAddr,
-                                bar1MapSize,
-                                BUS_MAP_FB_FLAGS_MAP_UNICAST);
+        kbusUnmapFbApertureSingle(pPeerGpu, pPeerKernelBus,
+                                  pDmaMappingInfo->pBar1P2PPhysMemDesc,
+                                  bar1PhysAddr,
+                                  bar1MapSize,
+                                  BUS_MAP_FB_FLAGS_MAP_UNICAST);
 
         NV_PRINTF(LEVEL_INFO, "bar1p2p surface UN-mapped at 0x%llx + 0x%llx\n", bar1PhysAddr, bar1MapSize);
 

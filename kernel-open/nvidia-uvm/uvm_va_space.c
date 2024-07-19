@@ -155,11 +155,6 @@ static bool va_space_check_processors_masks(uvm_va_space_t *va_space)
                                                  &va_space->can_copy_from[uvm_id_value(processor)]));
         }
 
-        // Peers
-        UVM_ASSERT(!processor_mask_array_test(va_space->indirect_peers, processor, processor));
-        UVM_ASSERT(uvm_processor_mask_subset(&va_space->indirect_peers[uvm_id_value(processor)],
-                                             &va_space->has_native_atomics[uvm_id_value(processor)]));
-
         // Atomics
         UVM_ASSERT(processor_mask_array_test(va_space->has_native_atomics, processor, processor));
 
@@ -374,8 +369,6 @@ static void unregister_gpu(uvm_va_space_t *va_space,
     processor_mask_array_clear(va_space->has_nvlink, gpu->id, UVM_ID_CPU);
     processor_mask_array_clear(va_space->has_nvlink, UVM_ID_CPU, gpu->id);
     UVM_ASSERT(processor_mask_array_empty(va_space->has_nvlink, gpu->id));
-
-    UVM_ASSERT(processor_mask_array_empty(va_space->indirect_peers, gpu->id));
 
     processor_mask_array_clear(va_space->has_native_atomics, gpu->id, gpu->id);
     processor_mask_array_clear(va_space->has_native_atomics, gpu->id, UVM_ID_CPU);
@@ -1035,8 +1028,6 @@ static void disable_peers(uvm_va_space_t *va_space,
     processor_mask_array_clear(va_space->can_copy_from, gpu1->id, gpu0->id);
     processor_mask_array_clear(va_space->has_nvlink, gpu0->id, gpu1->id);
     processor_mask_array_clear(va_space->has_nvlink, gpu1->id, gpu0->id);
-    processor_mask_array_clear(va_space->indirect_peers, gpu0->id, gpu1->id);
-    processor_mask_array_clear(va_space->indirect_peers, gpu1->id, gpu0->id);
     processor_mask_array_clear(va_space->has_native_atomics, gpu0->id, gpu1->id);
     processor_mask_array_clear(va_space->has_native_atomics, gpu1->id, gpu0->id);
 
@@ -1100,15 +1091,6 @@ static NV_STATUS enable_peers(uvm_va_space_t *va_space, uvm_gpu_t *gpu0, uvm_gpu
 
         processor_mask_array_set(va_space->has_native_atomics, gpu0->id, gpu1->id);
         processor_mask_array_set(va_space->has_native_atomics, gpu1->id, gpu0->id);
-
-        if (peer_caps->is_indirect_peer) {
-            UVM_ASSERT(peer_caps->link_type >= UVM_GPU_LINK_NVLINK_2);
-            UVM_ASSERT(gpu0->mem_info.numa.enabled);
-            UVM_ASSERT(gpu1->mem_info.numa.enabled);
-
-            processor_mask_array_set(va_space->indirect_peers, gpu0->id, gpu1->id);
-            processor_mask_array_set(va_space->indirect_peers, gpu1->id, gpu0->id);
-        }
     }
     else if (gpu0->parent == gpu1->parent) {
         processor_mask_array_set(va_space->has_native_atomics, gpu0->id, gpu1->id);
@@ -1587,45 +1569,19 @@ error_gpu_release:
     return status;
 }
 
-static NvU32 find_gpu_va_space_index(uvm_va_space_t *va_space,
-                                     uvm_parent_gpu_t *parent_gpu)
-{
-    uvm_gpu_id_t gpu_id;
-    NvU32 index = UVM_ID_MAX_PROCESSORS;
-
-    // TODO: Bug 4351121: this conversion from parent ID to gpu ID depends on
-    // the fact that only one partition is registered per va_space per physical
-    // GPU. This code will need to change when multiple MIG instances are
-    // supported.
-    for_each_sub_processor_id_in_parent_gpu(gpu_id, parent_gpu->id) {
-        if (uvm_processor_mask_test(&va_space->registered_gpu_va_spaces, gpu_id)) {
-            UVM_ASSERT(index == UVM_ID_MAX_PROCESSORS);
-            index = uvm_id_gpu_index(gpu_id);
-        }
-    }
-
-    return index;
-}
-
-uvm_gpu_va_space_t *uvm_gpu_va_space_get_by_parent_gpu(uvm_va_space_t *va_space,
-                                                       uvm_parent_gpu_t *parent_gpu)
+uvm_gpu_va_space_t *uvm_gpu_va_space_get(uvm_va_space_t *va_space, uvm_gpu_t *gpu)
 {
     uvm_gpu_va_space_t *gpu_va_space;
-    NvU32 gpu_index;
 
     uvm_assert_rwsem_locked(&va_space->lock);
 
-    if (!parent_gpu)
+    if (!gpu || !uvm_processor_mask_test(&va_space->registered_gpu_va_spaces, gpu->id))
         return NULL;
 
-    gpu_index = find_gpu_va_space_index(va_space, parent_gpu);
-    if (gpu_index == UVM_ID_MAX_PROCESSORS)
-        return NULL;
-
-    gpu_va_space = va_space->gpu_va_spaces[gpu_index];
+    gpu_va_space = va_space->gpu_va_spaces[uvm_id_gpu_index(gpu->id)];
     UVM_ASSERT(uvm_gpu_va_space_state(gpu_va_space) == UVM_GPU_VA_SPACE_STATE_ACTIVE);
     UVM_ASSERT(gpu_va_space->va_space == va_space);
-    UVM_ASSERT(gpu_va_space->gpu->parent == parent_gpu);
+    UVM_ASSERT(gpu_va_space->gpu == gpu);
 
     return gpu_va_space;
 }
@@ -1772,25 +1728,10 @@ uvm_processor_id_t uvm_processor_mask_find_closest_id(uvm_va_space_t *va_space,
     uvm_mutex_lock(&va_space->closest_processors.mask_mutex);
 
     if (uvm_processor_mask_and(mask, candidates, &va_space->has_nvlink[uvm_id_value(src)])) {
-        // NvLink peers
-        uvm_processor_mask_t *indirect_peers;
-        uvm_processor_mask_t *direct_peers = &va_space->closest_processors.direct_peers;
-
-        indirect_peers = &va_space->indirect_peers[uvm_id_value(src)];
-
-        if (uvm_processor_mask_andnot(direct_peers, mask, indirect_peers)) {
-            // Direct peers, prioritizing GPU peers over CPU
-            closest_id = uvm_processor_mask_find_first_gpu_id(direct_peers);
-            if (UVM_ID_IS_INVALID(closest_id))
-                closest_id = UVM_ID_CPU;
-        }
-        else {
-            // Indirect peers
-            UVM_ASSERT(UVM_ID_IS_GPU(src));
-            UVM_ASSERT(!uvm_processor_mask_test(mask, UVM_ID_CPU));
-
-            closest_id = uvm_processor_mask_find_first_gpu_id(mask);
-        }
+        // Direct peers, prioritizing GPU peers over CPU
+        closest_id = uvm_processor_mask_find_first_gpu_id(mask);
+        if (UVM_ID_IS_INVALID(closest_id))
+            closest_id = UVM_ID_CPU;
     }
     else if (uvm_processor_mask_and(mask, candidates, &va_space->can_access[uvm_id_value(src)])) {
         // If source is GPU, prioritize PCIe peers over CPU

@@ -30,6 +30,8 @@
 // Source file:      class/cl0050.finn
 //
 
+#include "nvcfg_sdk.h"
+
 #define NV_CE_UTILS (0x50U) /* finn: Evaluated from "NV0050_ALLOCATION_PARAMETERS_MESSAGE_ID" */
 
 #define NV0050_ALLOCATION_PARAMETERS_MESSAGE_ID (0x0050U)
@@ -65,3 +67,9 @@ typedef struct NV0050_ALLOCATION_PARAMETERS {
 #define NV0050_CEUTILS_FLAGS_FORCE_CE_ID             4:4
 #define NV0050_CEUTILS_FLAGS_FORCE_CE_ID_FALSE  (0x00000000)
 #define NV0050_CEUTILS_FLAGS_FORCE_CE_ID_TRUE   (0x00000001)
+
+// Use a CC secure channel
+#define NV0050_CEUTILS_FLAGS_CC_SECURE             5:5
+#define NV0050_CEUTILS_FLAGS_CC_SECURE_FALSE    (0x00000000)
+#define NV0050_CEUTILS_FLAGS_CC_SECURE_TRUE     (0x00000001)
+

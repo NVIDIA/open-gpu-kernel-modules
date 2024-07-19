@@ -451,11 +451,6 @@ vaspaceapiCopyConstruct_IMPL
 
     vaspaceIncRefCnt(pVAS);
     pVaspaceApi->pVASpace = pVAS;
-    //
-    // Mark the VAS to be duped, so that we can free it when FLA Memory is freed
-    // This is hacked for now, to make sure the duped VAS is freed with the duped VA
-    //
-    pVaspaceApi->bDuped = NV_TRUE;
 
     return status;
 

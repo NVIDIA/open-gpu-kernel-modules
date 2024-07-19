@@ -323,10 +323,3 @@ NvU32 uvm_hal_pascal_fault_buffer_entry_size(uvm_parent_gpu_t *parent_gpu)
 {
     return NVB069_FAULT_BUF_SIZE;
 }
-
-void uvm_hal_pascal_fault_buffer_parse_non_replayable_entry_unsupported(uvm_parent_gpu_t *parent_gpu,
-                                                                        void *fault_packet,
-                                                                        uvm_fault_buffer_entry_t *buffer_entry)
-{
-    UVM_ASSERT_MSG(false, "fault_buffer_parse_non_replayable_entry called on Pascal GPU\n");
-}

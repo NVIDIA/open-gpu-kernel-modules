@@ -45,15 +45,13 @@ struct uvm_gpu_semaphore_struct
     // The semaphore pool page the semaphore came from
     uvm_gpu_semaphore_pool_page_t *page;
 
-    // Pointer to the memory location
-    NvU32 *payload;
+    // Index of the semaphore in semaphore page
+    NvU16 index;
+
     struct {
-        NvU16 index;
-        NvU32 cached_payload;
-        uvm_rm_mem_t *encrypted_payload;
-        uvm_rm_mem_t *notifier;
-        uvm_rm_mem_t *auth_tag;
         UvmCslIv *ivs;
+        NvU32 cached_payload;
+
         NvU32 last_pushed_notifier;
         NvU32 last_observed_notifier;
     } conf_computing;
@@ -150,6 +148,17 @@ NvU64 uvm_gpu_semaphore_get_gpu_uvm_va(uvm_gpu_semaphore_t *semaphore, uvm_gpu_t
 NvU64 uvm_gpu_semaphore_get_gpu_proxy_va(uvm_gpu_semaphore_t *semaphore, uvm_gpu_t *gpu);
 
 NvU64 uvm_gpu_semaphore_get_gpu_va(uvm_gpu_semaphore_t *semaphore, uvm_gpu_t *gpu, bool is_proxy_va_space);
+
+NvU32 *uvm_gpu_semaphore_get_cpu_va(uvm_gpu_semaphore_t *semaphore);
+
+NvU32 *uvm_gpu_semaphore_get_encrypted_payload_cpu_va(uvm_gpu_semaphore_t *semaphore);
+uvm_gpu_address_t uvm_gpu_semaphore_get_encrypted_payload_gpu_va(uvm_gpu_semaphore_t *semaphore);
+
+NvU32 *uvm_gpu_semaphore_get_notifier_cpu_va(uvm_gpu_semaphore_t *semaphore);
+uvm_gpu_address_t uvm_gpu_semaphore_get_notifier_gpu_va(uvm_gpu_semaphore_t *semaphore);
+
+void *uvm_gpu_semaphore_get_auth_tag_cpu_va(uvm_gpu_semaphore_t *semaphore);
+uvm_gpu_address_t uvm_gpu_semaphore_get_auth_tag_gpu_va(uvm_gpu_semaphore_t *semaphore);
 
 // Read the 32-bit payload of the semaphore
 // Notably doesn't provide any memory ordering guarantees and needs to be used with

@@ -47,19 +47,6 @@ extern "C" {
 
 #define HALMGR_GET_HAL(p, halid)     halmgrGetHal((p), halid)
 
-typedef struct OBJHALMGR *POBJHALMGR;
-
-#ifndef __NVOC_CLASS_OBJHALMGR_TYPEDEF__
-#define __NVOC_CLASS_OBJHALMGR_TYPEDEF__
-typedef struct OBJHALMGR OBJHALMGR;
-#endif /* __NVOC_CLASS_OBJHALMGR_TYPEDEF__ */
-
-#ifndef __nvoc_class_id_OBJHALMGR
-#define __nvoc_class_id_OBJHALMGR 0xbf26de
-#endif /* __nvoc_class_id_OBJHALMGR */
-
-
-
 
 // Private field names are wrapped in PRIVATE_FIELD, which does nothing for
 // the matching C source file, but causes diagnostics to be issued if another
@@ -84,7 +71,7 @@ struct OBJHALMGR {
     struct OBJHALMGR *__nvoc_pbase_OBJHALMGR;    // halmgr
 
     // Data members
-    struct OBJHAL *pHalList[69];
+    struct OBJHAL *pHalList[71];
 };
 
 #ifndef __NVOC_CLASS_OBJHALMGR_TYPEDEF__

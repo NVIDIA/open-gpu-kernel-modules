@@ -30,7 +30,7 @@
 
 #include "class/cl0000.h"
 #include "kernel/gpu/timed_sema.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "gpu_mgr/gpu_mgr.h"
 #include "rmapi/control.h"

@@ -55,6 +55,11 @@
 #define RM_PAGE_SIZE_512M  (1ULL << RM_PAGE_SHIFT_512M)
 #define RM_PAGE_MASK_512M  (RM_PAGE_SIZE_512M - 1)
 
+// 256GB page size
+#define RM_PAGE_SHIFT_256G 38
+#define RM_PAGE_SIZE_256G  (1ULL << RM_PAGE_SHIFT_256G)
+#define RM_PAGE_MASK_256G  (RM_PAGE_SHIFT_256G - 1)
+
 //---------------------------------------------------------------------------
 //
 //  Memory page attributes.
@@ -63,6 +68,7 @@
 //  Big pages can be of 64/128KB[Fermi/Kepler/Pascal]
 //  Huge page is 2 MB[Pascal+]
 //  512MB page is Ampere+
+//  256GB page is for Blackwell+
 //  Default page attribute lets driver decide the optimal page size
 //
 //---------------------------------------------------------------------------
@@ -73,6 +79,7 @@ typedef enum
     RM_ATTR_PAGE_SIZE_BIG,
     RM_ATTR_PAGE_SIZE_HUGE,
     RM_ATTR_PAGE_SIZE_512MB,
+    RM_ATTR_PAGE_SIZE_256GB,
     RM_ATTR_PAGE_SIZE_INVALID
 }
 RM_ATTR_PAGE_SIZE;

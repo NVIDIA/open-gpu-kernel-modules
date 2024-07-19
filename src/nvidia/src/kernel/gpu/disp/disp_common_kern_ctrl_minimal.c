@@ -266,7 +266,7 @@ NV_STATUS dispcmnCtrlCmdVRRSetRgLineActive_IMPL
 
 static NV_STATUS _kheadCheckVblankCountCallback
 (
-    POBJGPU   pGpu,
+    OBJGPU   *pGpu,
     void     *Object,
     NvU32     param1,
     NvV32     BuffNum,
@@ -397,50 +397,6 @@ NV_STATUS dispcmnCtrlCmdVblankSemControlEnable_IMPL(
                            sizeof(*pParams));
 }
 
-NV_STATUS dispcmnCtrlCmdVblankSemControlDisable_IMPL(
-    DispCommon *pDispCommon,
-    NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DISABLE_PARAMS *pParams
-)
-{
-    OBJGPU   *pGpu   = DISPAPI_GET_GPU(pDispCommon);
-    RsClient *pClient = RES_GET_CLIENT(pDispCommon);
-    RM_API   *pRmApi = GPU_GET_PHYSICAL_RMAPI(DISPAPI_GET_GPU(pDispCommon));
-    NV_STATUS status = NV_OK;
-
-    // Get the right pGpu from subdevice instance given by client
-    status = dispapiSetUnicastAndSynchronize_HAL(
-                               staticCast(pDispCommon, DisplayApi),
-                               DISPAPI_GET_GPUGRP(pDispCommon),
-                               &pGpu,
-                               NULL,
-                               pParams->subDeviceInstance);
-
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    //
-    // Note that we don't explicitly unregister here to complement the
-    // memRegisterWithGsp() done in dispcmnCtrlCmdVblankSemControlEnable_IMPL():
-    // that could unregister the memory out from under other uses of this
-    // hMemory on GSP (e.g., other vblank semaphore controls).  Instead, we rely
-    // on the hMemory getting unregistered when the 'struct Memory' is freed.
-    //
-
-    //
-    // NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DISABLE_PARAMS and
-    // NV0073_CTRL_CMD_INTERNAL_VBLANK_SEM_CONTROL_DISABLE_PARAMS are
-    // equivalent, so just pass pParams through.
-    //
-    return pRmApi->Control(pRmApi,
-                           pClient->hClient,
-                           RES_GET_HANDLE(pDispCommon),
-                           NV0073_CTRL_CMD_INTERNAL_VBLANK_SEM_CONTROL_DISABLE,
-                           pParams,
-                           sizeof(*pParams));
-}
-
 /*
  * @brief This call engages the WAR for VR where the Pstate
  *        switching can cause delay in serving Vblank interrupts
@@ -459,7 +415,7 @@ dispcmnCtrlCmdInlineDispIntrServiceWarForVr_IMPL
     NV0073_CTRL_SYSTEM_INLINE_DISP_INTR_SERVICE_WAR_FOR_VR_PARAMS *pParams
 )
 {
-    POBJGPU  pGpu  = NULL;
+    OBJGPU   *pGpu  = NULL;
     RM_API   *pRmApi;
     NV_STATUS status;
     KernelDisplay *pKernelDisplay = NULL;

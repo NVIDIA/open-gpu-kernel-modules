@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -90,7 +90,7 @@ NV_STATUS kceGetP2PCes_GV100(KernelCE *pKCe, OBJGPU *pGpu, NvU32 gpuMask, NvU32 
         }
 
 
-        KCE_ITER_ALL_BEGIN(pGpu, pKCeLoop, NVLINK_MIN_P2P_LCE)
+        KCE_ITER_BEGIN(pGpu, pKCe, pKCeLoop, NVLINK_MIN_P2P_LCE)
             if (pKCeLoop->bStubbed)
             {
                 continue;
@@ -187,7 +187,7 @@ NV_STATUS kceGetP2PCes_GV100(KernelCE *pKCe, OBJGPU *pGpu, NvU32 gpuMask, NvU32 
     return NV_OK;
 }
 
-void kceGetSysmemRWLCEs_GV100(KernelCE* pKCe, NvU32 *rd, NvU32 *wr)
+void kceGetSysmemRWLCEs_GV100(OBJGPU *pGpu, KernelCE* pKCe, NvU32 *rd, NvU32 *wr)
 {
     *rd = NVLINK_SYSMEM_READ_LCE;
     *wr = NVLINK_SYSMEM_WRITE_LCE;
@@ -252,7 +252,7 @@ kceClearAssignedNvlinkPeerMasks_GV100
 {
     KernelCE *pKCeLoop = NULL;
 
-    KCE_ITER_ALL_BEGIN(pGpu, pKCeLoop, NVLINK_MIN_P2P_LCE)
+    KCE_ITER_BEGIN(pGpu, pKCe, pKCeLoop, NVLINK_MIN_P2P_LCE)
         pKCeLoop->nvlinkPeerMask = 0;
     KCE_ITER_END
 }

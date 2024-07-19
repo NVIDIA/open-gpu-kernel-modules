@@ -313,6 +313,8 @@ dmaNvos32ToPageSizeAttr
                     return RM_ATTR_PAGE_SIZE_HUGE;
                 case NVOS32_ATTR2_PAGE_SIZE_HUGE_512MB:
                     return RM_ATTR_PAGE_SIZE_512MB;
+                case NVOS32_ATTR2_PAGE_SIZE_HUGE_256GB:
+                    return RM_ATTR_PAGE_SIZE_256GB;
             }
             break;
     }

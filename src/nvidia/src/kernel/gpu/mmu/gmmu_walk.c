@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,7 +28,7 @@
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "gpu/mem_mgr/mem_desc.h"
-#include "nvRmReg.h"  // NV_REG_STR_RM_*
+#include "nvrm_registry.h"  // NV_REG_STR_RM_*
 
 #include "mmu/gmmu_fmt.h"
 #include "mmu/mmu_fmt.h"
@@ -878,23 +878,32 @@ _gmmuWalkCBFillEntries
             {
                 const GMMU_FMT_FAMILY  *pFam = kgmmuFmtGetFamily(pKernelGmmu, pFmt->version);
                 const GMMU_ENTRY_VALUE *pSparseEntry;
+                // Fake sparse entry is needed for GH100 in CC mode for PDE2-PDE4. Ref: Bug 3341692
+                NvU8 *pFakeSparse = kgmmuGetFakeSparseEntry_HAL(pGpu, pKernelGmmu, pLevelFmt);
 
-                // Select sparse entry template based on number of sub-levels.
-                if (pLevelFmt->numSubLevels > 1)
+                if (pFakeSparse != NULL)
                 {
-                    pSparseEntry = &pFam->sparsePdeMulti;
-                }
-                else if (pLevelFmt->numSubLevels == 1)
-                {
-                    pSparseEntry = &pFam->sparsePde;
+                    pSparseEntry = (const GMMU_ENTRY_VALUE *) pFakeSparse;
                 }
                 else
                 {
-                    if (kbusIsFlaDummyPageEnabled(pKernelBus) &&
-                        (pUserCtx->pGVAS->flags & VASPACE_FLAGS_FLA))
-                        pSparseEntry = &pUserCtx->pGpuState->flaDummyPage.pte;
+                    // Select sparse entry template based on number of sub-levels.
+                    if (pLevelFmt->numSubLevels > 1)
+                    {
+                        pSparseEntry = &pFam->sparsePdeMulti;
+                    }
+                    else if (pLevelFmt->numSubLevels == 1)
+                    {
+                        pSparseEntry = &pFam->sparsePde;
+                    }
                     else
-                        pSparseEntry = &pFam->sparsePte;
+                    {
+                        if (kbusIsFlaDummyPageEnabled(pKernelBus) &&
+                            (pUserCtx->pGVAS->flags & VASPACE_FLAGS_FLA))
+                            pSparseEntry = &pUserCtx->pGpuState->flaDummyPage.pte;
+                        else
+                            pSparseEntry = &pFam->sparsePte;
+                    }
                 }
 
                 // Copy sparse template to each entry.

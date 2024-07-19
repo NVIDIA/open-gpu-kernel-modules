@@ -112,7 +112,7 @@
 #include "gpu/mem_mgr/heap.h"
 #include "os/os.h"
 #include "rmapi/client.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "gpu/mem_mgr/virt_mem_allocator.h"
 #include "gpu/bif/kernel_bif.h"
 #include "core/system.h"
@@ -121,6 +121,7 @@
 #include "mem_mgr/fabric_vaspace.h"
 #include "mem_mgr/virt_mem_mgr.h"
 #include "platform/sli/sli.h"
+#include "containers/eheap_old.h"
 
 #include "mem_mgr/fla_mem.h"
 
@@ -148,7 +149,10 @@
 // no trace output
 #define _MMUXLATEVADDR_FLAG_XLATE_ONLY          _MMUXLATEVADDR_FLAG_VALIDATE_TERSELY
 
-static NV_STATUS _dmaGetFabricAddress(OBJGPU *pGpu, NvU32 aperture, NvU32 kind, NvU64 *fabricAddr);
+static NV_STATUS _dmaGetFabricAddress(OBJGPU *pGpu, NvU32 aperture, NvU32 kind,
+                                        NvU64 *fabricAddr);
+static NV_STATUS _dmaGetFabricEgmAddress(OBJGPU *pGpu, NvU32 aperture, NvU32 kind,
+                                        NvU64 *fabricEgmAddr);
 
 static NV_STATUS
 _dmaApplyWarForBug2720120
@@ -575,7 +579,8 @@ dmaAllocMapping_GM107
         NV_ASSERT((pLocals->pageSize == pLocals->vaspaceBigPageSize) ||
                   (pLocals->pageSize == RM_PAGE_SIZE) ||
                   (pLocals->pageSize == RM_PAGE_SIZE_HUGE) ||
-                  (pLocals->pageSize == RM_PAGE_SIZE_512M));
+                  (pLocals->pageSize == RM_PAGE_SIZE_512M) ||
+                  (pLocals->pageSize == RM_PAGE_SIZE_256G));
 
         pLocals->overMap = 0;
 
@@ -696,7 +701,7 @@ dmaAllocMapping_GM107
                 }
             }
         }
-        else if (pDma->getProperty(pDma, PDB_PROP_DMA_RESTRICT_VA_RANGE))
+        else if (pDma->bDmaRestrictVaRange)
         {
             // See comments in vaspaceFillAllocParams_IMPL.
             pLocals->vaRangeHi = NV_MIN(pLocals->vaRangeHi, NVBIT64(40) - 1);
@@ -1081,9 +1086,30 @@ dmaAllocMapping_GM107
         {
             pLocals->fabricAddr = NVLINK_INVALID_FABRIC_ADDR;
         }
+        else if ((GPU_GET_KERNEL_NVLINK(pGpu) != NULL) &&
+                 !gpuFabricProbeIsSupported(pGpu) &&
+                 (knvlinkGetIPVersion(pGpu, GPU_GET_KERNEL_NVLINK(pGpu)) >= NVLINK_VERSION_50))
+        {
+            //
+            // on NVL5 direct connect systems we need to use the peerId << 42 as
+            // the fabric offset
+            //
+            pLocals->fabricAddr = (((NvU64)pLocals->peerNumber) << NVLINK_NODE_REMAP_OFFSET_SHIFT);
+        }
         else
         {
-            status = _dmaGetFabricAddress(pLocals->pSrcGpu, pLocals->aperture,  pLocals->kind, &pLocals->fabricAddr);
+            // Get EGM fabric address for Remote EGM
+            if (memdescIsEgm(pLocals->pTempMemDesc))
+            {
+                status = _dmaGetFabricEgmAddress(pLocals->pSrcGpu, pLocals->aperture,
+                                                pLocals->kind, &pLocals->fabricAddr);
+            }
+            else
+            {
+                status = _dmaGetFabricAddress(pLocals->pSrcGpu, pLocals->aperture,
+                                                pLocals->kind, &pLocals->fabricAddr);
+            }
+
             if (status != NV_OK)
             {
                 DBG_BREAKPOINT();
@@ -1689,8 +1715,51 @@ static NV_STATUS _dmaGetFabricAddress
     // Fabric address should be available for NVSwitch connected GPUs,
     // otherwise it is a NOP.
     //
-    *fabricAddr =  knvlinkGetUniqueFabricBaseAddress(pGpu, pKernelNvlink);
+    *fabricAddr = knvlinkGetUniqueFabricBaseAddress(pGpu, pKernelNvlink);
     if (*fabricAddr == NVLINK_INVALID_FABRIC_ADDR)
+    {
+        return NV_OK;
+    }
+
+    if (memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_COMPRESSIBLE, kind))
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Nvswitch systems don't support compression.\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    return NV_OK;
+}
+
+static NV_STATUS _dmaGetFabricEgmAddress
+(
+    OBJGPU         *pGpu,
+    NvU32           aperture,
+    NvU32           kind,
+    NvU64           *fabricEgmAddr
+)
+{
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    KernelNvlink  *pKernelNvlink  = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    *fabricEgmAddr = NVLINK_INVALID_FABRIC_ADDR;
+
+    if (pKernelNvlink == NULL)
+    {
+        return NV_OK;
+    }
+
+    if (aperture != NV_MMU_PTE_APERTURE_PEER_MEMORY)
+    {
+        return NV_OK;
+    }
+
+    //
+    // Fabric address should be available for NVSwitch connected GPUs,
+    // otherwise it is a NOP.
+    //
+    *fabricEgmAddr = knvlinkGetUniqueFabricEgmBaseAddress(pGpu, pKernelNvlink);
+    if (*fabricEgmAddr == NVLINK_INVALID_FABRIC_ADDR)
     {
         return NV_OK;
     }
@@ -2202,7 +2271,7 @@ dmaInit_GM107(OBJGPU *pGpu, VirtMemAllocator *pDma)
     {
         if (NV_REG_STR_RM_RESTRICT_VA_RANGE_ON == data)
         {
-            pDma->setProperty(pDma, PDB_PROP_DMA_RESTRICT_VA_RANGE, NV_TRUE);
+            pDma->bDmaRestrictVaRange = NV_TRUE;
         }
     }
 
@@ -2362,7 +2431,7 @@ dmaMapBuffer_GM107
     {
         rangeHi = NV_MIN(rangeHi, NVBIT64(49) - 1);
     }
-    else if (pDma->getProperty(pDma, PDB_PROP_DMA_RESTRICT_VA_RANGE))
+    else if (pDma->bDmaRestrictVaRange)
     {
         // See comments in vaspaceFillAllocParams_IMPL.
         rangeHi = NV_MIN(rangeHi, NVBIT64(40) - 1);

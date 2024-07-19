@@ -279,6 +279,10 @@ struct uvm_fault_service_batch_context_struct
     // pick one to be the target of the cancel sequence.
     uvm_va_space_t *fatal_va_space;
 
+    // TODO: Bug 3900733: refactor service_fault_batch_for_cancel() to handle
+    // iterating over multiple GPU VA spaces and remove fatal_gpu.
+    uvm_gpu_t *fatal_gpu;
+
     bool has_throttled_faults;
 
     NvU32 num_invalid_prefetch_faults;
@@ -593,6 +597,7 @@ typedef enum
     UVM_GPU_LINK_NVLINK_2,
     UVM_GPU_LINK_NVLINK_3,
     UVM_GPU_LINK_NVLINK_4,
+    UVM_GPU_LINK_NVLINK_5,
     UVM_GPU_LINK_C2C,
     UVM_GPU_LINK_MAX
 } uvm_gpu_link_type_t;
@@ -1265,11 +1270,6 @@ struct uvm_gpu_peer_struct
     // peer_id[1] from max(gpu_id_1, gpu_id_2) -> min(gpu_id_1, gpu_id_2)
     NvU8 peer_ids[2];
 
-    // Indirect peers are GPUs which can coherently access each others' memory
-    // over NVLINK, but are routed through the CPU using the SYS aperture rather
-    // than a PEER aperture
-    NvU8 is_indirect_peer : 1;
-
     // The link type between the peer GPUs, currently either PCIe or NVLINK.
     // This field is used to determine the when this peer struct has been
     // initialized (link_type != UVM_GPU_LINK_INVALID). NVLink peers are
@@ -1278,8 +1278,8 @@ struct uvm_gpu_peer_struct
     uvm_gpu_link_type_t link_type;
 
     // Maximum unidirectional bandwidth between the peers in megabytes per
-    // second, not taking into account the protocols' overhead. The reported
-    // bandwidth for indirect peers is zero. See UvmGpuP2PCapsParams.
+    // second, not taking into account the protocols' overhead.
+    // See UvmGpuP2PCapsParams.
     NvU32 total_link_line_rate_mbyte_per_s;
 
     // For PCIe, the number of times that this has been retained by a VA space.
@@ -1423,19 +1423,9 @@ static bool uvm_gpus_are_nvswitch_connected(const uvm_gpu_t *gpu0, const uvm_gpu
     return false;
 }
 
-static bool uvm_gpus_are_indirect_peers(uvm_gpu_t *gpu0, uvm_gpu_t *gpu1)
+static bool uvm_gpus_are_smc_peers(uvm_gpu_t *gpu0, uvm_gpu_t *gpu1)
 {
-    uvm_gpu_peer_t *peer_caps = uvm_gpu_peer_caps(gpu0, gpu1);
-
-    if (peer_caps->link_type != UVM_GPU_LINK_INVALID && peer_caps->is_indirect_peer) {
-        UVM_ASSERT(gpu0->mem_info.numa.enabled);
-        UVM_ASSERT(gpu1->mem_info.numa.enabled);
-        UVM_ASSERT(peer_caps->link_type != UVM_GPU_LINK_PCIE);
-        UVM_ASSERT(!uvm_gpus_are_nvswitch_connected(gpu0, gpu1));
-        return true;
-    }
-
-    return false;
+    return gpu0->parent == gpu1->parent;
 }
 
 // Retrieve the virtual address corresponding to the given vidmem physical
@@ -1620,16 +1610,25 @@ void uvm_parent_gpu_remove_user_channel(uvm_parent_gpu_t *parent_gpu, uvm_user_c
 //  NV_ERR_PAGE_TABLE_NOT_AVAIL  Entry's instance pointer is valid but the entry
 //                               targets an invalid subcontext
 //
-// out_va_space is valid if NV_OK is returned, otherwise it's NULL. The caller
-// is responsibile for ensuring that the returned va_space can't be destroyed,
-// so these functions should only be called from the bottom half.
+// out_va_space is valid if NV_OK is returned, otherwise it's NULL.
+// out_gpu is valid if NV_OK is returned, otherwise it's NULL.
+// The caller is responsible for ensuring that the returned va_space and gpu
+// can't be destroyed, so this function should only be called from the bottom
+// half.
 NV_STATUS uvm_parent_gpu_fault_entry_to_va_space(uvm_parent_gpu_t *parent_gpu,
-                                                 uvm_fault_buffer_entry_t *fault,
-                                                 uvm_va_space_t **out_va_space);
+                                                 const uvm_fault_buffer_entry_t *fault,
+                                                 uvm_va_space_t **out_va_space,
+                                                 uvm_gpu_t **out_gpu);
 
+// Return the GPU VA space for the given instance pointer and ve_id in the
+// access counter entry. This function can only be used for virtual address
+// entries.
+// The return values are the same as uvm_parent_gpu_fault_entry_to_va_space()
+// but for virtual access counter entries.
 NV_STATUS uvm_parent_gpu_access_counter_entry_to_va_space(uvm_parent_gpu_t *parent_gpu,
-                                                          uvm_access_counter_buffer_entry_t *entry,
-                                                          uvm_va_space_t **out_va_space);
+                                                          const uvm_access_counter_buffer_entry_t *entry,
+                                                          uvm_va_space_t **out_va_space,
+                                                          uvm_gpu_t **out_gpu);
 
 typedef enum
 {

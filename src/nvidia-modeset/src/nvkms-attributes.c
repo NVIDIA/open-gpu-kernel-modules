@@ -628,6 +628,7 @@ static void DpyPostColorSpaceOrRangeSetEvo(NVDpyEvoPtr pDpyEvo)
                                               pApiHeadState->timings.yuv420Mode,
                                               pApiHeadState->attributes.color.colorimetry,
                                               pDpyEvo->requestedColorSpace,
+                                              NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN,
                                               pDpyEvo->requestedColorRange,
                                               &colorSpace,
                                               &colorBpc,
@@ -668,8 +669,8 @@ static void DpyPostColorSpaceOrRangeSetEvo(NVDpyEvoPtr pDpyEvo)
         if (pApiHeadState->timings.protocol == NVKMS_PROTOCOL_SOR_HDMI_FRL) {
             tmpDpyColor.bpc = pApiHeadState->attributes.color.bpc;
         } else {
-            const NVColorFormatInfoRec colorFormatsInfo =
-                nvGetColorFormatInfo(pDpyEvo);
+            const NvKmsDpyOutputColorFormatInfo colorFormatsInfo =
+                nvDpyGetOutputColorFormatInfo(pDpyEvo);
 
             while (nvHdmiGetEffectivePixelClockKHz(pDpyEvo,
                                                    &pApiHeadState->timings,
@@ -878,6 +879,30 @@ static NvBool GetColorRangeValidValues(
     return TRUE;
 }
 
+static NvBool GetCurrentColorBpc(const NVDpyEvoRec *pDpyEvo, NvS64 *pValue)
+{
+    *pValue = pDpyEvo->currentAttributes.color.bpc;
+    return TRUE;
+}
+
+static NvBool GetColorBpcValidValues(
+    const NVDpyEvoRec *pDpyEvo,
+    struct NvKmsAttributeValidValuesCommonReply *pValidValues)
+{
+    nvAssert(pValidValues->type == NV_KMS_ATTRIBUTE_TYPE_INTBITS);
+
+    /* If new enum values are added, update the u.bits.ints assignment. */
+    ct_assert(NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_MAX ==
+                NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10);
+
+    pValidValues->u.bits.ints =
+        NVBIT(NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6) |
+        NVBIT(NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8) |
+        NVBIT(NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10);
+
+    return TRUE;
+}
+
 static NvBool DigitalSignalAvailable(const NVDpyEvoRec *pDpyEvo)
 {
     return pDpyEvo->pConnectorEvo->legacyType ==
@@ -979,6 +1004,30 @@ static NvBool GetDisplayportLinkRate(const NVDpyEvoRec *pDpyEvo, NvS64 *pValue)
 }
 
 static NvBool GetDisplayportLinkRateValidValues(
+    const NVDpyEvoRec *pDpyEvo,
+    struct NvKmsAttributeValidValuesCommonReply *pValidValues)
+{
+    if (!DisplayportLinkRateAvailable(pDpyEvo)) {
+        return FALSE;
+    }
+
+    nvAssert(pValidValues->type == NV_KMS_ATTRIBUTE_TYPE_INTEGER);
+
+    return TRUE;
+}
+
+static NvBool GetDisplayportLinkRate10MHz(const NVDpyEvoRec *pDpyEvo, NvS64 *pValue)
+{
+    if (!DisplayportLinkRateAvailable(pDpyEvo)) {
+        return FALSE;
+    }
+
+    *pValue = pDpyEvo->dp.linkRate10MHz;
+
+    return TRUE;
+}
+
+static NvBool GetDisplayportLinkRate10MHzValidValues(
     const NVDpyEvoRec *pDpyEvo,
     struct NvKmsAttributeValidValuesCommonReply *pValidValues)
 {
@@ -1139,6 +1188,7 @@ static NvBool GetVrrMinRefreshRateValidValues(
     struct NvKmsAttributeValidValuesCommonReply *pValidValues)
 {
     NvU32 minMinRefreshRate, maxMinRefreshRate;
+    const NVHwModeTimingsEvo *pTimings;
     const NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
     NvU32 head;
 
@@ -1148,9 +1198,12 @@ static NvBool GetVrrMinRefreshRateValidValues(
 
     head = nvGetPrimaryHwHead(pDispEvo, pDpyEvo->apiHead);
     nvAssert(head != NV_INVALID_HEAD);
-    nvGetDpyMinRefreshRateValidValues(&pDispEvo->headState[head].timings,
+
+    pTimings = &pDispEvo->headState[head].timings;
+
+    nvGetDpyMinRefreshRateValidValues(pTimings,
                                       pDpyEvo->vrr.type,
-                                      pDpyEvo->vrr.edidTimeoutMicroseconds,
+                                      pTimings->vrr.timeoutMicroseconds,
                                       &minMinRefreshRate,
                                       &maxMinRefreshRate);
 #if defined(DEBUG)
@@ -1159,9 +1212,11 @@ static NvBool GetVrrMinRefreshRateValidValues(
         FOR_EACH_EVO_HW_HEAD(pDispEvo, pDpyEvo->apiHead, h) {
             NvU32 tmpMinMinRefreshRate, tmpMaxMinRefreshRate;
 
-            nvGetDpyMinRefreshRateValidValues(&pDispEvo->headState[h].timings,
+            pTimings = &pDispEvo->headState[h].timings;
+
+            nvGetDpyMinRefreshRateValidValues(pTimings,
                                               pDpyEvo->vrr.type,
-                                              pDpyEvo->vrr.edidTimeoutMicroseconds,
+                                              pTimings->vrr.timeoutMicroseconds,
                                               &tmpMinMinRefreshRate,
                                               &tmpMaxMinRefreshRate);
 
@@ -1302,6 +1357,12 @@ static const struct {
         .getValidValues = GetColorRangeValidValues,
         .type           = NV_KMS_ATTRIBUTE_TYPE_INTBITS,
     },
+    [NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC] = {
+        .set            = NULL,
+        .get            = GetCurrentColorBpc,
+        .getValidValues = GetColorBpcValidValues,
+        .type           = NV_KMS_ATTRIBUTE_TYPE_INTBITS,
+    },
     [NV_KMS_DPY_ATTRIBUTE_DIGITAL_SIGNAL] = {
         .set            = NULL,
         .get            = GetDigitalSignal,
@@ -1318,6 +1379,12 @@ static const struct {
         .set            = NULL,
         .get            = GetDisplayportLinkRate,
         .getValidValues = GetDisplayportLinkRateValidValues,
+        .type           = NV_KMS_ATTRIBUTE_TYPE_INTEGER,
+    },
+    [NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_LINK_RATE_10MHZ] = {
+        .set            = NULL,
+        .get            = GetDisplayportLinkRate10MHz,
+        .getValidValues = GetDisplayportLinkRate10MHzValidValues,
         .type           = NV_KMS_ATTRIBUTE_TYPE_INTEGER,
     },
     [NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_CONNECTOR_TYPE] = {

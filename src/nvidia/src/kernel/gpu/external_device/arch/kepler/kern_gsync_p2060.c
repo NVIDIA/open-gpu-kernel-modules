@@ -22,9 +22,9 @@
  */
 
 #include "nvrm_registry.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "gpu/external_device/gsync.h"
-#include "dev_p2060.h"
+#include "gpu/external_device/dev_p2060.h"
 #include "gpu/external_device/dac_p2060.h"
 #include "gpu_mgr/gpu_mgr.h"
 #include "gpu/disp/kern_disp.h"
@@ -77,7 +77,7 @@ static NV_STATUS  gsyncSetLsrMinTime(OBJGPU *, PDACEXTERNALDEVICE, NvU32);
 
 static NV_STATUS  gsyncUpdateFrameCount_P2060(PDACP2060EXTERNALDEVICE, OBJGPU *);
 static NvU32      gsyncGetNumberOfGpuFrameCountRollbacks_P2060(NvU32, NvU32, NvU32);
-static NV_STATUS  gsyncFrameCountTimerService_P2060(OBJGPU *, OBJTMR *, void *);
+static NV_STATUS  gsyncFrameCountTimerService_P2060(OBJGPU *, OBJTMR *, TMR_EVENT *);
 static NV_STATUS  gsyncResetFrameCountData_P2060(OBJGPU *, PDACP2060EXTERNALDEVICE);
 
 static NV_STATUS  gsyncGpuStereoHeadSync(OBJGPU *, NvU32, PDACEXTERNALDEVICE, NvU32);
@@ -163,6 +163,8 @@ extdevConstruct_P2060
     KernelDisplay          *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
     NvU32 iface, head, i;
     NvU32 numHeads = kdispGetNumHeads(pKernelDisplay);
+    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
+    NV_STATUS status;
 
     if ( !extdevConstruct_Base(pGpu, pExternalDevice) )
     {
@@ -207,6 +209,15 @@ extdevConstruct_P2060
     pThis->FrameCountData.enableFrmCmpMatchIntSlave     = NV_FALSE;
     pThis->FrameCountData.head                          = NV_P2060_MAX_HEADS_PER_GPU;
     pThis->FrameCountData.iface                         = NV_P2060_MAX_IFACES_PER_GSYNC;
+    status = tmrEventCreate(pTmr,
+                            &pThis->FrameCountData.pTimerEvent,
+                            gsyncFrameCountTimerService_P2060,
+                            pThis,
+                            TMR_FLAG_RECUR);
+    if (status != NV_OK)
+    {
+        goto fail_tmr_event_create;
+    }
 
     for (iface = 0; iface < NV_P2060_MAX_IFACES_PER_GSYNC; iface++)
     {
@@ -240,6 +251,10 @@ extdevConstruct_P2060
     }
 
     return pExternalDevice;
+
+fail_tmr_event_create:
+    extdevDestroy_Base(pGpu, pExternalDevice);
+    return NULL;
 }
 
 /*
@@ -749,6 +764,7 @@ extdevDestroy_P2060
     NvU32 iface, head;
     NvU32 numHeads = kdispGetNumHeads(pKernelDisplay);
     NvU8 ctrl2 = 0;
+    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
     NV_STATUS rmStatus;
 
     for (iface = 0; iface < NV_P2060_MAX_IFACES_PER_GSYNC; iface++)
@@ -818,6 +834,8 @@ cleanup:
     if (pExternalDevice->ReferenceCount == 0)
     {
        // And continue the chain running.
+       tmrEventDestroy(pTmr, pThis->FrameCountData.pTimerEvent);
+       pThis->FrameCountData.pTimerEvent = NULL;
        extdevDestroy_Base(pGpu, pExternalDevice);
     }
 }
@@ -866,7 +884,7 @@ extdevService_P2060
         if (NV_OK != osQueueWorkItemWithFlags(pGpu,
                                               _extdevService,
                                               (void *)workerThreadData,
-                                              OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW))
+                                              OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE))
         {
             portMemFree((void *)workerThreadData);
         }
@@ -5000,7 +5018,7 @@ NV_STATUS gsyncFrameCountTimerService_P2060
 (
     OBJGPU *pGpu,
     OBJTMR *pTmr,
-    void *pComponent
+    TMR_EVENT *pTmrEvent
 )
 {
     PDACP2060EXTERNALDEVICE pThis = NULL;
@@ -5014,12 +5032,7 @@ NV_STATUS gsyncFrameCountTimerService_P2060
     pThis = (PDACP2060EXTERNALDEVICE)pGsync->pExtDev;
 
     // disable the timer callback
-    status = tmrCancelCallback(pTmr, (void *)&pThis->FrameCountData);
-
-    if (status != NV_OK)
-    {
-        return status;
-    }
+    tmrEventCancel(pTmr, pThis->FrameCountData.pTimerEvent);
 
     //
     // read the gsync and gpu frame count values.Cache the difference between them.
@@ -5276,13 +5289,9 @@ gsyncUpdateFrameCount_P2060
         NV_STATUS status = NV_OK;
         OBJTMR *pTmr  = GPU_GET_TIMER(pGpu);
 
-        status = tmrScheduleCallbackRel(
-                 pTmr,
-                 gsyncFrameCountTimerService_P2060,
-                 (void *)&pThis->FrameCountData,
-                 (NV_P2060_FRAME_COUNT_TIMER_INTERVAL / 5),
-                 TMR_FLAG_RECUR,
-                 0);
+        status = tmrEventScheduleRel(pTmr,
+                                     pThis->FrameCountData.pTimerEvent,
+                                     (NV_P2060_FRAME_COUNT_TIMER_INTERVAL / 5));
 
         if (status == NV_OK)
         {

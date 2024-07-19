@@ -60,6 +60,13 @@ static int peerdirect_support = NV_MEM_PEERDIRECT_SUPPORT_DEFAULT;
 module_param(peerdirect_support, int, S_IRUGO);
 MODULE_PARM_DESC(peerdirect_support, "Set level of support for Peer-direct, 0 [default] or 1 [legacy, for example MLNX_OFED 4.9 LTS]");
 
+enum {
+        NV_MEM_PERSISTENT_API_SUPPORT_LEGACY = 0,
+        NV_MEM_PERSISTENT_API_SUPPORT_DEFAULT = 1,
+};
+static int persistent_api_support = NV_MEM_PERSISTENT_API_SUPPORT_DEFAULT;
+module_param(persistent_api_support, int, S_IRUGO);
+MODULE_PARM_DESC(persistent_api_support, "Set level of support for persistent APIs, 0 [legacy] or 1 [default]");
 
 #define peer_err(FMT, ARGS...) printk(KERN_ERR "nvidia-peermem" " %s:%d ERROR " FMT, __FUNCTION__, __LINE__, ## ARGS)
 #ifdef NV_MEM_DEBUG
@@ -479,32 +486,8 @@ static struct peer_memory_client nv_mem_client_nc = {
     .release        = nv_mem_release,
 };
 
-#endif /* NV_MLNX_IB_PEER_MEM_SYMBOLS_PRESENT */
-
-static int nv_mem_param_conf_check(void)
+static int nv_mem_legacy_client_init(void)
 {
-    int rc = 0;
-    switch (peerdirect_support) {
-    case NV_MEM_PEERDIRECT_SUPPORT_DEFAULT:
-    case NV_MEM_PEERDIRECT_SUPPORT_LEGACY:
-        break;
-    default:
-        peer_err("invalid peerdirect_support param value %d\n", peerdirect_support);
-        rc = -EINVAL;
-        break;
-    }
-    return rc;
-}
-
-static int __init nv_mem_client_init(void)
-{
-    int rc;
-    rc = nv_mem_param_conf_check();
-    if (rc) {
-        return rc;
-    }
-
-#if defined (NV_MLNX_IB_PEER_MEM_SYMBOLS_PRESENT)
     // off by one, to leave space for the trailing '1' which is flagging
     // the new client type
     BUG_ON(strlen(DRV_NAME) > IB_PEER_MEMORY_NAME_MAX-1);
@@ -533,19 +516,96 @@ static int __init nv_mem_client_init(void)
                          &mem_invalidate_callback);
     if (!reg_handle) {
         peer_err("nv_mem_client_init -- error while registering traditional client\n");
-        rc = -EINVAL;
-        goto out;
+        return -EINVAL;
+    }
+    return 0;
+}
+
+static int nv_mem_nc_client_init(void)
+{
+    // The nc client enables support for persistent pages.
+    if (persistent_api_support == NV_MEM_PERSISTENT_API_SUPPORT_LEGACY)
+    {
+        //
+        // If legacy behavior is forced via module param,
+        // both legacy and persistent clients are registered and are named
+        // "nv_mem"(legacy) and "nv_mem_nc"(persistent).
+        //
+        strcpy(nv_mem_client_nc.name, DRV_NAME "_nc");
+    }
+    else
+    {
+        //
+        // With default persistent behavior, the client name shall be "nv_mem"
+        // so that libraries can use the persistent client under the same name.
+        //
+        strcpy(nv_mem_client_nc.name, DRV_NAME);
     }
 
-    // The nc client enables support for persistent pages.
-    strcpy(nv_mem_client_nc.name, DRV_NAME "_nc");
     strcpy(nv_mem_client_nc.version, DRV_VERSION);
     reg_handle_nc = ib_register_peer_memory_client(&nv_mem_client_nc, NULL);
     if (!reg_handle_nc) {
         peer_err("nv_mem_client_init -- error while registering nc client\n");
-        rc = -EINVAL;
-        goto out;
+        return -EINVAL;
     }
+    return 0;
+}
+
+#endif /* NV_MLNX_IB_PEER_MEM_SYMBOLS_PRESENT */
+
+static int nv_mem_param_peerdirect_conf_check(void)
+{
+    int rc = 0;
+    switch (peerdirect_support) {
+    case NV_MEM_PEERDIRECT_SUPPORT_DEFAULT:
+    case NV_MEM_PEERDIRECT_SUPPORT_LEGACY:
+        break;
+    default:
+        peer_err("invalid peerdirect_support param value %d\n", peerdirect_support);
+        rc = -EINVAL;
+        break;
+    }
+    return rc;
+}
+
+static int nv_mem_param_persistent_api_conf_check(void)
+{
+    int rc = 0;
+    switch (persistent_api_support) {
+    case NV_MEM_PERSISTENT_API_SUPPORT_DEFAULT:
+    case NV_MEM_PERSISTENT_API_SUPPORT_LEGACY:
+        break;
+    default:
+        peer_err("invalid persistent_api_support param value %d\n", persistent_api_support);
+        rc = -EINVAL;
+        break;
+    }
+    return rc;
+}
+
+static int __init nv_mem_client_init(void)
+{
+#if defined (NV_MLNX_IB_PEER_MEM_SYMBOLS_PRESENT)
+    int rc;
+    rc = nv_mem_param_peerdirect_conf_check();
+    if (rc) {
+        return rc;
+    }
+
+    rc = nv_mem_param_persistent_api_conf_check();
+    if (rc) {
+        return rc;
+    }
+
+    if (persistent_api_support == NV_MEM_PERSISTENT_API_SUPPORT_LEGACY) {
+        rc = nv_mem_legacy_client_init();
+        if (rc)
+            goto out;
+    }
+
+    rc = nv_mem_nc_client_init();
+    if (rc)
+        goto out;
 
 out:
     if (rc) {

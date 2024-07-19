@@ -87,19 +87,19 @@ struct KernelHwpm {
     // Vtable with 15 per-object function pointers
     NV_STATUS (*__khwpmStateInitUnlocked__)(OBJGPU *, struct KernelHwpm * /*this*/);  // virtual override (engstate) base (engstate)
     void (*__khwpmStateDestroy__)(OBJGPU *, struct KernelHwpm * /*this*/);  // virtual override (engstate) base (engstate)
-    void (*__khwpmGetCblockInfo__)(OBJGPU *, struct KernelHwpm * /*this*/, NvU32 *, NvU32 *);  // halified (2 hals) body
-    NV_STATUS (*__khwpmConstructEngine__)(POBJGPU, struct KernelHwpm * /*this*/, ENGDESCRIPTOR);  // virtual inherited (engstate) base (engstate)
-    void (*__khwpmInitMissing__)(POBJGPU, struct KernelHwpm * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khwpmStatePreInitLocked__)(POBJGPU, struct KernelHwpm * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khwpmStatePreInitUnlocked__)(POBJGPU, struct KernelHwpm * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khwpmStateInitLocked__)(POBJGPU, struct KernelHwpm * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khwpmStatePreLoad__)(POBJGPU, struct KernelHwpm * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khwpmStateLoad__)(POBJGPU, struct KernelHwpm * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khwpmStatePostLoad__)(POBJGPU, struct KernelHwpm * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khwpmStatePreUnload__)(POBJGPU, struct KernelHwpm * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khwpmStateUnload__)(POBJGPU, struct KernelHwpm * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__khwpmStatePostUnload__)(POBJGPU, struct KernelHwpm * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__khwpmIsPresent__)(POBJGPU, struct KernelHwpm * /*this*/);  // virtual inherited (engstate) base (engstate)
+    void (*__khwpmGetCblockInfo__)(OBJGPU *, struct KernelHwpm * /*this*/, NvU32 *, NvU32 *);  // halified (3 hals) body
+    NV_STATUS (*__khwpmConstructEngine__)(struct OBJGPU *, struct KernelHwpm * /*this*/, ENGDESCRIPTOR);  // virtual inherited (engstate) base (engstate)
+    void (*__khwpmInitMissing__)(struct OBJGPU *, struct KernelHwpm * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__khwpmStatePreInitLocked__)(struct OBJGPU *, struct KernelHwpm * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__khwpmStatePreInitUnlocked__)(struct OBJGPU *, struct KernelHwpm * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__khwpmStateInitLocked__)(struct OBJGPU *, struct KernelHwpm * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__khwpmStatePreLoad__)(struct OBJGPU *, struct KernelHwpm * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__khwpmStateLoad__)(struct OBJGPU *, struct KernelHwpm * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__khwpmStatePostLoad__)(struct OBJGPU *, struct KernelHwpm * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__khwpmStatePreUnload__)(struct OBJGPU *, struct KernelHwpm * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__khwpmStateUnload__)(struct OBJGPU *, struct KernelHwpm * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__khwpmStatePostUnload__)(struct OBJGPU *, struct KernelHwpm * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__khwpmIsPresent__)(struct OBJGPU *, struct KernelHwpm * /*this*/);  // virtual inherited (engstate) base (engstate)
 
     // 1 PDB property
     NvBool PDB_PROP_KHWPM_MULTIPLE_PMA_SUPPORTED;
@@ -196,51 +196,51 @@ static inline void khwpmGetCblockInfo_DISPATCH(OBJGPU *pGpu, struct KernelHwpm *
     pKernelHwpm->__khwpmGetCblockInfo__(pGpu, pKernelHwpm, arg3, arg4);
 }
 
-static inline NV_STATUS khwpmConstructEngine_DISPATCH(POBJGPU pGpu, struct KernelHwpm *pEngstate, ENGDESCRIPTOR arg3) {
+static inline NV_STATUS khwpmConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate, ENGDESCRIPTOR arg3) {
     return pEngstate->__khwpmConstructEngine__(pGpu, pEngstate, arg3);
 }
 
-static inline void khwpmInitMissing_DISPATCH(POBJGPU pGpu, struct KernelHwpm *pEngstate) {
+static inline void khwpmInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate) {
     pEngstate->__khwpmInitMissing__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS khwpmStatePreInitLocked_DISPATCH(POBJGPU pGpu, struct KernelHwpm *pEngstate) {
+static inline NV_STATUS khwpmStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate) {
     return pEngstate->__khwpmStatePreInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS khwpmStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct KernelHwpm *pEngstate) {
+static inline NV_STATUS khwpmStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate) {
     return pEngstate->__khwpmStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS khwpmStateInitLocked_DISPATCH(POBJGPU pGpu, struct KernelHwpm *pEngstate) {
+static inline NV_STATUS khwpmStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate) {
     return pEngstate->__khwpmStateInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS khwpmStatePreLoad_DISPATCH(POBJGPU pGpu, struct KernelHwpm *pEngstate, NvU32 arg3) {
+static inline NV_STATUS khwpmStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate, NvU32 arg3) {
     return pEngstate->__khwpmStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS khwpmStateLoad_DISPATCH(POBJGPU pGpu, struct KernelHwpm *pEngstate, NvU32 arg3) {
+static inline NV_STATUS khwpmStateLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate, NvU32 arg3) {
     return pEngstate->__khwpmStateLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS khwpmStatePostLoad_DISPATCH(POBJGPU pGpu, struct KernelHwpm *pEngstate, NvU32 arg3) {
+static inline NV_STATUS khwpmStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate, NvU32 arg3) {
     return pEngstate->__khwpmStatePostLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS khwpmStatePreUnload_DISPATCH(POBJGPU pGpu, struct KernelHwpm *pEngstate, NvU32 arg3) {
+static inline NV_STATUS khwpmStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate, NvU32 arg3) {
     return pEngstate->__khwpmStatePreUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS khwpmStateUnload_DISPATCH(POBJGPU pGpu, struct KernelHwpm *pEngstate, NvU32 arg3) {
+static inline NV_STATUS khwpmStateUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate, NvU32 arg3) {
     return pEngstate->__khwpmStateUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS khwpmStatePostUnload_DISPATCH(POBJGPU pGpu, struct KernelHwpm *pEngstate, NvU32 arg3) {
+static inline NV_STATUS khwpmStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate, NvU32 arg3) {
     return pEngstate->__khwpmStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NvBool khwpmIsPresent_DISPATCH(POBJGPU pGpu, struct KernelHwpm *pEngstate) {
+static inline NvBool khwpmIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelHwpm *pEngstate) {
     return pEngstate->__khwpmIsPresent__(pGpu, pEngstate);
 }
 
@@ -251,6 +251,8 @@ static inline NV_STATUS khwpmPmaStreamSriovSetGfid_56cd7a(OBJGPU *pGpu, struct K
 NV_STATUS khwpmPmaStreamSriovSetGfid_GA100(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3, NvU32 arg4);
 
 NV_STATUS khwpmPmaStreamSriovSetGfid_GH100(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3, NvU32 arg4);
+
+NV_STATUS khwpmPmaStreamSriovSetGfid_GB100(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3, NvU32 arg4);
 
 static inline NV_STATUS khwpmPmaStreamSriovSetGfid_92bfc3(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 arg3, NvU32 arg4) {
     NV_ASSERT_PRECOMP(0);
@@ -276,6 +278,8 @@ void khwpmStateDestroy_IMPL(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm);
 void khwpmGetCblockInfo_GM107(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 *arg3, NvU32 *arg4);
 
 void khwpmGetCblockInfo_GH100(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 *arg3, NvU32 *arg4);
+
+void khwpmGetCblockInfo_GB100(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU32 *arg3, NvU32 *arg4);
 
 NV_STATUS khwpmStreamoutAllocPmaStream_IMPL(OBJGPU *pGpu, struct KernelHwpm *pKernelHwpm, NvU64 arg3, MEMORY_DESCRIPTOR *arg4, MEMORY_DESCRIPTOR *arg5, NvU32 arg6, HWPM_PMA_STREAM *arg7);
 

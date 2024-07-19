@@ -5,7 +5,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_hal_register.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102
 //
 
 #ifndef _G_RMCFG_HAL_REGISTER_H_
@@ -133,6 +133,24 @@ static NV_STATUS NV_INLINE REGISTER_GH10X_HALS(void)
     return NV_OK;
 }
 
+NV_STATUS registerHalModule_GB100(void);    
+NV_STATUS registerHalModule_GB102(void);    
+
+static NV_STATUS NV_INLINE REGISTER_GB10X_HALS(void)
+{
+    NV_STATUS rmStatus;
+
+    rmStatus = registerHalModule_GB100();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    rmStatus = registerHalModule_GB102();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    return NV_OK;
+}
+
 // 
 // This routine can be used by platform dependent code to
 // enable all HAL modules.
@@ -160,6 +178,12 @@ static NV_STATUS NV_INLINE REGISTER_ALL_HALS(void)
     }
 
     rmStatus = REGISTER_GH10X_HALS();
+    if (rmStatus != NV_OK)
+    {
+        return rmStatus;
+    }
+
+    rmStatus = REGISTER_GB10X_HALS();
     if (rmStatus != NV_OK)
     {
         return rmStatus;

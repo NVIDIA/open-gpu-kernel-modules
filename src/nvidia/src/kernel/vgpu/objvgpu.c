@@ -35,7 +35,7 @@
 #include "vgpu/rpc.h"
 #include "vgpu/vgpu_util.h"
 
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 
 OBJVGPU *NvVGPU_Table[NV_VGPU_MAX_INSTANCES];
 

@@ -31,7 +31,7 @@
 /* ------------------------ Includes --------------------------------------- */
 #include "gpu/perf/kern_perf.h"
 #include "gpu/perf/kern_perf_boost.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "platform/platform_request_handler.h"
 #include "platform/chipset/chipset.h"
 

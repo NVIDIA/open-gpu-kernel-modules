@@ -158,13 +158,17 @@ struct NvKmsKapiDeviceResourcesInfo {
 
         NvU32 hasVideoMemory;
 
+        NvU32 numDisplaySemaphores;
+
         NvU8  genericPageKind;
 
         NvBool  supportsSyncpts;
+
+        NvBool requiresVrrSemaphores;
     } caps;
 
     NvU64 supportedSurfaceMemoryFormats[NVKMS_KAPI_LAYER_MAX];
-    NvBool supportsHDR[NVKMS_KAPI_LAYER_MAX];
+    NvBool supportsICtCp[NVKMS_KAPI_LAYER_MAX];
 };
 
 #define NVKMS_KAPI_LAYER_MASK(layerType) (1 << (layerType))
@@ -210,18 +214,26 @@ struct NvKmsKapiStaticDisplayInfo {
     NvU32 headMask;
 };
 
-struct NvKmsKapiSyncpt {
+struct NvKmsKapiSyncParams {
+    union {
+        struct {
+            /*!
+             * Possible syncpt use case in kapi.
+             * For pre-syncpt, use only id and value
+             * and for post-syncpt, use only fd.
+             */
+            NvU32   preSyncptId;
+            NvU32   preSyncptValue;
+        } syncpt;
 
-    /*!
-     * Possible syncpt use case in kapi.
-     * For pre-syncpt, use only id and value
-     * and for post-syncpt, use only fd.
-     */
-    NvBool  preSyncptSpecified;
-    NvU32   preSyncptId;
-    NvU32   preSyncptValue;
+        struct {
+            NvU32 index;
+        } semaphore;
+    } u;
 
-    NvBool  postSyncptRequested;
+    NvBool preSyncptSpecified;
+    NvBool postSyncptRequested;
+    NvBool semaphoreSpecified;
 };
 
 struct NvKmsKapiLayerConfig {
@@ -231,7 +243,7 @@ struct NvKmsKapiLayerConfig {
         NvU8 surfaceAlpha;
     } compParams;
     struct NvKmsRRParams rrParams;
-    struct NvKmsKapiSyncpt syncptParams;
+    struct NvKmsKapiSyncParams syncParams;
 
     struct {
         struct NvKmsHDRStaticMetadata val;
@@ -319,7 +331,6 @@ struct NvKmsKapiHeadModeSetConfig {
 
     struct {
         struct {
-            NvBool specified;
             NvU32 depth;
             NvU32 start;
             NvU32 end;
@@ -327,7 +338,6 @@ struct NvKmsKapiHeadModeSetConfig {
         } input;
 
         struct {
-            NvBool specified;
             NvBool enabled;
             struct NvKmsLutRamps *pRamps;
         } output;
@@ -342,7 +352,8 @@ struct NvKmsKapiHeadRequestedConfig {
         NvBool modeChanged         : 1;
         NvBool hdrInfoFrameChanged : 1;
         NvBool colorimetryChanged  : 1;
-        NvBool lutChanged      : 1;
+        NvBool ilutChanged         : 1;
+        NvBool olutChanged         : 1;
     } flags;
 
     struct NvKmsKapiCursorRequestedConfig cursorRequestedConfig;
@@ -368,6 +379,8 @@ struct NvKmsKapiHeadReplyConfig {
 
 struct NvKmsKapiModeSetReplyConfig {
     enum NvKmsFlipResult flipResult;
+    NvBool vrrFlip;
+    NvS32 vrrSemaphoreIndex;
     struct NvKmsKapiHeadReplyConfig
         headReplyConfig[NVKMS_KAPI_MAX_HEADS];
 };
@@ -1409,6 +1422,87 @@ struct NvKmsKapiFunctionsTable {
     (*setSuspendResumeCallback)
     (
         NvKmsKapiSuspendResumeCallbackFunc *function
+    );
+
+    /*!
+     * Immediately reset the specified display semaphore to the pending state.
+     *
+     * Must be called prior to applying a mode set that utilizes the specified
+     * display semaphore for synchronization.
+     *
+     * \param [in] device         The device which will utilize the semaphore.
+     *
+     * \param [in] semaphoreIndex Index of the desired semaphore within the
+     *                            NVKMS semaphore pool. Must be less than
+     *                            NvKmsKapiDeviceResourcesInfo::caps::numDisplaySemaphores
+     *                            for the specified device.
+     */
+    NvBool
+    (*resetDisplaySemaphore)
+    (
+        struct NvKmsKapiDevice *device,
+        NvU32 semaphoreIndex
+    );
+
+    /*!
+     * Immediately set the specified display semaphore to the displayable state.
+     *
+     * Must be called after \ref resetDisplaySemaphore to indicate a mode
+     * configuration change that utilizes the specified display semaphore for
+     * synchronization may proceed.
+     *
+     * \param [in] device         The device which will utilize the semaphore.
+     *
+     * \param [in] semaphoreIndex Index of the desired semaphore within the
+     *                            NVKMS semaphore pool. Must be less than
+     *                            NvKmsKapiDeviceResourcesInfo::caps::numDisplaySemaphores
+     *                            for the specified device.
+     */
+    void
+    (*signalDisplaySemaphore)
+    (
+        struct NvKmsKapiDevice *device,
+        NvU32 semaphoreIndex
+    );
+
+    /*!
+     * Immediately cancel use of a display semaphore by resetting its value to
+     * its initial state.
+     *
+     * This can be used by clients to restore a semaphore to a consistent state
+     * when they have prepared it for use by previously calling
+     * \ref resetDisplaySemaphore() on it, but are then prevented from
+     * submitting the associated hardware operations to consume it due to the
+     * subsequent failure of some software or hardware operation.
+     *
+     * \param [in] device         The device which will utilize the semaphore.
+     *
+     * \param [in] semaphoreIndex Index of the desired semaphore within the
+     *                            NVKMS semaphore pool. Must be less than
+     *                            NvKmsKapiDeviceResourcesInfo::caps::numDisplaySemaphores
+     *                            for the specified device.
+     */
+    void
+    (*cancelDisplaySemaphore)
+    (
+        struct NvKmsKapiDevice *device,
+        NvU32 semaphoreIndex
+    );
+
+    /*!
+     * Signal the VRR semaphore at the specified index from the CPU.
+     * If device does not support VRR semaphores, this is a no-op.
+     * Returns true if signal is success or no-op, otherwise returns false.
+     *
+     * \param [in]  device  A device allocated using allocateDevice().
+     *
+     * \param [in]  index   The VRR semaphore index to be signalled.
+     */
+    NvBool
+    (*signalVrrSemaphore)
+    (
+        struct NvKmsKapiDevice *device,
+        NvS32 index
     );
 };
 

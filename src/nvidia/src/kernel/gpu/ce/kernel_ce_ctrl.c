@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -125,7 +125,7 @@ subdeviceCtrlCmdCeGetCapsV2_VF
     NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
 
     // If engine disabled, return error and not empty caps.
-    if ((pVSI->engineList & NVBIT64(pParams->ceEngineType)) == 0)
+    if (NVGPU_VGPU_GET_ENGINE_LIST_MASK(pVSI->engineList, pParams->ceEngineType) == 0)
     {
         portMemSet(&pParams->capsTbl, 0, NV2080_CTRL_CE_CAPS_TBL_SIZE);
         return NV_ERR_NOT_SUPPORTED;

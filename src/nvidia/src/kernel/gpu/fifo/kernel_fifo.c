@@ -38,7 +38,8 @@
 #include "gpu/mmu/kern_gmmu.h"
 #include "vgpu/rpc.h"
 #include "vgpu/vgpu_events.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
+#include "containers/eheap_old.h"
 
 #include "nvmisc.h"
 
@@ -2711,7 +2712,7 @@ kfifoRunlistAllocBuffers_IMPL
             }
         }
 
-        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_101, 
+        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_101,
                         ppMemDesc[counter]);
         if (status != NV_OK)
         {
@@ -3044,56 +3045,63 @@ kfifoTriggerPostSchedulingEnableCallback_IMPL
 {
     NV_STATUS status = NV_OK;
     FifoSchedulingHandlerEntry *pEntry;
-    NvBool bRetry = NV_FALSE;
+    NvBool bFirstPass = NV_TRUE;
+    NvBool bRetry;
 
-    for (pEntry = listHead(&pKernelFifo->postSchedulingEnableHandlerList);
-         pEntry != NULL;
-         pEntry = listNext(&pKernelFifo->postSchedulingEnableHandlerList, pEntry))
+    do
     {
-        NV_ASSERT_OR_ELSE(pEntry->pCallback != NULL,
-            status = NV_ERR_INVALID_STATE; break;);
+        NvBool bMadeProgress = NV_FALSE;
 
-        pEntry->bHandled = NV_FALSE;
-        status = pEntry->pCallback(pGpu, pEntry->pCallbackParam);
+        bRetry = NV_FALSE;
 
-        // Retry mechanism: Some callbacks depend on other callbacks in this list.
-        bRetry = bRetry || (status == NV_WARN_MORE_PROCESSING_REQUIRED);
+        for (pEntry = listHead(&pKernelFifo->postSchedulingEnableHandlerList);
+             pEntry != NULL;
+             pEntry = listNext(&pKernelFifo->postSchedulingEnableHandlerList, pEntry))
+        {
+            NV_ASSERT_OR_ELSE(pEntry->pCallback != NULL,
+                status = NV_ERR_INVALID_STATE; break;);
 
-        if (status == NV_WARN_MORE_PROCESSING_REQUIRED)
-            // Quash retry status
-            status = NV_OK;
-        else if (status == NV_OK)
-            // Successfully handled, no need to retry
-            pEntry->bHandled = NV_TRUE;
-        else
-            // Actual error, abort
-            break;
-    }
+            if (bFirstPass)
+            {
+                // Reset bHandled set by previous call (fore example, for dor suspend-resume)
+                pEntry->bHandled = NV_FALSE;
+            }
+            else if (pEntry->bHandled)
+            {
+                continue;
+            }
 
-    // If we hit an actual error or completed everything successfully, return early.
-    if ((status != NV_OK) || !bRetry)
-        return status;
+            status = pEntry->pCallback(pGpu, pEntry->pCallbackParam);
 
-    // Second pass, retry anything that asked nicely to be deferred
-    for (pEntry = listHead(&pKernelFifo->postSchedulingEnableHandlerList);
-         pEntry != NULL;
-         pEntry = listNext(&pKernelFifo->postSchedulingEnableHandlerList, pEntry))
-    {
-        NV_ASSERT_OR_ELSE(pEntry->pCallback != NULL,
-            status = NV_ERR_INVALID_STATE; break;);
+            if (status == NV_WARN_MORE_PROCESSING_REQUIRED)
+            {
+                // Retry mechanism: Some callbacks depend on other callbacks in this list.
+                bRetry = NV_TRUE;
+                // Quash retry status
+                status = NV_OK;
+            }
+            else if (status == NV_OK)
+            {
+                // Successfully handled, no need to retry
+                pEntry->bHandled = NV_TRUE;
+                bMadeProgress = NV_TRUE;
+            }
+            else
+            {
+                // Actual error, abort
+                NV_ASSERT(0);
+                break;
+            }
+        }
 
-        // Skip anything that was completed successfully
-        if (pEntry->bHandled)
-            continue;
+        // We are stuck in a loop, and all remaining callbacks are returning NV_WARN_MORE_PROCESSING_REQUIRED
+        NV_ASSERT_OR_RETURN(bMadeProgress || status != NV_OK, NV_ERR_INVALID_STATE);
 
-        NV_CHECK_OK_OR_ELSE(status, LEVEL_ERROR,
-            pEntry->pCallback(pGpu, pEntry->pCallbackParam),
-            break; );
-    }
+        bFirstPass = NV_FALSE;
+    } while (bRetry && status == NV_OK);
 
     return status;
 }
-
 
 /*!
  * @brief Notify handlers that scheduling will soon be disabled.
@@ -3112,53 +3120,60 @@ kfifoTriggerPreSchedulingDisableCallback_IMPL
 {
     NV_STATUS status = NV_OK;
     FifoSchedulingHandlerEntry *pEntry;
-    NvBool bRetry = NV_FALSE;
+    NvBool bFirstPass = NV_TRUE;
+    NvBool bRetry;
 
-    // First pass
-    for (pEntry = listHead(&pKernelFifo->preSchedulingDisableHandlerList);
-         pEntry != NULL;
-         pEntry = listNext(&pKernelFifo->preSchedulingDisableHandlerList, pEntry))
+    do
     {
-        NV_ASSERT_OR_ELSE(pEntry->pCallback != NULL,
-            status = NV_ERR_INVALID_STATE; break;);
+        NvBool bMadeProgress = NV_FALSE;
 
-        pEntry->bHandled = NV_FALSE;
-        status = pEntry->pCallback(pGpu, pEntry->pCallbackParam);
+        bRetry = NV_FALSE;
 
-        // Retry mechanism: Some callbacks depend on other callbacks in this list.
-        bRetry = bRetry || (status == NV_WARN_MORE_PROCESSING_REQUIRED);
+        for (pEntry = listHead(&pKernelFifo->preSchedulingDisableHandlerList);
+             pEntry != NULL;
+             pEntry = listNext(&pKernelFifo->preSchedulingDisableHandlerList, pEntry))
+        {
+            NV_ASSERT_OR_ELSE(pEntry->pCallback != NULL,
+                status = NV_ERR_INVALID_STATE; break;);
 
-        if (status == NV_WARN_MORE_PROCESSING_REQUIRED)
-            // Quash retry status
-            status = NV_OK;
-        else if (status == NV_OK)
-            // Successfully handled, no need to retry
-            pEntry->bHandled = NV_TRUE;
-        else
-            // Actual error, abort
-            break;
-    }
+            if (bFirstPass)
+            {
+                // Reset bHandled set by previous call (fore example, for dor suspend-resume)
+                pEntry->bHandled = NV_FALSE;
+            }
+            else if (pEntry->bHandled)
+            {
+                continue;
+            }
 
-    // If we hit an actual error or completed everything successfully, return early.
-    if ((status != NV_OK) || !bRetry)
-        return status;
+            status = pEntry->pCallback(pGpu, pEntry->pCallbackParam);
 
-    // Second pass, retry anything that asked nicely to be deferred
-    for (pEntry = listHead(&pKernelFifo->preSchedulingDisableHandlerList);
-         pEntry != NULL;
-         pEntry = listNext(&pKernelFifo->preSchedulingDisableHandlerList, pEntry))
-    {
-        NV_ASSERT_OR_ELSE(pEntry->pCallback != NULL,
-            status = NV_ERR_INVALID_STATE; break;);
+            if (status == NV_WARN_MORE_PROCESSING_REQUIRED)
+            {
+                // Retry mechanism: Some callbacks depend on other callbacks in this list.
+                bRetry = NV_TRUE;
+                // Quash retry status
+                status = NV_OK;
+            }
+            else if (status == NV_OK)
+            {
+                // Successfully handled, no need to retry
+                pEntry->bHandled = NV_TRUE;
+                bMadeProgress = NV_TRUE;
+            }
+            else
+            {
+                // Actual error, abort
+                NV_ASSERT(0);
+                break;
+            }
+        }
 
-        // Skip anything that was completed successfully
-        if (pEntry->bHandled)
-            continue;
+        // We are stuck in a loop, and all remaining callbacks are returning NV_WARN_MORE_PROCESSING_REQUIRED
+        NV_ASSERT_OR_RETURN(bMadeProgress || status != NV_OK, NV_ERR_INVALID_STATE);
 
-        NV_CHECK_OK_OR_ELSE(status, LEVEL_ERROR,
-            pEntry->pCallback(pGpu, pEntry->pCallbackParam),
-            break; );
-    }
+        bFirstPass = NV_FALSE;
+    } while (bRetry && status == NV_OK);
 
     return status;
 }
@@ -3496,13 +3511,47 @@ kfifoGetGuestEngineLookupTable_IMPL
         {NV2080_ENGINE_TYPE_NVJPEG6,    MC_ENGINE_IDX_NVJPEG6},
         {NV2080_ENGINE_TYPE_NVJPEG7,    MC_ENGINE_IDX_NVJPEG7},
         {NV2080_ENGINE_TYPE_OFA0,       MC_ENGINE_IDX_OFA0},
+        {NV2080_ENGINE_TYPE_OFA1,       MC_ENGINE_IDX_OFA1},
+        // removal tracking bug: 3748354
+        {NV2080_ENGINE_TYPE_COPY10,     MC_ENGINE_IDX_CE10},
+        {NV2080_ENGINE_TYPE_COPY11,     MC_ENGINE_IDX_CE11},
+        {NV2080_ENGINE_TYPE_COPY12,     MC_ENGINE_IDX_CE12},
+        {NV2080_ENGINE_TYPE_COPY13,     MC_ENGINE_IDX_CE13},
+        {NV2080_ENGINE_TYPE_COPY14,     MC_ENGINE_IDX_CE14},
+        {NV2080_ENGINE_TYPE_COPY15,     MC_ENGINE_IDX_CE15},
+        {NV2080_ENGINE_TYPE_COPY16,     MC_ENGINE_IDX_CE16},
+        {NV2080_ENGINE_TYPE_COPY17,     MC_ENGINE_IDX_CE17},
+        {NV2080_ENGINE_TYPE_COPY18,     MC_ENGINE_IDX_CE18},
+        {NV2080_ENGINE_TYPE_COPY19,     MC_ENGINE_IDX_CE19},
+        // removal tracking bug: 3748354
+        {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY0,      MC_ENGINE_IDX_CE0},
+        {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY1,      MC_ENGINE_IDX_CE1},
+        {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY2,      MC_ENGINE_IDX_CE2},
+        {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY3,      MC_ENGINE_IDX_CE3},
+        {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY4,      MC_ENGINE_IDX_CE4},
+        {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY5,      MC_ENGINE_IDX_CE5},
+        {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY6,      MC_ENGINE_IDX_CE6},
+        {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY7,      MC_ENGINE_IDX_CE7},
+        {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY8,      MC_ENGINE_IDX_CE8},
+        {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY9,      MC_ENGINE_IDX_CE9},
+        // removal tracking bug: 3748354
+        {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY10,     MC_ENGINE_IDX_CE10},
+        {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY11,     MC_ENGINE_IDX_CE11},
+        {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY12,     MC_ENGINE_IDX_CE12},
+        {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY13,     MC_ENGINE_IDX_CE13},
+        {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY14,     MC_ENGINE_IDX_CE14},
+        {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY15,     MC_ENGINE_IDX_CE15},
+        {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY16,     MC_ENGINE_IDX_CE16},
+        {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY17,     MC_ENGINE_IDX_CE17},
+        {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY18,     MC_ENGINE_IDX_CE18},
+        {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY19,     MC_ENGINE_IDX_CE19},
     };
 
     //
     // To trap NV2080_ENGINE_TYPE expansions.
     // Please update the table guestEngineLookupTable if this assertion is triggered.
     //
-    ct_assert(NV2080_ENGINE_TYPE_LAST == 0x00000040);
+    ct_assert(NV2080_ENGINE_TYPE_LAST == 0x00000054);
 
     *pEngLookupTblSize = NV_ARRAY_ELEMENTS(guestEngineLookupTable);
 
@@ -3583,6 +3632,8 @@ kfifoGetPbdmaIdFromMmuFaultId_IMPL
     const ENGINE_INFO *pEngineInfo = kfifoGetEngineInfo(pKernelFifo);
     NvU32 pbdmaFaultIdStart;
 
+    // This function relies on pKernelFifo->bIsPbdmaMmuEngineIdContiguous to be set.
+    NV_ASSERT_OR_RETURN(pKernelFifo->bIsPbdmaMmuEngineIdContiguous, NV_ERR_NOT_SUPPORTED);
     NV_ASSERT_OR_RETURN(pEngineInfo != NULL, NV_ERR_INVALID_STATE);
 
     //
@@ -3617,6 +3668,42 @@ kfifoGetEngineTypeFromPbdmaFaultId_IMPL
 {
     const ENGINE_INFO *pEngineInfo = kfifoGetEngineInfo(pKernelFifo);
     NvU32 i, j;
+
+    if (!pKernelFifo->bIsPbdmaMmuEngineIdContiguous)
+    {
+        NvU32  maxSubctx;
+        NvU32  baseGrFaultId;
+        NvU32 *pPbdmaFaultIds;
+        NvU32  numPbdma = 0;
+
+         NV_ASSERT_OK_OR_RETURN(kfifoGetEnginePbdmaFaultIds_HAL(pGpu, pKernelFifo,
+                                            ENGINE_INFO_TYPE_RM_ENGINE_TYPE, (NvU32)RM_ENGINE_TYPE_GR0,
+                                            &pPbdmaFaultIds, &numPbdma));
+
+        baseGrFaultId = pPbdmaFaultIds[0];
+        maxSubctx = kfifoGetMaxSubcontext_HAL(pGpu, pKernelFifo, NV_FALSE);
+
+        if ((pbdmaFaultId >= baseGrFaultId) && (pbdmaFaultId < (baseGrFaultId + maxSubctx)))
+        {
+            // We need extra logic when SMC is enabled
+            if (IS_MIG_IN_USE(pGpu))
+            {
+                KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
+                NvU32 grIdx;
+                NvU32 subctxId;
+
+                subctxId = pbdmaFaultId - baseGrFaultId;
+                NV_ASSERT_OK_OR_RETURN(kgrmgrGetGrIdxForVeid(pGpu, pKernelGraphicsManager, subctxId, &grIdx));
+                *pRmEngineType = RM_ENGINE_TYPE_GR(grIdx);
+            }
+            else
+            {
+                *pRmEngineType = RM_ENGINE_TYPE_GR(0);
+            }
+
+            return NV_OK;
+        }
+    }
 
     for (i = 0; i < pEngineInfo->engineInfoListSize; i++)
     {

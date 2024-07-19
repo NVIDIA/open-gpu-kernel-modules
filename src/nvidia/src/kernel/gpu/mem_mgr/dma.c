@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -53,6 +53,7 @@
 #include "gpu/subdevice/subdevice.h"
 #include "gpu/bus/kern_bus.h"
 #include "platform/sli/sli.h"
+#include "containers/eheap_old.h"
 
 /*!
  * @brief Allocate mapping.

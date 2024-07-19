@@ -38,6 +38,7 @@
 #include "nvidia-push-init.h" // nvPushGetSupportedClassIndex()
 #include "nvidia-push-utils.h" // nvPushIsAmodel()
 
+#include <class/clcd97.h> // BLACKWELL_A
 #include <class/clcb97.h> // HOPPER_A
 #include <class/clc997.h> // ADA_A
 #include <class/clc797.h> // AMPERE_B
@@ -58,6 +59,7 @@
 #include "g_turing_shader_info.h"
 #include "g_ampere_shader_info.h"
 #include "g_hopper_shader_info.h"
+#include "g_blackwell_shader_info.h"
 
 #define _NV3D_CHANNEL_PROGRAMS_ENTRY(_archLower, _archCamel, _archUpper) \
     [NV3D_SHADER_ARCH_ ## _archUpper ] = {                               \
@@ -92,6 +94,7 @@ static Nv3dChannelProgramsRec PickProgramsRec(
         _NV3D_CHANNEL_PROGRAMS_ENTRY(turing, Turing, TURING),
         _NV3D_CHANNEL_PROGRAMS_ENTRY(ampere, Ampere, AMPERE),
         _NV3D_CHANNEL_PROGRAMS_ENTRY(hopper, Hopper, HOPPER),
+        _NV3D_CHANNEL_PROGRAMS_ENTRY(blackwell, Blackwell, BLACKWELL),
     };
 
     return programsTable[p3dDevice->shaderArch];
@@ -197,6 +200,7 @@ static NvU32 GetSmVersion(
             [NV_AMODEL_AMPERE]      = NV2080_CTRL_GR_INFO_SM_VERSION_8_2,
             [NV_AMODEL_ADA]         = NV2080_CTRL_GR_INFO_SM_VERSION_8_9,
             [NV_AMODEL_HOPPER]      = NV2080_CTRL_GR_INFO_SM_VERSION_9_0,
+            [NV_AMODEL_BLACKWELL]   = NV2080_CTRL_GR_INFO_SM_VERSION_10_0,
         };
 
         if (pPushDevice->amodelConfig >= ARRAY_LEN(table)) {
@@ -292,6 +296,9 @@ static NvBool GetSpaVersion(
         /* Hopper */
         { NV2080_CTRL_GR_INFO_SM_VERSION_9_0, { 9,0 } },
 
+        /* Blackwell */
+        { NV2080_CTRL_GR_INFO_SM_VERSION_10_0, { 10,0 } },
+        { NV2080_CTRL_GR_INFO_SM_VERSION_10_1, { 10,1 } },
     };
 
     const NvU32 smVersion = GetSmVersion(pPushDevice);
@@ -399,6 +406,7 @@ NvBool nv3dAllocDevice(
          * classNumber   |            |            |  |  |      |
          *    |          |            |            |  |  |      |
          */
+        ENTRY(BLACKWELL_A,BLACKWELL,  BLACKWELL,   0, 0, 32768, Hopper),
         ENTRY(HOPPER_A,  HOPPER,      HOPPER,      0, 0, 32768, Hopper),
         ENTRY(ADA_A,     AMPERE,      ADA,         0, 0, 32768, Ampere),
         ENTRY(AMPERE_B,  AMPERE,      AMPERE,      0, 0, 32768, Ampere),

@@ -24,7 +24,7 @@
 #ifndef HWBC_H
 #define HWBC_H
 
-#include "gpu/gpu.h"       // NBADDR, POBJGPU
+#include "gpu/gpu.h"       // NBADDR, OBJGPU
 
 /**************** Resource Manager Defines and Structures ******************\
 *                                                                           *
@@ -33,7 +33,6 @@
 *                                                                           *
 \***************************************************************************/
 struct OBJCL;
-typedef struct OBJHWBC *POBJHWBC;
 typedef struct OBJHWBC OBJHWBC;
 
 

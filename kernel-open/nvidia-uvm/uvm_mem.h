@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2023 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -324,8 +324,7 @@ uvm_gpu_phys_address_t uvm_mem_gpu_physical(uvm_mem_t *mem, uvm_gpu_t *gpu, NvU6
 uvm_gpu_address_t uvm_mem_gpu_address_physical(uvm_mem_t *mem, uvm_gpu_t *gpu, NvU64 offset, NvU64 size);
 
 // Helper to get an address suitable for accessing_gpu (which may be the backing
-// GPU) to access with CE. Note that mappings for indirect peers are not
-// created automatically.
+// GPU) to access with CE.
 uvm_gpu_address_t uvm_mem_gpu_address_copy(uvm_mem_t *mem, uvm_gpu_t *accessing_gpu, NvU64 offset, NvU64 size);
 
 static bool uvm_mem_is_sysmem(uvm_mem_t *mem)

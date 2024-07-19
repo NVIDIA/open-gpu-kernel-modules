@@ -57,7 +57,9 @@
 #define NV_PFALCON_FALCON_DMATRFCMD                                                                    0x00000118     /* RW-4R */
 #define NV_PFALCON_FALCON_DMATRFCMD_FULL                                                               0:0            /* R-XVF */
 #define NV_PFALCON_FALCON_DMATRFCMD_FULL_TRUE                                                          0x00000001     /* R---V */
+#define NV_PFALCON_FALCON_DMATRFCMD_FULL_FALSE                                                         0x00000000     /* R---V */
 #define NV_PFALCON_FALCON_DMATRFCMD_IDLE                                                               1:1            /* R-XVF */
+#define NV_PFALCON_FALCON_DMATRFCMD_IDLE_TRUE                                                          0x00000001     /* R---V */
 #define NV_PFALCON_FALCON_DMATRFCMD_IDLE_FALSE                                                         0x00000000     /* R---V */
 #define NV_PFALCON_FALCON_DMATRFCMD_SEC                                                                3:2            /* RWXVF */
 #define NV_PFALCON_FALCON_DMATRFCMD_IMEM                                                               4:4            /* RWXVF */

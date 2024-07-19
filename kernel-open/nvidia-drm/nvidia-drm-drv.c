@@ -430,7 +430,7 @@ static int nv_drm_load(struct drm_device *dev, unsigned long flags)
 
     struct NvKmsKapiAllocateDeviceParams allocateDeviceParams;
     struct NvKmsKapiDeviceResourcesInfo resInfo;
-#endif
+#endif /* defined(NV_DRM_ATOMIC_MODESET_AVAILABLE) */
 #if defined(NV_DRM_FORMAT_MODIFIERS_PRESENT)
     NvU64 kind;
     NvU64 gen;
@@ -516,6 +516,12 @@ static int nv_drm_load(struct drm_device *dev, unsigned long flags)
 
     nv_dev->semsurf_max_submitted_offset =
         resInfo.caps.semsurf.maxSubmittedOffset;
+
+    nv_dev->display_semaphores.count =
+        resInfo.caps.numDisplaySemaphores;
+    nv_dev->display_semaphores.next_index = 0;
+
+    nv_dev->requiresVrrSemaphores = resInfo.caps.requiresVrrSemaphores;
 
 #if defined(NV_DRM_FORMAT_MODIFIERS_PRESENT)
     gen = nv_dev->pageKindGeneration;
@@ -673,7 +679,6 @@ static int __nv_drm_master_set(struct drm_device *dev,
         !nvKms->grabOwnership(nv_dev->pDevice)) {
         return -EINVAL;
     }
-    nv_dev->drmMasterChangedSinceLastAtomicCommit = NV_TRUE;
 
     return 0;
 }
@@ -863,13 +868,18 @@ static int nv_drm_get_dpy_id_for_connector_id_ioctl(struct drm_device *dev,
                                                     struct drm_file *filep)
 {
     struct drm_nvidia_get_dpy_id_for_connector_id_params *params = data;
+    struct drm_connector *connector;
+    struct nv_drm_connector *nv_connector;
+    int ret = 0;
+
+    if (!drm_core_check_feature(dev, DRIVER_MODESET)) {
+        return -EOPNOTSUPP;
+    }
+
     // Importantly, drm_connector_lookup (with filep) will only return the
     // connector if we are master, a lessee with the connector, or not master at
     // all. It will return NULL if we are a lessee with other connectors.
-    struct drm_connector *connector =
-        nv_drm_connector_lookup(dev, filep, params->connectorId);
-    struct nv_drm_connector *nv_connector;
-    int ret = 0;
+    connector = nv_drm_connector_lookup(dev, filep, params->connectorId);
 
     if (!connector) {
         return -EINVAL;
@@ -902,6 +912,11 @@ static int nv_drm_get_connector_id_for_dpy_id_ioctl(struct drm_device *dev,
     int ret = -EINVAL;
 #if defined(NV_DRM_CONNECTOR_LIST_ITER_PRESENT)
     struct drm_connector_list_iter conn_iter;
+#endif
+    if (!drm_core_check_feature(dev, DRIVER_MODESET)) {
+        return -EOPNOTSUPP;
+    }
+#if defined(NV_DRM_CONNECTOR_LIST_ITER_PRESENT)
     nv_drm_connector_list_iter_begin(dev, &conn_iter);
 #endif
 
@@ -1114,6 +1129,10 @@ static int nv_drm_grant_permission_ioctl(struct drm_device *dev, void *data,
 {
     struct drm_nvidia_grant_permissions_params *params = data;
 
+    if (!drm_core_check_feature(dev, DRIVER_MODESET)) {
+        return -EOPNOTSUPP;
+    }
+
     if (params->type == NV_DRM_PERMISSIONS_TYPE_MODESET) {
         return nv_drm_grant_modeset_permission(dev, params, filep);
     } else if (params->type == NV_DRM_PERMISSIONS_TYPE_SUB_OWNER) {
@@ -1278,6 +1297,10 @@ static int nv_drm_revoke_permission_ioctl(struct drm_device *dev, void *data,
                                           struct drm_file *filep)
 {
     struct drm_nvidia_revoke_permissions_params *params = data;
+
+    if (!drm_core_check_feature(dev, DRIVER_MODESET)) {
+        return -EOPNOTSUPP;
+    }
 
     if (params->type == NV_DRM_PERMISSIONS_TYPE_MODESET) {
         if (!params->dpyId) {

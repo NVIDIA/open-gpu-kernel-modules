@@ -5,7 +5,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_rmconfig.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102
 //
 
 #ifndef _RMCFG_H_
@@ -32,6 +32,7 @@
 #define RMCFG_CHIP_AD10X     1
 #define RMCFG_CHIP_GH10X     1
 #define RMCFG_CHIP_GH20X     0
+#define RMCFG_CHIP_GB10X     1
 #define RMCFG_CHIP_T12X      0
 #define RMCFG_CHIP_T13X      0
 #define RMCFG_CHIP_T21X      0
@@ -86,6 +87,9 @@
 #define RMCFG_CHIP_AD107     1
 
 #define RMCFG_CHIP_GH100     1
+
+#define RMCFG_CHIP_GB100     1
+#define RMCFG_CHIP_GB102     1
 
 #define RMCFG_CHIP_T194      0
 
@@ -182,6 +186,10 @@
 #define RMCFG_CHIP_DHOPPER   1
 #define RMCFG_CHIP_HOPPER    1
 #define RMCFG_CHIP_HOPPER_CLASSIC_GPUS 1
+#define RMCFG_CHIP_dBLACKWELL 1
+#define RMCFG_CHIP_DBLACKWELL 1
+#define RMCFG_CHIP_BLACKWELL 1
+#define RMCFG_CHIP_BLACKWELL_CLASSIC_GPUS 1
 #define RMCFG_CHIP_TEGRA_DISP 0
 #define RMCFG_CHIP_TEGRA_BIG_GPUS 0
 #define RMCFG_CHIP_FERMI_TEGRA_BIG_GPUS 0
@@ -256,6 +264,7 @@
 #define RMCFG_FEATURE_MXM                         0  // MXM Module Support (all versions)
 #define RMCFG_FEATURE_NBSI                        1  // NoteBook System Information Structure
 #define RMCFG_FEATURE_ONSEMI_NB7NQ621M            1  // ONSEMI_NB7NQ621M Redriver Support
+#define RMCFG_FEATURE_GPIO_EXPANDER               1  // Support for GPIO Expander emulated on FPGA
 #define RMCFG_FEATURE_DCB_0X                      1  // Fallback DCB routines
 #define RMCFG_FEATURE_DCB_4X                      1  // DCB4x (used on G8x and later)
 #define RMCFG_FEATURE_RMAPI_GRAVEYARD             1  // Use RMAPI Graveyard to translate deprecated APIs
@@ -386,6 +395,7 @@
 #define RMCFG_CLASS_TURING_CHANNEL_GPFIFO_A       1
 #define RMCFG_CLASS_AMPERE_CHANNEL_GPFIFO_A       1
 #define RMCFG_CLASS_HOPPER_CHANNEL_GPFIFO_A       1
+#define RMCFG_CLASS_BLACKWELL_CHANNEL_GPFIFO_A    1
 #define RMCFG_CLASS_NV04_SOFTWARE_TEST            1
 #define RMCFG_CLASS_NV4_SOFTWARE_TEST             1  // aka NV04_SOFTWARE_TEST
 #define RMCFG_CLASS_NV30_GSYNC                    1
@@ -466,6 +476,7 @@
 #define RMCFG_CLASS_NVC6B0_VIDEO_DECODER          1  // Decoder Class for Ampere
 #define RMCFG_CLASS_NVC7B0_VIDEO_DECODER          1  // Decoder Class for Ampere
 #define RMCFG_CLASS_NVC9B0_VIDEO_DECODER          1  // Decoder Class for Ada
+#define RMCFG_CLASS_NVCDB0_VIDEO_DECODER          1  // Decoder Class for Blackwell
 #define RMCFG_CLASS_NVC0B7_VIDEO_ENCODER          0
 #define RMCFG_CLASS_NVD0B7_VIDEO_ENCODER          0
 #define RMCFG_CLASS_NVC1B7_VIDEO_ENCODER          0
@@ -478,10 +489,12 @@
 #define RMCFG_CLASS_NVB8D1_VIDEO_NVJPG            1
 #define RMCFG_CLASS_NVC4D1_VIDEO_NVJPG            1
 #define RMCFG_CLASS_NVC9D1_VIDEO_NVJPG            1
+#define RMCFG_CLASS_NVCDD1_VIDEO_NVJPG            1
 #define RMCFG_CLASS_NVB8FA_VIDEO_OFA              1
 #define RMCFG_CLASS_NVC6FA_VIDEO_OFA              1
 #define RMCFG_CLASS_NVC7FA_VIDEO_OFA              1
 #define RMCFG_CLASS_NVC9FA_VIDEO_OFA              1
+#define RMCFG_CLASS_NVCDFA_VIDEO_OFA              1
 #define RMCFG_CLASS_KEPLER_INLINE_TO_MEMORY_B     1  // Kepler inline to memory
 #define RMCFG_CLASS_FERMI_CONTEXT_SHARE_A         1  // Context Share class
 #define RMCFG_CLASS_KEPLER_CHANNEL_GROUP_A        1  // Channel Group Class
@@ -498,6 +511,7 @@
 #define RMCFG_CLASS_AMPERE_DMA_COPY_A             1
 #define RMCFG_CLASS_AMPERE_DMA_COPY_B             1
 #define RMCFG_CLASS_HOPPER_DMA_COPY_A             1
+#define RMCFG_CLASS_BLACKWELL_DMA_COPY_A          1
 #define RMCFG_CLASS_MAXWELL_DMA_COPY_A            1
 #define RMCFG_CLASS_MAXWELL_FAULT_BUFFER_A        0  // Maxwell Fault Buffer for Gr
 #define RMCFG_CLASS_ACCESS_COUNTER_NOTIFY_BUFFER  1  // Access Cntr Buffer for Gr
@@ -522,6 +536,9 @@
 #define RMCFG_CLASS_AMPERE_SMC_MONITOR_SESSION    1  // Ampere SMC monitor session subscription
 #define RMCFG_CLASS_HOPPER_A                      1  // HopperA (Graphics)
 #define RMCFG_CLASS_HOPPER_COMPUTE_A              1  // HopperComputeA (Graphics Compute)
+#define RMCFG_CLASS_BLACKWELL_A                   1  // BlackwellA (Graphics)
+#define RMCFG_CLASS_BLACKWELL_COMPUTE_A           1  // BlackwellComputeA (Graphics Compute)
+#define RMCFG_CLASS_BLACKWELL_INLINE_TO_MEMORY_A  1  // Blackwell inline to memory
 #define RMCFG_CLASS_NV40_DEBUG_BUFFER             1
 #define RMCFG_CLASS_RM_USER_SHARED_DATA           1
 #define RMCFG_CLASS_GT200_DEBUGGER                1  // CUDA Debugger support
@@ -737,175 +754,9 @@
 
 
 
-//
-// API's - enabled or disabled
-//
-#define RMCFG_API_NV04_ALLOC                      1
-#define RMCFG_API_NVOS21_PARAMETERS               1  // aka NV04_ALLOC
-#define RMCFG_API_NV_ESC_RM_ALLOC                 1  // aka NV04_ALLOC
-#define RMCFG_API_Nv04Alloc                       1  // aka NV04_ALLOC
-#define RMCFG_API_NvRmAlloc                       1  // aka NV04_ALLOC
-#define RMCFG_API_NV04_ALLOC_WITH_ACCESS          1
-#define RMCFG_API_NVOS64_PARAMETERS               1  // aka NV04_ALLOC_WITH_ACCESS
-#define RMCFG_API_NV_ESC_RM_ALLOC                 1  // aka NV04_ALLOC_WITH_ACCESS
-#define RMCFG_API_Nv04AllocWithAccess             1  // aka NV04_ALLOC_WITH_ACCESS
-#define RMCFG_API_NvRmAllocWithAccess             1  // aka NV04_ALLOC_WITH_ACCESS
-#define RMCFG_API_NV01_ALLOC_MEMORY               1
-#define RMCFG_API_NVOS02_PARAMETERS               1  // aka NV01_ALLOC_MEMORY
-#define RMCFG_API_NV_ESC_RM_ALLOC_MEMORY          1  // aka NV01_ALLOC_MEMORY
-#define RMCFG_API_Nv01AllocMemory                 1  // aka NV01_ALLOC_MEMORY
-#define RMCFG_API_NvRmAllocMemory64               1  // aka NV01_ALLOC_MEMORY
-#define RMCFG_API_NV01_ALLOC_OBJECT               1
-#define RMCFG_API_NVOS05_PARAMETERS               1  // aka NV01_ALLOC_OBJECT
-#define RMCFG_API_NV_ESC_RM_ALLOC_OBJECT          1  // aka NV01_ALLOC_OBJECT
-#define RMCFG_API_Nv01AllocObject                 1  // aka NV01_ALLOC_OBJECT
-#define RMCFG_API_NvRmAllocObject                 1  // aka NV01_ALLOC_OBJECT
-#define RMCFG_API_NV01_FREE                       1
-#define RMCFG_API_NVOS00_PARAMETERS               1  // aka NV01_FREE
-#define RMCFG_API_NV_ESC_RM_FREE                  1  // aka NV01_FREE
-#define RMCFG_API_Nv01Free                        1  // aka NV01_FREE
-#define RMCFG_API_NvRmFree                        1  // aka NV01_FREE
-#define RMCFG_API_NV04_VID_HEAP_CONTROL           1
-#define RMCFG_API_NVOS32_PARAMETERS               1  // aka NV04_VID_HEAP_CONTROL
-#define RMCFG_API_NV_ESC_RM_VID_HEAP_CONTROL      1  // aka NV04_VID_HEAP_CONTROL
-#define RMCFG_API_Nv04VidHeapControl              1  // aka NV04_VID_HEAP_CONTROL
-#define RMCFG_API_NvRmVidHeapControl              1  // aka NV04_VID_HEAP_CONTROL
-#define RMCFG_API_NV01_CONFIG_GET                 0
-#define RMCFG_API_NVOS13_PARAMETERS               0  // aka NV01_CONFIG_GET
-#define RMCFG_API_NV_ESC_RM_CONFIG_GET            0  // aka NV01_CONFIG_GET
-#define RMCFG_API_Nv01ConfigGet                   0  // aka NV01_CONFIG_GET
-#define RMCFG_API_NvRmConfigGet                   0  // aka NV01_CONFIG_GET
-#define RMCFG_API_NV01_CONFIG_SET                 0
-#define RMCFG_API_NVOS14_PARAMETERS               0  // aka NV01_CONFIG_SET
-#define RMCFG_API_NV_ESC_RM_CONFIG_SET            0  // aka NV01_CONFIG_SET
-#define RMCFG_API_Nv01ConfigSet                   0  // aka NV01_CONFIG_SET
-#define RMCFG_API_NvRmConfigSet                   0  // aka NV01_CONFIG_SET
-#define RMCFG_API_NV04_CONFIG_GET_EX              0
-#define RMCFG_API_NVOS_CONFIG_GET_EX_PARAMS       0  // aka NV04_CONFIG_GET_EX
-#define RMCFG_API_NV_ESC_RM_CONFIG_GET_EX         0  // aka NV04_CONFIG_GET_EX
-#define RMCFG_API_Nv04ConfigGetEx                 0  // aka NV04_CONFIG_GET_EX
-#define RMCFG_API_NvRmConfigGetEx                 0  // aka NV04_CONFIG_GET_EX
-#define RMCFG_API_NV04_CONFIG_SET_EX              0
-#define RMCFG_API_NVOS_CONFIG_SET_EX_PARAMS       0  // aka NV04_CONFIG_SET_EX
-#define RMCFG_API_NV_ESC_RM_CONFIG_SET_EX         0  // aka NV04_CONFIG_SET_EX
-#define RMCFG_API_Nv04ConfigSetEx                 0  // aka NV04_CONFIG_SET_EX
-#define RMCFG_API_NvRmConfigSetEx                 0  // aka NV04_CONFIG_SET_EX
-#define RMCFG_API_NV04_I2C_ACCESS                 1
-#define RMCFG_API_NVOS_I2C_ACCESS_PARAMS          1  // aka NV04_I2C_ACCESS
-#define RMCFG_API_NV_ESC_RM_I2C_ACCESS            1  // aka NV04_I2C_ACCESS
-#define RMCFG_API_Nv04I2CAccess                   1  // aka NV04_I2C_ACCESS
-#define RMCFG_API_NvRmI2CAccess                   1  // aka NV04_I2C_ACCESS
-#define RMCFG_API_NV04_IDLE_CHANNELS              1
-#define RMCFG_API_NVOS30_PARAMETERS               1  // aka NV04_IDLE_CHANNELS
-#define RMCFG_API_NV_ESC_RM_IDLE_CHANNELS         1  // aka NV04_IDLE_CHANNELS
-#define RMCFG_API_Nv04IdleChannels                1  // aka NV04_IDLE_CHANNELS
-#define RMCFG_API_NvRmIdleChannels                1  // aka NV04_IDLE_CHANNELS
-#define RMCFG_API_NV04_MAP_MEMORY                 1
-#define RMCFG_API_NVOS33_PARAMETERS               1  // aka NV04_MAP_MEMORY
-#define RMCFG_API_NV_ESC_RM_MAP_MEMORY            1  // aka NV04_MAP_MEMORY
-#define RMCFG_API_Nv04MapMemory                   1  // aka NV04_MAP_MEMORY
-#define RMCFG_API_NvRmMapMemory                   1  // aka NV04_MAP_MEMORY
-#define RMCFG_API_NV04_UNMAP_MEMORY               1
-#define RMCFG_API_NVOS34_PARAMETERS               1  // aka NV04_UNMAP_MEMORY
-#define RMCFG_API_NV_ESC_RM_UNMAP_MEMORY          1  // aka NV04_UNMAP_MEMORY
-#define RMCFG_API_Nv04UnmapMemory                 1  // aka NV04_UNMAP_MEMORY
-#define RMCFG_API_NvRmUnmapMemory                 1  // aka NV04_UNMAP_MEMORY
-#define RMCFG_API_NV04_MAP_MEMORY_DMA             1
-#define RMCFG_API_NVOS46_PARAMETERS               1  // aka NV04_MAP_MEMORY_DMA
-#define RMCFG_API_NV_ESC_RM_MAP_MEMORY_DMA        1  // aka NV04_MAP_MEMORY_DMA
-#define RMCFG_API_Nv04MapMemoryDma                1  // aka NV04_MAP_MEMORY_DMA
-#define RMCFG_API_NvRmMapMemoryDma                1  // aka NV04_MAP_MEMORY_DMA
-#define RMCFG_API_NV04_UNMAP_MEMORY_DMA           1
-#define RMCFG_API_NVOS47_PARAMETERS               1  // aka NV04_UNMAP_MEMORY_DMA
-#define RMCFG_API_NV_ESC_RM_UNMAP_MEMORY_DMA      1  // aka NV04_UNMAP_MEMORY_DMA
-#define RMCFG_API_Nv04UnmapMemoryDma              1  // aka NV04_UNMAP_MEMORY_DMA
-#define RMCFG_API_NvRmUnmapMemoryDma              1  // aka NV04_UNMAP_MEMORY_DMA
-#define RMCFG_API_NV04_UNMAP_MEMORY_DMA2          1
-#define RMCFG_API_NVOS47_PARAMETERS               1  // aka NV04_UNMAP_MEMORY_DMA2
-#define RMCFG_API_NV_ESC_RM_UNMAP_MEMORY_DMA      1  // aka NV04_UNMAP_MEMORY_DMA2
-#define RMCFG_API_Nv04UnmapMemoryDmaPartial       1  // aka NV04_UNMAP_MEMORY_DMA2
-#define RMCFG_API_NvRmUnmapMemoryDmaPartial       1  // aka NV04_UNMAP_MEMORY_DMA2
-#define RMCFG_API_NV04_ALLOC_CONTEXT_DMA          1
-#define RMCFG_API_NVOS39_PARAMETERS               1  // aka NV04_ALLOC_CONTEXT_DMA
-#define RMCFG_API_NV_ESC_RM_ALLOC_CONTEXT_DMA2    1  // aka NV04_ALLOC_CONTEXT_DMA
-#define RMCFG_API_Nv04AllocContextDma             1  // aka NV04_ALLOC_CONTEXT_DMA
-#define RMCFG_API_NvRmAllocContextDma2            1  // aka NV04_ALLOC_CONTEXT_DMA
-#define RMCFG_API_NV04_BIND_CONTEXT_DMA           1
-#define RMCFG_API_NVOS49_PARAMETERS               1  // aka NV04_BIND_CONTEXT_DMA
-#define RMCFG_API_NV_ESC_RM_BIND_CONTEXT_DMA      1  // aka NV04_BIND_CONTEXT_DMA
-#define RMCFG_API_Nv04BindContextDma              1  // aka NV04_BIND_CONTEXT_DMA
-#define RMCFG_API_NvRmBindContextDma              1  // aka NV04_BIND_CONTEXT_DMA
-#define RMCFG_API_NV04_CONTROL                    1
-#define RMCFG_API_NVOS54_PARAMETERS               1  // aka NV04_CONTROL
-#define RMCFG_API_NV_ESC_RM_CONTROL               1  // aka NV04_CONTROL
-#define RMCFG_API_Nv04Control                     1  // aka NV04_CONTROL
-#define RMCFG_API_NvRmControl                     1  // aka NV04_CONTROL
-#define RMCFG_API_NV04_DUP_OBJECT                 1
-#define RMCFG_API_NVOS55_PARAMETERS               1  // aka NV04_DUP_OBJECT
-#define RMCFG_API_NV_ESC_RM_DUP_OBJECT            1  // aka NV04_DUP_OBJECT
-#define RMCFG_API_Nv04DupObject                   1  // aka NV04_DUP_OBJECT
-#define RMCFG_API_NvRmDupObject                   1  // aka NV04_DUP_OBJECT
-#define RMCFG_API_NV04_DUP_OBJECT2                1
-#define RMCFG_API_NVOS55_PARAMETERS               1  // aka NV04_DUP_OBJECT2
-#define RMCFG_API_NV_ESC_RM_DUP_OBJECT            1  // aka NV04_DUP_OBJECT2
-#define RMCFG_API_Nv04DupObject                   1  // aka NV04_DUP_OBJECT2
-#define RMCFG_API_NvRmDupObject2                  1  // aka NV04_DUP_OBJECT2
-#define RMCFG_API_NV04_SHARE_OBJECT               1
-#define RMCFG_API_NVOS57_PARAMETERS               1  // aka NV04_SHARE_OBJECT
-#define RMCFG_API_NV_ESC_RM_SHARE                 1  // aka NV04_SHARE_OBJECT
-#define RMCFG_API_Nv04Share                       1  // aka NV04_SHARE_OBJECT
-#define RMCFG_API_NvRmShare                       1  // aka NV04_SHARE_OBJECT
-#define RMCFG_API_NV04_ADD_VBLANK_CALLBACK        1
-#define RMCFG_API_NVOS61_PARAMETERS               1  // aka NV04_ADD_VBLANK_CALLBACK
-#define RMCFG_API_NV_ESC_RM_ADD_VBLANK_CALLBACK   1  // aka NV04_ADD_VBLANK_CALLBACK
-#define RMCFG_API_Nv04AddVblankCallback           1  // aka NV04_ADD_VBLANK_CALLBACK
-#define RMCFG_API_NvRmAddVblankCallback           1  // aka NV04_ADD_VBLANK_CALLBACK
-#define RMCFG_API_NV04_ACCESS_REGISTRY            1
-#define RMCFG_API_NvRmReadRegistryDword           1  // aka NV04_ACCESS_REGISTRY
-#define RMCFG_API_NvRmWriteRegistryDword          1  // aka NV04_ACCESS_REGISTRY
-#define RMCFG_API_NvRmGetNumRegistryEntries       1  // aka NV04_ACCESS_REGISTRY
-#define RMCFG_API_NvRmDeleteRegistryEntry         1  // aka NV04_ACCESS_REGISTRY
-#define RMCFG_API_NvRmReadRegistryEntry           1  // aka NV04_ACCESS_REGISTRY
-#define RMCFG_API_NvRmReadRegistryBinary          1  // aka NV04_ACCESS_REGISTRY
-#define RMCFG_API_NvRmWriteRegistryBinary         1  // aka NV04_ACCESS_REGISTRY
-#define RMCFG_API_NVOS38_PARAMETERS               1  // aka NV04_ACCESS_REGISTRY
-#define RMCFG_API_NV_ESC_RM_ACCESS_REGISTRY       1  // aka NV04_ACCESS_REGISTRY
-#define RMCFG_API_NV04_GET_EVENT_DATA             1
-#define RMCFG_API_NVOS41_PARAMETERS               1  // aka NV04_GET_EVENT_DATA
-#define RMCFG_API_NV_ESC_RM_GET_EVENT_DATA        1  // aka NV04_GET_EVENT_DATA
-#define RMCFG_API_NvRmGetEventData                1  // aka NV04_GET_EVENT_DATA
-#define RMCFG_API_NV04_UPDATE_DEVICE_MAPPING_INFO  1  // Update Mapping Parameters (unix-only)
-#define RMCFG_API_NVOS56_PARAMETERS               1  // aka NV04_UPDATE_DEVICE_MAPPING_INFO
-#define RMCFG_API_NV_ESC_RM_UPDATE_DEVICE_MAPPING_INFO  1  // aka NV04_UPDATE_DEVICE_MAPPING_INFO
-#define RMCFG_API_NVXX_CARD_INFO                  1
-#define RMCFG_API_nv_ioctl_card_info_t            1  // aka NVXX_CARD_INFO
-#define RMCFG_API_NV_ESC_CARD_INFO                1  // aka NVXX_CARD_INFO
-#define RMCFG_API_NVXX_ENV_INFO                   1
-#define RMCFG_API_nv_ioctl_env_info_t             1  // aka NVXX_ENV_INFO
-#define RMCFG_API_NV_ESC_ENV_INFO                 1  // aka NVXX_ENV_INFO
-#define RMCFG_API_NVXX_ALLOC_OS_EVENT             1
-#define RMCFG_API_nv_ioctl_alloc_os_event_t       1  // aka NVXX_ALLOC_OS_EVENT
-#define RMCFG_API_NV_ESC_ALLOC_OS_EVENT           1  // aka NVXX_ALLOC_OS_EVENT
-#define RMCFG_API_NvRmAllocOsEvent                1  // aka NVXX_ALLOC_OS_EVENT
-#define RMCFG_API_NVXX_FREE_OS_EVENT              1
-#define RMCFG_API_nv_ioctl_free_os_event_t        1  // aka NVXX_FREE_OS_EVENT
-#define RMCFG_API_NV_ESC_FREE_OS_EVENT            1  // aka NVXX_FREE_OS_EVENT
-#define RMCFG_API_NvRmFreeOsEvent                 1  // aka NVXX_FREE_OS_EVENT
-#define RMCFG_API_NVXX_STATUS_CODE                1
-#define RMCFG_API_nv_ioctl_status_code_t          1  // aka NVXX_STATUS_CODE
-#define RMCFG_API_NV_ESC_STATUS_CODE              1  // aka NVXX_STATUS_CODE
-#define RMCFG_API_NVXX_CHECK_VERSION_STR          1
-#define RMCFG_API_nv_ioctl_rm_api_version_t       1  // aka NVXX_CHECK_VERSION_STR
-#define RMCFG_API_NV_ESC_CHECK_VERSION_STR        1  // aka NVXX_CHECK_VERSION_STR
-#define RMCFG_API_NVXX_ATTACH_GPUS_TO_FD          1
-#define RMCFG_API_NvU32                           1  // aka NVXX_ATTACH_GPUS_TO_FD
-#define RMCFG_API_NV_ESC_ATTACH_GPUS_TO_FD        1  // aka NVXX_ATTACH_GPUS_TO_FD
-
-
 
 // Disable misspelling detection
 #define __RMCFG_vet_enabled  0
-
 
 
 
@@ -933,6 +784,5 @@
 #define RMCFG_FEATURE_ENABLED(_feature) (RMCFG_FEATURE_##_feature  + _RMCFG_vet(_FEATURE_ ## _feature))
 #define RMCFG_MODULE_ENABLED(_module)   (RMCFG_MODULE_##_module    + _RMCFG_vet(_MODULE_ ## _module))
 #define RMCFG_CLASS_ENABLED(_clss)      (RMCFG_CLASS_##_clss       + _RMCFG_vet(_CLASS_ ## _clss))
-#define RMCFG_API_ENABLED(_api)         (RMCFG_API_##_api          + _RMCFG_vet(_API_ ## _api))
 
 #endif // _RMCFG_H_

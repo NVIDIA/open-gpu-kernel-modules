@@ -529,12 +529,10 @@ NV_STATUS mmuWalkProcessPdes
                     entryIndexHi = mmuFmtVirtAddrToEntryIndex(pLevel->pFmt, clippedVaHi);
 
                     // Now replace the current stack frame with the frame that is one level down
-                    // pLevel replaced above
+                    // pLevel, vaLevelBase, entryIndexHi replaced above
                     pLevelInst   = pSubLevelInsts[subLevel];
                     vaLo         = clippedVaLo;
                     vaHi         = clippedVaHi;
-                    vaLevelBase  = vaLevelBase;
-                    entryIndexHi = entryIndexHi;
                     entryIndex   = entryIndexLo;
                     entryIndexFillStart = 0;
                     entryIndexFillEnd   = 0;

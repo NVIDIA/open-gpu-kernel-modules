@@ -254,6 +254,8 @@ kgraphicsAllocGrGlobalCtxBuffers_GM200
                                   ADDR_UNKNOWN,
                                   pCtxAttr[GR_GLOBALCTX_BUFFER_PRIV_ACCESS_MAP].cpuAttr,
                                   flags));
+                if (kgraphicsIsOverrideContextBuffersToGpuCached(pGpu, pKernelGraphics))
+                    memdescSetGpuCacheAttrib(*ppMemDesc, NV_MEMORY_CACHED);
 
                 if ((flags & MEMDESC_FLAGS_OWNED_BY_CTX_BUF_POOL) != 0)
                 {
@@ -285,6 +287,9 @@ kgraphicsAllocGrGlobalCtxBuffers_GM200
                                   ADDR_UNKNOWN,
                                   pCtxAttr[GR_GLOBALCTX_BUFFER_UNRESTRICTED_PRIV_ACCESS_MAP].cpuAttr,
                                   flags));
+
+                if (kgraphicsIsOverrideContextBuffersToGpuCached(pGpu, pKernelGraphics))
+                    memdescSetGpuCacheAttrib(*ppMemDesc, NV_MEMORY_CACHED);
 
                 if ((flags & MEMDESC_FLAGS_OWNED_BY_CTX_BUF_POOL) != 0)
                 {

@@ -156,11 +156,35 @@
  *   NV2080_CTRL_FB_INFO_INDEX_EFFECTIVE_BW
  *     This index is deprecated, and returns zero value.
  *   NV2080_CTRL_FB_INFO_INDEX_PARTITION_MASK
+ *   NV2080_CTRL_FB_INFO_INDEX_PARTITION_MASK_0
+ *   NV2080_CTRL_FB_INFO_INDEX_PARTITION_MASK_1
  *     This index is used to request the mask of currently active partitions.
- *     Each  active partition has an ID that's equivalent to the corresponding
+ *     Each active partition has an ID that's equivalent to the corresponding
  *     bit position in the mask.
  *     This an SMC aware attribute, thus necessary partition subscription is
  *     required if the device is partitioned.
+ *     This value is moving from 32bits to 64bits, so PARTITION_MASK
+ *     (though kept for backwards compatibility on older chips), on newer chips
+ *     will be replaced by:
+ *     PARTITION_MASK_0 for the lower 32bits
+ *     PARTITION_MASK_1 for the upper 32bits
+ *     Note that PARTITION_MASK and PARTITION_MASK_0 are handled the same, and
+ *     use the same enum value.
+ *   NV2080_CTRL_FB_INFO_INDEX_LTC_MASK
+ *   NV2080_CTRL_FB_INFO_INDEX_LTC_MASK_0
+ *   NV2080_CTRL_FB_INFO_INDEX_LTC_MASK_1
+ *     This index is used to request the mask of currently active LTCs.
+ *     Each active LTC has an ID that's equivalent to the corresponding
+ *     bit position in the mask.
+ *     This an SMC aware attribute, thus necessary partition subscription is
+ *     required if the device is partitioned.
+ *     This value is moving from 32bits to 64bits, so LTC_MASK
+ *     (though kept for backwards compatibility on older chips), on newer chips
+ *     will be replaced by:
+ *     LTC_MASK_0 for the lower 32bits
+ *     LTC_MASK_1 for the upper 32bits
+ *     Note that LTC_MASK and LTC_MASK_0 are handled the same, and
+ *     use the same enum value.
  *   NV2080_CTRL_FB_INFO_INDEX_VISTA_RESERVED_HEAP_SIZE
  *     This index is used to request the amount of total RAM in kilobytes
  *     reserved for internal RM allocations on Vista.  This will need to
@@ -332,9 +356,13 @@ typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_FB_INFO;
 #define NV2080_CTRL_FB_INFO_INDEX_PROTECTED_MEM_SIZE_FREE_KB       (0x00000034U)
 #define NV2080_CTRL_FB_INFO_INDEX_ECC_STATUS_SIZE                  (0x00000035U)
 #define NV2080_CTRL_FB_INFO_INDEX_IS_ZERO_FB                       (0x00000036U)
-#define NV2080_CTRL_FB_INFO_MAX_LIST_SIZE                          (0x00000037U)
+#define NV2080_CTRL_FB_INFO_INDEX_PARTITION_MASK_0                 (NV2080_CTRL_FB_INFO_INDEX_PARTITION_MASK)
+#define NV2080_CTRL_FB_INFO_INDEX_PARTITION_MASK_1                 (0x00000037U)
+#define NV2080_CTRL_FB_INFO_INDEX_LTC_MASK_0                       (NV2080_CTRL_FB_INFO_INDEX_LTC_MASK)
+#define NV2080_CTRL_FB_INFO_INDEX_LTC_MASK_1                       (0x00000038U)
+#define NV2080_CTRL_FB_INFO_MAX_LIST_SIZE                          (0x00000039U)
 
-#define NV2080_CTRL_FB_INFO_INDEX_MAX                              (0x36U) /* finn: Evaluated from "(NV2080_CTRL_FB_INFO_MAX_LIST_SIZE - 1)" */
+#define NV2080_CTRL_FB_INFO_INDEX_MAX                              (0x38U) /* finn: Evaluated from "(NV2080_CTRL_FB_INFO_MAX_LIST_SIZE - 1)" */
 
 /* valid fb RAM type values */
 #define NV2080_CTRL_FB_INFO_RAM_TYPE_UNKNOWN                       (0x00000000U)

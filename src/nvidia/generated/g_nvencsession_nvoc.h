@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -44,6 +44,7 @@ extern "C" {
 
 #include "core/core.h"
 #include "rmapi/client.h"
+#include "gpu/gpu_halspec.h"
 #include "gpu/gpu_resource.h"
 #include "class/cla0bc.h"
 #include "ctrl/ctrla0bc.h"
@@ -111,8 +112,8 @@ struct NvencSession {
     struct NvencSession *__nvoc_pbase_NvencSession;    // nvencsession
 
     // Vtable with 27 per-object function pointers
-    NV_STATUS (*__nvencsessionCtrlCmdNvencSwSessionUpdateInfo__)(struct NvencSession * /*this*/, NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS *);  // exported (id=0xa0bc0101)
-    NV_STATUS (*__nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2__)(struct NvencSession * /*this*/, NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_V2_PARAMS *);  // exported (id=0xa0bc0102)
+    NV_STATUS (*__nvencsessionCtrlCmdNvencSwSessionUpdateInfo__)(struct NvencSession * /*this*/, NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS *);  // halified (2 hals) exported (id=0xa0bc0101) body
+    NV_STATUS (*__nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2__)(struct NvencSession * /*this*/, NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_V2_PARAMS *);  // halified (2 hals) exported (id=0xa0bc0102) body
     NV_STATUS (*__nvencsessionControl__)(struct NvencSession * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__nvencsessionMap__)(struct NvencSession * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__nvencsessionUnmap__)(struct NvencSession * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
@@ -183,8 +184,10 @@ NV_STATUS __nvoc_objCreate_NvencSession(NvencSession**, Dynamic*, NvU32, struct 
 // Wrapper macros
 #define nvencsessionCtrlCmdNvencSwSessionUpdateInfo_FNPTR(pNvencSession) pNvencSession->__nvencsessionCtrlCmdNvencSwSessionUpdateInfo__
 #define nvencsessionCtrlCmdNvencSwSessionUpdateInfo(pNvencSession, pParams) nvencsessionCtrlCmdNvencSwSessionUpdateInfo_DISPATCH(pNvencSession, pParams)
+#define nvencsessionCtrlCmdNvencSwSessionUpdateInfo_HAL(pNvencSession, pParams) nvencsessionCtrlCmdNvencSwSessionUpdateInfo_DISPATCH(pNvencSession, pParams)
 #define nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_FNPTR(pNvencSession) pNvencSession->__nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2__
 #define nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2(pNvencSession, pParams) nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_DISPATCH(pNvencSession, pParams)
+#define nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_HAL(pNvencSession, pParams) nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_DISPATCH(pNvencSession, pParams)
 #define nvencsessionControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresControl__
 #define nvencsessionControl(pGpuResource, pCallContext, pParams) nvencsessionControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define nvencsessionMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresMap__
@@ -345,7 +348,15 @@ static inline void nvencsessionAddAdditionalDependants_DISPATCH(struct RsClient 
     pResource->__nvencsessionAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+static inline NV_STATUS nvencsessionCtrlCmdNvencSwSessionUpdateInfo_46f6a7(struct NvencSession *pNvencSession, NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS *pParams) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
 NV_STATUS nvencsessionCtrlCmdNvencSwSessionUpdateInfo_IMPL(struct NvencSession *pNvencSession, NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS *pParams);
+
+static inline NV_STATUS nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_46f6a7(struct NvencSession *pNvencSession, NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_V2_PARAMS *pParams) {
+    return NV_ERR_NOT_SUPPORTED;
+}
 
 NV_STATUS nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_IMPL(struct NvencSession *pNvencSession, NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_V2_PARAMS *pParams);
 

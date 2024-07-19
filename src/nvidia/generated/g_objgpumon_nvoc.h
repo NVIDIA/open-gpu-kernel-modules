@@ -80,20 +80,20 @@ struct OBJGPUMON {
     struct OBJGPUMON *__nvoc_pbase_OBJGPUMON;    // gpumon
 
     // Vtable with 14 per-object function pointers
-    NV_STATUS (*__gpumonConstructEngine__)(POBJGPU, struct OBJGPUMON * /*this*/, ENGDESCRIPTOR);  // virtual inherited (engstate) base (engstate)
-    void (*__gpumonInitMissing__)(POBJGPU, struct OBJGPUMON * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__gpumonStatePreInitLocked__)(POBJGPU, struct OBJGPUMON * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__gpumonStatePreInitUnlocked__)(POBJGPU, struct OBJGPUMON * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__gpumonStateInitLocked__)(POBJGPU, struct OBJGPUMON * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__gpumonStateInitUnlocked__)(POBJGPU, struct OBJGPUMON * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__gpumonStatePreLoad__)(POBJGPU, struct OBJGPUMON * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__gpumonStateLoad__)(POBJGPU, struct OBJGPUMON * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__gpumonStatePostLoad__)(POBJGPU, struct OBJGPUMON * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__gpumonStatePreUnload__)(POBJGPU, struct OBJGPUMON * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__gpumonStateUnload__)(POBJGPU, struct OBJGPUMON * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__gpumonStatePostUnload__)(POBJGPU, struct OBJGPUMON * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    void (*__gpumonStateDestroy__)(POBJGPU, struct OBJGPUMON * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__gpumonIsPresent__)(POBJGPU, struct OBJGPUMON * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__gpumonConstructEngine__)(struct OBJGPU *, struct OBJGPUMON * /*this*/, ENGDESCRIPTOR);  // virtual inherited (engstate) base (engstate)
+    void (*__gpumonInitMissing__)(struct OBJGPU *, struct OBJGPUMON * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__gpumonStatePreInitLocked__)(struct OBJGPU *, struct OBJGPUMON * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__gpumonStatePreInitUnlocked__)(struct OBJGPU *, struct OBJGPUMON * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__gpumonStateInitLocked__)(struct OBJGPU *, struct OBJGPUMON * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__gpumonStateInitUnlocked__)(struct OBJGPU *, struct OBJGPUMON * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__gpumonStatePreLoad__)(struct OBJGPU *, struct OBJGPUMON * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__gpumonStateLoad__)(struct OBJGPU *, struct OBJGPUMON * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__gpumonStatePostLoad__)(struct OBJGPU *, struct OBJGPUMON * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__gpumonStatePreUnload__)(struct OBJGPU *, struct OBJGPUMON * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__gpumonStateUnload__)(struct OBJGPU *, struct OBJGPUMON * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__gpumonStatePostUnload__)(struct OBJGPU *, struct OBJGPUMON * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    void (*__gpumonStateDestroy__)(struct OBJGPU *, struct OBJGPUMON * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__gpumonIsPresent__)(struct OBJGPU *, struct OBJGPUMON * /*this*/);  // virtual inherited (engstate) base (engstate)
 };
 
 #ifndef __NVOC_CLASS_OBJGPUMON_TYPEDEF__
@@ -160,59 +160,59 @@ NV_STATUS __nvoc_objCreate_OBJGPUMON(OBJGPUMON**, Dynamic*, NvU32);
 #define gpumonIsPresent(pGpu, pEngstate) gpumonIsPresent_DISPATCH(pGpu, pEngstate)
 
 // Dispatch functions
-static inline NV_STATUS gpumonConstructEngine_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate, ENGDESCRIPTOR arg3) {
+static inline NV_STATUS gpumonConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct OBJGPUMON *pEngstate, ENGDESCRIPTOR arg3) {
     return pEngstate->__gpumonConstructEngine__(pGpu, pEngstate, arg3);
 }
 
-static inline void gpumonInitMissing_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate) {
+static inline void gpumonInitMissing_DISPATCH(struct OBJGPU *pGpu, struct OBJGPUMON *pEngstate) {
     pEngstate->__gpumonInitMissing__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS gpumonStatePreInitLocked_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate) {
+static inline NV_STATUS gpumonStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct OBJGPUMON *pEngstate) {
     return pEngstate->__gpumonStatePreInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS gpumonStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate) {
+static inline NV_STATUS gpumonStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct OBJGPUMON *pEngstate) {
     return pEngstate->__gpumonStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS gpumonStateInitLocked_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate) {
+static inline NV_STATUS gpumonStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct OBJGPUMON *pEngstate) {
     return pEngstate->__gpumonStateInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS gpumonStateInitUnlocked_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate) {
+static inline NV_STATUS gpumonStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct OBJGPUMON *pEngstate) {
     return pEngstate->__gpumonStateInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS gpumonStatePreLoad_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate, NvU32 arg3) {
+static inline NV_STATUS gpumonStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJGPUMON *pEngstate, NvU32 arg3) {
     return pEngstate->__gpumonStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS gpumonStateLoad_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate, NvU32 arg3) {
+static inline NV_STATUS gpumonStateLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJGPUMON *pEngstate, NvU32 arg3) {
     return pEngstate->__gpumonStateLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS gpumonStatePostLoad_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate, NvU32 arg3) {
+static inline NV_STATUS gpumonStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJGPUMON *pEngstate, NvU32 arg3) {
     return pEngstate->__gpumonStatePostLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS gpumonStatePreUnload_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate, NvU32 arg3) {
+static inline NV_STATUS gpumonStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJGPUMON *pEngstate, NvU32 arg3) {
     return pEngstate->__gpumonStatePreUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS gpumonStateUnload_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate, NvU32 arg3) {
+static inline NV_STATUS gpumonStateUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJGPUMON *pEngstate, NvU32 arg3) {
     return pEngstate->__gpumonStateUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS gpumonStatePostUnload_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate, NvU32 arg3) {
+static inline NV_STATUS gpumonStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJGPUMON *pEngstate, NvU32 arg3) {
     return pEngstate->__gpumonStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline void gpumonStateDestroy_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate) {
+static inline void gpumonStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct OBJGPUMON *pEngstate) {
     pEngstate->__gpumonStateDestroy__(pGpu, pEngstate);
 }
 
-static inline NvBool gpumonIsPresent_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate) {
+static inline NvBool gpumonIsPresent_DISPATCH(struct OBJGPU *pGpu, struct OBJGPUMON *pEngstate) {
     return pEngstate->__gpumonIsPresent__(pGpu, pEngstate);
 }
 

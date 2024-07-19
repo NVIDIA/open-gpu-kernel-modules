@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -43,6 +43,7 @@
 #define NV_DP_REGKEY_ENABLE_OCA_LOGGING               "ENABLE_OCA_LOGGING"
 #define NV_DP_REGKEY_REPORT_DEVICE_LOST_BEFORE_NEW    "HP_WAR_1707690"
 #define NV_DP_REGKEY_APPLY_LINK_BW_OVERRIDE_WAR       "APPLY_LINK_BW_OVERRIDE_WAR"
+// For DP2x, the regkey value needs to be in 10M convention
 #define NV_DP_REGKEY_APPLY_MAX_LINK_RATE_OVERRIDES    "APPLY_OVERRIDES_FOR_BUG_2489143"
 #define NV_DP_REGKEY_DISABLE_DSC                      "DISABLE_DSC"
 #define NV_DP_REGKEY_SKIP_ASSESSLINK_FOR_EDP          "HP_WAR_2189772"
@@ -80,9 +81,6 @@
 // Bug 4426624: Flush timeslot change to HW when dirty bit is set.
 #define NV_DP_REGKEY_FLUSH_TIMESLOT_INFO_WHEN_DIRTY    "DP_BUG_4426624_WAR"
 
-// Bug 4459839 : This regkey will enable DSC irrespective of LT status.
-#define NV_DP_REGKEY_FORCE_DSC_ON_SINK                 "DP_FORCE_DSC_ON_SINK"
-#define NV_DP_REGKEY_ENABLE_SKIP_DPCD_READS_WAR        "DP_BUG_4478047_WAR"
 #define NV_DP_REGKEY_DISABLE_TUNNEL_BW_ALLOCATION      "DP_DISABLE_TUNNEL_BW_ALLOCATION"
 
 //
@@ -118,8 +116,6 @@ struct DP_REGKEY_DATABASE
     bool  bPowerDownPhyBeforeD3;
     bool  bReassessMaxLink;
     bool  bMSTPCONCapsReadDisabled;
-    bool  bForceDscOnSink;
-    bool  bSkipFakeDeviceDpcdAccess;
     bool  bFlushTimeslotWhenDirty;
     bool  bForceDisableTunnelBwAllocation;
 };

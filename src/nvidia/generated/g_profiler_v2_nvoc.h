@@ -88,7 +88,7 @@ struct ProfilerBase {
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct ProfilerBase *__nvoc_pbase_ProfilerBase;    // profilerBase
 
-    // Vtable with 57 per-object function pointers
+    // Vtable with 59 per-object function pointers
     NV_STATUS (*__profilerBaseConstructState__)(struct ProfilerBase * /*this*/, CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);  // halified (2 hals) body
     void (*__profilerBaseDestructState__)(struct ProfilerBase * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__profilerBaseCtrlCmdReserveHwpmLegacy__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_RESERVE_HWPM_LEGACY_PARAMS *);  // exported (id=0xb0cc0101)
@@ -101,7 +101,7 @@ struct ProfilerBase {
     NV_STATUS (*__profilerBaseCtrlCmdInternalFreePmaStream__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_INTERNAL_FREE_PMA_STREAM_PARAMS *);  // halified (2 hals) exported (id=0xb0cc0206) body
     NV_STATUS (*__profilerBaseCtrlCmdInternalGetMaxPmas__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_INTERNAL_GET_MAX_PMAS_PARAMS *);  // exported (id=0xb0cc0207)
     NV_STATUS (*__profilerBaseCtrlCmdBindPmResources__)(struct ProfilerBase * /*this*/);  // exported (id=0xb0cc0107)
-    NV_STATUS (*__profilerBaseCtrlCmdUnbindPmResources__)(struct ProfilerBase * /*this*/);  // exported (id=0xb0cc0108)
+    NV_STATUS (*__profilerBaseCtrlCmdUnbindPmResources__)(struct ProfilerBase * /*this*/);  // halified (2 hals) exported (id=0xb0cc0108) body
     NV_STATUS (*__profilerBaseCtrlCmdInternalBindPmResources__)(struct ProfilerBase * /*this*/);  // exported (id=0xb0cc0208)
     NV_STATUS (*__profilerBaseCtrlCmdInternalUnbindPmResources__)(struct ProfilerBase * /*this*/);  // exported (id=0xb0cc0209)
     NV_STATUS (*__profilerBaseCtrlCmdPmaStreamUpdateGetPut__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS *);  // halified (2 hals) exported (id=0xb0cc0109) body
@@ -113,6 +113,8 @@ struct ProfilerBase {
     NV_STATUS (*__profilerBaseCtrlCmdReservePmAreaPcSampler__)(struct ProfilerBase * /*this*/);  // exported (id=0xb0cc010b)
     NV_STATUS (*__profilerBaseCtrlCmdReleasePmAreaPcSampler__)(struct ProfilerBase * /*this*/);  // exported (id=0xb0cc010c)
     NV_STATUS (*__profilerBaseCtrlCmdGetTotalHsCredits__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_GET_TOTAL_HS_CREDITS_PARAMS *);  // exported (id=0xb0cc010d)
+    NV_STATUS (*__profilerBaseCtrlCmdGetChipletHsCredits__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL *);  // exported (id=0xb0cc0115)
+    NV_STATUS (*__profilerBaseCtrlCmdGetHsCreditsMapping__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS *);  // exported (id=0xb0cc0116)
     NV_STATUS (*__profilerBaseCtrlCmdGetHsCredits__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_GET_HS_CREDITS_PARAMS *);  // exported (id=0xb0cc010f)
     NV_STATUS (*__profilerBaseCtrlCmdSetHsCredits__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_SET_HS_CREDITS_PARAMS *);  // exported (id=0xb0cc010e)
     NV_STATUS (*__profilerBaseCtrlCmdReserveHes__)(struct ProfilerBase * /*this*/, NVB0CC_CTRL_RESERVE_HES_PARAMS *);  // exported (id=0xb0cc0113)
@@ -221,6 +223,7 @@ NV_STATUS __nvoc_objCreate_ProfilerBase(ProfilerBase**, Dynamic*, NvU32, CALL_CO
 #define profilerBaseCtrlCmdBindPmResources(pProfiler) profilerBaseCtrlCmdBindPmResources_DISPATCH(pProfiler)
 #define profilerBaseCtrlCmdUnbindPmResources_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdUnbindPmResources__
 #define profilerBaseCtrlCmdUnbindPmResources(pProfiler) profilerBaseCtrlCmdUnbindPmResources_DISPATCH(pProfiler)
+#define profilerBaseCtrlCmdUnbindPmResources_HAL(pProfiler) profilerBaseCtrlCmdUnbindPmResources_DISPATCH(pProfiler)
 #define profilerBaseCtrlCmdInternalBindPmResources_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdInternalBindPmResources__
 #define profilerBaseCtrlCmdInternalBindPmResources(pProfiler) profilerBaseCtrlCmdInternalBindPmResources_DISPATCH(pProfiler)
 #define profilerBaseCtrlCmdInternalUnbindPmResources_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdInternalUnbindPmResources__
@@ -246,6 +249,10 @@ NV_STATUS __nvoc_objCreate_ProfilerBase(ProfilerBase**, Dynamic*, NvU32, CALL_CO
 #define profilerBaseCtrlCmdReleasePmAreaPcSampler(pProfiler) profilerBaseCtrlCmdReleasePmAreaPcSampler_DISPATCH(pProfiler)
 #define profilerBaseCtrlCmdGetTotalHsCredits_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdGetTotalHsCredits__
 #define profilerBaseCtrlCmdGetTotalHsCredits(pProfiler, pParams) profilerBaseCtrlCmdGetTotalHsCredits_DISPATCH(pProfiler, pParams)
+#define profilerBaseCtrlCmdGetChipletHsCredits_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdGetChipletHsCredits__
+#define profilerBaseCtrlCmdGetChipletHsCredits(pProfiler, pParams) profilerBaseCtrlCmdGetChipletHsCredits_DISPATCH(pProfiler, pParams)
+#define profilerBaseCtrlCmdGetHsCreditsMapping_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdGetHsCreditsMapping__
+#define profilerBaseCtrlCmdGetHsCreditsMapping(pProfiler, pParams) profilerBaseCtrlCmdGetHsCreditsMapping_DISPATCH(pProfiler, pParams)
 #define profilerBaseCtrlCmdGetHsCredits_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdGetHsCredits__
 #define profilerBaseCtrlCmdGetHsCredits(pProfiler, pParams) profilerBaseCtrlCmdGetHsCredits_DISPATCH(pProfiler, pParams)
 #define profilerBaseCtrlCmdSetHsCredits_FNPTR(pProfiler) pProfiler->__profilerBaseCtrlCmdSetHsCredits__
@@ -410,6 +417,14 @@ static inline NV_STATUS profilerBaseCtrlCmdReleasePmAreaPcSampler_DISPATCH(struc
 
 static inline NV_STATUS profilerBaseCtrlCmdGetTotalHsCredits_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_TOTAL_HS_CREDITS_PARAMS *pParams) {
     return pProfiler->__profilerBaseCtrlCmdGetTotalHsCredits__(pProfiler, pParams);
+}
+
+static inline NV_STATUS profilerBaseCtrlCmdGetChipletHsCredits_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL *pParams) {
+    return pProfiler->__profilerBaseCtrlCmdGetChipletHsCredits__(pProfiler, pParams);
+}
+
+static inline NV_STATUS profilerBaseCtrlCmdGetHsCreditsMapping_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS *pParams) {
+    return pProfiler->__profilerBaseCtrlCmdGetHsCreditsMapping__(pProfiler, pParams);
 }
 
 static inline NV_STATUS profilerBaseCtrlCmdGetHsCredits_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_HS_CREDITS_PARAMS *pParams) {
@@ -580,6 +595,10 @@ NV_STATUS profilerBaseCtrlCmdInternalGetMaxPmas_IMPL(struct ProfilerBase *pProfi
 
 NV_STATUS profilerBaseCtrlCmdBindPmResources_IMPL(struct ProfilerBase *pProfiler);
 
+static inline NV_STATUS profilerBaseCtrlCmdUnbindPmResources_46f6a7(struct ProfilerBase *pProfiler) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
 NV_STATUS profilerBaseCtrlCmdUnbindPmResources_IMPL(struct ProfilerBase *pProfiler);
 
 NV_STATUS profilerBaseCtrlCmdInternalBindPmResources_IMPL(struct ProfilerBase *pProfiler);
@@ -615,6 +634,10 @@ NV_STATUS profilerBaseCtrlCmdReservePmAreaPcSampler_IMPL(struct ProfilerBase *pP
 NV_STATUS profilerBaseCtrlCmdReleasePmAreaPcSampler_IMPL(struct ProfilerBase *pProfiler);
 
 NV_STATUS profilerBaseCtrlCmdGetTotalHsCredits_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_TOTAL_HS_CREDITS_PARAMS *pParams);
+
+NV_STATUS profilerBaseCtrlCmdGetChipletHsCredits_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL *pParams);
+
+NV_STATUS profilerBaseCtrlCmdGetHsCreditsMapping_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS *pParams);
 
 NV_STATUS profilerBaseCtrlCmdGetHsCredits_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_HS_CREDITS_PARAMS *pParams);
 

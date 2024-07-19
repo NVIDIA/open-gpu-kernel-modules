@@ -76,7 +76,7 @@ DeviceImpl::~DeviceImpl()
 }
 
 
-DeviceImpl::DeviceImpl(DPCDHAL * hal, ConnectorImpl * connector, DeviceImpl * parent, bool bSkipFakeDeviceDpcdAccess)
+DeviceImpl::DeviceImpl(DPCDHAL * hal, ConnectorImpl * connector, DeviceImpl * parent)
     : parent(parent),
       hal(hal),
       activeGroup(0),
@@ -97,7 +97,6 @@ DeviceImpl::DeviceImpl(DPCDHAL * hal, ConnectorImpl * connector, DeviceImpl * pa
       bSdpExtCapable(Indeterminate),
       bAsyncSDPCapable(Indeterminate),
       bDscPassThroughColorFormatWar(false),
-      bSkipFakeDeviceDpcdAccess(bSkipFakeDeviceDpcdAccess),
       maxModeBwRequired(0)
 {
     bandwidth.enum_path.dataValid = false;
@@ -378,7 +377,7 @@ AuxBus::status DeviceImpl::getDpcdData(unsigned offset, NvU8 * buffer,
                                        unsigned * sizeCompleted,
                                        unsigned  * pNakReason)
 {
-    if (this->bSkipFakeDeviceDpcdAccess && isFakedMuxDevice())
+    if (isFakedMuxDevice())
     {
         DP_PRINTF(DP_INFO, "Device is faked, returning nack\n");
         return AuxBus::nack;
@@ -412,7 +411,7 @@ AuxBus::status DeviceImpl::setDpcdData(unsigned offset, NvU8 * buffer,
                                        unsigned * sizeCompleted,
                                        unsigned  * pNakReason)
 {
-    if (this->bSkipFakeDeviceDpcdAccess && isFakedMuxDevice())
+    if (isFakedMuxDevice())
     {
         DP_PRINTF(DP_INFO, "Device is faked, returning nack\n");
         return AuxBus::nack;
@@ -890,19 +889,19 @@ void DeviceImpl::dpcdOverrides()
         switch(processedEdid.WARData.optimalLinkRate)
         {
             case 0x6:
-                optimalLinkRate = RBR;
+                optimalLinkRate = dp2LinkRate_1_62Gbps;
                 break;
             case 0xa:
-                optimalLinkRate = HBR;
+                optimalLinkRate = dp2LinkRate_2_70Gbps;
                 break;
             case 0x14:
-                optimalLinkRate = HBR2;
+                optimalLinkRate = dp2LinkRate_5_40Gbps;
                 break;
             case 0x1E:
-                optimalLinkRate = HBR3;
+                optimalLinkRate = dp2LinkRate_8_10Gbps;
                 break;
             default:
-                optimalLinkRate = RBR;
+                optimalLinkRate = dp2LinkRate_1_62Gbps;
                 DP_PRINTF(DP_ERROR, "DP-DEV> Invalid link rate supplied. Falling back to RBR");
                 break;
         }
@@ -2838,6 +2837,8 @@ bool DeviceImpl::setModeList(DisplayPort::DpModesetParams *modeList, unsigned nu
 
         connector->endCompoundQuery();
     }
+
+    DP_PRINTF(DP_INFO, "Computed Max mode BW: %d Mbps", maxModeBwRequired / (1000 * 1000));
 
     connector->updateDpTunnelBwAllocation();
 

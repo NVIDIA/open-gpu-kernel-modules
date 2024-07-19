@@ -39,10 +39,10 @@
 // The following memory regions are not to scale. The memory layout is linear,
 // i.e., no canonical form address conversion.
 //
-// Hopper:
+// Hopper-Blackwell:
 // +----------------+ 128PB
 // |                |
-// |   (not used)   |
+// |   (not used)*  | * See note(1)
 // |                |
 // ------------------
 // |uvm_mem_t(128GB)| (uvm_mem_va_size)
@@ -66,7 +66,7 @@
 // Pascal-Ada:
 // +----------------+ 512TB
 // |                |
-// |   (not used)   |
+// |   (not used)*  | * See note(1)
 // |                |
 // ------------------
 // |uvm_mem_t(128GB)| (uvm_mem_va_size)
@@ -107,6 +107,9 @@
 // | rm_mem(128GB)  | (rm_va_size)
 // |                |
 // +----------------+ 0 (rm_va_base)
+//
+// Note (1): This region is used in unit tests, see
+// tests/uvm_mem_test.c:test_huge_pages().
 
 // Maximum memory of any GPU.
 #define UVM_GPU_MAX_PHYS_MEM (UVM_SIZE_1TB)
@@ -376,7 +379,7 @@ void uvm_page_tree_deinit(uvm_page_tree_t *tree);
 NV_STATUS uvm_page_tree_get_ptes(uvm_page_tree_t *tree,
                                  NvU64 page_size,
                                  NvU64 start,
-                                 NvLength size,
+                                 NvU64 size,
                                  uvm_pmm_alloc_flags_t pmm_flags,
                                  uvm_page_table_range_t *range);
 
@@ -386,7 +389,7 @@ NV_STATUS uvm_page_tree_get_ptes(uvm_page_tree_t *tree,
 NV_STATUS uvm_page_tree_get_ptes_async(uvm_page_tree_t *tree,
                                        NvU64 page_size,
                                        NvU64 start,
-                                       NvLength size,
+                                       NvU64 size,
                                        uvm_pmm_alloc_flags_t pmm_flags,
                                        uvm_page_table_range_t *range);
 

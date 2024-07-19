@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2002-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2002-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -685,15 +685,11 @@ subdeviceCtrlCmdBusGetPcieSupportedGpuAtomics_VF
     NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS *pParams
 )
 {
-    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
-    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
-
-    NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
-
+    // Atomics not supported in VF. See bug 3497203.
     for (NvU32 i = 0; i < NV2080_CTRL_PCIE_SUPPORTED_GPU_ATOMICS_OP_TYPE_COUNT; i++)
     {
-        pParams->atomicOp[i].bSupported = pVSI->pcieSupportedGpuAtomics.atomicOp[i].bSupported;
-        pParams->atomicOp[i].attributes = pVSI->pcieSupportedGpuAtomics.atomicOp[i].attributes;
+        pParams->atomicOp[i].bSupported = NV_FALSE;
+        pParams->atomicOp[i].attributes = 0x0;
     }
 
     return NV_OK;

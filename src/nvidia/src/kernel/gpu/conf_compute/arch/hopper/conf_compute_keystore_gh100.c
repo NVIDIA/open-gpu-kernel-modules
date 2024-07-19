@@ -99,8 +99,10 @@ confComputeKeyStoreInit_GH100(ConfidentialCompute *pConfCompute)
     }
 
     // SEC2 key slots are a mix of encryption / decryption with channel counter and HMAC.
-    ct_assert(CC_KEYSPACE_SEC2_SIZE == 4);
+    ct_assert(CC_KEYSPACE_SEC2_SIZE == 6);
 
+    (*pKeyStore)[index++].type = CRYPT_COUNTER;
+    (*pKeyStore)[index++].type = HMAC_COUNTER;
     (*pKeyStore)[index++].type = CRYPT_COUNTER;
     (*pKeyStore)[index++].type = HMAC_COUNTER;
     (*pKeyStore)[index++].type = CRYPT_COUNTER;
@@ -125,6 +127,7 @@ confComputeKeyStoreDeinit_GH100(ConfidentialCompute *pConfCompute)
         portMemSet(pConfCompute->m_keySlot, 0, (NvLength) sizeof(keySlot_t));
         confComputeKeyStoreClearExportMasterKey_HAL(pConfCompute);
         portMemFree(pConfCompute->m_keySlot);
+        pConfCompute->m_keySlot = NULL;
     }
 }
 
@@ -150,7 +153,8 @@ confComputeKeyStoreDeriveKey_GH100(ConfidentialCompute *pConfCompute, NvU32 glob
     NV_PRINTF(LEVEL_INFO, "Deriving key for global key ID %x.\n", globalKeyId);
 
     if ((globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_USER)) ||
-        (globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_KERN)))
+        (globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_KERN)) ||
+        (globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER)))
     {
         pKey = (uint8_t *)(*pKeyStore)[slotIndex].hmacBundle.key;
         keySize = sizeof((*pKeyStore)[slotIndex].hmacBundle.key);
@@ -399,7 +403,8 @@ confComputeKeyStoreUpdateKey_GH100(ConfidentialCompute *pConfCompute, NvU32 glob
     pKeyStore = pConfCompute->m_keySlot;
 
     if ((globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_USER)) ||
-        (globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_KERN)))
+        (globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_KERN)) ||
+        (globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER)))
     {
         pKey = (uint8_t *)(*pKeyStore)[slotIndex].hmacBundle.key;
         keySize = sizeof((*pKeyStore)[slotIndex].hmacBundle.key);
@@ -492,6 +497,18 @@ confComputeGetKeyPairByChannel_GH100
     return NV_OK;
 }
 
+NvBool
+confComputeKeyStoreIsValidGlobalKeyId_GH100
+(
+    ConfidentialCompute *pConfCompute,
+    NvU32                globalKeyId
+)
+{
+    const char *globalKeyIdString = CC_GKEYID_GET_STR(globalKeyId);
+
+    return (globalKeyIdString != NULL);
+}
+
 //
 // Return the key ID for a given LCE channel and rotation operation.
 // If rotateOperation is ROTATE_IV_ALL_VALID then it will return the least
@@ -565,13 +582,18 @@ getKeyIdSec2
     {
         if ((rotateOperation == ROTATE_IV_ENCRYPT) || (rotateOperation == ROTATE_IV_ALL_VALID))
         {
-            *keyId = CC_LKEYID_CPU_SEC2_DATA_KERN;
+            if (pKernelChannel->bUseScrubKey)
+                *keyId = CC_LKEYID_CPU_SEC2_DATA_SCRUBBER;
+            else
+                *keyId = CC_LKEYID_CPU_SEC2_DATA_KERN;
         }
         else
         {
-            *keyId = CC_LKEYID_CPU_SEC2_HMAC_KERN;
+            if (pKernelChannel->bUseScrubKey)
+                *keyId = CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER;
+            else
+                *keyId = CC_LKEYID_CPU_SEC2_HMAC_KERN;
         }
-
         return NV_OK;
     }
 

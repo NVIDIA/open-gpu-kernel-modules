@@ -53,8 +53,6 @@ extern "C" {
 #include "core/core.h"
 #include "gpu/eng_state.h"
 
-typedef struct OBJSWENG *POBJSWENG;
-
 
 // Private field names are wrapped in PRIVATE_FIELD, which does nothing for
 // the matching C source file, but causes diagnostics to be issued if another
@@ -81,19 +79,19 @@ struct OBJSWENG {
 
     // Vtable with 14 per-object function pointers
     NV_STATUS (*__swengConstructEngine__)(struct OBJGPU *, struct OBJSWENG * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
-    void (*__swengInitMissing__)(POBJGPU, struct OBJSWENG * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__swengStatePreInitLocked__)(POBJGPU, struct OBJSWENG * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__swengStatePreInitUnlocked__)(POBJGPU, struct OBJSWENG * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__swengStateInitLocked__)(POBJGPU, struct OBJSWENG * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__swengStateInitUnlocked__)(POBJGPU, struct OBJSWENG * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__swengStatePreLoad__)(POBJGPU, struct OBJSWENG * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__swengStateLoad__)(POBJGPU, struct OBJSWENG * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__swengStatePostLoad__)(POBJGPU, struct OBJSWENG * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__swengStatePreUnload__)(POBJGPU, struct OBJSWENG * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__swengStateUnload__)(POBJGPU, struct OBJSWENG * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__swengStatePostUnload__)(POBJGPU, struct OBJSWENG * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    void (*__swengStateDestroy__)(POBJGPU, struct OBJSWENG * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__swengIsPresent__)(POBJGPU, struct OBJSWENG * /*this*/);  // virtual inherited (engstate) base (engstate)
+    void (*__swengInitMissing__)(struct OBJGPU *, struct OBJSWENG * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swengStatePreInitLocked__)(struct OBJGPU *, struct OBJSWENG * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swengStatePreInitUnlocked__)(struct OBJGPU *, struct OBJSWENG * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swengStateInitLocked__)(struct OBJGPU *, struct OBJSWENG * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swengStateInitUnlocked__)(struct OBJGPU *, struct OBJSWENG * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swengStatePreLoad__)(struct OBJGPU *, struct OBJSWENG * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swengStateLoad__)(struct OBJGPU *, struct OBJSWENG * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swengStatePostLoad__)(struct OBJGPU *, struct OBJSWENG * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swengStatePreUnload__)(struct OBJGPU *, struct OBJSWENG * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swengStateUnload__)(struct OBJGPU *, struct OBJSWENG * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__swengStatePostUnload__)(struct OBJGPU *, struct OBJSWENG * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    void (*__swengStateDestroy__)(struct OBJGPU *, struct OBJSWENG * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__swengIsPresent__)(struct OBJGPU *, struct OBJSWENG * /*this*/);  // virtual inherited (engstate) base (engstate)
 };
 
 #ifndef __NVOC_CLASS_OBJSWENG_TYPEDEF__
@@ -164,55 +162,55 @@ static inline NV_STATUS swengConstructEngine_DISPATCH(struct OBJGPU *pGpu, struc
     return pSweng->__swengConstructEngine__(pGpu, pSweng, arg3);
 }
 
-static inline void swengInitMissing_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEngstate) {
+static inline void swengInitMissing_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate) {
     pEngstate->__swengInitMissing__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS swengStatePreInitLocked_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEngstate) {
+static inline NV_STATUS swengStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate) {
     return pEngstate->__swengStatePreInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS swengStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEngstate) {
+static inline NV_STATUS swengStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate) {
     return pEngstate->__swengStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS swengStateInitLocked_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEngstate) {
+static inline NV_STATUS swengStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate) {
     return pEngstate->__swengStateInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS swengStateInitUnlocked_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEngstate) {
+static inline NV_STATUS swengStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate) {
     return pEngstate->__swengStateInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS swengStatePreLoad_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
+static inline NV_STATUS swengStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
     return pEngstate->__swengStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS swengStateLoad_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
+static inline NV_STATUS swengStateLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
     return pEngstate->__swengStateLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS swengStatePostLoad_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
+static inline NV_STATUS swengStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
     return pEngstate->__swengStatePostLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS swengStatePreUnload_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
+static inline NV_STATUS swengStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
     return pEngstate->__swengStatePreUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS swengStateUnload_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
+static inline NV_STATUS swengStateUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
     return pEngstate->__swengStateUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS swengStatePostUnload_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
+static inline NV_STATUS swengStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
     return pEngstate->__swengStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline void swengStateDestroy_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEngstate) {
+static inline void swengStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate) {
     pEngstate->__swengStateDestroy__(pGpu, pEngstate);
 }
 
-static inline NvBool swengIsPresent_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEngstate) {
+static inline NvBool swengIsPresent_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate) {
     return pEngstate->__swengIsPresent__(pGpu, pEngstate);
 }
 

@@ -175,7 +175,8 @@ void nvlink_core_correlate_conn_by_token(nvlink_link *srcLink, NvU64 writeToken,
  */
 void nvlink_core_discover_and_get_remote_end(nvlink_link  *end,
                                              nvlink_link **remote_end,
-                                             NvU32         flags);
+                                             NvU32         flags,
+                                             NvBool        bForceDiscovery);
 
 
 /************************************************************************************************/

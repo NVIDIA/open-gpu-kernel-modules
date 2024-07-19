@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -425,4 +425,96 @@ kdispGetPBTargetAperture_v03_00
     }
 
     return pbTargetAperture;
+}
+
+NvU32
+kheadReadPendingRgLineIntr_v03_00
+(
+    OBJGPU *pGpu,
+    KernelHead *pKernelHead,
+    THREAD_STATE_NODE   *pThreadState
+)
+{
+    NvU32 intr;
+    NvU32 headIntrMask = 0;
+
+    intr = GPU_REG_RD32_EX(pGpu, NV_PDISP_FE_RM_INTR_DISPATCH, pThreadState);
+
+    if (!FLD_IDX_TEST_DRF(_PDISP, _FE_RM_INTR_DISPATCH, _HEAD_TIMING, pKernelHead->PublicId, _PENDING, intr))
+    {
+        return headIntrMask;
+    }
+
+    intr = GPU_REG_RD32_EX(pGpu, NV_PDISP_FE_RM_INTR_STAT_HEAD_TIMING(pKernelHead->PublicId), pThreadState);
+
+    if (FLD_TEST_DRF(_PDISP, _FE_EVT_STAT_HEAD_TIMING, _RG_LINE_A, _PENDING, intr))
+    {
+        headIntrMask |= headIntr_RgLineA;
+    }
+
+    if (FLD_TEST_DRF(_PDISP, _FE_EVT_STAT_HEAD_TIMING, _RG_LINE_B, _PENDING, intr))
+    {
+        headIntrMask |= headIntr_RgLineB;
+    }
+
+    return headIntrMask;
+}
+
+void
+kheadResetRgLineIntrMask_v03_00
+(
+    OBJGPU *pGpu,
+    KernelHead *pKernelHead,
+    NvU32 headIntrMask,
+    THREAD_STATE_NODE   *pThreadState
+)
+{
+    NvU32 writeIntr = 0;
+
+    if (headIntrMask & headIntr_RgLineA)
+    {
+        writeIntr |= DRF_DEF(_PDISP, _FE_EVT_STAT_HEAD_TIMING, _RG_LINE_A, _RESET);
+    }
+
+    if (headIntrMask & headIntr_RgLineB)
+    {
+        writeIntr |= DRF_DEF(_PDISP, _FE_EVT_STAT_HEAD_TIMING, _RG_LINE_B, _RESET);
+    }
+
+    GPU_REG_WR32_EX(pGpu, NV_PDISP_FE_EVT_STAT_HEAD_TIMING(pKernelHead->PublicId), writeIntr, pThreadState);
+}
+
+NvBool
+kheadReadPendingVblank_v03_00
+(
+    OBJGPU *pGpu,
+    KernelHead *pKernelHead,
+    NvU32 *pCachedIntr,
+    THREAD_STATE_NODE *pThreadState
+)
+{
+    NvU32  intr = pCachedIntr ? *pCachedIntr : GPU_REG_RD32_EX(pGpu, NV_PDISP_FE_RM_INTR_DISPATCH, pThreadState);
+
+    if (!FLD_IDX_TEST_DRF(_PDISP, _FE_RM_INTR_DISPATCH, _HEAD_TIMING, pKernelHead->PublicId, _PENDING, intr))
+    {
+        return NV_FALSE;
+    }
+
+    intr = GPU_REG_RD32_EX(pGpu, NV_PDISP_FE_RM_INTR_STAT_HEAD_TIMING(pKernelHead->PublicId), pThreadState);
+
+    if (FLD_TEST_DRF(_PDISP, _FE_EVT_STAT_HEAD_TIMING, _LAST_DATA, _PENDING, intr))
+    {
+        return NV_TRUE;
+    }
+
+    return NV_FALSE;
+}
+
+void kheadResetPendingVblank_KERNEL(OBJGPU *pGpu, KernelHead *pKernelHead, THREAD_STATE_NODE *pThreadState)
+{
+    NvU32 writeIntr = GPU_REG_RD32(pGpu, NV_PDISP_FE_EVT_STAT_HEAD_TIMING(pKernelHead->PublicId));
+
+    writeIntr = DRF_DEF(_PDISP, _FE_EVT_STAT_HEAD_TIMING, _LAST_DATA, _RESET);
+
+    GPU_REG_WR32(pGpu, NV_PDISP_FE_EVT_STAT_HEAD_TIMING(pKernelHead->PublicId), writeIntr);
 }

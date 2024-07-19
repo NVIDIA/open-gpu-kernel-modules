@@ -26,6 +26,7 @@
 #include "nvidia-modeset-os-interface.h"
 
 #include "nvkms-api.h"
+#include "nvkms-sync.h"
 #include "nvkms-rmapi.h"
 #include "nvkms-vrr.h"
 
@@ -272,9 +273,10 @@ failed:
  */
 static void KmsFreeDevice(struct NvKmsKapiDevice *device)
 {
-    /* Free notifier memory */
+    /* Free notifier and semaphore memory */
 
-    nvKmsKapiFreeNotifiers(device);
+    nvKmsKapiFreeNisoSurface(device, &device->semaphore);
+    nvKmsKapiFreeNisoSurface(device, &device->notifier);
 
     /* Free NVKMS device */
 
@@ -398,7 +400,7 @@ static NvBool KmsAllocateDevice(struct NvKmsKapiDevice *device)
     for (layer = 0; layer < NVKMS_KAPI_LAYER_MAX; layer++) {
         device->supportedSurfaceMemoryFormats[layer] =
             paramsAlloc->reply.layerCaps[layer].supportedSurfaceMemoryFormats;
-        device->supportsHDR[layer] = paramsAlloc->reply.layerCaps[layer].supportsHDR;
+        device->supportsICtCp[layer] = paramsAlloc->reply.layerCaps[layer].supportsICtCp;
     }
 
     if (paramsAlloc->reply.validNIsoFormatMask &
@@ -411,6 +413,15 @@ static NvBool KmsAllocateDevice(struct NvKmsKapiDevice *device)
         nvAssert(paramsAlloc->reply.validNIsoFormatMask &
                  (1 << NVKMS_NISO_FORMAT_LEGACY));
         device->notifier.format = NVKMS_NISO_FORMAT_LEGACY;
+    }
+
+    if (paramsAlloc->reply.validNIsoFormatMask &
+        (1 << NVKMS_NISO_FORMAT_FOUR_WORD_NVDISPLAY)) {
+        device->semaphore.format = NVKMS_NISO_FORMAT_FOUR_WORD_NVDISPLAY;
+    } else {
+        nvAssert(paramsAlloc->reply.validNIsoFormatMask &
+                 (1 << NVKMS_NISO_FORMAT_LEGACY));
+        device->semaphore.format = NVKMS_NISO_FORMAT_LEGACY;
     }
 
     /* XXX Add support for SLI/multiple display engines per device */
@@ -438,6 +449,14 @@ static NvBool KmsAllocateDevice(struct NvKmsKapiDevice *device)
     if (!nvKmsKapiAllocateNotifiers(device, inVideoMemory)) {
         nvKmsKapiLogDebug(
             "Failed to allocate Notifier objects for GPU ID 0x%08x",
+            device->gpuId);
+        goto done;
+    }
+
+    /* Allocate semaphore memory in video memory whenever available */
+    if (!nvKmsKapiAllocateSemaphores(device, !device->isSOC)) {
+        nvKmsKapiLogDebug(
+            "Failed to allocate Semaphore objects for GPU ID 0x%08x",
             device->gpuId);
         goto done;
     }
@@ -1010,6 +1029,7 @@ static NvBool GetDeviceResourcesInfo
 
     info->caps.hasVideoMemory = !device->isSOC;
     info->caps.genericPageKind = device->caps.genericPageKind;
+    info->caps.requiresVrrSemaphores = device->caps.requiresVrrSemaphores;
 
     if (device->hKmsDevice == 0x0) {
         info->caps.pitchAlignment = 0x1;
@@ -1085,6 +1105,8 @@ static NvBool GetDeviceResourcesInfo
     info->caps.supportedCursorSurfaceMemoryFormats =
         NVBIT(NvKmsSurfaceMemoryFormatA8R8G8B8);
 
+    info->caps.numDisplaySemaphores  = device->numDisplaySemaphores;
+
     ct_assert(sizeof(info->supportedSurfaceMemoryFormats) ==
               sizeof(device->supportedSurfaceMemoryFormats));
 
@@ -1092,12 +1114,12 @@ static NvBool GetDeviceResourcesInfo
                  device->supportedSurfaceMemoryFormats,
                  sizeof(device->supportedSurfaceMemoryFormats));
 
-    ct_assert(sizeof(info->supportsHDR) ==
-              sizeof(device->supportsHDR));
+    ct_assert(sizeof(info->supportsICtCp) ==
+              sizeof(device->supportsICtCp));
 
-    nvkms_memcpy(info->supportsHDR,
-                 device->supportsHDR,
-                 sizeof(device->supportsHDR));
+    nvkms_memcpy(info->supportsICtCp,
+                 device->supportsICtCp,
+                 sizeof(device->supportsICtCp));
 done:
 
     return status;
@@ -1319,7 +1341,7 @@ static NvBool GetDynamicDisplayInfo(
             sizeof(params->edid.buffer));
 
         params->edid.bufferSize = pParamsDpyDynamic->reply.edid.bufferSize;
-        params->vrrSupported = (vrrSupported && !device->caps.requiresVrrSemaphores) ? NV_TRUE : NV_FALSE;
+        params->vrrSupported = vrrSupported;
     }
 
 done:
@@ -2471,25 +2493,48 @@ static NvBool AssignSyncObjectConfig(
     struct NvKmsChannelSyncObjects *pSyncObject)
 {
     if (!device->supportsSyncpts) {
-        if (pLayerConfig->syncptParams.preSyncptSpecified ||
-            pLayerConfig->syncptParams.postSyncptRequested) {
+        if (pLayerConfig->syncParams.preSyncptSpecified ||
+            pLayerConfig->syncParams.postSyncptRequested) {
             return NV_FALSE;
         }
+
+    }
+
+    /* Syncpt and Semaphore usage are mutually exclusive. */
+    if (pLayerConfig->syncParams.semaphoreSpecified &&
+        (pLayerConfig->syncParams.preSyncptSpecified ||
+         pLayerConfig->syncParams.postSyncptRequested)) {
+        return NV_FALSE;
     }
 
     pSyncObject->useSyncpt = FALSE;
 
-    if (pLayerConfig->syncptParams.preSyncptSpecified) {
+    if (pLayerConfig->syncParams.preSyncptSpecified) {
         pSyncObject->useSyncpt = TRUE;
 
         pSyncObject->u.syncpts.pre.type = NVKMS_SYNCPT_TYPE_RAW;
-        pSyncObject->u.syncpts.pre.u.raw.id = pLayerConfig->syncptParams.preSyncptId;
-        pSyncObject->u.syncpts.pre.u.raw.value = pLayerConfig->syncptParams.preSyncptValue;
+        pSyncObject->u.syncpts.pre.u.raw.id = pLayerConfig->syncParams.u.syncpt.preSyncptId;
+        pSyncObject->u.syncpts.pre.u.raw.value = pLayerConfig->syncParams.u.syncpt.preSyncptValue;
+    } else if (pLayerConfig->syncParams.semaphoreSpecified) {
+        pSyncObject->u.semaphores.release.surface.surfaceHandle =
+            pSyncObject->u.semaphores.acquire.surface.surfaceHandle =
+            device->semaphore.hKmsHandle;
+        pSyncObject->u.semaphores.release.surface.format =
+            pSyncObject->u.semaphores.acquire.surface.format =
+            device->semaphore.format;
+        pSyncObject->u.semaphores.release.surface.offsetInWords =
+            pSyncObject->u.semaphores.acquire.surface.offsetInWords =
+            nvKmsKapiGetDisplaySemaphoreOffset(
+                device,
+                pLayerConfig->syncParams.u.semaphore.index) >> 2;
+        pSyncObject->u.semaphores.acquire.value =
+            NVKMS_KAPI_SEMAPHORE_VALUE_READY;
+        pSyncObject->u.semaphores.release.value =
+            NVKMS_KAPI_SEMAPHORE_VALUE_DONE;
     }
 
-    if (pLayerConfig->syncptParams.postSyncptRequested) {
+    if (pLayerConfig->syncParams.postSyncptRequested) {
         pSyncObject->useSyncpt = TRUE;
-
         pSyncObject->u.syncpts.requestedPostType = NVKMS_SYNCPT_TYPE_FD;
     }
     return NV_TRUE;
@@ -2581,7 +2626,7 @@ static NvBool NvKmsKapiOverlayLayerConfigToKms(
         params->layer[layer].colorSpace.specified = TRUE;
     }
 
-    if (layerRequestedConfig->flags.cscChanged) {
+    if (layerRequestedConfig->flags.cscChanged || bFromKmsSetMode) {
         params->layer[layer].csc.specified = NV_TRUE;
         params->layer[layer].csc.useMain = layerConfig->cscUseMain;
         if (!layerConfig->cscUseMain) {
@@ -2709,7 +2754,7 @@ static NvBool NvKmsKapiPrimaryLayerConfigToKms(
         changed = TRUE;
     }
 
-    if (layerRequestedConfig->flags.cscChanged) {
+    if (layerRequestedConfig->flags.cscChanged || bFromKmsSetMode) {
         nvAssert(!layerConfig->cscUseMain);
 
         params->layer[NVKMS_MAIN_LAYER].csc.specified = NV_TRUE;
@@ -2795,25 +2840,32 @@ static NvBool NvKmsKapiLayerConfigToKms(
 }
 
 static void NvKmsKapiHeadLutConfigToKms(
-    const struct NvKmsKapiHeadModeSetConfig *modeSetConfig,
-    struct NvKmsSetLutCommonParams *lutParams)
+    const struct NvKmsKapiHeadRequestedConfig *headRequestedConfig,
+    struct NvKmsSetLutCommonParams *lutParams,
+    NvBool bFromKmsSetMode)
 {
+    const struct NvKmsKapiHeadModeSetConfig *modeSetConfig =
+        &headRequestedConfig->modeSetConfig;
     struct NvKmsSetInputLutParams  *input  = &lutParams->input;
     struct NvKmsSetOutputLutParams *output = &lutParams->output;
 
     /* input LUT */
-    input->specified = modeSetConfig->lut.input.specified;
-    input->depth     = modeSetConfig->lut.input.depth;
-    input->start     = modeSetConfig->lut.input.start;
-    input->end       = modeSetConfig->lut.input.end;
+    if (headRequestedConfig->flags.ilutChanged || bFromKmsSetMode) {
+        input->specified = NV_TRUE;
+        input->depth     = modeSetConfig->lut.input.depth;
+        input->start     = modeSetConfig->lut.input.start;
+        input->end       = modeSetConfig->lut.input.end;
 
-    input->pRamps = nvKmsPointerToNvU64(modeSetConfig->lut.input.pRamps);
+        input->pRamps = nvKmsPointerToNvU64(modeSetConfig->lut.input.pRamps);
+    }
 
     /* output LUT */
-    output->specified = modeSetConfig->lut.output.specified;
-    output->enabled   = modeSetConfig->lut.output.enabled;
+    if (headRequestedConfig->flags.olutChanged || bFromKmsSetMode) {
+        output->specified = NV_TRUE;
+        output->enabled   = modeSetConfig->lut.output.enabled;
 
-    output->pRamps = nvKmsPointerToNvU64(modeSetConfig->lut.output.pRamps);
+        output->pRamps = nvKmsPointerToNvU64(modeSetConfig->lut.output.pRamps);
+    }
 }
 
 static NvBool AnyLayerTransferFunctionChanged(
@@ -2925,9 +2977,9 @@ static NvBool NvKmsKapiRequestedModeSetConfigToKms(
 
         NvKmsKapiDisplayModeToKapi(&headModeSetConfig->mode, &paramsHead->mode);
 
-        if (headRequestedConfig->flags.lutChanged) {
-            NvKmsKapiHeadLutConfigToKms(headModeSetConfig, &paramsHead->flip.lut);
-        }
+        NvKmsKapiHeadLutConfigToKms(headRequestedConfig,
+                                    &paramsHead->flip.lut,
+                                    NV_TRUE /* bFromKmsSetMode */);
 
         NvKmsKapiCursorConfigToKms(&headRequestedConfig->cursorRequestedConfig,
                                    &paramsHead->flip,
@@ -2975,13 +3027,8 @@ static NvBool NvKmsKapiRequestedModeSetConfigToKms(
         paramsHead->viewPortSizeIn.height =
             headModeSetConfig->mode.timings.vVisible;
 
-        if (device->caps.requiresVrrSemaphores) {
-            paramsHead->allowGsync = NV_FALSE;
-            paramsHead->allowAdaptiveSync = NVKMS_ALLOW_ADAPTIVE_SYNC_DISABLED;
-        } else {
-            paramsHead->allowGsync = NV_TRUE;
-            paramsHead->allowAdaptiveSync = NVKMS_ALLOW_ADAPTIVE_SYNC_ALL;
-        }
+        paramsHead->allowGsync = NV_TRUE;
+        paramsHead->allowAdaptiveSync = NVKMS_ALLOW_ADAPTIVE_SYNC_ALL;
     }
 
     return NV_TRUE;
@@ -3189,9 +3236,10 @@ static NvBool KmsFlip(
         if (headModeSetConfig->vrrEnabled) {
             params->request.allowVrr = NV_TRUE;
         }
-        if (headRequestedConfig->flags.lutChanged) {
-            NvKmsKapiHeadLutConfigToKms(headModeSetConfig, &flipParams->lut);
-        }
+
+        NvKmsKapiHeadLutConfigToKms(headRequestedConfig,
+                                    &flipParams->lut,
+                                    NV_FALSE /* bFromKmsSetMode */);
     }
 
     if (params->request.numFlipHeads == 0) {
@@ -3216,6 +3264,9 @@ static NvBool KmsFlip(
     }
 
     /*! fill back flip reply */
+    replyConfig->vrrFlip = params->reply.vrrFlipType;
+    replyConfig->vrrSemaphoreIndex = params->reply.vrrSemaphoreIndex;
+
     for (i = 0; i < params->request.numFlipHeads; i++) {
          const struct NvKmsKapiHeadRequestedConfig *headRequestedConfig =
             &requestedConfig->headRequestedConfig[pFlipHead[i].head];
@@ -3246,7 +3297,7 @@ static NvBool KmsFlip(
 
               /*! initialize explicitly to -1 as 0 is valid file descriptor */
               layerReplyConfig->postSyncptFd = -1;
-              if (layerRequestedConfig->syncptParams.postSyncptRequested) {
+              if (layerRequestedConfig->syncParams.postSyncptRequested) {
                  layerReplyConfig->postSyncptFd =
                      flipParams->layer[layer].postSyncpt.u.fd;
               }
@@ -3457,6 +3508,25 @@ static void nvKmsKapiSetSuspendResumeCallback
     pSuspendResumeFunc = function;
 }
 
+static NvBool SignalVrrSemaphore
+(
+    struct NvKmsKapiDevice *device,
+    NvS32 index
+)
+{
+    NvBool status = NV_TRUE;
+    struct NvKmsVrrSignalSemaphoreParams params = { };
+    params.request.deviceHandle = device->hKmsDevice;
+    params.request.vrrSemaphoreIndex = index;
+    status = nvkms_ioctl_from_kapi(device->pKmsOpen,
+                                   NVKMS_IOCTL_VRR_SIGNAL_SEMAPHORE,
+                                   &params, sizeof(params));
+    if (!status) {
+        nvKmsKapiLogDeviceDebug(device, "NVKMS VrrSignalSemaphore failed");
+    }
+    return status;
+}
+
 NvBool nvKmsKapiGetFunctionsTableInternal
 (
     struct NvKmsKapiFunctionsTable *funcsTable
@@ -3536,6 +3606,11 @@ NvBool nvKmsKapiGetFunctionsTableInternal
     funcsTable->setSemaphoreSurfaceValue =
         nvKmsKapiSetSemaphoreSurfaceValue;
     funcsTable->setSuspendResumeCallback = nvKmsKapiSetSuspendResumeCallback;
+
+    funcsTable->resetDisplaySemaphore = nvKmsKapiResetDisplaySemaphore;
+    funcsTable->signalDisplaySemaphore = nvKmsKapiSignalDisplaySemaphore;
+    funcsTable->cancelDisplaySemaphore = nvKmsKapiCancelDisplaySemaphore;
+    funcsTable->signalVrrSemaphore = SignalVrrSemaphore;
 
     return NV_TRUE;
 }

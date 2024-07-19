@@ -42,7 +42,7 @@
 #include "os/os.h"
 #include "rmapi/rmapi.h"
 #include "gpu/gpu.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "vgpu/rpc.h"
 #include "kernel/gpu/intr/engine_idx.h"
 

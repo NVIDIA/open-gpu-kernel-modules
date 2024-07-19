@@ -28,7 +28,7 @@
 
 bool uvm_parent_gpu_non_replayable_faults_pending(uvm_parent_gpu_t *parent_gpu);
 
-void uvm_gpu_service_non_replayable_fault_buffer(uvm_gpu_t *gpu);
+void uvm_parent_gpu_service_non_replayable_fault_buffer(uvm_parent_gpu_t *parent_gpu);
 
 NV_STATUS uvm_parent_gpu_fault_buffer_init_non_replayable_faults(uvm_parent_gpu_t *parent_gpu);
 

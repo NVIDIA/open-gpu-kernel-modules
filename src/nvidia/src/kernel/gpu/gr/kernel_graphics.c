@@ -36,7 +36,7 @@
 #include "kernel/gpu/mem_sys/kern_mem_sys.h"
 #include "kernel/mem_mgr/gpu_vaspace.h"
 #include "virtualization/hypervisor/hypervisor.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/mem_mgr/heap.h"
 #include "kernel/gpu/intr/engine_idx.h"
@@ -58,6 +58,7 @@
 #include "class/clc46f.h" // TURING_CHANNEL_GPFIFO_A
 #include "class/clc56f.h" // AMPERE_CHANNEL_GPFIFO_A
 #include "class/clc86f.h" // HOPPER_CHANNEL_GPFIFO_A
+#include "class/clc96f.h" // BLACKWELL_CHANNEL_GPFIFO_A
 #include "class/clc637.h"
 #include "class/clc638.h"
 
@@ -314,6 +315,11 @@ kgraphicsStateInitLocked_IMPL
                                       NULL, NULL));
     }
 
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM))
+    {
+        kgraphicsSetBug4208224WAREnabled(pGpu, pKernelGraphics, NV_FALSE);
+    }
+
     pKernelGraphics->bug4208224Info.hClient      = NV01_NULL_OBJECT;
     pKernelGraphics->bug4208224Info.hDeviceId    = NV01_NULL_OBJECT;
     pKernelGraphics->bug4208224Info.hSubdeviceId = NV01_NULL_OBJECT;
@@ -466,6 +472,8 @@ _kgraphicsPostSchedulingEnableHandler
     KernelGraphics *pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, ((NvU32)(NvUPtr)pGrIndex));
     const KGRAPHICS_STATIC_INFO *pKernelGraphicsStaticInfo = kgraphicsGetStaticInfo(pGpu, pKernelGraphics);
 
+
+    // Nothing to do for non-GSPCLIENT
     if (!IS_GSP_CLIENT(pGpu) && !kgraphicsIsBug4208224WARNeeded_HAL(pGpu, pKernelGraphics))
         return NV_OK;
 
@@ -496,7 +504,6 @@ _kgraphicsPostSchedulingEnableHandler
             return NV_WARN_MORE_PROCESSING_REQUIRED;
         }
     }
-
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kgraphicsCreateGoldenImageChannel(pGpu, pKernelGraphics));
     if (kgraphicsIsBug4208224WARNeeded_HAL(pGpu, pKernelGraphics) && !pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_RESUME_CODEPATH))
     {
@@ -1015,6 +1022,13 @@ kgraphicsLoadStaticInfo_VF
 
         // Cache legacy GR mask info (i.e. GR0 with MIG disabled) to pKernelGraphicsManager->legacyFsMaskState
         kgrmgrSetLegacyKgraphicsStaticInfo(pGpu, pKernelGraphicsManager, pKernelGraphics);
+    }
+
+    // FECS ctxsw logging is consumed when profiling support is available in guest
+    if (!pVSI->vgpuStaticProperties.bProfilingTracingEnabled)
+    {
+        kgraphicsSetCtxswLoggingSupported(pGpu, pKernelGraphics, NV_FALSE);
+        NV_PRINTF(LEVEL_NOTICE, "Profiling support not requested. Disabling ctxsw logging\n");
     }
 
 cleanup :
@@ -2203,6 +2217,10 @@ kgraphicsCreateGoldenImageChannel_IMPL
         else if (gpuIsClassSupported(pGpu, HOPPER_CHANNEL_GPFIFO_A))
         {
             ctrlSize = sizeof(Nvc86fControl);
+        }
+        else if (gpuIsClassSupported(pGpu, BLACKWELL_CHANNEL_GPFIFO_A))
+        {
+            ctrlSize = sizeof(Nvc96fControl);
         }
         else
         {

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -61,7 +61,7 @@
 #define NV2080_CTRL_MAX_VMMU_SEGMENTS                                   384
 
 /* Must match NV2080_ENGINE_TYPE_LAST from cl2080.h */
-#define NV2080_GPU_MAX_ENGINES                                          0x40
+#define NV2080_GPU_MAX_ENGINES                                          0x54
 
 #define NV2080_CTRL_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK_PARAMS_MESSAGE_ID (0x1U)
 
@@ -85,6 +85,8 @@ typedef struct NV2080_CTRL_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK_PARAM
     NV_DECLARE_ALIGNED(NvU64 initTaskLogBuffSize, 8);
     NV_DECLARE_ALIGNED(NvU64 vgpuTaskLogBuffOffset, 8);
     NV_DECLARE_ALIGNED(NvU64 vgpuTaskLogBuffSize, 8);
+    NV_DECLARE_ALIGNED(NvU64 kernelLogBuffOffset, 8);
+    NV_DECLARE_ALIGNED(NvU64 kernelLogBuffSize, 8);
     NV_DECLARE_ALIGNED(NvU64 migRmHeapMemoryPhysAddr, 8);
     NV_DECLARE_ALIGNED(NvU64 migRmHeapMemoryLength, 8);
     NvBool bDeviceProfilingEnabled;

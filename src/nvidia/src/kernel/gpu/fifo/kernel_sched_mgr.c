@@ -31,7 +31,7 @@
 /* -------------------------------- Includes -------------------------------- */
 
 #include "os/os.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "kernel/gpu/fifo/kernel_sched_mgr.h"

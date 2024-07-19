@@ -380,7 +380,7 @@ int nv_drm_gem_import_nvkms_memory_ioctl(struct drm_device *dev,
     int ret;
 
     if (!drm_core_check_feature(dev, DRIVER_MODESET)) {
-        ret = -EINVAL;
+        ret = -EOPNOTSUPP;
         goto failed;
     }
 
@@ -430,7 +430,7 @@ int nv_drm_gem_export_nvkms_memory_ioctl(struct drm_device *dev,
     int ret = 0;
 
     if (!drm_core_check_feature(dev, DRIVER_MODESET)) {
-        ret = -EINVAL;
+        ret = -EOPNOTSUPP;
         goto done;
     }
 
@@ -483,7 +483,7 @@ int nv_drm_gem_alloc_nvkms_memory_ioctl(struct drm_device *dev,
     int ret = 0;
 
     if (!drm_core_check_feature(dev, DRIVER_MODESET)) {
-        ret = -EINVAL;
+        ret = -EOPNOTSUPP;
         goto failed;
     }
 

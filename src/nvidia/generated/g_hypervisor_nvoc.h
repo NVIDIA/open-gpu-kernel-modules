@@ -67,18 +67,6 @@ typedef struct OBJOS OBJOS;
 
 
 
-typedef struct OBJHYPERVISOR *POBJHYPERVISOR;
-
-#ifndef __NVOC_CLASS_OBJHYPERVISOR_TYPEDEF__
-#define __NVOC_CLASS_OBJHYPERVISOR_TYPEDEF__
-typedef struct OBJHYPERVISOR OBJHYPERVISOR;
-#endif /* __NVOC_CLASS_OBJHYPERVISOR_TYPEDEF__ */
-
-#ifndef __nvoc_class_id_OBJHYPERVISOR
-#define __nvoc_class_id_OBJHYPERVISOR 0x33c1ba
-#endif /* __nvoc_class_id_OBJHYPERVISOR */
-
-
 typedef struct HOST_VGPU_DEVICE HOST_VGPU_DEVICE;
 
 

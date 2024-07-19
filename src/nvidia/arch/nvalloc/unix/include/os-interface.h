@@ -151,6 +151,7 @@ void        NV_API_CALL  os_release_rwlock_read      (void *);
 void        NV_API_CALL  os_release_rwlock_write     (void *);
 NvBool      NV_API_CALL  os_semaphore_may_sleep      (void);
 NV_STATUS   NV_API_CALL  os_get_version_info         (os_version_info*);
+NV_STATUS   NV_API_CALL  os_get_is_openrm            (NvBool *);
 NvBool      NV_API_CALL  os_is_isr                   (void);
 NvBool      NV_API_CALL  os_pat_supported            (void);
 void        NV_API_CALL  os_dump_stack               (void);

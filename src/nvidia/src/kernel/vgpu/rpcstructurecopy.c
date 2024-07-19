@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -67,7 +67,9 @@ NV_STATUS deserialize_VGPU_FB_GET_LTC_INFO_FOR_FBP_v1A_0D(VGPU_FB_GET_LTC_INFO_F
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(VGPU_FB_GET_LTC_INFO_FOR_FBP_v1A_0D))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         vgpu_fb_get_ltc_info_for_fbp_v1A_0D = (void*)(buffer + *offset);
 
@@ -99,7 +101,9 @@ NV_STATUS deserialize_NV2080_CTRL_MC_GET_ENGINE_NOTIFICATION_INTR_VECTORS_PARAMS
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_MC_GET_ENGINE_NOTIFICATION_INTR_VECTORS_PARAMS_v16_00))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         mc_get_engine_notification_intr_vectors_v16_00 = (void*)(buffer + *offset);
 
@@ -133,7 +137,9 @@ NV_STATUS deserialize_NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS_v1E_09(NV2080_
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS_v1E_09))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         mc_get_static_intr_table_v1E_09 = (void*)(buffer + *offset);
 
@@ -170,7 +176,9 @@ NV_STATUS deserialize_VGPU_FIFO_GET_DEVICE_INFO_TABLE_v1A_07(VGPU_FIFO_GET_DEVIC
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(VGPU_FIFO_GET_DEVICE_INFO_TABLE_v1A_07))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         vgpu_fifo_get_device_info_table_v1A_07 = (void*)(buffer + *offset);
 
@@ -224,7 +232,9 @@ NV_STATUS deserialize_VGPU_FB_GET_DYNAMIC_BLACKLISTED_PAGES_v1A_07(VGPU_FB_GET_D
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(VGPU_FB_GET_DYNAMIC_BLACKLISTED_PAGES_v1A_07))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         vgpu_fb_get_dynamic_blacklisted_pages_v1A_07 = (void*)(buffer + *offset);
 
@@ -262,7 +272,9 @@ NV_STATUS deserialize_NV2080_CTRL_BUS_GET_INFO_V2_PARAMS_v1C_09(NV2080_CTRL_BUS_
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_BUS_GET_INFO_V2_PARAMS_v1C_09))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         bus_get_info_v2_v1C_09 = (void*)(buffer + *offset);
 
@@ -299,7 +311,9 @@ NV_STATUS deserialize_NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS_v1A_1F(NV
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS_v1A_1F))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         gr_get_sm_issue_rate_modifier_v1A_1F = (void*)(buffer + *offset);
 
@@ -336,7 +350,9 @@ NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_INFO_PARAMS_v24_07(NV20
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_INFO_PARAMS_v24_07))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         gr_info_v24_07 = (void*)(buffer + *offset);
 
@@ -371,7 +387,9 @@ NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_GLOBAL_SM_ORDER_PARAMS_
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_GLOBAL_SM_ORDER_PARAMS_v1F_01))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         sm_order_v1F_01 = (void*)(buffer + *offset);
 
@@ -412,7 +430,9 @@ NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_ROP_INFO_PARAMS_v1B_05(
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_ROP_INFO_PARAMS_v1B_05))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         rop_info_v1B_05 = (void*)(buffer + *offset);
 
@@ -444,7 +464,9 @@ NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_PPC_MASKS_PARAMS_v1C_06
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_PPC_MASKS_PARAMS_v1C_06))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         ppc_mask_v1C_06 = (void*)(buffer + *offset);
 
@@ -477,7 +499,9 @@ NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_CONTEXT_BUFFERS_INFO_PA
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_CONTEXT_BUFFERS_INFO_PARAMS_v25_07))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         ctx_buff_info_v25_07 = (void*)(buffer + *offset);
 
@@ -515,7 +539,9 @@ NV_STATUS deserialize_NV2080_CTRL_CMD_BUS_GET_PCIE_REQ_ATOMICS_CAPS_PARAMS_v25_0
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_CMD_BUS_GET_PCIE_REQ_ATOMICS_CAPS_PARAMS_v25_0B))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         pParams_v25_0B = (void*)(buffer + *offset);
 
@@ -542,7 +568,9 @@ NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS_v1B_05))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         rate_modifier_v1B_05 = (void*)(buffer + *offset);
 
@@ -580,7 +608,9 @@ NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_FLOORSWEEPING_MASKS_PAR
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_FLOORSWEEPING_MASKS_PARAMS_v1D_03))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         floorsweep_mask_params_v1D_03 = (void*)(buffer + *offset);
 
@@ -626,7 +656,9 @@ NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_ZCULL_INFO_PARAMS_v1B_0
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_ZCULL_INFO_PARAMS_v1B_05))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         zcull_info_v1B_05 = (void*)(buffer + *offset);
 
@@ -665,7 +697,9 @@ NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_RECORD_SIZE_PARAMS
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_RECORD_SIZE_PARAMS_v1B_05))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         fecs_record_size_v1B_05 = (void*)(buffer + *offset);
 
@@ -695,7 +729,9 @@ NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_TRACE_DEFINES_PARA
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_TRACE_DEFINES_PARAMS_v1D_04))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         fecs_trace_defines_v1D_04 = (void*)(buffer + *offset);
 
@@ -728,7 +764,9 @@ NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_PDB_PROPERTIES_PARAMS_v
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_INTERNAL_STATIC_GR_GET_PDB_PROPERTIES_PARAMS_v1E_02))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         gr_pdb_properties_v1E_02 = (void*)(buffer + *offset);
 
@@ -759,7 +797,9 @@ NV_STATUS deserialize_VGPU_STATIC_DATA_v25_0E(VGPU_STATIC_INFO *pVSI, NvU8 *buff
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(VGPU_STATIC_DATA_v25_0E))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         vgpu_static_data_v25_0E = (void*)(buffer + *offset);
 
@@ -771,7 +811,7 @@ NV_STATUS deserialize_VGPU_STATIC_DATA_v25_0E(VGPU_STATIC_INFO *pVSI, NvU8 *buff
         pVSI->ltcMask                = vgpu_static_data_v25_0E->ltcMask;
         pVSI->ltsCount               = vgpu_static_data_v25_0E->ltsCount;
         pVSI->subProcessIsolation    = vgpu_static_data_v25_0E->subProcessIsolation;
-        pVSI->engineList             = vgpu_static_data_v25_0E->engineList;
+        pVSI->engineList[0]          = vgpu_static_data_v25_0E->engineList;
         pVSI->sizeL2Cache            = vgpu_static_data_v25_0E->sizeL2Cache;
         pVSI->poisonFuseEnabled      = vgpu_static_data_v25_0E->poisonFuseEnabled;
         pVSI->guestManagedHwAlloc    = vgpu_static_data_v25_0E->guestManagedHwAlloc;
@@ -822,6 +862,157 @@ NV_STATUS deserialize_VGPU_STATIC_DATA_v25_0E(VGPU_STATIC_INFO *pVSI, NvU8 *buff
     return NVOS_STATUS_SUCCESS;
 }
 
+NV_STATUS deserialize_VGPU_STATIC_DATA_v27_00(VGPU_STATIC_INFO *pVSI, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
+{
+    if (!offset)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+
+    // If pVSI and buffer are valid, then copy data and return the offset
+    if (pVSI && buffer)
+    {
+        VGPU_STATIC_DATA_v27_00 *vgpu_static_data_v27_00 = NULL;
+        NvU32 i;
+
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(VGPU_STATIC_DATA_v27_00))))
+        {
+            return NV_ERR_BUFFER_TOO_SMALL;
+        }
+
+        vgpu_static_data_v27_00 = (void*)(buffer + *offset);
+
+        pVSI->fbTaxLength            = vgpu_static_data_v27_00->fbTaxLength;
+        pVSI->fbLength               = vgpu_static_data_v27_00->fbLength;
+        pVSI->fbBusWidth             = vgpu_static_data_v27_00->fbBusWidth;
+        pVSI->fbioMask               = vgpu_static_data_v27_00->fbioMask;
+        pVSI->fbpMask                = vgpu_static_data_v27_00->fbpMask;
+        pVSI->ltcMask                = vgpu_static_data_v27_00->ltcMask;
+        pVSI->ltsCount               = vgpu_static_data_v27_00->ltsCount;
+        pVSI->subProcessIsolation    = vgpu_static_data_v27_00->subProcessIsolation;
+        pVSI->engineList[0]          = vgpu_static_data_v27_00->engineList;
+        pVSI->sizeL2Cache            = vgpu_static_data_v27_00->sizeL2Cache;
+        pVSI->poisonFuseEnabled      = vgpu_static_data_v27_00->poisonFuseEnabled;
+        pVSI->guestManagedHwAlloc    = vgpu_static_data_v27_00->guestManagedHwAlloc;
+
+        // gpuname
+        portMemCopy(pVSI->adapterName, sizeof(pVSI->adapterName),
+                    vgpu_static_data_v27_00->gpuName.adapterName, sizeof(pVSI->adapterName));
+        portMemCopy(pVSI->adapterName_Unicode, sizeof(pVSI->adapterName_Unicode),
+                    vgpu_static_data_v27_00->gpuName.adapterName_Unicode, sizeof(pVSI->adapterName_Unicode));
+        portMemCopy(pVSI->shortGpuNameString, sizeof(pVSI->shortGpuNameString),
+                    vgpu_static_data_v27_00->gpuName.shortGpuNameString, sizeof(pVSI->adapterName));
+
+        pVSI->bSplitVasBetweenServerClientRm = vgpu_static_data_v27_00->bSplitVasBetweenServerClientRm;
+        pVSI->maxSupportedPageSize           = vgpu_static_data_v27_00->maxSupportedPageSize;
+        pVSI->bFlaSupported                  = vgpu_static_data_v27_00->bFlaSupported;
+        pVSI->bPerRunlistChannelRamEnabled   = vgpu_static_data_v27_00->bPerRunlistChannelRamEnabled;
+        pVSI->bAtsSupported                  = vgpu_static_data_v27_00->bAtsSupported;
+
+        pVSI->bPerSubCtxheaderSupported      = vgpu_static_data_v27_00->bPerSubCtxheaderSupported;
+        pVSI->bC2CLinkUp                     = vgpu_static_data_v27_00->bC2CLinkUp;
+        pVSI->bLocalEgmEnabled               = vgpu_static_data_v27_00->bLocalEgmEnabled;
+        pVSI->localEgmPeerId                 = vgpu_static_data_v27_00->localEgmPeerId;
+        pVSI->bSelfHostedMode                = vgpu_static_data_v27_00->bSelfHostedMode;
+
+        pVSI->ceFaultMethodBufferDepth       = vgpu_static_data_v27_00->ceFaultMethodBufferDepth;
+        pVSI->pcieGpuLinkCaps                = vgpu_static_data_v27_00->pcieGpuLinkCaps;
+
+        portMemCopy(pVSI->grCapsBits, sizeof(pVSI->grCapsBits),
+                    vgpu_static_data_v27_00->grCapsBits, sizeof(vgpu_static_data_v27_00->grCapsBits));
+
+        for (i = 0; i < NV2080_CTRL_CMD_GR_CTXSW_PREEMPTION_BIND_BUFFERS_CONTEXT_POOL_v25_0E; i++)
+        {
+            pVSI->gfxpBufferSize[i]      = vgpu_static_data_v27_00->gfxpBufferSize[i];
+            pVSI->gfxpBufferAlignment[i] = vgpu_static_data_v27_00->gfxpBufferAlignment[i];
+        }
+
+        for (i = 0; i < RPC_GR_BUFFER_TYPE_GRAPHICS_MAX_v25_0E; i++)
+        {
+            pVSI->grBufferSize[i] = vgpu_static_data_v27_00->grBufferSize[i];
+        }
+
+        portMemCopy(pVSI->jpegCaps, sizeof(pVSI->jpegCaps),
+                    vgpu_static_data_v27_00->jpegCaps, sizeof(vgpu_static_data_v27_00->jpegCaps));
+    }
+
+    *offset += sizeof(VGPU_STATIC_DATA_v27_00);
+
+    return NVOS_STATUS_SUCCESS;
+}
+
+NV_STATUS deserialize_VGPU_STATIC_DATA_v27_01(VGPU_STATIC_INFO *pVSI, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
+{
+    if (offset == NULL)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+    // If pVSI and buffer are valid, then copy data and return the offset
+    if (pVSI && buffer)
+    {
+        VGPU_STATIC_DATA_v27_01 *vgpu_static_data_v27_01 = NULL;
+        NvU32 i;
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(VGPU_STATIC_DATA_v27_01))))
+        {
+            return NV_ERR_BUFFER_TOO_SMALL;
+        }
+        vgpu_static_data_v27_01 = (void*)(buffer + *offset);
+        pVSI->fbTaxLength            = vgpu_static_data_v27_01->fbTaxLength;
+        pVSI->fbLength               = vgpu_static_data_v27_01->fbLength;
+        pVSI->fbBusWidth             = vgpu_static_data_v27_01->fbBusWidth;
+        pVSI->fbioMask               = vgpu_static_data_v27_01->fbioMask;
+        pVSI->fbpMask                = vgpu_static_data_v27_01->fbpMask;
+        pVSI->ltcMask                = vgpu_static_data_v27_01->ltcMask;
+        pVSI->ltsCount               = vgpu_static_data_v27_01->ltsCount;
+        pVSI->subProcessIsolation    = vgpu_static_data_v27_01->subProcessIsolation;
+        pVSI->sizeL2Cache            = vgpu_static_data_v27_01->sizeL2Cache;
+        pVSI->poisonFuseEnabled      = vgpu_static_data_v27_01->poisonFuseEnabled;
+        pVSI->guestManagedHwAlloc    = vgpu_static_data_v27_01->guestManagedHwAlloc;
+
+        // gpuname
+        portMemCopy(pVSI->adapterName, sizeof(pVSI->adapterName),
+                    vgpu_static_data_v27_01->gpuName.adapterName, sizeof(pVSI->adapterName));
+        portMemCopy(pVSI->adapterName_Unicode, sizeof(pVSI->adapterName_Unicode),
+                    vgpu_static_data_v27_01->gpuName.adapterName_Unicode, sizeof(pVSI->adapterName_Unicode));
+        portMemCopy(pVSI->shortGpuNameString, sizeof(pVSI->shortGpuNameString),
+                    vgpu_static_data_v27_01->gpuName.shortGpuNameString, sizeof(pVSI->adapterName));
+        pVSI->bSplitVasBetweenServerClientRm = vgpu_static_data_v27_01->bSplitVasBetweenServerClientRm;
+        pVSI->maxSupportedPageSize           = vgpu_static_data_v27_01->maxSupportedPageSize;
+        pVSI->bFlaSupported                  = vgpu_static_data_v27_01->bFlaSupported;
+        pVSI->bPerRunlistChannelRamEnabled   = vgpu_static_data_v27_01->bPerRunlistChannelRamEnabled;
+        pVSI->bAtsSupported                  = vgpu_static_data_v27_01->bAtsSupported;
+        pVSI->bPerSubCtxheaderSupported      = vgpu_static_data_v27_01->bPerSubCtxheaderSupported;
+        pVSI->bC2CLinkUp                     = vgpu_static_data_v27_01->bC2CLinkUp;
+        pVSI->bLocalEgmEnabled               = vgpu_static_data_v27_01->bLocalEgmEnabled;
+        pVSI->localEgmPeerId                 = vgpu_static_data_v27_01->localEgmPeerId;
+        pVSI->bSelfHostedMode                = vgpu_static_data_v27_01->bSelfHostedMode;
+        pVSI->ceFaultMethodBufferDepth       = vgpu_static_data_v27_01->ceFaultMethodBufferDepth;
+        pVSI->pcieGpuLinkCaps                = vgpu_static_data_v27_01->pcieGpuLinkCaps;
+        portMemCopy(pVSI->grCapsBits, sizeof(pVSI->grCapsBits),
+                    vgpu_static_data_v27_01->grCapsBits, sizeof(vgpu_static_data_v27_01->grCapsBits));
+        for (i = 0; i < NV2080_CTRL_CMD_GR_CTXSW_PREEMPTION_BIND_BUFFERS_CONTEXT_POOL_v25_0E; i++)
+        {
+            pVSI->gfxpBufferSize[i]      = vgpu_static_data_v27_01->gfxpBufferSize[i];
+            pVSI->gfxpBufferAlignment[i] = vgpu_static_data_v27_01->gfxpBufferAlignment[i];
+        }
+        for (i = 0; i < RPC_GR_BUFFER_TYPE_GRAPHICS_MAX_v25_0E; i++)
+        {
+            pVSI->grBufferSize[i] = vgpu_static_data_v27_01->grBufferSize[i];
+        }
+
+        for (i = 0; i < NVGPU_VGPU_ENGINE_LIST_MASK_ARRAY_MAX_v27_01; i++)
+        {
+            pVSI->engineList[i] = vgpu_static_data_v27_01->engineList[i];
+        }
+        portMemCopy(pVSI->jpegCaps, sizeof(pVSI->jpegCaps),
+                    vgpu_static_data_v27_01->jpegCaps, sizeof(vgpu_static_data_v27_01->jpegCaps));
+    }
+    *offset += sizeof(VGPU_STATIC_DATA_v27_01);
+    return NVOS_STATUS_SUCCESS;
+}
+
 NV_STATUS deserialize_NV0000_CTRL_SYSTEM_GET_VGX_SYSTEM_INFO_PARAMS_v03_00(NV0000_CTRL_SYSTEM_GET_VGX_SYSTEM_INFO_PARAMS *vgxSystemInfo,
                                                                             NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
 {
@@ -837,7 +1028,9 @@ NV_STATUS deserialize_NV0000_CTRL_SYSTEM_GET_VGX_SYSTEM_INFO_PARAMS_v03_00(NV000
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV0000_CTRL_SYSTEM_GET_VGX_SYSTEM_INFO_PARAMS_v03_00))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         vgx_system_info_v03_00 = (void*)(buffer + *offset);
 
@@ -888,7 +1081,9 @@ NV_STATUS deserialize_NV2080_CTRL_GPU_GET_GID_INFO_PARAMS_v03_00(NV2080_CTRL_GPU
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_GPU_GET_GID_INFO_PARAMS_v03_00))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         gid_info_v03_00 = (void*)(buffer + *offset);
 
@@ -924,7 +1119,9 @@ NV_STATUS deserialize_NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS_v25_0E(NV2080_CTRL_BI
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS_v25_0E))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         sku_info_v25_0E = (void*)(buffer + *offset);
 
@@ -966,7 +1163,9 @@ NV_STATUS deserialize_NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_PARAMS_v03_00(NV2080
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_PARAMS_v03_00))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         fbRegionInfoParams_v03_00 = (void*)(buffer + *offset);
 
@@ -1009,7 +1208,9 @@ NV_STATUS deserialize_NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS_v20_04(NV2080_
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS_v20_04))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         ciProfiles_v20_04 = (void*)(buffer + *offset);
 
@@ -1065,7 +1266,9 @@ NV_STATUS deserialize_NVC637_CTRL_EXEC_PARTITIONS_GET_PARAMS_v24_05(NVC637_CTRL_
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NVC637_CTRL_EXEC_PARTITIONS_GET_PARAMS_v24_05))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         execPartitionInfo_v24_05 = (void*)(buffer + *offset);
 
@@ -1113,7 +1316,9 @@ NV_STATUS deserialize_NV9096_CTRL_GET_ZBC_CLEAR_TABLE_SIZE_PARAMS_v1A_07(NV9096_
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV9096_CTRL_GET_ZBC_CLEAR_TABLE_SIZE_PARAMS_v1A_07))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         zbcTableSizes_v1A_07 = (void*)(buffer + *offset);
 
@@ -1163,7 +1368,9 @@ NV_STATUS deserialize_GPU_PARTITION_INFO_v24_05(GPU_PARTITION_INFO *gpuPartition
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(GPU_PARTITION_INFO_v24_05))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         gpu_partition_info_v24_05 = (void*)(buffer + *offset);
 
@@ -1236,7 +1443,9 @@ NV_STATUS deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v24_06(NV2080_CTRL
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v24_06))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         eccStatusParams_v24_06 = (void*)(buffer + *offset);
 
@@ -1272,7 +1481,9 @@ NV_STATUS deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v26_02(NV2080_CTRL
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v26_02))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         eccStatusParams_v26_02 = (void*)(buffer + *offset);
 
@@ -1293,6 +1504,44 @@ NV_STATUS deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v26_02(NV2080_CTRL
     return NVOS_STATUS_SUCCESS;
 }
 
+NV_STATUS deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v27_04(NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS *eccStatusParams, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
+{
+    if (offset == NULL)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+
+    // If eccStatusParams and buffer are valid, then copy data and return the offset
+    if (eccStatusParams && buffer)
+    {
+        NvU32 i;
+        NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v27_04 *eccStatusParams_v27_04 = NULL;
+
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v27_04))))
+        {
+            return NV_ERR_BUFFER_TOO_SMALL;
+        }
+
+        eccStatusParams_v27_04 = (void*)(buffer + *offset);
+
+        eccStatusParams->bFatalPoisonError = eccStatusParams_v27_04->bFatalPoisonError;
+
+        for (i = 0; i < NV2080_CTRL_GPU_ECC_UNIT_COUNT_v27_04; i++) {
+            eccStatusParams->units[i].enabled                = eccStatusParams_v27_04->units[i].enabled;
+            eccStatusParams->units[i].scrubComplete          = eccStatusParams_v27_04->units[i].scrubComplete;
+            eccStatusParams->units[i].supported              = eccStatusParams_v27_04->units[i].supported;
+            eccStatusParams->units[i].dbe.count              = eccStatusParams_v27_04->units[i].dbe.count;
+            eccStatusParams->units[i].dbeNonResettable.count = eccStatusParams_v27_04->units[i].dbeNonResettable.count;
+            eccStatusParams->units[i].sbe.count              = eccStatusParams_v27_04->units[i].sbe.count;
+            eccStatusParams->units[i].sbeNonResettable.count = eccStatusParams_v27_04->units[i].sbeNonResettable.count;
+        }
+    }
+    *offset += sizeof(NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v27_04);
+
+    return NVOS_STATUS_SUCCESS;
+}
+
 NV_STATUS deserialize_GPU_EXEC_SYSPIPE_INFO_v26_01(GPU_EXEC_SYSPIPE_INFO *execSyspipeInfo, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
 {
     if (!offset)
@@ -1308,7 +1557,9 @@ NV_STATUS deserialize_GPU_EXEC_SYSPIPE_INFO_v26_01(GPU_EXEC_SYSPIPE_INFO *execSy
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(GPU_EXEC_SYSPIPE_INFO_v26_01))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         execSyspipeInfo_v26_01 = (void*)(buffer + *offset);
 
@@ -1339,7 +1590,9 @@ NV_STATUS deserialize_NV2080_CTRL_GR_GET_ZCULL_INFO_PARAMS_v12_01(NV2080_CTRL_GR
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_GR_GET_ZCULL_INFO_PARAMS_v12_01))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         get_zcull_info_params_12_01 = (void*)(buffer + *offset);
 
@@ -1375,7 +1628,9 @@ NV_STATUS deserialize_VGPU_STATIC_PROPERTIES_v1B_01(VGPU_STATIC_PROPERTIES *vgpu
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(VGPU_STATIC_PROPERTIES_v1B_01))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         vgpu_static_properties_v1B_01 = (void*)(buffer + *offset);
 
@@ -1406,7 +1661,9 @@ NV_STATUS deserialize_VGPU_STATIC_PROPERTIES_v26_03(VGPU_STATIC_PROPERTIES *vgpu
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(VGPU_STATIC_PROPERTIES_v26_03))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         vgpu_static_properties_v26_03 = (void*)(buffer + *offset);
 
@@ -1439,7 +1696,9 @@ NV_STATUS deserialize_VGPU_BSP_GET_CAPS_v25_00(VGPU_BSP_GET_CAPS *vgpuBspCaps, N
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(VGPU_BSP_GET_CAPS_v25_00))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         vgpu_bsp_get_caps_v25_00 = (void*)(buffer + *offset);
 
@@ -1488,6 +1747,40 @@ NV_STATUS deserialize_VGPU_GET_LATENCY_BUFFER_SIZE_v1C_09(VGPU_GET_LATENCY_BUFFE
     return NVOS_STATUS_SUCCESS;
 }
 
+NV_STATUS deserialize_VGPU_GET_LATENCY_BUFFER_SIZE_v27_02(VGPU_GET_LATENCY_BUFFER_SIZE *vgpu_get_latency_buffer_size, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
+{
+    if (!offset)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+
+    // If vgpu_get_latency_buffer_size and buffer are valid, then copy data and return the offset
+    if (vgpu_get_latency_buffer_size && buffer)
+    {
+        VGPU_GET_LATENCY_BUFFER_SIZE_v27_02 *vgpu_get_latency_buffer_size_v27_02 = NULL;
+        NV0080_CTRL_FIFO_GET_LATENCY_BUFFER_SIZE_PARAMS *fifoLatencyBufferSize = *vgpu_get_latency_buffer_size;
+        NvU32 i;
+
+        if (bufferSize < (*offset + sizeof(VGPU_GET_LATENCY_BUFFER_SIZE_v27_02)))
+            return NV_ERR_NO_MEMORY;
+
+        vgpu_get_latency_buffer_size_v27_02 = (void*)(buffer + *offset);
+
+        for (i = 0; i < NV2080_ENGINE_TYPE_LAST_v27_02; i++)
+        {
+            fifoLatencyBufferSize[i].engineID  = vgpu_get_latency_buffer_size_v27_02->fifoLatencyBufferSize[i].engineID;
+            fifoLatencyBufferSize[i].gpEntries = vgpu_get_latency_buffer_size_v27_02->fifoLatencyBufferSize[i].gpEntries;
+            fifoLatencyBufferSize[i].pbEntries = vgpu_get_latency_buffer_size_v27_02->fifoLatencyBufferSize[i].pbEntries;
+        }
+    }
+
+    // If vgpu_get_latency_buffer_size or buffer is NULL, then this will be used to determine the size of the
+    // static info buffer corresponding to the negotiated version
+    *offset += sizeof(VGPU_GET_LATENCY_BUFFER_SIZE_v27_02);
+
+    return NVOS_STATUS_SUCCESS;
+}
+
 NV_STATUS deserialize_VGPU_CE_GET_CAPS_V2_v24_09(VGPU_CE_GET_CAPS_V2 *ceCapsPtr, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
 {
     if (!offset)
@@ -1504,7 +1797,9 @@ NV_STATUS deserialize_VGPU_CE_GET_CAPS_V2_v24_09(VGPU_CE_GET_CAPS_V2 *ceCapsPtr,
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(VGPU_CE_GET_CAPS_V2_v24_09))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         vgpu_ce_get_caps_v2_v24_09 = (void*)(buffer + *offset);
 
@@ -1535,7 +1830,9 @@ NV_STATUS deserialize_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS_PARAMS_v15_02(NV208
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS_PARAMS_v15_02))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         get_nvlink_caps_v15_02 = (void*)(buffer + *offset);
 
@@ -1567,7 +1864,9 @@ NV_STATUS deserialize_NV2080_CTRL_FLA_GET_RANGE_PARAMS_v1A_18(NV2080_CTRL_FLA_GE
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_FLA_GET_RANGE_PARAMS_v1A_18))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         range_params_v1A_18 = (void*)(buffer + *offset);
 
@@ -1595,7 +1894,9 @@ NV_STATUS deserialize_NVA080_CTRL_VGPU_GET_CONFIG_PARAMS_v21_0C(NVA080_CTRL_VGPU
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NVA080_CTRL_VGPU_GET_CONFIG_PARAMS_v21_0C))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         vgpu_get_config_params_v21_0C = (void*)(buffer + *offset);
 
@@ -1636,7 +1937,9 @@ NV_STATUS deserialize_NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS_
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS_v1F_08))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         pcie_supported_gpu_atomics_v1F_08 = (void*)(buffer + *offset);
 
@@ -1669,7 +1972,9 @@ NV_STATUS deserialize_NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS_v21_0A(NV2080_CTRL_CE_G
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS_v21_0A))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         ce_get_all_caps_v21_0A = (void*)(buffer + *offset);
 
@@ -1706,7 +2011,9 @@ NV_STATUS deserialize_NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS_v22_01(NV2080_CTRL
 
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS_v22_01))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         c2c_info_v22_01 = (void*)(buffer + *offset);
 
@@ -1737,7 +2044,9 @@ NV_STATUS deserialize_NV0080_CTRL_MSENC_GET_CAPS_V2_PARAMS_v25_00(
     {
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(*pParams_v25_00))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         pParams_v25_00 = (void*)(buffer + *offset);
         NV_ASSERT_OR_RETURN(NV0080_CTRL_MSENC_CAPS_TBL_SIZE_V25_00 <=
@@ -1769,7 +2078,9 @@ NV_STATUS deserialize_NV2080_CTRL_GPU_GET_CONSTRUCTED_FALCON_INFO_PARAMS_v25_01(
         NvU32 i;
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(*pParams_v25_01))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         pParams_v25_01 = (void*)(buffer + *offset);
 
@@ -1805,7 +2116,9 @@ NV_STATUS deserialize_VGPU_P2P_CAPABILITY_PARAMS_v25_03(
     {
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(*pParams_v))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         pParams_v = (void*)(buffer + *offset);
 
@@ -1832,12 +2145,14 @@ NV_STATUS deserialize_NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_v25_05(
         NvU32 i;
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(*pParams_v25_05))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         pParams_v25_05 = (void*)(buffer + *offset);
 
         pParams->numEntries = pParams_v25_05->numEntries;
-        for (i = 0; i < NV2080_CTRL_CMD_INTERNAL_DEVICE_INFO_MAX_ENTRIES; i++) {
+        for (i = 0; i < NV2080_CTRL_CMD_INTERNAL_DEVICE_INFO_MAX_ENTRIES_V25_05; i++) {
             NV2080_CTRL_INTERNAL_DEVICE_INFO *dst = &(pParams->deviceInfoTable[i]);
             NV2080_CTRL_INTERNAL_DEVICE_INFO_v25_05 *src = &(pParams_v25_05->deviceInfoTable[i]);
 
@@ -1857,6 +2172,51 @@ NV_STATUS deserialize_NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_v25_05(
     return NVOS_STATUS_SUCCESS;
 }
 
+NV_STATUS deserialize_NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_v27_05(
+    NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS *pParams, NvU8 *buffer, NvU32 bufferSize,
+    NvU32 *offset)
+{
+    NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_v27_05 *pParams_v27_05 = NULL;
+
+    if (offset == NULL)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (pParams != NULL && buffer != NULL)
+    {
+        NvU32 i;
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(*pParams_v27_05))))
+        {
+            return NV_ERR_BUFFER_TOO_SMALL;
+        }
+
+        pParams_v27_05 = (void*)(buffer + *offset);
+
+        pParams->numEntries = pParams_v27_05->numEntries;
+        for (i = 0; i < NV2080_CTRL_CMD_INTERNAL_DEVICE_INFO_MAX_ENTRIES_V25_05; i++) {
+            NV2080_CTRL_INTERNAL_DEVICE_INFO *dst = &(pParams->deviceInfoTable[i]);
+            NV2080_CTRL_INTERNAL_DEVICE_INFO_v27_05 *src = &(pParams_v27_05->deviceInfoTable[i]);
+
+            dst->faultId = src->faultId;
+            dst->instanceId = src->instanceId;
+            dst->typeEnum = src->typeEnum;
+            dst->resetId = src->resetId;
+            dst->devicePriBase = src->devicePriBase;
+            dst->isEngine = src->isEngine;
+            dst->rlEngId = src->rlEngId;
+            dst->runlistPriBase = src->runlistPriBase;
+            dst->groupId = src->groupId;
+            dst->ginTargetId = src->ginTargetId;
+            dst->deviceBroadcastPriBase = src->deviceBroadcastPriBase;
+        }
+    }
+
+    *offset += sizeof(*pParams_v27_05);
+    return NVOS_STATUS_SUCCESS;
+}
+
 NV_STATUS deserialize_NV2080_CTRL_INTERNAL_MEMSYS_GET_STATIC_CONFIG_PARAMS_v25_06(
     NV2080_CTRL_INTERNAL_MEMSYS_GET_STATIC_CONFIG_PARAMS *pParams, NvU8 *buffer, NvU32 bufferSize,
     NvU32 *offset)
@@ -1872,7 +2232,9 @@ NV_STATUS deserialize_NV2080_CTRL_INTERNAL_MEMSYS_GET_STATIC_CONFIG_PARAMS_v25_0
     {
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(*pParams_v25_06))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
 
         pParams_v25_06 = (void*)(buffer + *offset);
 
@@ -1908,7 +2270,9 @@ NV_STATUS deserialize_NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MA
         NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS_v25_13 *pParams_v25_13  = NULL;
         if ((bufferSize < *offset) ||
             (bufferSize < (*offset + sizeof(NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS_v25_13))))
+        {
             return NV_ERR_BUFFER_TOO_SMALL;
+        }
         pParams_v25_13       = (void*)(buffer + *offset);
         pParams->eccMask     = pParams_v25_13->eccMask;
         pParams->nvlinkMask  = pParams_v25_13->nvlinkMask;

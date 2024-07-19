@@ -51,6 +51,91 @@ void DPCDHALImpl::updateDPCDOffline()
     }
 }
 
+bool DPCDHALImpl::auxAccessAvailable()
+{
+    NvU8 buffer[16];
+    unsigned retries = 16;
+    // Burst read from 0x00 to 0x0F.
+    if (AuxRetry::ack != bus.read(NV_DPCD_REV, &buffer[0], sizeof buffer, retries))
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+}
+
+/*!
+ * @brief Enable/Disable DP Tunnel BW allocation depending on support and client request
+ *
+ * @return      Boolean to indicate success or failure
+ */
+void DPCDHALImpl::configureDpTunnelBwAllocation()
+{
+    NvU8 byte = 0;
+
+    // Client has not requested or it is not enabled due to regkey override
+    if (!this->bEnableDpTunnelBwAllocationSupport)
+    {
+        bIsDpTunnelBwAllocationEnabled = false;
+        return;
+    }
+
+    bIsDpTunnelBwAllocationEnabled = false;
+
+    if (AuxRetry::ack ==
+        bus.read(NV_DPCD20_DP_TUNNEL_CAPABILITIES, &byte, sizeof byte))
+    {
+        caps.dpInTunnelingCaps.bIsSupported =
+            FLD_TEST_DRF(_DPCD20, _DP_TUNNEL_CAPABILITIES,
+                            _DPTUNNELING_SUPPORT, _YES, byte);
+
+        caps.dpInTunnelingCaps.bIsPanelReplayOptimizationSupported =
+            FLD_TEST_DRF(_DPCD20, _DP_TUNNEL_CAPABILITIES,
+                            _PANEL_REPLAY_TUNNELING_OPTIMIZATION_SUPPORT,
+                            _YES, byte);
+
+        caps.dpInTunnelingCaps.bIsBwAllocationSupported =
+            FLD_TEST_DRF(_DPCD20, _DP_TUNNEL_CAPABILITIES,
+                            _DPIN_BW_ALLOCATION_MODE_SUPPORT,
+                            _YES, byte);
+    }
+
+
+    if (caps.dpInTunnelingCaps.bIsSupported)
+    {
+        if (AuxRetry::ack ==
+            bus.read(NV_DPCD20_USB4_DRIVER_BW_CAPABILITY, &byte, sizeof byte))
+        {
+            caps.dpInTunnelingCaps.bUsb4DriverBwAllocationSupport =
+                FLD_TEST_DRF(_DPCD20, _USB4_DRIVER, _BW_ALLOCATION, _YES, byte);
+        }
+    }
+
+    bool bIsDpTunnelBwAllocationSupported = false;
+
+    bIsDpTunnelBwAllocationSupported = caps.dpInTunnelingCaps.bIsSupported &&
+                                       caps.dpInTunnelingCaps.bUsb4DriverBwAllocationSupport &&
+                                       caps.dpInTunnelingCaps.bIsBwAllocationSupported;
+
+    if (bIsDpTunnelBwAllocationEnabled == bIsDpTunnelBwAllocationSupported)
+    {
+        DP_PRINTF(DP_NOTICE, "Bw Allocation already in requested state: %d", bIsDpTunnelBwAllocationSupported);
+        return;
+    }
+
+    if (!setDpTunnelBwAllocation(bIsDpTunnelBwAllocationSupported))
+    {
+        DP_PRINTF(DP_ERROR, "Failed to set DP Tunnel BW allocation");
+    }
+
+    if (bIsDpTunnelBwAllocationEnabled != bIsDpTunnelBwAllocationSupported)
+    {
+        DP_PRINTF(DP_WARNING, "Unable to set BW allocation to requested state: %d", bIsDpTunnelBwAllocationSupported);
+    }
+}
+
 void DPCDHALImpl::parseAndReadCaps()
 {
     NvU8 buffer[16];
@@ -77,6 +162,8 @@ void DPCDHALImpl::parseAndReadCaps()
     {
         caps.extendedRxCapsPresent = DRF_VAL(_DPCD14, _TRAINING_AUX_RD_INTERVAL, _EXTENDED_RX_CAP, byte);
     }
+
+    configureDpTunnelBwAllocation();
 
     if (caps.extendedRxCapsPresent)
     {
@@ -161,6 +248,7 @@ void DPCDHALImpl::parseAndReadCaps()
     caps.supportsESI = (isAtLeastVersion(1,2) &&
                         FLD_TEST_DRF(0073_CTRL_CMD_DP, _GET_CAPS_DP_VERSIONS_SUPPORTED, _DP1_2, _YES, gpuDPSupportedVersions));
 
+
     if (caps.eDpRevision >= NV_DPCD_EDP_REV_VAL_1_4 || this->bBypassILREdpRevCheck)
     {
         NvU16 linkRate = 0;
@@ -176,24 +264,24 @@ void DPCDHALImpl::parseAndReadCaps()
                         linkRate = caps.linkRateTable[i];
                 }
                 if (linkRate)
-                    caps.maxLinkRate = LINK_RATE_KHZ_TO_MBPS((NvU64)linkRate * DP_LINK_RATE_TABLE_MULTIPLIER_KHZ);
+                    caps.maxLinkRate = LINK_RATE_200KHZ_TO_10MHZ((NvU64)linkRate);
             }
         }
     }
     if (!bIndexedLinkrateCapable)
     {
         if (FLD_TEST_DRF(_DPCD, _MAX_LINK_BANDWIDTH, _VAL, _1_62_GBPS, buffer[1]))
-            caps.maxLinkRate = RBR;
+            caps.maxLinkRate = dp2LinkRate_1_62Gbps;
         else if (FLD_TEST_DRF(_DPCD, _MAX_LINK_BANDWIDTH, _VAL, _2_70_GBPS, buffer[1]))
-        caps.maxLinkRate = HBR;
+            caps.maxLinkRate = dp2LinkRate_2_70Gbps;
         else if (FLD_TEST_DRF(_DPCD, _MAX_LINK_BANDWIDTH, _VAL, _5_40_GBPS, buffer[1]))
-            caps.maxLinkRate = HBR2;
+            caps.maxLinkRate = dp2LinkRate_5_40Gbps;
         else if (FLD_TEST_DRF(_DPCD14, _MAX_LINK_BANDWIDTH, _VAL, _8_10_GBPS, buffer[1]))
-            caps.maxLinkRate = HBR3;
+            caps.maxLinkRate = dp2LinkRate_8_10Gbps;
         else
         {
             DP_ASSERT(0 && "Unknown max link rate. Assuming DP 1.1 defaults");
-            caps.maxLinkRate = HBR;
+            caps.maxLinkRate = dp2LinkRate_2_70Gbps;
         }
     }
 
@@ -289,17 +377,17 @@ void DPCDHALImpl::parseAndReadCaps()
                 if (caps.phyRepeaterCount != 0)
                 {
                     if (FLD_TEST_DRF(_DPCD14, _MAX_LINK_RATE_PHY_REPEATER, _VAL, _1_62_GBPS, buffer[1]))
-                        caps.repeaterCaps.maxLinkRate = RBR;
+                        caps.repeaterCaps.maxLinkRate = dp2LinkRate_1_62Gbps;
                     else if (FLD_TEST_DRF(_DPCD14, _MAX_LINK_RATE_PHY_REPEATER, _VAL, _2_70_GBPS, buffer[1]))
-                        caps.repeaterCaps.maxLinkRate = HBR;
+                        caps.repeaterCaps.maxLinkRate = dp2LinkRate_2_70Gbps;
                     else if (FLD_TEST_DRF(_DPCD14, _MAX_LINK_RATE_PHY_REPEATER, _VAL, _5_40_GBPS, buffer[1]))
-                        caps.repeaterCaps.maxLinkRate = HBR2;
+                        caps.repeaterCaps.maxLinkRate = dp2LinkRate_5_40Gbps;
                     else if (FLD_TEST_DRF(_DPCD14, _MAX_LINK_RATE_PHY_REPEATER, _VAL, _8_10_GBPS, buffer[1]))
-                        caps.repeaterCaps.maxLinkRate = HBR3;
+                        caps.repeaterCaps.maxLinkRate = dp2LinkRate_8_10Gbps;
                     else
                     {
                         DP_ASSERT(0 && "Unknown max link rate or HBR2 without at least DP 1.2. Assuming DP 1.1 defaults");
-                        caps.repeaterCaps.maxLinkRate = HBR;
+                        caps.repeaterCaps.maxLinkRate = dp2LinkRate_2_70Gbps;
                     }
 
                     caps.repeaterCaps.maxLaneCount =
@@ -417,33 +505,8 @@ void DPCDHALImpl::parseAndReadCaps()
         }
     }
 
-    if (AuxRetry::ack ==
-        bus.read(NV_DPCD20_DP_TUNNEL_CAPABILITIES, &byte, sizeof byte))
+    if (bIsDpTunnelBwAllocationEnabled)
     {
-        caps.dpInTunnelingCaps.bIsSupported =
-            FLD_TEST_DRF(_DPCD20, _DP_TUNNEL_CAPABILITIES,
-                            _DPTUNNELING_SUPPORT, _YES, byte);
-
-        caps.dpInTunnelingCaps.bIsPanelReplayOptimizationSupported =
-            FLD_TEST_DRF(_DPCD20, _DP_TUNNEL_CAPABILITIES,
-                            _PANEL_REPLAY_TUNNELING_OPTIMIZATION_SUPPORT,
-                            _YES, byte);
-
-        caps.dpInTunnelingCaps.bIsBwAllocationSupported =
-            FLD_TEST_DRF(_DPCD20, _DP_TUNNEL_CAPABILITIES,
-                            _DPIN_BW_ALLOCATION_MODE_SUPPORT,
-                            _YES, byte);
-    }
-
-    if (caps.dpInTunnelingCaps.bIsSupported)
-    {
-        if (AuxRetry::ack ==
-            bus.read(NV_DPCD20_USB4_DRIVER_BW_CAPABILITY, &byte, sizeof byte))
-        {
-            caps.dpInTunnelingCaps.bUsb4DriverSupport =
-                FLD_TEST_DRF(_DPCD20, _USB4_DRIVER, _BW_ALLOCATION, _YES, byte);
-        }
-
         AuxRetry::status busReadStatus = bus.read(NV_DPCD20_DP_TUNNELING_MAX_LANE_COUNT, &byte, sizeof byte);
 
         if (AuxRetry::ack == busReadStatus)
@@ -460,24 +523,24 @@ void DPCDHALImpl::parseAndReadCaps()
         {
             if (FLD_TEST_DRF(_DPCD20, _DP_TUNNELING_8B10B, _MAX_LINK_RATE_VAL, _1_62_GBPS, byte))
             {
-                caps.dpInTunnelingCaps.maxLinkRate = RBR;
+                caps.dpInTunnelingCaps.maxLinkRate = dp2LinkRate_1_62Gbps;
             }
             else if (FLD_TEST_DRF(_DPCD20, _DP_TUNNELING_8B10B, _MAX_LINK_RATE_VAL, _2_70_GBPS, byte))
             {
-                caps.dpInTunnelingCaps.maxLinkRate = HBR;
+                caps.dpInTunnelingCaps.maxLinkRate = dp2LinkRate_2_70Gbps;
             }
             else if (FLD_TEST_DRF(_DPCD20, _DP_TUNNELING_8B10B, _MAX_LINK_RATE_VAL, _5_40_GBPS, byte))
             {
-                caps.dpInTunnelingCaps.maxLinkRate = HBR2;
+                caps.dpInTunnelingCaps.maxLinkRate = dp2LinkRate_5_40Gbps;
             }
             else if (FLD_TEST_DRF(_DPCD20, _DP_TUNNELING_8B10B, _MAX_LINK_RATE_VAL, _8_10_GBPS, byte))
             {
-                caps.dpInTunnelingCaps.maxLinkRate = HBR3;
+                caps.dpInTunnelingCaps.maxLinkRate = dp2LinkRate_8_10Gbps;
             }
             else
             {
                 DP_ASSERT(0 && "Unknown max link rate. Assuming DP 1.1 defaults");
-                caps.dpInTunnelingCaps.maxLinkRate = HBR;
+                caps.dpInTunnelingCaps.maxLinkRate = dp2LinkRate_2_70Gbps;
             }
         }
         else
@@ -530,14 +593,14 @@ unsigned DPCDHALImpl::getMaxLaneCount()
 // Max lanes supported at the desired link rate.
 unsigned DPCDHALImpl::getMaxLaneCountSupportedAtLinkRate(LinkRate linkRate)
 {
-    if (linkRate == HBR)
+    if (linkRate == dp2LinkRate_2_70Gbps)
     {
         if (caps.maxLanesAtHBR)
         {
             return DP_MIN(caps.maxLanesAtHBR, getMaxLaneCount());
         }
     }
-    else if (linkRate == RBR)
+    else if (linkRate == dp2LinkRate_1_62Gbps)
     {
         if (caps.maxLanesAtRBR)
         {
@@ -927,7 +990,7 @@ void DPCDHALImpl::populateFakeDpcd()
     caps.revisionMajor = 0x1;
     caps.revisionMinor = 0x1;
     caps.supportsESI = false;
-    caps.maxLinkRate = HBR3;
+    caps.maxLinkRate = dp2LinkRate_8_10Gbps;
     caps.maxLaneCount = 4;
     caps.enhancedFraming = true;
     caps.downStreamPortPresent = true;
@@ -942,7 +1005,7 @@ void DPCDHALImpl::overrideMaxLinkRate(NvU32 overrideMaxLinkRate)
 {
     if (overrideMaxLinkRate)
     {
-        caps.maxLinkRate = mapLinkBandiwdthToLinkrate(overrideMaxLinkRate);
+        caps.maxLinkRate = overrideMaxLinkRate;
     }
 }
 
@@ -1291,17 +1354,17 @@ AuxRetry::status DPCDHALImpl::setMultistreamHotplugMode(MultistreamHotplugMode n
 bool DPCDHALImpl::parseTestRequestTraining(NvU8 * buffer /* 0x18-0x28 valid */)
 {
     if (buffer[1] == 0x6)
-        interrupts.testTraining.testRequestLinkRate = RBR;
+        interrupts.testTraining.testRequestLinkRate = dp2LinkRate_1_62Gbps;
     else if (buffer[1] == 0xa)
-        interrupts.testTraining.testRequestLinkRate = HBR;
+        interrupts.testTraining.testRequestLinkRate = dp2LinkRate_2_70Gbps;
     else if (buffer[1] == 0x14)
-        interrupts.testTraining.testRequestLinkRate = HBR2;
+        interrupts.testTraining.testRequestLinkRate = dp2LinkRate_5_40Gbps;
     else if (buffer[1] == 0x1E)
-        interrupts.testTraining.testRequestLinkRate = HBR3;
+        interrupts.testTraining.testRequestLinkRate = dp2LinkRate_8_10Gbps;
     else
     {
         DP_ASSERT(0 && "Unknown max link rate.  Assuming RBR");
-        interrupts.testTraining.testRequestLinkRate = RBR;
+        interrupts.testTraining.testRequestLinkRate = dp2LinkRate_1_62Gbps;
     }
 
     interrupts.testTraining.testRequestLaneCount  = buffer[(0x220 - 0x218)] & 0xf;
@@ -1507,6 +1570,8 @@ void DPCDHALImpl::parseAndReadInterruptsESI()
                                                           _STREAM_STATUS_CHANGED, _YES, buffer[5]);
     interrupts.hdmiLinkStatusChanged       = FLD_TEST_DRF(_DPCD, _LINK_SERVICE_IRQ_VECTOR_ESI0,
                                                           _HDMI_LINK_STATUS_CHANGED, _YES, buffer[5]);
+    interrupts.dpTunnelingIrq              = FLD_TEST_DRF(_DPCD20, _LINK_SERVICE_IRQ_VECTOR_ESI0,
+                                                          _DP_TUNNELING_IRQ, _YES, buffer[5]);
 
     //
     // Link status changed bit is not necessarily set at all times when the sink
@@ -1533,6 +1598,12 @@ void DPCDHALImpl::parseAndReadInterruptsESI()
         DP_PRINTF(DP_WARNING, "DPHAL> RX Capabilities have changed!");
         parseAndReadCaps();
         this->clearInterruptCapabilitiesChanged();
+    }
+
+    if (interrupts.dpTunnelingIrq && hasDpTunnelBwAllocationCapabilityChanged())
+    {
+        // Re read caps and turn on BW allocation if needed
+        parseAndReadCaps();
     }
 
     if (interrupts.hdmiLinkStatusChanged)
@@ -2895,6 +2966,69 @@ bool DPCDHALImpl::writeDpTunnelRequestedBw(NvU8 requestedBw)
         bus.write(NV_DPCD20_DP_TUNNEL_REQUESTED_BW, &requestedBw, sizeof(requestedBw)))
     {
         DP_PRINTF(DP_ERROR, "Failed to write requested BW");
+        return false;
+    }
+
+    return true;
+}
+
+bool DPCDHALImpl::clearDpTunnelingBwRequestStatus()
+{
+    NvU8 readByte = 0;
+    NvU8 writeByte = 0;
+    if (AuxRetry::ack !=
+        bus.read(NV_DPCD20_DP_TUNNELING_STATUS, &readByte, sizeof(readByte)))
+    {
+        DP_PRINTF(DP_ERROR, "Failed to read DP Tunneling status");
+        return false;
+    }
+
+    if (FLD_TEST_DRF(_DPCD20, _DP_TUNNELING, _BW_REQUEST_FAILED, _YES, readByte))
+    {
+        writeByte = FLD_SET_DRF(_DPCD20, _DP_TUNNELING, _BW_REQUEST_FAILED, _YES, writeByte);
+    }
+
+    if (FLD_TEST_DRF(_DPCD20, _DP_TUNNELING, _BW_REQUEST_SUCCEEDED, _YES, readByte))
+    {
+        writeByte = FLD_SET_DRF(_DPCD20, _DP_TUNNELING, _BW_REQUEST_SUCCEEDED, _YES, writeByte);
+    }
+
+    if (writeByte > 0)
+    {
+        if (AuxRetry::ack !=
+            bus.write(NV_DPCD20_DP_TUNNELING_STATUS, &writeByte, sizeof(writeByte)))
+        {
+            DP_PRINTF(DP_ERROR, "Failed to write DP_TUNNELING_STATUS");
+            return false;
+        }
+
+    }
+    return true;
+}
+
+bool DPCDHALImpl::clearDpTunnelingEstimatedBwStatus()
+{
+    NvU8 byte = 0;
+    byte = FLD_SET_DRF(_DPCD20, _DP_TUNNELING, _ESTIMATED_BW_CHANGED, _YES, byte);
+    if (AuxRetry::ack !=
+        bus.write(NV_DPCD20_DP_TUNNELING_STATUS, &byte, sizeof(byte)))
+    {
+        DP_PRINTF(DP_ERROR, "Failed to write clear estimated BW status");
+        return false;
+    }
+
+    return true;
+}
+
+bool DPCDHALImpl::clearDpTunnelingBwAllocationCapStatus()
+{
+    NvU8 byte = 0;
+    byte = FLD_SET_DRF(_DPCD20, _DP_TUNNELING, _BW_ALLOCATION_CAPABILITY_CHANGED, _YES, byte);
+
+    if (AuxRetry::ack !=
+        bus.write(NV_DPCD20_DP_TUNNELING_STATUS, &byte, sizeof(byte)))
+    {
+        DP_PRINTF(DP_ERROR, "Failed to write clear bw allocation capability changed status");
         return false;
     }
 

@@ -207,7 +207,7 @@ deviceCtrlCmdGpuGetVirtualizationMode_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-#if defined(NV_UNIX)
+#if defined(NV_UNIX) && !RMCFG_FEATURE_MODS_FEATURES
     pParams->isGridBuild = os_is_grid_supported();
 #endif
 

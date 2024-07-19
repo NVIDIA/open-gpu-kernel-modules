@@ -5807,6 +5807,9 @@ NvU32 NvTiming_IsTimingExactEqualEx(const NVT_TIMING *pT1, const NVT_TIMING *pT2
 NvU32 NvTiming_IsTimingRelaxedEqual(const NVT_TIMING *pT1, const NVT_TIMING *pT2);
 NvU16 NvTiming_MaxFrameWidth(NvU16 HVisible, NvU16 rep);
 
+NvU32 NvTiming_GetVrrFmin(const NVT_EDID_INFO *pEdidInfo, const NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo,
+                          NvU32 nominalRefreshRateHz, NVT_PROTOCOL sinkProtocol);
+
 // Establish timing enumeration
 NVT_STATUS NvTiming_EnumEST(NvU32 index, NVT_TIMING *pT);
 NVT_STATUS NvTiming_EnumESTIII(NvU32 index, NVT_TIMING *pT);

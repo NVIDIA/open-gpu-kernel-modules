@@ -153,6 +153,8 @@ NV_STATUS_CODE(NV_ERR_ALREADY_SIGNALLED,               0x0000007B, "Semaphore Su
 NV_STATUS_CODE(NV_ERR_QUEUE_TASK_SLOT_NOT_AVAILABLE,   0x0000007C, "PMU RPC error due to no queue slot available for this event")
 NV_STATUS_CODE(NV_ERR_KEY_ROTATION_IN_PROGRESS,        0x0000007D, "Operation not allowed as key rotation is in progress")
 NV_STATUS_CODE(NV_ERR_TEST_ONLY_CODE_NOT_ENABLED,      0x0000007E, "Test-only code path not enabled")
+NV_STATUS_CODE(NV_ERR_SECURE_BOOT_FAILED,              0x0000007F, "GFW secure boot failed")
+NV_STATUS_CODE(NV_ERR_INSUFFICIENT_ZBC_ENTRY,          0x00000080, "No more ZBC entry for the client")
 
 // Warnings:
 NV_STATUS_CODE(NV_WARN_HOT_SWITCH,                     0x00010001, "WARNING Hot switch")

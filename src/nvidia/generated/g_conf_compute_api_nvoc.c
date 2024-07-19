@@ -240,6 +240,21 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Confiden
         /*func=*/       "confComputeApiCtrlCmdGpuGetNumSecureChannels"
 #endif
     },
+    {               /*  [10] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) confComputeApiCtrlCmdGpuGetKeyRotationState_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+        /*flags=*/      0x8u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0xcb33010cu,
+        /*paramSize=*/  sizeof(NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_ConfidentialComputeApi.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "confComputeApiCtrlCmdGpuGetKeyRotationState"
+#endif
+    },
 
 };
 
@@ -353,7 +368,7 @@ static void __nvoc_up_thunk_RsResource_confComputeApiAddAdditionalDependants(str
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_ConfidentialComputeApi = 
 {
-    /*numEntries=*/     10,
+    /*numEntries=*/     11,
     /*pExportEntries=*/ __nvoc_exported_method_def_ConfidentialComputeApi
 };
 
@@ -441,6 +456,11 @@ static void __nvoc_init_funcTable_ConfidentialComputeApi_1(ConfidentialComputeAp
     pThis->__confComputeApiCtrlCmdSystemSetSecurityPolicy__ = &confComputeApiCtrlCmdSystemSetSecurityPolicy_IMPL;
 #endif
 
+    // confComputeApiCtrlCmdGpuGetKeyRotationState -- exported (id=0xcb33010c)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+    pThis->__confComputeApiCtrlCmdGpuGetKeyRotationState__ = &confComputeApiCtrlCmdGpuGetKeyRotationState_IMPL;
+#endif
+
     // confComputeApiAccessCallback -- virtual inherited (rmres) base (rmres)
     pThis->__confComputeApiAccessCallback__ = &__nvoc_up_thunk_RmResource_confComputeApiAccessCallback;
 
@@ -503,13 +523,13 @@ static void __nvoc_init_funcTable_ConfidentialComputeApi_1(ConfidentialComputeAp
 
     // confComputeApiAddAdditionalDependants -- virtual inherited (res) base (rmres)
     pThis->__confComputeApiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_confComputeApiAddAdditionalDependants;
-} // End __nvoc_init_funcTable_ConfidentialComputeApi_1 with approximately 31 basic block(s).
+} // End __nvoc_init_funcTable_ConfidentialComputeApi_1 with approximately 32 basic block(s).
 
 
-// Initialize vtable(s) for 31 virtual method(s).
+// Initialize vtable(s) for 32 virtual method(s).
 void __nvoc_init_funcTable_ConfidentialComputeApi(ConfidentialComputeApi *pThis) {
 
-    // Initialize vtable(s) with 31 per-object function pointer(s).
+    // Initialize vtable(s) with 32 per-object function pointer(s).
     __nvoc_init_funcTable_ConfidentialComputeApi_1(pThis);
 }
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -190,6 +190,7 @@ _kfifoIsValidCETag_GP102
     NvU32 *pSrcPbdmaIds;
     NvU32 numSrcPbdmaIds;
     NvU32 i;
+    NvU32 grEngineTag = ENG_GR(0);
 
     if (kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
                                  ENGINE_INFO_TYPE_ENG_DESC, ceEngineTag,
@@ -204,13 +205,13 @@ _kfifoIsValidCETag_GP102
 
     NV_ASSERT_OR_RETURN(
         kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
-                                 ENGINE_INFO_TYPE_ENG_DESC, ENG_GR(0),
+                                 ENGINE_INFO_TYPE_ENG_DESC, grEngineTag,
                                  ENGINE_INFO_TYPE_RUNLIST, &srcRunlist) == NV_OK,
         NV_FALSE);
 
     NV_ASSERT_OR_RETURN(
         kfifoGetEnginePbdmaIds_HAL(pGpu, pKernelFifo,
-                                  ENGINE_INFO_TYPE_ENG_DESC, ENG_GR(0),
+                                  ENGINE_INFO_TYPE_ENG_DESC, grEngineTag,
                                   &pSrcPbdmaIds, &numSrcPbdmaIds) == NV_OK,
         NV_FALSE);
 

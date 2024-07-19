@@ -1349,7 +1349,7 @@ NV_STATUS uvm_page_tree_wait(uvm_page_tree_t *tree)
 static NV_STATUS try_get_ptes(uvm_page_tree_t *tree,
                               NvU64 page_size,
                               NvU64 start,
-                              NvLength size,
+                              NvU64 size,
                               uvm_page_table_range_t *range,
                               NvU32 *cur_depth,
                               uvm_page_directory_t **dir_cache)
@@ -1379,9 +1379,9 @@ static NV_STATUS try_get_ptes(uvm_page_tree_t *tree,
     // This algorithm will work with unaligned ranges, but the caller's intent
     // is unclear
     UVM_ASSERT_MSG(start % page_size == 0 && size % page_size == 0,
-                   "start 0x%llx size 0x%zx page_size 0x%llx\n",
+                   "start 0x%llx size 0x%llx page_size 0x%llx\n",
                    start,
-                   (size_t)size,
+                   size,
                    page_size);
 
     // The GPU should be capable of addressing the passed range
@@ -1444,7 +1444,7 @@ static NV_STATUS try_get_ptes(uvm_page_tree_t *tree,
     return write_gpu_state(tree, page_size, invalidate_depth, used_count, dirs_used);
 }
 
-static NV_STATUS map_remap(uvm_page_tree_t *tree, NvU64 start, NvLength size, uvm_page_table_range_t *range)
+static NV_STATUS map_remap(uvm_page_tree_t *tree, NvU64 start, NvU64 size, uvm_page_table_range_t *range)
 {
     NV_STATUS status;
     uvm_push_t push;
@@ -1502,7 +1502,7 @@ static NV_STATUS map_remap(uvm_page_tree_t *tree, NvU64 start, NvLength size, uv
 NV_STATUS uvm_page_tree_get_ptes_async(uvm_page_tree_t *tree,
                                        NvU64 page_size,
                                        NvU64 start,
-                                       NvLength size,
+                                       NvU64 size,
                                        uvm_pmm_alloc_flags_t pmm_flags,
                                        uvm_page_table_range_t *range)
 {
@@ -1547,7 +1547,7 @@ NV_STATUS uvm_page_tree_get_ptes_async(uvm_page_tree_t *tree,
 NV_STATUS uvm_page_tree_get_ptes(uvm_page_tree_t *tree,
                                  NvU64 page_size,
                                  NvU64 start,
-                                 NvLength size,
+                                 NvU64 size,
                                  uvm_pmm_alloc_flags_t pmm_flags,
                                  uvm_page_table_range_t *range)
 {
@@ -2076,13 +2076,13 @@ static NV_STATUS uvm_page_table_range_vec_write_ptes_cpu(uvm_page_table_range_ve
         uvm_mmu_page_table_alloc_t *dir = &range->table->phys_alloc;
         NvU32 entry;
 
-        for (entry = range->start_index; entry < range->entry_count; ++entry) {
+        for (entry = 0; entry < range->entry_count; ++entry) {
             NvU64 pte_bits[2] = {pte_maker(range_vec, offset, caller_data), 0};
 
             if (entry_size == 8)
-                uvm_mmu_page_table_cpu_memset_8(tree->gpu, dir, entry, pte_bits[0], 1);
+                uvm_mmu_page_table_cpu_memset_8(tree->gpu, dir, range->start_index + entry, pte_bits[0], 1);
             else
-                uvm_mmu_page_table_cpu_memset_16(tree->gpu, dir, entry, pte_bits, 1);
+                uvm_mmu_page_table_cpu_memset_16(tree->gpu, dir, range->start_index + entry, pte_bits, 1);
 
             offset += range_vec->page_size;
         }
@@ -2310,7 +2310,7 @@ bool uvm_mmu_parent_gpu_needs_dynamic_sysmem_mapping(uvm_parent_gpu_t *parent_gp
     return uvm_parent_gpu_is_virt_mode_sriov_heavy(parent_gpu);
 }
 
-NV_STATUS create_static_vidmem_mapping(uvm_gpu_t *gpu)
+static NV_STATUS create_static_vidmem_mapping(uvm_gpu_t *gpu)
 {
     NvU64 page_size;
     NvU64 size;
@@ -2406,9 +2406,9 @@ void uvm_mmu_init_gpu_chunk_sizes(uvm_parent_gpu_t *parent_gpu)
     // to handle allocating multiple chunks per page.
     parent_gpu->mmu_user_chunk_sizes = sizes & PAGE_MASK;
 
-    // Ampere+ GPUs support 512MB page size, however, the maximum chunk size is
-    // 2MB(i.e., UVM_CHUNK_SIZE_MAX), therefore we mask out any supported page
-    // size greater than UVM_CHUNK_SIZE_MAX from the chunk size list.
+    // The maximum chunk size is 2MB (i.e., UVM_CHUNK_SIZE_MAX), therefore we
+    // mask out any supported page size greater than UVM_CHUNK_SIZE_MAX from
+    // the chunk size list.
     parent_gpu->mmu_user_chunk_sizes &= UVM_CHUNK_SIZES_MASK;
 
     parent_gpu->mmu_kernel_chunk_sizes = allocation_sizes_for_big_page_size(parent_gpu, UVM_PAGE_SIZE_64K) |

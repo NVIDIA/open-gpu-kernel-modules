@@ -104,6 +104,7 @@ typedef NV_STATUS      RpcDupObject(POBJGPU, POBJRPC, NvHandle, NvHandle, NvHand
 typedef NV_STATUS      RpcGspSetSystemInfo(POBJGPU, POBJRPC);
 typedef NV_STATUS      RpcCtrlPmAreaPcSampler(POBJGPU, POBJRPC, NvHandle, NvHandle, NvU32, void*);
 typedef NV_STATUS      RpcCtrlDbgSetExceptionMask(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
+typedef NV_STATUS      RpcCtrlSetZbcStencilClear(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlVaspaceCopyServerReservedPdes(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlGrCtxswPreemptionBind(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlAllocPmaStream(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
@@ -209,6 +210,7 @@ typedef NV_STATUS      RpcUpdateBarPde(POBJGPU, POBJRPC, NV_RPC_UPDATE_PDE_BAR_T
 typedef NV_STATUS      RpcCtrlBindPmResources(POBJGPU, POBJRPC, NvHandle, NvHandle);
 typedef NV_STATUS      RpcMapMemoryDma(POBJGPU, POBJRPC, NvHandle, NvHandle, NvHandle,
                                     NvHandle, NvU64, NvU64, NvU32, NvU64*);
+typedef NV_STATUS      RpcUpdateGpmGuestBufferInfo(POBJGPU, POBJRPC, NvU64, NvU32, NvU32, NvU32, NvBool);
 typedef NV_STATUS      RpcCtrlSetVgpuFbUsage(POBJGPU, POBJRPC, void*);
 typedef NV_STATUS      RpcUnmapMemoryDma(POBJGPU, POBJRPC, NvHandle, NvHandle, NvHandle, NvHandle, NvU32, NvU64);
 typedef NV_STATUS      RpcSetGuestSystemInfoExt(POBJGPU, POBJRPC);
@@ -254,6 +256,7 @@ typedef struct RPC_HAL_IFACES {
     RpcGspSetSystemInfo         *rpcGspSetSystemInfo;         /* Tells GSP-RM about the overall system environment */
     RpcCtrlPmAreaPcSampler      *rpcCtrlPmAreaPcSampler;      /* CTRL_PM_AREA_PC_SAMPLER */
     RpcCtrlDbgSetExceptionMask  *rpcCtrlDbgSetExceptionMask;  /* CTRL_DBG_SET_EXCEPTION_MASK */
+    RpcCtrlSetZbcStencilClear   *rpcCtrlSetZbcStencilClear;   /* CTRL_SET_ZBC_STENCIL_CLEAR */
     RpcCtrlVaspaceCopyServerReservedPdes  *rpcCtrlVaspaceCopyServerReservedPdes; /* CTRL_VASPACE_COPY_SERVER_RESERVED_PDES */
     RpcCtrlGrCtxswPreemptionBind  *rpcCtrlGrCtxswPreemptionBind; /* CTRL_GR_CTXSW_PREEMPTION_BIND */
     RpcCtrlAllocPmaStream       *rpcCtrlAllocPmaStream;       /* CTRL_ALLOC_PMA_STREAM */
@@ -348,6 +351,7 @@ typedef struct RPC_HAL_IFACES {
     RpcUpdateBarPde             *rpcUpdateBarPde;             /* Update the value of BAR1/BAR2 PDE */
     RpcCtrlBindPmResources      *rpcCtrlBindPmResources;      /* CTRL_BIND_PM_RESOURCES */
     RpcMapMemoryDma             *rpcMapMemoryDma;             /* MAP_MEMORY_DMA */
+    RpcUpdateGpmGuestBufferInfo  *rpcUpdateGpmGuestBufferInfo; /* CTRL_UPDATE_GPM_GUEST_BUFFER_INFO */
     RpcCtrlSetVgpuFbUsage       *rpcCtrlSetVgpuFbUsage;       /* CTRL_SET_VGPU_FB_USAGE */
     RpcUnmapMemoryDma           *rpcUnmapMemoryDma;           /* UNMAP_MEMORY_DMA */
     RpcSetGuestSystemInfoExt    *rpcSetGuestSystemInfoExt;    /* SET_GUEST_SYSTEM_INFO_EXT */
@@ -428,6 +432,8 @@ typedef struct RPC_HAL_IFACES {
         (_pRpc)->_hal.rpcCtrlPmAreaPcSampler(_pGpu, _pRpc, _arg0, _arg1, _arg2, _pArg3)
 #define rpcCtrlDbgSetExceptionMask_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlDbgSetExceptionMask(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
+#define rpcCtrlSetZbcStencilClear_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
+        (_pRpc)->_hal.rpcCtrlSetZbcStencilClear(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlVaspaceCopyServerReservedPdes_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlVaspaceCopyServerReservedPdes(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlGrCtxswPreemptionBind_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
@@ -616,6 +622,8 @@ typedef struct RPC_HAL_IFACES {
         (_pRpc)->_hal.rpcCtrlBindPmResources(_pGpu, _pRpc, _arg0, _arg1)
 #define rpcMapMemoryDma_HAL(_pGpu, _pRpc, _arg0, _arg1, _arg2, _arg3, _arg4, _arg5, _arg6, _pArg7)  \
         (_pRpc)->_hal.rpcMapMemoryDma(_pGpu, _pRpc, _arg0, _arg1, _arg2, _arg3, _arg4, _arg5, _arg6, _pArg7)
+#define rpcUpdateGpmGuestBufferInfo_HAL(_pGpu, _pRpc, _arg0, _arg1, _arg2, _arg3, _arg4)  \
+        (_pRpc)->_hal.rpcUpdateGpmGuestBufferInfo(_pGpu, _pRpc, _arg0, _arg1, _arg2, _arg3, _arg4)
 #define rpcCtrlSetVgpuFbUsage_HAL(_pGpu, _pRpc, _pArg0)  \
         (_pRpc)->_hal.rpcCtrlSetVgpuFbUsage(_pGpu, _pRpc, _pArg0)
 #define rpcUnmapMemoryDma_HAL(_pGpu, _pRpc, _arg0, _arg1, _arg2, _arg3, _arg4, _arg5)  \

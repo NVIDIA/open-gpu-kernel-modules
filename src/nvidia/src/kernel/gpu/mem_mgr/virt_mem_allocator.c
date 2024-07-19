@@ -71,16 +71,6 @@ static NV_STATUS
 dmaInitRegistryOverrides(OBJGPU *pGpu, VirtMemAllocator *pDma)
 {
     NV_STATUS rmStatus = NV_OK;
-    NvU32     data32;
-
-#if defined(DEBUG) || defined (DEVELOP)
-    pDma->bMemoryMapperApiEnabled = NV_TRUE;
-#endif
-    if (osReadRegistryDword(pGpu, NV_REG_ENABLE_MEMORY_MAPPER_API, &data32) == NV_OK &&
-        data32 == NV_REG_ENABLE_MEMORY_MAPPER_API_TRUE)
-    {
-        pDma->bMemoryMapperApiEnabled = NV_TRUE;
-    }
 
     return rmStatus;
 }

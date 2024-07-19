@@ -43,9 +43,9 @@
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/gpu/subdevice/subdevice.h"
+#include "kernel/gpu/timer/objtmr.h"
 #include "kernel/virtualization/hypervisor/hypervisor.h"
 #include "rmapi/client.h"
-#include "objtmr.h"
 #include "vgpu/sdk-structures.h"
 
 #include "class/cl90cdtypes.h"
@@ -849,7 +849,7 @@ _fecsTimerCallback
 
         if (fecsBufferChanged(pGpu, pKernelGraphics) && _fecsSignalCallbackScheduled(pFecsGlobalTraceInfo))
         {
-            NV_CHECK_OK(status, LEVEL_ERROR, osQueueWorkItemWithFlags(pGpu, _fecsOsWorkItem, NULL, OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE_RW));
+            NV_CHECK_OK(status, LEVEL_ERROR, osQueueWorkItemWithFlags(pGpu, _fecsOsWorkItem, NULL, OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE));
 
             if (status != NV_OK)
                 _fecsClearCallbackScheduled(pFecsGlobalTraceInfo);
@@ -1671,7 +1671,6 @@ fecsBufferMap
     NvU8 *pFecsBufferMapping = NULL;
     NV_STATUS status;
     KGRAPHICS_FECS_TRACE_INFO *pFecsTraceInfo = kgraphicsGetFecsTraceInfo(pGpu, pKernelGraphics);
-    TRANSFER_SURFACE surf = {0};
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
     NV_ASSERT_OR_RETURN(pFecsTraceInfo != NULL, NV_ERR_INVALID_STATE);
@@ -1686,13 +1685,9 @@ fecsBufferMap
     if ((status != NV_OK) || (pFecsMemDesc == NULL))
         return NV_ERR_INVALID_STATE;
 
-    surf.pMemDesc = pFecsMemDesc;
-    surf.offset = 0;
-
-    pFecsBufferMapping = memmgrMemBeginTransfer(pMemoryManager, &surf, 
-                                                memdescGetSize(pFecsMemDesc),
-                                                TRANSFER_FLAGS_PREFER_PROCESSOR |
-                                                TRANSFER_FLAGS_PERSISTENT_CPU_MAPPING);
+    pFecsBufferMapping = memmgrMemDescBeginTransfer(pMemoryManager, pFecsMemDesc,
+                                                    TRANSFER_FLAGS_PREFER_PROCESSOR |
+                                                    TRANSFER_FLAGS_PERSISTENT_CPU_MAPPING);
     if (pFecsBufferMapping == NULL)
         return NV_ERR_INSUFFICIENT_RESOURCES;
 
@@ -1711,7 +1706,6 @@ fecsBufferUnmap
     MEMORY_DESCRIPTOR *pFecsMemDesc = NULL;
     NV_STATUS status;
     KGRAPHICS_FECS_TRACE_INFO *pFecsTraceInfo = kgraphicsGetFecsTraceInfo(pGpu, pKernelGraphics);
-    TRANSFER_SURFACE surf = {0};
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
     NV_ASSERT_OR_RETURN_VOID(pFecsTraceInfo != NULL);
@@ -1723,15 +1717,11 @@ fecsBufferUnmap
     if ((status != NV_OK) || (pFecsMemDesc == NULL))
         return;
 
-    surf.pMemDesc = pFecsMemDesc;
-    surf.offset = 0;
-
     if (pFecsTraceInfo->pFecsBufferMapping != NULL)
     {
-        memmgrMemEndTransfer(pMemoryManager, &surf,
-                             memdescGetSize(pFecsMemDesc),
-                             TRANSFER_FLAGS_PREFER_PROCESSOR |
-                             TRANSFER_FLAGS_PERSISTENT_CPU_MAPPING);
+        memmgrMemDescEndTransfer(pMemoryManager, pFecsMemDesc,
+                                 TRANSFER_FLAGS_PREFER_PROCESSOR |
+                                 TRANSFER_FLAGS_PERSISTENT_CPU_MAPPING);
 
         pFecsTraceInfo->pFecsBufferMapping = NULL;
     }

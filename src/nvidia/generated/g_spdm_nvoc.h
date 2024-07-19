@@ -45,7 +45,7 @@ extern "C" {
 
 #include "gpu/gpu.h"
 #include "nvport/nvport.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 
 /****************************************************************************\
  *                                                                           *
@@ -125,7 +125,7 @@ struct Spdm {
     size_t msgLogMaxSize;
     NvBool bExportSecretCleared;
     NvU32 sessionMsgCount;
-    PTMR_EVENT pHeartbeatEvent;
+    struct TMR_EVENT *pHeartbeatEvent;
     NvU32 heartbeatPeriodSec;
     NvU8 *pTransportBuffer;
     NvU32 transportBufferSize;

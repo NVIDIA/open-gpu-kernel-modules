@@ -35,7 +35,7 @@
 #include "gpu/ce/kernel_ce_private.h"
 #include "mem_mgr/gpu_vaspace.h"
 #include "core/locks.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "rmapi/rs_utils.h"
 #include "mem_mgr/ctx_buf_pool.h"
 #include "vgpu/rpc.h"
@@ -328,6 +328,22 @@ _memUtilsChannelAllocatePB_GM107
                                 sizeof(memAllocParams)));
 
     // allocate the physmem for the notifier
+
+    if (gpuIsCCFeatureEnabled(pGpu))
+    {
+        //
+        // Force error notifier to ncoh sysmem when CC is enabled
+        // since key rotation notifier is part of error notifier and
+        // it needs to be in sysmem so we can create persistent mapping for it.
+        // we cannot create mappins on the fly since this notifier is
+        // written as part of 1 sec callback where creating mappings is
+        // not allowed.
+        //
+        hClass = NV01_MEMORY_SYSTEM;
+        attrNotifier   = DRF_DEF(OS32, _ATTR, _LOCATION,  _PCI)        |
+                         DRF_DEF(OS32, _ATTR, _COHERENCY, _UNCACHED);
+    }
+
     portMemSet(&memAllocParams, 0, sizeof(memAllocParams));
     memAllocParams.owner     = HEAP_OWNER_RM_CLIENT_GENERIC;
     memAllocParams.type      = NVOS32_TYPE_IMAGE;
@@ -1182,18 +1198,15 @@ _memUtilsAllocateChannel
     NvU32                   hClass;
     RM_API                 *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     NvBool                  bMIGInUse = IS_MIG_IN_USE(pGpu);
-    RM_ENGINE_TYPE          engineType;
     NvU32                   flags = DRF_DEF(OS04, _FLAGS, _CHANNEL_SKIP_SCRUBBER, _TRUE);
+    RM_ENGINE_TYPE          engineType = (pChannel->type == SWL_SCRUBBER_CHANNEL) ?
+                                RM_ENGINE_TYPE_SEC2 : RM_ENGINE_TYPE_COPY(pChannel->ceId);
 
-    if (pChannel->type == SWL_SCRUBBER_CHANNEL)
+    if (pChannel->bSecure)
     {
-        engineType = RM_ENGINE_TYPE_SEC2;
         flags |= DRF_DEF(OS04, _FLAGS, _CC_SECURE, _TRUE);
     }
-    else
-    {
-        engineType = RM_ENGINE_TYPE_COPY(pChannel->ceId);
-    }
+
     portMemSet(&channelGPFIFOAllocParams, 0, sizeof(NV_CHANNEL_ALLOC_PARAMS));
     channelGPFIFOAllocParams.hObjectError  = hObjectError;
     channelGPFIFOAllocParams.hObjectBuffer = hObjectBuffer;

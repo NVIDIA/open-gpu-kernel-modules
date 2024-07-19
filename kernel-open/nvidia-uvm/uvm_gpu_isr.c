@@ -479,17 +479,14 @@ void uvm_parent_gpu_deinit_isr(uvm_parent_gpu_t *parent_gpu)
     uvm_kvfree(parent_gpu->isr.access_counters.stats.cpu_exec_count);
 }
 
-static uvm_gpu_t *find_first_valid_gpu(uvm_parent_gpu_t *parent_gpu)
+uvm_gpu_t *uvm_parent_gpu_find_first_valid_gpu(uvm_parent_gpu_t *parent_gpu)
 {
     uvm_gpu_t *gpu;
 
     // When SMC is enabled, there's no longer a 1:1 relationship between the
-    // parent and the partitions.  But because all relevant interrupt paths
-    // are shared, as is the fault reporting logic, it's sufficient here
-    // to proceed with any valid uvm_gpu_t, even if the corresponding partition
-    // didn't cause all, or even any of the interrupts.
-    // The bottom half handlers will later find the appropriate partitions by
-    // attributing the notifications to VA spaces as necessary.
+    // parent and the partitions. It's sufficient to return any valid uvm_gpu_t
+    // since the purpose is to have a channel and push buffer for operations
+    // that affect the whole parent GPU.
     if (parent_gpu->smc.enabled) {
         NvU32 sub_processor_index;
 
@@ -518,12 +515,7 @@ static uvm_gpu_t *find_first_valid_gpu(uvm_parent_gpu_t *parent_gpu)
 static void replayable_faults_isr_bottom_half(void *args)
 {
     uvm_parent_gpu_t *parent_gpu = (uvm_parent_gpu_t *)args;
-    uvm_gpu_t *gpu;
     unsigned int cpu;
-
-    gpu = find_first_valid_gpu(parent_gpu);
-    if (gpu == NULL)
-        goto put_kref;
 
     UVM_ASSERT(parent_gpu->replayable_faults_supported);
 
@@ -545,11 +537,10 @@ static void replayable_faults_isr_bottom_half(void *args)
     ++parent_gpu->isr.replayable_faults.stats.cpu_exec_count[cpu];
     put_cpu();
 
-    uvm_gpu_service_replayable_faults(gpu);
+    uvm_parent_gpu_service_replayable_faults(parent_gpu);
 
     uvm_parent_gpu_replayable_faults_isr_unlock(parent_gpu);
 
-put_kref:
     // It is OK to drop a reference on the parent GPU if a bottom half has
     // been retriggered within uvm_parent_gpu_replayable_faults_isr_unlock,
     // because the rescheduling added an additional reference.
@@ -564,12 +555,7 @@ static void replayable_faults_isr_bottom_half_entry(void *args)
 static void non_replayable_faults_isr_bottom_half(void *args)
 {
     uvm_parent_gpu_t *parent_gpu = (uvm_parent_gpu_t *)args;
-    uvm_gpu_t *gpu;
     unsigned int cpu;
-
-    gpu = find_first_valid_gpu(parent_gpu);
-    if (gpu == NULL)
-        goto put_kref;
 
     UVM_ASSERT(parent_gpu->non_replayable_faults_supported);
 
@@ -584,11 +570,10 @@ static void non_replayable_faults_isr_bottom_half(void *args)
     ++parent_gpu->isr.non_replayable_faults.stats.cpu_exec_count[cpu];
     put_cpu();
 
-    uvm_gpu_service_non_replayable_fault_buffer(gpu);
+    uvm_parent_gpu_service_non_replayable_fault_buffer(parent_gpu);
 
     uvm_parent_gpu_non_replayable_faults_isr_unlock(parent_gpu);
 
-put_kref:
     uvm_parent_gpu_kref_put(parent_gpu);
 }
 
@@ -600,12 +585,7 @@ static void non_replayable_faults_isr_bottom_half_entry(void *args)
 static void access_counters_isr_bottom_half(void *args)
 {
     uvm_parent_gpu_t *parent_gpu = (uvm_parent_gpu_t *)args;
-    uvm_gpu_t *gpu;
     unsigned int cpu;
-
-    gpu = find_first_valid_gpu(parent_gpu);
-    if (gpu == NULL)
-        goto put_kref;
 
     UVM_ASSERT(parent_gpu->access_counters_supported);
 
@@ -620,11 +600,10 @@ static void access_counters_isr_bottom_half(void *args)
     ++parent_gpu->isr.access_counters.stats.cpu_exec_count[cpu];
     put_cpu();
 
-    uvm_gpu_service_access_counters(gpu);
+    uvm_parent_gpu_service_access_counters(parent_gpu);
 
     uvm_parent_gpu_access_counters_isr_unlock(parent_gpu);
 
-put_kref:
     uvm_parent_gpu_kref_put(parent_gpu);
 }
 

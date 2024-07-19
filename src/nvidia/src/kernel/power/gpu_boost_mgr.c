@@ -32,7 +32,7 @@
 #include "core/locks.h"
 #include "gpu/gpu_access.h"
 #include "gpu/gpu.h"
-#include "syncgpuboost.h"
+#include "gpu/power/syncgpuboost.h"
 #include "nvlimits.h"
 #include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gsp/gsp_static_config.h"

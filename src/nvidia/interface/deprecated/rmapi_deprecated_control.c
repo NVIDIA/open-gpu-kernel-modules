@@ -103,7 +103,7 @@ RmDeprecatedControlHandler RmDeprecatedGetControlHandler(NVOS54_PARAMETERS *pArg
     NvU32     i;
     NV_STATUS nvStatus;
     RsClient *pClient     = NULL;
-    POBJGPU   pGpu        = NULL;
+    OBJGPU   *pGpu        = NULL;
     NvBool gssLegacyVgpuCall = NV_FALSE;
 
     NV_CHECK_OK_OR_ELSE(nvStatus,

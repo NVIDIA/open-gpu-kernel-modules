@@ -25,6 +25,7 @@
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "class/clc8b5.h"  // HOPPER_DMA_COPY_A
+#include "class/clc9b5.h"
 
 
 /*!
@@ -65,6 +66,7 @@ memmgrMemUtilsCheckMemoryFastScrubEnable_GH100
     // LineLength is 4KB aligned
     //
     return  ((copyClass == HOPPER_DMA_COPY_A
+              || copyClass == BLACKWELL_DMA_COPY_A
              ) &&
              (!bIsVirtualMemory)                                                    &&
              (dstAddressSpace == ADDR_FBMEM)                                        &&

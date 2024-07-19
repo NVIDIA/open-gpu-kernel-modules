@@ -176,18 +176,6 @@ NvBool gpuIsGlobalPoisonFuseEnabled_FWCLIENT(OBJGPU *pGpu)
     return pGSCI->poisonFuseEnabled;
 }
 
-void gpuInitProperties_FWCLIENT(OBJGPU *pGpu)
-{
-    GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
-
-    pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_MOBILE, pGSCI->bIsMobile);
-    pGpu->setProperty(pGpu, PDB_PROP_GPU_RTD3_GC6_SUPPORTED, pGSCI->bIsGc6Rtd3Allowed);
-    pGpu->setProperty(pGpu, PDB_PROP_GPU_RTD3_GC8_SUPPORTED, pGSCI->bIsGc8Rtd3Allowed);
-    pGpu->setProperty(pGpu, PDB_PROP_GPU_RTD3_GCOFF_SUPPORTED, pGSCI->bIsGcOffRtd3Allowed);
-    pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_UEFI, pGSCI->bIsGpuUefi);
-    pGpu->setProperty(pGpu, PDB_PROP_GPU_LEGACY_GCOFF_SUPPORTED, pGSCI->bIsGcoffLegacyAllowed);
-}
-
 void gpuGetRtd3GC6Data_FWCLIENT(OBJGPU *pGpu)
 {
     GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);

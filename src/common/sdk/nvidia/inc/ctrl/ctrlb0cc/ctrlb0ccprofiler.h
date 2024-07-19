@@ -556,6 +556,98 @@ typedef struct NVB0CC_CTRL_RELEASE_HES_PARAMS {
     NVB0CC_CTRL_HES_TYPE type;
 } NVB0CC_CTRL_RELEASE_HES_PARAMS;
 
+/*!
+ * Defines the maximum count of output credit pools.
+ * 30 is estimate based on the # of PMAs (2) and chiplet types(3), 
+ * which should be big enough to accommodate the required number of credit pools
+ */
+#define NVB0CC_CREDIT_POOL_MAX_COUNT 30
+
+/*!
+ * NVB0CC_CTRL_CMD_GET_CHIPLET_HS_CREDIT_POOL
+ *
+ * Gets the total high speed streaming credits available for the client 
+ * in each chiplet pool.
+ *
+ * This command is similar to @ref NVB0CC_CTRL_CMD_GET_TOTAL_HS_CREDITS but
+ * supports multiple chiplet credit pools.
+ *
+ */
+typedef struct NVB0CC_CTRL_CREDIT_POOL_INFO {
+    /*!
+     * [out] number of credits.
+     */
+    NvU16 numCredits;
+
+    /*!
+     * [out] index of credit pool.
+     */
+    NvU8  poolIndex;
+
+    /*!
+     * [out] chiplet type of credit pool.
+     */
+    NvU8  chipletType;
+} NVB0CC_CTRL_CREDIT_POOL_INFO;
+#define NVB0CC_CTRL_CMD_GET_CHIPLET_HS_CREDIT_POOL (0xb0cc0115) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL_MESSAGE_ID" */
+
+#define NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL_MESSAGE_ID (0x15U)
+
+typedef struct NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL {
+    /*!
+     * [out] chiplet-level credit pool.
+     */
+    NVB0CC_CTRL_CREDIT_POOL_INFO poolInfos[NVB0CC_CREDIT_POOL_MAX_COUNT];
+
+    /*!
+     * [out] number of credit pools.
+     */
+    NvU32                        poolInfosCount;
+} NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL;
+
+typedef struct NVB0CC_CTRL_PMA_STREAM_HS_CREDITS_MAPPING_INFO {
+    /*! 
+     * [in] Specifies the chiplet type @ref NVB0CC_CHIPLET_TYPE. 
+     */
+    NvU8 chipletType;
+
+    /*! 
+     * [in] Specifies the logical index of the chiplet. 
+     */
+    NvU8 chipletIndex;
+
+    /*! 
+     * [out] Specifies the index of credits pool for the chiplet. 
+     */
+    NvU8 poolIndex;
+} NVB0CC_CTRL_PMA_STREAM_HS_CREDITS_MAPPING_INFO;
+
+/*!
+ * NVB0CC_CTRL_CMD_GET_HS_CREDITS_MAPPING
+ * 
+ * Query the associated PMA credit pool index for given chiplet.
+ *
+ */
+#define NVB0CC_CTRL_CMD_GET_HS_CREDITS_MAPPING (0xb0cc0116) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS_MESSAGE_ID" */
+#define NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS_MESSAGE_ID (0x16U)
+
+typedef struct NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS {
+    /*!
+     * [in]: number of input queries.
+     */
+    NvU16                                          numQueries;
+
+    /*!
+     * [out] Provides status for the entire operation.
+     */
+    NVB0CC_CTRL_PMA_STREAM_HS_CREDITS_STATUS       statusInfo;
+
+    /*!
+     * [in/out]: Used to query the PMA credit pool index of specified chiplet.
+     */
+    NVB0CC_CTRL_PMA_STREAM_HS_CREDITS_MAPPING_INFO queries[NVB0CC_MAX_CREDIT_INFO_ENTRIES];
+} NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS;
+
  /* End of extension construct */
 
 

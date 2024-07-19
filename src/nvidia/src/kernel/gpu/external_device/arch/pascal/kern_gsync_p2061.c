@@ -21,8 +21,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "dev_p2060.h"
-#include "dev_p2061.h"
+#include "gpu/external_device/dev_p2060.h"
+#include "gpu/external_device/dev_p2061.h"
 #include "gpu/external_device/dac_p2060.h"
 #include "gpu/external_device/dac_p2061.h"
 

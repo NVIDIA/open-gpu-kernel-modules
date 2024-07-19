@@ -1102,7 +1102,37 @@ typedef union alloc_object_params_v26_00
     NvU8       param_padding[NV_ALLOC_STRUCTURE_SIZE_v26_00];
 } alloc_object_params_v26_00;
 
-typedef alloc_object_params_v26_00 alloc_object_params_v;
+typedef union alloc_object_params_v27_00
+{
+    alloc_object_NV50_TESLA_v03_00 param_NV50_TESLA;
+    alloc_object_GT212_DMA_COPY_v03_00 param_GT212_DMA_COPY;
+    alloc_object_GF100_DISP_SW_v03_00 param_GF100_DISP_SW;
+    alloc_object_KEPLER_CHANNEL_GROUP_A_v12_08 param_KEPLER_CHANNEL_GROUP_A;
+    alloc_object_FERMI_CONTEXT_SHARE_A_v04_00 param_FERMI_CONTEXT_SHARE_A;
+    alloc_object_NVD0B7_VIDEO_ENCODER_v03_00 param_NVD0B7_VIDEO_ENCODER;
+    alloc_object_FERMI_VASPACE_A_v03_00 param_FERMI_VASPACE_A;
+    alloc_object_NVB0B0_VIDEO_DECODER_v03_00 param_NVB0B0_VIDEO_DECODER;
+    alloc_object_NV83DE_ALLOC_PARAMETERS_v03_00 param_NV83DE_ALLOC_PARAMETERS;
+    alloc_object_NVENC_SW_SESSION_v06_01 param_NVENC_SW_SESSION;
+    alloc_object_NVC4B0_VIDEO_DECODER_v12_02 param_NVC4B0_VIDEO_DECODER;
+    alloc_object_NVFBC_SW_SESSION_v12_04 param_NVFBC_SW_SESSION;
+    alloc_object_NV_NVJPG_ALLOCATION_PARAMETERS_v20_02 param_NV_NVJPG_ALLOCATION_PARAMETERS;
+    alloc_object_NV503B_ALLOC_PARAMETERS_v1D_02 param_NV503B_ALLOC_PARAMETERS;
+    alloc_object_NVC637_ALLOCATION_PARAMETERS_v13_00 param_NVC637_ALLOCATION_PARAMETERS;
+    alloc_object_NV_MEMORY_VIRTUAL_ALLOCATION_PARAMS_v13_03 param_NV_MEMORY_VIRTUAL_ALLOCATION_PARAMS;
+    alloc_object_NVC638_ALLOCATION_PARAMETERS_v18_06 param_NVC638_ALLOCATION_PARAMETERS;
+    alloc_object_NV503C_ALLOC_PARAMETERS_v18_15 param_NV503C_ALLOC_PARAMETERS;
+    alloc_object_NVC670_ALLOCATION_PARAMETERS_v1A_01 param_NVC670_ALLOCATION_PARAMETERS;
+    alloc_object_NVB2CC_ALLOC_PARAMETERS_v1A_03 param_NVB2CC_ALLOC_PARAMETERS;
+    NV_GR_ALLOCATION_PARAMETERS_v1A_17 param_NV_GR_ALLOCATION_PARAMETERS;
+    alloc_object_NV_UVM_CHANNEL_RETAINER_ALLOC_PARAMS_v1A_1B param_NV_UVM_CHANNEL_RETAINER_ALLOC_PARAMS;
+    alloc_object_NV00F8_ALLOCATION_PARAMETERS_v1E_0C param_NV00F8_ALLOCATION_PARAMETERS;
+    alloc_object_NVC9FA_VIDEO_OFA_v1F_00 param_NVC9FA_VIDEO_OFA;
+    alloc_object_NV2081_ALLOC_PARAMETERS_v25_08 param_NV2081_ALLOC_PARAMETERS;
+    NvU8       param_padding[NV_ALLOC_STRUCTURE_SIZE_v26_00];
+} alloc_object_params_v27_00;
+
+typedef alloc_object_params_v27_00 alloc_object_params_v;
 
 typedef struct gpu_exec_reg_ops_v12_01
 {
@@ -1203,7 +1233,12 @@ typedef struct VGPU_GET_LATENCY_BUFFER_SIZE_v1C_09
     NV0080_CTRL_FIFO_GET_LATENCY_BUFFER_SIZE_PARAMS_v03_00 fifoLatencyBufferSize[NV2080_ENGINE_TYPE_LAST_v1C_09];
 } VGPU_GET_LATENCY_BUFFER_SIZE_v1C_09;
 
-typedef VGPU_GET_LATENCY_BUFFER_SIZE_v1C_09 VGPU_GET_LATENCY_BUFFER_SIZE_v;
+typedef struct VGPU_GET_LATENCY_BUFFER_SIZE_v27_02
+{
+    NV0080_CTRL_FIFO_GET_LATENCY_BUFFER_SIZE_PARAMS_v03_00 fifoLatencyBufferSize[NV2080_ENGINE_TYPE_LAST_v27_02];
+} VGPU_GET_LATENCY_BUFFER_SIZE_v27_02;
+
+typedef VGPU_GET_LATENCY_BUFFER_SIZE_v27_02 VGPU_GET_LATENCY_BUFFER_SIZE_v;
 
 typedef struct NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS_v03_00
 {
@@ -1410,6 +1445,15 @@ typedef struct NV9096_CTRL_SET_ZBC_DEPTH_CLEAR_PARAMS_v03_00
 } NV9096_CTRL_SET_ZBC_DEPTH_CLEAR_PARAMS_v03_00;
 
 typedef NV9096_CTRL_SET_ZBC_DEPTH_CLEAR_PARAMS_v03_00 NV9096_CTRL_SET_ZBC_DEPTH_CLEAR_PARAMS_v;
+
+typedef struct NV9096_CTRL_SET_ZBC_STENCIL_CLEAR_PARAMS_v27_06
+{
+    NvU32      stencil;
+    NvU32      format;
+    NvBool     bSkipL2Table;
+} NV9096_CTRL_SET_ZBC_STENCIL_CLEAR_PARAMS_v27_06;
+
+typedef NV9096_CTRL_SET_ZBC_STENCIL_CLEAR_PARAMS_v27_06 NV9096_CTRL_SET_ZBC_STENCIL_CLEAR_PARAMS_v;
 
 typedef struct NV9096_CTRL_GET_ZBC_CLEAR_TABLE_ENTRY_PARAMS_value_v1A_07
 {
@@ -1939,7 +1983,14 @@ typedef struct NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v26_02
     NvU32      flags;
 } NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v26_02;
 
-typedef NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v26_02 NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v;
+typedef struct NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v27_04
+{
+    NV2080_CTRL_GPU_QUERY_ECC_UNIT_STATUS_v15_01 units[NV2080_CTRL_GPU_ECC_UNIT_COUNT_v27_04];
+    NvBool     bFatalPoisonError;
+    NvU32      flags;
+} NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v27_04;
+
+typedef NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v27_04 NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v;
 
 typedef struct NV2080_CTRL_GPU_QUERY_ECC_STATUS_DEPRECATED_RPC_PARAMS_v24_06
 {
@@ -2215,7 +2266,75 @@ typedef struct VGPU_STATIC_DATA_v25_0E
     NvU8       jpegCaps[NV0080_CTRL_NVJPG_CAPS_TBL_SIZE_V18_0C];
 } VGPU_STATIC_DATA_v25_0E;
 
-typedef VGPU_STATIC_DATA_v25_0E VGPU_STATIC_DATA_v;
+typedef struct VGPU_STATIC_DATA_v27_00
+{
+    NvU64      fbTaxLength NV_ALIGN_BYTES(8);
+    NvU64      fbLength NV_ALIGN_BYTES(8);
+    NvU32      fbBusWidth;
+    NvU64      fbioMask NV_ALIGN_BYTES(8);
+    NvU32      fbpMask;
+    NvU64      ltcMask NV_ALIGN_BYTES(8);
+    NvU32      ltsCount;
+    NvU32      subProcessIsolation;
+    NvU64      engineList NV_ALIGN_BYTES(8);
+    NvU32      sizeL2Cache;
+    NvBool     poisonFuseEnabled;
+    NvBool     guestManagedHwAlloc;
+    NV_DEVICE_NAME_v13_06 gpuName;
+    NvBool     bSplitVasBetweenServerClientRm;
+    NvU64      maxSupportedPageSize NV_ALIGN_BYTES(8);
+    NvBool     bFlaSupported;
+    NvBool     bPerRunlistChannelRamEnabled;
+    NvBool     bAtsSupported;
+    NvBool     bPerSubCtxheaderSupported;
+    NvBool     bC2CLinkUp;
+    NvBool     bLocalEgmEnabled;
+    NvU32      localEgmPeerId;
+    NvBool     bSelfHostedMode;
+    NvU32      ceFaultMethodBufferDepth;
+    NvU32      pcieGpuLinkCaps;
+    NvU8       grCapsBits[NV0080_CTRL_GR_CAPS_TBL_SIZE_v25_0E];
+    NvU32      gfxpBufferSize[NV2080_CTRL_CMD_GR_CTXSW_PREEMPTION_BIND_BUFFERS_CONTEXT_POOL_v25_0E];
+    NvU32      gfxpBufferAlignment[NV2080_CTRL_CMD_GR_CTXSW_PREEMPTION_BIND_BUFFERS_CONTEXT_POOL_v25_0E];
+    NvU32      grBufferSize[RPC_GR_BUFFER_TYPE_GRAPHICS_MAX_v25_0E];
+    NvU8       jpegCaps[NV0080_CTRL_NVJPG_CAPS_TBL_SIZE_V18_0C];
+} VGPU_STATIC_DATA_v27_00;
+
+typedef struct VGPU_STATIC_DATA_v27_01
+{
+    NvU64      fbTaxLength NV_ALIGN_BYTES(8);
+    NvU64      fbLength NV_ALIGN_BYTES(8);
+    NvU32      fbBusWidth;
+    NvU64      fbioMask NV_ALIGN_BYTES(8);
+    NvU32      fbpMask;
+    NvU64      ltcMask NV_ALIGN_BYTES(8);
+    NvU32      ltsCount;
+    NvU32      subProcessIsolation;
+    NvU64      engineList[NVGPU_VGPU_ENGINE_LIST_MASK_ARRAY_MAX_v27_01] NV_ALIGN_BYTES(8);
+    NvU32      sizeL2Cache;
+    NvBool     poisonFuseEnabled;
+    NvBool     guestManagedHwAlloc;
+    NV_DEVICE_NAME_v13_06 gpuName;
+    NvBool     bSplitVasBetweenServerClientRm;
+    NvU64      maxSupportedPageSize NV_ALIGN_BYTES(8);
+    NvBool     bFlaSupported;
+    NvBool     bPerRunlistChannelRamEnabled;
+    NvBool     bAtsSupported;
+    NvBool     bPerSubCtxheaderSupported;
+    NvBool     bC2CLinkUp;
+    NvBool     bLocalEgmEnabled;
+    NvU32      localEgmPeerId;
+    NvBool     bSelfHostedMode;
+    NvU32      ceFaultMethodBufferDepth;
+    NvU32      pcieGpuLinkCaps;
+    NvU8       grCapsBits[NV0080_CTRL_GR_CAPS_TBL_SIZE_v25_0E];
+    NvU32      gfxpBufferSize[NV2080_CTRL_CMD_GR_CTXSW_PREEMPTION_BIND_BUFFERS_CONTEXT_POOL_v25_0E];
+    NvU32      gfxpBufferAlignment[NV2080_CTRL_CMD_GR_CTXSW_PREEMPTION_BIND_BUFFERS_CONTEXT_POOL_v25_0E];
+    NvU32      grBufferSize[RPC_GR_BUFFER_TYPE_GRAPHICS_MAX_v25_0E];
+    NvU8       jpegCaps[NV0080_CTRL_NVJPG_CAPS_TBL_SIZE_V18_0C];
+} VGPU_STATIC_DATA_v27_01;
+
+typedef VGPU_STATIC_DATA_v27_01 VGPU_STATIC_DATA_v;
 
 typedef struct NV2080_CTRL_CMD_GPU_HANDLE_VF_PRI_FAULT_PARAMS_v18_09
 {
@@ -2685,7 +2804,13 @@ typedef struct NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v25_0A
     NV2080_CTRL_FB_INFO_v1A_15 fbInfoList[NV2080_CTRL_FB_INFO_MAX_LIST_SIZE_24_0A];
 } NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v25_0A;
 
-typedef NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v25_0A NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v;
+typedef struct NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v27_00
+{
+    NvU32      fbInfoListSize;
+    NV2080_CTRL_FB_INFO_v1A_15 fbInfoList[NV2080_CTRL_FB_INFO_MAX_LIST_SIZE_27_00];
+} NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v27_00;
+
+typedef NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v27_00 NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v;
 
 typedef struct NV2080_CTRL_KGR_GET_CTX_BUFFER_PTES_PARAMS_v1A_1A
 {
@@ -3417,7 +3542,22 @@ typedef struct NV2080_CTRL_INTERNAL_DEVICE_INFO_v25_05
     NvU32      groupId;
 } NV2080_CTRL_INTERNAL_DEVICE_INFO_v25_05;
 
-typedef NV2080_CTRL_INTERNAL_DEVICE_INFO_v25_05 NV2080_CTRL_INTERNAL_DEVICE_INFO_v;
+typedef struct NV2080_CTRL_INTERNAL_DEVICE_INFO_v27_05
+{
+    NvU32      faultId;
+    NvU32      instanceId;
+    NvU32      typeEnum;
+    NvU32      resetId;
+    NvU32      devicePriBase;
+    NvU32      isEngine;
+    NvU32      rlEngId;
+    NvU32      runlistPriBase;
+    NvU32      groupId;
+    NvU32      ginTargetId;
+    NvU32      deviceBroadcastPriBase;
+} NV2080_CTRL_INTERNAL_DEVICE_INFO_v27_05;
+
+typedef NV2080_CTRL_INTERNAL_DEVICE_INFO_v27_05 NV2080_CTRL_INTERNAL_DEVICE_INFO_v;
 
 typedef struct NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_v25_05
 {
@@ -3425,7 +3565,13 @@ typedef struct NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_v25_05
     NV2080_CTRL_INTERNAL_DEVICE_INFO_v25_05 deviceInfoTable[NV2080_CTRL_CMD_INTERNAL_DEVICE_INFO_MAX_ENTRIES_V25_05];
 } NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_v25_05;
 
-typedef NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_v25_05 NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_v;
+typedef struct NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_v27_05
+{
+    NvU32      numEntries;
+    NV2080_CTRL_INTERNAL_DEVICE_INFO_v27_05 deviceInfoTable[NV2080_CTRL_CMD_INTERNAL_DEVICE_INFO_MAX_ENTRIES_V25_05];
+} NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_v27_05;
+
+typedef NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_v27_05 NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_v;
 
 typedef struct NV2080_CTRL_INTERNAL_MEMSYS_GET_STATIC_CONFIG_PARAMS_v25_06
 {
@@ -3588,7 +3734,6 @@ uint32_t _get_union_member_index_alloc_object_params_v25_08(NvU32 cmd)
         case NVC4B7_VIDEO_ENCODER:
         case NVC7B7_VIDEO_ENCODER:
         case NVC9B7_VIDEO_ENCODER:
-        case NVCFB7_VIDEO_ENCODER:
                 return 6; // "param_NVD0B7_VIDEO_ENCODER"
 
         case FERMI_VASPACE_A:
@@ -3617,7 +3762,6 @@ uint32_t _get_union_member_index_alloc_object_params_v25_08(NvU32 cmd)
         case NVB8B0_VIDEO_DECODER:
         case NVC9B0_VIDEO_DECODER:
         case NVCDB0_VIDEO_DECODER:
-        case NVCFB0_VIDEO_DECODER:
                 return 12; // "param_NVC4B0_VIDEO_DECODER"
 
         case NVFBC_SW_SESSION:
@@ -3627,7 +3771,6 @@ uint32_t _get_union_member_index_alloc_object_params_v25_08(NvU32 cmd)
         case NVB8D1_VIDEO_NVJPG:
         case NVC9D1_VIDEO_NVJPG:
         case NVCDD1_VIDEO_NVJPG:
-        case NVCFD1_VIDEO_NVJPG:
                 return 14; // "param_NV_NVJPG_ALLOCATION_PARAMETERS"
 
         case NV50_P2P:
@@ -3682,7 +3825,6 @@ uint32_t _get_union_member_index_alloc_object_params_v25_08(NvU32 cmd)
         case NVC6FA_VIDEO_OFA:
         case NVC7FA_VIDEO_OFA:
         case NVB8FA_VIDEO_OFA:
-        case NVCFFA_VIDEO_OFA:
                 return 27; // "param_NVC9FA_VIDEO_OFA"
 
         case NV2081_BINAPI:
@@ -3741,7 +3883,6 @@ uint32_t _get_union_member_index_alloc_object_params_v26_00(NvU32 cmd)
         case NVC4B7_VIDEO_ENCODER:
         case NVC7B7_VIDEO_ENCODER:
         case NVC9B7_VIDEO_ENCODER:
-        case NVCFB7_VIDEO_ENCODER:
                 return 6; // "param_NVD0B7_VIDEO_ENCODER"
 
         case FERMI_VASPACE_A:
@@ -3770,7 +3911,6 @@ uint32_t _get_union_member_index_alloc_object_params_v26_00(NvU32 cmd)
         case NVB8B0_VIDEO_DECODER:
         case NVC9B0_VIDEO_DECODER:
         case NVCDB0_VIDEO_DECODER:
-        case NVCFB0_VIDEO_DECODER:
                 return 12; // "param_NVC4B0_VIDEO_DECODER"
 
         case NVFBC_SW_SESSION:
@@ -3780,7 +3920,6 @@ uint32_t _get_union_member_index_alloc_object_params_v26_00(NvU32 cmd)
         case NVB8D1_VIDEO_NVJPG:
         case NVC9D1_VIDEO_NVJPG:
         case NVCDD1_VIDEO_NVJPG:
-        case NVCFD1_VIDEO_NVJPG:
                 return 14; // "param_NV_NVJPG_ALLOCATION_PARAMETERS"
 
         case NV50_P2P:
@@ -3835,7 +3974,155 @@ uint32_t _get_union_member_index_alloc_object_params_v26_00(NvU32 cmd)
         case NVC6FA_VIDEO_OFA:
         case NVC7FA_VIDEO_OFA:
         case NVB8FA_VIDEO_OFA:
-        case NVCFFA_VIDEO_OFA:
+                return 27; // "param_NVC9FA_VIDEO_OFA"
+
+        case NV2081_BINAPI:
+        case NV2082_BINAPI_PRIVILEGED:
+                return 28; // "param_NV2081_ALLOC_PARAMETERS"
+
+        default:
+                return UNION_UNKNOWN_FIELD_PRINT;
+    }
+}
+
+uint32_t _get_union_member_index_alloc_object_params_v27_00(NvU32 cmd)
+{
+    switch (cmd)
+    {
+        case G82_TESLA:
+        case GT200_TESLA:
+        case GT214_TESLA:
+        case NV50_TESLA:
+        case FERMI_A:
+        case KEPLER_A:
+        case KEPLER_B:
+        case MAXWELL_A:
+        case MAXWELL_B:
+        case PASCAL_A:
+        case PASCAL_B:
+        case VOLTA_A:
+        case TURING_A:
+        case AMPERE_A:
+                return 0; // "param_NV50_TESLA"
+
+        case KEPLER_DMA_COPY_A:
+        case MAXWELL_DMA_COPY_A:
+        case PASCAL_DMA_COPY_A:
+        case VOLTA_DMA_COPY_A:
+        case TURING_DMA_COPY_A:
+        case AMPERE_DMA_COPY_A:
+                return 1; // "param_GT212_DMA_COPY"
+
+        case GF100_MSPPP:
+                return 2; // "param_G98_MSPPP"
+
+        case GF100_DISP_SW:
+                return 3; // "param_GF100_DISP_SW"
+
+        case KEPLER_CHANNEL_GROUP_A:
+                return 4; // "param_KEPLER_CHANNEL_GROUP_A"
+
+        case FERMI_CONTEXT_SHARE_A:
+                return 5; // "param_FERMI_CONTEXT_SHARE_A"
+
+        case NVD0B7_VIDEO_ENCODER:
+        case NVC1B7_VIDEO_ENCODER:
+        case NVC2B7_VIDEO_ENCODER:
+        case NVC3B7_VIDEO_ENCODER:
+        case NVC4B7_VIDEO_ENCODER:
+        case NVC7B7_VIDEO_ENCODER:
+        case NVC9B7_VIDEO_ENCODER:
+                return 6; // "param_NVD0B7_VIDEO_ENCODER"
+
+        case FERMI_VASPACE_A:
+                return 7; // "param_FERMI_VASPACE_A"
+
+        case NVA0B0_VIDEO_DECODER:
+        case NVB0B0_VIDEO_DECODER:
+        case NVC1B0_VIDEO_DECODER:
+        case NVC2B0_VIDEO_DECODER:
+        case NVC3B0_VIDEO_DECODER:
+        case NV95B1_VIDEO_MSVLD:
+                return 8; // "param_NVB0B0_VIDEO_DECODER"
+
+        case NV95B2_VIDEO_MSPDEC:
+                return 9; // "param_NV95B2_VIDEO_MSPDEC"
+
+        case GT200_DEBUGGER:
+                return 10; // "param_NV83DE_ALLOC_PARAMETERS"
+
+        case NVENC_SW_SESSION:
+                return 11; // "param_NVENC_SW_SESSION"
+
+        case NVC4B0_VIDEO_DECODER:
+        case NVC6B0_VIDEO_DECODER:
+        case NVC7B0_VIDEO_DECODER:
+        case NVB8B0_VIDEO_DECODER:
+        case NVC9B0_VIDEO_DECODER:
+        case NVCDB0_VIDEO_DECODER:
+                return 12; // "param_NVC4B0_VIDEO_DECODER"
+
+        case NVFBC_SW_SESSION:
+                return 13; // "param_NVFBC_SW_SESSION"
+
+        case NVC4D1_VIDEO_NVJPG:
+        case NVB8D1_VIDEO_NVJPG:
+        case NVC9D1_VIDEO_NVJPG:
+        case NVCDD1_VIDEO_NVJPG:
+                return 14; // "param_NV_NVJPG_ALLOCATION_PARAMETERS"
+
+        case NV50_P2P:
+                return 15; // "param_NV503B_ALLOC_PARAMETERS"
+
+        case AMPERE_SMC_PARTITION_REF:
+                return 16; // "param_NVC637_ALLOCATION_PARAMETERS"
+
+        case NV01_MEMORY_VIRTUAL:
+                return 17; // "param_NV_MEMORY_VIRTUAL_ALLOCATION_PARAMS"
+
+        case AMPERE_SMC_EXEC_PARTITION_REF:
+                return 18; // "param_NVC638_ALLOCATION_PARAMETERS"
+
+        case NV50_THIRD_PARTY_P2P:
+                return 19; // "param_NV503C_ALLOC_PARAMETERS"
+
+        case NVC670_DISPLAY:
+                return 20; // "param_NVC670_ALLOCATION_PARAMETERS"
+
+        case NVC67B_WINDOW_IMM_CHANNEL_DMA:
+        case NVC67D_CORE_CHANNEL_DMA:
+        case NVC67E_WINDOW_CHANNEL_DMA:
+                return 21; // "param_NV50VAIO_CHANNELDMA_ALLOCATION_PARAMETERS"
+
+        case MAXWELL_PROFILER_CONTEXT:
+                return 22; // "param_NVB1CC_ALLOC_PARAMETERS"
+
+        case MAXWELL_PROFILER_DEVICE:
+                return 23; // "param_NVB2CC_ALLOC_PARAMETERS"
+
+        case MAXWELL_COMPUTE_A:
+        case PASCAL_COMPUTE_A:
+        case VOLTA_COMPUTE_A:
+        case TURING_COMPUTE_A:
+        case AMPERE_COMPUTE_A:
+        case HOPPER_COMPUTE_A:
+        case MAXWELL_COMPUTE_B:
+        case PASCAL_COMPUTE_B:
+        case VOLTA_COMPUTE_B:
+        case AMPERE_COMPUTE_B:
+                return 24; // "param_NV_GR_ALLOCATION_PARAMETERS"
+
+        case UVM_CHANNEL_RETAINER:
+                return 25; // "param_NV_UVM_CHANNEL_RETAINER_ALLOC_PARAMS"
+
+        case NV_MEMORY_FABRIC:
+                return 26; // "param_NV00F8_ALLOCATION_PARAMETERS"
+
+        case NVC9FA_VIDEO_OFA:
+        case NVCDFA_VIDEO_OFA:
+        case NVC6FA_VIDEO_OFA:
+        case NVC7FA_VIDEO_OFA:
+        case NVB8FA_VIDEO_OFA:
                 return 27; // "param_NVC9FA_VIDEO_OFA"
 
         case NV2081_BINAPI:

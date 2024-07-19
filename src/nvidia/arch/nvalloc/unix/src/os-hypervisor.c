@@ -31,7 +31,7 @@
 #include "os/os.h"
 #include "nv.h"
 #include "nv-priv.h"
-#include <nvRmReg.h>
+#include <nvrm_registry.h>
 #include <virtualization/hypervisor/hypervisor.h>
 #include "core/thread_state.h"
 #include "core/locks.h"
@@ -40,7 +40,7 @@
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "osapi.h"
 #include "virtualization/kernel_hostvgpudeviceapi.h"
-#include <objtmr.h>
+#include "gpu/timer/objtmr.h"
 #include "gpu/bif/kernel_bif.h"
 #include "gpu/bus/kern_bus.h"
 #include <nv_ref.h>               // NV_PMC_BOOT_1_VGPU

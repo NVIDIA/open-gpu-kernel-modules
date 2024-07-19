@@ -557,7 +557,11 @@ rmapiLockAcquire(NvU32 flags, NvU32 module)
     NvU64 myPriority = 0;
     NvU64 startWaitTime;
 
+    // Make sure lock has been created
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, g_RmApiLock.pLock != NULL, NV_ERR_NOT_READY);
+
     LOCK_ASSERT_AND_RETURN(!rmapiLockIsOwner());
+
 
     // Ensure that GPU locks are NEVER acquired before the API lock
     LOCK_ASSERT_AND_RETURN(rmGpuLocksGetOwnedMask() == 0);
@@ -982,108 +986,57 @@ rmapiGetClientHandlesFromOSInfo
     NvU32     *pClientHandleListSize
 )
 {
-    OBJSYS *pSys = SYS_GET_INSTANCE();
-
     NvHandle   *pClientHandleList;
     NvU32       clientHandleListSize = 0;
     NvU32       k;
 
-    RmClient **ppClient;
-    RmClient **ppFirstClient;
     RmClient  *pClient;
     RsClient  *pRsClient;
 
-    NvBool clientHandleLookup = pSys->getProperty(pSys, PDB_PROP_SYS_CLIENT_HANDLE_LOOKUP);
+    OsInfoMapSubmap *pSubmap = NULL;
+    OsInfoMapIter it;
+    NvU64 key1 = (NvUPtr)pOSInfo;
 
-    if (!clientHandleLookup)
+    *pClientHandleListSize = 0;
+    *ppClientHandleList = NULL;
+
+    pSubmap = multimapFindSubmap(&g_osInfoList, key1);
+
+    if (pSubmap == NULL)
+        return NV_WARN_NOTHING_TO_DO;
+
+    clientHandleListSize = multimapCountSubmapItems(&g_osInfoList, pSubmap);
+    NV_PRINTF(LEVEL_INFO, "*** Found %d clients for %llx\n", clientHandleListSize, key1);
+
+    if (clientHandleListSize == 0)
     {
-        ppFirstClient = NULL;
-        for (ppClient = serverutilGetFirstClientUnderLock();
-            ppClient;
-            ppClient = serverutilGetNextClientUnderLock(ppClient))
-        {
-            pClient = *ppClient;
-            if (pClient->pOSInfo != pOSInfo)
-            {
-                continue;
-            }
-            clientHandleListSize++;
-
-            if (NULL == ppFirstClient)
-                ppFirstClient = ppClient;
-        }
-
-        if (clientHandleListSize == 0)
-        {
-            *pClientHandleListSize = 0;
-            *ppClientHandleList = NULL;
-            return NV_ERR_INVALID_ARGUMENT;
-        }
-
-        pClientHandleList = portMemAllocNonPaged(clientHandleListSize * sizeof(NvU32));
-        if (pClientHandleList == NULL)
-        {
-            return NV_ERR_NO_MEMORY;
-        }
-
-        *pClientHandleListSize = clientHandleListSize;
-        *ppClientHandleList = pClientHandleList;
-
-        k = 0;
-        for (ppClient = ppFirstClient;
-            ppClient;
-            ppClient = serverutilGetNextClientUnderLock(ppClient))
-        {
-            pClient = *ppClient;
-            pRsClient = staticCast(pClient, RsClient);
-            if (pClient->pOSInfo != pOSInfo)
-            {
-                continue;
-            }
-            pClientHandleList[k++] = pRsClient->hClient;
-
-            if (clientHandleListSize <= k)
-                break;
-        }
+        NV_ASSERT_FAILED("Empty client handle submap");
+        return NV_ERR_INVALID_STATE;
     }
-    else
+
+    pClientHandleList = portMemAllocNonPaged(clientHandleListSize * sizeof(NvU32));
+
+    if (pClientHandleList == NULL)
     {
-        OsInfoMapSubmap *pSubmap = NULL;
-        OsInfoMapIter it;
-        NvU64 key1 = (NvUPtr)pOSInfo;
-        pSubmap = multimapFindSubmap(&g_osInfoList, key1);
-        if (pSubmap != NULL)
-        {
-            clientHandleListSize = multimapCountSubmapItems(&g_osInfoList, pSubmap);
-            NV_PRINTF(LEVEL_INFO, "*** Found %d clients for %llx\n", clientHandleListSize, key1);
-        }
-        if (clientHandleListSize == 0)
-        {
-            *pClientHandleListSize = 0;
-            *ppClientHandleList = NULL;
-            return NV_ERR_INVALID_ARGUMENT;
-        }
-        pClientHandleList = portMemAllocNonPaged(clientHandleListSize * sizeof(NvU32));
-        if (pClientHandleList == NULL)
-        {
-            return NV_ERR_NO_MEMORY;
-        }
-        *pClientHandleListSize = clientHandleListSize;
-        *ppClientHandleList = pClientHandleList;
-        k = 0;
-        it = multimapSubmapIterItems(&g_osInfoList, pSubmap);
-        while(multimapItemIterNext(&it))
-        {
-            pClient = *it.pValue;
-            pRsClient = staticCast(pClient, RsClient);
+        return NV_ERR_NO_MEMORY;
+    }
 
-            NV_CHECK_OR_ELSE_STR(LEVEL_ERROR, pClient->pOSInfo == pOSInfo, "*** OS info mismatch", continue);
+    *pClientHandleListSize = clientHandleListSize;
+    *ppClientHandleList = pClientHandleList;
 
-            pClientHandleList[k++] = pRsClient->hClient;
-            NV_PRINTF(LEVEL_INFO, "*** Found: %x\n", pRsClient->hClient);
-            if (clientHandleListSize <= k)
-                break;
-        }
+    k = 0;
+    it = multimapSubmapIterItems(&g_osInfoList, pSubmap);
+    while(multimapItemIterNext(&it))
+    {
+        NV_ASSERT_OR_ELSE(clientHandleListSize > k, break);
+
+        pClient = *it.pValue;
+        pRsClient = staticCast(pClient, RsClient);
+
+        NV_CHECK_OR_ELSE_STR(LEVEL_ERROR, pClient->pOSInfo == pOSInfo, "*** OS info mismatch", continue);
+
+        pClientHandleList[k++] = pRsClient->hClient;
+        NV_PRINTF(LEVEL_INFO, "*** Found: %x\n", pRsClient->hClient);
     }
 
     return NV_OK;

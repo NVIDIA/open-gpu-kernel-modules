@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -152,13 +152,13 @@ NV_STATUS __nvoc_objCreate_KernelCtxShare(KernelCtxShare**, Dynamic*, NvU32);
 // Wrapper macros
 
 // Dispatch functions
-static inline NV_STATUS kctxshareInit_56cd7a(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct OBJVASPACE *pVAS, struct KernelChannelGroupApi *pKernelChannelGroupApi, NvU64 offset, struct EMEMBLOCK *pBlock) {
+static inline NV_STATUS kctxshareInit_56cd7a(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct OBJVASPACE *pVAS, struct KernelChannelGroupApi *pKernelChannelGroupApi, NvU64 offset, EMEMBLOCK *pBlock) {
     return NV_OK;
 }
 
 
 #ifdef __nvoc_kernel_ctxshare_h_disabled
-static inline NV_STATUS kctxshareInit(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct OBJVASPACE *pVAS, struct KernelChannelGroupApi *pKernelChannelGroupApi, NvU64 offset, struct EMEMBLOCK *pBlock) {
+static inline NV_STATUS kctxshareInit(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct OBJVASPACE *pVAS, struct KernelChannelGroupApi *pKernelChannelGroupApi, NvU64 offset, EMEMBLOCK *pBlock) {
     NV_ASSERT_FAILED_PRECOMP("KernelCtxShare was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }

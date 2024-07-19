@@ -26,7 +26,7 @@
 #include "kernel/virtualization/hypervisor/hypervisor.h"
 #include "gpu/mem_mgr/mem_desc.h"
 
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 
 #include "gpu/bus/kern_bus.h"
 

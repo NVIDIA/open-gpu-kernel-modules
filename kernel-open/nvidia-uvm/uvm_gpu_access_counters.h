@@ -31,7 +31,7 @@ NV_STATUS uvm_parent_gpu_init_access_counters(uvm_parent_gpu_t *parent_gpu);
 void uvm_parent_gpu_deinit_access_counters(uvm_parent_gpu_t *parent_gpu);
 bool uvm_parent_gpu_access_counters_pending(uvm_parent_gpu_t *parent_gpu);
 
-void uvm_gpu_service_access_counters(uvm_gpu_t *gpu);
+void uvm_parent_gpu_service_access_counters(uvm_parent_gpu_t *parent_gpu);
 
 void uvm_parent_gpu_access_counter_buffer_flush(uvm_parent_gpu_t *parent_gpu);
 

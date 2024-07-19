@@ -72,40 +72,99 @@ typedef struct NV_SEMAPHORE_SURFACE_CTRL_REF_MEMORY_PARAMS {
 } NV_SEMAPHORE_SURFACE_CTRL_REF_MEMORY_PARAMS;
 
 /*
+* Currently no known usages that require more than two indices per channel:
+*
+* 1) The channel's associated backend engine's TRAP interrupt.
+* 2) The frontend/GPFIFO's non-stall interrupt.
+*
+* The remaining slots are for futureproofing purposes only.
+*/
+#define NV_SEMAPHORE_SURFACE_CTRL_CMD_BIND_CHANNEL_MAX_INDICES 8
+
+/*
 * NV_SEMAPHORE_SURFACE_CTRL_CMD_BIND_CHANNEL
 *   Associates a channel with the semaphore surface.  All channels which will
 *   wait on or signal semaphores in a semaphore surface should first register
 *   with it to ensure proper event delivery and error handling.
 *
-*   engineMask is a bitfield whose contents should be defined by setting bit
-*   index <n> to '1' if the corresponding engine index will be used.  See
-*   cl2080.h for a list of engine indices.  For example, this would indicate
-*   a channel making use of the engines GR0(graphics/compute), COPY0-COPY9,
-*   and host:
+*   numNotifyIndices is the number of valid entries in notifyIndices.
 *
-*     NvU64 engineMask = (1ULL << NV2080_ENGINE_TYPE_GR0) |
-*                        (1ULL << NV2080_ENGINE_TYPE_COPY0) |
-*                        (1ULL << NV2080_ENGINE_TYPE_COPY1) |
-*                        (1ULL << NV2080_ENGINE_TYPE_COPY2) |
-*                        (1ULL << NV2080_ENGINE_TYPE_COPY3) |
-*                        (1ULL << NV2080_ENGINE_TYPE_COPY4) |
-*                        (1ULL << NV2080_ENGINE_TYPE_COPY5) |
-*                        (1ULL << NV2080_ENGINE_TYPE_COPY6) |
-*                        (1ULL << NV2080_ENGINE_TYPE_COPY7) |
-*                        (1ULL << NV2080_ENGINE_TYPE_COPY8) |
-*                        (1ULL << NV2080_ENGINE_TYPE_COPY9) |
-*                        (1ULL << NV2080_ENGINE_TYPE_HOST);
+*   notifyIndices is an array of notifier indices corresponding to the engines
+*   the caller may use to signal a semaphore in the semaphore surface.  See
+*   cl2080_notifiers.h for a list of notifier indices.  For example, this would
+*   indicate a channel using the GR0(graphics/compute) and FIFO TRAP method
+*   (GPFIFO) notifiers to signal semaphores.
+*
+*     params.hChannel = myChannelHandle;
+*     params.numNotifyIndices = 2;
+*     params.notifyIndex[0] = NV2080_NOTIFIERS_GR0;
+*     params.notifyIndex[1] = NV2080_NOTIFIERS_FIFO_EVENT_MTHD;
+*
+*   If the specified channel will only be used to wait for semaphores, set
+*   numNotifyIndices to 0.
+*
+* RETURNS:
+*   NVOS_STATUS_SUCCESS if the channel and notification indices were
+*       successfully bound.
+*   NVOS_STATUS_ERROR_INVALID_OBJECT_HANDLE if hChannel does not refer an object
+*       in the client.
+*   NVOS_STATUS_ERROR_INVALID_OBJECT_ERROR if hChannel does not refer to a valid
+*       channel object.
+*   NVOS_STATUS_ERROR_INVALID_PARAMETER if numNotifyIndices is greater than
+*       NV_SEMAPHORE_SURFACE_CTRL_CMD_BIND_CHANNEL_MAX_INDICES.
+*   NVOS_STATUS_ERROR_NOT_SUPPORTED if the notifyIndex is not a valid
+*       notification index.
+*   NVOS_STATUS_ERROR_INVALID_STATE if an internal inconsistency is found in the
+*       binding tracking logic.
+*   NV_ERR_NO_MEMORY if memory could not be allocated for internal tracking
+*       structures.
 */
-#define NV_SEMAPHORE_SURFACE_CTRL_CMD_BIND_CHANNEL (0xda0002) /* finn: Evaluated from "(FINN_NV_SEMAPHORE_SURFACE_INTERFACE_ID << 8) | NV_SEMAPHORE_SURFACE_CTRL_BIND_CHANNEL_PARAMS_MESSAGE_ID" */
+#define NV_SEMAPHORE_SURFACE_CTRL_CMD_BIND_CHANNEL             (0xda0002) /* finn: Evaluated from "(FINN_NV_SEMAPHORE_SURFACE_INTERFACE_ID << 8) | NV_SEMAPHORE_SURFACE_CTRL_BIND_CHANNEL_PARAMS_MESSAGE_ID" */
 
 #define NV_SEMAPHORE_SURFACE_CTRL_BIND_CHANNEL_PARAMS_MESSAGE_ID (0x02U)
 
 typedef struct NV_SEMAPHORE_SURFACE_CTRL_BIND_CHANNEL_PARAMS {
-    NvHandle hClient;
-    NvHandle hDevice;
     NvHandle hChannel;
-    NV_DECLARE_ALIGNED(NvU64 engineMask, 8);
+    NvU32    numNotifyIndices;
+    NvU32    notifyIndices[NV_SEMAPHORE_SURFACE_CTRL_CMD_BIND_CHANNEL_MAX_INDICES];
 } NV_SEMAPHORE_SURFACE_CTRL_BIND_CHANNEL_PARAMS;
+
+/*
+* NV_SEMAPHORE_SURFACE_CTRL_CMD_UNBIND_CHANNEL
+*   Dissociate a channel and a semaphore surface.  Before freeing a channel
+*   object, it should be dissociated from all semaphore surfaces to which it has
+*   been bound.
+*
+*   hChannel is a valid channel object handle which has previously been bound
+*   to the semaphore surface.
+*
+*   numNotifyIndices is the number of valid entries in the notifyIndices array.
+*   the hChannel handle.
+*
+*   notifyIndices is the array of notifier indices that was bound to the
+*   semaphore surface with the hChannel handle.
+
+* RETURNS:
+*   NVOS_STATUS_SUCCESS if the channel and notification indices were
+*       successfully unbound.
+*   NVOS_STATUS_ERROR_INVALID_OBJECT_HANDLE if hChannel does not refer an object
+*       in the client.
+*   NVOS_STATUS_ERROR_INVALID_OBJECT_ERROR if hChannel does not refer to a valid
+*       channel object.
+*   NVOS_STATUS_ERROR_INVALID_PARAMETER if numNotifyIndices is greater than
+*       NV_SEMAPHORE_SURFACE_CTRL_CMD_BIND_CHANNEL_MAX_INDICES.
+*   NVOS_STATUS_ERROR_INVALID_STATE if no binding associated with the specified
+*       channel and notification indices is found.
+*/
+#define NV_SEMAPHORE_SURFACE_CTRL_CMD_UNBIND_CHANNEL (0xda0006) /* finn: Evaluated from "(FINN_NV_SEMAPHORE_SURFACE_INTERFACE_ID << 8) | NV_SEMAPHORE_SURFACE_CTRL_UNBIND_CHANNEL_PARAMS_MESSAGE_ID" */
+
+#define NV_SEMAPHORE_SURFACE_CTRL_UNBIND_CHANNEL_PARAMS_MESSAGE_ID (0x06U)
+
+typedef struct NV_SEMAPHORE_SURFACE_CTRL_UNBIND_CHANNEL_PARAMS {
+    NvHandle hChannel;
+    NvU32    numNotifyIndices;
+    NvU32    notifyIndices[NV_SEMAPHORE_SURFACE_CTRL_CMD_BIND_CHANNEL_MAX_INDICES];
+} NV_SEMAPHORE_SURFACE_CTRL_UNBIND_CHANNEL_PARAMS;
 
 /*
 * NV_SEMAPHORE_SURFACE_CTRL_CMD_REGISTER_WAITER

@@ -46,6 +46,7 @@ extern "C" {
 #include "rmapi/rmapi.h"
 #include "rmapi/resource.h"
 #include "gpu/gpu_resource.h"
+#include "gpu/mem_mgr/mem_mgr.h"
 
 #include "class/cl00fe.h"
 #include "ctrl/ctrl00fe.h"
@@ -185,9 +186,11 @@ struct MemoryMapper {
     void (*__memmapperAddAdditionalDependants__)(struct RsClient *, struct MemoryMapper * /*this*/, RsResourceRef *);  // virtual inherited (res) base (gpures)
 
     // Data members
+    API_SECURITY_INFO secInfo;
     struct Subdevice *pSubdevice;
     struct Memory *pNotificationMemory;
-    NvU64 notificationOffset;
+    TRANSFER_SURFACE notificationSurface;
+    NV_MEMORY_MAPPER_NOTIFICATION *pNotification;
     NV00FE_CTRL_OPERATION *pOperationQueue;
     NvU32 operationQueuePut;
     NvU32 operationQueueGet;

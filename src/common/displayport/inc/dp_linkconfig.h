@@ -36,6 +36,7 @@
 #include "ctrl/ctrl0073/ctrl0073specific.h" // NV0073_CTRL_HDCP_VPRIME_SIZE
 #include "displayport.h"
 
+#define NV_SUPPORTED_DP_LINK_RATES__SIZE NV_SUPPORTED_DP1X_LINK_RATES__SIZE
 namespace DisplayPort
 {
     typedef NvU64 LinkRate;
@@ -44,58 +45,36 @@ namespace DisplayPort
     {
     public:
         NvU8 entries;
+        // Store link rate in multipler of 10MBPS to save space
+        NvU16 element[NV_SUPPORTED_DP_LINK_RATES__SIZE];
 
-        virtual void clear() = 0;
-        virtual bool import(NvU8 linkBw)
-        {
-            DP_ASSERT(0);
-            return false;
-        }
-
-        virtual LinkRate getLowerRate(LinkRate rate) = 0;
-        virtual LinkRate getMaxRate() = 0;
-        virtual NvU8 getNumElements() = 0;
-
-        NvU8 getNumLinkRates()
-        {
-            return entries;
-        }
-
-    };
-
-    class LinkRates1x : virtual public LinkRates
-    {
-    public:
-        // Store link rate in multipler of 270MBPS to save space
-        NvU8 element[NV_SUPPORTED_DP1X_LINK_RATES__SIZE];
-
-        LinkRates1x()
+        LinkRates()
         {
             entries = 0;
-            for (int i = 0; i < NV_SUPPORTED_DP1X_LINK_RATES__SIZE; i++)
+            for (int i = 0; i < NV_SUPPORTED_DP_LINK_RATES__SIZE; i++)
             {
                 element[i] = 0;
             }
         }
 
-        virtual void clear()
+        void clear()
         {
             entries = 0;
-            for (int i = 0; i < NV_SUPPORTED_DP1X_LINK_RATES__SIZE; i++)
+            for (int i = 0; i < NV_SUPPORTED_DP_LINK_RATES__SIZE; i++)
             {
                 element[i] = 0;
             }
         }
 
-        virtual bool import(NvU8 linkBw)
+        bool import(NvU16 linkBw)
         {
-            if (!IS_VALID_LINKBW(linkBw))
+            if (!IS_VALID_LINKBW_10M(linkBw))
             {
                 DP_ASSERT(0 && "Unsupported Link Bandwidth");
                 return false;
             }
 
-            if (entries < NV_SUPPORTED_DP1X_LINK_RATES__SIZE)
+            if (entries < NV_SUPPORTED_DP_LINK_RATES__SIZE)
             {
                 element[entries] = linkBw;
                 entries++;
@@ -105,47 +84,49 @@ namespace DisplayPort
                 return false;
         }
 
-        virtual LinkRate getLowerRate(LinkRate rate)
+        LinkRate getLowerRate(LinkRate rate)
         {
             int i;
-            NvU8 linkBw = (NvU8)(rate / DP_LINK_BW_FREQ_MULTI_MBPS);
 
-            if ((entries == 0) || (linkBw <= element[0]))
+            if ((entries == 0) || (rate <= element[0]))
                 return 0;
 
             for (i = entries - 1; i > 0; i--)
             {
-                if (linkBw > element[i])
+                if (rate > element[i])
                     break;
             }
 
-            rate = (LinkRate)element[i] * DP_LINK_BW_FREQ_MULTI_MBPS;
-            return rate;
+            return ((LinkRate)element[i]);
         }
 
-        virtual LinkRate getMaxRate()
+        LinkRate getMaxRate()
         {
             LinkRate rate = 0;
             if ((entries > 0) &&
-                (entries <= NV_SUPPORTED_DP1X_LINK_RATES__SIZE))
+                (entries <= NV_SUPPORTED_DP_LINK_RATES__SIZE))
             {
-                rate = (LinkRate)element[entries - 1] * DP_LINK_BW_FREQ_MULTI_MBPS;
+                rate = (LinkRate)element[entries - 1];
             }
-
             return rate;
         }
-        virtual NvU8 getNumElements()
+
+        NvU8 getNumElements()
         {
-            return NV_SUPPORTED_DP1X_LINK_RATES__SIZE;
+            return NV_SUPPORTED_DP_LINK_RATES__SIZE;
         }
 
+        NvU8 getNumLinkRates()
+        {
+            return entries;
+        }
     };
-
     class LinkPolicy : virtual public Object
     {
     protected:
         bool            bNoFallback;                // No fallback when LT fails
-        LinkRates1x     linkRates;
+        LinkRates       linkRates;
+
     public:
         LinkPolicy() : bNoFallback(false)
         {
@@ -281,8 +262,40 @@ namespace DisplayPort
             return linkTrainCounter;
         }
 
+        // Returns data rate in Bytes per second
+        NvU64 convertLinkRateToDataRate(LinkRate linkRate) const
+        {
+            NvU64 dataRate;
+            dataRate = LINK_RATE_TO_DATA_RATE_8B_10B(linkRate);
+            return dataRate;
+        }
+
+        // Returns minRate in data rate in Bytes per second
+        NvU64 convertMinRateToDataRate() const
+        {
+            NvU64 dataRate;
+            dataRate = DP_LINK_RATE_BITSPS_TO_BYTESPS(OVERHEAD_8B_10B(minRate));
+            return dataRate;
+        }
+
+        NvU64 getTotalDataRate() const
+        {
+            return (convertLinkRateToDataRate(peakRate) * lanes);
+        }
+
         NvU64 linkOverhead(NvU64 rate)
         {
+            if(IS_VALID_LINKBW_10M(rate))
+            {
+                // Converting here so that minRate from 10M is converted to bps
+                rate = DP_LINK_RATE_10M_TO_BPS(rate);
+            }
+            else
+            {
+                // Convert from data rate to bps
+                rate = DATA_RATE_8B_10B_TO_LINK_RATE_BPS(rate);
+            }
+
             if(bEnableFEC)
             {
 
@@ -356,74 +369,89 @@ namespace DisplayPort
 
             if (TotalLinkPBN <= 90)
             {
-                peakRatePossible = peakRate = RBR;
-                minRate = linkOverhead(RBR);
+                peakRatePossible = dp2LinkRate_1_62Gbps;
+                peakRate = peakRatePossible;
+                minRate = linkOverhead(dp2LinkRate_1_62Gbps);
                 lanes = 0; // FAIL
             }
             if (TotalLinkPBN <= 192)
             {
-                peakRatePossible = peakRate = RBR;
-                minRate = linkOverhead(RBR);
+                peakRatePossible = dp2LinkRate_1_62Gbps;
+                peakRate = peakRatePossible;
+                minRate = linkOverhead(dp2LinkRate_1_62Gbps);
                 lanes = 1;
             }
             else if (TotalLinkPBN <= 320)
             {
-                peakRatePossible = peakRate = HBR;
-                minRate = linkOverhead(HBR);
+                peakRatePossible = dp2LinkRate_2_70Gbps;
+                peakRate = peakRatePossible;
+                minRate = linkOverhead(dp2LinkRate_2_70Gbps);
                 lanes = 1;
             }
             else if (TotalLinkPBN <= 384)
             {
-                peakRatePossible = peakRate = RBR;
-                minRate = linkOverhead(RBR);
+                peakRatePossible = dp2LinkRate_1_62Gbps;
+                peakRate = peakRatePossible;
+                minRate = linkOverhead(dp2LinkRate_1_62Gbps);
                 lanes = 2;
             }
             else if (TotalLinkPBN <= 640)
             {
                 // could be HBR2 x 1, but TotalLinkPBN works out same
-                peakRatePossible = peakRate = HBR;
-                minRate = linkOverhead(HBR);
+                peakRatePossible = dp2LinkRate_2_70Gbps;
+                peakRate = peakRatePossible;
+                minRate = linkOverhead(dp2LinkRate_2_70Gbps);
                 lanes = 2;
             }
             else if (TotalLinkPBN <= 768)
             {
-                peakRatePossible = peakRate = RBR;
-                minRate = linkOverhead(RBR);
+                peakRatePossible = dp2LinkRate_1_62Gbps;
+                peakRate = peakRatePossible;
+                minRate = linkOverhead(dp2LinkRate_1_62Gbps);
                 lanes = 4;
             }
             else if (TotalLinkPBN <= 960)
             {
-                peakRatePossible = peakRate = HBR3;
-                minRate = linkOverhead(HBR3);
+                peakRatePossible = dp2LinkRate_8_10Gbps;
+                peakRate = peakRatePossible;
+                minRate = linkOverhead(dp2LinkRate_8_10Gbps);
                 lanes = 1;
             }
             else if (TotalLinkPBN <= 1280)
             {
                 // could be HBR2 x 2
-                peakRatePossible = peakRate = HBR;
-                minRate = linkOverhead(HBR);
+                peakRatePossible = dp2LinkRate_2_70Gbps;
+                peakRate = peakRatePossible;
+                minRate = linkOverhead(dp2LinkRate_2_70Gbps);
                 lanes = 4;
             }
             else if (TotalLinkPBN <= 1920)
             {
-                peakRatePossible = peakRate = HBR3;
-                minRate = linkOverhead(HBR3);
+                peakRatePossible = dp2LinkRate_8_10Gbps;
+                peakRate = peakRatePossible;
+                minRate = linkOverhead(dp2LinkRate_8_10Gbps);
                 lanes = 2;
             }
             else if (TotalLinkPBN <= 2560)
             {
-                peakRatePossible = peakRate = HBR2;
-                minRate = linkOverhead(HBR2);
+                peakRatePossible = dp2LinkRate_5_40Gbps;
+                peakRate = peakRatePossible;
+                minRate = linkOverhead(dp2LinkRate_5_40Gbps);
                 lanes = 4;
             }
             else if (TotalLinkPBN <= 3840)
             {
-                peakRatePossible = peakRate = HBR3;
-                minRate = linkOverhead(HBR3);
+                peakRatePossible = dp2LinkRate_8_10Gbps;
+                peakRate = peakRatePossible;
+                minRate = linkOverhead(dp2LinkRate_8_10Gbps);
                 lanes = 4;
             }
-            else {
-                peakRatePossible = peakRate = RBR, minRate = linkOverhead(RBR), lanes = 0; // FAIL
+            else
+            {
+                peakRatePossible = dp2LinkRate_1_62Gbps;
+                peakRate = peakRatePossible;
+                minRate = linkOverhead(dp2LinkRate_1_62Gbps);
+                lanes = 0; // FAIL
                 DP_ASSERT(0 && "Unknown configuration");
             }
         }
@@ -512,7 +540,7 @@ namespace DisplayPort
         NvU32 slotsForPBN(NvU32 allocatedPBN, bool usable = false)
         {
             NvU64 bytes_per_pbn      = 54 * 1000000 / 64;     // this comes out exact
-            NvU64 bytes_per_timeslot = peakRate * lanes / 64;
+            NvU64 bytes_per_timeslot = getTotalDataRate() / 64;
 
             if (bytes_per_timeslot == 0)
                 return (NvU32)-1;
@@ -532,7 +560,7 @@ namespace DisplayPort
         NvU32 PBNForSlots(NvU32 slots)                      // Rounded down
         {
             NvU64 bytes_per_pbn      = 54 * 1000000 / 64;     // this comes out exact
-            NvU64 bytes_per_timeslot = peakRate * lanes / 64;
+            NvU64 bytes_per_timeslot = getTotalDataRate() / 64;
 
             return (NvU32)(bytes_per_timeslot * slots/ bytes_per_pbn);
         }
@@ -553,8 +581,8 @@ namespace DisplayPort
 
         bool operator< (const LinkConfiguration & right) const
         {
-            NvU64 leftMKBps = peakRate * lanes;
-            NvU64 rightMKBps = right.peakRate * right.lanes;
+            NvU64 leftMKBps = getTotalDataRate();
+            NvU64 rightMKBps = right.getTotalDataRate();
 
             if (leftMKBps == rightMKBps)
             {
@@ -567,10 +595,5 @@ namespace DisplayPort
         }
     };
 
-#define IS_DP2X_UHBR_LINK_DATA_RATE(val)   (((NvU32)(val) == UHBR_2_50GHZ) || \
-                                            ((NvU32)(val) == UHBR_2_70GHZ) || \
-                                            ((NvU32)(val) == UHBR_10_0GHZ) || \
-                                            ((NvU32)(val) == UHBR_13_5GHZ) || \
-                                            ((NvU32)(val) == UHBR_20_0GHZ))
 }
 #endif //INCLUDED_DP_LINKCONFIG_H

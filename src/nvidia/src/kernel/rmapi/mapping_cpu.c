@@ -481,10 +481,10 @@ memMap_IMPL
                 (void) deviceGetByHandle(staticCast(pClient, RsClient),
                                          pMapParams->hDevice, &pDevice);
 
-                rmStatus = kbusMapFbAperture_HAL(pGpu, pKernelBus,
-                                                 pMemDesc, pMapParams->offset,
-                                                 &gpuVirtAddr, &gpuMapLength,
-                                                 busMapFbFlags, pDevice);
+                rmStatus = kbusMapFbApertureSingle(pGpu, pKernelBus,
+                                                   pMemDesc, pMapParams->offset,
+                                                   &gpuVirtAddr, &gpuMapLength,
+                                                   busMapFbFlags, pDevice);
             }
 
             if (rmStatus != NV_OK)
@@ -556,12 +556,12 @@ memMap_IMPL
     _rmMapMemory_pciFail:
             if (!kbusIsBar1PhysicalModeEnabled(pKernelBus))
             {
-                kbusUnmapFbAperture_HAL(pGpu,
-                                        pKernelBus,
-                                        pMemDesc,
-                                        gpuVirtAddr,
-                                        gpuMapLength,
-                                        BUS_MAP_FB_FLAGS_MAP_UNICAST);
+                kbusUnmapFbApertureSingle(pGpu,
+                                          pKernelBus,
+                                          pMemDesc,
+                                          gpuVirtAddr,
+                                          gpuMapLength,
+                                          BUS_MAP_FB_FLAGS_MAP_UNICAST);
     _rmMapMemory_busFail:
                 gpumgrSetBcEnabledStatus(pGpu, bcState);
             }
@@ -739,11 +739,11 @@ memUnmap_IMPL
         if (!kbusIsBar1PhysicalModeEnabled(pKernelBus))
         {
             {
-                kbusUnmapFbAperture_HAL(pGpu, pKernelBus,
-                                        pMemory->pMemDesc,
-                                        pCpuMapping->pPrivate->gpuAddress,
-                                        pCpuMapping->pPrivate->gpuMapLength,
-                                        BUS_MAP_FB_FLAGS_MAP_UNICAST);
+                kbusUnmapFbApertureSingle(pGpu, pKernelBus,
+                                          pMemory->pMemDesc,
+                                          pCpuMapping->pPrivate->gpuAddress,
+                                          pCpuMapping->pPrivate->gpuMapLength,
+                                          BUS_MAP_FB_FLAGS_MAP_UNICAST);
             }
         }
     }

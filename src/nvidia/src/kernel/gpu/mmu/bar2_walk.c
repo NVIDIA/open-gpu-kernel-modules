@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -155,6 +155,15 @@ _bar2WalkCBFillEntries
             portMemSet(&entryValue, 0, sizeof(entryValue));
             break;
         case MMU_WALK_FILL_SPARSE:
+        {
+            // Fake sparse entry is needed for GH100 in CC mode for PDE2-PDE4. Ref: Bug 3341692
+            NvU8 *pFakeSparse = kgmmuGetFakeSparseEntry_HAL(pGpu, pKernelGmmu, pLevelFmt);
+
+            if (pFakeSparse != NULL)
+            {
+                portMemCopy(entryValue.v8, pLevelFmt->entrySize, pFakeSparse, pLevelFmt->entrySize);
+                break;
+            }
             if (pLevelFmt->numSubLevels > 0)
             {
                 // Select sparse entry template based on number of sub-levels.
@@ -173,6 +182,7 @@ _bar2WalkCBFillEntries
                 entryValue = pFam->sparsePte;
             }
             break;
+        }
         // case MMU_WALK_FILL_NV4K not supported on bar2 gmmu
         default:
             NV_ASSERT(0);
@@ -566,7 +576,7 @@ _bar2WalkCBLevelAlloc
     {
             NV_ASSERT(pKernelBus->bar2[gfid].bBootstrap || IS_GFID_VF(gfid) ||
                       KBUS_BAR0_PRAMIN_DISABLED(pGpu) ||
-                      KBUS_CPU_VISIBLE_BAR12_DISABLED(pGpu) ||
+                      kbusIsCpuVisibleBar2Disabled(pKernelBus) ||
                       kbusIsBarAccessBlocked(pKernelBus));
             pdeBase = pKernelBus->bar2[gfid].pdeBase;
             pteBase = pKernelBus->bar2[gfid].pteBase;
@@ -649,7 +659,7 @@ _bar2WalkCBLevelAlloc
             {
                 NV_ASSERT(pKernelBus->bar2[gfid].bBootstrap || IS_GFID_VF(gfid) ||
                           KBUS_BAR0_PRAMIN_DISABLED(pGpu) ||
-                          KBUS_CPU_VISIBLE_BAR12_DISABLED(pGpu) ||
+                          kbusIsCpuVisibleBar2Disabled(pKernelBus) ||
                           kbusIsBarAccessBlocked(pKernelBus));
                 pKernelBus->bar2[gfid].pdeBase = memdescGetPhysAddr(pMemDesc, AT_GPU, 0);
                 pKernelBus->bar2[gfid].pPDEMemDesc = pMemDesc;
@@ -735,7 +745,7 @@ _bar2WalkCBLevelAlloc
             {
                 NV_ASSERT(pKernelBus->bar2[gfid].bBootstrap || IS_GFID_VF(gfid) ||
                           KBUS_BAR0_PRAMIN_DISABLED(pGpu) ||
-                          KBUS_CPU_VISIBLE_BAR12_DISABLED(pGpu) ||
+                          kbusIsCpuVisibleBar2Disabled(pKernelBus) ||
                           kbusIsBarAccessBlocked(pKernelBus));
                 pKernelBus->bar2[gfid].pteBase = memdescGetPhysAddr(pMemDesc,
                                                                     AT_GPU, 0);

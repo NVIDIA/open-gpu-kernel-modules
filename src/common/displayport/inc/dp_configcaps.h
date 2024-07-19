@@ -346,21 +346,21 @@ namespace DisplayPort
             return false;
         }
 
-        // Convert Link Bandwidth read from DPCD register to Linkrate
-        NvU64 mapLinkBandiwdthToLinkrate(NvU32 linkBandwidth)
+        // Convert Link Bandwidth read from DPCD 00001h/2201h 8b10b_MAX_LINK_RATE to 10M convention link rate
+        NvU32 mapLinkBandiwdthToLinkrate(NvU32 linkBandwidth)
         {
             if (FLD_TEST_DRF(_DPCD, _MAX_LINK_BANDWIDTH, _VAL, _1_62_GBPS, linkBandwidth))
-                return RBR;
+                return dp2LinkRate_1_62Gbps;
             else if (FLD_TEST_DRF(_DPCD, _MAX_LINK_BANDWIDTH, _VAL, _2_70_GBPS, linkBandwidth))
-                return HBR;
+                return dp2LinkRate_2_70Gbps;
             else if (FLD_TEST_DRF(_DPCD, _MAX_LINK_BANDWIDTH, _VAL, _5_40_GBPS, linkBandwidth))
-                return HBR2;
+                return dp2LinkRate_5_40Gbps;
             else if (FLD_TEST_DRF(_DPCD14, _MAX_LINK_BANDWIDTH, _VAL, _8_10_GBPS, linkBandwidth))
-                return HBR3;
+                return dp2LinkRate_8_10Gbps;
             else
             {
                 DP_ASSERT(0 && "Unknown link bandwidth. Assuming HBR");
-                return HBR;
+                return dp2LinkRate_2_70Gbps;
             }
         }
 
@@ -395,6 +395,7 @@ namespace DisplayPort
 
         virtual void setDPCDOffline(bool enable) = 0;
         virtual void updateDPCDOffline() = 0;
+        virtual bool auxAccessAvailable() = 0;
 
         virtual void setSupportsESI(bool bIsESISupported) = 0;
         virtual void setLttprSupported(bool isLttprSupported) = 0;
@@ -532,7 +533,8 @@ namespace DisplayPort
         virtual bool readPsrEvtIndicator(vesaPsrEventIndicator *psrErr) = 0;
         virtual bool readPrSinkDebugInfo(panelReplaySinkDebugInfo *prDbgInfo) = 0;
 
-        virtual bool     getDpTunnelBwAllocationSupported() = 0;
+        virtual void     enableDpTunnelingBwAllocationSupport() = 0;
+        virtual bool     isDpTunnelBwAllocationEnabled() = 0;
         virtual bool     getDpTunnelEstimatedBw(NvU8 &estimatedBw) = 0;
         virtual bool     getDpTunnelGranularityMultiplier(NvU8 &granularityMultiplier) = 0;
         virtual TriState getDpTunnelBwRequestStatus() = 0;
@@ -540,6 +542,9 @@ namespace DisplayPort
         virtual bool     hasDpTunnelEstimatedBwChanged() = 0;
         virtual bool     hasDpTunnelBwAllocationCapabilityChanged() = 0;
         virtual bool     writeDpTunnelRequestedBw(NvU8 requestedBw) = 0;
+        virtual bool     clearDpTunnelingBwRequestStatus() = 0;
+        virtual bool     clearDpTunnelingEstimatedBwStatus() = 0;
+        virtual bool     clearDpTunnelingBwAllocationCapStatus() = 0;
 
         virtual ~DPCDHAL() {}
 
@@ -653,7 +658,7 @@ namespace DisplayPort
             struct
             {
                 bool     bIsSupported;
-                bool     bUsb4DriverSupport;
+                bool     bUsb4DriverBwAllocationSupport;
                 bool     bIsPanelReplayOptimizationSupported;
                 bool     bIsBwAllocationSupported;
                 NvU8     maxLaneCount;
@@ -666,7 +671,9 @@ namespace DisplayPort
 
         } caps;
 
-        bool bIsDpTunnelBwAllocationEnabled;
+        // This is set by connectorImpl depending on the request from client/regkey
+        bool bEnableDpTunnelBwAllocationSupport;
+        bool bIsDpTunnelBwAllocationEnabled;                        // This is set to true after we succeed in enabling BW allocation
 
         struct
         {
@@ -748,7 +755,7 @@ namespace DisplayPort
         : bus(bus), timer(timer), bGrantsPostLtRequest(false), uprequestEnable(false),
           upstreamIsSource(false), bMultistream(false), bGpuFECSupported(false),
           bBypassILREdpRevCheck(false), overrideDpcdMaxLinkRate(0),
-          overrideDpcdRev(0), gpuDPSupportedVersions(0), bIsDpTunnelBwAllocationEnabled(false)
+          overrideDpcdRev(0), gpuDPSupportedVersions(0)
         {
             // start with default caps.
             dpcdOffline = true;
@@ -760,7 +767,7 @@ namespace DisplayPort
             caps.revisionMajor = 0x1;
             caps.revisionMinor = 0x1;
             caps.supportsESI = false;
-            caps.maxLinkRate = HBR3;
+            caps.maxLinkRate = dp2LinkRate_8_10Gbps;
             caps.maxLaneCount = 4;
             caps.enhancedFraming = true;
             caps.downStreamPortPresent = true;
@@ -790,6 +797,7 @@ namespace DisplayPort
         }
 
         void updateDPCDOffline();
+        bool auxAccessAvailable();
 
         void setPC2Disabled(bool disabled)
         {
@@ -1402,19 +1410,28 @@ namespace DisplayPort
 
         virtual bool readPrSinkDebugInfo(panelReplaySinkDebugInfo *prDbgInfo);
 
-        bool getDpTunnelBwAllocationSupported()
-        {
-            return false;
-        }
-
+        virtual void     configureDpTunnelBwAllocation();
         virtual bool     getDpTunnelGranularityMultiplier(NvU8 &granularityMultiplier);
         virtual TriState getDpTunnelBwRequestStatus();
         virtual bool     setDpTunnelBwAllocation(bool bEnable);
+
+        virtual void     enableDpTunnelingBwAllocationSupport()
+        {
+            bEnableDpTunnelBwAllocationSupport = true;
+        }
+
+        virtual bool isDpTunnelBwAllocationEnabled()
+        {
+            return bIsDpTunnelBwAllocationEnabled;
+        }
 
         bool getDpTunnelEstimatedBw(NvU8 &estimatedBw);
         bool hasDpTunnelEstimatedBwChanged();
         bool hasDpTunnelBwAllocationCapabilityChanged();
         bool writeDpTunnelRequestedBw(NvU8 requestedBw);
+        bool clearDpTunnelingBwRequestStatus();
+        bool clearDpTunnelingEstimatedBwStatus();
+        bool clearDpTunnelingBwAllocationCapStatus();
 
     };
 

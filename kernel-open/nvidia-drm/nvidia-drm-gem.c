@@ -319,7 +319,7 @@ int nv_drm_gem_identify_object_ioctl(struct drm_device *dev,
     struct nv_drm_gem_object *nv_gem = NULL;
 
     if (!drm_core_check_feature(dev, DRIVER_MODESET)) {
-        return -EINVAL;
+        return -EOPNOTSUPP;
     }
 
     nv_dma_buf = nv_drm_gem_object_dma_buf_lookup(dev, filep, p->handle);

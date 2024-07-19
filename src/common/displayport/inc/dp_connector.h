@@ -416,7 +416,7 @@ namespace DisplayPort
         virtual LinkConfiguration getActiveLinkConfig() = 0;
 
         // Get Current link configuration
-        virtual void getCurrentLinkConfig(unsigned & laneCount, NvU64 & linkRate) = 0;
+        virtual void getCurrentLinkConfig(unsigned &laneCount, NvU64 &linkRate) = 0;
 
         // Get the clock calculation supported by the panel
         virtual unsigned getPanelDataClockMultiplier() = 0;
@@ -669,9 +669,10 @@ namespace DisplayPort
         // Compound queries and notify attaches(link train) would use the preferred link config unless it is reset again.
         // (not advisable to leave a preferred link config always ON).
         //
-        virtual bool setPreferredLinkConfig(LinkConfiguration & lc, bool commit,
+        virtual bool setPreferredLinkConfig(LinkConfiguration &lc, bool commit,
                                             bool force = false,
-                                            LinkTrainingType forceTrainType = NORMAL_LINK_TRAINING) = 0;
+                                            LinkTrainingType forceTrainType = NORMAL_LINK_TRAINING,
+                                            bool forcePreferredLinkConfig = false) = 0;
 
         //
         // Resets the preferred link config and lets the library go back to default LT policy.
@@ -702,7 +703,7 @@ namespace DisplayPort
         virtual bool getHDCPAbortCodesDP12(NvU32 &hdcpAbortCodesDP12) = 0;
 
         virtual bool getOuiSink(unsigned &ouiId, unsigned char * modelName,
-                                size_t modelNameBufferSize, NvU8 & chipRevision) = 0;
+                                size_t modelNameBufferSize, NvU8 &chipRevision) = 0;
 
         virtual bool getIgnoreSourceOuiHandshake() = 0;
         virtual void setIgnoreSourceOuiHandshake(bool bIgnore) = 0;
@@ -750,6 +751,7 @@ namespace DisplayPort
 
     virtual bool readPrSinkDebugInfo(panelReplaySinkDebugInfo *prDbgInfo) = 0;
     virtual void enableDpTunnelingBwAllocationSupport() = 0;
+    virtual bool willLinkSupportModeSST(const LinkConfiguration &linkConfig, const ModesetInfo &modesetInfo) = 0;
 
     protected:
            virtual ~Connector() {}

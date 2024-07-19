@@ -29,7 +29,7 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mmu/kern_gmmu.h"
 
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 
 #include "vgpu/rpc.h"
 #include "gpu/bus/kern_bus.h"
@@ -1285,7 +1285,7 @@ kfifoPreAllocUserD_GM107
         else if ((bCoherentCpuMapping &&
                  memdescGetAddressSpace(pUserdInfo->userdPhysDesc[currentGpuInst]) == ADDR_SYSMEM &&
                  !kbusIsReflectedMappingAccessAllowed(pKernelBus)) ||
-                 pGpu->getProperty(pGpu, PDB_PROP_GPU_BAR1_BAR2_DISABLED))
+                 kbusIsBar1Disabled(pKernelBus))
         {
             NV_PRINTF(LEVEL_INFO, "Mapping USERD with coherent link (USERD in SYSMEM).\n");
 
@@ -1306,9 +1306,9 @@ kfifoPreAllocUserD_GM107
                 goto fail;
             }
             // Now BAR1 map it
-            status = kbusMapFbAperture_HAL(pGpu, pKernelBus, pUserdInfo->userdPhysDesc[currentGpuInst], 0,
-                                           &pUserdInfo->userdBar1MapStartOffset,
-                                           &temp, mapFlags | BUS_MAP_FB_FLAGS_PRE_INIT, NULL);
+            status = kbusMapFbApertureSingle(pGpu, pKernelBus, pUserdInfo->userdPhysDesc[currentGpuInst], 0,
+                                             &pUserdInfo->userdBar1MapStartOffset,
+                                             &temp, mapFlags | BUS_MAP_FB_FLAGS_PRE_INIT, NULL);
 
             if (status != NV_OK)
             {
@@ -1340,7 +1340,7 @@ kfifoPreAllocUserD_GM107
         else if ((bCoherentCpuMapping &&
                  memdescGetAddressSpace(pUserdInfo->userdPhysDesc[currentGpuInst]) == ADDR_SYSMEM &&
                  !kbusIsReflectedMappingAccessAllowed(pKernelBus)) ||
-                 pGpu->getProperty(pGpu, PDB_PROP_GPU_BAR1_BAR2_DISABLED))
+                 kbusIsBar1Disabled(pKernelBus))
         {
             status = osMapPciMemoryKernelOld(pGpu,
                                              pUserdInfo->userdBar1MapStartOffset,
@@ -1449,11 +1449,11 @@ kfifoFreePreAllocUserD_GM107
                 // Unmap in UC for each GPU with a pKernelFifo userd
                 // reference mapped through bar1
                 //
-                kbusUnmapFbAperture_HAL(pGpu, pKernelBus,
-                                        pUserdInfo->userdPhysDesc[currentGpuInst],
-                                        pUserdInfo->userdBar1MapStartOffset,
-                                        pUserdInfo->userdBar1MapSize,
-                                        BUS_MAP_FB_FLAGS_MAP_UNICAST | BUS_MAP_FB_FLAGS_PRE_INIT);
+                kbusUnmapFbApertureSingle(pGpu, pKernelBus,
+                                          pUserdInfo->userdPhysDesc[currentGpuInst],
+                                          pUserdInfo->userdBar1MapStartOffset,
+                                          pUserdInfo->userdBar1MapSize,
+                                          BUS_MAP_FB_FLAGS_MAP_UNICAST | BUS_MAP_FB_FLAGS_PRE_INIT);
                 pUserdInfo->userdBar1RefMask &= (~NVBIT(pGpu->gpuInstance));
             }
 

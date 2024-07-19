@@ -7,7 +7,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_rmconfig_util.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102
 //
 
 #ifndef _G_RMCFG_UTIL_H_
@@ -61,6 +61,14 @@ NvBool rmcfg_IsGH100(POBJGPU pGpu);
 NvBool rmcfg_IsGH100orBetter(POBJGPU pGpu);
 NvBool rmcfg_IsGH10X(POBJGPU pGpu);
 NvBool rmcfg_IsGH10XorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGH202orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGH20XorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGB100(POBJGPU pGpu);
+NvBool rmcfg_IsGB100orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGB102(POBJGPU pGpu);
+NvBool rmcfg_IsGB102orBetter(POBJGPU pGpu);
+NvBool rmcfg_IsGB10X(POBJGPU pGpu);
+NvBool rmcfg_IsGB10XorBetter(POBJGPU pGpu);
 NvBool rmcfg_IsDISPLAYLESS_CLASSIC_GPUS(POBJGPU pGpu);
 NvBool rmcfg_IsDISPLAYLESS_CLASSIC_GPUSorBetter(POBJGPU pGpu);
 NvBool rmcfg_IsdTURING(POBJGPU pGpu);
@@ -77,6 +85,10 @@ NvBool rmcfg_IsdHOPPER(POBJGPU pGpu);
 NvBool rmcfg_IsdHOPPERorBetter(POBJGPU pGpu);
 NvBool rmcfg_IsHOPPER_CLASSIC_GPUS(POBJGPU pGpu);
 NvBool rmcfg_IsHOPPER_CLASSIC_GPUSorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsdBLACKWELL(POBJGPU pGpu);
+NvBool rmcfg_IsdBLACKWELLorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsBLACKWELL_CLASSIC_GPUS(POBJGPU pGpu);
+NvBool rmcfg_IsBLACKWELL_CLASSIC_GPUSorBetter(POBJGPU pGpu);
 
 
 #endif  // _G_RMCFG_UTIL_H_

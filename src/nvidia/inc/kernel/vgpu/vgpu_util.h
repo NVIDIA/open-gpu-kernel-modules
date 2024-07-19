@@ -41,6 +41,7 @@ NV_STATUS vgpuAllocSysmemPfnBitMapNode(OBJGPU *pGpu, VGPU_SYSMEM_PFN_BITMAP_NODE
 NvU64 vgpuGspSysmemPfnMakeBufferAddress(MEMORY_DESCRIPTOR *pMemDesc,  NvU64 pfn);
 void vgpuFreeSysmemPfnBitMapNode(VGPU_SYSMEM_PFN_BITMAP_NODE_P node);
 NV_STATUS vgpuUpdateSysmemPfnBitMap(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc, NvBool bAlloc);
+NV_STATUS vgpuUpdateGuestSysmemPfnBitMap(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc, NvBool bAlloc);
 
 static inline NvBool vgpuIsGuestManagedHwAlloc(OBJGPU *pGpu)
 {

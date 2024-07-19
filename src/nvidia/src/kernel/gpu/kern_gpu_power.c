@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -388,6 +388,20 @@ gpuIsOnTheBus_IMPL(OBJGPU *pGpu)
     NvU16   vendorId, deviceId;
     void   *handle;
 
+    if (RMCFG_FEATURE_PLATFORM_GSP)
+    {
+        //
+        // TODO: This is a temporary WAR. GSP-RM should not be doing any config access,
+        //       especially for Blackwell where config mirror is no longer available.
+        //       This functionality is just to verify if GPU is on the bus,
+        //       so we can either assume that in case of physical RM calling this function,
+        //       GPU will always be on the bus or we need to figure out a different way
+        //       to verify the same. To reach to any conclusion we need further discussion and
+        //       analysis, hence adding this WAR temporarily. Bug 4315004.
+        //
+        return NV_TRUE;
+    }
+
     handle = osPciInitHandle(domain, bus, device, 0, &vendorId, &deviceId);
     return (handle != NULL);
 }
@@ -604,7 +618,8 @@ _gpuForceGc6inD3Hot(OBJGPU *pGpu, NV2080_CTRL_GC6_EXIT_PARAMS *pParams)
     }
 
     // The power remains is necessary for d3hot
-    if (!gpuCompletedGC6PowerOff_HAL(pGpu))
+    if (!gpuCompletedGC6PowerOff_HAL(pGpu)
+        )
     {
         pParams->params.bIsRTD3HotTransition = NV_TRUE;
 

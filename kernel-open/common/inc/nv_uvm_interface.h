@@ -1463,29 +1463,6 @@ NV_STATUS nvUvmInterfacePagingChannelPushStream(UvmGpuPagingChannelHandle channe
                                                 NvU32 methodStreamSize);
 
 /*******************************************************************************
-    nvUvmInterfaceKeyRotationChannelDisable
-
-    This function notifies RM that the given channels are idle.
-
-    This function is called after RM has notified UVM that keys need to be rotated.
-    When called RM will disable the channels, rotate their keys, and then re-enable
-    the channels.
-
-    Locking: This function acquires an API and GPU lock.
-    Memory : This function dynamically allocates memory.
-
-    Arguments:
-        channelList[IN]      - An array of channel handles whose channels are idle.
-        channelListCount[IN] - Number of channels in channelList. Its value must be
-                               greater than 0.
-
-    Error codes:
-      NV_ERR_INVALID_ARGUMENT - channelList is NULL or channeListCount is 0.
-*/
-NV_STATUS nvUvmInterfaceKeyRotationChannelDisable(uvmGpuChannelHandle channelList[],
-                                                  NvU32 channeListCount);
-
-/*******************************************************************************
     Cryptography Services Library (CSL) Interface
 */
 
@@ -1528,15 +1505,21 @@ NV_STATUS nvUvmInterfaceCslInitContext(UvmCslContext *uvmCslContext,
 void nvUvmInterfaceDeinitCslContext(UvmCslContext *uvmCslContext);
 
 /*******************************************************************************
-    nvUvmInterfaceCslUpdateContext
+    nvUvmInterfaceCslRotateKey
 
-    Updates contexts after a key rotation event and can only be called once per
-    key rotation event. Following a key rotation event, and before
-    nvUvmInterfaceCslUpdateContext is called, data encrypted by the GPU with the
-    previous key can be decrypted with nvUvmInterfaceCslDecrypt.
+    Disables channels and rotates keys.
 
-    Locking: This function acquires an API lock.
-    Memory : This function does not dynamically allocate memory.
+    This function disables channels and rotates associated keys. The channels
+    associated with the given CSL contexts must be idled before this function is
+    called. To trigger key rotation all allocated channels for a given key must
+    be present in the list. If the function returns successfully then the CSL
+    contexts have been updated with the new key.
+
+    Locking: This function attempts to acquire the GPU lock. In case of failure
+             to acquire the return code is NV_ERR_STATE_IN_USE. The caller must
+             guarantee that no CSL function, including this one, is invoked
+             concurrently with the CSL contexts in contextList.
+    Memory : This function dynamically allocates memory.
 
     Arguments:
         contextList[IN/OUT]  - An array of pointers to CSL contexts.
@@ -1544,9 +1527,13 @@ void nvUvmInterfaceDeinitCslContext(UvmCslContext *uvmCslContext);
                                must be greater than 0.
     Error codes:
         NV_ERR_INVALID_ARGUMENT - contextList is NULL or contextListCount is 0.
+        NV_ERR_STATE_IN_USE     - Unable to acquire lock / resource. Caller
+                                  can retry at a later time.
+        NV_ERR_GENERIC          - A failure other than _STATE_IN_USE occurred
+                                  when attempting to acquire a lock.
 */
-NV_STATUS nvUvmInterfaceCslUpdateContext(UvmCslContext *contextList[],
-                                         NvU32 contextListCount);
+NV_STATUS nvUvmInterfaceCslRotateKey(UvmCslContext *contextList[],
+                                     NvU32 contextListCount);
 
 /*******************************************************************************
     nvUvmInterfaceCslRotateIv
@@ -1554,17 +1541,13 @@ NV_STATUS nvUvmInterfaceCslUpdateContext(UvmCslContext *contextList[],
     Rotates the IV for a given channel and operation.
 
     This function will rotate the IV on both the CPU and the GPU.
-    Outstanding messages that have been encrypted by the GPU should first be
-    decrypted before calling this function with operation equal to
-    UVM_CSL_OPERATION_DECRYPT. Similarly, outstanding messages that have been
-    encrypted by the CPU should first be decrypted before calling this function
-    with operation equal to UVM_CSL_OPERATION_ENCRYPT. For a given operation
-    the channel must be idle before calling this function. This function can be
-    called regardless of the value of the IV's message counter.
+    For a given operation the channel must be idle before calling this function.
+    This function can be called regardless of the value of the IV's message counter.
 
-    Locking: This function attempts to acquire the GPU lock.
-             In case of failure to acquire the return code
-             is NV_ERR_STATE_IN_USE.
+    Locking: This function attempts to acquire the GPU lock. In case of failure to
+             acquire the return code is NV_ERR_STATE_IN_USE. The caller must guarantee
+             that no CSL function, including this one, is invoked concurrently with
+             the same CSL context.
     Memory : This function does not dynamically allocate memory.
 
 Arguments:
@@ -1598,8 +1581,8 @@ NV_STATUS nvUvmInterfaceCslRotateIv(UvmCslContext *uvmCslContext,
     However, it is optional. If it is NULL, the next IV in line will be used.
 
     Locking: This function does not acquire an API or GPU lock.
-             If called concurrently in different threads with the same UvmCslContext
-             the caller must guarantee exclusion.
+             The caller must guarantee that no CSL function, including this one,
+             is invoked concurrently with the same CSL context.
     Memory : This function does not dynamically allocate memory.
 
 Arguments:
@@ -1635,9 +1618,14 @@ NV_STATUS nvUvmInterfaceCslEncrypt(UvmCslContext *uvmCslContext,
     maximized when the input and output buffers are 16-byte aligned. This is
     natural alignment for AES block.
 
+    During a key rotation event the previous key is stored in the CSL context.
+    This allows data encrypted by the GPU to be decrypted with the previous key.
+    The keyRotationId parameter identifies which key is used. The first key rotation
+    ID has a value of 0 that increments by one for each key rotation event.
+
     Locking: This function does not acquire an API or GPU lock.
-             If called concurrently in different threads with the same UvmCslContext
-             the caller must guarantee exclusion.
+             The caller must guarantee that no CSL function, including this one,
+             is invoked concurrently with the same CSL context.
     Memory : This function does not dynamically allocate memory.
 
     Arguments:
@@ -1647,6 +1635,8 @@ NV_STATUS nvUvmInterfaceCslEncrypt(UvmCslContext *uvmCslContext,
         decryptIv[IN]         - IV used to decrypt the ciphertext. Its value can either be given by
                                 nvUvmInterfaceCslIncrementIv, or, if NULL, the CSL context's
                                 internal counter is used.
+        keyRotationId[IN]     - Specifies the key that is used for decryption.
+                                A value of NV_U32_MAX specifies the current key.
         inputBuffer[IN]       - Address of ciphertext input buffer.
         outputBuffer[OUT]     - Address of plaintext output buffer.
         addAuthData[IN]       - Address of the plaintext additional authenticated data used to
@@ -1667,6 +1657,7 @@ NV_STATUS nvUvmInterfaceCslDecrypt(UvmCslContext *uvmCslContext,
                                    NvU32 bufferSize,
                                    NvU8 const *inputBuffer,
                                    UvmCslIv const *decryptIv,
+                                   NvU32 keyRotationId,
                                    NvU8 *outputBuffer,
                                    NvU8 const *addAuthData,
                                    NvU32 addAuthDataSize,
@@ -1681,8 +1672,8 @@ NV_STATUS nvUvmInterfaceCslDecrypt(UvmCslContext *uvmCslContext,
     undefined behavior.
 
     Locking: This function does not acquire an API or GPU lock.
-             If called concurrently in different threads with the same UvmCslContext
-             the caller must guarantee exclusion.
+             The caller must guarantee that no CSL function, including this one,
+             is invoked concurrently with the same CSL context.
     Memory : This function does not dynamically allocate memory.
 
     Arguments:
@@ -1710,8 +1701,8 @@ NV_STATUS nvUvmInterfaceCslSign(UvmCslContext *uvmCslContext,
 
     Locking: This function does not acquire an API or GPU lock.
     Memory : This function does not dynamically allocate memory.
-             If called concurrently in different threads with the same UvmCslContext
-             the caller must guarantee exclusion.
+             The caller must guarantee that no CSL function, including this one,
+             is invoked concurrently with the same CSL context.
 
     Arguments:
         uvmCslContext[IN/OUT] - The CSL context.
@@ -1736,8 +1727,8 @@ NV_STATUS nvUvmInterfaceCslQueryMessagePool(UvmCslContext *uvmCslContext,
     the returned IV can be used in nvUvmInterfaceCslDecrypt.
 
     Locking: This function does not acquire an API or GPU lock.
-             If called concurrently in different threads with the same UvmCslContext
-             the caller must guarantee exclusion.
+             The caller must guarantee that no CSL function, including this one,
+             is invoked concurrently with the same CSL context.
     Memory : This function does not dynamically allocate memory.
 
 Arguments:
@@ -1759,13 +1750,13 @@ NV_STATUS nvUvmInterfaceCslIncrementIv(UvmCslContext *uvmCslContext,
                                        UvmCslIv *iv);
 
 /*******************************************************************************
-    nvUvmInterfaceCslLogExternalEncryption
+    nvUvmInterfaceCslLogEncryption
 
-    Checks and logs information about non-CSL encryptions, such as those that
-    originate from the GPU.
+    Checks and logs information about encryptions associated with the given
+    CSL context.
 
     For contexts associated with channels, this function does not modify elements of
-    the UvmCslContext and must be called for each external encryption invocation.
+    the UvmCslContext, and must be called for every CPU/GPU encryption.
 
     For the context associated with fault buffers, bufferSize can encompass multiple
     encryption invocations, and the UvmCslContext will be updated following a key
@@ -1775,19 +1766,25 @@ NV_STATUS nvUvmInterfaceCslIncrementIv(UvmCslContext *uvmCslContext,
 
     Locking: This function does not acquire an API or GPU lock.
     Memory : This function does not dynamically allocate memory.
-             If called concurrently in different threads with the same UvmCslContext
-             the caller must guarantee exclusion.
+             The caller must guarantee that no CSL function, including this one,
+             is invoked concurrently with the same CSL context.
 
     Arguments:
         uvmCslContext[IN/OUT] - The CSL context.
-        bufferSize[OUT]       - The size of the buffer(s) encrypted by the
+        operation[IN]         - If the CSL context is associated with a fault
+                                buffer, this argument is ignored. If it is
+                                associated with a channel, it must be either
+                                - UVM_CSL_OPERATION_ENCRYPT
+                                - UVM_CSL_OPERATION_DECRYPT
+        bufferSize[IN]        - The size of the buffer(s) encrypted by the
                                 external entity in units of bytes.
 
     Error codes:
-      NV_ERR_INSUFFICIENT_RESOURCES - The device encryption would cause a counter
+      NV_ERR_INSUFFICIENT_RESOURCES - The encryption would cause a counter
                                       to overflow.
 */
-NV_STATUS nvUvmInterfaceCslLogExternalEncryption(UvmCslContext *uvmCslContext,
-                                                 NvU32 bufferSize);
+NV_STATUS nvUvmInterfaceCslLogEncryption(UvmCslContext *uvmCslContext,
+                                         UvmCslOperation operation,
+                                         NvU32 bufferSize);
 
 #endif // _NV_UVM_INTERFACE_H_

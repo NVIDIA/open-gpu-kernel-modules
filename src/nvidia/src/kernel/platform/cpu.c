@@ -593,7 +593,6 @@ void RmInitCpuInfo(void)
     OBJSYS    *pSys = SYS_GET_INSTANCE();
     CPUIDINFO  cpuinfo;
     NvU32      eax, ebx, ecx, edx;
-    OBJOS     *pOS = SYS_GET_OS(pSys);
 
     // Do this only once.
     if (pSys->cpuInfo.bInitialized)
@@ -617,13 +616,13 @@ void RmInitCpuInfo(void)
 
     // Get CPUID stuff for all processors.  We will figure out what to do with it later.
 
-    // if pOS->osNv_cpuid returns 0, then this cpu does not support cpuid instruction
+    // if osNv_cpuid returns 0, then this cpu does not support cpuid instruction
     // We just worry about this on the first call...
-    if ( ! pOS->osNv_cpuid(pOS, 0, 0, &eax, &cpuinfo.Foundry.StrID[0],
+    if ( ! osNv_cpuid(0, 0, &eax, &cpuinfo.Foundry.StrID[0],
             &cpuinfo.Foundry.StrID[2], &cpuinfo.Foundry.StrID[1]))
         goto Exit;
 
-    pOS->osNv_cpuid(pOS, 1, 0, &eax, &ebx, &ecx, &edx);
+    osNv_cpuid(1, 0, &eax, &ebx, &ecx, &edx);
     cpuinfo.Family = (NvU16)((eax >> 8) & 0x0F);
     cpuinfo.ExtFamily = (NvU16)((eax >> 20) & 0xFF);
     if (cpuinfo.Family != 0xF)
@@ -680,7 +679,7 @@ void RmInitCpuInfo(void)
             // is prepared to switch the additional SSE FP state for us.
             // CPU_STD_FXSR indicates that CR4.OSFXSR is valid.
             check_osfxsr = ((cpuinfo.StandardFeatures & CPU_STD_FXSR) != 0) &&
-                           ((pOS->osNv_rdcr4(pOS) & 0x200) != 0);
+                           ((osNv_rdcr4() & 0x200) != 0);
 
             // For NV0000_CTRL_SYSTEM_CPU_CAP_AVX bit, we need:
             // - CPU_STD2_OSXSAVE - CR4.OSXSAVE is valid
@@ -688,8 +687,8 @@ void RmInitCpuInfo(void)
             //     specified by XCR0
             // - XCR0 - bits 1 and 2 indicate SSE and AVX support respectively
             check_osxsave = ((ecx & CPU_STD2_OSXSAVE) != 0) &&
-                            ((pOS->osNv_rdcr4(pOS) & (1<<18)) != 0) &&
-                            ((pOS->osNv_rdxcr0(pOS) & 0x6) != 0);
+                            ((osNv_rdcr4() & (1<<18)) != 0) &&
+                            ((osNv_rdxcr0() & 0x6) != 0);
             if(check_osfxsr)
             {
                 pSys->cpuInfo.caps |= NV0000_CTRL_SYSTEM_CPU_CAP_SSE;
@@ -721,7 +720,7 @@ void RmInitCpuInfo(void)
         }
     }
 
-    if (pOS->osNv_cpuid(pOS, 7, 0, &eax, &ebx, &ecx, &edx))
+    if (osNv_cpuid(7, 0, &eax, &ebx, &ecx, &edx))
     {
         if (ebx & CPU_EXT2_ERMS)
         {
@@ -734,9 +733,9 @@ void RmInitCpuInfo(void)
         pSys->cpuInfo.clock = osGetCpuFrequency();
 
     // Get the extended features (if they exist).
-    if (pOS->osNv_cpuid(pOS, 0x80000000, 0, &eax, &ebx, &ecx, &edx) && eax >= 0x80000001)
+    if (osNv_cpuid(0x80000000, 0, &eax, &ebx, &ecx, &edx) && eax >= 0x80000001)
     {
-        if (pOS->osNv_cpuid(pOS, 0x80000001, 0, &eax, &ebx, &ecx, &edx))
+        if (osNv_cpuid(0x80000001, 0, &eax, &ebx, &ecx, &edx))
         {
             cpuinfo.ExtendedFeatures = edx;
             // if 8 bit brandId is 0
@@ -823,7 +822,6 @@ void RmInitCpuInfo(void)
 static void
 getCpuCounts(OBJSYS *pSys, PCPUIDINFO pCpuidInfo)
 {
-    OBJOS *pOS = SYS_GET_OS(pSys);
     NvU32  numPhysicalCpus, numLogicalCpus, maxLogicalCpus;
     NvU32  eax = 0;
     NvU32  ebx = 0;
@@ -855,17 +853,17 @@ getCpuCounts(OBJSYS *pSys, PCPUIDINFO pCpuidInfo)
     {
         NvBool cpuHasLeafB = NV_FALSE;
 
-        pOS->osNv_cpuid(pOS, 0, 0, &eax, &ebx, &ecx, &edx);
+        osNv_cpuid(0, 0, &eax, &ebx, &ecx, &edx);
         if (eax >= 0xB)
         {
-            pOS->osNv_cpuid(pOS, 0xB, 0, &eax, &ebx, &ecx, &edx);
+            osNv_cpuid(0xB, 0, &eax, &ebx, &ecx, &edx);
             if (ebx != 0)
             {
                 cpuHasLeafB = NV_TRUE;
             }
         }
 
-        pOS->osNv_cpuid(pOS, 1, 0, &eax, &ebx, &ecx, &edx);
+        osNv_cpuid(1, 0, &eax, &ebx, &ecx, &edx);
 
         if (edx & INTEL_HT_BIT)
         {
@@ -873,20 +871,20 @@ getCpuCounts(OBJSYS *pSys, PCPUIDINFO pCpuidInfo)
 
             if (cpuHasLeafB)
             {
-                pOS->osNv_cpuid(pOS, 0xB, 0, &eax, &ebx, &ecx, &edx);
+                osNv_cpuid(0xB, 0, &eax, &ebx, &ecx, &edx);
                 CpuHT = (ebx & INTEL_LOGICAL_CNT_LEAFB);
-                pOS->osNv_cpuid(pOS, 0xB, 1, &eax, &ebx, &ecx, &edx);
+                osNv_cpuid(0xB, 1, &eax, &ebx, &ecx, &edx);
                 maxLogicalCpus = (ebx & INTEL_LOGICAL_CNT_LEAFB);
                 numPhysicalCpus = maxLogicalCpus/CpuHT;
             }
             else
             {
-                pOS->osNv_cpuid(pOS, 0, 0, &eax, &ebx, &ecx, &edx);
+                osNv_cpuid(0, 0, &eax, &ebx, &ecx, &edx);
                 if (eax >=4)
                 {
-                    pOS->osNv_cpuid(pOS, 4, 0, &eax, &ebx, &ecx, &edx);
+                    osNv_cpuid(4, 0, &eax, &ebx, &ecx, &edx);
                     numPhysicalCpus = ((eax & INTEL_CORE_CNT) >> 26) + 1;
-                    pOS->osNv_cpuid(pOS, 1, 0, &eax, &ebx, &ecx, &edx);
+                    osNv_cpuid(1, 0, &eax, &ebx, &ecx, &edx);
                     maxLogicalCpus = (ebx & INTEL_LOGICAL_CNT) >> 16;
                     CpuHT = maxLogicalCpus/numPhysicalCpus;
                 }
@@ -903,7 +901,7 @@ getCpuCounts(OBJSYS *pSys, PCPUIDINFO pCpuidInfo)
     }
     else if(IS_AMD(pCpuidInfo->Foundry))
     {
-        pOS->osNv_cpuid(pOS, 1, 0, &eax, &ebx, &ecx, &edx);
+        osNv_cpuid(1, 0, &eax, &ebx, &ecx, &edx);
         if( edx & AMD_HT_BIT )
         {
             maxLogicalCpus = (ebx & AMD_LOGICAL_CNT) >> 16;
@@ -941,8 +939,6 @@ static NvBool getEmbeddedProcessorName(char *pName, NvU32 size)
 {
     NvU32       op, eax, ebx, ecx, edx;
     char       *p       = pName;
-    OBJSYS     *pSys    = SYS_GET_INSTANCE();
-    OBJOS      *pOS     = SYS_GET_OS(pSys);
     const NvU32 maxSize = 48; // max 48 bytes on x86 CPUs
 
     NV_ASSERT_OR_RETURN(size >= maxSize, 0);
@@ -950,12 +946,12 @@ static NvBool getEmbeddedProcessorName(char *pName, NvU32 size)
     pName[size > maxSize ? maxSize : size-1] = 0;  // Make sure it has a zero at the end.
 
     // Is there is a enough data?  If not bail.
-    if (pOS->osNv_cpuid(pOS, 0x80000000, 0, &eax, &ebx, &ecx, &edx) == 0 || eax < 0x80000004)
+    if (osNv_cpuid(0x80000000, 0, &eax, &ebx, &ecx, &edx) == 0 || eax < 0x80000004)
         return NV_FALSE;
 
     // Yes, get 48 bytes of CPU name.
     for (op = 0x80000002; op < 0x80000005; op++, p += 16)
-        pOS->osNv_cpuid(pOS, op, 0, (NvU32 *)&p[0], (NvU32 *)&p[4], (NvU32 *)&p[8], (NvU32 *)&p[12]);
+        osNv_cpuid(op, 0, (NvU32 *)&p[0], (NvU32 *)&p[4], (NvU32 *)&p[8], (NvU32 *)&p[12]);
 
     // Kill leading spaces. (Intel's string is right justified.)
     if (*pName == ' ')
@@ -977,11 +973,10 @@ static NvBool getEmbeddedProcessorName(char *pName, NvU32 size)
 static NvBool DecodePrescottCache(OBJSYS *pSys)
 {
     NvU32   eax, ebx, ecx, edx;
-    OBJOS  *pOS = SYS_GET_OS(pSys);
 
     // Decode the cache desciptors.
 
-    if (pOS->osNv_cpuid(pOS, 0, 0, &eax, &ebx, &ecx, &edx))
+    if (osNv_cpuid(0, 0, &eax, &ebx, &ecx, &edx))
     {
         if (eax >= 4 && eax < 0x80000000)     // CPU support new (Prescott) cache descrtiptors?
         {
@@ -998,7 +993,7 @@ static NvBool DecodePrescottCache(OBJSYS *pSys)
             //
             for (i = 0; i < 20; i++)
             {
-                pOS->osNv_cpuid(pOS, 4, i, &eax, &ebx, &ecx, &edx);
+                osNv_cpuid(4, i, &eax, &ebx, &ecx, &edx);
 
                 if (i == 0)
                 {
@@ -1229,7 +1224,6 @@ static void DecodeIntelCacheRegister(OBJSYS *pSys, NvU32 cacheRegister /* punny,
 static void cpuidInfoIntel(OBJSYS *pSys, PCPUIDINFO pCpuidInfo)
 {
     NvU32   eax, ebx, ecx, edx;
-    OBJOS  *pOS = SYS_GET_OS(pSys);
 
     if (pCpuidInfo->Family == 5)
     {
@@ -1327,7 +1321,7 @@ static void cpuidInfoIntel(OBJSYS *pSys, PCPUIDINFO pCpuidInfo)
 
     if (pCpuidInfo->Family == 0xF || (pCpuidInfo->Family == 6 && pCpuidInfo->Model >= 7))
     {
-        if (pOS->osNv_cpuid(pOS, 0x17, 0, &eax, &ebx, &ecx, &edx))
+        if (osNv_cpuid(0x17, 0, &eax, &ebx, &ecx, &edx))
             pSys->cpuInfo.platformID = (edx >> 18) & 7;        // edx[20:18]   PlatformID (package type)
     }
 
@@ -1338,11 +1332,11 @@ static void cpuidInfoIntel(OBJSYS *pSys, PCPUIDINFO pCpuidInfo)
 
         // Prescott style cache descriptors are not supported.  Fall back to older style.
         //
-        if (pOS->osNv_cpuid(pOS, 0, 0, &eax, &ebx, &ecx, &edx))
+        if (osNv_cpuid(0, 0, &eax, &ebx, &ecx, &edx))
         {
             if (eax >= 2)                    // CPU support old cache descrtiptors?
             {
-                pOS->osNv_cpuid(pOS, 2, 0, &eax, &ebx, &ecx, &edx);
+                osNv_cpuid(2, 0, &eax, &ebx, &ecx, &edx);
 
                 if ((eax & 0xff) == 1)  // AL contains number of times CPU must be called.  This will be 1 forever.
                 {
@@ -1364,7 +1358,6 @@ static void cpuidInfoAMD(OBJSYS *pSys, PCPUIDINFO pCpuidInfo)
     NvU32   ecx = 0;
     NvU32   edx = 0;
 
-    OBJOS  *pOS = SYS_GET_OS(pSys);
     NvU32 largestExtendedFunctionNumberSupported = 0x80000000;
 
     if (pCpuidInfo->Family == 5)                // K5, K6, K6-2 with 3DNow, K6-3
@@ -1387,7 +1380,7 @@ static void cpuidInfoAMD(OBJSYS *pSys, PCPUIDINFO pCpuidInfo)
     else if (pCpuidInfo->Family == 15)          // K8
     {
         // If family is 15, we need to use AMD's extended family/model information.
-        pOS->osNv_cpuid(pOS, 1, 0, &eax, &ebx, &ecx, &edx);
+        osNv_cpuid(1, 0, &eax, &ebx, &ecx, &edx);
         pCpuidInfo->Family = (NvU16)(((eax >> 8) & 0x0F) + ((eax >> 16) & 0xFF0));  // 27:20 concat 11:8
         pCpuidInfo->Model  = (NvU8) (((eax >> 4) & 0x0F) + ((eax >> 12) & 0xF0));   // 19:16 concat 7:4
 
@@ -1430,27 +1423,27 @@ static void cpuidInfoAMD(OBJSYS *pSys, PCPUIDINFO pCpuidInfo)
     }
 
     // Get the cache info.
-    if (pOS->osNv_cpuid(pOS, 0x80000000, 0, &eax, &ebx, &ecx, &edx))
+    if (osNv_cpuid(0x80000000, 0, &eax, &ebx, &ecx, &edx))
     {
         largestExtendedFunctionNumberSupported = eax;
 
         if (largestExtendedFunctionNumberSupported >= 0x80000006)
         {
             // L1 cache
-            if (pOS->osNv_cpuid(pOS, 0x80000005, 0, &eax, &ebx, &ecx, &edx))
+            if (osNv_cpuid(0x80000005, 0, &eax, &ebx, &ecx, &edx))
             {
                 pSys->cpuInfo.dataCacheLineSize = ecx & 0xff;
                 pSys->cpuInfo.l1DataCacheSize = ecx >> 24;
             }
 
             // L2 cache
-            if (pOS->osNv_cpuid(pOS, 0x80000006, 0, &eax, &ebx, &ecx, &edx))
+            if (osNv_cpuid(0x80000006, 0, &eax, &ebx, &ecx, &edx))
                 pSys->cpuInfo.l2DataCacheSize = ecx >> 16;
         }
 
         // Get the SEV capability info
         if ((largestExtendedFunctionNumberSupported >= 0x8000001f) &&
-            pOS->osNv_cpuid(pOS, 0x8000001f, 0, &eax, &ebx, &ecx, &edx))
+            osNv_cpuid(0x8000001f, 0, &eax, &ebx, &ecx, &edx))
         {
             //
             // EAX[1] stores capability info
@@ -1503,7 +1496,6 @@ static void cpuidInfoCyrix(OBJSYS *pSys, PCPUIDINFO pCpuidInfo)
 static void cpuidInfoTransmeta(OBJSYS *pSys, PCPUIDINFO pCpuidInfo)
 {
     NvU32 eax, ebx, ecx, edx;
-    OBJOS *pOS = SYS_GET_OS(pSys);
 
     //
     // Transmeta allows the OEM to program the foundry, family, model, and stepping.  Arrrrgh...
@@ -1518,17 +1510,17 @@ static void cpuidInfoTransmeta(OBJSYS *pSys, PCPUIDINFO pCpuidInfo)
     // Get the cache info.  From preliminary TM8000 programming and config guide, 2/19/03
     // This appears to match AMD's cache CPUID definitions.
     //
-    if (pOS->osNv_cpuid(pOS, 0x80000000, 0, &eax, &ebx, &ecx, &edx) && eax >= 0x80000006)
+    if (osNv_cpuid(0x80000000, 0, &eax, &ebx, &ecx, &edx) && eax >= 0x80000006)
     {
         // L1 Cache
-        if (pOS->osNv_cpuid(pOS, 0x80000005, 0, &eax, &ebx, &ecx, &edx))
+        if (osNv_cpuid(0x80000005, 0, &eax, &ebx, &ecx, &edx))
         {
             pSys->cpuInfo.dataCacheLineSize = ecx & 0xff;
             pSys->cpuInfo.l1DataCacheSize = ecx >> 24;
         }
 
         // L2 Cache
-        if (pOS->osNv_cpuid(pOS, 0x80000006, 0, &eax, &ebx, &ecx, &edx))
+        if (osNv_cpuid(0x80000006, 0, &eax, &ebx, &ecx, &edx))
             pSys->cpuInfo.l2DataCacheSize = ecx >> 16;
     }
 }

@@ -125,6 +125,16 @@ static void __nvoc_init_funcTable_CrashCatReport_1(CrashCatReport *pThis) {
     PORT_UNREFERENCED_VARIABLE(reportHal);
     PORT_UNREFERENCED_VARIABLE(reportHal_HalVarIdx);
 
+    // crashcatReportSourceContainment -- halified (2 hals)
+    if (( ((reportHal_HalVarIdx >> 5) == 0UL) && ((1UL << (reportHal_HalVarIdx & 0x1f)) & 0x00000004UL) )) /* CrashCatReportHal: V1_LIBOS3 */ 
+    {
+        pThis->__crashcatReportSourceContainment__ = &crashcatReportSourceContainment_V1_LIBOS3;
+    }
+    else
+    {
+        pThis->__crashcatReportSourceContainment__ = &crashcatReportSourceContainment_3e9f29;
+    }
+
     // crashcatReportLogReporter -- halified (3 hals)
     if (( ((reportHal_HalVarIdx >> 5) == 0UL) && ((1UL << (reportHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* CrashCatReportHal: V1_LIBOS2 */ 
     {
@@ -152,13 +162,13 @@ static void __nvoc_init_funcTable_CrashCatReport_1(CrashCatReport *pThis) {
     {
         pThis->__crashcatReportLogSource__ = &crashcatReportLogSource_V1_GENERIC;
     }
-} // End __nvoc_init_funcTable_CrashCatReport_1 with approximately 6 basic block(s).
+} // End __nvoc_init_funcTable_CrashCatReport_1 with approximately 8 basic block(s).
 
 
-// Initialize vtable(s) for 2 virtual method(s).
+// Initialize vtable(s) for 3 virtual method(s).
 void __nvoc_init_funcTable_CrashCatReport(CrashCatReport *pThis) {
 
-    // Initialize vtable(s) with 2 per-object function pointer(s).
+    // Initialize vtable(s) with 3 per-object function pointer(s).
     __nvoc_init_funcTable_CrashCatReport_1(pThis);
 }
 

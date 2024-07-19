@@ -44,7 +44,7 @@
 static NvU32 channelPushMemoryProperties(OBJCHANNEL *pChannel, CHANNEL_PB_INFO *pChannelPbInfo, NvU32 **ppPtr);
 static void channelPushMethod(OBJCHANNEL *pChannel, CHANNEL_PB_INFO *pChannelPbInfo,
                               NvBool bPipelined, NvBool bInsertFinishPayload,
-                              NvU32 launchType, NvU32 semaValue, NvU32 **ppPtr);
+                              NvU32 launchType, NvU32 semaValue, NvU32 copyType, NvU32 **ppPtr);
 
 /* Public APIs */
 NV_STATUS
@@ -727,6 +727,53 @@ channelAddHostSema
     *ppPtr = pPtr;
 }
 
+static NvU32
+channelPushSecureCopyProperties
+(
+    OBJCHANNEL      *pChannel,
+    CHANNEL_PB_INFO *pChannelPbInfo,
+    NvU32           *pCopyType,
+    NvU32           **ppPtr
+)
+{
+    NvU32 *pPtr = *ppPtr;
+
+    if (!pChannelPbInfo->bSecureCopy)
+    {
+        *pCopyType = FLD_SET_DRF(C8B5, _LAUNCH_DMA, _COPY_TYPE, _DEFAULT, *pCopyType);
+        return NV_OK;
+    }
+
+    NV_ASSERT_OR_RETURN(gpuIsCCFeatureEnabled(pChannel->pGpu), NV_ERR_NOT_SUPPORTED);
+    NV_ASSERT_OR_RETURN(pChannel->bSecure, NV_ERR_NOT_SUPPORTED);
+    NV_ASSERT_OR_RETURN(pChannel->hTdCopyClass >= HOPPER_DMA_COPY_A, NV_ERR_NOT_SUPPORTED);
+
+    if (pChannelPbInfo->bEncrypt)
+    {
+        NV_PUSH_INC_1U(RM_SUBCHANNEL,
+            NVC8B5_SET_SECURE_COPY_MODE,                    DRF_DEF(C8B5, _SET_SECURE_COPY_MODE, _MODE, _ENCRYPT));
+
+        NV_PUSH_INC_4U(RM_SUBCHANNEL,
+            NVC8B5_SET_ENCRYPT_AUTH_TAG_ADDR_UPPER,         NvU64_HI32(pChannelPbInfo->authTagAddr),
+            NVC8B5_SET_ENCRYPT_AUTH_TAG_ADDR_LOWER,         NvU64_LO32(pChannelPbInfo->authTagAddr),
+            NVC8B5_SET_ENCRYPT_IV_ADDR_UPPER,               NvU64_HI32(pChannelPbInfo->encryptIvAddr),
+            NVC8B5_SET_ENCRYPT_IV_ADDR_LOWER,               NvU64_LO32(pChannelPbInfo->encryptIvAddr));
+    }
+    else
+    {
+        NV_PUSH_INC_1U(RM_SUBCHANNEL,
+            NVC8B5_SET_SECURE_COPY_MODE,                    DRF_DEF(C8B5, _SET_SECURE_COPY_MODE, _MODE, _DECRYPT));
+
+        NV_PUSH_INC_2U(RM_SUBCHANNEL,
+            NVC8B5_SET_DECRYPT_AUTH_TAG_COMPARE_ADDR_UPPER, NvU64_HI32(pChannelPbInfo->authTagAddr),
+            NVC8B5_SET_DECRYPT_AUTH_TAG_COMPARE_ADDR_LOWER, NvU64_LO32(pChannelPbInfo->authTagAddr));
+    }
+
+    *ppPtr = pPtr;
+    *pCopyType = FLD_SET_DRF(C8B5, _LAUNCH_DMA, _COPY_TYPE, _SECURE, *pCopyType);
+    return NV_OK;
+}
+
 /** single helper function to fill the push buffer with the methods needed for
  *  memsetting using CE. This function is much more efficient in the sense it
  *  decouples the mem(set/copy) operation from managing channel resources.
@@ -742,6 +789,7 @@ channelFillCePb
     CHANNEL_PB_INFO *pChannelPbInfo
 )
 {
+    NvU32  copyType   = 0;
     NvU32  launchType = 0;
     NvU32 *pPtr       = (NvU32 *)((NvU8 *)pChannel->pbCpuVA + (putIndex * pChannel->methodSizePerBlock));
     NvU32 *pStartPtr  = pPtr;
@@ -750,6 +798,9 @@ channelFillCePb
     NV_PRINTF(LEVEL_INFO, "PutIndex: %x, PbOffset: %x\n", putIndex, putIndex * pChannel->methodSizePerBlock);
 
     NV_PUSH_INC_1U(RM_SUBCHANNEL, NV906F_SET_OBJECT, pChannel->classEngineID);
+
+    if (channelPushSecureCopyProperties(pChannel, pChannelPbInfo, &copyType, &pPtr) != NV_OK)
+        return 0;
 
     // Side effect - pushed target addresses, aperture and REMAP method for memset
     launchType = channelPushMemoryProperties(pChannel, pChannelPbInfo, &pPtr);
@@ -770,7 +821,10 @@ channelFillCePb
     }
 
     // Side effect - pushed LAUNCH_DMA methods
-    channelPushMethod(pChannel, pChannelPbInfo, bPipelined, bInsertFinishPayload, launchType, semaValue, &pPtr);
+    channelPushMethod(pChannel, pChannelPbInfo, bPipelined, bInsertFinishPayload,
+                      launchType, semaValue,
+                      copyType,
+                      &pPtr);
 
     channelAddHostSema(pChannel, putIndex, &pPtr);
 
@@ -1034,6 +1088,7 @@ channelPushMethod
     NvBool           bInsertFinishPayload,
     NvU32            launchType,
     NvU32            semaValue,
+    NvU32            copyType,
     NvU32          **ppPtr
 )
 {
@@ -1087,6 +1142,7 @@ channelPushMethod
                    launchType |
                    pipelinedValue |
                    flushValue |
-                   semaValue);
+                   semaValue |
+                   copyType);
     *ppPtr = pPtr;
 }

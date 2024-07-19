@@ -100,6 +100,14 @@ profilerBaseDestruct_IMPL
     ProfilerBase *pProf
 )
 {
+    if (pProf->ppBytesAvailable !=  NULL)
+    {
+        portMemFree(pProf->ppBytesAvailable);
+        portMemFree(pProf->ppStreamBuffers);
+        pProf->ppStreamBuffers = NULL;
+        pProf->ppBytesAvailable = NULL;
+    }
+
     profilerBaseDestructState_HAL(pProf);
 }
 

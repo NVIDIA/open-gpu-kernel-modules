@@ -29,7 +29,7 @@
 #include "gpu/bus/kern_bus.h"
 #include "gpu/mmu/kern_gmmu.h"
 #include "kernel/gpu/bif/kernel_bif.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "nv_ref.h"
 
 #include "lib/protobuf/prb_util.h"

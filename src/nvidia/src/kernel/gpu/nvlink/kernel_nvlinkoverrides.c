@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,7 @@
 
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "kernel/gpu/nvlink/kernel_ioctrl.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "os/os.h"
 
 /*!
@@ -273,5 +273,18 @@ knvlinkApplyRegkeyOverrides_IMPL
                       "Forced Loopback on switch is enabled\n");
         }        
     }
+
+    // Registry override to enable nvlink encryption
+    if (NV_OK == osReadRegistryDword(pGpu,
+                 NV_REG_STR_RM_NVLINK_ENCRYPTION, &regdata))
+    {
+        if (FLD_TEST_DRF(_REG_STR_RM, _NVLINK_ENCRYPTION, _MODE, _ENABLE, regdata))
+        {
+            pKernelNvlink->setProperty(pGpu, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED, NV_TRUE);
+            NV_PRINTF(LEVEL_INFO,
+                      "Nvlink Encryption is enabled\n");
+        }        
+    }
+
     return NV_OK;
 }

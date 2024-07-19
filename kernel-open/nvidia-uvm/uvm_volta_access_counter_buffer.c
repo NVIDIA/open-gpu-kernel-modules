@@ -199,12 +199,10 @@ void uvm_hal_volta_access_counter_buffer_parse_entry(uvm_parent_gpu_t *parent_gp
         buffer_entry->virtual_info.mmu_engine_id =
             READ_HWVALUE_MW(access_counter_entry, C365, NOTIFY_BUF_ENTRY, MMU_ENGINE_ID);
 
-        // MMU engine id aligns with the fault buffer packets. Therefore, we
-        // reuse the helpers to compute the MMU engine type and the VE ID from
-        // the fault buffer class
-        buffer_entry->virtual_info.mmu_engine_type =
-            parent_gpu->arch_hal->mmu_engine_id_to_type(buffer_entry->virtual_info.mmu_engine_id);
+        buffer_entry->virtual_info.mmu_engine_type = UVM_MMU_ENGINE_TYPE_GRAPHICS;
 
+        // MMU engine id aligns with the fault buffer packets. Therefore, we
+        // reuse the helper to compute the VE ID from the fault buffer class.
         buffer_entry->virtual_info.ve_id =
             parent_gpu->fault_buffer_hal->get_ve_id(buffer_entry->virtual_info.mmu_engine_id,
                                                     buffer_entry->virtual_info.mmu_engine_type);

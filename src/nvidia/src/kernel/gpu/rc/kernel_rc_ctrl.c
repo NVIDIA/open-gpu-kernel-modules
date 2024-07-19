@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -314,6 +314,17 @@ krcCliresCtrlNvdGetRcerrRptCheckPermissions_KERNEL
     {
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
     }
+
+    return NV_OK;
+}
+
+NV_STATUS subdeviceCtrlCmdGetRcRecovery_VF
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_CMD_RC_RECOVERY_PARAMS *pRcRecovery
+)
+{
+    pRcRecovery->rcEnable = NV2080_CTRL_CMD_RC_RECOVERY_DISABLED;
 
     return NV_OK;
 }

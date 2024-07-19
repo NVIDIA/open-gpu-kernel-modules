@@ -44,8 +44,8 @@ NvBool ceIsCeGrce(OBJGPU *pGpu, RM_ENGINE_TYPE rmCeEngineType)
 
     NV_ASSERT_OR_RETURN(RM_ENGINE_TYPE_IS_COPY(rmCeEngineType), NV_FALSE);
 
-    NvU32   i;
-    NV_STATUS status = NV_OK;
+    NvU32      i;
+    NV_STATUS  status = NV_OK;
 
     partnerParams.engineType = gpuGetNv2080EngineType(rmCeEngineType);
     partnerParams.numPartners = 0;
@@ -92,6 +92,80 @@ NvBool ceIsCeGrce(OBJGPU *pGpu, RM_ENGINE_TYPE rmCeEngineType)
     for (i = 0; i < partnerParams.numPartners; i++)
     {
         if (NV2080_ENGINE_TYPE_IS_GR(partnerParams.partnerList[i]))
+        {
+            return NV_TRUE;
+        }
+    }
+
+    return NV_FALSE;
+}
+
+/*!
+ * Checks if a given GRCE is partnered with the given GR engine
+ * 
+ * @param[in] rmCeEngineType CE Engine to check
+ * @param[in] rmGrEngineType GR Engine type to check if the CE is partnered with
+ * 
+ * @return NvBool depending on whether the engines passed in are partnered or not. 
+ */
+NvBool
+ceIsPartneredWithGr
+(
+    OBJGPU *pGpu,
+    RM_ENGINE_TYPE rmCeEngineType,
+    RM_ENGINE_TYPE rmGrEngineType
+)
+{
+    NV2080_CTRL_GPU_GET_ENGINE_PARTNERLIST_PARAMS partnerParams = {0};
+    KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
+
+    if (IsAMODEL(pGpu) || IsT234DorBetter(pGpu))
+        return NV_FALSE;
+
+    NV_ASSERT_OR_RETURN(RM_ENGINE_TYPE_IS_COPY(rmCeEngineType), NV_FALSE);
+
+    NvU32   i;
+    NV_STATUS status = NV_OK;
+
+    partnerParams.engineType = gpuGetNv2080EngineType(rmCeEngineType);
+    partnerParams.numPartners = 0;
+
+    // See if the hal wants to handle this
+    status = kfifoGetEnginePartnerList_HAL(pGpu, pKernelFifo, &partnerParams);
+    if (status != NV_OK)
+    {
+        // For channels that the hal didnt handle, we should just return
+        // all of the supported engines except for the target engine.
+        //
+        // Update the engine Database
+        status = gpuUpdateEngineTable(pGpu);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "Could not update the engine db. This is fatal\n");
+            DBG_BREAKPOINT();
+            return NV_FALSE;
+        }
+
+        NV_ASSERT_OR_RETURN(pGpu->engineDB.size <= NV2080_CTRL_GPU_MAX_ENGINE_PARTNERS, NV_FALSE);
+
+        // Copy over all of the engines except the target
+        for (i = 0; i < pGpu->engineDB.size; i++)
+        {
+            // Skip the engine handed in
+            if (pGpu->engineDB.pType[i] != rmCeEngineType )
+            {
+                partnerParams.partnerList[partnerParams.numPartners++] =
+                    gpuGetNv2080EngineType(pGpu->engineDB.pType[i]);
+            }
+        }
+    }
+
+    // check if gr is in the partnerList
+    for (i = 0; i < partnerParams.numPartners; i++)
+    {
+        if (NV2080_ENGINE_TYPE_IS_GR(partnerParams.partnerList[i]) &&
+            (gpuGetNv2080EngineType(rmGrEngineType) == partnerParams.partnerList[i]))
         {
             return NV_TRUE;
         }
@@ -227,4 +301,30 @@ subdeviceCtrlCmdCeGetAllCaps_IMPL
     }
 
     return NV_OK;
+}
+
+// removal tracking bug: 3748354
+/*!
+ * Checks whether given NV2080_ENGINE_TYPE_COPYN supports decompression workloads
+ *
+ * @param[in]  pGpu            OBJGPU pointer
+ * @param[in]  nv2080engineId  NV2080_ENGINE_TYPE_COPYN
+ *
+ * Returns NV_TRUE if the ceEngineType is set in the decompLceMask
+ */
+NvBool ceIsDecompLce(OBJGPU *pGpu, NvU32 nv2080EngineId)
+{
+    NvBool decompCapPresent = NV_FALSE;
+    KernelCE *pKCe = NULL;
+
+    // Find 1st available pKCe to call below func
+    KCE_ITER_ALL_BEGIN(pGpu, pKCe, 0)
+        if (pKCe != NULL)
+            break;
+    KCE_ITER_END
+
+    if (pKCe != NULL)
+        decompCapPresent = kceCheckForDecompCapability_HAL(pGpu, pKCe, nv2080EngineId);
+
+    return decompCapPresent;
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2023 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -33,7 +33,7 @@
 
 static const size_t sysmem_alloc_sizes[] = { 1, PAGE_SIZE - 1, PAGE_SIZE, 7 * PAGE_SIZE };
 
-static NvU32 first_page_size(NvU32 page_sizes)
+static NvU64 first_page_size(NvU64 page_sizes)
 {
     return page_sizes & ~(page_sizes - 1);
 }
@@ -43,7 +43,7 @@ static NvU32 first_page_size(NvU32 page_sizes)
          page_size;                                                                 \
          page_size = first_page_size((page_sizes) & ~(page_size | (page_size - 1))))
 
-static inline NV_STATUS __alloc_map_sysmem(NvU64 size, uvm_gpu_t *gpu, uvm_mem_t **sys_mem)
+static inline NV_STATUS mem_alloc_sysmem_and_map_cpu_kernel(NvU64 size, uvm_gpu_t *gpu, uvm_mem_t **sys_mem)
 {
     if (g_uvm_global.conf_computing_enabled)
         return uvm_mem_alloc_sysmem_dma_and_map_cpu_kernel(size, gpu, current->mm, sys_mem);
@@ -67,7 +67,7 @@ static NV_STATUS check_accessible_from_gpu(uvm_gpu_t *gpu, uvm_mem_t *mem)
     UVM_ASSERT(uvm_mem_physical_size(mem) >= verif_size);
     UVM_ASSERT(verif_size >= sizeof(*sys_verif));
 
-    TEST_NV_CHECK_GOTO(__alloc_map_sysmem(verif_size, gpu, &sys_mem), done);
+    TEST_NV_CHECK_GOTO(mem_alloc_sysmem_and_map_cpu_kernel(verif_size, gpu, &sys_mem), done);
     TEST_NV_CHECK_GOTO(uvm_mem_map_gpu_kernel(sys_mem, gpu), done);
 
     sys_verif = (NvU64*)uvm_mem_get_cpu_addr_kernel(sys_mem);
@@ -100,9 +100,9 @@ static NV_STATUS check_accessible_from_gpu(uvm_gpu_t *gpu, uvm_mem_t *mem)
                                  "Memcopy %zd bytes from virtual sys_mem 0x%llx to %s mem 0x%llx [mem loc: %s, page size: %u]",
                                  size_this_time,
                                  sys_mem_gpu_address.address,
-                                 mem_gpu_address.is_virtual? "virtual" : "physical",
+                                 mem_gpu_address.is_virtual ? "virtual" : "physical",
                                  mem_gpu_address.address,
-                                 uvm_mem_is_sysmem(mem)? "sys" : "vid",
+                                 uvm_mem_is_sysmem(mem) ? "sys" : "vid",
                                  mem->chunk_size);
 
         gpu->parent->ce_hal->memcopy(&push, mem_gpu_address, sys_mem_gpu_address, size_this_time);
@@ -140,7 +140,7 @@ static NV_STATUS check_accessible_from_gpu(uvm_gpu_t *gpu, uvm_mem_t *mem)
                                  "Memcopy %zd bytes from virtual mem 0x%llx to %s sys_mem 0x%llx",
                                  size_this_time,
                                  mem_gpu_address.address,
-                                 sys_mem_gpu_address.is_virtual? "virtual" : "physical",
+                                 sys_mem_gpu_address.is_virtual ? "virtual" : "physical",
                                  sys_mem_gpu_address.address);
 
         gpu->parent->ce_hal->memcopy(&push, sys_mem_gpu_address, mem_gpu_address, size_this_time);
@@ -252,10 +252,9 @@ static NV_STATUS test_alloc_sysmem(uvm_va_space_t *va_space, NvU64 page_size, si
     params.page_size = page_size;
     params.mm = current->mm;
 
-    status = uvm_mem_alloc(&params, &mem);
-    TEST_CHECK_GOTO(status == NV_OK, error);
+    TEST_NV_CHECK_GOTO(uvm_mem_alloc(&params, &mem), error);
 
-    TEST_CHECK_GOTO(test_map_cpu(mem) == NV_OK, error);
+    TEST_NV_CHECK_GOTO(test_map_cpu(mem), error);
 
     for_each_va_space_gpu(gpu, va_space)
         TEST_NV_CHECK_GOTO(test_map_gpu(mem, gpu), error);
@@ -266,6 +265,7 @@ static NV_STATUS test_alloc_sysmem(uvm_va_space_t *va_space, NvU64 page_size, si
 
 error:
     uvm_mem_free(mem);
+
     return status;
 }
 
@@ -352,20 +352,21 @@ static NV_STATUS test_all(uvm_va_space_t *va_space)
     NvU32 current_alloc = 0;
 
     // Create allocations of these sizes
-    static const size_t sizes[] = {1, 4, 16, 1024, 4096, 1024 * 1024, 7 * 1024 * 1024 + 17 };
+    static const size_t sizes[] = { 1, 4, 16, 1024, 4096, 1024 * 1024, 7 * 1024 * 1024 + 17 };
 
     // Pascal+ can map sysmem with 4K, 64K and 2M PTEs, other GPUs can only use
     // 4K. Test all of the sizes supported by Pascal+ and 128K to match big page
     // size on pre-Pascal GPUs with 128K big page size.
     // Ampere+ also supports 512M PTEs, but since UVM's maximum chunk size is
     // 2M, we don't test for this page size.
+    // Blackwell+ also supports 256G PTEs and the above holds for this case too.
+
     static const NvU64 cpu_chunk_sizes = PAGE_SIZE | UVM_PAGE_SIZE_64K | UVM_PAGE_SIZE_128K | UVM_PAGE_SIZE_2M;
 
     // All supported page sizes will be tested, CPU has the most with 4 and +1
     // for the default.
     static const int max_supported_page_sizes = 4 + 1;
     int i;
-
 
     // TODO: Bug 3839176: the test is waived on Confidential Computing because
     // it assumes that GPU can access system memory without using encryption.
@@ -386,13 +387,13 @@ static NV_STATUS test_all(uvm_va_space_t *va_space)
         return NV_ERR_NO_MEMORY;
 
     for (i = 0; i < ARRAY_SIZE(sizes); ++i) {
-        NvU32 page_size = 0;
+        NvU64 page_size = 0;
         uvm_mem_t *mem;
 
         if (should_test_page_size(sizes[i], UVM_PAGE_SIZE_DEFAULT)) {
             status = test_alloc_sysmem(va_space, UVM_PAGE_SIZE_DEFAULT, sizes[i], &mem);
             if (status != NV_OK) {
-                UVM_TEST_PRINT("Failed to alloc sysmem size %zd, page_size default\n", sizes[i], page_size);
+                UVM_TEST_PRINT("Failed to alloc sysmem size %zd, page_size default\n", sizes[i]);
                 goto cleanup;
             }
             all_mem[current_alloc++] = mem;
@@ -404,14 +405,14 @@ static NV_STATUS test_all(uvm_va_space_t *va_space)
 
             status = test_alloc_sysmem(va_space, page_size, sizes[i], &mem);
             if (status != NV_OK) {
-                UVM_TEST_PRINT("Failed to alloc sysmem size %zd, page_size %u\n", sizes[i], page_size);
+                UVM_TEST_PRINT("Failed to alloc sysmem size %zd, page_size %llu\n", sizes[i], page_size);
                 goto cleanup;
             }
             all_mem[current_alloc++] = mem;
         }
 
         for_each_va_space_gpu(gpu, va_space) {
-            NvU32 page_sizes = gpu->address_space_tree.hal->page_sizes();
+            NvU64 page_sizes = gpu->address_space_tree.hal->page_sizes();
 
             UVM_ASSERT(max_supported_page_sizes >= hweight_long(page_sizes));
 
@@ -428,7 +429,7 @@ static NV_STATUS test_all(uvm_va_space_t *va_space)
             for_each_page_size(page_size, page_sizes) {
                 status = test_alloc_vidmem(gpu, page_size, sizes[i], &mem);
                 if (status != NV_OK) {
-                    UVM_TEST_PRINT("Test alloc vidmem failed, page_size %u size %zd GPU %s\n",
+                    UVM_TEST_PRINT("Test alloc vidmem failed, page_size %llu size %zd GPU %s\n",
                                    page_size,
                                    sizes[i],
                                    uvm_gpu_name(gpu));
@@ -461,17 +462,17 @@ cleanup:
 static NV_STATUS test_basic_vidmem(uvm_gpu_t *gpu)
 {
     NV_STATUS status = NV_OK;
-    NvU32 page_size;
-    NvU32 page_sizes = gpu->address_space_tree.hal->page_sizes();
-    NvU32 biggest_page_size = uvm_mmu_biggest_page_size_up_to(&gpu->address_space_tree, UVM_CHUNK_SIZE_MAX);
-    NvU32 smallest_page_size = page_sizes & ~(page_sizes - 1);
+    NvU64 page_size;
+    NvU64 page_sizes = gpu->address_space_tree.hal->page_sizes();
+    NvU64 biggest_page_size = uvm_mmu_biggest_page_size_up_to(&gpu->address_space_tree, UVM_CHUNK_SIZE_MAX);
+    NvU64 smallest_page_size = page_sizes & ~(page_sizes - 1);
     uvm_mem_t *mem = NULL;
 
     page_sizes &= UVM_CHUNK_SIZES_MASK;
     for_each_page_size(page_size, page_sizes) {
         TEST_CHECK_GOTO(uvm_mem_alloc_vidmem(page_size - 1, gpu, &mem) == NV_OK, done);
         if (gpu->mem_info.numa.enabled)
-            TEST_CHECK_GOTO(mem->chunk_size >= PAGE_SIZE && mem->chunk_size <= max(page_size, (NvU32)PAGE_SIZE), done);
+            TEST_CHECK_GOTO(mem->chunk_size >= PAGE_SIZE && mem->chunk_size <= max(page_size, (NvU64)PAGE_SIZE), done);
         else
             TEST_CHECK_GOTO(mem->chunk_size < page_size || page_size == smallest_page_size, done);
         uvm_mem_free(mem);
@@ -479,14 +480,14 @@ static NV_STATUS test_basic_vidmem(uvm_gpu_t *gpu)
 
         TEST_CHECK_GOTO(uvm_mem_alloc_vidmem(page_size, gpu, &mem) == NV_OK, done);
         if (gpu->mem_info.numa.enabled)
-            TEST_CHECK_GOTO(mem->chunk_size == max(page_size, (NvU32)PAGE_SIZE), done);
+            TEST_CHECK_GOTO(mem->chunk_size == max(page_size, (NvU64)PAGE_SIZE), done);
         else
             TEST_CHECK_GOTO(mem->chunk_size == page_size, done);
         uvm_mem_free(mem);
         mem = NULL;
     }
 
-    TEST_CHECK_GOTO(uvm_mem_alloc_vidmem(5 * ((NvU64)biggest_page_size) - 1, gpu, &mem) == NV_OK, done);
+    TEST_CHECK_GOTO(uvm_mem_alloc_vidmem(5 * biggest_page_size - 1, gpu, &mem) == NV_OK, done);
     TEST_CHECK_GOTO(mem->chunk_size == biggest_page_size, done);
 
 done:
@@ -569,6 +570,135 @@ done:
     return status;
 }
 
+static NV_STATUS check_huge_page_from_gpu(uvm_gpu_t *gpu, uvm_mem_t *mem, NvU64 offset)
+{
+    NV_STATUS status = NV_OK;
+    uvm_mem_t *sys_mem = NULL;
+    uvm_push_t push;
+    NvU64 *sys_verif;
+    NvU64 *expected_value;
+    NvU64 verif_size = mem->size;
+    uvm_gpu_address_t mem_gpu_address, sys_mem_gpu_address;
+
+    UVM_ASSERT(uvm_mem_physical_size(mem) >= verif_size);
+
+    TEST_NV_CHECK_GOTO(mem_alloc_sysmem_and_map_cpu_kernel(verif_size, gpu, &sys_mem), done);
+    sys_verif = uvm_mem_get_cpu_addr_kernel(sys_mem);
+    memset(sys_verif, 0x0, mem->size);
+
+    TEST_NV_CHECK_GOTO(uvm_mem_map_gpu_kernel(sys_mem, gpu), done);
+
+    mem_gpu_address = uvm_gpu_address_virtual(offset);
+    sys_mem_gpu_address = uvm_mem_gpu_address_virtual_kernel(sys_mem, gpu);
+
+    TEST_NV_CHECK_GOTO(uvm_push_begin(gpu->channel_manager,
+                                      UVM_CHANNEL_TYPE_GPU_TO_CPU,
+                                      &push,
+                                      "Memcopy %llu bytes from virtual mem 0x%llx to virtual sys_mem 0x%llx",
+                                      verif_size,
+                                      mem_gpu_address.address,
+                                      sys_mem_gpu_address.address),
+                       done);
+
+    gpu->parent->ce_hal->memcopy(&push, sys_mem_gpu_address, mem_gpu_address, verif_size);
+    TEST_NV_CHECK_GOTO(uvm_push_end_and_wait(&push), done);
+
+    expected_value = uvm_mem_get_cpu_addr_kernel(mem);
+    TEST_CHECK_GOTO(memcmp(sys_verif, expected_value, verif_size) == 0, done);
+
+done:
+    uvm_mem_free(sys_mem);
+
+    return status;
+}
+
+static NvU64 test_pte_maker(uvm_page_table_range_vec_t *range_vec, NvU64 offset, void *phys_addr)
+{
+    uvm_page_tree_t *tree = range_vec->tree;
+    uvm_gpu_phys_address_t phys = uvm_gpu_phys_address(UVM_APERTURE_SYS, (NvU64)phys_addr);
+
+    return tree->hal->make_pte(phys.aperture, phys.address, UVM_PROT_READ_ONLY, UVM_MMU_PTE_FLAGS_NONE);
+}
+
+static NV_STATUS test_huge_page_size(uvm_va_space_t *va_space, uvm_gpu_t *gpu, NvU64 page_size)
+{
+    NV_STATUS status = NV_OK;
+    uvm_mem_t *mem = NULL;
+    size_t size = PAGE_SIZE;
+    NvU64 *cpu_addr;
+    NvU64 huge_gpu_va;
+    NvU64 gpu_phys_addr;
+    uvm_page_table_range_vec_t *range_vec;
+    NvU8 value = 0xA5;
+
+    // TODO: Bug 3839176: the test is waived on Confidential Computing because
+    // it assumes that GPU can access system memory without using encryption.
+    if (g_uvm_global.conf_computing_enabled)
+        return NV_OK;
+
+    TEST_NV_CHECK_GOTO(mem_alloc_sysmem_and_map_cpu_kernel(size, gpu, &mem), cleanup);
+    cpu_addr = uvm_mem_get_cpu_addr_kernel(mem);
+    memset(cpu_addr, value, mem->size);
+
+    // Map it on the GPU (uvm_mem base area), it creates GPU physical address
+    // for the sysmem mapping.
+    TEST_NV_CHECK_GOTO(uvm_mem_map_gpu_phys(mem, gpu), cleanup);
+
+    huge_gpu_va = UVM_ALIGN_UP(gpu->parent->uvm_mem_va_base + gpu->parent->uvm_mem_va_size, page_size);
+    TEST_CHECK_GOTO(IS_ALIGNED(huge_gpu_va, page_size), cleanup);
+    TEST_CHECK_GOTO((huge_gpu_va + page_size) < (1ull << gpu->address_space_tree.hal->num_va_bits()), cleanup);
+
+    // Manually mapping huge_gpu_va because page_size is larger than the largest
+    // uvm_mem_t chunk/page size, so we don't use uvm_mem_gpu_kernel() helper.
+    TEST_NV_CHECK_GOTO(uvm_page_table_range_vec_create(&gpu->address_space_tree,
+                                                       huge_gpu_va,
+                                                       page_size,
+                                                       page_size,
+                                                       UVM_PMM_ALLOC_FLAGS_NONE,
+                                                       &range_vec), cleanup);
+
+    gpu_phys_addr = uvm_mem_gpu_physical(mem, gpu, 0, size).address;
+
+    TEST_NV_CHECK_GOTO(uvm_page_table_range_vec_write_ptes(range_vec,
+                                                           UVM_MEMBAR_NONE,
+                                                           test_pte_maker,
+                                                           (void *)gpu_phys_addr), cleanup_range);
+
+    // Despite the huge page_size mapping, only PAGE_SIZE is backed by an
+    // allocation "own" by the test. We compute the offset within the huge page
+    // to verify only this segment.
+    TEST_NV_CHECK_GOTO(check_huge_page_from_gpu(gpu, mem, huge_gpu_va + (gpu_phys_addr % page_size)),
+                       cleanup_range);
+
+cleanup_range:
+    uvm_page_table_range_vec_destroy(range_vec);
+    range_vec = NULL;
+
+cleanup:
+    uvm_mem_free(mem);
+
+    return status;
+}
+
+// Check the GPU access to memory from a 512MB+ page size mapping.
+// The test allocates a PAGE_SIZE sysmem page, but uses the GMMU to map a huge
+// page size area. It maps the allocated page to this area, and uses the CE to
+// access it, thus, exercising a memory access using a huge page.
+static NV_STATUS test_huge_pages(uvm_va_space_t *va_space, uvm_gpu_t *gpu)
+{
+    NvU64 page_sizes = gpu->address_space_tree.hal->page_sizes();
+    NvU64 page_size = 0;
+
+    for_each_page_size(page_size, page_sizes) {
+        if (page_size < UVM_PAGE_SIZE_512M)
+            continue;
+
+        TEST_NV_CHECK_RET(test_huge_page_size(va_space, gpu, page_size));
+    }
+
+    return NV_OK;
+}
+
 static NV_STATUS test_basic(uvm_va_space_t *va_space)
 {
     uvm_gpu_t *gpu;
@@ -579,6 +709,7 @@ static NV_STATUS test_basic(uvm_va_space_t *va_space)
         TEST_NV_CHECK_RET(test_basic_vidmem(gpu));
         TEST_NV_CHECK_RET(test_basic_sysmem_dma(gpu));
         TEST_NV_CHECK_RET(test_basic_dma_pool(gpu));
+        TEST_NV_CHECK_RET(test_huge_pages(va_space, gpu));
     }
 
     return NV_OK;

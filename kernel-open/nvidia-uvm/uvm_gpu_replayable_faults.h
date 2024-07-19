@@ -73,5 +73,5 @@ void uvm_parent_gpu_disable_prefetch_faults(uvm_parent_gpu_t *parent_gpu);
 
 // Service pending replayable faults on the given GPU. This function must be
 // only called from the ISR bottom half
-void uvm_gpu_service_replayable_faults(uvm_gpu_t *gpu);
+void uvm_parent_gpu_service_replayable_faults(uvm_parent_gpu_t *parent_gpu);
 #endif // __UVM_GPU_PAGE_FAULT_H__

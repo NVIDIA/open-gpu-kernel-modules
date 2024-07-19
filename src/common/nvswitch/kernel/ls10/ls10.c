@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -387,6 +387,13 @@ nvswitch_set_ganged_link_table_ls10
 {
     NvU32 i;
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return;
+    }
+
     NVSWITCH_NPORT_MC_BCAST_WR32_LS10(device, _ROUTE, _REG_TABLE_ADDRESS,
         DRF_NUM(_ROUTE, _REG_TABLE_ADDRESS, _INDEX, firstIndex) |
         DRF_NUM(_ROUTE, _REG_TABLE_ADDRESS, _AUTO_INCR, 1));
@@ -712,6 +719,13 @@ nvswitch_ctrl_get_counters_ls10
     {
         if (minion_enabled)
         {
+            if (nvswitch_is_tnvl_mode_locked(device))
+            {
+                NVSWITCH_PRINT(device, ERROR,
+                    "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+                return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+            }
+
             status = nvswitch_minion_get_dl_status(device, link->linkNumber,
                                     NV_NVLSTAT_RX01, 0, &data);
             if (status != NVL_SUCCESS)
@@ -734,6 +748,13 @@ nvswitch_ctrl_get_counters_ls10
     {
         if (minion_enabled)
         {
+            if (nvswitch_is_tnvl_mode_locked(device))
+            {
+                NVSWITCH_PRINT(device, ERROR,
+                    "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+                return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+            }
+
             status = nvswitch_minion_get_dl_status(device, link->linkNumber,
                                     NV_NVLSTAT_RX02, 0, &data);
             if (status != NVL_SUCCESS)
@@ -764,6 +785,13 @@ nvswitch_ctrl_get_counters_ls10
 
         if (minion_enabled)
         {
+            if (nvswitch_is_tnvl_mode_locked(device))
+            {
+                NVSWITCH_PRINT(device, ERROR,
+                    "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+                return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+            }
+
             status = nvswitch_minion_get_dl_status(device, link->linkNumber,
                                     NV_NVLSTAT_DB01, 0, &data);
             if (status != NVL_SUCCESS)
@@ -799,6 +827,13 @@ nvswitch_ctrl_get_counters_ls10
     {
         if (minion_enabled)
         {
+            if (nvswitch_is_tnvl_mode_locked(device))
+            {
+                NVSWITCH_PRINT(device, ERROR,
+                    "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+                return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+            }
+
             status = nvswitch_minion_get_dl_status(device, link->linkNumber,
                                     NV_NVLSTAT_TX09, 0, &data);
             if (status != NVL_SUCCESS)
@@ -821,6 +856,13 @@ nvswitch_ctrl_get_counters_ls10
     {
         if (minion_enabled)
         {
+            if (nvswitch_is_tnvl_mode_locked(device))
+            {
+                NVSWITCH_PRINT(device, ERROR,
+                    "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+                return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+            }
+
             status = nvswitch_minion_get_dl_status(device, link->linkNumber,
                                     NV_NVLSTAT_LNK1, 0, &data);
             if (status != NVL_SUCCESS)
@@ -843,6 +885,13 @@ nvswitch_ctrl_get_counters_ls10
     {
         if (minion_enabled)
         {
+            if (nvswitch_is_tnvl_mode_locked(device))
+            {
+                NVSWITCH_PRINT(device, ERROR,
+                    "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+                return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+            }
+
             status = nvswitch_minion_get_dl_status(device, link->linkNumber,
                                     NV_NVLSTAT_RX00, 0, &data);
             if (status != NVL_SUCCESS)
@@ -866,6 +915,13 @@ nvswitch_ctrl_get_counters_ls10
     {
         if (minion_enabled)
         {
+            if (nvswitch_is_tnvl_mode_locked(device))
+            {
+                NVSWITCH_PRINT(device, ERROR,
+                    "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+                return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+            }
+
             status = nvswitch_minion_get_dl_status(device, link->linkNumber,
                 NV_NVLSTAT_DB11, 0, &data);
             if (status != NVL_SUCCESS)
@@ -1669,8 +1725,8 @@ _nvswitch_reset_and_drain_links_ls10
             continue;
         }
 
-        // Initialize select scratch registers to 0x0
-        device->hal.nvswitch_init_scratch(device);
+        // Reset NV_NPORT_SCRATCH_WARM_PORT_RESET_REQUIRED to 0x0
+        NVSWITCH_LINK_WR32(device, link, NPORT, _NPORT, _SCRATCH_WARM, 0);
 
         //
         // Step 9.0: Launch ALI training to re-initialize and train the links
@@ -1751,6 +1807,13 @@ nvswitch_reset_and_drain_links_ls10
     }
     FOR_EACH_INDEX_IN_MASK_END;
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
     status = _nvswitch_reset_and_drain_links_ls10(device, link_mask, bForced);
     if (status != NVL_SUCCESS)
     {
@@ -1786,6 +1849,13 @@ nvswitch_set_nport_port_config_ls10
             "%s: Invalid requester RLAN 0x%x\n",
             __FUNCTION__, p->requesterLanID);
         return -NVL_BAD_ARGS;
+    }
+
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
     }
 
     val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _NPORT, _CTRL);
@@ -2035,6 +2105,13 @@ nvswitch_ctrl_get_internal_latency_ls10
         return -NVL_BAD_ARGS;
     }
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
     nvswitch_os_memset(pLatency, 0, sizeof(*pLatency));
     pLatency->vc_selector = vc_selector;
 
@@ -2094,6 +2171,13 @@ nvswitch_ctrl_set_latency_bins_ls10
     const NvU32 switchpll_hz = freq_mhz * 1000000ULL; // TODO: Verify this against POR clocks
     const NvU32 min_threshold = 10;   // Must be > zero to avoid div by zero
     const NvU32 max_threshold = 10000;
+
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
 
     // Quick input validation and ns to register value conversion
     for (vc_selector = 0; vc_selector < NVSWITCH_NUM_VCS_LS10; vc_selector++)
@@ -2724,6 +2808,13 @@ nvswitch_ctrl_register_write_ls10
     NvU32 base;
     NvlStatus retval = NVL_SUCCESS;
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
     retval = _nvswitch_get_engine_base_ls10(device, p->engine, p->instance, p->bcast, &base);
     if (retval != NVL_SUCCESS)
     {
@@ -2755,6 +2846,13 @@ nvswitch_get_nvlink_ecc_errors_ls10
     NvU8 i, j;
     NvlStatus status;
     NvBool bLaneReversed;
+
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
 
     nvswitch_os_memset(params->errorLink, 0, sizeof(params->errorLink));
 
@@ -2861,6 +2959,13 @@ nvswitch_ctrl_get_fom_values_ls10
     NvlStatus status;
     NvU32     statData;
     nvlink_link *link;
+
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
 
     link = nvswitch_get_link(device, p->linkId);
     if (link == NULL)
@@ -3521,6 +3626,13 @@ nvswitch_ctrl_set_remap_policy_ls10
     NvU32 ram_size;
     NvlStatus retval = NVL_SUCCESS;
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
     //
     // This function is used to read both normal and multicast REMAP table,
     // so guarantee table definitions are identical.
@@ -3782,6 +3894,13 @@ nvswitch_ctrl_get_remap_policy_ls10
     NvU32 ram_size;
     NvlStatus retval;
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
     if (!NVSWITCH_IS_LINK_ENG_VALID_LS10(device, NPORT, params->portNum))
     {
         NVSWITCH_PRINT(device, ERROR,
@@ -3959,6 +4078,13 @@ nvswitch_ctrl_set_remap_policy_valid_ls10
     NvU32 ram_size;
     NvlStatus retval;
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
     if (!NVSWITCH_IS_LINK_ENG_VALID_LS10(device, NPORT, p->portNum))
     {
         NVSWITCH_PRINT(device, ERROR,
@@ -4109,6 +4235,13 @@ NvlStatus nvswitch_ctrl_set_mc_rid_table_ls10
          NVSWITCH_PRINT(device, ERROR, "%s: index %d out of range for main table\n",
                         __FUNCTION__, p->index);
          return -NVL_BAD_ARGS;
+    }
+
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
     }
 
     // if !entryValid, zero the table and return
@@ -4854,6 +4987,13 @@ nvswitch_ctrl_set_residency_bins_ls10
 {
     NvU64 threshold;
     NvU64 max_threshold;
+
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
 
     if (p->bin.lowThreshold > p->bin.hiThreshold )
     {
@@ -5774,6 +5914,13 @@ nvswitch_ctrl_get_nvlink_lp_counters_ls10
     NV_STATUS status;
     NvU32 statData;
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
     if (!NVSWITCH_IS_LINK_ENG_VALID_LS10(device, NVLDL, params->linkId))
     {
         return -NVL_BAD_ARGS;
@@ -5868,6 +6015,13 @@ nvswitch_ctrl_clear_counters_ls10
     NvU8 i;
     NvU32 counterMask;
     NvlStatus status = NVL_SUCCESS;
+
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
 
     counterMask = ret->counterMask;
 

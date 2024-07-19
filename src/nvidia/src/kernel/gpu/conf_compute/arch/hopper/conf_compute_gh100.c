@@ -71,8 +71,8 @@ confComputeIsGpuCcCapable_GH100
 
     if (confComputeIsDebugModeEnabled_HAL(pGpu, pConfCompute))
     {
-        NV_PRINTF(LEVEL_ERROR, "Not checking if GPU is capable of accepting conf compute workloads\n");
-        return NV_TRUE;
+        NV_PRINTF(LEVEL_ERROR, "Cannot boot Confidential Compute as debug board is not supported!\n");
+        return NV_FALSE;
     }
 
     reg = GPU_REG_RD32(pGpu, NV_FUSE_SPARE_BIT_0);
@@ -136,6 +136,10 @@ confComputeDeriveSecrets_GH100(ConfidentialCompute *pConfCompute,
                                                  CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_DATA_KERN),
                                                  (void*)&params.ivMaskSet[NV2080_CTRL_INTERNAL_CONF_COMPUTE_IVMASK_SWL_KERNEL].ivMask[0]);
 
+            confComputeKeyStoreDepositIvMask_HAL(pConfCompute,
+                                                 CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_DATA_SCRUBBER),
+                                                 (void*)&params.ivMaskSet[NV2080_CTRL_INTERNAL_CONF_COMPUTE_IVMASK_SWL_SCRUBBER].ivMask[0]);
+
             NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
                 CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_DATA_USER)));
             NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
@@ -144,6 +148,10 @@ confComputeDeriveSecrets_GH100(ConfidentialCompute *pConfCompute,
                 CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_DATA_KERN)));
             NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
                 CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_KERN)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_DATA_SCRUBBER)));
+            NV_ASSERT_OK_OR_RETURN(confComputeKeyStoreDeriveKey_HAL(pConfCompute,
+                CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER)));
         }
         break;
         case MC_ENGINE_IDX_CE2:
@@ -539,6 +547,8 @@ confComputeGlobalKeyIsKernelPriv_GH100
         {
             case CC_LKEYID_CPU_SEC2_DATA_KERN:
             case CC_LKEYID_CPU_SEC2_HMAC_KERN:
+            case CC_LKEYID_CPU_SEC2_DATA_SCRUBBER:
+            case CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER:
                 return NV_TRUE;
         }
     }
@@ -553,6 +563,37 @@ confComputeGlobalKeyIsKernelPriv_GH100
         }
     }
     return NV_FALSE;
+}
+
+/*!
+ * Checks if key is UVM key
+ *
+ * @param[in]     pConfCompute             : ConfidentialCompute pointer
+ * @param[in]     keyId                    : global keyId
+ */
+NvBool
+confComputeGlobalKeyIsUvmKey_GH100
+(
+    ConfidentialCompute *pConfCompute,
+    NvU32 globalKeyId
+)
+{
+    NvU32 keySpace = CC_GKEYID_GET_KEYSPACE(globalKeyId);
+    NvU32 localKeyId = CC_GKEYID_GET_LKEYID(globalKeyId);
+    if (keySpace == CC_KEYSPACE_GSP)
+    {
+        return NV_FALSE;
+    }
+    else if (keySpace == CC_KEYSPACE_SEC2)
+    {
+        switch (localKeyId)
+        {
+            case CC_LKEYID_CPU_SEC2_DATA_SCRUBBER:
+            case CC_LKEYID_CPU_SEC2_HMAC_SCRUBBER:
+                return NV_FALSE;
+        }
+    }
+    return confComputeGlobalKeyIsKernelPriv_HAL(pConfCompute, globalKeyId);
 }
 
 NV_STATUS confComputeUpdateSecrets_GH100(ConfidentialCompute *pConfCompute,

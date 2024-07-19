@@ -765,14 +765,12 @@ kbifDoSecondaryBusResetOrFunctionLevelReset_TU102
         //
         kbifPrepareForFullChipReset_HAL(pGpu, pKernelBif);
 
-        //
-        // First Reset engines in NV_PMC_ENABLE
-        // This code was added to solve a problem that we are seeing with the Microsoft new Win8 Tdr Tests
-        // The GPU is not hung but given more work then it can consume in 2 seconds.  As a result we have some
-        // outstanding IO operations that will cause us issues in the future
-        //
+        // First Reset PMC
         engineMask = kbifGetValidEnginesToReset_HAL(pGpu, pKernelBif);
-        NV_ASSERT(kmcWritePmcEnableReg_HAL(pGpu, pKernelMc, engineMask, NV_FALSE, NV_FALSE) == NV_OK);
+        if (engineMask)
+        {
+            NV_ASSERT_OK(kmcWritePmcEnableReg_HAL(pGpu, pKernelMc, engineMask, NV_FALSE, NV_FALSE));
+        }
 
         //
         // Reset engines in NV_PMC_DEVICE_ENABLE. For Ampere and later chips,

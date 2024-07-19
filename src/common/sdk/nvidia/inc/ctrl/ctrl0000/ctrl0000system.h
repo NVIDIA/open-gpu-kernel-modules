@@ -46,6 +46,8 @@
  *         When this bit is set, SLI is supported.
  *       NV0000_CTRL_SYSTEM_GET_FEATURES_IS_EFI_INIT
  *         When this bit is set, EFI has initialized core channel 
+ *       NV0000_CTRL_SYSTEM_GET_FEATURES_RM_TEST_ONLY_CODE_ENABLED
+ *         When this bit is set, RM test only code is supported.
  *
  * Possible status values returned are:
  *   NV_OK
@@ -63,17 +65,20 @@ typedef struct NV0000_CTRL_SYSTEM_GET_FEATURES_PARAMS {
 
 /* Valid feature values */
 #define NV0000_CTRL_SYSTEM_GET_FEATURES_SLI                                 0:0
-#define NV0000_CTRL_SYSTEM_GET_FEATURES_SLI_FALSE                    (0x00000000U)
-#define NV0000_CTRL_SYSTEM_GET_FEATURES_SLI_TRUE                     (0x00000001U)
+#define NV0000_CTRL_SYSTEM_GET_FEATURES_SLI_FALSE                       (0x00000000U)
+#define NV0000_CTRL_SYSTEM_GET_FEATURES_SLI_TRUE                        (0x00000001U)
 
 #define NV0000_CTRL_SYSTEM_GET_FEATURES_IS_EFI_INIT                         2:2
-#define NV0000_CTRL_SYSTEM_GET_FEATURES_IS_EFI_INIT_FALSE            (0x00000000U)
-#define NV0000_CTRL_SYSTEM_GET_FEATURES_IS_EFI_INIT_TRUE             (0x00000001U)
+#define NV0000_CTRL_SYSTEM_GET_FEATURES_IS_EFI_INIT_FALSE               (0x00000000U)
+#define NV0000_CTRL_SYSTEM_GET_FEATURES_IS_EFI_INIT_TRUE                (0x00000001U)
 
 #define NV0000_CTRL_SYSTEM_GET_FEATURES_UUID_BASED_MEM_SHARING              3:3
-#define NV0000_CTRL_SYSTEM_GET_FEATURES_UUID_BASED_MEM_SHARING_FALSE (0x00000000U)
-#define NV0000_CTRL_SYSTEM_GET_FEATURES_UUID_BASED_MEM_SHARING_TRUE  (0x00000001U)
+#define NV0000_CTRL_SYSTEM_GET_FEATURES_UUID_BASED_MEM_SHARING_FALSE    (0x00000000U)
+#define NV0000_CTRL_SYSTEM_GET_FEATURES_UUID_BASED_MEM_SHARING_TRUE     (0x00000001U)
 
+#define NV0000_CTRL_SYSTEM_GET_FEATURES_RM_TEST_ONLY_CODE_ENABLED              4:4
+#define NV0000_CTRL_SYSTEM_GET_FEATURES_RM_TEST_ONLY_CODE_ENABLED_FALSE (0x00000000U)
+#define NV0000_CTRL_SYSTEM_GET_FEATURES_RM_TEST_ONLY_CODE_ENABLED_TRUE  (0x00000001U)
 /*
  * NV0000_CTRL_CMD_SYSTEM_GET_BUILD_VERSION
  *
@@ -104,7 +109,7 @@ typedef struct NV0000_CTRL_SYSTEM_GET_FEATURES_PARAMS {
  *   NV_ERR_INVALID_PARAM_STRUCT
  */
 
-#define NV0000_CTRL_CMD_SYSTEM_GET_BUILD_VERSION                     (0x101U) /* finn: Evaluated from "(FINN_NV01_ROOT_SYSTEM_INTERFACE_ID << 8) | NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_PARAMS_MESSAGE_ID" */
+#define NV0000_CTRL_CMD_SYSTEM_GET_BUILD_VERSION                        (0x101U) /* finn: Evaluated from "(FINN_NV01_ROOT_SYSTEM_INTERFACE_ID << 8) | NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_PARAMS_MESSAGE_ID" */
 
 #define NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_PARAMS_MESSAGE_ID (0x1U)
 
@@ -413,6 +418,28 @@ typedef struct NV0000_CTRL_SYSTEM_GET_CHIPSET_INFO_PARAMS {
 
 
 /*
+ * NV0000_CTRL_SYSTEM_GET_VRR_COOKIE_PRESENT
+ *
+ * This command returns whether the VRR cookie is present in the SBIOS.
+ *
+ * bIsPresent (out)
+ *     This parameter contains whether the VRR cookie is present in the SBIOS.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_REQUEST
+ *   NV_ERR_NOT_SUPPORTED
+ */
+
+#define NV0000_CTRL_SYSTEM_GET_VRR_COOKIE_PRESENT                                      (0x107U) /* finn: Evaluated from "(FINN_NV01_ROOT_SYSTEM_INTERFACE_ID << 8) | NV0000_CTRL_SYSTEM_GET_VRR_COOKIE_PRESENT_PARAMS_MESSAGE_ID" */
+
+#define NV0000_CTRL_SYSTEM_GET_VRR_COOKIE_PRESENT_PARAMS_MESSAGE_ID (0x7U)
+
+typedef struct NV0000_CTRL_SYSTEM_GET_VRR_COOKIE_PRESENT_PARAMS {
+    NvBool bIsPresent;
+} NV0000_CTRL_SYSTEM_GET_VRR_COOKIE_PRESENT_PARAMS;
+
+/*
  * NV0000_CTRL_CMD_SYSTEM_GET_LOCK_TIMES
  *
  * This command is used to retrieve the measured times spent holding and waiting for
@@ -439,7 +466,7 @@ typedef struct NV0000_CTRL_SYSTEM_GET_CHIPSET_INFO_PARAMS {
  *   NV_ERR_NOT_SUPPORTED
  */
 
-#define NV0000_CTRL_CMD_SYSTEM_GET_LOCK_TIMES                                          (0x109U) /* finn: Evaluated from "(FINN_NV01_ROOT_SYSTEM_INTERFACE_ID << 8) | NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS_MESSAGE_ID" */
+#define NV0000_CTRL_CMD_SYSTEM_GET_LOCK_TIMES (0x109U) /* finn: Evaluated from "(FINN_NV01_ROOT_SYSTEM_INTERFACE_ID << 8) | NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS_MESSAGE_ID" */
 
 #define NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS_MESSAGE_ID (0x9U)
 
@@ -2086,40 +2113,82 @@ typedef struct NV0000_CTRL_SYSTEM_GET_RM_INSTANCE_ID_PARAMS {
 
 typedef struct NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS {
     /* GPU ID */
-    NvU32 gpuId;
+    NvU32  gpuId;
 
     /* Total processing power including CPU and GPU */
-    NvU32 tpp;
+    NvU32  tpp;
 
     /* Rated total GPU Power */
-    NvU32 ratedTgp;
+    NvU32  ratedTgp;
 
     /* NVPCF subfunction id */
-    NvU32 subFunc;
+    NvU32  subFunc;
 
     /* Configurable TGP offset, in mW */
-    NvS32 ctgpOffsetmW;
+    NvS32  ctgpOffsetmW;
 
     /* TPP, as offset in mW */
-    NvS32 targetTppOffsetmW;
+    NvS32  targetTppOffsetmW;
 
     /* Maximum allowed output, as offset in mW */
-    NvS32 maxOutputOffsetmW;
+    NvS32  maxOutputOffsetmW;
 
     /* Minimum allowed output, as offset in mW */
-    NvS32 minOutputOffsetmW;
+    NvS32  minOutputOffsetmW;
+
+    /* Configurable TGP offset, on battery, in milli-Watts. */
+    NvS32  ctgpBattOffsetmW;
+
+    /* Target total processing power on battery, offset, in milli-Watts. */
+    NvS32  targetTppBattOffsetmW;
+
+    /*
+     * If value specified is larger than the statically assigned ROS reserve in
+     * the system power limits table, this will take affect.
+     *
+     * A value of zero naturally works as a clear as it will be lesser than the
+     * statically assigned value.
+     */
+    NvU32  dcRosReserveOverridemW;
+
+    /*
+     * This is the active arbitrated long timescale limit provided by Qboost and
+     * honored by JPAC/JPPC
+     */
+    NvU32  dcTspLongTimescaleLimitmA;
+
+   /*
+    * This is the active arbitrated short timescale limit provided by Qboost and
+    * honored by RM/PMU
+    */
+    NvU32  dcTspShortTimescaleLimitmA;
+
+    /* Require DB on DC to use system power limits table */
+    NvBool bRequireDcSysPowerLimitsTable;
+
+    /* Dynamic params can override ROS reserve used in DB-DC */
+    NvBool bAllowDcRestOfSystemReserveOverride;
+
+    /* Is DC-TSP supported? */
+    NvBool bSupportDcTsp;
+
+    /* Dynamic Boost AC support */
+    NvBool bEnableForAC;
+
+    /* Dynamic Boost DC support */
+    NvBool bEnableForDC;
 
     /* The System Controller Table Version */
-    NvU8  version;
+    NvU8   version;
 
     /* Base sampling period */
-    NvU16 samplingPeriodmS;
+    NvU16  samplingPeriodmS;
 
     /* Sampling Multiplier */
-    NvU16 samplingMulti;
+    NvU16  samplingMulti;
 
     /* Fitler function type */
-    NvU8  filterType;
+    NvU8   filterType;
 
     union {
 
@@ -2240,6 +2309,8 @@ typedef struct NV0000_CTRL_SYSTEM_GET_CLIENT_DATABASE_INFO_PARAMS {
  *       This field returns the version (NV_VERSION_STRING).
  *   versionBuffer
  *       This field returns the version (NV_BUILD_BRANCH_VERSION).
+ *   driverBranch
+ *       This field returns the branch (NV_BUILD_BRANCH).
  *   titleBuffer
  *       This field returns the title (NV_DISPLAY_DRIVER_TITLE).
  *   changelistNumber
@@ -2260,6 +2331,7 @@ typedef struct NV0000_CTRL_SYSTEM_GET_CLIENT_DATABASE_INFO_PARAMS {
 typedef struct NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_V2_PARAMS {
     char  driverVersionBuffer[NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_V2_MAX_STRING_SIZE];
     char  versionBuffer[NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_V2_MAX_STRING_SIZE];
+    char  driverBranch[NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_V2_MAX_STRING_SIZE];
     char  titleBuffer[NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_V2_MAX_STRING_SIZE];
     NvU32 changelistNumber;
     NvU32 officialChangelistNumber;

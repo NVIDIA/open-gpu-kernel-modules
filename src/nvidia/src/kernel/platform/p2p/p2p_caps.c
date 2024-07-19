@@ -33,7 +33,7 @@
 #include "vgpu/vgpu_events.h"
 #include "platform/chipset/chipset.h"
 #include "platform/p2p/p2p_caps.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "nvlimits.h"
 #include "nvdevid.h"
 
@@ -372,6 +372,14 @@ _kp2pCapsGetStatusOverPcie
     {
         *pP2PReadCapStatus = NV0000_P2P_CAPS_STATUS_OK;
         *pP2PWriteCapStatus = NV0000_P2P_CAPS_STATUS_OK;
+        goto done;
+    }
+
+    // If the PCIE topology cannot be accessed do not allow P2P
+    if (!pCl->ChipsetInitialized)
+    {
+        *pP2PReadCapStatus = NV0000_P2P_CAPS_STATUS_NOT_SUPPORTED;
+        *pP2PWriteCapStatus= NV0000_P2P_CAPS_STATUS_NOT_SUPPORTED;
         goto done;
     }
 

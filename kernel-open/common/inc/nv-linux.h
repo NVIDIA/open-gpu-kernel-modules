@@ -470,7 +470,9 @@ static inline void *nv_vmalloc(unsigned long size)
     void *ptr = __vmalloc(size, GFP_KERNEL);
 #endif
     if (ptr)
+    {
         NV_MEMDBG_ADD(ptr, size);
+    }
     return ptr;
 }
 
@@ -488,7 +490,9 @@ static inline void *nv_ioremap(NvU64 phys, NvU64 size)
     void *ptr = ioremap(phys, size);
 #endif
     if (ptr)
+    {
         NV_MEMDBG_ADD(ptr, size);
+    }
     return ptr;
 }
 
@@ -524,8 +528,9 @@ static inline void *nv_ioremap_cache(NvU64 phys, NvU64 size)
 #endif
 
     if (ptr)
+    {
         NV_MEMDBG_ADD(ptr, size);
-
+    }
     return ptr;
 }
 
@@ -541,8 +546,9 @@ static inline void *nv_ioremap_wc(NvU64 phys, NvU64 size)
 #endif
 
     if (ptr)
+    {
         NV_MEMDBG_ADD(ptr, size);
-
+    }
     return ptr;
 }
 
@@ -671,7 +677,9 @@ static inline NvUPtr nv_vmap(struct page **pages, NvU32 page_count,
     /* All memory cached in PPC64LE; can't honor 'cached' input. */
     ptr = vmap(pages, page_count, VM_MAP, prot);
     if (ptr)
+    {
         NV_MEMDBG_ADD(ptr, page_count * PAGE_SIZE);
+    }
     return (NvUPtr)ptr;
 }
 
@@ -1173,6 +1181,16 @@ typedef struct nvidia_pte_s {
 #endif
     unsigned int    page_count;
 } nvidia_pte_t;
+
+#if defined(CONFIG_DMA_SHARED_BUFFER)
+/* Standard dma_buf-related information. */
+struct nv_dma_buf
+{
+    struct dma_buf *dma_buf;
+    struct dma_buf_attachment *dma_attach;
+    struct sg_table *sgt;
+};
+#endif // CONFIG_DMA_SHARED_BUFFER
 
 typedef struct nv_alloc_s {
     struct nv_alloc_s *next;

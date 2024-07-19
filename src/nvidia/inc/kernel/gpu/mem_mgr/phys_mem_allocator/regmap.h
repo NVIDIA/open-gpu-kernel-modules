@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -179,7 +179,7 @@ PMA_PAGESTATUS pmaRegmapRead(void *pMap, NvU64 frameNum, NvBool readAttrib);
  */
 NV_STATUS pmaRegmapScanContiguous(
     void *pMap, NvU64 addrBase, NvU64 rangeStart, NvU64 rangeEnd,
-    NvU64 numPages, NvU64 *freelist, NvU64 pageSize, NvU64 alignment,
+    NvU64 numPages, NvU64 *freelist, NvU64 pageSize, NvU64 alignment, NvU64 stride, NvU32 strideStart,
     NvU64 *pagesAllocated, NvBool bSkipEvict, NvBool bReverseAlloc);
 
 /*!
@@ -206,7 +206,7 @@ NV_STATUS pmaRegmapScanContiguous(
  */
 NV_STATUS pmaRegmapScanDiscontiguous(
     void *pMap, NvU64 addrBase, NvU64 rangeStart, NvU64 rangeEnd,
-    NvU64 numPages, NvU64 *freelist, NvU64 pageSize, NvU64 alignment,
+    NvU64 numPages, NvU64 *freelist, NvU64 pageSize, NvU64 alignment, NvU64 stride, NvU32 strideStart, 
     NvU64 *pagesAllocated, NvBool bSkipEvict, NvBool bReverseAlloc);
 
 /*!

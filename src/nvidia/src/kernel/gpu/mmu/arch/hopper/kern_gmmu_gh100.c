@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,7 +23,7 @@
 
 #define NVOC_KERN_GMMU_H_PRIVATE_ACCESS_ALLOWED
 
-#include "gpu/mmu/kern_gmmu.h"
+#include "gpu/bus/kern_bus.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "vgpu/vgpu_events.h"
 #include "nv_sriov_defines.h"
@@ -749,6 +749,7 @@ kgmmuCopyFaultPacketToClientShadowBuffer_GH100
     NvU32 faultPacketPageOffset;
     void *pSrc;
     NvU8 *pDst;
+    ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
     NV_STATUS status;
     NvU8 *pDstMetadata;
     NvU32 metadataStartIndex;
@@ -850,20 +851,20 @@ kgmmuCopyFaultPacketToClientShadowBuffer_GH100
         return NV_ERR_INVALID_STATE;
     }
 
-    status = ccslEncrypt(pCslCtx,
-                         sizeof(GMMU_FAULT_PACKET),
-                         (NvU8*) &faultPacket,
-                         &validBit,
-                         GMMU_FAULT_PACKET_METADATA_VALID_SIZE,
-                         pDst,
-                         &pDstMetadata[GMMU_FAULT_PACKET_METADATA_AUTHTAG_IDX]);
+    status = ccslEncryptWithRotationChecks(pCslCtx,
+                                           sizeof(GMMU_FAULT_PACKET),
+                                           (NvU8*) &faultPacket,
+                                           &validBit,
+                                           GMMU_FAULT_PACKET_METADATA_VALID_SIZE,
+                                           pDst,
+                                           &pDstMetadata[GMMU_FAULT_PACKET_METADATA_AUTHTAG_IDX]);
     if (status != NV_OK)
     {
         if (status == NV_ERR_INSUFFICIENT_RESOURCES)
         {
             // IV overflow is considered fatal.
             NV_PRINTF(LEVEL_ERROR, "Fatal error detected in fault buffer packet encryption: IV overflow!\n");
-            confComputeSetErrorState(pGpu, GPU_GET_CONF_COMPUTE(pGpu));
+            confComputeSetErrorState(pGpu, pConfCompute);
         }
         else
         {
@@ -989,4 +990,219 @@ kgmmuSignExtendFaultAddress_GH100
         NV_PRINTF(LEVEL_ERROR, "UVM has not defined what to do here, doing nothing\n");
         NV_ASSERT(0);
     }
+}
+
+/*
+ * @brief Program PD2-PD4 fake sparse tables with fake sparse entries.
+ *      Sparse entries work correctly PDE1 and below. So PD2 contains true (not fake) sparse entries
+ *
+ * @param[in] pKernelGmmu           KernGmmu object
+ * @param[in] bufferBaseOffset      Base offset of fake sparse tables buffer
+ * @param[in] pTablesBasePtr        Base pointer to mapped fake sparse tables buffer
+ *
+ * @return NV_STATUS
+ */
+static NV_STATUS
+kgmmuFillFakeSparseTables
+(
+    KernelGmmu* pKernelGmmu,
+    NvU64 bufferBaseOffset,
+    volatile NvU64 *pTablesBasePtr
+)
+{
+    GMMU_FMT_FAMILY *pFam = pKernelGmmu->pFmtFamilies[GMMU_FMT_VERSION_3 - 1];
+    GMMU_ENTRY_VALUE templateFakeEntry;
+    const GMMU_FIELD_ADDRESS *pFldAddr;
+
+    // Intentionally set pdePcf to 0 to create a valid PDE mapping.
+    NvU32 templatePdePcfSw = 0;
+    NvU32 templatePdePcfHw = 0;
+    NvU8 i;
+
+    NV_ASSERT_OR_RETURN(pFam != NULL, NV_ERR_INVALID_STATE);
+    pFldAddr = gmmuFmtPdePhysAddrFld(&pFam->pde, GMMU_APERTURE_VIDEO);
+
+    NV_ASSERT_OR_RETURN((kgmmuTranslatePdePcfFromSw_HAL(pKernelGmmu, templatePdePcfSw, &templatePdePcfHw) == NV_OK),
+        NV_ERR_INVALID_ARGUMENT);
+
+    // Initialize Fake PDE entry attrs without address
+    portMemSet(templateFakeEntry.v8, 0, NV_MMU_VER3_PDE__SIZE);
+    nvFieldSet32(&pFam->pde.fldPdePcf, templatePdePcfHw, templateFakeEntry.v8);
+    gmmuFieldSetAperture(&pFam->pde.fldAperture, GMMU_APERTURE_VIDEO, templateFakeEntry.v8);
+
+    for (i = 0; i < NV_GMMU_FAKE_SPARSE_TABLE_LEVELS; i++)
+    {
+        // Pointer to base of mapped page directory
+        volatile NvU64 *pTablePtr = (volatile NvU64 *)((NvU64)pTablesBasePtr + i * RM_PAGE_SIZE);
+        // Base vidmem offset of page directory
+        NvU64 pdBaseOffset = bufferBaseOffset + i * RM_PAGE_SIZE;
+        // Fake sparse PDE to fill page directory. Points to next level of page directory.
+        GMMU_ENTRY_VALUE fillEntry;
+        // Current level PDE value. Filled into previous level page directory.
+        GMMU_ENTRY_VALUE entry;
+        NvU32 j;
+
+        portMemCopy(entry.v8, NV_MMU_VER3_PDE__SIZE, templateFakeEntry.v8, NV_MMU_VER3_PDE__SIZE);
+
+        if (i == 0)
+        {
+            NvU32 pdePcfSw = 0;
+            NvU32 pdePcfHw = 0;
+
+            // PD2 has true sparse entries as PDE1 sparse translation is not broken in HW
+            // TODO: Bug 4615812: Handle fake sparse PD2 creation for ATS
+            pdePcfSw |= (1 << SW_MMU_PCF_SPARSE_IDX);
+            NV_ASSERT_OR_RETURN((kgmmuTranslatePdePcfFromSw_HAL(pKernelGmmu, pdePcfSw, &pdePcfHw) == NV_OK),
+                NV_ERR_INVALID_ARGUMENT);
+
+            portMemSet(fillEntry.v8, 0, NV_MMU_VER3_PDE__SIZE);
+            gmmuFieldSetAperture(&pFam->pde.fldAperture, GMMU_APERTURE_INVALID, fillEntry.v8);
+            nvFieldSet32(&pFam->pde.fldPdePcf, pdePcfHw, fillEntry.v8);
+        }
+        else
+        {
+            NvU64 nextLevelPD = pKernelGmmu->fakeSparseEntry[i-1];
+            portMemCopy(fillEntry.v8, NV_MMU_VER3_PDE__SIZE, templateFakeEntry.v8, NV_MMU_VER3_PDE__SIZE);
+
+            // Update PDE address field to point to next level fake PD
+            gmmuFieldSetAddress(pFldAddr, nextLevelPD, fillEntry.v8);
+        }
+
+        gmmuFieldSetAddress(pFldAddr, pdBaseOffset, entry.v8);
+        pKernelGmmu->fakeSparseEntry[i] = entry.v64[0];
+
+        for (j = 0; j < RM_PAGE_SIZE / NV_GMMU_FAKE_SPARSE_TABLE_ENTRY_SIZE; j++)
+        {
+            pTablePtr[j] = fillEntry.v64[0];
+        }
+    }
+
+    return NV_OK;
+}
+
+/**
+ * @brief Create BAR0 mapping and program fake sparse tables.
+ *
+ * @param[in] pGpu          OBJGPU object
+ * @param[in] pKernelGmmu   KernGmmu object
+ *
+ * @return NV_STATUS
+ */
+NV_STATUS
+kgmmuCreateFakeSparseTablesInternal_KERNEL
+(
+    OBJGPU *pGpu,
+    KernelGmmu* pKernelGmmu
+)
+{
+    NvU64 bufferBaseOffset = pKernelGmmu->pFakeSparseBuffer->_pteArray[0];
+    volatile NvU64 *pTablesBasePtr;
+    NV_STATUS status;
+
+    KernelBus *pKernelBus       = GPU_GET_KERNEL_BUS(pGpu);
+    NvU64 origBar0Mapping       = kbusGetBAR0WindowVidOffset_HAL(pGpu, pKernelBus);
+    NvU64 bar0WindowSize        = pKernelBus->physicalBar0WindowSize;
+    NvU8 *pBar0WindowAddress    = pKernelBus->pDefaultBar0Pointer;
+    NvU64 bufBar0OffsetMask     = bar0WindowSize - 1;
+
+    pTablesBasePtr = (volatile NvU64*) &pBar0WindowAddress[bufferBaseOffset & bufBar0OffsetMask];
+
+    NV_ASSERT_OK_OR_RETURN(kbusSetBAR0WindowVidOffset_HAL(pGpu, pKernelBus, bufferBaseOffset & ~bufBar0OffsetMask));
+
+    status = kgmmuFillFakeSparseTables(pKernelGmmu, bufferBaseOffset, pTablesBasePtr);
+
+    NV_ASSERT(kbusSetBAR0WindowVidOffset_HAL(pGpu, pKernelBus, origBar0Mapping) == NV_OK);
+
+    return status;
+}
+
+/**
+ * @brief Create PCI mapping and program fake sparse tables.
+ *
+ * @param[in] pGpu          OBJGPU object
+ * @param[in] pKernelGmmu   KernGmmu object
+ *
+ * @return NV_STATUS
+ */
+NV_STATUS
+kgmmuCreateFakeSparseTablesInternal_PHYSICAL
+(
+    OBJGPU *pGpu,
+    KernelGmmu* pKernelGmmu
+)
+{
+    NvU64 bufferBaseOffset = pKernelGmmu->pFakeSparseBuffer->_pteArray[0];
+    volatile NvU64 *pTablesBasePtr;
+    NV_STATUS status;
+
+    NV_ASSERT_OK_OR_RETURN(osMapPciMemoryKernel64(pGpu, bufferBaseOffset,
+        RM_PAGE_SIZE * NV_GMMU_FAKE_SPARSE_TABLE_LEVELS, NV_PROTECT_READ_WRITE, (NvP64 *)&pTablesBasePtr,
+        NV_MEMORY_UNCACHED));
+
+    status = kgmmuFillFakeSparseTables(pKernelGmmu, bufferBaseOffset, pTablesBasePtr);
+
+    osUnmapPciMemoryKernel64(pGpu, (NvP64) pTablesBasePtr);
+
+    return status;
+}
+
+/**
+ * @brief On Hopper, a HW bug in the GMMU causes sparse PDEs to not function correctly in CC mode.
+ *      To emulate sparse correctly, pre-allocate 3 levels of fake sparse tables. See Bug 3341692 for details.
+ *
+ * @param[in] pGpu          OBJGPU object
+ * @param[in] pKernelGmmu   KernGmmu object
+ *
+ * @return NV_STATUS
+ */
+NV_STATUS kgmmuCreateFakeSparseTables_GH100
+(
+    OBJGPU *pGpu,
+    KernelGmmu* pKernelGmmu
+)
+{
+    NV_STATUS status;
+
+    NV_ASSERT_OK_OR_RETURN(memdescCreate(&pKernelGmmu->pFakeSparseBuffer, pGpu,
+        RM_PAGE_SIZE * NV_GMMU_FAKE_SPARSE_TABLE_LEVELS, RM_PAGE_SIZE, NV_TRUE, ADDR_FBMEM, NV_MEMORY_WRITECOMBINED,
+        MEMDESC_FLAGS_NONE));
+    NV_ASSERT_OK_OR_GOTO(status, memdescAlloc(pKernelGmmu->pFakeSparseBuffer), error_alloc);
+
+    NV_ASSERT_OK_OR_GOTO(status, kgmmuCreateFakeSparseTablesInternal(pGpu, pKernelGmmu), error);
+
+    return NV_OK;
+error:
+    memdescFree(pKernelGmmu->pFakeSparseBuffer);
+error_alloc:
+    memdescDestroy(pKernelGmmu->pFakeSparseBuffer);
+    pKernelGmmu->pFakeSparseBuffer = NULL;
+    return status;
+}
+
+/**
+ * @brief Get fake sparse entry for page directories.
+ *
+ * @param[in] pGpu          OBJGPU object
+ * @param[in] pKernelGmmu   KernGmmu object
+ * @param[in] pLevelFmt     Format of the level
+ *
+ * @return NvU8* pointer to sparse entry if relevant, NULL otherwise
+ */
+NvU8 *kgmmuGetFakeSparseEntry_GH100
+(
+    OBJGPU *pGpu,
+    KernelGmmu *pKernelGmmu,
+    const MMU_FMT_LEVEL *pLevelFmt
+)
+{
+    NvU32 level = 0;
+
+    // Fake sparse entry is needed only if hopper in CC mode & PDE levels 2-4
+    if (pKernelGmmu->pFakeSparseBuffer == NULL || (pLevelFmt->virtAddrBitLo < NV_GMMU_FAKE_SPARSE_TABLE_LEVEL_LO))
+        return NULL;
+
+    // Level index with PDE2 as index 0
+    level = (pLevelFmt->virtAddrBitLo - NV_GMMU_FAKE_SPARSE_TABLE_LEVEL_LO) / NV_GMMU_FAKE_SPARSE_TABLE_BITS_PER_LEVEL;
+
+    return (NvU8 *) &pKernelGmmu->fakeSparseEntry[level];
 }

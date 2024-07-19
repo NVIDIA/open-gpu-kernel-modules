@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -51,8 +51,10 @@
 #include "class/clc56f.h" // AMPERE_CHANNEL_GPFIFO_A
 #include "class/clc86f.h" // HOPPER_CHANNEL_GPFIFO_A
 
+#include "class/clc96f.h" // BLACKWELL_CHANNEL_GPFIFO_A
+
 #include "deprecated/rmapi_deprecated.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 
 //
 // Watchdog object ids
@@ -621,6 +623,7 @@ krcWatchdogInit_IMPL
             , {TURING_CHANNEL_GPFIFO_A,  sizeof(Nvc46fControl)}
             , {AMPERE_CHANNEL_GPFIFO_A,  sizeof(Nvc56fControl)}
             , {HOPPER_CHANNEL_GPFIFO_A,  sizeof(Nvc86fControl)}
+            , {BLACKWELL_CHANNEL_GPFIFO_A,  sizeof(Nvc96fControl)}
         };
 
         NvU32 i;
@@ -1302,8 +1305,38 @@ krcWatchdogInitPushbuffer_IMPL
               NV902D_NOTIFY, NV902D_NOTIFY_TYPE_WRITE_ONLY);
     PUSH_PAIR(pKernelRc->watchdogChannelInfo.class2dSubch,
               NV902D_NO_OPERATION, 0x0);
-    PUSH_PAIR(pKernelRc->watchdogChannelInfo.class2dSubch,
-              NV906F_SET_REFERENCE, 0x0);
+
+    if (!gpuIsClassSupported(pGpu, HOPPER_CHANNEL_GPFIFO_A))
+    {
+        //
+        // TODO Bug 4588210
+        // Ticking bomb when Hopper eventually gets deprecated and
+        // HOPPER_CHANNEL_GPFIFO_A is no longer supported.
+        //
+        // When this assert starts failing, delete this branch of the if
+        // condition above.
+        //
+        NV_ASSERT(!IsHOPPERorBetter(pGpu));
+
+        PUSH_PAIR(pKernelRc->watchdogChannelInfo.class2dSubch,
+                  NV906F_SET_REFERENCE, 0x0);
+    }
+    else
+    {
+        PUSH_PAIR(pKernelRc->watchdogChannelInfo.class2dSubch, NVC86F_WFI, 0);
+        PUSH_PAIR(pKernelRc->watchdogChannelInfo.class2dSubch,
+                  NVC86F_MEM_OP_A,
+                  0);
+        PUSH_PAIR(pKernelRc->watchdogChannelInfo.class2dSubch,
+                  NVC86F_MEM_OP_B,
+                  0);
+        PUSH_PAIR(pKernelRc->watchdogChannelInfo.class2dSubch,
+                  NVC86F_MEM_OP_C,
+                  0);
+        PUSH_PAIR(pKernelRc->watchdogChannelInfo.class2dSubch,
+                  NVC86F_MEM_OP_D,
+                  DRF_DEF(C86F, _MEM_OP_D, _OPERATION, _MEMBAR));
+    }
 
     // Pushbuffer 1
     {

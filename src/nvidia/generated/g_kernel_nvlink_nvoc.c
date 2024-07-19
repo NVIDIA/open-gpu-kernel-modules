@@ -107,37 +107,37 @@ static NvBool __nvoc_down_thunk_KernelNvlink_engstateIsPresent(struct OBJGPU *ar
 // 7 up-thunk(s) defined to bridge methods in KernelNvlink to superclasses
 
 // knvlinkInitMissing: virtual inherited (engstate) base (engstate)
-static void __nvoc_up_thunk_OBJENGSTATE_knvlinkInitMissing(POBJGPU pGpu, struct KernelNvlink *pEngstate) {
+static void __nvoc_up_thunk_OBJENGSTATE_knvlinkInitMissing(struct OBJGPU *pGpu, struct KernelNvlink *pEngstate) {
     engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelNvlink_OBJENGSTATE.offset));
 }
 
 // knvlinkStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_knvlinkStatePreInitUnlocked(POBJGPU pGpu, struct KernelNvlink *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_knvlinkStatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelNvlink *pEngstate) {
     return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelNvlink_OBJENGSTATE.offset));
 }
 
 // knvlinkStateInitLocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_knvlinkStateInitLocked(POBJGPU pGpu, struct KernelNvlink *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_knvlinkStateInitLocked(struct OBJGPU *pGpu, struct KernelNvlink *pEngstate) {
     return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelNvlink_OBJENGSTATE.offset));
 }
 
 // knvlinkStateInitUnlocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_knvlinkStateInitUnlocked(POBJGPU pGpu, struct KernelNvlink *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_knvlinkStateInitUnlocked(struct OBJGPU *pGpu, struct KernelNvlink *pEngstate) {
     return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelNvlink_OBJENGSTATE.offset));
 }
 
 // knvlinkStatePreLoad: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_knvlinkStatePreLoad(POBJGPU pGpu, struct KernelNvlink *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_knvlinkStatePreLoad(struct OBJGPU *pGpu, struct KernelNvlink *pEngstate, NvU32 arg3) {
     return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelNvlink_OBJENGSTATE.offset), arg3);
 }
 
 // knvlinkStatePreUnload: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_knvlinkStatePreUnload(POBJGPU pGpu, struct KernelNvlink *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_knvlinkStatePreUnload(struct OBJGPU *pGpu, struct KernelNvlink *pEngstate, NvU32 arg3) {
     return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelNvlink_OBJENGSTATE.offset), arg3);
 }
 
 // knvlinkStateDestroy: virtual inherited (engstate) base (engstate)
-static void __nvoc_up_thunk_OBJENGSTATE_knvlinkStateDestroy(POBJGPU pGpu, struct KernelNvlink *pEngstate) {
+static void __nvoc_up_thunk_OBJENGSTATE_knvlinkStateDestroy(struct OBJGPU *pGpu, struct KernelNvlink *pEngstate) {
     engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelNvlink_OBJENGSTATE.offset));
 }
 
@@ -174,7 +174,7 @@ void __nvoc_init_dataField_KernelNvlink(KernelNvlink *pThis, RmHalspecOwner *pRm
     }
 
     // NVOC Property Hal field -- PDB_PROP_KNVLINK_ENABLED
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0fc60UL) )) /* ChipHal: TU102 | TU104 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0fc60UL) )) /* ChipHal: TU102 | TU104 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
         pThis->setProperty(pThis, PDB_PROP_KNVLINK_ENABLED, ((NvBool)(0 == 0)));
     }
@@ -185,7 +185,7 @@ void __nvoc_init_dataField_KernelNvlink(KernelNvlink *pThis, RmHalspecOwner *pRm
     }
 
     // NVOC Property Hal field -- PDB_PROP_KNVLINK_UNSET_NVLINK_PEER_SUPPORTED
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
         pThis->setProperty(pThis, PDB_PROP_KNVLINK_UNSET_NVLINK_PEER_SUPPORTED, ((NvBool)(0 == 0)));
     }
@@ -196,7 +196,7 @@ void __nvoc_init_dataField_KernelNvlink(KernelNvlink *pThis, RmHalspecOwner *pRm
     }
 
     // NVOC Property Hal field -- PDB_PROP_KNVLINK_CONFIG_REQUIRE_INITIALIZED_LINKS_CHECK
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->setProperty(pThis, PDB_PROP_KNVLINK_CONFIG_REQUIRE_INITIALIZED_LINKS_CHECK, ((NvBool)(0 == 0)));
     }
@@ -207,7 +207,7 @@ void __nvoc_init_dataField_KernelNvlink(KernelNvlink *pThis, RmHalspecOwner *pRm
     }
 
     // NVOC Property Hal field -- PDB_PROP_KNVLINK_LANE_SHUTDOWN_ENABLED
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
         pThis->setProperty(pThis, PDB_PROP_KNVLINK_LANE_SHUTDOWN_ENABLED, ((NvBool)(0 == 0)));
     }
@@ -227,6 +227,11 @@ void __nvoc_init_dataField_KernelNvlink(KernelNvlink *pThis, RmHalspecOwner *pRm
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
     {
         pThis->setProperty(pThis, PDB_PROP_KNVLINK_LINKRESET_AFTER_SHUTDOWN, ((NvBool)(0 == 0)));
+    }
+    // default
+    else
+    {
+        pThis->setProperty(pThis, PDB_PROP_KNVLINK_LINKRESET_AFTER_SHUTDOWN, ((NvBool)(0 != 0)));
     }
 
     // NVOC Property Hal field -- PDB_PROP_KNVLINK_BUG2274645_RESET_FOR_RTD3_FGC6
@@ -255,7 +260,7 @@ void __nvoc_init_dataField_KernelNvlink(KernelNvlink *pThis, RmHalspecOwner *pRm
     pThis->setProperty(pThis, PDB_PROP_KNVLINK_WAR_BUG_3471679_PEERID_FILTERING, ((NvBool)(0 != 0)));
 
     // NVOC Property Hal field -- PDB_PROP_KNVLINK_MINION_GFW_BOOT
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->setProperty(pThis, PDB_PROP_KNVLINK_MINION_GFW_BOOT, ((NvBool)(0 == 0)));
     }
@@ -266,7 +271,7 @@ void __nvoc_init_dataField_KernelNvlink(KernelNvlink *pThis, RmHalspecOwner *pRm
     }
 
     // NVOC Property Hal field -- PDB_PROP_KNVLINK_SYSMEM_SUPPORT_ENABLED
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
         pThis->setProperty(pThis, PDB_PROP_KNVLINK_SYSMEM_SUPPORT_ENABLED, ((NvBool)(0 != 0)));
     }
@@ -276,7 +281,12 @@ void __nvoc_init_dataField_KernelNvlink(KernelNvlink *pThis, RmHalspecOwner *pRm
         pThis->setProperty(pThis, PDB_PROP_KNVLINK_SYSMEM_SUPPORT_ENABLED, ((NvBool)(0 == 0)));
     }
 
+    // NVOC Property Hal field -- PDB_PROP_KNVLINK_ENCRYPTION_ENABLED
+    pThis->setProperty(pThis, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED, ((NvBool)(0 != 0)));
+
     pThis->fabricBaseAddr = (+18446744073709551615ULL);
+
+    pThis->fabricEgmBaseAddr = (+18446744073709551615ULL);
 }
 
 NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE* );
@@ -335,7 +345,7 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
     pThis->__nvoc_base_OBJENGSTATE.__engstateIsPresent__ = &__nvoc_down_thunk_KernelNvlink_engstateIsPresent;
 
     // knvlinkSetUniqueFabricBaseAddress -- halified (3 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__knvlinkSetUniqueFabricBaseAddress__ = &knvlinkSetUniqueFabricBaseAddress_GH100;
     }
@@ -350,7 +360,7 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
     }
 
     // knvlinkClearUniqueFabricBaseAddress -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__knvlinkClearUniqueFabricBaseAddress__ = &knvlinkClearUniqueFabricBaseAddress_GH100;
     }
@@ -358,6 +368,28 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
     else
     {
         pThis->__knvlinkClearUniqueFabricBaseAddress__ = &knvlinkClearUniqueFabricBaseAddress_b3696a;
+    }
+
+    // knvlinkSetUniqueFabricEgmBaseAddress -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
+    {
+        pThis->__knvlinkSetUniqueFabricEgmBaseAddress__ = &knvlinkSetUniqueFabricEgmBaseAddress_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__knvlinkSetUniqueFabricEgmBaseAddress__ = &knvlinkSetUniqueFabricEgmBaseAddress_46f6a7;
+    }
+
+    // knvlinkClearUniqueFabricEgmBaseAddress -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
+    {
+        pThis->__knvlinkClearUniqueFabricEgmBaseAddress__ = &knvlinkClearUniqueFabricEgmBaseAddress_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__knvlinkClearUniqueFabricEgmBaseAddress__ = &knvlinkClearUniqueFabricEgmBaseAddress_b3696a;
     }
 
     // knvlinkHandleFaultUpInterrupt -- halified (2 hals) body
@@ -372,7 +404,7 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
     }
 
     // knvlinkValidateFabricBaseAddress -- halified (3 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__knvlinkValidateFabricBaseAddress__ = &knvlinkValidateFabricBaseAddress_GH100;
     }
@@ -386,8 +418,19 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
         pThis->__knvlinkValidateFabricBaseAddress__ = &knvlinkValidateFabricBaseAddress_46f6a7;
     }
 
+    // knvlinkValidateFabricEgmBaseAddress -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
+    {
+        pThis->__knvlinkValidateFabricEgmBaseAddress__ = &knvlinkValidateFabricEgmBaseAddress_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__knvlinkValidateFabricEgmBaseAddress__ = &knvlinkValidateFabricEgmBaseAddress_46f6a7;
+    }
+
     // knvlinkGetConnectedLinksMask -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000380UL) )) /* ChipHal: TU106 | TU116 | TU117 | GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000380UL) )) /* ChipHal: TU106 | TU116 | TU117 | GH100 | GB100 | GB102 */ 
     {
         pThis->__knvlinkGetConnectedLinksMask__ = &knvlinkGetConnectedLinksMask_15a734;
     }
@@ -475,7 +518,7 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
     }
 
     // knvlinkConstructHal -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000380UL) )) /* ChipHal: TU106 | TU116 | TU117 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000380UL) )) /* ChipHal: TU106 | TU116 | TU117 | GB100 | GB102 */ 
     {
         pThis->__knvlinkConstructHal__ = &knvlinkConstructHal_56cd7a;
     }
@@ -515,7 +558,7 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
     }
 
     // knvlinkIsAliSupported -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__knvlinkIsAliSupported__ = &knvlinkIsAliSupported_GH100;
     }
@@ -525,7 +568,7 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
     }
 
     // knvlinkPostSetupNvlinkPeer -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__knvlinkPostSetupNvlinkPeer__ = &knvlinkPostSetupNvlinkPeer_GH100;
     }
@@ -535,7 +578,7 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
     }
 
     // knvlinkDiscoverPostRxDetLinks -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__knvlinkDiscoverPostRxDetLinks__ = &knvlinkDiscoverPostRxDetLinks_GH100;
     }
@@ -544,10 +587,14 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
         pThis->__knvlinkDiscoverPostRxDetLinks__ = &knvlinkDiscoverPostRxDetLinks_46f6a7;
     }
 
-    // knvlinkLogAliDebugMessages -- halified (2 hals) body
+    // knvlinkLogAliDebugMessages -- halified (3 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__knvlinkLogAliDebugMessages__ = &knvlinkLogAliDebugMessages_GH100;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
+    {
+        pThis->__knvlinkLogAliDebugMessages__ = &knvlinkLogAliDebugMessages_GB100;
     }
     // default
     else
@@ -555,8 +602,19 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
         pThis->__knvlinkLogAliDebugMessages__ = &knvlinkLogAliDebugMessages_46f6a7;
     }
 
+    // knvlinkDumpCallbackRegister -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
+    {
+        pThis->__knvlinkDumpCallbackRegister__ = &knvlinkDumpCallbackRegister_GB100;
+    }
+    // default
+    else
+    {
+        pThis->__knvlinkDumpCallbackRegister__ = &knvlinkDumpCallbackRegister_b3696a;
+    }
+
     // knvlinkGetEffectivePeerLinkMask -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__knvlinkGetEffectivePeerLinkMask__ = &knvlinkGetEffectivePeerLinkMask_GH100;
     }
@@ -566,7 +624,7 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
     }
 
     // knvlinkGetNumLinksToBeReducedPerIoctrl -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__knvlinkGetNumLinksToBeReducedPerIoctrl__ = &knvlinkGetNumLinksToBeReducedPerIoctrl_GH100;
     }
@@ -576,7 +634,7 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
     }
 
     // knvlinkIsBandwidthModeOff -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__knvlinkIsBandwidthModeOff__ = &knvlinkIsBandwidthModeOff_GH100;
     }
@@ -586,7 +644,7 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
     }
 
     // knvlinkDirectConnectCheck -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__knvlinkDirectConnectCheck__ = &knvlinkDirectConnectCheck_GH100;
     }
@@ -615,6 +673,17 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
         pThis->__knvlinkIsFloorSweepingNeeded__ = &knvlinkIsFloorSweepingNeeded_491d52;
     }
 
+    // knvlinkGetSupportedCounters -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
+    {
+        pThis->__knvlinkGetSupportedCounters__ = &knvlinkGetSupportedCounters_GB100;
+    }
+    // default
+    else
+    {
+        pThis->__knvlinkGetSupportedCounters__ = &knvlinkGetSupportedCounters_46f6a7;
+    }
+
     // knvlinkInitMissing -- virtual inherited (engstate) base (engstate)
     pThis->__knvlinkInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_knvlinkInitMissing;
 
@@ -635,13 +704,13 @@ static void __nvoc_init_funcTable_KernelNvlink_1(KernelNvlink *pThis, RmHalspecO
 
     // knvlinkStateDestroy -- virtual inherited (engstate) base (engstate)
     pThis->__knvlinkStateDestroy__ = &__nvoc_up_thunk_OBJENGSTATE_knvlinkStateDestroy;
-} // End __nvoc_init_funcTable_KernelNvlink_1 with approximately 77 basic block(s).
+} // End __nvoc_init_funcTable_KernelNvlink_1 with approximately 88 basic block(s).
 
 
-// Initialize vtable(s) for 40 virtual method(s).
+// Initialize vtable(s) for 45 virtual method(s).
 void __nvoc_init_funcTable_KernelNvlink(KernelNvlink *pThis, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 40 per-object function pointer(s).
+    // Initialize vtable(s) with 45 per-object function pointer(s).
     __nvoc_init_funcTable_KernelNvlink_1(pThis, pRmhalspecowner);
 }
 

@@ -440,9 +440,9 @@ struct NvKmsLayerCapabilities {
     NvBool supportsWindowMode              :1;
 
     /*!
-     * Whether layer supports HDR pipe.
+     * Whether layer supports ICtCp pipe.
      */
-    NvBool supportsHDR                     :1;
+    NvBool supportsICtCp                   :1;
 
 
     /*!

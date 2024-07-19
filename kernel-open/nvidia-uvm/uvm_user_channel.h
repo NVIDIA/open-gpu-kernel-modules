@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2023 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -30,9 +30,9 @@
 #include "uvm_rb_tree.h"
 #include "nv-kref.h"
 
-// This structure contains the VA spaces of all the subcontexts in a TSG. It
+// This structure contains the GPU VA spaces of all the subcontexts in a TSG. It
 // is stored in a per-GPU UVM RB tree and is required to perform instance_ptr
-// to VA space translations when channels are registered in a subcontext,
+// to GPU VA space translations when channels are registered in a subcontext,
 // since SM fault/access counter notification packets may report any
 // instance_ptr in the TSG.
 typedef struct
@@ -46,7 +46,7 @@ typedef struct
     // Array of per-subcontext information
     struct
     {
-        uvm_va_space_t *va_space;
+        uvm_gpu_va_space_t *gpu_va_space;
 
         // Number of instance pointers referencing this specific subcontext
         NvU32 refcount;

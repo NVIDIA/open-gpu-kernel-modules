@@ -45,6 +45,7 @@
 #include "class/clc56f.h" // AMPERE_CHANNEL_GPFIFO_A
 #include "class/clc86f.h" // HOPPER_CHANNEL_GPFIFO_A
 #include "class/clc361.h" // VOLTA_USERMODE_A
+#include "class/clc96f.h" // BLACKWELL_CHANNEL_GPFIFO_A
 #include "ctrl/ctrl906f.h" // NV906F_CTRL_GET_CLASS_ENGINEID
 
 /*
@@ -1097,6 +1098,9 @@ NvBool __nvPushGetHal(
     NvPushHal *pHal)
 {
     switch (channelClass) {
+        case BLACKWELL_CHANNEL_GPFIFO_A:
+            // backwards compatible with Hopper
+            // fall through
         case HOPPER_CHANNEL_GPFIFO_A:
             pHal->caps.extendedBase = TRUE;
             // otherwise backwards compatible with the Volta DMA HAL

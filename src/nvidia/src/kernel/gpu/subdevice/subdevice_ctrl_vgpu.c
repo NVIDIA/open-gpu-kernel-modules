@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -188,4 +188,28 @@ subdeviceCtrlCmdGpuQueryEccStatus_VF
     }
 
     return status;
+}
+
+/*!
+ * @brief   This Command is used to report if the specified logo illumination attribute
+ *          is supported
+ *
+ * @param[in,out]   pConfigParams
+ *                  attribute:  The attribute whose support is to be determined.
+ *                  bSupported: indicator if the specified attribute is supported.
+ *
+ * @return  Returns NV_STATUS
+ *          NV_OK                     Success
+ *
+ */
+NV_STATUS
+subdeviceCtrlCmdGpuQueryIllumSupport_VF
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_CMD_GPU_QUERY_ILLUM_SUPPORT_PARAMS *pConfigParams
+)
+{
+    pConfigParams->bSupported = NV_FALSE;
+
+    return NV_OK;
 }

@@ -25,6 +25,7 @@
 
 #include <nv_ref.h>
 #include <nv.h>
+#include <nv_escape.h>
 #include <nv-priv.h>
 #include <os/os.h>
 #include <osapi.h>
@@ -32,10 +33,9 @@
 #include <rmosxfac.h> // Declares RmInitRm().
 #include "gpu/gpu.h"
 #include "gps.h"
-#include <osfuncs.h>
 #include <platform/chipset/chipset.h>
 
-#include <objtmr.h>
+#include <gpu/timer/objtmr.h>
 #include <gpu/subdevice/subdevice.h>
 #include <mem_mgr/mem.h>
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
@@ -406,6 +406,39 @@ static void free_os_events(
     portSyncSpinlockRelease(nv->event_spinlock);
 }
 
+static NV_STATUS get_os_event_data(
+    nv_file_private_t  *nvfp,
+    NvP64               pEvent,
+    NvU32              *MoreEvents
+)
+{
+    nv_event_t        nv_event;
+    NvUnixEvent      *nv_unix_event;
+    NV_STATUS         status;
+
+    status = os_alloc_mem((void**)&nv_unix_event, sizeof(NvUnixEvent));
+    if (status != NV_OK)
+        return status;
+
+    status = nv_get_event(nvfp, &nv_event, MoreEvents);
+    if (status != NV_OK)
+    {
+        status = NV_ERR_OPERATING_SYSTEM;
+        goto done;
+    }
+
+    os_mem_set(nv_unix_event, 0, sizeof(NvUnixEvent));
+    nv_unix_event->hObject     = nv_event.hObject;
+    nv_unix_event->NotifyIndex = nv_event.index;
+    nv_unix_event->info32      = nv_event.info32;
+    nv_unix_event->info16      = nv_event.info16;
+
+    status = os_memcpy_to_user(NvP64_VALUE(pEvent), nv_unix_event, sizeof(NvUnixEvent));
+done:
+    os_free_mem(nv_unix_event);
+    return status;
+}
+
 void rm_client_free_os_events(
     NvHandle client
 )
@@ -482,6 +515,12 @@ static NV_STATUS allocate_os_event(
         goto done;
     }
 
+    new_event->hParent  = hParent;
+    new_event->nvfp     = nvfp;
+    new_event->fd       = fd;
+    new_event->active   = NV_TRUE;
+    new_event->refcount = 0;
+
     portSyncSpinlockAcquire(nv->event_spinlock);
     for (event = nv->event_list; event; event = event->next)
     {
@@ -496,43 +535,24 @@ static NV_STATUS allocate_os_event(
 
     new_event->next = nv->event_list;
     nv->event_list = new_event;
+    nvfp->bCleanupRmapi = NV_TRUE;
     portSyncSpinlockRelease(nv->event_spinlock);
 
 done:
     if (status == NV_OK)
     {
-        new_event->hParent  = hParent;
-        new_event->nvfp     = nvfp;
-        new_event->fd       = fd;
-        new_event->active   = NV_TRUE;
-        new_event->refcount = 0;
-
-        nvfp->bCleanupRmapi = NV_TRUE;
-
         NV_PRINTF(LEVEL_INFO, "allocated OS event:\n");
         NV_PRINTF(LEVEL_INFO, "   hParent: 0x%x\n", hParent);
         NV_PRINTF(LEVEL_INFO, "   fd: %d\n", fd);
     }
     else
     {
+        NV_PRINTF(LEVEL_ERROR, "failed to allocate OS event: 0x%08x\n", status);
+        status = NV_ERR_INSUFFICIENT_RESOURCES;
         portMemFree(new_event);
     }
 
     return status;
-}
-
-NV_STATUS RmAllocOsEvent(
-    NvHandle            hParent,
-    nv_file_private_t  *nvfp,
-    NvU32               fd
-)
-{
-    if (NV_OK != allocate_os_event(hParent, nvfp, fd))
-    {
-        NV_PRINTF(LEVEL_ERROR, "failed to allocate OS event\n");
-        return NV_ERR_INSUFFICIENT_RESOURCES;
-    }
-    return NV_OK;
 }
 
 static NV_STATUS free_os_event(
@@ -585,18 +605,6 @@ static NV_STATUS free_os_event(
     return result;
 }
 
-NV_STATUS RmFreeOsEvent(
-    NvHandle    hParent,
-    NvU32       fd
-)
-{
-    if (NV_OK != free_os_event(hParent, fd))
-    {
-        return NV_ERR_INVALID_EVENT;
-    }
-    return NV_OK;
-}
-
 static void RmExecuteWorkItem(
     void *pWorkItem
 )
@@ -607,8 +615,8 @@ static void RmExecuteWorkItem(
 
     if (!(pWi->flags & NV_WORK_ITEM_FLAGS_REQUIRES_GPU) &&
         ((pWi->flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS) ||
-         (pWi->flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE_RW) ||
-         (pWi->flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW) ||
+         (pWi->flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE) ||
+         (pWi->flags & OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE) ||
          (pWi->flags & OS_QUEUE_WORKITEM_FLAGS_FULL_GPU_SANITY)))
     {
         // Requesting one of the GPU locks without providing a GPU instance
@@ -654,40 +662,6 @@ done:
     }
 
     portMemFree((void *)pWi);
-}
-
-static NV_STATUS RmGetEventData(
-    nv_file_private_t *nvfp,
-    NvP64 pEvent,
-    NvU32 *MoreEvents,
-    NvBool bUserModeArgs
-)
-{
-    NV_STATUS         RmStatus;
-    NvUnixEvent      *pKernelEvent = NULL;
-    nv_event_t        nv_event;
-    RMAPI_PARAM_COPY  paramCopy;
-
-    RmStatus = nv_get_event(nvfp, &nv_event, MoreEvents);
-    if (RmStatus != NV_OK)
-        return NV_ERR_OPERATING_SYSTEM;
-
-    // setup for access to client's parameters
-    RMAPI_PARAM_COPY_INIT(paramCopy, pKernelEvent, pEvent, 1, sizeof(NvUnixEvent));
-    RmStatus = rmapiParamsAcquire(&paramCopy, bUserModeArgs);
-    if (RmStatus != NV_OK)
-        return NV_ERR_OPERATING_SYSTEM;
-
-    pKernelEvent->hObject     = nv_event.hObject;
-    pKernelEvent->NotifyIndex = nv_event.index;
-    pKernelEvent->info32      = nv_event.info32;
-    pKernelEvent->info16      = nv_event.info16;
-
-    // release client buffer access, with copyout as needed
-    if (rmapiParamsRelease(&paramCopy) != NV_OK)
-        return NV_ERR_OPERATING_SYSTEM;
-
-    return NV_OK;
 }
 
 static NV_STATUS RmAccessRegistry(
@@ -1016,6 +990,7 @@ static NV_STATUS RmUpdateDeviceMappingInfo(
         goto done;
 
     if ((objDynamicCastById(pMappableRef->pResource, classId(Memory)) == NULL) &&
+        (objDynamicCastById(pMappableRef->pResource, classId(KernelCcuApi)) == NULL) &&
         (objDynamicCastById(pMappableRef->pResource, classId(KernelChannel)) == NULL))
     {
         status = NV_ERR_INVALID_OBJECT_HANDLE;
@@ -2107,7 +2082,7 @@ static NV_STATUS RmGetMmapPteArray(
     }
     else
     {
-        // Offset is accounted in mmap_start.
+        // Offset is accounted in nvuap->mmap_start.start.
         for (nvuap->page_array[0] = nvuap->mmap_start, i = 1;
              i < pages; i++)
         {
@@ -2738,16 +2713,68 @@ NV_STATUS NV_API_CALL rm_ioctl(
     NvU32               dataSize
 )
 {
-    NV_STATUS rmStatus;
+    NV_STATUS rmStatus = NV_OK;
     THREAD_STATE_NODE threadState;
     void *fp;
 
     NV_ENTER_RM_RUNTIME(sp,fp);
-    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
-    rmStatus = RmIoctl(pNv, nvfp, Command, pData, dataSize);
+    //
+    // Some ioctls are handled entirely inside the OS layer and don't need to
+    // suffer the overhead of calling into RM core.
+    //
+    switch (Command)
+    {
+        case NV_ESC_ALLOC_OS_EVENT:
+        {
+            nv_ioctl_alloc_os_event_t *pApi = pData;
 
-    threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
+            if (dataSize != sizeof(nv_ioctl_alloc_os_event_t))
+            {
+                rmStatus = NV_ERR_INVALID_ARGUMENT;
+                break;
+            }
+
+            pApi->Status = allocate_os_event(pApi->hClient, nvfp, pApi->fd);
+            break;
+        }
+        case NV_ESC_FREE_OS_EVENT:
+        {
+            nv_ioctl_free_os_event_t *pApi = pData;
+
+            if (dataSize != sizeof(nv_ioctl_free_os_event_t))
+            {
+                rmStatus = NV_ERR_INVALID_ARGUMENT;
+                break;
+            }
+
+            pApi->Status = free_os_event(pApi->hClient, pApi->fd);
+            break;
+        }
+        case NV_ESC_RM_GET_EVENT_DATA:
+        {
+            NVOS41_PARAMETERS *pApi = pData;
+
+            if (dataSize != sizeof(NVOS41_PARAMETERS))
+            {
+                rmStatus = NV_ERR_INVALID_ARGUMENT;
+                break;
+            }
+
+            pApi->status = get_os_event_data(nvfp,
+                                             pApi->pEvent,
+                                             &pApi->MoreEvents);
+            break;
+        }
+        default:
+        {
+            threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
+            rmStatus = RmIoctl(pNv, nvfp, Command, pData, dataSize);
+            threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
+            break;
+        }
+    }
+
     NV_EXIT_RM_RUNTIME(sp,fp);
 
     return rmStatus;
@@ -2880,65 +2907,6 @@ void NV_API_CALL rm_unbind_lock(
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
     NV_EXIT_RM_RUNTIME(sp,fp);
-}
-
-NV_STATUS rm_alloc_os_event(
-    NvHandle            hClient,
-    nv_file_private_t  *nvfp,
-    NvU32               fd
-)
-{
-    NV_STATUS RmStatus;
-
-    // LOCK: acquire API lock
-    if ((RmStatus = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_EVENT)) == NV_OK)
-    {
-        RmStatus = RmAllocOsEvent(hClient, nvfp, fd);
-
-        // UNLOCK: release API lock
-        rmapiLockRelease();
-    }
-
-    return RmStatus;
-}
-
-NV_STATUS rm_free_os_event(
-    NvHandle    hClient,
-    NvU32       fd
-)
-{
-    NV_STATUS RmStatus;
-
-    // LOCK: acquire API lock
-    if ((RmStatus = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_EVENT)) == NV_OK)
-    {
-        RmStatus = RmFreeOsEvent(hClient, fd);
-
-        // UNLOCK: release API lock
-        rmapiLockRelease();
-    }
-
-    return RmStatus;
-}
-
-NV_STATUS rm_get_event_data(
-    nv_file_private_t  *nvfp,
-    NvP64               pEvent,
-    NvU32              *MoreEvents
-)
-{
-    NV_STATUS RmStatus;
-
-    // LOCK: acquire API lock
-    if ((RmStatus = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_EVENT)) == NV_OK)
-    {
-        RmStatus = RmGetEventData(nvfp, pEvent, MoreEvents, NV_TRUE);
-
-        // UNLOCK: release API lock
-        rmapiLockRelease();
-    }
-
-    return RmStatus;
 }
 
 NV_STATUS NV_API_CALL rm_read_registry_dword(
@@ -3254,42 +3222,51 @@ NV_STATUS NV_API_CALL rm_run_rc_callback(
     return NV_OK;
 }
 
+static void _tmrEventServiceTimerWorkItem
+(
+    NvU32 gpuInstance,
+    void *pArgs  
+)
+{
+    OBJGPU *pGpu = gpumgrGetGpu(gpuInstance);
+    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
+    NV_STATUS status = NV_OK;
+
+    status = tmrEventServiceTimer(pGpu, pTmr, (TMR_EVENT *)pArgs);
+
+    if (status != NV_OK)
+        NV_PRINTF(LEVEL_ERROR, "Timer event failed from OS timer callback workitem with status :0x%x\n", status);
+}
+
 static NV_STATUS RmRunNanoTimerCallback(
     OBJGPU *pGpu,
     void *pTmrEvent
 )
 {
-    OBJTMR             *pTmr = GPU_GET_TIMER(pGpu);
     THREAD_STATE_NODE   threadState;
     NV_STATUS         status = NV_OK;
-    // LOCK: try to acquire GPUs lock
-    if ((status = rmGpuLocksAcquire(GPU_LOCK_FLAGS_COND_ACQUIRE, RM_LOCK_MODULES_TMR)) != NV_OK)
-    {
-        TMR_EVENT *pEvent = (TMR_EVENT *)pTmrEvent;
-        NvU64 timeNs = pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_RESUME_CODEPATH) ?
-                            TIMER_RESCHED_TIME_DURING_PM_RESUME_NS :
-                            osGetTickResolution();
-
-        //
-        // We failed to acquire the lock - depending on what's holding it,
-        // the lock could be held for a while, so try again soon, but not too
-        // soon to prevent the owner from making forward progress indefinitely.
-        //
-        return osStartNanoTimer(pGpu->pOsGpuInfo, pEvent->pOSTmrCBdata, timeNs);
-    }
 
     threadStateInitISRAndDeferredIntHandler(&threadState, pGpu,
         THREAD_STATE_FLAGS_IS_DEFERRED_INT_HANDLER);
 
-    // Call timer event service
-    status = tmrEventServiceTimer(pGpu, pTmr, (PTMR_EVENT)pTmrEvent);
+    //
+    // OS timers come in ISR context, hence schedule workitem for timer event service.
+    // GPU timer events are also handled in same mammer allowing us to have same functionality
+    // for callback functions.
+    //
+    status = osQueueWorkItemWithFlags(pGpu,
+                                      _tmrEventServiceTimerWorkItem,
+                                      pTmrEvent,
+                                      (OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE |
+                                       OS_QUEUE_WORKITEM_FLAGS_DONT_FREE_PARAMS));
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,"Queuing workitem for timer event failed with status :0x%x\n", status);
+    }
 
     // Out of conflicting thread
     threadStateFreeISRAndDeferredIntHandler(&threadState,
         pGpu, THREAD_STATE_FLAGS_IS_DEFERRED_INT_HANDLER);
-
-    // UNLOCK: release GPUs lock
-    rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, pGpu);
 
     return status;
 }
@@ -3542,7 +3519,7 @@ NV_STATUS NV_API_CALL rm_is_supported_device(
         bIsFirmwareCapable = gpumgrIsDeviceRmFirmwareCapable(pmc_boot_42,
                                                              NV_IS_SOC_DISPLAY_DEVICE(pNv),
                                                              NULL,
-                                                             NV_FALSE /* isMCDM */);
+                                                             NV_FALSE /* bIsTccOrMcdm */);
         if (!bIsFirmwareCapable)
         {
             if (hypervisorIsVgxHyper())

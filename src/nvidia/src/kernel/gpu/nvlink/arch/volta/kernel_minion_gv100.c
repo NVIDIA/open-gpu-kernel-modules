@@ -24,7 +24,7 @@
 #define NVOC_KERNEL_IOCTRL_H_PRIVATE_ACCESS_ALLOWED
 
 #include "os/os.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "kernel/gpu/nvlink/kernel_ioctrl.h"
 

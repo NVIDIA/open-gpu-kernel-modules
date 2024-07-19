@@ -110,7 +110,7 @@ static void __nvoc_init_funcTable_OBJFBSR_1(OBJFBSR *pThis, RmHalspecOwner *pRmh
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
     // fbsrBegin -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x100003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd00003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GH100 | GB100 | GB102 */ 
     {
         pThis->__fbsrBegin__ = &fbsrBegin_GM107;
     }
@@ -120,7 +120,7 @@ static void __nvoc_init_funcTable_OBJFBSR_1(OBJFBSR *pThis, RmHalspecOwner *pRmh
     }
 
     // fbsrEnd -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x100003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd00003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GH100 | GB100 | GB102 */ 
     {
         pThis->__fbsrEnd__ = &fbsrEnd_GM107;
     }
@@ -130,7 +130,7 @@ static void __nvoc_init_funcTable_OBJFBSR_1(OBJFBSR *pThis, RmHalspecOwner *pRmh
     }
 
     // fbsrSendMemsysProgramRawCompressionMode -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
         pThis->__fbsrSendMemsysProgramRawCompressionMode__ = &fbsrSendMemsysProgramRawCompressionMode_GA100;
     }

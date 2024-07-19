@@ -126,6 +126,19 @@ static void _calculateNvlinkCaps
 
     switch (ipVerNvlink)
     {
+        case NV2080_CTRL_NVLINK_CAPS_NVLINK_VERSION_5_0:
+        {
+            pParams->lowestNvlinkVersion  = NV2080_CTRL_NVLINK_CAPS_NVLINK_VERSION_5_0;
+            pParams->highestNvlinkVersion = NV2080_CTRL_NVLINK_CAPS_NVLINK_VERSION_5_0;
+            pParams->lowestNciVersion     = NV2080_CTRL_NVLINK_CAPS_NCI_VERSION_5_0;
+            pParams->highestNciVersion    = NV2080_CTRL_NVLINK_CAPS_NCI_VERSION_5_0;
+
+            // Supported power states
+            RMCTRL_SET_CAP(tempCaps, NV2080_CTRL_NVLINK_CAPS, _POWER_STATE_L0);
+            RMCTRL_SET_CAP(tempCaps, NV2080_CTRL_NVLINK_CAPS, _POWER_STATE_L1);
+            RMCTRL_SET_CAP(tempCaps, NV2080_CTRL_NVLINK_CAPS, _POWER_STATE_L2);
+            break;
+        }
         case NV2080_CTRL_NVLINK_CAPS_NVLINK_VERSION_4_0:
         {
             pParams->lowestNvlinkVersion  = NV2080_CTRL_NVLINK_CAPS_NVLINK_VERSION_4_0;
@@ -343,6 +356,7 @@ static _getNvlinkStatus
             case NV2080_CTRL_NVLINK_CAPS_NVLINK_VERSION_2_0:
                 RMCTRL_SET_CAP(tempCaps, NV2080_CTRL_NVLINK_CAPS, _POWER_STATE_L0);
                 break;
+            case NV2080_CTRL_NVLINK_CAPS_NVLINK_VERSION_5_0:
             case NV2080_CTRL_NVLINK_CAPS_NVLINK_VERSION_4_0:
             case NV2080_CTRL_NVLINK_CAPS_NVLINK_VERSION_3_1:
             case NV2080_CTRL_NVLINK_CAPS_NVLINK_VERSION_3_0:
@@ -372,6 +386,10 @@ static _getNvlinkStatus
 
         switch (ipVerNvlink)
         {
+            case NV2080_CTRL_NVLINK_CAPS_NVLINK_VERSION_5_0:
+                pParams->linkInfo[i].nvlinkVersion = NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_5_0;
+                pParams->linkInfo[i].nciVersion    = NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_5_0;
+                break;
             case NV2080_CTRL_NVLINK_CAPS_NVLINK_VERSION_4_0:
                 pParams->linkInfo[i].nvlinkVersion = NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_4_0;
                 pParams->linkInfo[i].nciVersion    = NV2080_CTRL_NVLINK_STATUS_NCI_VERSION_4_0;

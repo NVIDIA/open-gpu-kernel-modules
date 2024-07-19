@@ -38,6 +38,7 @@
 #include "gpu/gpu.h"
 
 /* ------------------------------------ Local Defines ------------------------------ */
+#define PMA_CHUNK_SIZE_256G (256ULL * 1024 * 1024 * 1024)
 #define PMA_CHUNK_SIZE_512M (512 * 1024 * 1024)
 #define PMA_CHUNK_SIZE_4M   (4 * 1024 * 1024)
 #define PMA_CHUNK_SIZE_2M   (2 * 1024 * 1024)
@@ -82,6 +83,7 @@
  */
 typedef enum
 {
+    RM_POOL_IDX_256G,
     RM_POOL_IDX_512M,
     RM_POOL_IDX_2M,
     RM_POOL_IDX_256K,
@@ -97,6 +99,7 @@ typedef enum
  * This array contains the alloction sizes (in bytes) of each pool.
  */
 static const NvU64 poolAllocSizes[] = {
+    0x4000000000,
     0x20000000, 0x200000, 0x40000, 0x20000, 0x10000, 0x2000, 0x1000, 0x100
 };
 
@@ -107,6 +110,7 @@ static const NvU64 poolConfig[POOL_CONFIG_MAX_SUPPORTED][POOL_CONFIG_CHUNKSIZE_I
      // page size        // chunk size
      { RM_POOL_IDX_256K, PMA_CHUNK_SIZE_512K},  // pool with pageSize = 256K for GMMU_FMT_VERSION_1
      { RM_POOL_IDX_4K,   PMA_CHUNK_SIZE_64K },  // pool with pageSize = 4K for GMMU_FMT_VERSION_2
+     { RM_POOL_IDX_256G, PMA_CHUNK_SIZE_256G }, // pool with pageSize = 256G for RM allocated buffers (unused as of blackwell)
      { RM_POOL_IDX_512M, PMA_CHUNK_SIZE_512M }, // pool with pageSize = 512MB for RM allocated buffers (unused as of ampere)
      { RM_POOL_IDX_2M,   PMA_CHUNK_SIZE_4M },   // pool with pageSize = 2MB for RM allocated buffers
      { RM_POOL_IDX_64K,  PMA_CHUNK_SIZE_256K }, // pool with pageSize = 64K for RM allocated buffers

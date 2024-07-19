@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +29,7 @@
 #include "published/ampere/ga100/dev_fb.h"
 #include "published/ampere/ga100/dev_vm.h"
 #include "published/ampere/ga100/dev_fuse.h"
+#include "published/ampere/ga100/dev_top.h"
 #include "virtualization/hypervisor/hypervisor.h"
 
 // Error containment error id string description.
@@ -46,8 +47,8 @@ NV_ERROR_CONT_STATE_TABLE g_errContStateTable[] = NV_ERROR_CONT_STATE_TABLE_SETT
  *
  * @returns NV_STATUS
  */
-static NV_STATUS _gpuGetErrorContStateTableIndex_GA100(OBJGPU              *pGpu,
-                                                       NV_ERROR_CONT_ERR_ID errorCode,
+static NV_STATUS _gpuGetErrorContStateTableIndex_GA100(OBJGPU               *pGpu,
+                                                       NV_ERROR_CONT_ERR_ID  errorCode,
                                                        NvU32                *pTableIndex);
 
 /*!
@@ -367,7 +368,9 @@ _gpuNotifySubDeviceEventNotifier_GA100
         case NV_ERROR_CONT_ERR_ID_E01_FB_ECC_DED:
         case NV_ERROR_CONT_ERR_ID_E02_FB_ECC_DED_IN_CBC_STORE:
         case NV_ERROR_CONT_ERR_ID_E09_FBHUB_POISON:
-        case NV_ERROR_CONT_ERR_ID_E20_XALEP_POISON:
+        case NV_ERROR_CONT_ERR_ID_E20_XALEP_EGRESS_POISON:
+        case NV_ERROR_CONT_ERR_ID_E21A_XALEP_INGRESS_CONTAINED_POISON:
+        case NV_ERROR_CONT_ERR_ID_E21B_XALEP_INGRESS_UNCONTAINED_POISON:
             info16 = FB_MEMORY_ERROR;
             break;
 
@@ -390,8 +393,8 @@ _gpuNotifySubDeviceEventNotifier_GA100
         case NV_ERROR_CONT_ERR_ID_E12B_CE_POISON_IN_KERNEL_CHANNEL:
             NV_ASSERT_OR_RETURN(loc.locType == NV_ERROR_CONT_LOCATION_TYPE_ENGINE, NV_ERR_INVALID_ARGUMENT);
             //
-            // If SMC is enabled, RM need to notify partition local engineId. Convert
-            // global ID to partition local if client has filled proper engineIDs
+            // If SMC is enabled, RM need to notify partition local engine ID. Convert
+            // global ID to partition local if client has filled proper engine IDs
             //
             localRmEngineType = loc.locInfo.engineLoc.rmEngineId;
             if (IS_MIG_IN_USE(pGpu) &&
@@ -400,10 +403,11 @@ _gpuNotifySubDeviceEventNotifier_GA100
                 KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
                 MIG_INSTANCE_REF ref;
 
-                NV_ASSERT_OK_OR_RETURN(kmigmgrGetInstanceRefFromDevice(pGpu,
-                                                                       pKernelMIGManager,
-                                                                       loc.locInfo.engineLoc.pDevice,
-                                                                       &ref));
+                NV_ASSERT_OK_OR_RETURN(
+                    kmigmgrGetInstanceRefFromDevice(pGpu,
+                                                    pKernelMIGManager,
+                                                    loc.locInfo.engineLoc.pDevice,
+                                                    &ref));
 
                 if (!kmigmgrIsEngineInInstance(pGpu, pKernelMIGManager, loc.locInfo.engineLoc.rmEngineId, ref))
                 {
@@ -415,11 +419,12 @@ _gpuNotifySubDeviceEventNotifier_GA100
                 }
 
                 // Override the engine type with the local engine idx
-                NV_ASSERT_OK_OR_RETURN(kmigmgrGetGlobalToLocalEngineType(pGpu,
-                                                                         pKernelMIGManager,
-                                                                         ref,
-                                                                         loc.locInfo.engineLoc.rmEngineId,
-                                                                         &localRmEngineType));
+                NV_ASSERT_OK_OR_RETURN(
+                    kmigmgrGetGlobalToLocalEngineType(pGpu,
+                                                      pKernelMIGManager,
+                                                      ref,
+                                                      loc.locInfo.engineLoc.rmEngineId,
+                                                      &localRmEngineType));
             }
 
             info16 = ROBUST_CHANNEL_CE_ERROR(NV2080_ENGINE_TYPE_COPY_IDX(localRmEngineType));
@@ -427,6 +432,37 @@ _gpuNotifySubDeviceEventNotifier_GA100
 
         case NV_ERROR_CONT_ERR_ID_E13_MMU_POISON:
             info16 = ROBUST_CHANNEL_FIFO_ERROR_MMU_ERR_FLT;
+            break;
+
+        case NV_ERROR_CONT_ERR_ID_E22_PMU_POISON:
+            info16 = PMU_ERROR;
+            break;
+
+        case NV_ERROR_CONT_ERR_ID_E23_SEC2_POISON:
+            info16 = ROBUST_CHANNEL_SEC2_ERROR;
+            break;
+
+        case NV_ERROR_CONT_ERR_ID_E24_GSP_POISON:
+            info16 = GSP_ERROR;
+            break;
+
+        case NV_ERROR_CONT_ERR_ID_E25_FBFALCON_POISON:
+            info16 = ROBUST_CHANNEL_UNCONTAINED_ERROR;
+            break;
+
+        case NV_ERROR_CONT_ERR_ID_E26_NVDEC_POISON:
+            localRmEngineType = loc.locInfo.engineLoc.rmEngineId;
+            info16 = ROBUST_CHANNEL_NVDEC_ERROR(NV2080_ENGINE_TYPE_NVDEC_IDX(localRmEngineType));
+            break;
+
+        case NV_ERROR_CONT_ERR_ID_E27_NVJPG_POISON:
+            localRmEngineType = loc.locInfo.engineLoc.rmEngineId;
+            info16 = ROBUST_CHANNEL_NVJPG_ERROR(NV2080_ENGINE_TYPE_NVJPEG_IDX(localRmEngineType));
+            break;
+
+        case NV_ERROR_CONT_ERR_ID_E28_OFA_POISON:
+            localRmEngineType = loc.locInfo.engineLoc.rmEngineId;
+            info16 = ROBUST_CHANNEL_OFA_ERROR(NV2080_ENGINE_TYPE_OFA_IDX(localRmEngineType));
             break;
     }
 
@@ -503,10 +539,9 @@ _gpuGenerateErrorLog_GA100(OBJGPU                           *pGpu,
             break;
 
         case NV_ERROR_CONT_LOCATION_TYPE_ENGINE:
-            NV_ASSERT_OR_RETURN(loc.locType == NV_ERROR_CONT_LOCATION_TYPE_ENGINE, NV_ERR_INVALID_ARGUMENT);
             //
-            // If SMC is enabled, RM need to notify partition local engineId. Convert
-            // global ID to partition local if client has filled proper engineIDs
+            // If SMC is enabled, RM need to notify partition local engine ID. Convert
+            // global ID to partition local if client has filled proper engine IDs
             //
             localRmEngineType = loc.locInfo.engineLoc.rmEngineId;
             if (IS_MIG_IN_USE(pGpu) &&
@@ -534,6 +569,19 @@ _gpuGenerateErrorLog_GA100(OBJGPU                           *pGpu,
                               ROBUST_CHANNEL_UNCONTAINED_ERROR_STR,
                           ppErrContErrorIdStr[errorCode],
                           gpuGetNv2080EngineType(localRmEngineType),
+                          pErrorContSmcSetting->bGpuResetReqd ? "Yes" : "No",
+                          pErrorContSmcSetting->bGpuDrainAndResetReqd ? "Yes" : "No");
+            break;
+
+        case NV_ERROR_CONT_LOCATION_TYPE_VF:
+            nvErrorLog_va((void *)pGpu,
+                          rcErrorCode,
+                          "%s: %s (0x%x). RST: %s, D-RST: %s",
+                          rcErrorCode == ROBUST_CHANNEL_CONTAINED_ERROR ?
+                              ROBUST_CHANNEL_CONTAINED_ERROR_STR :
+                              ROBUST_CHANNEL_UNCONTAINED_ERROR_STR,
+                          ppErrContErrorIdStr[errorCode],
+                          loc.locInfo.vfGfid,
                           pErrorContSmcSetting->bGpuResetReqd ? "Yes" : "No",
                           pErrorContSmcSetting->bGpuDrainAndResetReqd ? "Yes" : "No");
             break;
@@ -664,3 +712,32 @@ gpuCheckIfFbhubPoisonIntrPending_GA100
 {
     return intrIsVectorPending_HAL(pGpu, GPU_GET_INTR(pGpu), NV_PFB_FBHUB_POISON_INTR_VECTOR_HW_INIT, NULL);
 }
+
+
+
+NV_STATUS
+gpuGetDeviceInfoTableSectionInfos_GA100
+(
+    OBJGPU                    *pGpu,
+    DeviceInfoTableSectionVec *pVec
+)
+{
+    NV_ASSERT_OR_RETURN(pVec != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    NvU32 deviceInfoCfg = GPU_REG_RD32(pGpu, NV_PTOP_DEVICE_INFO_CFG);
+
+    DeviceInfoTableSection section = {
+        .row0Addr   = NV_PTOP_DEVICE_INFO2(0),
+        .maxDevices = DRF_VAL(_PTOP, _DEVICE_INFO_CFG, _MAX_DEVICES,
+                              deviceInfoCfg),
+        .maxRows    = DRF_VAL(_PTOP, _DEVICE_INFO_CFG, _NUM_ROWS,
+                              deviceInfoCfg),
+        .maxRowsPerDevice = DRF_VAL(_PTOP, _DEVICE_INFO_CFG,
+                                    _MAX_ROWS_PER_DEVICE,
+                                    deviceInfoCfg)};
+
+    NV_ASSERT_OR_RETURN(vectAppend(pVec, &section) != NULL, NV_ERR_NO_MEMORY);
+
+    return NV_OK;
+};
+

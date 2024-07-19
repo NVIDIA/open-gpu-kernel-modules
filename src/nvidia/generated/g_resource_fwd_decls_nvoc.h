@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1233,6 +1233,17 @@ typedef struct KernelCcuApi KernelCcuApi;
 #define __nvoc_class_id_KernelCcuApi 0x3abed3
 #endif /* __nvoc_class_id_KernelCcuApi */
 
+struct CeUtilsApi;
+
+#ifndef __NVOC_CLASS_CeUtilsApi_TYPEDEF__
+#define __NVOC_CLASS_CeUtilsApi_TYPEDEF__
+typedef struct CeUtilsApi CeUtilsApi;
+#endif /* __NVOC_CLASS_CeUtilsApi_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_CeUtilsApi
+#define __nvoc_class_id_CeUtilsApi 0x2eb528
+#endif /* __nvoc_class_id_CeUtilsApi */
+
 struct LockStressObject;
 
 #ifndef __NVOC_CLASS_LockStressObject_TYPEDEF__
@@ -1283,6 +1294,7 @@ struct NVOCFwdDeclHack {
     struct KernelChannel *PRIVATE_FIELD(KernelChannel_TURING_CHANNEL_GPFIFO_A);
     struct KernelChannel *PRIVATE_FIELD(KernelChannel_AMPERE_CHANNEL_GPFIFO_A);
     struct KernelChannel *PRIVATE_FIELD(KernelChannel_HOPPER_CHANNEL_GPFIFO_A);
+    struct KernelChannel *PRIVATE_FIELD(KernelChannel_BLACKWELL_CHANNEL_GPFIFO_A);
     struct UvmChannelRetainer *PRIVATE_FIELD(UvmChannelRetainer_UVM_CHANNEL_RETAINER);
     struct KernelCtxShareApi *PRIVATE_FIELD(KernelCtxShareApi_FERMI_CONTEXT_SHARE_A);
     struct KernelGraphicsContext *PRIVATE_FIELD(KernelGraphicsContext_KERNEL_GRAPHICS_CONTEXT);
@@ -1370,18 +1382,22 @@ struct NVOCFwdDeclHack {
     struct KernelCeContext *PRIVATE_FIELD(KernelCeContext_AMPERE_DMA_COPY_A);
     struct KernelCeContext *PRIVATE_FIELD(KernelCeContext_AMPERE_DMA_COPY_B);
     struct KernelCeContext *PRIVATE_FIELD(KernelCeContext_HOPPER_DMA_COPY_A);
+    struct KernelCeContext *PRIVATE_FIELD(KernelCeContext_BLACKWELL_DMA_COPY_A);
     struct NvdecContext *PRIVATE_FIELD(NvdecContext_NVB8B0_VIDEO_DECODER);
     struct NvdecContext *PRIVATE_FIELD(NvdecContext_NVC4B0_VIDEO_DECODER);
     struct NvdecContext *PRIVATE_FIELD(NvdecContext_NVC6B0_VIDEO_DECODER);
     struct NvdecContext *PRIVATE_FIELD(NvdecContext_NVC7B0_VIDEO_DECODER);
     struct NvdecContext *PRIVATE_FIELD(NvdecContext_NVC9B0_VIDEO_DECODER);
+    struct NvdecContext *PRIVATE_FIELD(NvdecContext_NVCDB0_VIDEO_DECODER);
     struct NvjpgContext *PRIVATE_FIELD(NvjpgContext_NVB8D1_VIDEO_NVJPG);
     struct NvjpgContext *PRIVATE_FIELD(NvjpgContext_NVC4D1_VIDEO_NVJPG);
     struct NvjpgContext *PRIVATE_FIELD(NvjpgContext_NVC9D1_VIDEO_NVJPG);
+    struct NvjpgContext *PRIVATE_FIELD(NvjpgContext_NVCDD1_VIDEO_NVJPG);
     struct OfaContext *PRIVATE_FIELD(OfaContext_NVB8FA_VIDEO_OFA);
     struct OfaContext *PRIVATE_FIELD(OfaContext_NVC6FA_VIDEO_OFA);
     struct OfaContext *PRIVATE_FIELD(OfaContext_NVC7FA_VIDEO_OFA);
     struct OfaContext *PRIVATE_FIELD(OfaContext_NVC9FA_VIDEO_OFA);
+    struct OfaContext *PRIVATE_FIELD(OfaContext_NVCDFA_VIDEO_OFA);
     struct MsencContext *PRIVATE_FIELD(MsencContext_NVC4B7_VIDEO_ENCODER);
     struct MsencContext *PRIVATE_FIELD(MsencContext_NVB4B7_VIDEO_ENCODER);
     struct MsencContext *PRIVATE_FIELD(MsencContext_NVC7B7_VIDEO_ENCODER);
@@ -1395,6 +1411,9 @@ struct NVOCFwdDeclHack {
     struct KernelGraphicsObject *PRIVATE_FIELD(KernelGraphicsObject_ADA_COMPUTE_A);
     struct KernelGraphicsObject *PRIVATE_FIELD(KernelGraphicsObject_HOPPER_A);
     struct KernelGraphicsObject *PRIVATE_FIELD(KernelGraphicsObject_HOPPER_COMPUTE_A);
+    struct KernelGraphicsObject *PRIVATE_FIELD(KernelGraphicsObject_BLACKWELL_A);
+    struct KernelGraphicsObject *PRIVATE_FIELD(KernelGraphicsObject_BLACKWELL_COMPUTE_A);
+    struct KernelGraphicsObject *PRIVATE_FIELD(KernelGraphicsObject_BLACKWELL_INLINE_TO_MEMORY_A);
     struct KernelGraphicsObject *PRIVATE_FIELD(KernelGraphicsObject_FERMI_TWOD_A);
     struct KernelGraphicsObject *PRIVATE_FIELD(KernelGraphicsObject_KEPLER_INLINE_TO_MEMORY_B);
     struct KernelGraphicsObject *PRIVATE_FIELD(KernelGraphicsObject_TURING_A);
@@ -1406,6 +1425,7 @@ struct NVOCFwdDeclHack {
     struct Event *PRIVATE_FIELD(Event_NV01_EVENT_KERNEL_CALLBACK_EX);
     struct ConfidentialComputeApi *PRIVATE_FIELD(ConfidentialComputeApi_NV_CONFIDENTIAL_COMPUTE);
     struct KernelCcuApi *PRIVATE_FIELD(KernelCcuApi_NV_COUNTER_COLLECTION_UNIT);
+    struct CeUtilsApi *PRIVATE_FIELD(CeUtilsApi_NV_CE_UTILS);
     struct LockStressObject *PRIVATE_FIELD(LockStressObject_LOCK_STRESS_OBJECT);
 };
 

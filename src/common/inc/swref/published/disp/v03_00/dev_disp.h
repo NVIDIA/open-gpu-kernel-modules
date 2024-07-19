@@ -70,10 +70,55 @@
 #define NV_PDISP_RG_DPCA_FRM_CNT                                                    31:16 /* R--UF */
 #define NV_PDISP_FE_FLIPLOCK                                                   0x0061206C /* RW-4R */
 #define NV_PDISP_FE_FLIPLOCK_LSR_MIN_TIME                                            23:0 /* RWIVF */
+
+#define NV_PDISP_FE_RM_INTR_DISPATCH                                          0x00611EC0 /* R--4R */
+
+#define NV_PDISP_FE_RM_INTR_DISPATCH_HEAD_TIMING(i)                                      (0+(i)):(0+(i)) /*       */
+#define NV_PDISP_FE_RM_INTR_DISPATCH_HEAD_TIMING__SIZE_1                                               8 /*       */
+#define NV_PDISP_FE_RM_INTR_DISPATCH_HEAD_TIMING_NOT_PENDING                                  0x00000000 /*       */
+#define NV_PDISP_FE_RM_INTR_DISPATCH_HEAD_TIMING_PENDING                                      0x00000001 /*       */
+
+#define NV_PDISP_FE_RM_INTR_STAT_HEAD_TIMING(i)                                       (0x00611C00+(i)*4) /* R--4A */
+#define NV_PDISP_FE_RM_INTR_STAT_HEAD_TIMING__SIZE_1                                                   8 /*       */
+
+#define NV_PDISP_FE_RM_INTR_STAT_HEAD_TIMING_LAST_DATA                                               1:1 /* R-IVF */
+#define NV_PDISP_FE_RM_INTR_STAT_HEAD_TIMING_LAST_DATA_NOT_PENDING                            0x00000000 /* R-I-V */
+#define NV_PDISP_FE_RM_INTR_STAT_HEAD_TIMING_LAST_DATA_PENDING                                0x00000001 /* R---V */
+
+#define NV_PDISP_FE_RM_INTR_STAT_HEAD_TIMING_RG_LINE_A                                               5:5 /* R-IVF */
+#define NV_PDISP_FE_RM_INTR_STAT_HEAD_TIMING_RG_LINE_A_NOT_PENDING                            0x00000000 /* R-I-V */
+#define NV_PDISP_FE_RM_INTR_STAT_HEAD_TIMING_RG_LINE_A_PENDING                                0x00000001 /* R---V */
+
+#define NV_PDISP_FE_RM_INTR_STAT_HEAD_TIMING_RG_LINE_B                                               6:6 /* R-IVF */
+#define NV_PDISP_FE_RM_INTR_STAT_HEAD_TIMING_RG_LINE_B_NOT_PENDING                            0x00000000 /* R-I-V */
+#define NV_PDISP_FE_RM_INTR_STAT_HEAD_TIMING_RG_LINE_B_PENDING                                0x00000001 /* R---V */
+
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING(i)                                           (0x00611800+(i)*4) /* RW-4A */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING__SIZE_1                                                       8 /*       */
+
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_LAST_DATA                                                   1:1 /* RWIVF */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_LAST_DATA_INIT                                       0x00000000 /* R-I-V */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_LAST_DATA_NOT_PENDING                                0x00000000 /* R---V */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_LAST_DATA_PENDING                                    0x00000001 /* R---V */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_LAST_DATA_RESET                                      0x00000001 /* -W--V */
+
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_RG_LINE_A                                                   5:5 /* RWIVF */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_RG_LINE_A_INIT                                       0x00000000 /* R-I-V */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_RG_LINE_A_NOT_PENDING                                0x00000000 /* R---V */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_RG_LINE_A_PENDING                                    0x00000001 /* R---V */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_RG_LINE_A_RESET                                      0x00000001 /* -W--V */
+
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_RG_LINE_B                                                   6:6 /* RWIVF */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_RG_LINE_B_INIT                                       0x00000000 /* R-I-V */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_RG_LINE_B_NOT_PENDING                                0x00000000 /* R---V */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_RG_LINE_B_PENDING                                    0x00000001 /* R---V */
+#define NV_PDISP_FE_EVT_STAT_HEAD_TIMING_RG_LINE_B_RESET                                      0x00000001 /* -W--V */
+
 #define NV_PDISP_FE_RM_INTR_STAT_CTRL_DISP                                     0x00611C30 /* R--4R */
 #define NV_PDISP_FE_RM_INTR_STAT_CTRL_DISP_AWAKEN                                     8:8 /* R-IVF */
 #define NV_PDISP_FE_RM_INTR_STAT_CTRL_DISP_AWAKEN_NOT_PENDING                  0x00000000 /* R-I-V */
 #define NV_PDISP_FE_RM_INTR_STAT_CTRL_DISP_AWAKEN_PENDING                      0x00000001 /* R---V */
+
 #define NV_PDISP_POSTCOMP_HEAD_LOADV_COUNTER(i)                    (0x0061611C+(i)*2048) /* RW-4A */
 #define NV_PDISP_POSTCOMP_HEAD_LOADV_COUNTER__SIZE_1                                   8 /*       */
 #define NV_PDISP_POSTCOMP_HEAD_LOADV_COUNTER_VALUE                                  31:0 /* RWIUF */
@@ -81,4 +126,5 @@
 #define NV_PDISP_POSTCOMP_HEAD_LOADV_COUNTER_VALUE_ZERO                       0x00000000 /* RW--V */
 #define NV_PDISP_POSTCOMP_HEAD_LOADV_COUNTER_VALUE_HW                         0x00000000 /* R---V */
 #define NV_PDISP_POSTCOMP_HEAD_LOADV_COUNTER_VALUE_SW                         0x00000000 /* -W--V */
+
 #endif // __v03_00_dev_disp_h__

@@ -23,6 +23,10 @@
 
 #ifndef __gp100_dev_ctxsw_prog_h__
 #define __gp100_dev_ctxsw_prog_h__
+#define NV_CTXSW_TIMESTAMP_BUFFER_RD_WR_POINTER                            30:0  /*     */
+#define NV_CTXSW_TIMESTAMP_BUFFER_MAILBOX1_TRACE_FEATURE                  31:31  /*     */
+#define NV_CTXSW_TIMESTAMP_BUFFER_MAILBOX1_TRACE_FEATURE_ENABLED            0x1  /*     */
+#define NV_CTXSW_TIMESTAMP_BUFFER_MAILBOX1_TRACE_FEATURE_DISABLED           0x0  /*     */
 #define NV_CTXSW_GFXP_POOL_CTRL_BLK_PREEMPT_OFFSET                   0x00000000 /* RW-4R */
 #define NV_CTXSW_GFXP_POOL_CTRL_BLK_SPILL_OFFSET                     0x00000004 /* RW-4R */
 #define NV_CTXSW_GFXP_POOL_CTRL_BLK_CB_OFFSET                        0x00000008 /* RW-4R */

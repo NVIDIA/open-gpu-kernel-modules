@@ -127,12 +127,12 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_DeferredApiObject =
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DeferredApiObject[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40048u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) defapiCtrlCmdDeferredApi_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
-        /*flags=*/      0x48u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40048u)
+        /*flags=*/      0x40048u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x50800101u,
         /*paramSize=*/  sizeof(NV5080_CTRL_DEFERRED_API_PARAMS),
@@ -404,7 +404,7 @@ static void __nvoc_init_funcTable_DeferredApiObject_1(DeferredApiObject *pThis) 
     pThis->__nvoc_base_ChannelDescendant.__chandesIsSwMethodStalling__ = &__nvoc_down_thunk_DeferredApiObject_chandesIsSwMethodStalling;
 
     // defapiCtrlCmdDeferredApi -- exported (id=0x50800101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40048u)
     pThis->__defapiCtrlCmdDeferredApi__ = &defapiCtrlCmdDeferredApi_IMPL;
 #endif
 

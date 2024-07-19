@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,6 +33,8 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/pmu/kern_pmu.h"
 #include "fsp/nvdm_payload_cmd_response.h"
+#include "fsp/fsp_clock_boost_rpc.h"
+#include "fsp/fsp_caps_query_rpc.h"
 
 #include "published/hopper/gh100/dev_fsp_pri.h"
 #include "published/hopper/gh100/dev_fsp_addendum.h"
@@ -396,6 +398,7 @@ kfspProcessNvdmMessage_GH100
     return status;
 }
 
+
 /*!
  * @brief Process FSP command response
  *
@@ -426,7 +429,6 @@ kfspProcessCommandResponse_GH100
     }
 
     pCmdResponse = (NVDM_PAYLOAD_COMMAND_RESPONSE *)&(pBuffer[1]);
-
     NV_PRINTF(LEVEL_INFO, "Received FSP command response. Task ID: 0x%0x Command type: 0x%0x Error code: 0x%0x\n",
               pCmdResponse->taskId, pCmdResponse->commandNvdmType, pCmdResponse->errorCode);
 
@@ -437,7 +439,6 @@ kfspProcessCommandResponse_GH100
     }
     else if (status != NV_ERR_OBJECT_NOT_FOUND)
     {
-
         NV_PRINTF(LEVEL_ERROR, "FSP response reported error. Task ID: 0x%0x Command type: 0x%0x Error code: 0x%0x\n",
                 pCmdResponse->taskId, pCmdResponse->commandNvdmType, pCmdResponse->errorCode);
     }
@@ -642,25 +643,6 @@ kfspWaitForSecureBoot_GH100
     return status;
 }
 
-/*!
- * @brief Check if GSP-FMC Inst_in_sys ucode needs to be booted.
- *
- * @param[in]  pGpu          OBJGPU pointer
- * @param[in]  pKernelFsp    KernelFsp pointer
- *
- * @return NV_TRUE if GSP Inst_in_sys FMC needs to be booted, or NV_FALSE otherwise
- */
-NvBool
-kfspCheckGspSecureScratch_GH100
-(
-    OBJGPU    *pGpu,
-    KernelFsp *pKernelFsp
-)
-{
-
-    return NV_FALSE;
-}
-
 static const BINDATA_ARCHIVE *
 kfspGetGspUcodeArchive
 (
@@ -684,6 +666,7 @@ kfspGetGspUcodeArchive
             }
             else
             {
+
                 return kgspGetBinArchiveGspRmFmcGfwDebugSigned_HAL(pKernelGsp);
             }
         }
@@ -708,7 +691,7 @@ kfspGetGspUcodeArchive
         NV_PRINTF(LEVEL_ERROR, "Loading GSP image for monolithic RM using FSP.\n");
         if (gspIsDebugModeEnabled_HAL(pGpu, pGsp))
         {
-            if (kfspCheckGspSecureScratch_HAL(pGpu, pKernelFsp))
+            if (gpuIsGspToBootInInstInSysMode_HAL(pGpu))
             {
                 return gspGetBinArchiveGspFmcInstInSysGfwDebugSigned_HAL(pGsp);
             }
@@ -722,10 +705,10 @@ kfspGetGspUcodeArchive
                 //
                 NV_ASSERT_OR_RETURN(gspSetupRMProxyImage(pGpu, pGsp) == NV_OK, NULL);
 
-                // For debug board if CC is enabled pick spdm profile of gspcc ucode
-                if (pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED) == NV_TRUE)
+                // For debug board, when CC enabled, only pick SPDM profile if SPDM is enabled.
+                if ((pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED)      == NV_TRUE) &&
+                    (pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_SPDM_ENABLED) == NV_TRUE))
                 {
-
                     {
                         return gspGetBinArchiveGspFmcSpdmGfwDebugSigned_HAL(pGsp);
                     }
@@ -738,14 +721,15 @@ kfspGetGspUcodeArchive
         }
         else
         {
-            if (kfspCheckGspSecureScratch_HAL(pGpu, pKernelFsp))
+            if (gpuIsGspToBootInInstInSysMode_HAL(pGpu))
             {
                 return gspGetBinArchiveGspFmcInstInSysGfwProdSigned_HAL(pGsp);
             }
             else
             {
                 NV_ASSERT_OR_RETURN(gspSetupRMProxyImage(pGpu, pGsp) == NV_OK, NULL);
-                if (pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED) == NV_TRUE)
+                if ((pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED)      == NV_TRUE) &&
+                    (pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_SPDM_ENABLED) == NV_TRUE))
                 {
                     return gspGetBinArchiveGspCcFmcGfwProdSigned_HAL(pGsp);
                 }
@@ -877,10 +861,14 @@ kfspSetupGspImages
     status = bindataWriteToBuffer(pGspImageHash, (NvU8*)pCotPayload->hash384, sizeof(pCotPayload->hash384));
     NV_ASSERT_OR_GOTO(status == NV_OK, failed);
 
-    status = bindataWriteToBuffer(pGspImageSignature, (NvU8*)pCotPayload->signature, sizeof(pCotPayload->signature));
+    NV_ASSERT_OR_GOTO(bindataGetBufferSize(pGspImageSignature) == pKernelFsp->cotPayloadSignatureSize, failed);
+    NV_ASSERT_OR_GOTO(bindataGetBufferSize(pGspImageSignature) <= sizeof(pCotPayload->signature), failed);
+    status = bindataWriteToBuffer(pGspImageSignature, (NvU8*)pCotPayload->signature, bindataGetBufferSize(pGspImageSignature));
     NV_ASSERT_OR_GOTO(status == NV_OK, failed);
 
-    status = bindataWriteToBuffer(pGspImagePublicKey, (NvU8*)pCotPayload->publicKey, sizeof(pCotPayload->publicKey));
+    NV_ASSERT_OR_GOTO(bindataGetBufferSize(pGspImagePublicKey) == pKernelFsp->cotPayloadPublicKeySize, failed);
+    NV_ASSERT_OR_GOTO(bindataGetBufferSize(pGspImagePublicKey) <= sizeof(pCotPayload->publicKey), failed);
+    status = bindataWriteToBuffer(pGspImagePublicKey, (NvU8*)pCotPayload->publicKey, bindataGetBufferSize(pGspImagePublicKey));
     NV_ASSERT_OR_GOTO(status == NV_OK, failed);
 
     // Set up boot args based on the mode of operation
@@ -984,6 +972,8 @@ kfspDumpDebugState_GH100
 
     NV_PRINTF(LEVEL_ERROR, "GPU %04x:%02x:%02x\n",
               gpuGetDomain(pGpu), gpuGetBus(pGpu), gpuGetDevice(pGpu));
+
+
     NV_PRINTF(LEVEL_ERROR, "NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(0) = 0x%x\n",
               GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(0)));
     NV_PRINTF(LEVEL_ERROR, "NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(1) = 0x%x\n",
@@ -992,6 +982,11 @@ kfspDumpDebugState_GH100
               GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(2)));
     NV_PRINTF(LEVEL_ERROR, "NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(3) = 0x%x\n",
               GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(3)));
+
+    NV_PRINTF(LEVEL_ERROR, "NV_PGSP_FALCON_MAILBOX0 = 0x%x\n",
+              GPU_REG_RD32(pGpu, NV_PGSP_FALCON_MAILBOX0));
+    NV_PRINTF(LEVEL_ERROR, "NV_PGSP_FALCON_MAILBOX1 = 0x%x\n",
+              GPU_REG_RD32(pGpu, NV_PGSP_FALCON_MAILBOX1));
 }
 
 /*!
@@ -1096,7 +1091,7 @@ kfspPrepareBootCommands_GH100
 {
     NV_STATUS status = NV_OK;
     NV_STATUS statusBoot;
-
+    NvU32 data = 0;
     NvU32 frtsSize = 0;
     NvP64 pVaKernel = NULL;
     NvP64 pPrivKernel = NULL;
@@ -1117,6 +1112,45 @@ kfspPrepareBootCommands_GH100
         goto failed;
     }
 
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_RESUME_CODEPATH))
+    {
+        if (!IS_GSP_CLIENT(pGpu))
+        {
+            kfspCheckForClockBoostCapability_HAL(pGpu, pKernelFsp);
+        }
+
+        pKernelFsp->bClockBoostDisabledViaRegkey = NV_FALSE;
+
+        // Read and parse clock boost regkey, for the feature override
+        if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_BOOT_GSPRM_WITH_BOOST_CLOCKS, &data) == NV_OK) &&
+            (data == NV_REG_STR_RM_BOOT_GSPRM_WITH_BOOST_CLOCKS_DISABLED))
+        {
+            pKernelFsp->bClockBoostDisabledViaRegkey = NV_TRUE;
+        }
+    }
+
+    if (pKernelFsp->bClockBoostSupported)
+    {
+        NvU8 cmd;
+
+        if (pKernelFsp->bClockBoostDisabledViaRegkey)
+        {
+            cmd = FSP_CLOCK_BOOST_FEATURE_DISABLE_SUBMESSAGE_ID;
+        }
+        else
+        {
+            cmd = FSP_CLOCK_BOOST_FEATURE_ENABLE_SUBMESSAGE_ID;
+        }
+
+        status = kfspSendClockBoostRpc_HAL(pGpu, pKernelFsp, cmd);
+
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Clock boost feature cmd %d via FSP failed with error 0x%x\n", cmd, status);
+            goto failed;
+        }
+    }
+
     pKernelFsp->pCotPayload = portMemAllocNonPaged(sizeof(NVDM_PAYLOAD_COT));
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pKernelFsp->pCotPayload != NULL, NV_ERR_NO_MEMORY);
     portMemSet(pKernelFsp->pCotPayload, 0, sizeof(NVDM_PAYLOAD_COT));
@@ -1124,7 +1158,7 @@ kfspPrepareBootCommands_GH100
     frtsSize = NV_PGC6_AON_FRTS_INPUT_WPR_SIZE_SECURE_SCRATCH_GROUP_03_0_WPR_SIZE_1MB_IN_4K << 12;
     NV_ASSERT(frtsSize != 0);
 
-    pKernelFsp->pCotPayload->version = 1;
+    pKernelFsp->pCotPayload->version = pKernelFsp->cotPayloadVersion;
     pKernelFsp->pCotPayload->size = sizeof(NVDM_PAYLOAD_COT);
 
     // Set up sysmem for FRTS copy
@@ -1181,9 +1215,20 @@ kfspPrepareBootCommands_GH100
             memmgrGetFBEndReserveSizeEstimate_HAL(pGpu, GPU_GET_MEMORY_MANAGER(pGpu));
 
         //
-        // Layout: 0|| ....... | FRTS | rsvd est ||END
-        // frtsOffsetFromEnd =        ^ ........ ^
+        // Layout: 0|| ....... | FRTS | PMU | rsvd est ||END
+        // frtsOffsetFromEnd =        ^ .............. ^
         //
+        if (kpmuReservedMemorySizeGet(GPU_GET_KERNEL_PMU(pGpu)) != 0U)
+        {
+            frtsOffsetFromEnd += kfspGetExtraReservedMemorySize_HAL(pGpu, pKernelFsp) +
+                kpmuReservedMemorySizeGet(GPU_GET_KERNEL_PMU(pGpu));
+
+            //
+            // 2M alignment seems to be required? Should be NOP unless kpmuReserve
+            // is non 0 and GH100 WAR is needed
+            //
+            frtsOffsetFromEnd = NV_ALIGN_UP(frtsOffsetFromEnd, 0x200000U);
+        }
         KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
 
         //

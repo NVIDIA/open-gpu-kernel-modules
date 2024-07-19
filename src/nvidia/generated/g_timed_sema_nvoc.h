@@ -45,7 +45,7 @@ extern "C" {
 #include "core/core.h"
 #include "kernel/gpu/fifo/channel_descendant.h"
 #include "ctrl/ctrl9074.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 
 typedef struct
 {

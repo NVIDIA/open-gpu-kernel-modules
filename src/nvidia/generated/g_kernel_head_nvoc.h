@@ -52,7 +52,34 @@ extern "C" {
 #include "gpu/eng_state.h"
 #include "gpu/disp/vblank_callback/vblank.h"
 #include "gpu/gpu_halspec.h"
+
 /* ------------------------ Types definitions ------------------------------ */
+typedef enum
+{
+    headIntr_None                               = 0,
+    headIntr_Vblank                             = NVBIT(0),
+    headIntr_RgUnderflow                        = NVBIT(1),
+    headIntr_SdBucketWalkDone                   = NVBIT(2),
+    headIntr_RgVblank                           = NVBIT(3),
+    headIntr_VactiveSpaceVblank                 = NVBIT(4),
+    headIntr_RgVactiveSpaceVblank               = NVBIT(5),
+    headIntr_RgStall                            = NVBIT(6),
+    headIntr_LoadV                              = NVBIT(7),
+    headIntr_LastData                           = NVBIT(8),
+    headIntr_RgLineA                            = NVBIT(9),
+    headIntr_RgLineB                            = NVBIT(10),
+    headIntr_CrcMismatch                        = NVBIT(11),
+    headIntr_SecPolicy                          = NVBIT(12),
+    headIntr_DmiLine                            = NVBIT(13),
+    headIntr_SfDpOverflow                       = NVBIT(14),
+    headIntr_RgSem0                             = NVBIT(15),
+    headIntr_RgSem1                             = NVBIT(16),
+    headIntr_RgSem2                             = NVBIT(17),
+    headIntr_RgSem3                             = NVBIT(18),
+    headIntr_RgSem4                             = NVBIT(19),
+    headIntr_RgSem5                             = NVBIT(20),
+} HEADINTR, HEADINTRMASK;
+
 /* ------------------------ Macros & Defines ------------------------------- */
 
 
@@ -94,7 +121,7 @@ struct KernelHead {
     struct Object *__nvoc_pbase_Object;    // obj super
     struct KernelHead *__nvoc_pbase_KernelHead;    // khead
 
-    // Vtable with 7 per-object function pointers
+    // Vtable with 10 per-object function pointers
     NvBool (*__kheadReadVblankIntrEnable__)(struct OBJGPU *, struct KernelHead * /*this*/);  // halified (2 hals) body
     NvBool (*__kheadGetDisplayInitialized__)(struct OBJGPU *, struct KernelHead * /*this*/);  // halified (2 hals) body
     void (*__kheadWriteVblankIntrEnable__)(struct OBJGPU *, struct KernelHead * /*this*/, NvBool);  // halified (2 hals) body
@@ -102,6 +129,9 @@ struct KernelHead {
     void (*__kheadResetPendingVblank__)(struct OBJGPU *, struct KernelHead * /*this*/, THREAD_STATE_NODE *);  // halified (2 hals) body
     NvBool (*__kheadReadPendingVblank__)(struct OBJGPU *, struct KernelHead * /*this*/, NvU32 *, THREAD_STATE_NODE *);  // halified (2 hals) body
     NvU32 (*__kheadGetLoadVCounter__)(struct OBJGPU *, struct KernelHead * /*this*/);  // halified (2 hals) body
+    NvU32 (*__kheadReadPendingRgLineIntr__)(struct OBJGPU *, struct KernelHead * /*this*/, THREAD_STATE_NODE *);  // halified (2 hals) body
+    void (*__kheadResetRgLineIntrMask__)(struct OBJGPU *, struct KernelHead * /*this*/, NvU32, THREAD_STATE_NODE *);  // halified (2 hals) body
+    void (*__kheadProcessRgLineCallbacks__)(struct OBJGPU *, struct KernelHead * /*this*/, NvU32, NvU32 *, NvU32 *, NvBool);  // halified (2 hals) body
 
     // Data members
     struct __nvoc_inner_struc_KernelHead_1__ Vblank;
@@ -159,6 +189,15 @@ NV_STATUS __nvoc_objCreate_KernelHead(KernelHead**, Dynamic*, NvU32);
 #define kheadGetLoadVCounter_FNPTR(pKernelHead) pKernelHead->__kheadGetLoadVCounter__
 #define kheadGetLoadVCounter(pGpu, pKernelHead) kheadGetLoadVCounter_DISPATCH(pGpu, pKernelHead)
 #define kheadGetLoadVCounter_HAL(pGpu, pKernelHead) kheadGetLoadVCounter_DISPATCH(pGpu, pKernelHead)
+#define kheadReadPendingRgLineIntr_FNPTR(pKernelHead) pKernelHead->__kheadReadPendingRgLineIntr__
+#define kheadReadPendingRgLineIntr(pGpu, pKernelHead, pThreadState) kheadReadPendingRgLineIntr_DISPATCH(pGpu, pKernelHead, pThreadState)
+#define kheadReadPendingRgLineIntr_HAL(pGpu, pKernelHead, pThreadState) kheadReadPendingRgLineIntr_DISPATCH(pGpu, pKernelHead, pThreadState)
+#define kheadResetRgLineIntrMask_FNPTR(pKernelHead) pKernelHead->__kheadResetRgLineIntrMask__
+#define kheadResetRgLineIntrMask(pGpu, pKernelHead, headIntrMask, pThreadState) kheadResetRgLineIntrMask_DISPATCH(pGpu, pKernelHead, headIntrMask, pThreadState)
+#define kheadResetRgLineIntrMask_HAL(pGpu, pKernelHead, headIntrMask, pThreadState) kheadResetRgLineIntrMask_DISPATCH(pGpu, pKernelHead, headIntrMask, pThreadState)
+#define kheadProcessRgLineCallbacks_FNPTR(pKernelHead) pKernelHead->__kheadProcessRgLineCallbacks__
+#define kheadProcessRgLineCallbacks(pGpu, pKernelHead, head, headIntrMask, clearIntrMask, isIsr) kheadProcessRgLineCallbacks_DISPATCH(pGpu, pKernelHead, head, headIntrMask, clearIntrMask, isIsr)
+#define kheadProcessRgLineCallbacks_HAL(pGpu, pKernelHead, head, headIntrMask, clearIntrMask, isIsr) kheadProcessRgLineCallbacks_DISPATCH(pGpu, pKernelHead, head, headIntrMask, clearIntrMask, isIsr)
 
 // Dispatch functions
 static inline NvBool kheadReadVblankIntrEnable_DISPATCH(struct OBJGPU *pGpu, struct KernelHead *pKernelHead) {
@@ -187,6 +226,18 @@ static inline NvBool kheadReadPendingVblank_DISPATCH(struct OBJGPU *pGpu, struct
 
 static inline NvU32 kheadGetLoadVCounter_DISPATCH(struct OBJGPU *pGpu, struct KernelHead *pKernelHead) {
     return pKernelHead->__kheadGetLoadVCounter__(pGpu, pKernelHead);
+}
+
+static inline NvU32 kheadReadPendingRgLineIntr_DISPATCH(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, THREAD_STATE_NODE *pThreadState) {
+    return pKernelHead->__kheadReadPendingRgLineIntr__(pGpu, pKernelHead, pThreadState);
+}
+
+static inline void kheadResetRgLineIntrMask_DISPATCH(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvU32 headIntrMask, THREAD_STATE_NODE *pThreadState) {
+    pKernelHead->__kheadResetRgLineIntrMask__(pGpu, pKernelHead, headIntrMask, pThreadState);
+}
+
+static inline void kheadProcessRgLineCallbacks_DISPATCH(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvU32 head, NvU32 *headIntrMask, NvU32 *clearIntrMask, NvBool isIsr) {
+    pKernelHead->__kheadProcessRgLineCallbacks__(pGpu, pKernelHead, head, headIntrMask, clearIntrMask, isIsr);
 }
 
 NvU32 kheadGetVblankTotalCounter_IMPL(struct KernelHead *pKernelHead);
@@ -324,12 +375,6 @@ static inline void kheadResetPendingVblank_f2d351(struct OBJGPU *pGpu, struct Ke
     NV_ASSERT_PRECOMP(0);
 }
 
-NvBool kheadReadPendingVblank_KERNEL(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvU32 *pCachedIntr, THREAD_STATE_NODE *pThreadState);
-
-static inline NvBool kheadReadPendingVblank_108313(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvU32 *pCachedIntr, THREAD_STATE_NODE *pThreadState) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, ((NvBool)(0 != 0)));
-}
-
 NvBool kheadReadPendingVblank_v03_00(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvU32 *pCachedIntr, THREAD_STATE_NODE *pThreadState);
 
 static inline NvBool kheadReadPendingVblank_ceaee8(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvU32 *pCachedIntr, THREAD_STATE_NODE *pThreadState) {
@@ -341,6 +386,24 @@ NvU32 kheadGetLoadVCounter_v03_00(struct OBJGPU *pGpu, struct KernelHead *pKerne
 
 static inline NvU32 kheadGetLoadVCounter_4a4dee(struct OBJGPU *pGpu, struct KernelHead *pKernelHead) {
     return 0;
+}
+
+NvU32 kheadReadPendingRgLineIntr_v03_00(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, THREAD_STATE_NODE *pThreadState);
+
+static inline NvU32 kheadReadPendingRgLineIntr_4a4dee(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, THREAD_STATE_NODE *pThreadState) {
+    return 0;
+}
+
+void kheadResetRgLineIntrMask_v03_00(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvU32 headIntrMask, THREAD_STATE_NODE *pThreadState);
+
+static inline void kheadResetRgLineIntrMask_b3696a(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvU32 headIntrMask, THREAD_STATE_NODE *pThreadState) {
+    return;
+}
+
+void kheadProcessRgLineCallbacks_KERNEL(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvU32 head, NvU32 *headIntrMask, NvU32 *clearIntrMask, NvBool isIsr);
+
+static inline void kheadProcessRgLineCallbacks_ca557d(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvU32 head, NvU32 *headIntrMask, NvU32 *clearIntrMask, NvBool isIsr) {
+    NV_ASSERT_OR_RETURN_VOID_PRECOMP(0);
 }
 
 NV_STATUS kheadConstruct_IMPL(struct KernelHead *arg_pKernelHead);

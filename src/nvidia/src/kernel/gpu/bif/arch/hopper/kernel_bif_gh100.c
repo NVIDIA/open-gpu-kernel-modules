@@ -646,7 +646,7 @@ kbifProbePcieReqAtomicCaps_GH100
 {
     NvU32   osAtomicsMask    = 0;
 
-    if (!kbifAllowGpuOutboundPcieAtomics_HAL(pGpu, pKernelBif))
+    if (!kbifAllowGpuReqPcieAtomics_HAL(pGpu, pKernelBif))
     {
         NV_PRINTF(LEVEL_INFO, "PCIe atomics not supported in this platform!\n");
         return;
@@ -1613,28 +1613,6 @@ _bifPrepareForFullChipReset_GH100_exit:
     pGpu->setProperty(pGpu, PDB_PROP_GPU_PREPARING_FULLCHIP_RESET, NV_FALSE);
 }
 
-
-/*!
- * @brief HAL specific BIF software state initialization
- *
- * @param[in] pGpu       GPU object pointer
- * @param[in] pKernelBif KernelBif object pointer
- *
- * @return    NV_OK on success
- */
-NV_STATUS
-kbifInit_GH100
-(
-    OBJGPU    *pGpu,
-    KernelBif *pKernelBif
-)
-{
-    // Cache the offsets of BAR registers into an array for subsequent use
-    kbifStoreBarRegOffsets_HAL(pGpu, pKernelBif, NV_EP_PCFG_GPU_VF_BAR0);
-
-    return NV_OK;
-}
-
 NvU32
 kbifGetEccCounts_GH100
 (
@@ -1706,7 +1684,7 @@ kbifDoFullChipReset_GH100
 }
 
 
-NvBool kbifAllowGpuOutboundPcieAtomics_GH100
+NvBool kbifAllowGpuReqPcieAtomics_GH100
 (
     OBJGPU *pGpu,
     KernelBif *pKernelBif

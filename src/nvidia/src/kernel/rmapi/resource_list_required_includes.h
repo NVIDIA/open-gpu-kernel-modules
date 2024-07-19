@@ -47,6 +47,11 @@
 
 #include "alloc/alloc_channel.h"
 
+#include "alloc/alloc_channel.h"
+
+#include "class/clb0b5sw.h"
+
+// Bug 3748354
 #include "class/clb0b5sw.h"
 
 #include "alloc/alloc_access_counter_buffer.h"

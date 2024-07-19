@@ -35,7 +35,6 @@
 #define NV_CPR_SYS_INTR_RETRIGGER(i)                          (0x00000150+(i)*0x4) /* RW-4A */
 #define NV_CPR_SYS_INTR_RETRIGGER__SIZE_1                     3               /*       */
 #define NV_CPR_SYS_INTR_RETRIGGER_TRIGGER                     0:0             /* RWEVF */
-#define NV_CPR_SYS_INTR_RETRIGGER_TRIGGER__ONWRITE            "oneToSet"      /*       */
 #define NV_CPR_SYS_INTR_RETRIGGER_TRIGGER_INIT                0x00000000      /* RWE-V */
 #define NV_CPR_SYS_INTR_RETRIGGER_TRIGGER_TRUE                0x00000001      /* RW--V */
 #define NV_CPR_SYS_NVLW_INTR_0_STATUS                         0x000001a0      /* R--4R */
@@ -76,7 +75,6 @@
 #define NV_CPR_SYS_NVLW_INTR_2_MASK_INTR2_DISABLE             0x00000000      /* RWE-V */
 #define NV_CPR_SYS_ERR_STATUS_0                               0x00000200      /* RW-4R */
 #define NV_CPR_SYS_ERR_STATUS_0_ENGINE_RESET_ERR              0:0             /* RWIVF */
-#define NV_CPR_SYS_ERR_STATUS_0_ENGINE_RESET_ERR__ONWRITE     "oneToClear"    /*       */
 #define NV_CPR_SYS_ERR_STATUS_0_ENGINE_RESET_ERR_NONE         0x00000000      /* RWI-V */
 #define NV_CPR_SYS_ERR_STATUS_0_ENGINE_RESET_ERR_CLEAR        0x00000001      /* RW--V */
 #define NV_CPR_SYS_ERR_LOG_EN_0                               0x00000204      /* RW-4R */
@@ -102,7 +100,6 @@
 #define NV_CPR_SYS_ERR_CONTAIN_EN_0_ENGINE_RESET_ERR_ENABLE   0x00000001      /* RW--V */
 #define NV_CPR_SYS_ERR_FIRST_0                                0x0000021c      /* RW-4R */
 #define NV_CPR_SYS_ERR_FIRST_0_ENGINE_RESET_ERR               0:0             /* RWIVF */
-#define NV_CPR_SYS_ERR_FIRST_0_ENGINE_RESET_ERR__ONWRITE      "oneToClear"    /*       */
 #define NV_CPR_SYS_ERR_FIRST_0_ENGINE_RESET_ERR_NONE          0x00000000      /* RWI-V */
 #define NV_CPR_SYS_ERR_FIRST_0_ENGINE_RESET_ERR_CLEAR         0x00000001      /* RW--V */
 #endif // __ls10_dev_cpr_ip_h__

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,8 +29,9 @@
 #include "kernel/rmapi/rmapi.h"
 #include "kernel/gpu/gpu.h"
 #include "kernel/mem_mgr/mem.h"
+#include "containers/eheap_old.h"
 
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 
 #include "published/volta/gv100/dev_fault.h"
 #include "published/volta/gv100/dev_ram.h"

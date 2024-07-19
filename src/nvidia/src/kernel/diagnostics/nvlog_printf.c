@@ -1257,11 +1257,15 @@ nvDbgRmMsgCheck
         if (((nv_strnstr(filename, noun, nounlen) != NULL) ||
              (nv_strnstr(function, noun, nounlen) != NULL)) &&
             (linenumber >= startline) &&
-            (linenumber <= endline) &&
-            (debuglevel >= level))
+            (linenumber <= endline))
         {
             status = inc ? NVRM_MSG_PRINT : NVRM_MSG_HIDE;
             prefix = tempPrefix;
+
+            if (status == NVRM_MSG_PRINT && debuglevel < level)
+            {
+                status = NVRM_MSG_HIDE;
+            }
         }
 
         if (*p == '\0')

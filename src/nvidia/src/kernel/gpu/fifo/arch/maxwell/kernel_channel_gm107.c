@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +29,7 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "platform/sli/sli.h"
+#include "containers/eheap_old.h"
 
 #include "class/cl906f.h"
 

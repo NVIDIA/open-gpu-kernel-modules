@@ -1100,12 +1100,8 @@ _memMulticastFabricDescriptorFree
 
         _memorymulticastfabricBatchDetachMem(pMulticastFabricDesc);
 
-        if (_memMulticastFabricIsPrime(allocFlags))
-        {
-            _memMulticastFabricSendInbandRequest(pNode->pGpu,
-                                pMulticastFabricDesc,
-                                MEM_MULTICAST_FABRIC_TEAM_RELEASE_REQUEST);
-        }
+        _memMulticastFabricSendInbandRequest(pNode->pGpu, pMulticastFabricDesc,
+                                    MEM_MULTICAST_FABRIC_TEAM_RELEASE_REQUEST);
     }
 
     if (pMulticastFabricDesc->bInbandReqInProgress)

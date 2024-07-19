@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,7 +29,7 @@
 #include "vgpu/rpc.h"
 #include "vgpu/vgpu_events.h"
 
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 
 #include "class/cl2080.h"
 
@@ -175,6 +175,7 @@ _kfifoPreConstructRegistryOverrides
         NV_PRINTF(LEVEL_ERROR, "Enabling MapMemoryDma of USERD\n");
         pKernelFifo->bUserdMapDmaSupported = NV_TRUE;
     }
+
 
     return;
 }

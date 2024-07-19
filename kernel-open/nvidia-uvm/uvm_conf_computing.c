@@ -469,6 +469,7 @@ NV_STATUS uvm_conf_computing_cpu_decrypt(uvm_channel_t *channel,
                                       size,
                                       (const NvU8 *) src_cipher,
                                       src_iv,
+                                      NV_U32_MAX,
                                       (NvU8 *) dst_plain,
                                       NULL,
                                       0,
@@ -485,6 +486,8 @@ NV_STATUS uvm_conf_computing_fault_decrypt(uvm_parent_gpu_t *parent_gpu,
                                            NvU8 valid)
 {
     NV_STATUS status;
+    NvU32 fault_entry_size = parent_gpu->fault_buffer_hal->entry_size(parent_gpu);
+    UvmCslContext *csl_context = &parent_gpu->fault_buffer_info.rm_info.replayable.cslCtx;
 
     // There is no dedicated lock for the CSL context associated with replayable
     // faults. The mutual exclusion required by the RM CSL API is enforced by
@@ -494,36 +497,48 @@ NV_STATUS uvm_conf_computing_fault_decrypt(uvm_parent_gpu_t *parent_gpu,
 
     UVM_ASSERT(g_uvm_global.conf_computing_enabled);
 
-    status = nvUvmInterfaceCslDecrypt(&parent_gpu->fault_buffer_info.rm_info.replayable.cslCtx,
-                                      parent_gpu->fault_buffer_hal->entry_size(parent_gpu),
+    status = nvUvmInterfaceCslLogEncryption(csl_context, UVM_CSL_OPERATION_DECRYPT, fault_entry_size);
+
+    // Informing RM of an encryption/decryption should not fail
+    UVM_ASSERT(status == NV_OK);
+
+    status = nvUvmInterfaceCslDecrypt(csl_context,
+                                      fault_entry_size,
                                       (const NvU8 *) src_cipher,
                                       NULL,
+                                      NV_U32_MAX,
                                       (NvU8 *) dst_plain,
                                       &valid,
                                       sizeof(valid),
                                       (const NvU8 *) auth_tag_buffer);
 
-    if (status != NV_OK)
+    if (status != NV_OK) {
         UVM_ERR_PRINT("nvUvmInterfaceCslDecrypt() failed: %s, GPU %s\n",
                       nvstatusToString(status),
                       uvm_parent_gpu_name(parent_gpu));
 
+    }
+
     return status;
 }
 
-void uvm_conf_computing_fault_increment_decrypt_iv(uvm_parent_gpu_t *parent_gpu, NvU64 increment)
+void uvm_conf_computing_fault_increment_decrypt_iv(uvm_parent_gpu_t *parent_gpu)
 {
     NV_STATUS status;
+    NvU32 fault_entry_size = parent_gpu->fault_buffer_hal->entry_size(parent_gpu);
+    UvmCslContext *csl_context = &parent_gpu->fault_buffer_info.rm_info.replayable.cslCtx;
 
     // See comment in uvm_conf_computing_fault_decrypt
     UVM_ASSERT(uvm_sem_is_locked(&parent_gpu->isr.replayable_faults.service_lock));
 
     UVM_ASSERT(g_uvm_global.conf_computing_enabled);
 
-    status = nvUvmInterfaceCslIncrementIv(&parent_gpu->fault_buffer_info.rm_info.replayable.cslCtx,
-                                          UVM_CSL_OPERATION_DECRYPT,
-                                          increment,
-                                          NULL);
+    status = nvUvmInterfaceCslLogEncryption(csl_context, UVM_CSL_OPERATION_DECRYPT, fault_entry_size);
+
+    // Informing RM of an encryption/decryption should not fail
+    UVM_ASSERT(status == NV_OK);
+
+    status = nvUvmInterfaceCslIncrementIv(csl_context, UVM_CSL_OPERATION_DECRYPT, 1, NULL);
 
     UVM_ASSERT(status == NV_OK);
 }

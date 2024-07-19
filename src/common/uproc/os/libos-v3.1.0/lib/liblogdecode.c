@@ -362,7 +362,8 @@ static void emit_string(const char *s, int l, LIBOS_LOG_DECODE *logDecode)
     }
 }
 
-static NvBool s_getSymbolDataStr(LibosDebugResolver *resolver, char *decodedLine, NvLength decodedLineSize, NvUPtr addr)
+static NvBool s_getSymbolDataStr(LibosDebugResolver *resolver, char *decodedLine,
+    NvLength decodedLineSize, NvUPtr addr, NvBool bPrintDirectory)
 {
     const char *directory;
     const char *filename;
@@ -387,9 +388,14 @@ static NvBool s_getSymbolDataStr(LibosDebugResolver *resolver, char *decodedLine
     {
         if (name)
         {
+            bPrintDirectory &= (directory != NULL);
+
             snprintf(
-                decodedLine, decodedLineSize - 1, "%s+%lld (%s:%lld)", name, offset, filename,
-                outputLine);
+                decodedLine, decodedLineSize - 1, "%s+%lld (%s%s%s:%lld)",
+                name, offset,
+                (bPrintDirectory ? directory : ""),
+                (bPrintDirectory ? "/" : ""),
+                filename, outputLine);
         }
         else
         {
@@ -406,9 +412,10 @@ static NvBool s_getSymbolDataStr(LibosDebugResolver *resolver, char *decodedLine
     return bResolved;
 }
 
-NvBool libosLogSymbolicateAddress(LIBOS_LOG_DECODE *logDecode, char *decodedLine, NvLength decodedLineSize, NvUPtr addr)
+NvBool libosLogSymbolicateAddress(LIBOS_LOG_DECODE *logDecode, char *decodedLine,
+                                  NvLength decodedLineSize, NvUPtr addr, NvBool bPrintDirectory)
 {
-    return s_getSymbolDataStr(&logDecode->log[0].resolver, decodedLine, decodedLineSize, addr);
+    return s_getSymbolDataStr(&logDecode->log[0].resolver, decodedLine, decodedLineSize, addr, bPrintDirectory);
 }
 
 /**
@@ -942,7 +949,7 @@ static int libos_printf_a(
             {
                 static char symDecodedLine[SYM_DECODED_LINE_MAX_SIZE];
 
-                s_getSymbolDataStr(&pRec->logSymbolResolver->resolver, symDecodedLine, sizeof(symDecodedLine), (NvUPtr)arg.i);
+                s_getSymbolDataStr(&pRec->logSymbolResolver->resolver, symDecodedLine, sizeof(symDecodedLine), (NvUPtr)arg.i, NV_FALSE);
 
                 // Set common vars
                 a = &symDecodedLine[0];
@@ -994,7 +1001,7 @@ static int libos_printf_a(
             symDecodedLine[prefixLen++] = '<';
 #endif // NVWATCH
 
-            s_getSymbolDataStr(&pRec->log->resolver, symDecodedLine + prefixLen, sizeof(symDecodedLine) - prefixLen, (NvUPtr)arg.i);
+            s_getSymbolDataStr(&pRec->log->resolver, symDecodedLine + prefixLen, sizeof(symDecodedLine) - prefixLen, (NvUPtr)arg.i, NV_FALSE);
 
             symDecodedLineLen = portStringLength(symDecodedLine);
             symDecodedLineLen = MIN(symDecodedLineLen, sizeof(symDecodedLine) - 1); // just in case

@@ -31,7 +31,7 @@
 
 // The "ONLY_IF => 'EXTDEV_GSYNC'," condition in sources.def is ignored!
 
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "core/system.h"
 #include "core/locks.h"
 #include "gpu_mgr/gpu_mgr.h"
@@ -154,7 +154,7 @@ gsyncmgrDestruct_IMPL(OBJGSYNCMGR *pGsyncMgr)
 // gsyncGetMasterableGpuByInstance
 // Return a gpu that can be timing master for the specified gsync instance.
 //
-POBJGPU
+OBJGPU *
 gsyncGetMasterableGpuByInstance(NvU32 gsyncInst)
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();
@@ -462,7 +462,7 @@ gsyncRemoveGpu(OBJGPU *pGpu)
 //
 // This routine returns a OBJGSYNC object associated with this GPU.
 //
-POBJGSYNC
+OBJGSYNC *
 gsyncmgrGetGsync(OBJGPU *pGpu)
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();

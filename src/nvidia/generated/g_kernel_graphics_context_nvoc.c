@@ -360,7 +360,7 @@ static void __nvoc_init_funcTable_KernelGraphicsContext_1(KernelGraphicsContext 
     pThis->__nvoc_base_GpuResource.__gpuresGetInternalObjectHandle__ = &__nvoc_down_thunk_KernelGraphicsContext_gpuresGetInternalObjectHandle;
 
     // kgrctxShouldPreAllocPmBuffer -- halified (2 hals) body
-    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */  && (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ ))
+    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */  && (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ ))
     {
         pThis->__kgrctxShouldPreAllocPmBuffer__ = &kgrctxShouldPreAllocPmBuffer_VF;
     }
@@ -374,9 +374,10 @@ static void __nvoc_init_funcTable_KernelGraphicsContext_1(KernelGraphicsContext 
     {
         pThis->__kgrctxGetRegisterAccessMapId__ = &kgrctxGetRegisterAccessMapId_aa21e9;
     }
+    // default
     else
     {
-        pThis->__kgrctxGetRegisterAccessMapId__ = &kgrctxGetRegisterAccessMapId_PF;
+        pThis->__kgrctxGetRegisterAccessMapId__ = &kgrctxGetRegisterAccessMapId_IMPL;
     }
 
     // kgrctxCtrlGetTpcPartitionMode -- exported (id=0x900103)

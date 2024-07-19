@@ -82,6 +82,7 @@
 #include <ctrl/ctrl2080/ctrl2080unix.h> /* NV2080_CTRL_CMD_OS_UNIX_GC6_BLOCKER_REFCNT */
 #include <ctrl/ctrl5070/ctrl5070chnc.h> /* NV5070_CTRL_CMD_SET_RMFREE_FLAGS */
 #include <ctrl/ctrl5070/ctrl5070or.h> /* NV5070_CTRL_CMD_SET_DAC_PWR */
+#include <ctrl/ctrl0000/ctrl0000system.h> /* NV0000_CTRL_CMD_SYSTEM_GET_APPROVAL_COOKIE */
 
 #include "nvos.h"
 
@@ -1291,6 +1292,28 @@ static NvBool ProbeDisplayCommonCaps(NVDevEvoPtr pDevEvo)
     return TRUE;
 }
 
+
+/*!
+ * Query the variable refresh rate (G-SYNC) capability of a display.
+ */
+static void ProbeVRRCaps(NVDispEvoPtr pDispEvo)
+{
+    NV0000_CTRL_SYSTEM_GET_VRR_COOKIE_PRESENT_PARAMS params = { 0 };
+    NvU32 ret;
+
+    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                         nvEvoGlobal.clientHandle,
+                         NV0000_CTRL_SYSTEM_GET_VRR_COOKIE_PRESENT,
+                         &params, sizeof(params));
+    if (ret != NVOS_STATUS_SUCCESS) {
+        return;
+    }
+
+    pDispEvo->vrr.hasPlatformCookie = params.bIsPresent;
+
+}
+
+
 static NvBool ReadDPCDReg(NVConnectorEvoPtr pConnectorEvo,
                           NvU32 dpcdAddr,
                           NvU8 *dpcdData)
@@ -1766,6 +1789,7 @@ enum NvKmsAllocDeviceStatus nvRmAllocDisplays(NVDevEvoPtr pDevEvo)
             goto fail;
         }
 
+        ProbeVRRCaps(pDispEvo);
     }
 
     nvAllocVrrEvo(pDevEvo);

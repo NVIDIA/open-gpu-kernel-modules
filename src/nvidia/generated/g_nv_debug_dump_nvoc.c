@@ -82,62 +82,62 @@ static NV_STATUS __nvoc_down_thunk_NvDebugDump_engstateStateInitLocked(struct OB
 // 12 up-thunk(s) defined to bridge methods in NvDebugDump to superclasses
 
 // nvdInitMissing: virtual inherited (engstate) base (engstate)
-static void __nvoc_up_thunk_OBJENGSTATE_nvdInitMissing(POBJGPU pGpu, struct NvDebugDump *pEngstate) {
+static void __nvoc_up_thunk_OBJENGSTATE_nvdInitMissing(struct OBJGPU *pGpu, struct NvDebugDump *pEngstate) {
     engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_NvDebugDump_OBJENGSTATE.offset));
 }
 
 // nvdStatePreInitLocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_nvdStatePreInitLocked(POBJGPU pGpu, struct NvDebugDump *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_nvdStatePreInitLocked(struct OBJGPU *pGpu, struct NvDebugDump *pEngstate) {
     return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_NvDebugDump_OBJENGSTATE.offset));
 }
 
 // nvdStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_nvdStatePreInitUnlocked(POBJGPU pGpu, struct NvDebugDump *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_nvdStatePreInitUnlocked(struct OBJGPU *pGpu, struct NvDebugDump *pEngstate) {
     return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_NvDebugDump_OBJENGSTATE.offset));
 }
 
 // nvdStateInitUnlocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_nvdStateInitUnlocked(POBJGPU pGpu, struct NvDebugDump *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_nvdStateInitUnlocked(struct OBJGPU *pGpu, struct NvDebugDump *pEngstate) {
     return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_NvDebugDump_OBJENGSTATE.offset));
 }
 
 // nvdStatePreLoad: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_nvdStatePreLoad(POBJGPU pGpu, struct NvDebugDump *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_nvdStatePreLoad(struct OBJGPU *pGpu, struct NvDebugDump *pEngstate, NvU32 arg3) {
     return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_NvDebugDump_OBJENGSTATE.offset), arg3);
 }
 
 // nvdStateLoad: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_nvdStateLoad(POBJGPU pGpu, struct NvDebugDump *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_nvdStateLoad(struct OBJGPU *pGpu, struct NvDebugDump *pEngstate, NvU32 arg3) {
     return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_NvDebugDump_OBJENGSTATE.offset), arg3);
 }
 
 // nvdStatePostLoad: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_nvdStatePostLoad(POBJGPU pGpu, struct NvDebugDump *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_nvdStatePostLoad(struct OBJGPU *pGpu, struct NvDebugDump *pEngstate, NvU32 arg3) {
     return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_NvDebugDump_OBJENGSTATE.offset), arg3);
 }
 
 // nvdStatePreUnload: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_nvdStatePreUnload(POBJGPU pGpu, struct NvDebugDump *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_nvdStatePreUnload(struct OBJGPU *pGpu, struct NvDebugDump *pEngstate, NvU32 arg3) {
     return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_NvDebugDump_OBJENGSTATE.offset), arg3);
 }
 
 // nvdStateUnload: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_nvdStateUnload(POBJGPU pGpu, struct NvDebugDump *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_nvdStateUnload(struct OBJGPU *pGpu, struct NvDebugDump *pEngstate, NvU32 arg3) {
     return engstateStateUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_NvDebugDump_OBJENGSTATE.offset), arg3);
 }
 
 // nvdStatePostUnload: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_nvdStatePostUnload(POBJGPU pGpu, struct NvDebugDump *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_nvdStatePostUnload(struct OBJGPU *pGpu, struct NvDebugDump *pEngstate, NvU32 arg3) {
     return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_NvDebugDump_OBJENGSTATE.offset), arg3);
 }
 
 // nvdStateDestroy: virtual inherited (engstate) base (engstate)
-static void __nvoc_up_thunk_OBJENGSTATE_nvdStateDestroy(POBJGPU pGpu, struct NvDebugDump *pEngstate) {
+static void __nvoc_up_thunk_OBJENGSTATE_nvdStateDestroy(struct OBJGPU *pGpu, struct NvDebugDump *pEngstate) {
     engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_NvDebugDump_OBJENGSTATE.offset));
 }
 
 // nvdIsPresent: virtual inherited (engstate) base (engstate)
-static NvBool __nvoc_up_thunk_OBJENGSTATE_nvdIsPresent(POBJGPU pGpu, struct NvDebugDump *pEngstate) {
+static NvBool __nvoc_up_thunk_OBJENGSTATE_nvdIsPresent(struct OBJGPU *pGpu, struct NvDebugDump *pEngstate) {
     return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_NvDebugDump_OBJENGSTATE.offset));
 }
 

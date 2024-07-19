@@ -29,7 +29,6 @@
 #include "gpu/gpu.h"
 #include "gpu/gpu_resource.h"
 #include "gpu/subdevice/subdevice.h"
-#include <osfuncs.h>
 #include <diagnostics/journal.h>
 #include "gpu/mem_mgr/mem_desc.h"
 #include "mem_mgr/mem.h"

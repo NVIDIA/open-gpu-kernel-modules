@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -249,12 +249,6 @@ struct uvm_va_space_struct
     // for atomics in HW. This is a subset of accessible_from.
     uvm_processor_mask_t has_native_atomics[UVM_ID_MAX_PROCESSORS];
 
-    // Pre-computed masks that contain, for each processor memory, a mask with
-    // the processors that are indirect peers. Indirect peers can access each
-    // other's memory like regular peers, but with additional latency and/or bw
-    // penalty.
-    uvm_processor_mask_t indirect_peers[UVM_ID_MAX_PROCESSORS];
-
     // Mask of gpu_va_spaces registered with the va space
     // indexed by gpu->id
     uvm_processor_mask_t registered_gpu_va_spaces;
@@ -373,11 +367,7 @@ struct uvm_va_space_struct
         // uvm_processor_mask_find_closest_id.
         uvm_processor_mask_t mask;
 
-        // Temporary mask to hold direct_peers in
-        // uvm_processor_mask_find_closest_id.
-        uvm_processor_mask_t direct_peers;
-
-        // Protects the mask and direct_peers above.
+        // Protects the mask above.
         uvm_mutex_t mask_mutex;
     } closest_processors;
 
@@ -646,24 +636,9 @@ static uvm_gpu_va_space_state_t uvm_gpu_va_space_state(uvm_gpu_va_space_t *gpu_v
     return gpu_va_space->state;
 }
 
-// Return the GPU VA space for the given physical GPU.
+// Return the GPU VA space for the given GPU.
 // Locking: the va_space lock must be held.
-uvm_gpu_va_space_t *uvm_gpu_va_space_get_by_parent_gpu(uvm_va_space_t *va_space,
-                                                       uvm_parent_gpu_t *parent_gpu);
-
-static uvm_gpu_va_space_t *uvm_gpu_va_space_get(uvm_va_space_t *va_space, uvm_gpu_t *gpu)
-{
-    uvm_gpu_va_space_t *gpu_va_space;
-
-    if (!gpu)
-        return NULL;
-
-    gpu_va_space = uvm_gpu_va_space_get_by_parent_gpu(va_space, gpu->parent);
-    if (gpu_va_space)
-        UVM_ASSERT(gpu_va_space->gpu == gpu);
-
-    return gpu_va_space;
-}
+uvm_gpu_va_space_t *uvm_gpu_va_space_get(uvm_va_space_t *va_space, uvm_gpu_t *gpu);
 
 #define for_each_gpu_va_space(__gpu_va_space, __va_space)                                                   \
     for (__gpu_va_space =                                                                                   \
@@ -758,7 +733,6 @@ static uvm_gpu_t *uvm_processor_mask_find_next_va_space_gpu(const uvm_processor_
 // - src itself
 // - Direct NVLINK GPU peers if src is CPU or GPU (1)
 // - NVLINK CPU if src is GPU
-// - Indirect NVLINK GPU peers if src is GPU
 // - PCIe peers if src is GPU (2)
 // - CPU if src is GPU
 // - Deterministic selection from the pool of candidates

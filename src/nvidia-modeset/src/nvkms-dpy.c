@@ -1660,6 +1660,46 @@ static void LogEdid(NVDpyEvoPtr pDpyEvo, NVEvoInfoStringPtr pInfoString)
                            pParsedEdid->info.nvdaVsdbInfo.vrrData.v1.minRefreshRate);
     }
 
+    if (pParsedEdid->info.ext_displayid.version) {
+        nvEvoLogInfoString(pInfoString,
+                           "DisplayID vfreq_min          : %d Hz",
+                           pParsedEdid->info.ext_displayid.range_limits[0].vfreq_min);
+    }
+
+    if (pParsedEdid->info.ext_displayid20.version &&
+        pParsedEdid->info.ext_displayid20.range_limits.seamless_dynamic_video_timing_change) {
+        nvEvoLogInfoString(pInfoString,
+                           "DisplayID 2.0 vfreq_min      : %d Hz",
+                           pParsedEdid->info.ext_displayid20.range_limits.vfreq_min);
+    }
+
+    if (pParsedEdid->info.ext_displayid20.version &&
+        pParsedEdid->info.ext_displayid20.total_adaptive_sync_descriptor != 0) {
+        for (k = 0;
+             k < pParsedEdid->info.ext_displayid20.total_adaptive_sync_descriptor &&
+             k < ARRAY_LEN(pParsedEdid->info.ext_displayid20.adaptive_sync_descriptor);
+             k++) {
+            nvEvoLogInfoString(pInfoString,
+                               "DisplayID 2.0 adaptive sync  : %d Hz (max), %d Hz (min)",
+                               pParsedEdid->info.ext_displayid20.adaptive_sync_descriptor[k].max_rr,
+                               pParsedEdid->info.ext_displayid20.adaptive_sync_descriptor[k].min_rr);
+        }
+    }
+
+    for (k = 0; k < ARRAY_LEN(pParsedEdid->info.ldd); k++) {
+        if (pParsedEdid->info.ldd[k].tag == NVT_EDID_DISPLAY_DESCRIPTOR_DRL) {
+            nvEvoLogInfoString(pInfoString,
+                               "min_v_rate                   : %d Hz",
+                               pParsedEdid->info.ldd[k].u.range_limit.min_v_rate);
+        }
+    }
+
+    if (pParsedEdid->info.hdmiForumInfo.vrr_min != 0) {
+        nvEvoLogInfoString(pInfoString,
+                           "HDMI Forum vrr_min           : %d Hz",
+                           pParsedEdid->info.hdmiForumInfo.vrr_min);
+    }
+
     nvLogEdidCea861InfoEvo(pDpyEvo, pInfoString);
 
     if (pParsedEdid->info.input.isDigital &&
@@ -3014,6 +3054,9 @@ NvBool nvDpyGetDynamicData(
         nvkms_memcpy(pReply->edid.buffer, pDpyEvo->edid.buffer, pDpyEvo->edid.length);
     }
 
+    pReply->supportedOutputColorFormats =
+        nvDpyGetOutputColorFormatInfo(pDpyEvo);
+
     return TRUE;
 }
 
@@ -3172,17 +3215,21 @@ static enum NvKmsDpyAttributeColorBpcValue GetYuv422MaxBpc(
     return NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN;
 }
 
-NVColorFormatInfoRec nvGetColorFormatInfo(const NVDpyEvoRec *pDpyEvo)
+NvKmsDpyOutputColorFormatInfo nvDpyGetOutputColorFormatInfo(
+    const NVDpyEvoRec *pDpyEvo)
 {
     const NVConnectorEvoRec *pConnectorEvo =
             pDpyEvo->pConnectorEvo;
-    NVColorFormatInfoRec colorFormatsInfo = { };
+    NvKmsDpyOutputColorFormatInfo colorFormatsInfo = { };
 
     if (pConnectorEvo->legacyType ==
             NV0073_CTRL_SPECIFIC_DISPLAY_TYPE_CRT) {
 
         colorFormatsInfo.rgb444.maxBpc =
             NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
+        colorFormatsInfo.rgb444.minBpc =
+            NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
+
     } else if (pConnectorEvo->legacyType ==
                    NV0073_CTRL_SPECIFIC_DISPLAY_TYPE_DFP) {
 
@@ -3207,8 +3254,13 @@ NVColorFormatInfoRec nvGetColorFormatInfo(const NVDpyEvoRec *pDpyEvo)
                             NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
                         break;
                 }
+
+                colorFormatsInfo.rgb444.minBpc =
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6;
             } else {
                 colorFormatsInfo.rgb444.maxBpc =
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+                colorFormatsInfo.rgb444.minBpc =
                     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
             }
         } else if (nvConnectorUsesDPLib(pDpyEvo->pConnectorEvo)) {
@@ -3219,9 +3271,13 @@ NVColorFormatInfoRec nvGetColorFormatInfo(const NVDpyEvoRec *pDpyEvo)
                 if (pDpyEvo->parsedEdid.info.input.u.digital.bpc >= 10) {
                     colorFormatsInfo.rgb444.maxBpc =
                         NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
+                    colorFormatsInfo.yuv444.maxBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10;
                 } else if (pDpyEvo->parsedEdid.info.input.u.digital.bpc < 8) {
                     colorFormatsInfo.rgb444.maxBpc =
                         NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6;
+                    colorFormatsInfo.yuv444.maxBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN;
                 } else {
                     colorFormatsInfo.rgb444.maxBpc =
                         NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
@@ -3229,9 +3285,30 @@ NVColorFormatInfoRec nvGetColorFormatInfo(const NVDpyEvoRec *pDpyEvo)
                         NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
                 }
 
+                colorFormatsInfo.rgb444.minBpc =
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6;
+                if (colorFormatsInfo.yuv444.maxBpc !=
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN) {
+                     colorFormatsInfo.yuv444.minBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+                } else {
+                    colorFormatsInfo.yuv444.minBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN;
+                }
+
                 colorFormatsInfo.yuv422.maxBpc = GetYuv422MaxBpc(pDpyEvo);
+                if (colorFormatsInfo.yuv422.maxBpc !=
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN) {
+                    colorFormatsInfo.yuv422.minBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+                } else {
+                    colorFormatsInfo.yuv422.minBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN;
+                }
             } else {
                 colorFormatsInfo.rgb444.maxBpc =
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+                colorFormatsInfo.rgb444.minBpc =
                     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
             }
         } else {
@@ -3239,13 +3316,25 @@ NVColorFormatInfoRec nvGetColorFormatInfo(const NVDpyEvoRec *pDpyEvo)
                 nvDpyIsHdmiDepth30Evo(pDpyEvo) ?
                     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10 :
                     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+            colorFormatsInfo.rgb444.minBpc =
+                NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
 
             if (nvDpyIsHdmiEvo(pDpyEvo)) {
                 // TODO: Handle depth 30 YUV
                 colorFormatsInfo.yuv444.maxBpc =
                     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
-                colorFormatsInfo.yuv422.maxBpc =
-                    GetYuv422MaxBpc(pDpyEvo);
+                colorFormatsInfo.yuv444.minBpc =
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+
+                colorFormatsInfo.yuv422.maxBpc = GetYuv422MaxBpc(pDpyEvo);
+                if (colorFormatsInfo.yuv422.maxBpc !=
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN) {
+                    colorFormatsInfo.yuv422.minBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+                } else {
+                    colorFormatsInfo.yuv422.minBpc =
+                        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN;
+                }
             }
         }
     }

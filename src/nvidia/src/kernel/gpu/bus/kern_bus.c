@@ -36,11 +36,12 @@
 #include "rmapi/client.h"
 #include "platform/sli/sli.h"
 #include "nvdevid.h"
+#include "containers/eheap_old.h"
 
 #include "gpu/gsp/gsp_static_config.h"
 #include "vgpu/rpc.h"
 
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 
 static NV_STATUS kbusInitRegistryOverrides(OBJGPU *pGpu, KernelBus *pKernelBus);
 
@@ -896,17 +897,27 @@ kbusCheckEngineWithOrderList_KERNEL
 
     if (IS_VIRTUAL(pGpu))
     {
-        VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+        NvU32             i     = 0;
+        NvU32             j     = 0;
+        VGPU_STATIC_INFO *pVSI  = GPU_GET_STATIC_INFO(pGpu);
+
         if (pVSI == NULL)
         {
             return NV_FALSE;
         }
 
-        ct_assert(RM_ENGINE_TYPE_LAST <= 64);
-        ct_assert(NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX == 2);
+        //
+        // vGPU Enginelist can accommodate maximum of NVGPU_VGPU_ENGINE_LIST_LAST engine mask.
+        // Currently, vGPU plugin advertises the same in NvU64 bitmask.
+        //
+        ct_assert(RM_ENGINE_TYPE_LAST <= NVGPU_VGPU_ENGINE_LIST_LAST);
+        ct_assert(NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX <= (NVGPU_VGPU_ENGINE_LIST_MASK_ARRAY_MAX * 2));
 
-        nv2080EngineCaps[0] = NvU64_LO32(pVSI->engineList);
-        nv2080EngineCaps[1] = NvU64_HI32(pVSI->engineList);
+        for (i = 0; i < (NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX/2); i++)
+        {
+            nv2080EngineCaps[j++] = NvU64_LO32(pVSI->engineList[i]);
+            nv2080EngineCaps[j++] = NvU64_HI32(pVSI->engineList[i]);
+        }
     }
     else
     {
@@ -972,6 +983,17 @@ kbusCheckEngineWithOrderList_KERNEL
         case ENG_CE(7):
         case ENG_CE(8):
         case ENG_CE(9):
+            // Bug 3748354
+        case ENG_CE(10):
+        case ENG_CE(11):
+        case ENG_CE(12):
+        case ENG_CE(13):
+        case ENG_CE(14):
+        case ENG_CE(15):
+        case ENG_CE(16):
+        case ENG_CE(17):
+        case ENG_CE(18):
+        case ENG_CE(19):
             return !!NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps,
                 RM_ENGINE_TYPE_COPY(GET_CE_IDX(engDesc)));
 
@@ -995,6 +1017,7 @@ kbusCheckEngineWithOrderList_KERNEL
                 RM_ENGINE_TYPE_NVDEC(GET_NVDEC_IDX(engDesc)));
 
    case ENG_OFA(0):
+   case ENG_OFA(1):
             return !!NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps,
                 RM_ENGINE_TYPE_OFA(GET_OFA_IDX(engDesc)));
 
@@ -1100,9 +1123,6 @@ kbusGetDeviceCaps_IMPL
         RMCTRL_SET_CAP(tempCaps, NV0080_CTRL_HOST_CAPS, _CPU_WRITE_WAR_BUG_420495);
     }
 
-    // the RM always supports GPU-coherent mappings
-    RMCTRL_SET_CAP(tempCaps, NV0080_CTRL_HOST_CAPS, _GPU_COHERENT_MAPPING_SUPPORTED);
-
     // If we don't have existing caps with which to reconcile, then just return
     if (!bCapsInitialized)
     {
@@ -1110,42 +1130,40 @@ kbusGetDeviceCaps_IMPL
         return;
     }
 
-    // factor in this GPUs caps: all these are feature caps, so use AND
-    RMCTRL_AND_CAP(pHostCaps, tempCaps, temp,
-                   NV0080_CTRL_HOST_CAPS, _P2P_4_WAY);
-    RMCTRL_AND_CAP(pHostCaps, tempCaps, temp,
-                   NV0080_CTRL_HOST_CAPS, _P2P_8_WAY);
-    RMCTRL_AND_CAP(pHostCaps, tempCaps, temp,
-                   NV0080_CTRL_HOST_CAPS, _GPU_COHERENT_MAPPING_SUPPORTED);
-
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _SEMA_ACQUIRE_BUG_105665);
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _SYS_SEMA_DEADLOCK_BUG_148216);
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _SLOWSLI);
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _SEMA_READ_ONLY_BUG);
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _MEM2MEM_BUG_365782);
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _LARGE_NONCOH_UPSTR_WRITE_BUG_114871);
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _LARGE_UPSTREAM_WRITE_BUG_115115);
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _SEP_VIDMEM_PB_NOTIFIERS_BUG_83923);
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _P2P_DEADLOCK_BUG_203825);
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _COMPRESSED_BL_P2P_BUG_257072);
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _CROSS_BLITS_BUG_270260);
     RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
                   NV0080_CTRL_HOST_CAPS, _CPU_WRITE_WAR_BUG_420495);
-    RMCTRL_OR_CAP(pHostCaps, tempCaps, temp,
-                  NV0080_CTRL_HOST_CAPS, _BAR1_READ_DEADLOCK_BUG_511418);
 
     return;
+}
+
+NV_STATUS
+kbusMapFbApertureSingle_IMPL
+(
+    OBJGPU *pGpu,
+    KernelBus *pKernelBus,
+    MEMORY_DESCRIPTOR *pMemDesc,
+    NvU64 offset,
+    NvU64 *pAperOffset,
+    NvU64 *pLength,
+    NvU32 flags,
+    Device *pDevice
+)
+{
+    return kbusMapFbAperture_HAL(pGpu, pKernelBus, pMemDesc, offset, pAperOffset, pLength, flags, pDevice);
+}
+    
+NV_STATUS
+kbusUnmapFbApertureSingle_IMPL
+(
+    OBJGPU *pGpu,
+    KernelBus *pKernelBus,
+    MEMORY_DESCRIPTOR *pMemDesc,
+    NvU64 aperOffset,
+    NvU64 length,
+    NvU32 flags
+)
+{
+    return kbusUnmapFbAperture_HAL(pGpu, pKernelBus, pMemDesc, aperOffset, length, flags);
 }
 
 NV_STATUS
@@ -1190,9 +1208,9 @@ kbusMapFbApertureByHandle_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    status = kbusMapFbAperture_HAL(pGpu, pKernelBus, pMemDesc, offset,
-                                   &fbApertureOffset, &fbApertureLength,
-                                   BUS_MAP_FB_FLAGS_MAP_UNICAST, pDevice);
+    status = kbusMapFbApertureSingle(pGpu, pKernelBus, pMemDesc, offset,
+                                     &fbApertureOffset, &fbApertureLength,
+                                     BUS_MAP_FB_FLAGS_MAP_UNICAST, pDevice);
     if (status != NV_OK)
     {
         return status;
@@ -1218,10 +1236,10 @@ kbusMapFbApertureByHandle_IMPL
     return NV_OK;
 
 failed:
-    // Note: fbApertureLength is not used by kbusUnmapFbAperture_HAL(), so it's passed as 0
-    kbusUnmapFbAperture_HAL(pGpu, pKernelBus, pMemDesc,
-                            fbApertureOffset, 0,
-                            BUS_MAP_FB_FLAGS_MAP_UNICAST);
+    // Note: fbApertureLength is not used by kbusUnmapFbApertureSingle(), so it's passed as 0
+    kbusUnmapFbApertureSingle(pGpu, pKernelBus, pMemDesc,
+                              fbApertureOffset, 0,
+                              BUS_MAP_FB_FLAGS_MAP_UNICAST);
 
     return status;
 }
@@ -1258,10 +1276,10 @@ kbusUnmapFbApertureByHandle_IMPL
 
     pMemDesc = pSrcMemory->pMemDesc;
 
-    // Note: fbApertureLength is not used by kbusUnmapFbAperture_HAL(), so it's passed as 0
-    status = kbusUnmapFbAperture_HAL(pGpu, pKernelBus, pMemDesc,
-                                     bar1Va - gpumgrGetGpuPhysFbAddr(pGpu),
-                                     0, BUS_MAP_FB_FLAGS_MAP_UNICAST);
+    // Note: fbApertureLength is not used by kbusUnmapFbApertureSingle(), so it's passed as 0
+    status = kbusUnmapFbApertureSingle(pGpu, pKernelBus, pMemDesc,
+                                       bar1Va - gpumgrGetGpuPhysFbAddr(pGpu),
+                                       0, BUS_MAP_FB_FLAGS_MAP_UNICAST);
     if (status != NV_OK)
     {
         return status;
@@ -1427,11 +1445,11 @@ kbusUpdateRusdStatistics_IMPL
     KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     OBJVASPACE *pBar1VAS;
     OBJEHEAP *pVASHeap;
-    NV00DE_SHARED_DATA *pSharedData;
+    RUSD_BAR1_MEMORY_INFO *pSharedData;
     NvU64 bar1Size = 0;
     NvU64 bar1AvailSize = 0;
     NV_RANGE bar1VARange = NV_RANGE_EMPTY;
-    NvBool bZeroRusd = KBUS_CPU_VISIBLE_BAR12_DISABLED(pGpu);
+    NvBool bZeroRusd = kbusIsBar1Disabled(pKernelBus);
 
     bZeroRusd = bZeroRusd || IS_MIG_ENABLED(pGpu);
 
@@ -1454,10 +1472,10 @@ kbusUpdateRusdStatistics_IMPL
     }
 
     // Minimize critical section, write data once we have it.
-    pSharedData = gpushareddataWriteStart(pGpu);
+    pSharedData = gpushareddataWriteStart(pGpu, bar1MemoryInfo);
     pSharedData->bar1Size = bar1Size;
     pSharedData->bar1AvailSize = bar1AvailSize;
-    gpushareddataWriteFinish(pGpu);
+    gpushareddataWriteFinish(pGpu, bar1MemoryInfo);
 
     return NV_OK;
 }

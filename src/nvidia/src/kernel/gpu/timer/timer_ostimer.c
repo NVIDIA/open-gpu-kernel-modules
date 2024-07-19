@@ -27,7 +27,7 @@
 *                                                                           *
 \***************************************************************************/
 
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 
 // Minimum delay for OS timer
 #define OSTIMER_MIN_DELAY_NS        1 // 1 nanosecond
@@ -73,12 +73,12 @@ tmrGetTimeEx_OSTIMER
 NV_STATUS tmrEventCreateOSTimer_OSTIMER
 (
     OBJTMR     *pTmr,
-    PTMR_EVENT  pEventPublic
+    TMR_EVENT  *pEventPublic
 )
 {
     NV_STATUS status = NV_OK;
     OBJGPU *pGpu = ENG_GET_GPU(pTmr);
-    PTMR_EVENT_PVT pEvent = (PTMR_EVENT_PVT)pEventPublic;
+    TMR_EVENT_PVT *pEvent = (TMR_EVENT_PVT *)pEventPublic;
 
     status = osCreateNanoTimer(pGpu->pOsGpuInfo, pEvent, &(pEvent->super.pOSTmrCBdata));
 
@@ -103,13 +103,13 @@ NV_STATUS tmrEventCreateOSTimer_OSTIMER
 NV_STATUS tmrEventScheduleRelOSTimer_OSTIMER
 (
     OBJTMR     *pTmr,
-    PTMR_EVENT  pPublicEvent,
+    TMR_EVENT  *pPublicEvent,
     NvU64       timeRelNs
 )
 {
     NV_STATUS status= NV_OK;
     OBJGPU *pGpu = ENG_GET_GPU(pTmr);
-    PTMR_EVENT_PVT pEvent = (PTMR_EVENT_PVT) pPublicEvent;
+    TMR_EVENT_PVT *pEvent = (TMR_EVENT_PVT *) pPublicEvent;
 
     if (pEvent->super.pOSTmrCBdata == NULL)
     {
@@ -142,15 +142,15 @@ NV_STATUS tmrEventServiceOSTimerCallback_OSTIMER
 (
     OBJGPU             *pGpu,
     OBJTMR             *pTmr,
-    PTMR_EVENT          pPublicEvent
+    TMR_EVENT          *pPublicEvent
 )
 {
-    PTMR_EVENT_PVT  pEvent = (PTMR_EVENT_PVT)pPublicEvent;
+    TMR_EVENT_PVT *pEvent = (TMR_EVENT_PVT *)pPublicEvent;
     NV_STATUS status = NV_OK;
 
     if (pEvent && (pEvent->super.pTimeProc != NULL))
     {
-        pEvent->super.pTimeProc(pGpu, pTmr, (PTMR_EVENT)pEvent);
+        pEvent->super.pTimeProc(pGpu, pTmr, (TMR_EVENT *)pEvent);
         pEvent->super.flags &= ~TMR_FLAG_OS_TIMER_QUEUED;
     }
     else
@@ -173,12 +173,12 @@ NV_STATUS tmrEventServiceOSTimerCallback_OSTIMER
 NV_STATUS tmrEventCancelOSTimer_OSTIMER
 (
     OBJTMR             *pTmr,
-    PTMR_EVENT          pPublicEvent
+    TMR_EVENT          *pPublicEvent
 )
 {
     NV_STATUS status= NV_OK;
     OBJGPU *pGpu = ENG_GET_GPU(pTmr);
-    PTMR_EVENT_PVT  pTmrEvent = (PTMR_EVENT_PVT) pPublicEvent;
+    TMR_EVENT_PVT *pTmrEvent = (TMR_EVENT_PVT *) pPublicEvent;
 
     if (pTmrEvent != NULL && pTmrEvent->super.pOSTmrCBdata != NULL)
     {
@@ -207,12 +207,12 @@ NV_STATUS tmrEventCancelOSTimer_OSTIMER
 NV_STATUS tmrEventDestroyOSTimer_OSTIMER
 (
     OBJTMR             *pTmr,
-    PTMR_EVENT          pPublicEvent
+    TMR_EVENT          *pPublicEvent
 )
 {
     NV_STATUS status= NV_OK;
     OBJGPU *pGpu = ENG_GET_GPU(pTmr);
-    PTMR_EVENT_PVT  pTmrEvent = (PTMR_EVENT_PVT) pPublicEvent;
+    TMR_EVENT_PVT *pTmrEvent = (TMR_EVENT_PVT *) pPublicEvent;
 
     if (pTmrEvent != NULL && pTmrEvent->super.pOSTmrCBdata != NULL)
     {

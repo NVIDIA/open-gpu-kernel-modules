@@ -31,7 +31,7 @@
 #include "platform/nbsi/nbsi_read.h"
 #include "platform/platform.h"
 #include "nbci.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "gpu/gpu.h"
 #include "nvhybridacpi.h"
 #include "nvlimits.h"

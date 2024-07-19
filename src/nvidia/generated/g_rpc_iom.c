@@ -11,7 +11,7 @@
 #include "os/os.h"
 #include "gpu/gpu.h"
 
-#include "objrpc.h"
+#include "gpu/rpc/objrpc.h"
 
 #include "g_rpc_private.h"
 

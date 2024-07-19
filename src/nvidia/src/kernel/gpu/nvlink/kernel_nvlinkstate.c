@@ -620,6 +620,7 @@ knvlinkStateLoad_IMPL
     }
 
     if (!knvlinkIsForcedConfig(pGpu, pKernelNvlink) && pKernelNvlink->bEnableAli &&
+        (pKernelNvlink->ipVerNvlink < NVLINK_VERSION_50) &&
         (!pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_MINION_GFW_BOOT) ||
           pKernelNvlink->getProperty(pKernelNvlink,
                                      PDB_PROP_KNVLINK_MINION_FORCE_ALI_TRAINING)))
@@ -675,6 +676,8 @@ knvlinkStateLoad_IMPL
     FOR_EACH_INDEX_IN_MASK_END;
 
     listInit(&pKernelNvlink->faultUpLinks, portMemAllocatorGetGlobalNonPaged());
+
+    knvlinkDumpCallbackRegister_HAL(pGpu, pKernelNvlink);
 
 knvlinkStateLoad_end:
 
@@ -1140,6 +1143,24 @@ knvlinkSetDegradedMode_IMPL
     }
 
     return;
+}
+
+/*!
+ * @brief Gets degraded mode for current GPU
+ *
+ * @param[in] pGpu           OBJGPU pointer
+ * @param[in] pKernelNvlink  KernelNvlink pointer
+ *
+ * @return Current NVLink degraded mode
+ */
+NvBool
+knvlinkGetDegradedMode_IMPL
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    return pKernelNvlink->bIsGpuDegraded;
 }
 
 void

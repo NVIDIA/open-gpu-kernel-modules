@@ -217,12 +217,12 @@ NV_STATUS _createThirdPartyP2PMappingExtent
             NV_ASSERT_OR_GOTO(status == NV_OK, out);
         }
 
-        status = kbusMapFbAperture_HAL(pGpu, pKernelBus,
-                                       (*ppExtentInfo)->pMemDesc, 0,
-                                       &fbApertureOffset,
-                                       &fbApertureMapLength,
-                                       BUS_MAP_FB_FLAGS_MAP_UNICAST,
-                                       pDevice);
+        status = kbusMapFbApertureSingle(pGpu, pKernelBus,
+                                         (*ppExtentInfo)->pMemDesc, 0,
+                                         &fbApertureOffset,
+                                         &fbApertureMapLength,
+                                         BUS_MAP_FB_FLAGS_MAP_UNICAST,
+                                         pDevice);
 
         if (!bGpuLockTaken)
         {
@@ -282,11 +282,11 @@ out:
                     }
                 }
 
-                tmpStatus = kbusUnmapFbAperture_HAL(pGpu, pKernelBus,
-                                                    (*ppExtentInfo)->pMemDesc,
-                                                    fbApertureOffset,
-                                                    fbApertureMapLength,
-                                                    BUS_MAP_FB_FLAGS_MAP_UNICAST);
+                tmpStatus = kbusUnmapFbApertureSingle(pGpu, pKernelBus,
+                                                      (*ppExtentInfo)->pMemDesc,
+                                                      fbApertureOffset,
+                                                      fbApertureMapLength,
+                                                      BUS_MAP_FB_FLAGS_MAP_UNICAST);
 
                 if (!bGpuLockTaken)
                 {
@@ -434,11 +434,11 @@ NV_STATUS RmThirdPartyP2PMappingFree
             }
             else
             {
-                status = kbusUnmapFbAperture_HAL(pGpu, pKernelBus,
-                                                 pExtentInfo->pMemDesc,
-                                                 pExtentInfo->fbApertureOffset,
-                                                 pExtentInfo->length,
-                                                 BUS_MAP_FB_FLAGS_MAP_UNICAST);
+                status = kbusUnmapFbApertureSingle(pGpu, pKernelBus,
+                                                   pExtentInfo->pMemDesc,
+                                                   pExtentInfo->fbApertureOffset,
+                                                   pExtentInfo->length,
+                                                   BUS_MAP_FB_FLAGS_MAP_UNICAST);
             }
             NV_ASSERT(status == NV_OK);
 

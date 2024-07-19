@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2023 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -300,6 +300,7 @@ typedef enum
     UVM_FAULT_TYPE_UNSUPPORTED_KIND,
     UVM_FAULT_TYPE_REGION_VIOLATION,
     UVM_FAULT_TYPE_POISONED,
+    UVM_FAULT_TYPE_CC_VIOLATION,
 
     UVM_FAULT_TYPE_COUNT
 } uvm_fault_type_t;
@@ -399,6 +400,7 @@ struct uvm_fault_buffer_entry_struct
     //
 
     uvm_va_space_t                           *va_space;
+    uvm_gpu_t                                     *gpu;
 
     // This is set to true when some fault could not be serviced and a
     // cancel command needs to be issued
@@ -490,9 +492,9 @@ struct uvm_access_counter_buffer_entry_struct
     // Address of the region for which a notification was sent
     uvm_gpu_address_t address;
 
-    // These fields are only valid if address.is_virtual is true
     union
     {
+        // These fields are only valid if address.is_virtual is true
         struct
         {
             // Instance pointer of one of the channels in the TSG that triggered
@@ -522,8 +524,13 @@ struct uvm_access_counter_buffer_entry_struct
             // a regular processor id because P2P is not allowed between
             // partitioned GPUs.
             uvm_processor_id_t resident_id;
+
         } physical_info;
     };
+
+    // This is the GPU that triggered the notification. Note that physical
+    // address based notifications are only supported on non-MIG-capable GPUs.
+    uvm_gpu_t *gpu;
 
     // Number of times the tracked region was accessed since the last time it
     // was cleared. Counter values saturate at the maximum value supported by

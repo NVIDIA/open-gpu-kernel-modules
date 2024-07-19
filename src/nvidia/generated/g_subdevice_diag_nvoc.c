@@ -27,10 +27,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_INotifier;
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Notifier;
 
-void __nvoc_init_DiagApi(DiagApi*);
-void __nvoc_init_funcTable_DiagApi(DiagApi*);
-NV_STATUS __nvoc_ctor_DiagApi(DiagApi*, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
-void __nvoc_init_dataField_DiagApi(DiagApi*);
+void __nvoc_init_DiagApi(DiagApi*, RmHalspecOwner* );
+void __nvoc_init_funcTable_DiagApi(DiagApi*, RmHalspecOwner* );
+NV_STATUS __nvoc_ctor_DiagApi(DiagApi*, RmHalspecOwner* , struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+void __nvoc_init_dataField_DiagApi(DiagApi*, RmHalspecOwner* );
 void __nvoc_dtor_DiagApi(DiagApi*);
 extern const struct NVOC_EXPORT_INFO __nvoc_export_info_DiagApi;
 
@@ -118,12 +118,12 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_DiagApi =
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) diagapiCtrlCmdFifoCheckEngineContext_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
-        /*flags=*/      0x248u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+        /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x208f0401u,
         /*paramSize=*/  sizeof(NV208F_CTRL_FIFO_CHECK_ENGINE_CONTEXT_PARAMS),
@@ -151,7 +151,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) diagapiCtrlCmdFifoGetChannelState_IMPL,
+        /*pFunc=*/      (void (*)(void)) diagapiCtrlCmdFifoGetChannelState_DISPATCH,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -530,19 +530,24 @@ void __nvoc_dtor_DiagApi(DiagApi *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-void __nvoc_init_dataField_DiagApi(DiagApi *pThis) {
+void __nvoc_init_dataField_DiagApi(DiagApi *pThis, RmHalspecOwner *pRmhalspecowner) {
+    RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
+    const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
+    PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(rmVariantHal);
+    PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 }
 
 NV_STATUS __nvoc_ctor_GpuResource(GpuResource* , struct CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
 NV_STATUS __nvoc_ctor_Notifier(Notifier* , struct CALL_CONTEXT *);
-NV_STATUS __nvoc_ctor_DiagApi(DiagApi *pThis, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_ctor_DiagApi(DiagApi *pThis, RmHalspecOwner *pRmhalspecowner, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
     NV_STATUS status = NV_OK;
     status = __nvoc_ctor_GpuResource(&pThis->__nvoc_base_GpuResource, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_ctor_DiagApi_fail_GpuResource;
     status = __nvoc_ctor_Notifier(&pThis->__nvoc_base_Notifier, arg_pCallContext);
     if (status != NV_OK) goto __nvoc_ctor_DiagApi_fail_Notifier;
-    __nvoc_init_dataField_DiagApi(pThis);
+    __nvoc_init_dataField_DiagApi(pThis, pRmhalspecowner);
 
     status = __nvoc_diagapiConstruct(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_ctor_DiagApi_fail__init;
@@ -559,8 +564,13 @@ __nvoc_ctor_DiagApi_exit:
 }
 
 // Vtable initialization
-static void __nvoc_init_funcTable_DiagApi_1(DiagApi *pThis) {
+static void __nvoc_init_funcTable_DiagApi_1(DiagApi *pThis, RmHalspecOwner *pRmhalspecowner) {
+    RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
+    const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
+    PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(rmVariantHal);
+    PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
     // diagapiControl -- virtual override (res) base (gpures)
     pThis->__diagapiControl__ = &diagapiControl_IMPL;
@@ -571,7 +581,7 @@ static void __nvoc_init_funcTable_DiagApi_1(DiagApi *pThis) {
     pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resControlFilter__ = &__nvoc_down_thunk_DiagApi_resControlFilter;
 
     // diagapiCtrlCmdFifoCheckEngineContext -- exported (id=0x208f0401)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
     pThis->__diagapiCtrlCmdFifoCheckEngineContext__ = &diagapiCtrlCmdFifoCheckEngineContext_IMPL;
 #endif
 
@@ -580,10 +590,15 @@ static void __nvoc_init_funcTable_DiagApi_1(DiagApi *pThis) {
     pThis->__diagapiCtrlCmdFifoEnableVirtualContext__ = &diagapiCtrlCmdFifoEnableVirtualContext_IMPL;
 #endif
 
-    // diagapiCtrlCmdFifoGetChannelState -- exported (id=0x208f0403)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-    pThis->__diagapiCtrlCmdFifoGetChannelState__ = &diagapiCtrlCmdFifoGetChannelState_IMPL;
-#endif
+    // diagapiCtrlCmdFifoGetChannelState -- halified (2 hals) exported (id=0x208f0403) body
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__diagapiCtrlCmdFifoGetChannelState__ = &diagapiCtrlCmdFifoGetChannelState_46f6a7;
+    }
+    else
+    {
+        pThis->__diagapiCtrlCmdFifoGetChannelState__ = &diagapiCtrlCmdFifoGetChannelState_IMPL;
+    }
 
     // diagapiCtrlCmdFbCtrlGpuCache -- exported (id=0x208f0506)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
@@ -733,19 +748,19 @@ static void __nvoc_init_funcTable_DiagApi_1(DiagApi *pThis) {
 
     // diagapiGetOrAllocNotifShare -- virtual inherited (notify) base (notify)
     pThis->__diagapiGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_diagapiGetOrAllocNotifShare;
-} // End __nvoc_init_funcTable_DiagApi_1 with approximately 48 basic block(s).
+} // End __nvoc_init_funcTable_DiagApi_1 with approximately 49 basic block(s).
 
 
 // Initialize vtable(s) for 46 virtual method(s).
-void __nvoc_init_funcTable_DiagApi(DiagApi *pThis) {
+void __nvoc_init_funcTable_DiagApi(DiagApi *pThis, RmHalspecOwner *pRmhalspecowner) {
 
     // Initialize vtable(s) with 46 per-object function pointer(s).
-    __nvoc_init_funcTable_DiagApi_1(pThis);
+    __nvoc_init_funcTable_DiagApi_1(pThis, pRmhalspecowner);
 }
 
 void __nvoc_init_GpuResource(GpuResource*);
 void __nvoc_init_Notifier(Notifier*);
-void __nvoc_init_DiagApi(DiagApi *pThis) {
+void __nvoc_init_DiagApi(DiagApi *pThis, RmHalspecOwner *pRmhalspecowner) {
     pThis->__nvoc_pbase_DiagApi = pThis;
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;
     pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource;
@@ -756,7 +771,7 @@ void __nvoc_init_DiagApi(DiagApi *pThis) {
     pThis->__nvoc_pbase_Notifier = &pThis->__nvoc_base_Notifier;
     __nvoc_init_GpuResource(&pThis->__nvoc_base_GpuResource);
     __nvoc_init_Notifier(&pThis->__nvoc_base_Notifier);
-    __nvoc_init_funcTable_DiagApi(pThis);
+    __nvoc_init_funcTable_DiagApi(pThis, pRmhalspecowner);
 }
 
 NV_STATUS __nvoc_objCreate_DiagApi(DiagApi **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
@@ -764,6 +779,7 @@ NV_STATUS __nvoc_objCreate_DiagApi(DiagApi **ppThis, Dynamic *pParent, NvU32 cre
     NV_STATUS status;
     Object *pParentObj = NULL;
     DiagApi *pThis;
+    RmHalspecOwner *pRmhalspecowner;
 
     // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(DiagApi), (void**)&pThis, (void**)ppThis);
@@ -778,8 +794,11 @@ NV_STATUS __nvoc_objCreate_DiagApi(DiagApi **ppThis, Dynamic *pParent, NvU32 cre
 
     pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
-    // Link the child into the parent if there is one unless flagged not to do so.
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    // pParent must be a valid object that derives from a halspec owner class.
+    NV_ASSERT_OR_RETURN(pParent != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    // Link the child into the parent unless flagged not to do so.
+    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
         objAddChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
@@ -789,8 +808,12 @@ NV_STATUS __nvoc_objCreate_DiagApi(DiagApi **ppThis, Dynamic *pParent, NvU32 cre
         pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_DiagApi(pThis);
-    status = __nvoc_ctor_DiagApi(pThis, arg_pCallContext, arg_pParams);
+    if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
+        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
+    NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    __nvoc_init_DiagApi(pThis, pRmhalspecowner);
+    status = __nvoc_ctor_DiagApi(pThis, pRmhalspecowner, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_DiagApi_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.

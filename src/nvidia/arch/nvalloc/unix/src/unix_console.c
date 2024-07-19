@@ -103,9 +103,14 @@ RmSaveDisplayState
     preUnixConsoleParams.bSave     = NV_TRUE;
     preUnixConsoleParams.bUseVbios = use_vbios;
 
-    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,pRmApi->Control(pRmApi, nv->rmapi.hClient, nv->rmapi.hSubDevice,
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, pRmApi->Control(pRmApi, nv->rmapi.hClient, nv->rmapi.hSubDevice,
                         NV2080_CTRL_CMD_INTERNAL_DISPLAY_PRE_UNIX_CONSOLE,
                         &preUnixConsoleParams, sizeof(preUnixConsoleParams)), done);
+
+    if (preUnixConsoleParams.bReturnEarly)
+    {
+        goto done;
+    }
 
     if (use_vbios)
     {
@@ -128,10 +133,10 @@ RmSaveDisplayState
     postUnixConsoleParams.bSave     = NV_TRUE;
     postUnixConsoleParams.bUseVbios = use_vbios;
 
-    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, pRmApi->Control(pRmApi, nv->rmapi.hClient,
-                        nv->rmapi.hSubDevice,
-                        NV2080_CTRL_CMD_INTERNAL_DISPLAY_POST_UNIX_CONSOLE,
-                        &postUnixConsoleParams, sizeof(postUnixConsoleParams)), done);
+    NV_CHECK_OK(status, LEVEL_ERROR,
+                pRmApi->Control(pRmApi, nv->rmapi.hClient,nv->rmapi.hSubDevice,
+                                NV2080_CTRL_CMD_INTERNAL_DISPLAY_POST_UNIX_CONSOLE,
+                                &postUnixConsoleParams, sizeof(postUnixConsoleParams)));
 
 done:
     os_enable_console_access();
@@ -195,6 +200,11 @@ static void RmRestoreDisplayState
                         NV2080_CTRL_CMD_INTERNAL_DISPLAY_PRE_UNIX_CONSOLE,
                         &preUnixConsoleParams, sizeof(preUnixConsoleParams)), done);
 
+    if (preUnixConsoleParams.bReturnEarly)
+    {
+        goto done;
+    }
+
     if (use_vbios)
     {
         eax = 0x4f02;
@@ -209,10 +219,10 @@ static void RmRestoreDisplayState
     postUnixConsoleParams.bSave = NV_FALSE;
     postUnixConsoleParams.bUseVbios = use_vbios;
 
-    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, pRmApi->Control(pRmApi, nv->rmapi.hClient,
-                        nv->rmapi.hSubDevice,
-                        NV2080_CTRL_CMD_INTERNAL_DISPLAY_POST_UNIX_CONSOLE,
-                        &postUnixConsoleParams, sizeof(postUnixConsoleParams)), done);
+    NV_CHECK_OK(status, LEVEL_ERROR,
+                pRmApi->Control(pRmApi, nv->rmapi.hClient, nv->rmapi.hSubDevice,
+                                NV2080_CTRL_CMD_INTERNAL_DISPLAY_POST_UNIX_CONSOLE,
+                                &postUnixConsoleParams, sizeof(postUnixConsoleParams)));
 
 done:
     os_enable_console_access();

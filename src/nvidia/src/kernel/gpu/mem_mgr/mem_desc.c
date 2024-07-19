@@ -1371,19 +1371,6 @@ memdescAlloc
         gpumgrSetBcEnabledStatus(pGpu, bcState);
     }
 
-    if ((status == NV_OK) &&
-        IS_VIRTUAL_WITH_SRIOV(pGpu) &&
-        !gpuIsWarBug200577889SriovHeavyEnabled(pGpu) &&
-        (pMemDesc->_addressSpace == ADDR_SYSMEM) &&
-        !(pMemDesc->_flags & MEMDESC_FLAGS_CPU_ONLY))
-    {
-        status = vgpuUpdateSysmemPfnBitMap(pGpu, pMemDesc, NV_TRUE);
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_INFO, "Failed to update sysmem PFN bitmap, error 0x%x\n", status);
-        }
-    }
-
     return status;
 
 subdeviceAlloc_failed:
@@ -1646,24 +1633,6 @@ memdescFree
 
         if (!pMemDesc->Allocated)
         {
-            /*
-             * For sysmem not allocated by RM but only registered to it, we
-             * would need to update the shared sysmem pfn bitmap here
-             */
-            if (pMemDesc->pGpu && IS_VIRTUAL_WITH_SRIOV(pMemDesc->pGpu) &&
-                !gpuIsWarBug200577889SriovHeavyEnabled(pMemDesc->pGpu) &&
-                !(pMemDesc->_flags & MEMDESC_FLAGS_CPU_ONLY))
-            {
-                if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_EXT_PAGE_ARRAY_MEM) &&
-                    (pMemDesc->_addressSpace == ADDR_SYSMEM))
-                {
-                    NV_STATUS status = vgpuUpdateSysmemPfnBitMap(pMemDesc->pGpu, pMemDesc, NV_FALSE);
-                    if (status != NV_OK)
-                    {
-                        NV_PRINTF(LEVEL_INFO, "Failed to update sysmem PFN bitmap\n");
-                    }
-                }
-            }
             return;
         }
         pMemDesc->Allocated--;
@@ -1684,16 +1653,6 @@ memdescFree
 
         if (pMemDesc->_addressSpace == ADDR_SYSMEM)
         {
-            if (pMemDesc->pGpu && IS_VIRTUAL_WITH_SRIOV(pMemDesc->pGpu) &&
-                !gpuIsWarBug200577889SriovHeavyEnabled(pMemDesc->pGpu) &&
-                !(pMemDesc->_flags & MEMDESC_FLAGS_CPU_ONLY))
-            {
-                NV_STATUS status = vgpuUpdateSysmemPfnBitMap(pMemDesc->pGpu, pMemDesc, NV_FALSE);
-                if (status != NV_OK)
-                {
-                    NV_PRINTF(LEVEL_INFO, "Failed to update sysmem PFN bitmap\n");
-                }
-            }
             // The memdesc is being freed so destroy all of its IOMMU mappings.
             _memdescFreeIommuMappings(pMemDesc);
         }
@@ -1938,12 +1897,12 @@ memdescMap
 
             // Determine where in BAR1 the mapping will go
             pMapping->FbApertureLen = Size;
-            status = kbusMapFbAperture_HAL(pGpu, pKernelBus,
-                                           pMemDesc, Offset,
-                                           &pMapping->FbAperture,
-                                           &pMapping->FbApertureLen,
-                                           BUS_MAP_FB_FLAGS_MAP_UNICAST,
-                                           NULL);
+            status = kbusMapFbApertureSingle(pGpu, pKernelBus,
+                                             pMemDesc, Offset,
+                                             &pMapping->FbAperture,
+                                             &pMapping->FbApertureLen,
+                                             BUS_MAP_FB_FLAGS_MAP_UNICAST,
+                                             NULL);
             if (status != NV_OK)
             {
                 portMemFree(pMapping);
@@ -1972,10 +1931,10 @@ memdescMap
             {
                 if (!bCoherentCpuMapping)
                 {
-                    kbusUnmapFbAperture_HAL(pGpu, pKernelBus, pMemDesc,
-                                            pMapping->FbAperture,
-                                            pMapping->FbApertureLen,
-                                            BUS_MAP_FB_FLAGS_MAP_UNICAST);
+                    kbusUnmapFbApertureSingle(pGpu, pKernelBus, pMemDesc,
+                                              pMapping->FbAperture,
+                                              pMapping->FbApertureLen,
+                                              BUS_MAP_FB_FLAGS_MAP_UNICAST);
                 }
                 portMemFree(pMapping);
                 return status;
@@ -2078,10 +2037,10 @@ memdescUnmap
                 break;
             }
 
-            kbusUnmapFbAperture_HAL(pGpu, pKernelBus, pMemDesc,
-                                    pMapping->FbAperture,
-                                    Size,
-                                    BUS_MAP_FB_FLAGS_MAP_UNICAST);
+            kbusUnmapFbApertureSingle(pGpu, pKernelBus, pMemDesc,
+                                      pMapping->FbAperture,
+                                      Size,
+                                      BUS_MAP_FB_FLAGS_MAP_UNICAST);
             if (Kernel)
             {
                 osUnmapPciMemoryKernel64(pGpu, Address);

@@ -271,6 +271,7 @@ enum NvKmsIoctlCommand {
     NVKMS_IOCTL_ENABLE_VBLANK_SEM_CONTROL,
     NVKMS_IOCTL_DISABLE_VBLANK_SEM_CONTROL,
     NVKMS_IOCTL_ACCEL_VBLANK_SEM_CONTROLS,
+    NVKMS_IOCTL_VRR_SIGNAL_SEMAPHORE,
 };
 
 
@@ -295,7 +296,8 @@ enum NvKmsIoctlCommand {
 #define NVKMS_3DVISION_DONGLE_PARAM_BYTES                             20
 #define NVKMS_GPU_STRING_SIZE                                         80
 
-#define NVKMS_VRR_SEMAPHORE_SURFACE_SIZE                              1024
+#define NVKMS_VRR_SEMAPHORE_SURFACE_COUNT                             256
+#define NVKMS_VRR_SEMAPHORE_SURFACE_SIZE                              (sizeof(NvU32) * NVKMS_VRR_SEMAPHORE_SURFACE_COUNT)
 
 /*
  * The GUID string has the form:
@@ -416,6 +418,12 @@ enum NvKmsStereoMode {
     NVKMS_STEREO_OTHER,
 };
 
+enum NvKmsDscMode {
+    NVKMS_DSC_MODE_DEFAULT = 0,
+    NVKMS_DSC_MODE_FORCE_ENABLE,
+    NVKMS_DSC_MODE_FORCE_DISABLE,
+};
+
 struct NvKmsModeValidationParams {
     NvBool verboseModeValidation;
     NvBool moreVerboseModeValidation;
@@ -433,11 +441,11 @@ struct NvKmsModeValidationParams {
     struct NvKmsModeValidationValidSyncs validSyncs;
 
     /*!
-     * Normally, NVKMS will determine on its own whether to use Display
-     * Stream Compression (DSC).  Use forceDsc to force NVKMS to use DSC,
-     * when the GPU supports it.
+     * Normally, NVKMS will determine on its own whether to enable/disable
+     * Display Stream Compression (DSC). Use dscMode to force NVKMS to
+     * enable/disable DSC, when both the GPU and display supports it.
      */
-    NvBool forceDsc;
+    enum NvKmsDscMode dscMode;
 
     /*!
      * When enabled, Display Stream Compression (DSC) has an
@@ -908,7 +916,7 @@ struct NvKmsFlipCommonParams {
 
         /*
          * This field can be used when
-         * NvKmsAllocDeviceReply::layerCaps[layer].supportsHDR = TRUE.
+         * NvKmsAllocDeviceReply::layerCaps[layer].supportsICtCp = TRUE.
          *
          * If staticMetadata is enabled for multiple layers, flip request
          * will be rejected.
@@ -1413,6 +1421,23 @@ struct NvKmsQueryDpyDynamicDataRequest {
     } edid;
 };
 
+/*! Values for the NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC attributes. */
+enum NvKmsDpyAttributeColorBpcValue {
+    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN =  0,
+    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6       =  6,
+    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8       =  8,
+    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10      = 10,
+    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_MAX     =
+        NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10,
+};
+
+typedef struct _NvKmsDpyOutputColorFormatInfo {
+    struct {
+        enum NvKmsDpyAttributeColorBpcValue maxBpc;
+        enum NvKmsDpyAttributeColorBpcValue minBpc;
+    } rgb444, yuv444, yuv422;
+} NvKmsDpyOutputColorFormatInfo;
+
 enum NvKmsDpyVRRType {
     NVKMS_DPY_VRR_TYPE_NONE,
     NVKMS_DPY_VRR_TYPE_GSYNC,
@@ -1479,6 +1504,8 @@ struct NvKmsQueryDpyDynamicDataReply {
          */
         char infoString[NVKMS_EDID_INFO_STRING_LENGTH];
     } edid;
+
+    NvKmsDpyOutputColorFormatInfo supportedOutputColorFormats;
 
     struct NvKmsSuperframeInfo superframeInfo;
 };
@@ -1873,6 +1900,12 @@ struct NvKmsSetModeOneHeadRequest {
      */
     enum NvKmsDpyAttributeRequestedColorSpaceValue colorSpace;
     NvBool colorSpaceSpecified;
+
+    /*!
+     * Output color bpc. Valid only when colorBpcSpecified is true.
+     */
+    enum NvKmsDpyAttributeColorBpcValue colorBpc;
+    NvBool colorBpcSpecified;
 
     /*!
      * Output color range. Valid only when colorRangeSpecified is true.
@@ -2558,9 +2591,11 @@ enum NvKmsDpyAttribute {
     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE,
     NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_RANGE,
     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_RANGE,
+    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC,
     NV_KMS_DPY_ATTRIBUTE_DIGITAL_SIGNAL,
     NV_KMS_DPY_ATTRIBUTE_DIGITAL_LINK_TYPE,
     NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_LINK_RATE,
+    NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_LINK_RATE_10MHZ,
     NV_KMS_DPY_ATTRIBUTE_FRAMELOCK_DISPLAY_CONFIG,
     /*
      * XXX NVKMS TODO: Delete UPDATE_GLS_FRAMELOCK; this event-only
@@ -4166,6 +4201,27 @@ struct NvKmsAccelVblankSemControlsReply {
 struct NvKmsAccelVblankSemControlsParams {
     struct NvKmsAccelVblankSemControlsRequest request;
     struct NvKmsAccelVblankSemControlsReply reply;
+};
+
+/*!
+ * NVKMS_IOCTL_VRR_SIGNAL_SEMAPHORE
+ *
+ * This IOCTL is used to signal a semaphore from VRR semaphore surface.
+ * It should be invoked after flip if needed. If device does not supports
+ * VRR semaphores, then this is a no-op action for compatibility.
+ */
+struct NvKmsVrrSignalSemaphoreRequest {
+    NvKmsDeviceHandle deviceHandle;
+    NvS32 vrrSemaphoreIndex;
+};
+
+struct NvKmsVrrSignalSemaphoreReply {
+    NvU32 padding;
+};
+
+struct NvKmsVrrSignalSemaphoreParams {
+    struct NvKmsVrrSignalSemaphoreRequest request; /*! in */
+    struct NvKmsVrrSignalSemaphoreReply reply;     /*! out */
 };
 
 #endif /* NVKMS_API_H */

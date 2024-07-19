@@ -218,14 +218,12 @@ typedef struct _def_gsync {
     // gsync hal
     GSYNC_HAL_IFACES gsyncHal;
 
-} OBJGSYNC, *POBJGSYNC;
+} OBJGSYNC;
 
 /* ------------------------ Macros & Defines ------------------------------- */
 #define FLIPLOCK_LSR_MIN_TIME_FOR_SAWP_BARRIER_NV50  0x3FF //max LSR_MIN_TIME value for nv50
 #define FLIPLOCK_LSR_MIN_TIME_FOR_SAWP_BARRIER_GF100 0x3FF //max LSR_MIN_TIME value for gf100
 #define FLIPLOCK_LSR_MIN_TIME_FOR_SAWP_BARRIER_V02   0x3FF //max LSR_MIN_TIME value for gf11x+
-
-typedef struct OBJGSYNCMGR *POBJGSYNCMGR;
 
 
 // Private field names are wrapped in PRIVATE_FIELD, which does nothing for

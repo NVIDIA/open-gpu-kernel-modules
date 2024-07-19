@@ -447,9 +447,6 @@ number of Downstream ports will be limited to 32.
 #define NV_DPCD_DOWNSPREAD_CTRL_SPREAD_AMP                                            4:4  /* RWXUF */
 #define NV_DPCD_DOWNSPREAD_CTRL_SPREAD_AMP_NONE                               (0x00000000) /* RWXUV */
 #define NV_DPCD_DOWNSPREAD_CTRL_SPREAD_AMP_LESS_THAN_0_5                      (0x00000001) /* RWXUV */
-#define NV_DPCD_DOWNSPREAD_CTRL_FIXED_VTOTAL_AS_SDP_EN_IN_PR_ACTIVE                   6:6  /* RWXUF */
-#define NV_DPCD_DOWNSPREAD_CTRL_FIXED_VTOTAL_AS_SDP_EN_IN_PR_ACTIVE_NO        (0x00000000) /* RWXUV */
-#define NV_DPCD_DOWNSPREAD_CTRL_FIXED_VTOTAL_AS_SDP_EN_IN_PR_ACTIVE_YES       (0x00000001) /* RWXUV */
 #define NV_DPCD_DOWNSPREAD_CTRL_MSA_TIMING_PAR_IGNORED                                7:7  /* RWXUF */
 #define NV_DPCD_DOWNSPREAD_CTRL_MSA_TIMING_PAR_IGNORED_FALSE                  (0x00000000) /* RWXUV */
 #define NV_DPCD_DOWNSPREAD_CTRL_MSA_TIMING_PAR_IGNORED_TRUE                   (0x00000001) /* RWXUV */
@@ -732,28 +729,13 @@ number of Downstream ports will be limited to 32.
 #define NV_DPCD_TEST_REQUEST_TEST_PHY_TEST_PATTERN                       3:3  /* R-XUF */
 #define NV_DPCD_TEST_REQUEST_TEST_PHY_TEST_PATTERN_NO            (0x00000000) /* R-XUV */
 #define NV_DPCD_TEST_REQUEST_TEST_PHY_TEST_PATTERN_YES           (0x00000001) /* R-XUV */
-#define NV_DPCD_TEST_REQUEST_PHY_TEST_CHANNEL_CODING                     5:4  /* R-XUF */
-#define NV_DPCD_TEST_REQUEST_PHY_TEST_CHANNEL_CODING_8B10B       (0x00000000) /* R-XUV */
-#define NV_DPCD_TEST_REQUEST_PHY_TEST_CHANNEL_CODING_128B132B    (0x00000001) /* R-XUV */
-#define NV_DPCD_TEST_REQUEST_TEST_AUDIO_PATTERN_REQ                      6:6  /* R-XUF */
-#define NV_DPCD_TEST_REQUEST_TEST_AUDIO_PATTERN_REQ_NO           (0x00000000) /* R-XUV */
-#define NV_DPCD_TEST_REQUEST_TEST_AUDIO_PATTERN_REQ_YES          (0x00000001) /* R-XUV */
-#define NV_DPCD_TEST_REQUEST_TEST_AUDIO_DISABLED_VIDEO                   7:7  /* R-XUF */
-#define NV_DPCD_TEST_REQUEST_TEST_AUDIO_DISABLED_VIDEO_NO        (0x00000000) /* R-XUV */
-#define NV_DPCD_TEST_REQUEST_TEST_AUDIO_DISABLED_VIDEO_YES       (0x00000001) /* R-XUV */
 
 #define NV_DPCD_TEST_LINK_RATE                                   (0x00000219) /* R-XUR */
 #define NV_DPCD_TEST_LINK_RATE_TYPE                                      7:0  /* R-XUF */
 #define NV_DPCD_TEST_LINK_RATE_TYPE_1_62G                        (0x00000006) /* R-XUV */
 #define NV_DPCD_TEST_LINK_RATE_TYPE_2_70G                        (0x0000000A) /* R-XUV */
 #define NV_DPCD_TEST_LINK_RATE_TYPE_5_40G                        (0x00000014) /* R-XUV */
-//
-// For PHY Test 128b/132b channel coding (PHY_TEST_CHANNEL_CODING field in
-// the TEST_REQUEST register (DPCD Address 00218h, bits 5:4) is programmed to 01b)
-//
-#define NV_DPCD_TEST_LINK_RATE_TYPE_UHBR10                       (0x00000001) /* R-XUV */
-#define NV_DPCD_TEST_LINK_RATE_TYPE_UHBR20                       (0x00000002) /* R-XUV */
-#define NV_DPCD_TEST_LINK_RATE_TYPE_UHBR135                      (0x00000004) /* R-XUV */
+#define NV_DPCD_TEST_LINK_RATE_TYPE_8_10G                        (0x0000001E) /* R-XUV */
 
 // 0021Ah - 0021Fh: RESERVED. Read all 0s
 

@@ -42,7 +42,7 @@
 #include <core/system.h>
 #include <os/os.h>
 #include "gpu/gpu.h"
-#include <objtmr.h>
+#include <gpu/timer/objtmr.h>
 #include "gpu/bus/kern_bus.h"
 #include "nverror.h"
 #include <gpu/bif/kernel_bif.h>
@@ -99,7 +99,6 @@ typedef enum
    RM_INIT_GPU_PRE_INIT_FAILED,
    RM_INIT_GPU_STATE_INIT_FAILED,
    RM_INIT_GPU_LOAD_FAILED,
-   RM_INIT_GPU_UNIVERSAL_VALIDATION_FAILED,
    RM_INIT_GPU_DMA_CONFIGURATION_FAILED,
    RM_INIT_GPU_GPUMGR_EXPANDED_VISIBILITY_FAILED,
 
@@ -1130,14 +1129,6 @@ RmInitNvDevice(
     }
     nvp->flags |= NV_INIT_FLAG_GPU_STATE_LOAD;
 
-    status->rmStatus = gpuPerformUniversalValidation_HAL(pGpu);
-    if (status->rmStatus != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "*** Failed universal validation\n");
-        RM_SET_ERROR(*status, RM_INIT_GPU_UNIVERSAL_VALIDATION_FAILED);
-        return;
-    }
-
     // Setup GPU scalability
     (void) RmInitScalability(pGpu);
 
@@ -1672,7 +1663,7 @@ static NV_STATUS RmFetchGspRmImages
 {
     nv_firmware_chip_family_t chipFamily;
     nv_priv_t *nvp = NV_GET_NV_PRIV(nv);
-    NvU32 gpuArch = (DRF_VAL(_PMC, _BOOT_42, _ARCHITECTURE, nvp->pmc_boot_42) <<
+    NvU32 gpuArch = (gpuGetArchitectureFromPmcBoot42(nvp->pmc_boot_42) <<
                      GPU_ARCH_SHIFT);
     NvU32 gpuImpl = DRF_VAL(_PMC, _BOOT_42, _IMPLEMENTATION, nvp->pmc_boot_42);
 
@@ -1950,7 +1941,7 @@ NvBool RmInitAdapter(
                 nvp->status = NV_ERR_IRQ_NOT_FIRING;
                 break;
         }
-        NV_PRINTF(LEVEL_ERROR, "RmVerifySystemEnvironment failed, bailing!\n");
+        NV_PRINTF(LEVEL_ERROR, "osVerifySystemEnvironment failed, bailing!\n");
         goto shutdown;
     }
 
@@ -2041,8 +2032,7 @@ NvBool RmInitAdapter(
 
     pOS->setProperty(pOS, PDB_PROP_OS_SYSTEM_EVENTS_SUPPORTED, NV_TRUE);
 
-    RmInitS0ixPowerManagement(nv);
-    RmInitDeferredDynamicPowerManagement(nv);
+    RmInitPowerManagement(nv);
 
     if (!NV_IS_SOC_DISPLAY_DEVICE(nv) && !NV_IS_SOC_IGPU_DEVICE(nv))
     {
@@ -2139,7 +2129,7 @@ void RmShutdownAdapter(
                 //
                 NV_ASSERT_OK(gpumgrThreadEnableExpandedGpuVisibility());
 
-                RmDestroyDeferredDynamicPowerManagement(nv);
+                RmDestroyPowerManagement(nv);
 
                 freeNbsiTable(pGpu);
 

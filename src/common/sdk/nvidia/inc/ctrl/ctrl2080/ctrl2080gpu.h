@@ -115,6 +115,8 @@ typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_GPU_INFO;
 
 #define NV2080_CTRL_GPU_INFO_MAX_LIST_SIZE                             (0x00000041U)
 
+#define NV2080_CTRL_GPU_INFO_INDEX_GROUP_ID                30:24
+
 
 #define NV2080_CTRL_GPU_INFO_INDEX_RESERVED                31:31
 
@@ -753,7 +755,7 @@ typedef struct NV2080_CTRL_GPU_GET_ENGINES_PARAMS {
 #define NV2080_CTRL_CMD_GPU_GET_ENGINES_V2 (0x20800170U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_ENGINES_V2_PARAMS_MESSAGE_ID" */
 
 /* Must match NV2080_ENGINE_TYPE_LAST from cl2080.h */
-#define NV2080_GPU_MAX_ENGINES_LIST_SIZE   0x40U
+#define NV2080_GPU_MAX_ENGINES_LIST_SIZE   0x54U
 
 #define NV2080_CTRL_GPU_GET_ENGINES_V2_PARAMS_MESSAGE_ID (0x70U)
 
@@ -1126,7 +1128,7 @@ typedef struct NV2080_CTRL_GPU_QUERY_ECC_INTR_PARAMS {
 #define NV2080_CTRL_CMD_GPU_QUERY_ECC_STATUS                   (0x2080012fU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_MESSAGE_ID" */
 
 
-#define NV2080_CTRL_GPU_ECC_UNIT_COUNT                         (0x0000001EU)
+#define NV2080_CTRL_GPU_ECC_UNIT_COUNT                         (0x0000001FU)
 
 
 
@@ -4324,6 +4326,36 @@ typedef struct NV2080_CTRL_GPU_GET_CONSTRUCTED_FALCON_INFO_PARAMS {
     NvU32                                   numConstructedFalcons;
     NV2080_CTRL_GPU_CONSTRUCTED_FALCON_INFO constructedFalconsTable[NV2080_CTRL_GPU_MAX_CONSTRUCTED_FALCONS];
 } NV2080_CTRL_GPU_GET_CONSTRUCTED_FALCON_INFO_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_GPU_GET_VF_CAPS 
+ *
+ * This command will return the MSIX capabilities for virtual function
+ * Parameters:
+ * 
+ * gfid [IN]
+ *   The GPU function identifier for a given VF BDF
+ *
+ * vfMsixCap [out]
+ *   This field returns the VF MSIX cap values
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ */
+typedef struct NV2080_VF_MSIX_CAPS {
+    NvU32 msix_header;
+    NvU32 msix_table;
+    NvU32 msix_pba;
+} NV2080_VF_MSIX_CAPS;
+
+#define NV2080_CTRL_CMD_GPU_GET_VF_CAPS (0x208001b1) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_VF_CAPS_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_GPU_GET_VF_CAPS_PARAMS_MESSAGE_ID (0xB1U)
+
+typedef struct NV2080_CTRL_GPU_GET_VF_CAPS_PARAMS {
+    NvU32               gfid;
+    NV2080_VF_MSIX_CAPS vfMsixCap;
+} NV2080_CTRL_GPU_GET_VF_CAPS_PARAMS;
 
 /*
  * NV2080_CTRL_GPU_GET_FIPS_STATUS

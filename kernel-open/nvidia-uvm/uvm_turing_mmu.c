@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2017-2020 NVIDIA Corporation
+    Copyright (c) 2017-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -166,19 +166,4 @@ uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_turing(NvU64 big_page_size)
     }
 
     return &turing_mmu_mode_hal;
-}
-
-uvm_mmu_engine_type_t uvm_hal_turing_mmu_engine_id_to_type(NvU16 mmu_engine_id)
-{
-    if (mmu_engine_id >= NV_PFAULT_MMU_ENG_ID_HOST0 && mmu_engine_id <= NV_PFAULT_MMU_ENG_ID_HOST14)
-        return UVM_MMU_ENGINE_TYPE_HOST;
-
-    if (mmu_engine_id >= NV_PFAULT_MMU_ENG_ID_CE0 && mmu_engine_id <= NV_PFAULT_MMU_ENG_ID_CE8)
-        return UVM_MMU_ENGINE_TYPE_CE;
-
-    // We shouldn't be servicing faults from any other engines
-    UVM_ASSERT_MSG(mmu_engine_id >= NV_PFAULT_MMU_ENG_ID_GRAPHICS && mmu_engine_id < NV_PFAULT_MMU_ENG_ID_BAR1,
-                   "Unexpected engine ID: 0x%x\n", mmu_engine_id);
-
-    return UVM_MMU_ENGINE_TYPE_GRAPHICS;
 }

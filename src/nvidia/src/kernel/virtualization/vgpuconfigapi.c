@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,7 +34,7 @@
 #include "rmapi/control.h"
 #include "nv-hypervisor.h"
 #include "ctrl/ctrla081.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
 
 NV_STATUS
@@ -816,6 +816,20 @@ vgpuconfigapiCtrlCmdVgpuConfigGetCapability_IMPL
             pGetCapabilityParams->state = pPhysGpuInfo->computeMediaEngineEnabled;
             break;
         }
+        case NVA081_CTRL_VGPU_CAPABILITY_WARM_UPDATE:
+        {
+            /*
+             * As per our current requirement, the capability is supported on all GPUs
+             * and hence we are turning true always without checking for input device.
+             * If we decided not to support any GPU, this needs to be modified.
+             */
+            pGetCapabilityParams->state = NV_TRUE;
+            if (IS_MIG_ENABLED(pGpu))
+            {
+                pGetCapabilityParams->state = NV_FALSE;
+            }
+            break;
+        }
         default:
         {
             rmStatus = NV_ERR_INVALID_ARGUMENT;
@@ -1160,7 +1174,9 @@ vgpuconfigapiCtrlCmdGetVgpuDriversCaps_IMPL
     NVA081_CTRL_GET_VGPU_DRIVER_CAPS_PARAMS *pParams
 )
 {
-    pParams->heterogeneousMultiVgpuSupported = kvgpumgrIsHeterogeneousVgpuSupported();
+    pParams->heterogeneousMultiVgpuSupported    = kvgpumgrIsHeterogeneousVgpuSupported();
+    pParams->warmUpdateSupported                = kvgpumgrIsVgpuWarmUpdateSupported();
+
     return NV_OK;
 }
 

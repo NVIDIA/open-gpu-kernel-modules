@@ -49,6 +49,7 @@ gpuGetClassDescriptorList_TU102(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
         { KEPLER_INLINE_TO_MEMORY_B, ENG_GR(0) },
         { MMU_FAULT_BUFFER, ENG_GR(0) },
         { NV0060_SYNC_GPU_BOOST, ENG_GPU },
+        { NV01_MEMORY_LOCAL_USER, ENG_SW },
         { NV01_MEMORY_VIRTUAL, ENG_DMA },
         { NV04_DISPLAY_COMMON, ENG_KERNEL_DISPLAY },
         { NV04_SOFTWARE_TEST, ENG_SW },
@@ -84,7 +85,7 @@ gpuGetClassDescriptorList_TU102(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
 
     #define HALTU102_NUM_CLASS_DESCS (sizeof(halTU102ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
 
-    #define HALTU102_NUM_CLASSES 52
+    #define HALTU102_NUM_CLASSES 53
 
     ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALTU102_NUM_CLASSES);
 
@@ -115,6 +116,7 @@ gpuGetClassDescriptorList_TU104(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
         { KEPLER_INLINE_TO_MEMORY_B, ENG_GR(0) },
         { MMU_FAULT_BUFFER, ENG_GR(0) },
         { NV0060_SYNC_GPU_BOOST, ENG_GPU },
+        { NV01_MEMORY_LOCAL_USER, ENG_SW },
         { NV01_MEMORY_VIRTUAL, ENG_DMA },
         { NV04_DISPLAY_COMMON, ENG_KERNEL_DISPLAY },
         { NV04_SOFTWARE_TEST, ENG_SW },
@@ -151,7 +153,7 @@ gpuGetClassDescriptorList_TU104(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
 
     #define HALTU104_NUM_CLASS_DESCS (sizeof(halTU104ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
 
-    #define HALTU104_NUM_CLASSES 52
+    #define HALTU104_NUM_CLASSES 53
 
     ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALTU104_NUM_CLASSES);
 
@@ -182,6 +184,7 @@ gpuGetClassDescriptorList_TU106(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
         { KEPLER_INLINE_TO_MEMORY_B, ENG_GR(0) },
         { MMU_FAULT_BUFFER, ENG_GR(0) },
         { NV0060_SYNC_GPU_BOOST, ENG_GPU },
+        { NV01_MEMORY_LOCAL_USER, ENG_SW },
         { NV01_MEMORY_VIRTUAL, ENG_DMA },
         { NV04_DISPLAY_COMMON, ENG_KERNEL_DISPLAY },
         { NV04_SOFTWARE_TEST, ENG_SW },
@@ -219,7 +222,7 @@ gpuGetClassDescriptorList_TU106(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
 
     #define HALTU106_NUM_CLASS_DESCS (sizeof(halTU106ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
 
-    #define HALTU106_NUM_CLASSES 52
+    #define HALTU106_NUM_CLASSES 53
 
     ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALTU106_NUM_CLASSES);
 
@@ -250,6 +253,7 @@ gpuGetClassDescriptorList_TU116(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
         { KEPLER_INLINE_TO_MEMORY_B, ENG_GR(0) },
         { MMU_FAULT_BUFFER, ENG_GR(0) },
         { NV0060_SYNC_GPU_BOOST, ENG_GPU },
+        { NV01_MEMORY_LOCAL_USER, ENG_SW },
         { NV01_MEMORY_VIRTUAL, ENG_DMA },
         { NV04_DISPLAY_COMMON, ENG_KERNEL_DISPLAY },
         { NV04_SOFTWARE_TEST, ENG_SW },
@@ -285,7 +289,7 @@ gpuGetClassDescriptorList_TU116(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
 
     #define HALTU116_NUM_CLASS_DESCS (sizeof(halTU116ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
 
-    #define HALTU116_NUM_CLASSES 52
+    #define HALTU116_NUM_CLASSES 53
 
     ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALTU116_NUM_CLASSES);
 
@@ -316,6 +320,7 @@ gpuGetClassDescriptorList_TU117(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
         { KEPLER_INLINE_TO_MEMORY_B, ENG_GR(0) },
         { MMU_FAULT_BUFFER, ENG_GR(0) },
         { NV0060_SYNC_GPU_BOOST, ENG_GPU },
+        { NV01_MEMORY_LOCAL_USER, ENG_SW },
         { NV01_MEMORY_VIRTUAL, ENG_DMA },
         { NV04_DISPLAY_COMMON, ENG_KERNEL_DISPLAY },
         { NV04_SOFTWARE_TEST, ENG_SW },
@@ -351,7 +356,7 @@ gpuGetClassDescriptorList_TU117(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
 
     #define HALTU117_NUM_CLASS_DESCS (sizeof(halTU117ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
 
-    #define HALTU117_NUM_CLASSES 52
+    #define HALTU117_NUM_CLASSES 53
 
     ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALTU117_NUM_CLASSES);
 
@@ -401,6 +406,7 @@ gpuGetClassDescriptorList_GA100(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
         { KEPLER_INLINE_TO_MEMORY_B, ENG_GR(0) },
         { MMU_FAULT_BUFFER, ENG_GR(0) },
         { NV0060_SYNC_GPU_BOOST, ENG_GPU },
+        { NV01_MEMORY_LOCAL_USER, ENG_SW },
         { NV01_MEMORY_VIRTUAL, ENG_DMA },
         { NV04_SOFTWARE_TEST, ENG_SW },
         { NV50_DEFERRED_API_CLASS, ENG_SW },
@@ -426,7 +432,7 @@ gpuGetClassDescriptorList_GA100(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
 
     #define HALGA100_NUM_CLASS_DESCS (sizeof(halGA100ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
 
-    #define HALGA100_NUM_CLASSES 46
+    #define HALGA100_NUM_CLASSES 47
 
     ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALGA100_NUM_CLASSES);
 
@@ -466,6 +472,7 @@ gpuGetClassDescriptorList_GA102(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
         { KEPLER_INLINE_TO_MEMORY_B, ENG_GR(0) },
         { MMU_FAULT_BUFFER, ENG_GR(0) },
         { NV0060_SYNC_GPU_BOOST, ENG_GPU },
+        { NV01_MEMORY_LOCAL_USER, ENG_SW },
         { NV01_MEMORY_VIRTUAL, ENG_DMA },
         { NV04_DISPLAY_COMMON, ENG_KERNEL_DISPLAY },
         { NV04_SOFTWARE_TEST, ENG_SW },
@@ -498,7 +505,7 @@ gpuGetClassDescriptorList_GA102(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
 
     #define HALGA102_NUM_CLASS_DESCS (sizeof(halGA102ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
 
-    #define HALGA102_NUM_CLASSES 58
+    #define HALGA102_NUM_CLASSES 59
 
     ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALGA102_NUM_CLASSES);
 
@@ -538,6 +545,7 @@ gpuGetClassDescriptorList_GA103(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
         { KEPLER_INLINE_TO_MEMORY_B, ENG_GR(0) },
         { MMU_FAULT_BUFFER, ENG_GR(0) },
         { NV0060_SYNC_GPU_BOOST, ENG_GPU },
+        { NV01_MEMORY_LOCAL_USER, ENG_SW },
         { NV01_MEMORY_VIRTUAL, ENG_DMA },
         { NV04_DISPLAY_COMMON, ENG_KERNEL_DISPLAY },
         { NV04_SOFTWARE_TEST, ENG_SW },
@@ -570,7 +578,7 @@ gpuGetClassDescriptorList_GA103(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
 
     #define HALGA103_NUM_CLASS_DESCS (sizeof(halGA103ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
 
-    #define HALGA103_NUM_CLASSES 58
+    #define HALGA103_NUM_CLASSES 59
 
     ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALGA103_NUM_CLASSES);
 
@@ -610,6 +618,7 @@ gpuGetClassDescriptorList_GA104(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
         { KEPLER_INLINE_TO_MEMORY_B, ENG_GR(0) },
         { MMU_FAULT_BUFFER, ENG_GR(0) },
         { NV0060_SYNC_GPU_BOOST, ENG_GPU },
+        { NV01_MEMORY_LOCAL_USER, ENG_SW },
         { NV01_MEMORY_VIRTUAL, ENG_DMA },
         { NV04_DISPLAY_COMMON, ENG_KERNEL_DISPLAY },
         { NV04_SOFTWARE_TEST, ENG_SW },
@@ -642,7 +651,7 @@ gpuGetClassDescriptorList_GA104(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
 
     #define HALGA104_NUM_CLASS_DESCS (sizeof(halGA104ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
 
-    #define HALGA104_NUM_CLASSES 58
+    #define HALGA104_NUM_CLASSES 59
 
     ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALGA104_NUM_CLASSES);
 
@@ -682,6 +691,7 @@ gpuGetClassDescriptorList_GA106(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
         { KEPLER_INLINE_TO_MEMORY_B, ENG_GR(0) },
         { MMU_FAULT_BUFFER, ENG_GR(0) },
         { NV0060_SYNC_GPU_BOOST, ENG_GPU },
+        { NV01_MEMORY_LOCAL_USER, ENG_SW },
         { NV01_MEMORY_VIRTUAL, ENG_DMA },
         { NV04_DISPLAY_COMMON, ENG_KERNEL_DISPLAY },
         { NV04_SOFTWARE_TEST, ENG_SW },
@@ -714,7 +724,7 @@ gpuGetClassDescriptorList_GA106(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
 
     #define HALGA106_NUM_CLASS_DESCS (sizeof(halGA106ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
 
-    #define HALGA106_NUM_CLASSES 58
+    #define HALGA106_NUM_CLASSES 59
 
     ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALGA106_NUM_CLASSES);
 
@@ -754,6 +764,7 @@ gpuGetClassDescriptorList_GA107(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
         { KEPLER_INLINE_TO_MEMORY_B, ENG_GR(0) },
         { MMU_FAULT_BUFFER, ENG_GR(0) },
         { NV0060_SYNC_GPU_BOOST, ENG_GPU },
+        { NV01_MEMORY_LOCAL_USER, ENG_SW },
         { NV01_MEMORY_VIRTUAL, ENG_DMA },
         { NV04_DISPLAY_COMMON, ENG_KERNEL_DISPLAY },
         { NV04_SOFTWARE_TEST, ENG_SW },
@@ -786,7 +797,7 @@ gpuGetClassDescriptorList_GA107(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
 
     #define HALGA107_NUM_CLASS_DESCS (sizeof(halGA107ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
 
-    #define HALGA107_NUM_CLASSES 58
+    #define HALGA107_NUM_CLASSES 59
 
     ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALGA107_NUM_CLASSES);
 
@@ -826,6 +837,7 @@ gpuGetClassDescriptorList_AD102(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
         { KEPLER_INLINE_TO_MEMORY_B, ENG_GR(0) },
         { MMU_FAULT_BUFFER, ENG_GR(0) },
         { NV0060_SYNC_GPU_BOOST, ENG_GPU },
+        { NV01_MEMORY_LOCAL_USER, ENG_SW },
         { NV01_MEMORY_VIRTUAL, ENG_DMA },
         { NV04_DISPLAY_COMMON, ENG_KERNEL_DISPLAY },
         { NV04_SOFTWARE_TEST, ENG_SW },
@@ -866,7 +878,7 @@ gpuGetClassDescriptorList_AD102(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
 
     #define HALAD102_NUM_CLASS_DESCS (sizeof(halAD102ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
 
-    #define HALAD102_NUM_CLASSES 61
+    #define HALAD102_NUM_CLASSES 62
 
     ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALAD102_NUM_CLASSES);
 
@@ -906,6 +918,7 @@ gpuGetClassDescriptorList_AD103(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
         { KEPLER_INLINE_TO_MEMORY_B, ENG_GR(0) },
         { MMU_FAULT_BUFFER, ENG_GR(0) },
         { NV0060_SYNC_GPU_BOOST, ENG_GPU },
+        { NV01_MEMORY_LOCAL_USER, ENG_SW },
         { NV01_MEMORY_VIRTUAL, ENG_DMA },
         { NV04_DISPLAY_COMMON, ENG_KERNEL_DISPLAY },
         { NV04_SOFTWARE_TEST, ENG_SW },
@@ -946,7 +959,7 @@ gpuGetClassDescriptorList_AD103(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
 
     #define HALAD103_NUM_CLASS_DESCS (sizeof(halAD103ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
 
-    #define HALAD103_NUM_CLASSES 61
+    #define HALAD103_NUM_CLASSES 62
 
     ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALAD103_NUM_CLASSES);
 
@@ -986,6 +999,7 @@ gpuGetClassDescriptorList_AD104(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
         { KEPLER_INLINE_TO_MEMORY_B, ENG_GR(0) },
         { MMU_FAULT_BUFFER, ENG_GR(0) },
         { NV0060_SYNC_GPU_BOOST, ENG_GPU },
+        { NV01_MEMORY_LOCAL_USER, ENG_SW },
         { NV01_MEMORY_VIRTUAL, ENG_DMA },
         { NV04_DISPLAY_COMMON, ENG_KERNEL_DISPLAY },
         { NV04_SOFTWARE_TEST, ENG_SW },
@@ -1026,7 +1040,7 @@ gpuGetClassDescriptorList_AD104(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
 
     #define HALAD104_NUM_CLASS_DESCS (sizeof(halAD104ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
 
-    #define HALAD104_NUM_CLASSES 61
+    #define HALAD104_NUM_CLASSES 62
 
     ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALAD104_NUM_CLASSES);
 
@@ -1066,6 +1080,7 @@ gpuGetClassDescriptorList_AD106(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
         { KEPLER_INLINE_TO_MEMORY_B, ENG_GR(0) },
         { MMU_FAULT_BUFFER, ENG_GR(0) },
         { NV0060_SYNC_GPU_BOOST, ENG_GPU },
+        { NV01_MEMORY_LOCAL_USER, ENG_SW },
         { NV01_MEMORY_VIRTUAL, ENG_DMA },
         { NV04_DISPLAY_COMMON, ENG_KERNEL_DISPLAY },
         { NV04_SOFTWARE_TEST, ENG_SW },
@@ -1106,7 +1121,7 @@ gpuGetClassDescriptorList_AD106(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
 
     #define HALAD106_NUM_CLASS_DESCS (sizeof(halAD106ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
 
-    #define HALAD106_NUM_CLASSES 61
+    #define HALAD106_NUM_CLASSES 62
 
     ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALAD106_NUM_CLASSES);
 
@@ -1146,6 +1161,7 @@ gpuGetClassDescriptorList_AD107(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
         { KEPLER_INLINE_TO_MEMORY_B, ENG_GR(0) },
         { MMU_FAULT_BUFFER, ENG_GR(0) },
         { NV0060_SYNC_GPU_BOOST, ENG_GPU },
+        { NV01_MEMORY_LOCAL_USER, ENG_SW },
         { NV01_MEMORY_VIRTUAL, ENG_DMA },
         { NV04_DISPLAY_COMMON, ENG_KERNEL_DISPLAY },
         { NV04_SOFTWARE_TEST, ENG_SW },
@@ -1186,7 +1202,7 @@ gpuGetClassDescriptorList_AD107(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
 
     #define HALAD107_NUM_CLASS_DESCS (sizeof(halAD107ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
 
-    #define HALAD107_NUM_CLASSES 61
+    #define HALAD107_NUM_CLASSES 62
 
     ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALAD107_NUM_CLASSES);
 
@@ -1239,6 +1255,7 @@ gpuGetClassDescriptorList_GH100(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
         { KEPLER_INLINE_TO_MEMORY_B, ENG_GR(0) },
         { MMU_FAULT_BUFFER, ENG_GR(0) },
         { NV0060_SYNC_GPU_BOOST, ENG_GPU },
+        { NV01_MEMORY_LOCAL_USER, ENG_SW },
         { NV01_MEMORY_VIRTUAL, ENG_DMA },
         { NV04_SOFTWARE_TEST, ENG_SW },
         { NV50_DEFERRED_API_CLASS, ENG_SW },
@@ -1274,12 +1291,195 @@ gpuGetClassDescriptorList_GH100(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
 
     #define HALGH100_NUM_CLASS_DESCS (sizeof(halGH100ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
 
-    #define HALGH100_NUM_CLASSES 49
+    #define HALGH100_NUM_CLASSES 50
 
     ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALGH100_NUM_CLASSES);
 
     *pNumClassDescriptors = HALGH100_NUM_CLASS_DESCS;
     return halGH100ClassDescriptorList;
+}
+
+
+
+const CLASSDESCRIPTOR *
+gpuGetClassDescriptorList_GB100(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
+{
+    static const CLASSDESCRIPTOR halGB100ClassDescriptorList[] = {
+        { ACCESS_COUNTER_NOTIFY_BUFFER, ENG_GR(0) },
+        { AMPERE_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
+        { AMPERE_USERMODE_A, ENG_GPU },
+        { BLACKWELL_A, ENG_GR(0) },
+        { BLACKWELL_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
+        { BLACKWELL_COMPUTE_A, ENG_GR(0) },
+        { BLACKWELL_COMPUTE_A, ENG_GR(1) },
+        { BLACKWELL_COMPUTE_A, ENG_GR(2) },
+        { BLACKWELL_COMPUTE_A, ENG_GR(3) },
+        { BLACKWELL_COMPUTE_A, ENG_GR(4) },
+        { BLACKWELL_COMPUTE_A, ENG_GR(5) },
+        { BLACKWELL_COMPUTE_A, ENG_GR(6) },
+        { BLACKWELL_COMPUTE_A, ENG_GR(7) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(0) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(1) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(2) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(3) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(4) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(5) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(6) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(7) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(8) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(9) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(10) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(11) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(12) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(13) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(14) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(15) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(16) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(17) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(18) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(19) },
+        { BLACKWELL_INLINE_TO_MEMORY_A, ENG_GR(0) },
+        { FERMI_CONTEXT_SHARE_A, ENG_KERNEL_FIFO },
+        { FERMI_TWOD_A, ENG_GR(0) },
+        { FERMI_VASPACE_A, ENG_DMA },
+        { G84_PERFBUFFER, ENG_BUS },
+        { GF100_SUBDEVICE_INFOROM, ENG_GPU },
+        { GF100_SUBDEVICE_MASTER, ENG_GPU },
+        { GF100_TIMED_SEMAPHORE_SW, ENG_SW },
+        { GF100_ZBC_CLEAR, ENG_KERNEL_MEMORY_SYSTEM },
+        { GP100_UVM_SW, ENG_SW },
+        { HOPPER_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
+        { HOPPER_SEC2_WORK_LAUNCH_A, ENG_SEC2 },
+        { HOPPER_USERMODE_A, ENG_GPU },
+        { KEPLER_CHANNEL_GROUP_A, ENG_KERNEL_FIFO },
+        { KEPLER_DEVICE_VGPU, ENG_GPU },
+        { MMU_FAULT_BUFFER, ENG_GR(0) },
+        { NV0060_SYNC_GPU_BOOST, ENG_GPU },
+        { NV01_MEMORY_LOCAL_USER, ENG_SW },
+        { NV01_MEMORY_VIRTUAL, ENG_DMA },
+        { NV04_SOFTWARE_TEST, ENG_SW },
+        { NV50_DEFERRED_API_CLASS, ENG_SW },
+        { NV50_MEMORY_VIRTUAL, ENG_DMA },
+        { NV50_P2P, ENG_BUS },
+        { NV50_THIRD_PARTY_P2P, ENG_BUS },
+        { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
+        { NVCDB0_VIDEO_DECODER, ENG_NVDEC(0) },
+        { NVCDB0_VIDEO_DECODER, ENG_NVDEC(1) },
+        { NVCDB0_VIDEO_DECODER, ENG_NVDEC(2) },
+        { NVCDB0_VIDEO_DECODER, ENG_NVDEC(3) },
+        { NVCDB0_VIDEO_DECODER, ENG_NVDEC(4) },
+        { NVCDB0_VIDEO_DECODER, ENG_NVDEC(5) },
+        { NVCDB0_VIDEO_DECODER, ENG_NVDEC(6) },
+        { NVCDB0_VIDEO_DECODER, ENG_NVDEC(7) },
+        { NVCDD1_VIDEO_NVJPG, ENG_NVJPEG(0) },
+        { NVCDD1_VIDEO_NVJPG, ENG_NVJPEG(1) },
+        { NVCDD1_VIDEO_NVJPG, ENG_NVJPEG(2) },
+        { NVCDD1_VIDEO_NVJPG, ENG_NVJPEG(3) },
+        { NVCDD1_VIDEO_NVJPG, ENG_NVJPEG(4) },
+        { NVCDD1_VIDEO_NVJPG, ENG_NVJPEG(5) },
+        { NVCDD1_VIDEO_NVJPG, ENG_NVJPEG(6) },
+        { NVCDD1_VIDEO_NVJPG, ENG_NVJPEG(7) },
+        { NVCDFA_VIDEO_OFA, ENG_OFA(0) },
+        { NVCDFA_VIDEO_OFA, ENG_OFA(1) },
+        { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
+        { RM_USER_SHARED_DATA, ENG_GPU },
+        { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
+        { TURING_USERMODE_A, ENG_GPU },
+        { VOLTA_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
+        { VOLTA_USERMODE_A, ENG_GPU },
+    };
+
+    #define HALGB100_NUM_CLASS_DESCS (sizeof(halGB100ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
+
+    #define HALGB100_NUM_CLASSES 51
+
+    ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALGB100_NUM_CLASSES);
+
+    *pNumClassDescriptors = HALGB100_NUM_CLASS_DESCS;
+    return halGB100ClassDescriptorList;
+}
+
+
+
+const CLASSDESCRIPTOR *
+gpuGetClassDescriptorList_GB102(POBJGPU pGpu, NvU32 *pNumClassDescriptors)
+{
+    static const CLASSDESCRIPTOR halGB102ClassDescriptorList[] = {
+        { ACCESS_COUNTER_NOTIFY_BUFFER, ENG_GR(0) },
+        { AMPERE_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
+        { AMPERE_USERMODE_A, ENG_GPU },
+        { BLACKWELL_A, ENG_GR(0) },
+        { BLACKWELL_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
+        { BLACKWELL_COMPUTE_A, ENG_GR(0) },
+        { BLACKWELL_COMPUTE_A, ENG_GR(1) },
+        { BLACKWELL_COMPUTE_A, ENG_GR(2) },
+        { BLACKWELL_COMPUTE_A, ENG_GR(3) },
+        { BLACKWELL_COMPUTE_A, ENG_GR(4) },
+        { BLACKWELL_COMPUTE_A, ENG_GR(5) },
+        { BLACKWELL_COMPUTE_A, ENG_GR(6) },
+        { BLACKWELL_COMPUTE_A, ENG_GR(7) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(0) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(1) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(2) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(3) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(4) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(5) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(6) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(7) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(8) },
+        { BLACKWELL_DMA_COPY_A, ENG_CE(9) },
+        { BLACKWELL_INLINE_TO_MEMORY_A, ENG_GR(0) },
+        { FERMI_CONTEXT_SHARE_A, ENG_KERNEL_FIFO },
+        { FERMI_TWOD_A, ENG_GR(0) },
+        { FERMI_VASPACE_A, ENG_DMA },
+        { G84_PERFBUFFER, ENG_BUS },
+        { GF100_SUBDEVICE_INFOROM, ENG_GPU },
+        { GF100_SUBDEVICE_MASTER, ENG_GPU },
+        { GF100_TIMED_SEMAPHORE_SW, ENG_SW },
+        { GF100_ZBC_CLEAR, ENG_KERNEL_MEMORY_SYSTEM },
+        { GP100_UVM_SW, ENG_SW },
+        { HOPPER_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
+        { HOPPER_SEC2_WORK_LAUNCH_A, ENG_SEC2 },
+        { HOPPER_USERMODE_A, ENG_GPU },
+        { KEPLER_CHANNEL_GROUP_A, ENG_KERNEL_FIFO },
+        { KEPLER_DEVICE_VGPU, ENG_GPU },
+        { MMU_FAULT_BUFFER, ENG_GR(0) },
+        { NV0060_SYNC_GPU_BOOST, ENG_GPU },
+        { NV01_MEMORY_LOCAL_USER, ENG_SW },
+        { NV01_MEMORY_VIRTUAL, ENG_DMA },
+        { NV04_SOFTWARE_TEST, ENG_SW },
+        { NV50_DEFERRED_API_CLASS, ENG_SW },
+        { NV50_MEMORY_VIRTUAL, ENG_DMA },
+        { NV50_P2P, ENG_BUS },
+        { NV50_THIRD_PARTY_P2P, ENG_BUS },
+        { NVA081_VGPU_CONFIG, ENG_GPU },
+        { NVA084_KERNEL_HOST_VGPU_DEVICE, ENG_GPU },
+        { NVCDB0_VIDEO_DECODER, ENG_NVDEC(0) },
+        { NVCDB0_VIDEO_DECODER, ENG_NVDEC(1) },
+        { NVCDB0_VIDEO_DECODER, ENG_NVDEC(2) },
+        { NVCDB0_VIDEO_DECODER, ENG_NVDEC(3) },
+        { NVCDD1_VIDEO_NVJPG, ENG_NVJPEG(0) },
+        { NVCDD1_VIDEO_NVJPG, ENG_NVJPEG(1) },
+        { NVCDD1_VIDEO_NVJPG, ENG_NVJPEG(2) },
+        { NVCDD1_VIDEO_NVJPG, ENG_NVJPEG(3) },
+        { NVCDFA_VIDEO_OFA, ENG_OFA(0) },
+        { NV_CONFIDENTIAL_COMPUTE, ENG_CONF_COMPUTE },
+        { RM_USER_SHARED_DATA, ENG_GPU },
+        { TURING_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
+        { TURING_USERMODE_A, ENG_GPU },
+        { VOLTA_CHANNEL_GPFIFO_A, ENG_KERNEL_FIFO },
+        { VOLTA_USERMODE_A, ENG_GPU },
+    };
+
+    #define HALGB102_NUM_CLASS_DESCS (sizeof(halGB102ClassDescriptorList) / sizeof(CLASSDESCRIPTOR))
+
+    #define HALGB102_NUM_CLASSES 51
+
+    ct_assert(NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE >= HALGB102_NUM_CLASSES);
+
+    *pNumClassDescriptors = HALGB102_NUM_CLASS_DESCS;
+    return halGB102ClassDescriptorList;
 }
 
 

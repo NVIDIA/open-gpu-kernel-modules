@@ -29,7 +29,7 @@
 
 /* ------------------------- Includes --------------------------------------- */
 #include "gpu/gpu.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 
 #include "published/turing/tu104/dev_timer.h"
 

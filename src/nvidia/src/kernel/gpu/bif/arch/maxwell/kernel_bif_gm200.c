@@ -86,9 +86,6 @@ kbifDoFullChipReset_GM200
     NV_STATUS status;
 
     // First Reset PMC
-    // This code was added to solve a problem that we are seeing with the Microsoft new Win8 Tdr Tests
-    // The GPU is not hung but given more work then it can consume in 2 seconds.  As a result we have some
-    // outstanding IO operations that will cause us issues in the future
     oldPmc = GPU_REG_RD32(pGpu, NV_PMC_ENABLE);
     newPmc = oldPmc;
 

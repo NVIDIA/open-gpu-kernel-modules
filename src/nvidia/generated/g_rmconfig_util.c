@@ -5,7 +5,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_rmconfig_util.c
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102
 //
 
 #include "gpu/gpu.h"
@@ -23,47 +23,47 @@ const NVOC_RTTI_PROVIDER __iom_rtti_provider = { 0 };
 
 NvBool rmcfg_IsTU102(POBJGPU pGpu)
 {
-    return gpuIsImplementation(pGpu, HAL_IMPL_TU102, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementation(pGpu, HAL_IMPL_TU102);
 }
 
 NvBool rmcfg_IsTU104(POBJGPU pGpu)
 {
-    return gpuIsImplementation(pGpu, HAL_IMPL_TU104, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementation(pGpu, HAL_IMPL_TU104);
 }
 
 NvBool rmcfg_IsTU104orBetter(POBJGPU pGpu)
 {
-    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_TU104, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_TU104);
 }
 
 NvBool rmcfg_IsTU106(POBJGPU pGpu)
 {
-    return gpuIsImplementation(pGpu, HAL_IMPL_TU106, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementation(pGpu, HAL_IMPL_TU106);
 }
 
 NvBool rmcfg_IsTU106orBetter(POBJGPU pGpu)
 {
-    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_TU106, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_TU106);
 }
 
 NvBool rmcfg_IsTU116(POBJGPU pGpu)
 {
-    return gpuIsImplementation(pGpu, HAL_IMPL_TU116, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementation(pGpu, HAL_IMPL_TU116);
 }
 
 NvBool rmcfg_IsTU116orBetter(POBJGPU pGpu)
 {
-    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_TU116, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_TU116);
 }
 
 NvBool rmcfg_IsTU117(POBJGPU pGpu)
 {
-    return gpuIsImplementation(pGpu, HAL_IMPL_TU117, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementation(pGpu, HAL_IMPL_TU117);
 }
 
 NvBool rmcfg_IsTU117orBetter(POBJGPU pGpu)
 {
-    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_TU117, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_TU117);
 }
 
 NvBool rmcfg_IsTU10X(POBJGPU pGpu)
@@ -73,67 +73,67 @@ NvBool rmcfg_IsTU10X(POBJGPU pGpu)
 
 NvBool rmcfg_IsGA100(POBJGPU pGpu)
 {
-    return gpuIsImplementation(pGpu, HAL_IMPL_GA100, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementation(pGpu, HAL_IMPL_GA100);
 }
 
 NvBool rmcfg_IsGA100orBetter(POBJGPU pGpu)
 {
-    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GA100, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GA100);
 }
 
 NvBool rmcfg_IsGA102(POBJGPU pGpu)
 {
-    return gpuIsImplementation(pGpu, HAL_IMPL_GA102, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementation(pGpu, HAL_IMPL_GA102);
 }
 
 NvBool rmcfg_IsGA102orBetter(POBJGPU pGpu)
 {
-    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GA102, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GA102);
 }
 
 NvBool rmcfg_IsGA103(POBJGPU pGpu)
 {
-    return gpuIsImplementation(pGpu, HAL_IMPL_GA103, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementation(pGpu, HAL_IMPL_GA103);
 }
 
 NvBool rmcfg_IsGA103orBetter(POBJGPU pGpu)
 {
-    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GA103, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GA103);
 }
 
 NvBool rmcfg_IsGA104(POBJGPU pGpu)
 {
-    return gpuIsImplementation(pGpu, HAL_IMPL_GA104, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementation(pGpu, HAL_IMPL_GA104);
 }
 
 NvBool rmcfg_IsGA104orBetter(POBJGPU pGpu)
 {
-    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GA104, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GA104);
 }
 
 NvBool rmcfg_IsGA106(POBJGPU pGpu)
 {
-    return gpuIsImplementation(pGpu, HAL_IMPL_GA106, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementation(pGpu, HAL_IMPL_GA106);
 }
 
 NvBool rmcfg_IsGA106orBetter(POBJGPU pGpu)
 {
-    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GA106, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GA106);
 }
 
 NvBool rmcfg_IsGA107(POBJGPU pGpu)
 {
-    return gpuIsImplementation(pGpu, HAL_IMPL_GA107, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementation(pGpu, HAL_IMPL_GA107);
 }
 
 NvBool rmcfg_IsGA107orBetter(POBJGPU pGpu)
 {
-    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GA107, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GA107);
 }
 
 NvBool rmcfg_IsGA10BorBetter(POBJGPU pGpu)
 {
-    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GA10B, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GA10B);
 }
 
 NvBool rmcfg_IsGA10X(POBJGPU pGpu)
@@ -148,7 +148,7 @@ NvBool rmcfg_IsGA10XorBetter(POBJGPU pGpu)
 
 NvBool rmcfg_IsGA102ForBetter(POBJGPU pGpu)
 {
-    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GA102F, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GA102F);
 }
 
 NvBool rmcfg_IsGA10XForBetter(POBJGPU pGpu)
@@ -158,52 +158,52 @@ NvBool rmcfg_IsGA10XForBetter(POBJGPU pGpu)
 
 NvBool rmcfg_IsAD102(POBJGPU pGpu)
 {
-    return gpuIsImplementation(pGpu, HAL_IMPL_AD102, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementation(pGpu, HAL_IMPL_AD102);
 }
 
 NvBool rmcfg_IsAD102orBetter(POBJGPU pGpu)
 {
-    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_AD102, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_AD102);
 }
 
 NvBool rmcfg_IsAD103(POBJGPU pGpu)
 {
-    return gpuIsImplementation(pGpu, HAL_IMPL_AD103, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementation(pGpu, HAL_IMPL_AD103);
 }
 
 NvBool rmcfg_IsAD103orBetter(POBJGPU pGpu)
 {
-    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_AD103, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_AD103);
 }
 
 NvBool rmcfg_IsAD104(POBJGPU pGpu)
 {
-    return gpuIsImplementation(pGpu, HAL_IMPL_AD104, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementation(pGpu, HAL_IMPL_AD104);
 }
 
 NvBool rmcfg_IsAD104orBetter(POBJGPU pGpu)
 {
-    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_AD104, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_AD104);
 }
 
 NvBool rmcfg_IsAD106(POBJGPU pGpu)
 {
-    return gpuIsImplementation(pGpu, HAL_IMPL_AD106, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementation(pGpu, HAL_IMPL_AD106);
 }
 
 NvBool rmcfg_IsAD106orBetter(POBJGPU pGpu)
 {
-    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_AD106, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_AD106);
 }
 
 NvBool rmcfg_IsAD107(POBJGPU pGpu)
 {
-    return gpuIsImplementation(pGpu, HAL_IMPL_AD107, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementation(pGpu, HAL_IMPL_AD107);
 }
 
 NvBool rmcfg_IsAD107orBetter(POBJGPU pGpu)
 {
-    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_AD107, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_AD107);
 }
 
 NvBool rmcfg_IsAD10X(POBJGPU pGpu)
@@ -218,12 +218,12 @@ NvBool rmcfg_IsAD10XorBetter(POBJGPU pGpu)
 
 NvBool rmcfg_IsGH100(POBJGPU pGpu)
 {
-    return gpuIsImplementation(pGpu, HAL_IMPL_GH100, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementation(pGpu, HAL_IMPL_GH100);
 }
 
 NvBool rmcfg_IsGH100orBetter(POBJGPU pGpu)
 {
-    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GH100, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GH100);
 }
 
 NvBool rmcfg_IsGH10X(POBJGPU pGpu)
@@ -236,14 +236,54 @@ NvBool rmcfg_IsGH10XorBetter(POBJGPU pGpu)
     return IsGH100orBetter(pGpu);
 }
 
+NvBool rmcfg_IsGH202orBetter(POBJGPU pGpu)
+{
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GH202);
+}
+
+NvBool rmcfg_IsGH20XorBetter(POBJGPU pGpu)
+{
+    return IsGB100orBetter(pGpu);
+}
+
+NvBool rmcfg_IsGB100(POBJGPU pGpu)
+{
+    return gpuIsImplementation(pGpu, HAL_IMPL_GB100);
+}
+
+NvBool rmcfg_IsGB100orBetter(POBJGPU pGpu)
+{
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GB100);
+}
+
+NvBool rmcfg_IsGB102(POBJGPU pGpu)
+{
+    return gpuIsImplementation(pGpu, HAL_IMPL_GB102);
+}
+
+NvBool rmcfg_IsGB102orBetter(POBJGPU pGpu)
+{
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GB102);
+}
+
+NvBool rmcfg_IsGB10X(POBJGPU pGpu)
+{
+    return IsGB100(pGpu) || IsGB102(pGpu);
+}
+
+NvBool rmcfg_IsGB10XorBetter(POBJGPU pGpu)
+{
+    return IsGB100orBetter(pGpu);
+}
+
 NvBool rmcfg_IsDISPLAYLESS_CLASSIC_GPUS(POBJGPU pGpu)
 {
-    return IsGA100(pGpu) || IsGH100(pGpu);
+    return IsGA100(pGpu) || IsGH100(pGpu) || IsGB100(pGpu) || IsGB102(pGpu);
 }
 
 NvBool rmcfg_IsDISPLAYLESS_CLASSIC_GPUSorBetter(POBJGPU pGpu)
 {
-    return IsGF117(pGpu) || IsGK20A(pGpu) || IsGM108(pGpu) || IsGV11B(pGpu) || IsGA100(pGpu) || IsGA10B(pGpu) || IsGH100orBetter(pGpu);
+    return IsGF117(pGpu) || IsGK20A(pGpu) || IsGM108(pGpu) || IsGV11B(pGpu) || IsGA100(pGpu) || IsGA10B(pGpu) || IsGH100(pGpu) || IsGB100(pGpu) || IsGB102orBetter(pGpu);
 }
 
 NvBool rmcfg_IsdTURING(POBJGPU pGpu)
@@ -316,11 +356,30 @@ NvBool rmcfg_IsHOPPER_CLASSIC_GPUSorBetter(POBJGPU pGpu)
     return IsGH100orBetter(pGpu);
 }
 
+NvBool rmcfg_IsdBLACKWELL(POBJGPU pGpu)
+{
+    return IsGB100(pGpu) || IsGB102(pGpu);
+}
+
+NvBool rmcfg_IsdBLACKWELLorBetter(POBJGPU pGpu)
+{
+    return IsGB100orBetter(pGpu);
+}
+
+NvBool rmcfg_IsBLACKWELL_CLASSIC_GPUS(POBJGPU pGpu)
+{
+    return IsGB100(pGpu) || IsGB102(pGpu);
+}
+
+NvBool rmcfg_IsBLACKWELL_CLASSIC_GPUSorBetter(POBJGPU pGpu)
+{
+    return IsGB100orBetter(pGpu);
+}
+
 
 
 // NVOC class ID uniqueness checks
 #ifdef DEBUG
-char __nvoc_class_id_uniqueness_check_0x0x05c7b5 = 1;      /* OBJGPIO */
 char __nvoc_class_id_uniqueness_check_0x0x1ab16a = 1;      /* OBJRPC */
 char __nvoc_class_id_uniqueness_check_0x0xd4dff8 = 1;      /* OBJRPCSTRUCTURECOPY */
 

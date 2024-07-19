@@ -33,7 +33,7 @@
 #include "gpu/conf_compute/ccsl.h"
 #include "gpu/conf_compute/conf_compute.h"
 #include "spdm/rmspdmvendordef.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 /* ------------------------- Macros and Defines ----------------------------- */
 
 /* ------------------------- Static Functions ------------------------------ */

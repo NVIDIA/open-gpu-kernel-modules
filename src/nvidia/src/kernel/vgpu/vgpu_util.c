@@ -357,7 +357,7 @@ static NV_STATUS _updateSysmemPfnBitMap
         }
         else
         {
-            NV_CHECK(LEVEL_INFO, (vgpuSysmemPfnInfo.sysmemPfnRefCount[pfn] > 0));
+            NV_ASSERT(vgpuSysmemPfnInfo.sysmemPfnRefCount[pfn] > 0);
 
             if (vgpuSysmemPfnInfo.sysmemPfnRefCount[pfn] > 0)
             {
@@ -448,5 +448,31 @@ NV_STATUS vgpuUpdateSysmemPfnBitMap
     }
 
     return status;
+}
+
+/*
+ * @brief Wrapper of vgpuUpdateSysmemPfnBitMap
+ *
+ * This wrapper abstracts away Guest and memory config checks which
+ * otherwise get duplicated at the callsites in RM.
+ *
+ * @param[in]   pGpu      OBJGPU *object pointer
+ * @param[in]   pMemDesc  Memory descriptor corresponding to the sysmem
+ * @param[in]   bAlloc    To identify if memory is being allocated or freed
+ */
+NV_STATUS vgpuUpdateGuestSysmemPfnBitMap
+(
+    OBJGPU *pGpu,
+    MEMORY_DESCRIPTOR *pMemDesc,
+    NvBool bAlloc
+)
+{
+    if ((pGpu != NULL) && IS_VIRTUAL_WITH_FULL_SRIOV(pGpu) &&
+        (pMemDesc->_addressSpace == ADDR_SYSMEM) && !(pMemDesc->_flags & MEMDESC_FLAGS_CPU_ONLY))
+    {
+        return vgpuUpdateSysmemPfnBitMap(pGpu, pMemDesc, bAlloc);
+    }
+
+    return NV_OK;
 }
 

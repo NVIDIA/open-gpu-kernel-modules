@@ -128,7 +128,7 @@ nvencsessionCtrlCmdNvencSwSessionUpdateInfo_IMPL
 )
 {
     NVA0BC_CTRL_NVENC_TIMESTAMP *pTimeStampBuffer = NULL;
-    POBJGPU pGpu = GPU_RES_GET_GPU(pNvencSession);
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pNvencSession);
     NV_STATUS status = NV_OK;
 
     NV_PRINTF(LEVEL_INFO, "\n");
@@ -162,7 +162,7 @@ nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_IMPL
 )
 {
     NVA0BC_CTRL_NVENC_TIMESTAMP *pTimeStampBuffer = NULL;
-    POBJGPU pGpu = GPU_RES_GET_GPU(pNvencSession);
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pNvencSession);
     NV_STATUS status = NV_OK;
 
     NV_PRINTF(LEVEL_INFO, "\n");

@@ -238,9 +238,17 @@ static void EnableVRR(NVDpyEvoPtr pDpyEvo)
     DisplayPort::Device *device = pDpyEvo->dp.pDpLibDevice->device;
     const NvBool dispSupportsVrr = nvDispSupportsVrr(pDispEvo);
 
-    if (pDpyEvo->internal) {
-        // VRR + notebooks not supported, yet
-        pDpyEvo->vrr.type = NVKMS_DPY_VRR_TYPE_NONE;
+    // If the dpy is a laptop internal panel and an SBIOS cookie indicates that
+    // it supports VRR, override its enable flag and timeout.  Note that in the
+    // internal panel scenario, the EDID may not claim VRR support, so honor
+    // hasPlatformCookie even if DpyHasVRREDID() reports FALSE.
+    if (pDpyEvo->internal && pDispEvo->vrr.hasPlatformCookie) {
+
+        if (pDispEvo->pDevEvo->hal->caps.supportsDisplayRate) {
+            pDpyEvo->vrr.needsSwFramePacing = TRUE;
+        }
+
+        pDpyEvo->vrr.type = NVKMS_DPY_VRR_TYPE_GSYNC;
         return;
     }
 
@@ -297,53 +305,6 @@ static void EnableVRR(NVDpyEvoPtr pDpyEvo)
             pDpyEvo->vrr.type = NVKMS_DPY_VRR_TYPE_GSYNC;
         } else {
             pDpyEvo->vrr.type = NVKMS_DPY_VRR_TYPE_NONE;
-        }
-    }
-
-    if (pDpyEvo->parsedEdid.valid && nvDpyIsAdaptiveSync(pDpyEvo)) {
-        // Adaptive-Sync minimum refresh rate is either in DisplayID (Display
-        // ID spec 1.3 section 4.6 Video Timing Range Limits) or EDID (EDID
-        // spec 1.4 section 3.10.3.3 Display Range Limits & Additional Timing
-        // Descriptor Definition)
-        int minRR = 0;
-        if (pDpyEvo->parsedEdid.info.ext_displayid.version) {
-            minRR = pDpyEvo->parsedEdid.info.ext_displayid.range_limits[0].vfreq_min;
-        }
-
-        if (minRR == 0) {
-            NvU32 i;
-            for (i = 0; i < NVT_EDID_MAX_LONG_DISPLAY_DESCRIPTOR; i++) {
-                if (pDpyEvo->parsedEdid.info.ldd[i].tag ==
-                    NVT_EDID_DISPLAY_DESCRIPTOR_DRL) {
-                    minRR = pDpyEvo->parsedEdid.info.ldd[i].u.range_limit.min_v_rate;
-                }
-            }
-        }
-
-        if (minRR == 0) {
-            // Adaptive sync does not support self refresh (zero timeout)
-            nvEvoLogDisp(pDispEvo, EVO_LOG_WARN,
-                         "%s: G-SYNC Compatible: EDID min refresh rate "
-                         "invalid, disabling G-SYNC Compatible.",
-                         pDpyEvo->name);
-            pDpyEvo->vrr.type = NVKMS_DPY_VRR_TYPE_NONE;
-            pDpyEvo->vrr.needsSwFramePacing = FALSE;
-        } else {
-            pDpyEvo->vrr.edidTimeoutMicroseconds = 1000000 / minRR;
-        }
-    } else if (DpyHasVRREDID(pDpyEvo)) {
-        // Update the minimum refresh rate if a VRR EDID block is present.
-        const int minRR =
-            pDpyEvo->parsedEdid.info.nvdaVsdbInfo.vrrData.v1.minRefreshRate;
-
-        if (minRR == 0) {
-            // Zero indicates that no refreshes are required (i.e.  the panel is
-            // self-refreshing).
-            pDpyEvo->vrr.edidTimeoutMicroseconds = 0;
-        } else {
-            // Round the timeout down.  It's better to refresh the panel too soon
-            // than too late.
-            pDpyEvo->vrr.edidTimeoutMicroseconds = 1000000 / minRR;
         }
     }
 }
@@ -604,11 +565,13 @@ void nvDPLibUpdateDpyLinkConfiguration(NVDpyEvoPtr pDpyEvo)
         pDpyEvo->pConnectorEvo->pDpLibConnector->connector;
     unsigned laneCount;
     NvU64 linkRate;
+    NvU64 linkRate10MHz;
     enum NvKmsDpyAttributeDisplayportConnectorTypeValue connectorType;
     NvBool sinkIsAudioCapable;
 
     if (!dev || !pDpLibDevice->isPlugged) {
         linkRate = 0;
+        linkRate10MHz = 0;
         laneCount = NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LANE_COUNT_1;
         connectorType = NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_CONNECTOR_TYPE_UNKNOWN;
         sinkIsAudioCapable = FALSE;
@@ -620,6 +583,7 @@ void nvDPLibUpdateDpyLinkConfiguration(NVDpyEvoPtr pDpyEvo)
         // The DisplayPort library multiplies the link rate enum value by
         // 27000000.  Convert back to NV-CONTROL's defines.
         linkRate /= 27000000;
+        linkRate10MHz = linkRate * 27;
 
         nvkmsDisplayPort::EnableVRR(pDpyEvo);
 
@@ -665,6 +629,13 @@ void nvDPLibUpdateDpyLinkConfiguration(NVDpyEvoPtr pDpyEvo)
         nvSendDpyAttributeChangedEventEvo(pDpyEvo,
                           NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_LINK_RATE,
                           linkRate);
+    }
+
+    if (linkRate10MHz != pDpyEvo->dp.linkRate10MHz) {
+        pDpyEvo->dp.linkRate10MHz = linkRate10MHz;
+        nvSendDpyAttributeChangedEventEvo(pDpyEvo,
+                          NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_LINK_RATE_10MHZ,
+                          linkRate10MHz);
     }
 
     if (connectorType != pDpyEvo->dp.connectorType) {

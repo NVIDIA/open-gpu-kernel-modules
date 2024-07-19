@@ -27,7 +27,7 @@
 \***************************************************************************/
 /* ------------------------- Includes --------------------------------------- */
 #include "gpu/gpu.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "published/volta/gv100/dev_timer.h"
 #include "published/volta/gv100/dev_usermode.h"
 /* ------------------------- Datatypes -------------------------------------- */

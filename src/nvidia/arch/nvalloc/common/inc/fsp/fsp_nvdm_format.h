@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -45,5 +45,6 @@
 #define NVDM_TYPE_UEFI_RM               0x1C
 #define NVDM_TYPE_UEFI_XTL_DEBUG_INTR   0x1D
 #define NVDM_TYPE_TNVL                  0x1F
+#define NVDM_TYPE_CLOCK_BOOST           0x20
 
 #endif // FSP_NVDM_FORMAT_H

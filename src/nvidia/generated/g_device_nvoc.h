@@ -143,7 +143,7 @@ struct Device {
     NV_STATUS (*__deviceCtrlCmdFifoGetChannelList__)(struct Device * /*this*/, NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *);  // exported (id=0x80170d)
     NV_STATUS (*__deviceCtrlCmdFifoGetLatencyBufferSize__)(struct Device * /*this*/, NV0080_CTRL_FIFO_GET_LATENCY_BUFFER_SIZE_PARAMS *);  // halified (2 hals) exported (id=0x80170e) body
     NV_STATUS (*__deviceCtrlCmdFifoSetChannelProperties__)(struct Device * /*this*/, NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS *);  // exported (id=0x80170f)
-    NV_STATUS (*__deviceCtrlCmdFifoIdleChannels__)(struct Device * /*this*/, NV0080_CTRL_FIFO_IDLE_CHANNELS_PARAMS *);  // exported (id=0x801714)
+    NV_STATUS (*__deviceCtrlCmdFifoIdleChannels__)(struct Device * /*this*/, NV0080_CTRL_FIFO_IDLE_CHANNELS_PARAMS *);  // halified (2 hals) exported (id=0x801714) body
     NV_STATUS (*__deviceCtrlCmdHostGetCaps__)(struct Device * /*this*/, NV0080_CTRL_HOST_GET_CAPS_PARAMS *);  // exported (id=0x801401)
     NV_STATUS (*__deviceCtrlCmdHostGetCapsV2__)(struct Device * /*this*/, NV0080_CTRL_HOST_GET_CAPS_V2_PARAMS *);  // exported (id=0x801402)
     NV_STATUS (*__deviceCtrlCmdKPerfCudaLimitSetControl__)(struct Device * /*this*/, NV0080_CTRL_PERF_CUDA_LIMIT_CONTROL_PARAMS *);  // exported (id=0x801909)
@@ -327,6 +327,7 @@ NV_STATUS __nvoc_objCreate_Device(Device**, Dynamic*, NvU32, struct CALL_CONTEXT
 #define deviceCtrlCmdFifoSetChannelProperties(pDevice, pSetChannelPropertiesParams) deviceCtrlCmdFifoSetChannelProperties_DISPATCH(pDevice, pSetChannelPropertiesParams)
 #define deviceCtrlCmdFifoIdleChannels_FNPTR(pDevice) pDevice->__deviceCtrlCmdFifoIdleChannels__
 #define deviceCtrlCmdFifoIdleChannels(pDevice, pParams) deviceCtrlCmdFifoIdleChannels_DISPATCH(pDevice, pParams)
+#define deviceCtrlCmdFifoIdleChannels_HAL(pDevice, pParams) deviceCtrlCmdFifoIdleChannels_DISPATCH(pDevice, pParams)
 #define deviceCtrlCmdHostGetCaps_FNPTR(pDevice) pDevice->__deviceCtrlCmdHostGetCaps__
 #define deviceCtrlCmdHostGetCaps(pDevice, pHostCapsParams) deviceCtrlCmdHostGetCaps_DISPATCH(pDevice, pHostCapsParams)
 #define deviceCtrlCmdHostGetCapsV2_FNPTR(pDevice) pDevice->__deviceCtrlCmdHostGetCapsV2__
@@ -872,6 +873,10 @@ static inline NV_STATUS deviceCtrlCmdFifoGetLatencyBufferSize_92bfc3(struct Devi
 }
 
 NV_STATUS deviceCtrlCmdFifoSetChannelProperties_IMPL(struct Device *pDevice, NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS *pSetChannelPropertiesParams);
+
+static inline NV_STATUS deviceCtrlCmdFifoIdleChannels_46f6a7(struct Device *pDevice, NV0080_CTRL_FIFO_IDLE_CHANNELS_PARAMS *pParams) {
+    return NV_ERR_NOT_SUPPORTED;
+}
 
 NV_STATUS deviceCtrlCmdFifoIdleChannels_IMPL(struct Device *pDevice, NV0080_CTRL_FIFO_IDLE_CHANNELS_PARAMS *pParams);
 

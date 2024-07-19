@@ -34,7 +34,7 @@
 
 static HYPERVISOR_OPS _hypervisorOps[OS_HYPERVISOR_UNKNOWN];
 
-static NV_STATUS _hypervisorDetection_HVM(OBJHYPERVISOR *, OBJOS *);
+static NV_STATUS _hypervisorDetection_HVM(OBJHYPERVISOR *);
 static NvBool _hypervisorCheckVirtualPcieP2PApproval(OBJHYPERVISOR *, NvU32);
 
 // Because M$ compiler doesn't support C99 we have to initialize
@@ -89,7 +89,7 @@ NV_STATUS hypervisorDetection_IMPL
     if (hypervisorIsVgxHyper())
         goto found_one;
 
-    if ((rmStatus = _hypervisorDetection_HVM(pHypervisor, pOS)) != NV_OK)
+    if ((rmStatus = _hypervisorDetection_HVM(pHypervisor)) != NV_OK)
         return rmStatus;
 
     if ((rmStatus = _hypervisorOps[pHypervisor->type].hypervisorPostDetection(pOS, &pHypervisor->bIsHVMGuest)) != NV_OK)
@@ -120,8 +120,7 @@ found_one:
 
 static NV_STATUS _hypervisorDetection_HVM
 (
-    OBJHYPERVISOR *pHypervisor,
-    OBJOS *pOS
+    OBJHYPERVISOR *pHypervisor
 )
 {
 #if defined(NVCPU_X86_64)
@@ -131,7 +130,7 @@ static NV_STATUS _hypervisorDetection_HVM
 
     for (base = 0x40000000; base < 0x40001000; base += 0x100)
     {
-        if (pOS->osNv_cpuid(pOS, base, 0, &eax,
+        if (osNv_cpuid(base, 0, &eax,
                 &vmmSignature[0], &vmmSignature[1], &vmmSignature[2]) == 0)
         {
             NV_PRINTF(LEVEL_WARNING, "CPUID is NOT supported!\n");

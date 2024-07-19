@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2020-2023 NVIDIA Corporation
+    Copyright (c) 2020-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -46,20 +46,6 @@
 // Used in pde_pcf().
 #define ATS_ALLOWED 0
 #define ATS_NOT_ALLOWED 1
-
-uvm_mmu_engine_type_t uvm_hal_hopper_mmu_engine_id_to_type(NvU16 mmu_engine_id)
-{
-    if (mmu_engine_id >= NV_PFAULT_MMU_ENG_ID_HOST0 && mmu_engine_id <= NV_PFAULT_MMU_ENG_ID_HOST44)
-        return UVM_MMU_ENGINE_TYPE_HOST;
-
-    if (mmu_engine_id >= NV_PFAULT_MMU_ENG_ID_CE0 && mmu_engine_id <= NV_PFAULT_MMU_ENG_ID_CE9)
-        return UVM_MMU_ENGINE_TYPE_CE;
-
-    // We shouldn't be servicing faults from any other engines
-    UVM_ASSERT_MSG(mmu_engine_id >= NV_PFAULT_MMU_ENG_ID_GRAPHICS, "Unexpected engine ID: 0x%x\n", mmu_engine_id);
-
-    return UVM_MMU_ENGINE_TYPE_GRAPHICS;
-}
 
 static NvU32 page_table_depth_hopper(NvU64 page_size)
 {

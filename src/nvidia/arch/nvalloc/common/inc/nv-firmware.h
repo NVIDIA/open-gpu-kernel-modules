@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -44,6 +44,7 @@ typedef enum
     NV_FIRMWARE_CHIP_FAMILY_GA10X = 4,
     NV_FIRMWARE_CHIP_FAMILY_AD10X = 5,
     NV_FIRMWARE_CHIP_FAMILY_GH100 = 6,
+    NV_FIRMWARE_CHIP_FAMILY_GB10X = 8,
     NV_FIRMWARE_CHIP_FAMILY_END,
 } nv_firmware_chip_family_t;
 
@@ -52,6 +53,7 @@ static inline const char *nv_firmware_chip_family_to_string(
 )
 {
     switch (fw_chip_family) {
+        case NV_FIRMWARE_CHIP_FAMILY_GB10X: return "gb10x";
         case NV_FIRMWARE_CHIP_FAMILY_GH100: return "gh100";
         case NV_FIRMWARE_CHIP_FAMILY_AD10X: return "ad10x";
         case NV_FIRMWARE_CHIP_FAMILY_GA10X: return "ga10x";
@@ -66,13 +68,13 @@ static inline const char *nv_firmware_chip_family_to_string(
     return NULL;
 }
 
-// The includer (presumably nv.c) may optionally define
-// NV_FIRMWARE_PATH_FOR_FILENAME(filename)
-// to return a string "path" given a gsp_*.bin or gsp_log_*.bin filename.
+// The includer may optionally define
+// NV_FIRMWARE_FOR_NAME(name)
+// to return a platform-defined string for a given a gsp_* or gsp_log_* name.
 //
-// The function nv_firmware_path will then be available.
-#if defined(NV_FIRMWARE_PATH_FOR_FILENAME)
-static inline const char *nv_firmware_path(
+// The function nv_firmware_for_chip_family will then be available.
+#if defined(NV_FIRMWARE_FOR_NAME)
+static inline const char *nv_firmware_for_chip_family(
     nv_firmware_type_t fw_type,
     nv_firmware_chip_family_t fw_chip_family
 )
@@ -81,15 +83,16 @@ static inline const char *nv_firmware_path(
     {
         switch (fw_chip_family)
         {
+            case NV_FIRMWARE_CHIP_FAMILY_GB10X:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_GH100:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_AD10X:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_GA10X:
-                return NV_FIRMWARE_PATH_FOR_FILENAME("gsp_ga10x.bin");
+                return NV_FIRMWARE_FOR_NAME("gsp_ga10x");
 
             case NV_FIRMWARE_CHIP_FAMILY_GA100:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_TU11X:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_TU10X:
-                return NV_FIRMWARE_PATH_FOR_FILENAME("gsp_tu10x.bin");
+                return NV_FIRMWARE_FOR_NAME("gsp_tu10x");
 
             case NV_FIRMWARE_CHIP_FAMILY_END:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_NULL:
@@ -100,15 +103,16 @@ static inline const char *nv_firmware_path(
     {
         switch (fw_chip_family)
         {
+            case NV_FIRMWARE_CHIP_FAMILY_GB10X:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_GH100:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_AD10X:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_GA10X:
-                return NV_FIRMWARE_PATH_FOR_FILENAME("gsp_log_ga10x.bin");
+                return NV_FIRMWARE_FOR_NAME("gsp_log_ga10x");
 
             case NV_FIRMWARE_CHIP_FAMILY_GA100:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_TU11X:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_TU10X:
-                return NV_FIRMWARE_PATH_FOR_FILENAME("gsp_log_tu10x.bin");
+                return NV_FIRMWARE_FOR_NAME("gsp_log_tu10x");
 
             case NV_FIRMWARE_CHIP_FAMILY_END:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_NULL:
@@ -118,15 +122,15 @@ static inline const char *nv_firmware_path(
 
     return "";
 }
-#endif  // defined(NV_FIRMWARE_PATH_FOR_FILENAME)
+#endif  // defined(NV_FIRMWARE_FOR_NAME)
 
-// The includer (presumably nv.c) may optionally define
-// NV_FIRMWARE_DECLARE_GSP_FILENAME(filename)
+// The includer may optionally define
+// NV_FIRMWARE_DECLARE_GSP(name)
 // which will then be invoked (at the top-level) for each
-// gsp_*.bin (but not gsp_log_*.bin)
-#if defined(NV_FIRMWARE_DECLARE_GSP_FILENAME)
-NV_FIRMWARE_DECLARE_GSP_FILENAME("gsp_ga10x.bin")
-NV_FIRMWARE_DECLARE_GSP_FILENAME("gsp_tu10x.bin")
-#endif  // defined(NV_FIRMWARE_DECLARE_GSP_FILENAME)
+// gsp_* (but not gsp_log_*)
+#if defined(NV_FIRMWARE_DECLARE_GSP)
+NV_FIRMWARE_DECLARE_GSP("gsp_ga10x")
+NV_FIRMWARE_DECLARE_GSP("gsp_tu10x")
+#endif  // defined(NV_FIRMWARE_DECLARE_GSP)
 
-#endif  // NV_FIRMWARE_DECLARE_GSP_FILENAME
+#endif  // NV_FIRMWARE_DECLARE_GSP

@@ -559,6 +559,7 @@ memoryfabricConstruct_IMPL
     }
 
     if (
+        (pAllocParams->pageSize != NV_MEMORY_FABRIC_PAGE_SIZE_256G) &&
         (pAllocParams->pageSize != NV_MEMORY_FABRIC_PAGE_SIZE_512M) &&
         (pAllocParams->pageSize != NV_MEMORY_FABRIC_PAGE_SIZE_2M))
     {

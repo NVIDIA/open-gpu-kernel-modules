@@ -249,7 +249,7 @@ struct KernelVgpuMgr {
     KERNEL_VGPU_GUEST_LIST listVgpuGuestHead;
     NvU32 user_min_supported_version;
     NvU32 user_max_supported_version;
-    struct OBJEHEAP *pHeap;
+    OBJEHEAP *pHeap;
     REQUEST_VGPU_INFO_NODE_LIST listRequestVgpuHead;
 };
 
@@ -435,6 +435,9 @@ kvgpumgrSendAllVgpuTypesToGsp(struct OBJGPU *pGpu);
 
 NvBool
 kvgpumgrIsHeterogeneousVgpuSupported(void);
+
+NvBool
+kvgpumgrIsVgpuWarmUpdateSupported(void);
 
 NV_STATUS
 kvgpumgrGetHostVgpuDeviceFromGfid(NvU32 gpuPciId, NvU32 gfid,

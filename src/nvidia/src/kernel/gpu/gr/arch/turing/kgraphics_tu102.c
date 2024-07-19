@@ -54,9 +54,6 @@
 #include "class/clc36f.h" // VOLTA_CHANNEL_GPFIFO_A
 #include "class/clc46f.h" // TURING_CHANNEL_GPFIFO_A
 
-
-#include "ctrl/ctrl0080/ctrl0080fifo.h"
-
 /*!
  * @brief Allocate common local/global buffers that are required by the graphics context
  *
@@ -175,7 +172,7 @@ kgraphicsAllocGrGlobalCtxBuffers_TU102
             memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, *ppMemDesc, AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
             NV_ASSERT_OK_OR_RETURN(memdescSetCtxBufPool(*ppMemDesc, pCtxBufPool));
         }
-        memdescTagAllocList(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_113, 
+        memdescTagAllocList(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_113,
                     (*ppMemDesc), pCtxAttr[GR_GLOBALCTX_BUFFER_RTV_CB].pAllocList);
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
     }

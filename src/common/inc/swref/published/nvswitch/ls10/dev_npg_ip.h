@@ -75,6 +75,5 @@
 #define NV_NPG_INTR_RETRIGGER(i)                           (0x00000580+(i)*0x4) /* RW-4A */
 #define NV_NPG_INTR_RETRIGGER__SIZE_1                      3               /*       */
 #define NV_NPG_INTR_RETRIGGER_TRIGGER                      0:0             /* RWEVF */
-#define NV_NPG_INTR_RETRIGGER_TRIGGER__ONWRITE             "oneToSet"      /*       */
 #define NV_NPG_INTR_RETRIGGER_TRIGGER_INIT                 0x00000000      /* RWE-V */
 #endif // __ls10_dev_npg_ip_h__

@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -617,7 +617,7 @@ static inline GR_GLOBALCTX_BUFFER kgrctxGetRegisterAccessMapId_aa21e9(struct OBJ
     return GR_GLOBALCTX_BUFFER_PRIV_ACCESS_MAP;
 }
 
-GR_GLOBALCTX_BUFFER kgrctxGetRegisterAccessMapId_PF(struct OBJGPU *arg1, struct KernelGraphicsContext *arg2, struct KernelChannel *arg3);
+GR_GLOBALCTX_BUFFER kgrctxGetRegisterAccessMapId_IMPL(struct OBJGPU *arg1, struct KernelGraphicsContext *arg2, struct KernelChannel *arg3);
 
 NV_STATUS kgrctxCtrlGetTpcPartitionMode_IMPL(struct KernelGraphicsContext *pKernelGraphicsContext, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *pParams);
 

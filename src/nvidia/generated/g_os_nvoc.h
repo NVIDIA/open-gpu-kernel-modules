@@ -327,18 +327,16 @@ typedef NvU32      OSCountTailPages(NvU64);
 typedef NvU64      OSGetPageSize(void);
 typedef NvU8       OSGetPageShift(void);
 
-
-// We use osAcquireRmSema to catch "unported" sema code to new lock model
 typedef NV_STATUS  NV_FORCERESULTCHECK OSAcquireRmSema(void *);
 typedef NvBool     NV_FORCERESULTCHECK OSIsRmSemaOwner(void *);
+typedef NV_STATUS  NV_FORCERESULTCHECK OSCondAcquireRmSema(void *);
+typedef NvU32      OSReleaseRmSema(void *, OBJGPU *);
 
 #define DPC_RELEASE_ALL_GPU_LOCKS                       (1)
 #define DPC_RELEASE_SINGLE_GPU_LOCK                     (2)
 
 typedef NV_STATUS   OSGpuLocksQueueRelease(OBJGPU *pGpu, NvU32 dpcGpuLockRelease);
 typedef NvU32       OSApiLockAcquireConfigureFlags(NvU32 flags);
-typedef NV_STATUS  NV_FORCERESULTCHECK OSCondAcquireRmSema(void *);
-typedef NvU32      OSReleaseRmSema(void *, OBJGPU *);
 
 typedef NvU32      OSGetCpuCount(void);
 typedef NvU32      OSGetMaximumCoreCount(void);
@@ -394,16 +392,14 @@ typedef NvBool     OSIsEqualGUID(void *, void *);
 #define OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW                  NVBIT(9)
 #define OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RO                  NVBIT(10)
 #define OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS                    NVBIT(11)
-#define OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE_RW     NVBIT(12)
-#define OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE_RO     NVBIT(13)
-#define OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW  NVBIT(14)
-#define OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RO  NVBIT(15)
+#define OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE        NVBIT(12)
+#define OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE     NVBIT(13)
 //
 // Perform a GPU full power sanity after getting GPU locks.
 // One of the above LOCK_GPU flags must be provided when using this flag.
 //
-#define OS_QUEUE_WORKITEM_FLAGS_FULL_GPU_SANITY              NVBIT(16)
-#define OS_QUEUE_WORKITEM_FLAGS_FOR_PM_RESUME                NVBIT(17)
+#define OS_QUEUE_WORKITEM_FLAGS_FULL_GPU_SANITY              NVBIT(14)
+#define OS_QUEUE_WORKITEM_FLAGS_FOR_PM_RESUME                NVBIT(15)
 typedef void       OSWorkItemFunction(NvU32 gpuInstance, void *);
 typedef void       OSSystemWorkItemFunction(void *);
 NV_STATUS  osQueueWorkItemWithFlags(OBJGPU *, OSWorkItemFunction, void *, NvU32);
@@ -452,9 +448,9 @@ void       osQADbgRegistryInit(void);
 typedef NV_STATUS  OSGetVersionDump(void *);
 // End of WinNT
 
-typedef NvU32      OSnv_rdcr4(struct OBJOS *);
-typedef NvU64      OSnv_rdxcr0(struct OBJOS *);
-typedef int        OSnv_cpuid(struct OBJOS *, int, int, NvU32 *, NvU32 *, NvU32 *, NvU32 *);
+NvU32      osNv_rdcr4(void);
+NvU64      osNv_rdxcr0(void);
+int        osNv_cpuid(int, int, NvU32 *, NvU32 *, NvU32 *, NvU32 *);
 
 // NOTE: The following functions are also implemented in MODS
 NV_STATUS       osSimEscapeWrite(OBJGPU *, const char *path, NvU32 Index, NvU32 Size, NvU32 Value);
@@ -582,9 +578,6 @@ struct OBJOS {
     NvBool PDB_PROP_OS_NO_PAGED_SEGMENT_ACCESS;
 
     // Data members
-    OSnv_rdcr4 *osNv_rdcr4;
-    OSnv_rdxcr0 *osNv_rdxcr0;
-    OSnv_cpuid *osNv_cpuid;
     NvU32 dynamicPowerSupportGpuMask;
     NvBool bIsSimMods;
 };
@@ -891,6 +884,8 @@ NV_STATUS osGetVersion(NvU32 *pMajorVer,
                        NvU16 *pServicePackMaj,
                        NvU16 *pProductType);
 
+NV_STATUS osGetIsOpenRM(NvBool *bOpenRm);
+
 NvBool osGrService(OS_GPU_INFO *pOsGpuInfo, NvU32 grIdx, NvU32 intr, NvU32 nstatus, NvU32 addr, NvU32 dataLo);
 
 NvBool osDispService(NvU32 Intr0, NvU32 Intr1);
@@ -1173,6 +1168,7 @@ NV_STATUS osSanityTestIsr(OBJGPU *pGpu);
 void osAllocatedRmClient(void* pOSInfo);
 
 NV_STATUS osConfigurePcieReqAtomics(OS_GPU_INFO *pOsGpuInfo, NvU32 *pMask);
+NV_STATUS osGetPcieCplAtomicsCaps(OS_GPU_INFO *pOsGpuInfo, NvU32 *pMask);
 
 NvBool osDmabufIsSupported(void);
 
@@ -1214,12 +1210,21 @@ void osNumaRemoveGpuMemory(OS_GPU_INFO *pOsGpuInfo, NvU64 offset,
 
 NV_STATUS osOfflinePageAtAddress(NvU64 address);
 
+//
 // Os 1Hz timer callback functions
+//
+// 1 second is the median and mean time between two callback runs, but the worst
+// case can be anywhere between 0 (back-to-back) or (1s+RMTIMEOUT).
+// N callbacks are at least (N-2) seconds apart.
+//
+// Callbacks can run at either DISPATCH_LEVEL or PASSIVE_LEVEL
+//
 NV_STATUS osInit1HzCallbacks(OBJTMR *pTmr);
 NV_STATUS osDestroy1HzCallbacks(OBJTMR *pTmr);
 NV_STATUS osSchedule1HzCallback(OBJGPU *pGpu, OS1HZPROC callback, void *pData, NvU32 flags);
 void      osRemove1HzCallback(OBJGPU *pGpu, OS1HZPROC callback, void *pData);
 NvBool    osRun1HzCallbacksNow(OBJGPU *pGpu);
+void      osRunQueued1HzCallbacksUnderLock(OBJGPU *pGpu);
 
 NV_STATUS osDoFunctionLevelReset(OBJGPU *pGpu);
 
@@ -1352,6 +1357,11 @@ OSGetSysmemInfo                  osGetSysmemInfo;
 OSGC6PowerControl                osGC6PowerControl;
 OSReadPFPciConfigInVF            osReadPFPciConfigInVF;
 
+OSAcquireRmSema                  osAcquireRmSema;
+OSAcquireRmSema                  osAcquireRmSemaForced;
+OSCondAcquireRmSema              osCondAcquireRmSema;
+OSReleaseRmSema                  osReleaseRmSema;
+
 //
 // When the new basic lock model is enabled then the following legacy RM
 // system semaphore routines are stubbed.
@@ -1364,19 +1374,8 @@ OSReadPFPciConfigInVF            osReadPFPciConfigInVF;
 #define osAcquireRmSemaForced(s) osAcquireRmSema(s)
 #define osGpuLockSetOwner(s,t)   (NV_OK)
 
-//
-// This version of osAcquireRmSema asserts that the GPUs lock is held when the
-// basic lock model is enabled.  This should help catch newly introduced
-// dependencies on the legacy RM system semaphore that do not have
-// corresponding corresponding basic lock model support.
-//
-OSAcquireRmSema                  osAcquireRmSema;
-OSAcquireRmSema                  osAcquireRmSemaForced;
-
 OSApiLockAcquireConfigureFlags   osApiLockAcquireConfigureFlags;
 OSGpuLocksQueueRelease           osGpuLocksQueueRelease;
-OSCondAcquireRmSema              osCondAcquireRmSema;
-OSReleaseRmSema                  osReleaseRmSema;
 
 OSFlushLog                       osFlushLog;
 OSSetSurfaceName                 osSetSurfaceName;

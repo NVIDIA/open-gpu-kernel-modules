@@ -50,6 +50,12 @@ extern NVHDMIPKT_RESULT hdmiPacketCtrl9171(NVHDMIPKT_CLASS*  pThis,
                                             NVHDMIPKT_TYPE    packetType,
                                             NVHDMIPKT_TC      transmitControl);
 
+extern void hdmiWriteAviPacket9171(NVHDMIPKT_CLASS*   pThis,
+                                   NvU32*             pBaseReg,
+                                   NvU32              head,
+                                   NvU32              packetLen,
+                                   NvU8 const *const  pPacket);
+
 static NvU32
 translateTransmitControlC771(NVHDMIPKT_CLASS*  pThis,
                              NVHDMIPKT_TC      transmitControl)
@@ -150,6 +156,38 @@ hdmiPacketCtrlC771(NVHDMIPKT_CLASS*  pThis,
             break;
     }
     return result;
+}
+
+static void 
+hdmiWriteAviPacketC771(NVHDMIPKT_CLASS*   pThis,
+                       NvU32*             pBaseReg,
+                       NvU32              head,
+                       NvU32              packetLen,
+                       NvU8 const *const  pPacket)
+{
+    NvU32 data = 0;
+
+    if (packetLen > NVHDMIPKT_C771_MAX_PKT_BYTES_AVI)
+    {
+        NvHdmiPkt_Print(pThis, "ERROR - input AVI packet length incorrect. Write will be capped to max allowable bytes");
+        NvHdmiPkt_Assert(0);
+    }
+
+    data = REG_RD32(pBaseReg, NVC771_SF_HDMI_AVI_INFOFRAME_SUBPACK2_LOW(head));
+    data = FLD_SET_DRF_NUM(C771, _SF_HDMI_AVI_INFOFRAME_SUBPACK2_LOW, _PB14, pPacket[17], data);
+    data = FLD_SET_DRF_NUM(C771, _SF_HDMI_AVI_INFOFRAME_SUBPACK2_LOW, _PB15, pPacket[18], data);
+    data = FLD_SET_DRF_NUM(C771, _SF_HDMI_AVI_INFOFRAME_SUBPACK2_LOW, _PB16, pPacket[19], data);
+    data = FLD_SET_DRF_NUM(C771, _SF_HDMI_AVI_INFOFRAME_SUBPACK2_LOW, _PB17, pPacket[20], data);
+    REG_WR32(pBaseReg, NVC771_SF_HDMI_AVI_INFOFRAME_SUBPACK2_LOW(head), data);
+
+    // the lower 17 bytes remain the same as in 9171 class, call 9171 packet write function to program them
+    hdmiWriteAviPacket9171(pThis,
+                           pBaseReg,
+                           head,
+                           17, // packetLen: HB0-2 and PB0-14
+                           pPacket);
+
+    return;
 }
 
 static NVHDMIPKT_RESULT
@@ -305,4 +343,5 @@ initializeHdmiPktInterfaceC771(NVHDMIPKT_CLASS* pClass)
 
     pClass->hdmiPacketCtrl    = hdmiPacketCtrlC771;
     pClass->hdmiPacketWrite   = hdmiPacketWriteC771;
+    pClass->hdmiWriteAviPacket = hdmiWriteAviPacketC771;
 }

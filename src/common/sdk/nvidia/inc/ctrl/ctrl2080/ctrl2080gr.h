@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -310,6 +310,9 @@ typedef NV0080_CTRL_GR_INFO NV2080_CTRL_GR_INFO;
 #define NV2080_CTRL_GR_INFO_SM_VERSION_8_09                         (0x00000809U)
 #define NV2080_CTRL_GR_INFO_SM_VERSION_9_00                         (0x00000900U)
 
+#define NV2080_CTRL_GR_INFO_SM_VERSION_10_00                        (0x00000A00U)
+#define NV2080_CTRL_GR_INFO_SM_VERSION_10_01                        (0x00000A01U)
+
 
 
 /* compatibility SM versions to match the official names in the ISA (e.g., SM5.2)  */
@@ -327,6 +330,9 @@ typedef NV0080_CTRL_GR_INFO NV2080_CTRL_GR_INFO;
 #define NV2080_CTRL_GR_INFO_SM_VERSION_8_8                          (NV2080_CTRL_GR_INFO_SM_VERSION_8_08)
 #define NV2080_CTRL_GR_INFO_SM_VERSION_8_9                          (NV2080_CTRL_GR_INFO_SM_VERSION_8_09)
 #define NV2080_CTRL_GR_INFO_SM_VERSION_9_0                          (NV2080_CTRL_GR_INFO_SM_VERSION_9_00)
+
+#define NV2080_CTRL_GR_INFO_SM_VERSION_10_0                         (NV2080_CTRL_GR_INFO_SM_VERSION_10_00)
+#define NV2080_CTRL_GR_INFO_SM_VERSION_10_1                         (NV2080_CTRL_GR_INFO_SM_VERSION_10_01)
 
 
 
@@ -736,7 +742,7 @@ typedef struct NV2080_CTRL_GR_CTXSW_SMPC_MODE_PARAMS {
  */
 #define NV2080_CTRL_CMD_GR_GET_SM_TO_GPC_TPC_MAPPINGS          (0x2080120fU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GR_INTERFACE_ID << 8) | NV2080_CTRL_GR_GET_SM_TO_GPC_TPC_MAPPINGS_PARAMS_MESSAGE_ID" */
 
-#define NV2080_CTRL_GR_GET_SM_TO_GPC_TPC_MAPPINGS_MAX_SM_COUNT 144U
+#define NV2080_CTRL_GR_GET_SM_TO_GPC_TPC_MAPPINGS_MAX_SM_COUNT 240U
 #define NV2080_CTRL_GR_GET_SM_TO_GPC_TPC_MAPPINGS_PARAMS_MESSAGE_ID (0xFU)
 
 typedef struct NV2080_CTRL_GR_GET_SM_TO_GPC_TPC_MAPPINGS_PARAMS {

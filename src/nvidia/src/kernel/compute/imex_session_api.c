@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -68,6 +68,21 @@ _performRcAndDisableChannels
         NV_PRINTF(LEVEL_ERROR,
                 "Failed to disable channels for GPU %d\n", pGpu->gpuInstance);
     }
+}
+
+static NvBool
+_checkDanglingExports
+(
+    RsClient *pRsClient
+)
+{
+    RS_ITERATOR it = clientRefIter(pRsClient, 0, classId(MemoryExport),
+                                   RS_ITERATE_CHILDREN, NV_TRUE);
+
+    if (clientRefIterNext(pRsClient, &it))
+        return NV_TRUE;
+
+    return NV_FALSE;
 }
 
 static NvBool
@@ -279,6 +294,8 @@ imexsessionapiConstruct_IMPL
     fabricSetNodeId(pFabric, pUserParams->nodeId);
     pImexSessionApi->flags = pUserParams->flags;
 
+    fabricEnableMemAlloc(pFabric);
+
     return NV_OK;
 
 fail_unset_event:
@@ -299,6 +316,23 @@ imexsessionapiDestruct_IMPL
     OBJSYS *pSys = SYS_GET_INSTANCE();
     Fabric *pFabric = SYS_GET_FABRIC(pSys);
     NvP64 pImexOsEvent = fabricGetImexEvent(pFabric);
+
+    //
+    // If the IMEX daemon shutdown (crashed) without explicitly cleaning up all
+    // its state (e.g. duped exported memory), disable future fabric allocations.
+    // The memory is released prematurely due to the IMEX  daemon crash could
+    // still be in-use from other nodes and we don't want it to be re-allocated
+    // (reused) until all the users (importers) are killed. Thus, until the
+    // IMEX daemon restarts after appropriate recovery (admin controlled),
+    // disable any future fabric allocations.
+    //
+
+    if (_checkDanglingExports(RES_GET_CLIENT(pImexSessionApi)))
+    {
+        NV_PRINTF(LEVEL_WARNING,
+                  "Disabling fabric allocations due to unclean IMEX shutdown!\n");
+        fabricDisableMemAlloc(pFabric);
+    }
 
     // Invalidate export cache to block future imports on this node ID.
     memoryexportClearCache(fabricGetNodeId(pFabric));

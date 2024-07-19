@@ -43,7 +43,7 @@
 *   this specifies the function that needs to be performed on pbi
 *data
 *   the data to be set in the data in register
-* status 
+* status
 *   this corresponds to pbi status register
 * sysNotify
 *   this corresponds to system notify event, i.e. whether system
@@ -115,7 +115,7 @@ typedef struct NV208F_CTRL_BIF_CONFIG_REG_WRITE_PARAMS {
 * index
 *   Defines the index of the property to read
 * data
-*   Data that is read 
+*   Data that is read
 */
 #define NV208F_CTRL_CMD_BIF_INFO (0x208f0704) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_BIF_INTERFACE_ID << 8) | NV208F_CTRL_BIF_INFO_PARAMS_MESSAGE_ID" */
 

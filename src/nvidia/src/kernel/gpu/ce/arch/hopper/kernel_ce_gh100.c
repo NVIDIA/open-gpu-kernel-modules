@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -950,7 +950,7 @@ kceGetMappings_GH100
     // In CC case a 1-1 mapping should be applied and other mappings are not required
     if (gpuIsCCFeatureEnabled(pGpu))
     {
-        kceMapPceLceForCC(pGpu, pKCe, pTopoParams->pceAvailableMaskPerHshub,
+        kceMapPceLceForCC(pGpu, pKCe, pTopoParams->pceAvailableMaskPerConnectingHub,
                           pLocalPceLceMap, pLocalGrceMap, pExposeCeMask);
         goto returnSuccess;
     }
@@ -962,7 +962,7 @@ kceGetMappings_GH100
     if (pKernelNvlink && !knvlinkIsForcedConfig(pGpu, pKernelNvlink))
     {
         status = kceMapPceLceForNvlinkPeers_HAL(pGpu, pKCe,
-                                                pTopoParams->pceAvailableMaskPerHshub,
+                                                pTopoParams->pceAvailableMaskPerConnectingHub,
                                                 pLocalPceLceMap,
                                                 pExposeCeMask);
     }
@@ -973,12 +973,12 @@ kceGetMappings_GH100
 
     // Special C2C cases for LCE 2 and 3
     statusC2C = kceMapPceLceForC2C_HAL(pGpu, pKCe,
-                              pTopoParams->pceAvailableMaskPerHshub,
+                              pTopoParams->pceAvailableMaskPerConnectingHub,
                               pLocalPceLceMap, pExposeCeMask);
 
     // Assign PCEs for GRCE case
     kceMapPceLceForGRCE_HAL(pGpu, pKCe,
-                              pTopoParams->pceAvailableMaskPerHshub,
+                              pTopoParams->pceAvailableMaskPerConnectingHub,
                               pLocalPceLceMap, pExposeCeMask, pLocalGrceMap, pTopoParams->fbhubPceMask);
 
     if ((status == NV_WARN_NOTHING_TO_DO && statusC2C == NV_WARN_NOTHING_TO_DO) ||
@@ -986,7 +986,7 @@ kceGetMappings_GH100
     {
         // If there's no NVLink peers available, still expose an additional async LCE
         status = kceMapAsyncLceDefault_HAL(pGpu, pKCe,
-                                           pTopoParams->pceAvailableMaskPerHshub,
+                                           pTopoParams->pceAvailableMaskPerConnectingHub,
                                            pLocalPceLceMap,
                                            pExposeCeMask,
                                            NV_CE_NUM_PCES_NO_LINK_CASE);
@@ -1042,7 +1042,7 @@ NV_STATUS kceGetP2PCes_GH100(KernelCE *pKCe, OBJGPU *pGpu, NvU32 gpuMask, NvU32 
         NvU32        gpuInstance    = 0;
         NvU32         maxPces       = 0;
 
-        KCE_ITER_ALL_BEGIN(pGpu, pKCeLoop, minP2PLce)
+        KCE_ITER_BEGIN(pGpu, pKCe, pKCeLoop, minP2PLce)
 
         if (pKCeLoop->bStubbed)
         {
@@ -1157,7 +1157,7 @@ NV_STATUS kceGetP2PCes_GH100(KernelCE *pKCe, OBJGPU *pGpu, NvU32 gpuMask, NvU32 
         // be using which LCE. This is decided based on the majority. If
         // there is a tie, then LCE with the lower index is preferred.
         //
-        KCE_ITER_ALL_BEGIN(pGpu, pKCeLoop, minP2PLce)
+        KCE_ITER_BEGIN(pGpu, pKCe, pKCeLoop, minP2PLce)
             NvU32 localMaxPcePerHshub = 0;
             KernelCE *localMaxLcePerHshub;
             NvU32 localMaxHshub = NV_CE_MAX_HSHUBS;
@@ -1226,21 +1226,14 @@ NV_STATUS kceGetP2PCes_GH100(KernelCE *pKCe, OBJGPU *pGpu, NvU32 gpuMask, NvU32 
         {
             //
             // In the event that the preferred HSHUB's primary LCE is not available,
-            // choose the first available LCE which was found and set that index as
-            // the new preferred hshub.
+            // use the first available LCE and set that index as the new preferred hshub
             //
-            for (i = 0; i < NV_CE_MAX_HSHUBS; i++)
-            {
-                if (maxLcePerHshub[i] != NULL)
-                {
-                    NV_PRINTF(LEVEL_INFO,
-                              "GPU %d Assigning Peer %d to first available LCE %d\n",
-                              gpuGetInstance(pGpu), gpuInstance,
-                              maxLcePerHshub[i]->publicID);
-                    maxConnectedHshubId = i;
-                    break;
-                }
-            }
+            maxLcePerHshub[maxConnectedHshubId] = GPU_GET_KCE(pGpu, maxConnectedHshubId);
+
+            NV_PRINTF(LEVEL_INFO,
+                      "GPU %d Assigning Peer %d to first available LCE %d\n",
+                      gpuGetInstance(pGpu), gpuInstance,
+                      maxLcePerHshub[maxConnectedHshubId]->publicID);
         }
 
         if (maxConnectedHshubId < NV_CE_MAX_HSHUBS)

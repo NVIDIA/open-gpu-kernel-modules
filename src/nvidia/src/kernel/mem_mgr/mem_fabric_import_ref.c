@@ -206,7 +206,8 @@ memoryfabricimportedrefCtrlValidate_IMPL
     if ((pParams->attrs.pageSize != RM_PAGE_SIZE_HUGE) &&
         (pParams->attrs.pageSize != RM_PAGE_SIZE_512M))
     {
-        return NV_ERR_INVALID_ARGUMENT;
+        if (pParams->attrs.pageSize != RM_PAGE_SIZE_256G)
+            return NV_ERR_INVALID_ARGUMENT;
     }
 
     if ((pParams->attrs.size == 0) ||

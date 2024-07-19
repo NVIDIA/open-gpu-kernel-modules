@@ -723,6 +723,7 @@ continue_alloc_object:
             case RM_ATTR_PAGE_SIZE_DEFAULT:
                 NV_PRINTF(LEVEL_INFO, "page size default doesn't have any impact \n");
                 break;
+            case RM_ATTR_PAGE_SIZE_256GB:
             case RM_ATTR_PAGE_SIZE_INVALID:
                 NV_PRINTF(LEVEL_INFO, "unexpected pageSizeAttr = 0x%x\n", pageSizeAttr);
                 status = NV_ERR_INVALID_STATE;

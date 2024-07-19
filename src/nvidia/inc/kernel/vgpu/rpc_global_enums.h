@@ -219,7 +219,10 @@ enum {
     X(RM, CTRL_GPU_GET_INFO_V2,                                   209)
     X(RM, GET_BRAND_CAPS,                                         210)
     X(RM, CTRL_CMD_NVLINK_INBAND_SEND_DATA,                       211)
-    X(RM, NUM_FUNCTIONS,                                          212)
+    X(RM, UPDATE_GPM_GUEST_BUFFER_INFO,                           212)
+    X(RM, RESERVED_213,                                           213)
+    X(RM, CTRL_SET_ZBC_STENCIL_CLEAR,                             214)
+    X(RM, NUM_FUNCTIONS,                                          215)
 #ifdef DEFINING_X_IN_RPC_GLOBAL_ENUMS_H
 };
 #   undef X

@@ -289,6 +289,42 @@ typedef enum NV2080_CTRL_PERF_RATED_TDP_ACTION {
 } NV2080_CTRL_PERF_RATED_TDP_ACTION;
 
 /*!
+ * Enumeration VPstates - these are possible VPStates that clients can
+ * request
+ */
+typedef enum NV2080_CTRL_PERF_RATED_TDP_VPSTATE_TYPE {
+    /*!
+     * Choise of the RATED TDP VPstate
+     */
+    NV2080_CTRL_PERF_VPSTATE_RATED_TDP = 0,
+    /*!
+     * Choise of the TURBO BOOST VPstate
+     */
+    NV2080_CTRL_PERF_VPSTATE_TURBO_BOOST = 1,
+    /*!
+     * Number of supported vpstates.
+     *
+     * @Note MUST ALWAYS BE LAST!
+     */
+    NV2080_CTRL_PERF_VPSTATE_NUM_VPSTATES = 2,
+} NV2080_CTRL_PERF_RATED_TDP_VPSTATE_TYPE;
+
+/*!
+ * Enumeration VPstates - these are possible VPStates that clients can
+ * request
+ */
+typedef struct NV2080_CTRL_PERF_RATED_TDP_CLIENT_REQUEST {
+    /*!
+     * [in] - Specified client for request.
+     */
+    NV2080_CTRL_PERF_RATED_TDP_ACTION       action;
+    /*!
+     * [in/out] - Client's requested action.
+     */
+    NV2080_CTRL_PERF_RATED_TDP_VPSTATE_TYPE vPstateType;
+} NV2080_CTRL_PERF_RATED_TDP_CLIENT_REQUEST;
+
+/*!
  * Structure describing dynamic state of the RATED_TDP feature.
  */
 #define NV2080_CTRL_PERF_RATED_TDP_STATUS_PARAMS_MESSAGE_ID (0x6DU)
@@ -323,7 +359,12 @@ typedef struct NV2080_CTRL_PERF_RATED_TDP_STATUS_PARAMS {
      * NV2080_CTRL_PERF_RATED_TDP_ACTION_FORCE_EXCEED or @ref
      * NV2080_CTRL_PERF_RATED_TDP_ACTION_FORCE_LIMIT.
      */
-    NV2080_CTRL_PERF_RATED_TDP_ACTION output;
+    NV2080_CTRL_PERF_RATED_TDP_ACTION       output;
+    /*
+     * [out] - Arbitrated output VPStates of all client requests (@ref inputs).
+     * This is the current VPState of the RATED_TDP feature.
+     */
+    NV2080_CTRL_PERF_RATED_TDP_VPSTATE_TYPE outputVPstate;
     /*!
      * [out] - Array of input client request actions, indexed via @ref
      * NV2080_CTRL_PERF_RATED_TDP_CLIENT_<xyz>.  RM will arbitrate between these
@@ -331,7 +372,15 @@ typedef struct NV2080_CTRL_PERF_RATED_TDP_STATUS_PARAMS {
      * NV2080_CTRL_PERF_RATED_TDP_ACTION_DEFAULT or fallback to choosing @ref
      * NV2080_CTRL_PERF_RATED_TDP_ACTION_FORCE_EXCEED.
      */
-    NV2080_CTRL_PERF_RATED_TDP_ACTION inputs[NV2080_CTRL_PERF_RATED_TDP_CLIENT_NUM_CLIENTS];
+    NV2080_CTRL_PERF_RATED_TDP_ACTION       inputs[NV2080_CTRL_PERF_RATED_TDP_CLIENT_NUM_CLIENTS];
+    /*!
+     * [out] - Array of input client request VPstates, indexed via @ref
+     * NV2080_CTRL_PERF_RATED_TDP_CLIENT_<xyz>.  RM will arbitrate between these
+     * requests, choosing the highest priority request != @ref
+     * NV2080_CTRL_PERF_RATED_TDP_ACTION_DEFAULT or fallback to choosing @ref
+     * NV2080_CTRL_PERF_RATED_TDP_ACTION_FORCE_EXCEED.
+     */
+    NV2080_CTRL_PERF_RATED_TDP_VPSTATE_TYPE vPstateTypes[NV2080_CTRL_PERF_RATED_TDP_CLIENT_NUM_CLIENTS];
 } NV2080_CTRL_PERF_RATED_TDP_STATUS_PARAMS;
 
 /*!
@@ -357,11 +406,15 @@ typedef struct NV2080_CTRL_PERF_RATED_TDP_CONTROL_PARAMS {
     /*!
      * [in] - Specified client for request.
      */
-    NV2080_CTRL_PERF_RATED_TDP_CLIENT client;
+    NV2080_CTRL_PERF_RATED_TDP_CLIENT       client;
     /*!
      * [in/out] - Client's requested action.
      */
-    NV2080_CTRL_PERF_RATED_TDP_ACTION input;
+    NV2080_CTRL_PERF_RATED_TDP_ACTION       input;
+    /*
+     * [in] - Specified VPState of the request
+     */
+    NV2080_CTRL_PERF_RATED_TDP_VPSTATE_TYPE vPstateType;
 } NV2080_CTRL_PERF_RATED_TDP_CONTROL_PARAMS;
 
 #define NV2080_CTRL_PERF_RATED_TDP_GET_CONTROL_PARAMS_MESSAGE_ID (0x6EU)

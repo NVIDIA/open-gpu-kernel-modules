@@ -513,7 +513,7 @@ knvlinkCoreSetDlLinkModeCallback
     linkIndex     = pNvlinkLink->linkId;
     pKernelIoctrl = KNVLINK_LINK_GET_IOCTRL(pKernelNvlink, linkIndex);
 
-    if (pKernelIoctrl == NULL)
+    if ((pKernelNvlink->ipVerNvlink < NVLINK_VERSION_50) && (pKernelIoctrl == NULL))
         return 0;
 
     // If link training is disabled through regkey
@@ -1524,6 +1524,9 @@ knvlinkCoreAliTrainingCallback
     }
 
     pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    if (pKernelNvlink->ipVerNvlink >= NVLINK_VERSION_50)
+        return 0;
 
     status = knvlinkPreTrainLinksToActiveAli(pGpu, pKernelNvlink,
                                                  BIT(pNvlinkLink->linkId), NV_TRUE);

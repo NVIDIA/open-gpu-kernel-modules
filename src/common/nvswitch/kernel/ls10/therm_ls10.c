@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -144,6 +144,13 @@ nvswitch_ctrl_therm_read_temperature_ls10
     channel = NVSWITCH_THERM_CHANNEL_LS10_TDIODE;
     if (info->channelMask & NVBIT(channel))
     {
+        if (nvswitch_is_tnvl_mode_locked(device))
+        {
+            NVSWITCH_PRINT(device, ERROR,
+                "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+            return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+        }
+
         _nvswitch_read_external_tdiode_temperature_ls10(device, info, channel);
         info->channelMask &= ~NVBIT(channel);
     }
@@ -151,6 +158,13 @@ nvswitch_ctrl_therm_read_temperature_ls10
     channel = NVSWITCH_THERM_CHANNEL_LS10_TDIODE_OFFSET;
     if (info->channelMask & NVBIT(channel))
     {
+        if (nvswitch_is_tnvl_mode_locked(device))
+        {
+            NVSWITCH_PRINT(device, ERROR,
+                "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+            return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+        }
+
         _nvswitch_read_external_tdiode_temperature_ls10(device, info, channel);
         info->channelMask &= ~NVBIT(channel);
     }

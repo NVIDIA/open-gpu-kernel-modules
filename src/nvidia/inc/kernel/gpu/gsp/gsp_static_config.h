@@ -117,13 +117,13 @@ typedef struct GspStaticConfigInfo_t
     NvBool bIsTesla;
     NvBool bIsMobile;
     NvBool bIsGc6Rtd3Allowed;
-    NvBool bIsGc8Rtd3Allowed;
     NvBool bIsGcOffRtd3Allowed;
     NvBool bIsGcoffLegacyAllowed;
 
     /* "Total Board Power" refers to power requirement of GPU,
      * while in GC6 state. Majority of this power will be used
-     * to keep V-RAM active to preserve its content.      * Some energy maybe consumed by Always-on components on GPU chip.
+     * to keep V-RAM active to preserve its content.
+     * Some energy maybe consumed by Always-on components on GPU chip.
      * This power will be provided by 3.3v voltage rail.
      */
     NvU16  RTD3GC6TotalBoardPower;
@@ -165,8 +165,9 @@ typedef struct GspStaticConfigInfo_t
     NvBool bAtsSupported;
 
     NvBool bIsGpuUefi;
+    NvBool bIsEfiInit;
 
-    EcidManufacturingInfo ecidInfo;
+    EcidManufacturingInfo ecidInfo[2];
 } GspStaticConfigInfo;
 
 // Pushed from CPU-RM to GSP-RM
@@ -187,6 +188,7 @@ typedef struct GspSystemInfo
     NvU32 PCIDeviceID;
     NvU32 PCISubDeviceID;
     NvU32 PCIRevisionID;
+    NvU32 pcieAtomicsCplDeviceCapMask;
     NvU8 oorArch;
     NvU64 clPdbProperties;
     NvU32 Chipset;
@@ -198,7 +200,6 @@ typedef struct GspSystemInfo
     NvBool bUpstreamL1Unsupported;
     NvBool bUpstreamL1PorSupported;
     NvBool bUpstreamL1PorMobileOnly;
-    NvBool bSystemHasMux;
     NvU8   upstreamAddressValid;
     BUSINFO FHBBusInfo;
     BUSINFO chipsetIDInfo;
@@ -211,6 +212,9 @@ typedef struct GspSystemInfo
     NvBool isGridBuild;
     NvU32 gridBuildCsp;
     NvBool bPreserveVideoMemoryAllocations;
+    NvBool bTdrEventSupported;
+    NvBool bFeatureStretchVblankCapable;
+    NvBool bClockBoostSupported;
 } GspSystemInfo;
 
 

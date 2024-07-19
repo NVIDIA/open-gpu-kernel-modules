@@ -159,7 +159,14 @@ static int lkca_aead_internal(struct crypto_aead *aead,
     }
 
     if (rc != 0) {
-        pr_info("Encryption FAILED\n");
+        if (enc) {
+            pr_info("aead.c: Encryption failed with error %i\n", rc);
+        } else {
+            pr_info("aead.c: Decryption failed with error %i\n", rc);
+            if (rc == -EBADMSG) {
+                pr_info("aead.c: Authentication tag mismatch!\n");
+            }
+        }
     }
 
     *data_out_size = data_in_size;

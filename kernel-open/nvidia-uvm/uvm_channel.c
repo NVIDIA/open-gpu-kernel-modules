@@ -361,7 +361,6 @@ static NV_STATUS channel_reserve_and_lock_in_pool(uvm_channel_pool_t *pool, uvm_
             NV_STATUS status;
 
             uvm_channel_update_progress(channel);
-            index = uvm_channel_index_in_pool(channel);
 
             channel_pool_lock(pool);
 
@@ -493,24 +492,19 @@ static NvU32 channel_get_available_push_info_index(uvm_channel_t *channel)
 static void channel_semaphore_gpu_encrypt_payload(uvm_push_t *push, NvU64 semaphore_va)
 {
     NvU32 iv_index;
-    uvm_gpu_address_t notifier_gpu_va;
-    uvm_gpu_address_t auth_tag_gpu_va;
-    uvm_gpu_address_t semaphore_gpu_va;
-    uvm_gpu_address_t encrypted_payload_gpu_va;
     uvm_gpu_t *gpu = push->gpu;
     uvm_channel_t *channel = push->channel;
     uvm_gpu_semaphore_t *semaphore = &channel->tracking_sem.semaphore;
+    uvm_gpu_address_t notifier_gpu_va = uvm_gpu_semaphore_get_notifier_gpu_va(semaphore);
+    uvm_gpu_address_t auth_tag_gpu_va = uvm_gpu_semaphore_get_auth_tag_gpu_va(semaphore);
+    uvm_gpu_address_t encrypted_payload_gpu_va = uvm_gpu_semaphore_get_encrypted_payload_gpu_va(semaphore);
+    uvm_gpu_address_t semaphore_gpu_va = uvm_gpu_address_virtual(semaphore_va);
     UvmCslIv *iv_cpu_addr = semaphore->conf_computing.ivs;
-    NvU32 payload_size = sizeof(*semaphore->payload);
+    NvU32 payload_size = sizeof(*uvm_gpu_semaphore_get_encrypted_payload_cpu_va(semaphore));
     NvU32 *last_pushed_notifier = &semaphore->conf_computing.last_pushed_notifier;
 
     UVM_ASSERT(g_uvm_global.conf_computing_enabled);
     UVM_ASSERT(uvm_channel_is_ce(channel));
-
-    encrypted_payload_gpu_va = uvm_rm_mem_get_gpu_va(semaphore->conf_computing.encrypted_payload, gpu, false);
-    notifier_gpu_va = uvm_rm_mem_get_gpu_va(semaphore->conf_computing.notifier, gpu, false);
-    auth_tag_gpu_va = uvm_rm_mem_get_gpu_va(semaphore->conf_computing.auth_tag, gpu, false);
-    semaphore_gpu_va = uvm_gpu_address_virtual(semaphore_va);
 
     iv_index = ((*last_pushed_notifier + 2) / 2) % channel->num_gpfifo_entries;
 
@@ -1710,59 +1704,24 @@ static void free_conf_computing_buffers(uvm_channel_t *channel)
     channel->conf_computing.static_pb_protected_sysmem = NULL;
     channel->conf_computing.push_crypto_bundles = NULL;
 
-    uvm_rm_mem_free(channel->tracking_sem.semaphore.conf_computing.encrypted_payload);
-    uvm_rm_mem_free(channel->tracking_sem.semaphore.conf_computing.notifier);
-    uvm_rm_mem_free(channel->tracking_sem.semaphore.conf_computing.auth_tag);
     uvm_kvfree(channel->tracking_sem.semaphore.conf_computing.ivs);
-    channel->tracking_sem.semaphore.conf_computing.encrypted_payload = NULL;
-    channel->tracking_sem.semaphore.conf_computing.notifier = NULL;
-    channel->tracking_sem.semaphore.conf_computing.auth_tag = NULL;
     channel->tracking_sem.semaphore.conf_computing.ivs = NULL;
 }
 
 static NV_STATUS alloc_conf_computing_buffers_semaphore(uvm_channel_t *channel)
 {
     uvm_gpu_semaphore_t *semaphore = &channel->tracking_sem.semaphore;
-    uvm_gpu_t *gpu = uvm_channel_get_gpu(channel);
-    NV_STATUS status;
 
     UVM_ASSERT(g_uvm_global.conf_computing_enabled);
     UVM_ASSERT(uvm_channel_is_ce(channel));
 
-    status = uvm_rm_mem_alloc_and_map_cpu(gpu,
-                                          UVM_RM_MEM_TYPE_SYS,
-                                          sizeof(semaphore->conf_computing.last_pushed_notifier),
-                                          UVM_CONF_COMPUTING_BUF_ALIGNMENT,
-                                          &semaphore->conf_computing.notifier);
-
-    if (status != NV_OK)
-        return status;
-
-    status = uvm_rm_mem_alloc_and_map_cpu(gpu,
-                                          UVM_RM_MEM_TYPE_SYS,
-                                          sizeof(*channel->tracking_sem.semaphore.payload),
-                                          UVM_CONF_COMPUTING_BUF_ALIGNMENT,
-                                          &semaphore->conf_computing.encrypted_payload);
-
-    if (status != NV_OK)
-        return status;
-
-    status = uvm_rm_mem_alloc_and_map_cpu(gpu,
-                                          UVM_RM_MEM_TYPE_SYS,
-                                          UVM_CONF_COMPUTING_AUTH_TAG_SIZE,
-                                          UVM_CONF_COMPUTING_BUF_ALIGNMENT,
-                                          &semaphore->conf_computing.auth_tag);
-
-    if (status != NV_OK)
-        return status;
-
     semaphore->conf_computing.ivs = uvm_kvmalloc_zero(sizeof(*semaphore->conf_computing.ivs)
-                                    * channel->num_gpfifo_entries);
+                                                      * channel->num_gpfifo_entries);
 
     if (!semaphore->conf_computing.ivs)
         return NV_ERR_NO_MEMORY;
 
-    return status;
+    return NV_OK;
 }
 
 static NV_STATUS alloc_conf_computing_buffers_wlc(uvm_channel_t *channel)
@@ -2380,24 +2339,41 @@ static NV_STATUS channel_pool_add(uvm_channel_manager_t *channel_manager,
     return status;
 }
 
-static bool ce_usable_for_channel_type(uvm_channel_type_t type, const UvmGpuCopyEngineCaps *cap)
+static bool ce_is_usable(const UvmGpuCopyEngineCaps *cap)
 {
-    if (!cap->supported || cap->grce)
-        return false;
+    return cap->supported && !cap->grce;
+}
 
-    switch (type) {
-        case UVM_CHANNEL_TYPE_CPU_TO_GPU:
-        case UVM_CHANNEL_TYPE_GPU_TO_CPU:
-            return cap->sysmem;
-        case UVM_CHANNEL_TYPE_GPU_INTERNAL:
-        case UVM_CHANNEL_TYPE_MEMOPS:
-            return true;
-        case UVM_CHANNEL_TYPE_GPU_TO_GPU:
-            return cap->p2p;
-        default:
-            UVM_ASSERT_MSG(false, "Unexpected channel type 0x%x\n", type);
-            return false;
+// Check that all asynchronous CEs are usable, and that there is at least one
+// such CE.
+static NV_STATUS ces_validate(uvm_channel_manager_t *manager, const UvmGpuCopyEngineCaps *ces_caps)
+{
+    unsigned ce;
+    bool found_usable_ce = false;
+
+    for (ce = 0; ce < UVM_COPY_ENGINE_COUNT_MAX; ++ce) {
+        const UvmGpuCopyEngineCaps *ce_caps = ces_caps + ce;
+
+        if (!ce_is_usable(ce_caps))
+            continue;
+
+        found_usable_ce = true;
+
+        // All channels may need to release their semaphore to sysmem.
+        // All CEs are expected to have the sysmem flag set.
+        if (!ce_caps->sysmem)
+            return NV_ERR_NOT_SUPPORTED;
+
+        // While P2P capabilities are only required for transfers between GPUs,
+        // in practice all CEs are expected to have the corresponding flag set.
+        if (!ce_caps->p2p)
+            return NV_ERR_NOT_SUPPORTED;
     }
+
+    if (!found_usable_ce)
+        return NV_ERR_NOT_SUPPORTED;
+
+    return NV_OK;
 }
 
 static unsigned ce_usage_count(NvU32 ce, const unsigned *preferred_ce)
@@ -2426,15 +2402,13 @@ static int compare_ce_for_channel_type(const UvmGpuCopyEngineCaps *ce_caps,
     const UvmGpuCopyEngineCaps *cap0 = ce_caps + ce_index0;
     const UvmGpuCopyEngineCaps *cap1 = ce_caps + ce_index1;
 
-    UVM_ASSERT(ce_usable_for_channel_type(type, cap0));
-    UVM_ASSERT(ce_usable_for_channel_type(type, cap1));
     UVM_ASSERT(ce_index0 < UVM_COPY_ENGINE_COUNT_MAX);
     UVM_ASSERT(ce_index1 < UVM_COPY_ENGINE_COUNT_MAX);
     UVM_ASSERT(ce_index0 != ce_index1);
 
     switch (type) {
+        // For CPU to GPU fast sysmem read is the most important
         case UVM_CHANNEL_TYPE_CPU_TO_GPU:
-            // For CPU to GPU fast sysmem read is the most important
             if (cap0->sysmemRead != cap1->sysmemRead)
                 return cap1->sysmemRead - cap0->sysmemRead;
 
@@ -2444,8 +2418,8 @@ static int compare_ce_for_channel_type(const UvmGpuCopyEngineCaps *ce_caps,
 
             break;
 
+        // For GPU to CPU fast sysmem write is the most important
         case UVM_CHANNEL_TYPE_GPU_TO_CPU:
-            // For GPU to CPU fast sysmem write is the most important
             if (cap0->sysmemWrite != cap1->sysmemWrite)
                 return cap1->sysmemWrite - cap0->sysmemWrite;
 
@@ -2455,8 +2429,8 @@ static int compare_ce_for_channel_type(const UvmGpuCopyEngineCaps *ce_caps,
 
             break;
 
+        // For GPU to GPU prefer the LCE with the most PCEs
         case UVM_CHANNEL_TYPE_GPU_TO_GPU:
-            // Prefer the LCE with the most PCEs
             {
                 int pce_diff = (int)hweight32(cap1->cePceMask) - (int)hweight32(cap0->cePceMask);
 
@@ -2466,10 +2440,10 @@ static int compare_ce_for_channel_type(const UvmGpuCopyEngineCaps *ce_caps,
 
             break;
 
+        // For GPU_INTERNAL we want the max possible bandwidth for CEs. For now
+        // assume that the number of PCEs is a good measure.
+        // TODO: Bug 1735254: Add a direct CE query for local FB bandwidth
         case UVM_CHANNEL_TYPE_GPU_INTERNAL:
-            // We want the max possible bandwidth for CEs used for GPU_INTERNAL,
-            // for now assume that the number of PCEs is a good measure.
-            // TODO: Bug 1735254: Add a direct CE query for local FB bandwidth
             {
                 int pce_diff = (int)hweight32(cap1->cePceMask) - (int)hweight32(cap0->cePceMask);
 
@@ -2483,11 +2457,15 @@ static int compare_ce_for_channel_type(const UvmGpuCopyEngineCaps *ce_caps,
 
             break;
 
+        // For MEMOPS we mostly care about latency which should be better with
+        // less used CEs (although we only know about our own usage and not
+        // system-wide) so just break out to get the default ordering which
+        // prioritizes usage count.
         case UVM_CHANNEL_TYPE_MEMOPS:
-            // For MEMOPS we mostly care about latency which should be better
-            // with less used CEs (although we only know about our own usage and
-            // not system-wide) so just break out to get the default ordering
-            // which prioritizes usage count.
+        // For WLC we only care about using a dedicated CE, which requires
+        // knowing the global CE mappings. For now just rely on the default
+        // ordering, which results on selecting an unused CE (if available).
+        case UVM_CHANNEL_TYPE_WLC:
             break;
 
         default:
@@ -2510,53 +2488,103 @@ static int compare_ce_for_channel_type(const UvmGpuCopyEngineCaps *ce_caps,
     return ce_index0 - ce_index1;
 }
 
-// Identify usable CEs, and select the preferred CE for a given channel type.
-static NV_STATUS pick_ce_for_channel_type(uvm_channel_manager_t *manager,
-                                          const UvmGpuCopyEngineCaps *ce_caps,
-                                          uvm_channel_type_t type,
-                                          unsigned *preferred_ce)
+// Select the preferred CE for the given channel types.
+static void pick_ces_for_channel_types(uvm_channel_manager_t *manager,
+                                       const UvmGpuCopyEngineCaps *ce_caps,
+                                       uvm_channel_type_t *channel_types,
+                                       unsigned num_channel_types,
+                                       unsigned *preferred_ce)
 {
-    NvU32 i;
-    NvU32 best_ce = UVM_COPY_ENGINE_COUNT_MAX;
+    unsigned i;
 
-    UVM_ASSERT(type < UVM_CHANNEL_TYPE_CE_COUNT);
+    // In Confidential Computing, do not mark all usable CEs, only the preferred
+    // ones, because non-preferred CE channels are guaranteed to not be used.
+    bool mark_all_usable_ces = !g_uvm_global.conf_computing_enabled;
 
-    for (i = 0; i < UVM_COPY_ENGINE_COUNT_MAX; ++i) {
-        const UvmGpuCopyEngineCaps *cap = ce_caps + i;
+    for (i = 0; i < num_channel_types; ++i) {
+        unsigned ce;
+        unsigned best_ce = UVM_COPY_ENGINE_COUNT_MAX;
+        uvm_channel_type_t type = channel_types[i];
 
-        if (!ce_usable_for_channel_type(type, cap))
-            continue;
+        for (ce = 0; ce < UVM_COPY_ENGINE_COUNT_MAX; ++ce) {
+            if (!ce_is_usable(ce_caps + ce))
+                continue;
 
-        __set_bit(i, manager->ce_mask);
+            if (mark_all_usable_ces)
+                __set_bit(ce, manager->ce_mask);
 
-        if (best_ce == UVM_COPY_ENGINE_COUNT_MAX) {
-            best_ce = i;
-            continue;
+            if (best_ce == UVM_COPY_ENGINE_COUNT_MAX) {
+                best_ce = ce;
+                continue;
+            }
+
+            if (compare_ce_for_channel_type(ce_caps, type, ce, best_ce, preferred_ce) < 0)
+                best_ce = ce;
         }
 
-        if (compare_ce_for_channel_type(ce_caps, type, i, best_ce, preferred_ce) < 0)
-            best_ce = i;
-    }
+        UVM_ASSERT(best_ce != UVM_COPY_ENGINE_COUNT_MAX);
 
-    if (best_ce == UVM_COPY_ENGINE_COUNT_MAX) {
-        UVM_ERR_PRINT("Failed to find a suitable CE for channel type %s\n", uvm_channel_type_to_string(type));
-        return NV_ERR_NOT_SUPPORTED;
-    }
+        preferred_ce[type] = best_ce;
 
-    preferred_ce[type] = best_ce;
-    return NV_OK;
+        // Preferred CEs are always marked as usable.
+        if (type < UVM_CHANNEL_TYPE_CE_COUNT)
+            __set_bit(best_ce, manager->ce_mask);
+    }
 }
 
-static NV_STATUS channel_manager_pick_copy_engines(uvm_channel_manager_t *manager, unsigned *preferred_ce)
+static void pick_ces(uvm_channel_manager_t *manager, const UvmGpuCopyEngineCaps *ce_caps, unsigned *preferred_ce)
 {
-    NV_STATUS status;
-    unsigned i;
-    UvmGpuCopyEnginesCaps *ces_caps;
+    // The order of picking CEs for each type matters as it's affected by
+    // the usage count of each CE and it increases every time a CE
+    // is selected. MEMOPS has the least priority as it only cares about
+    // low usage of the CE to improve latency
     uvm_channel_type_t types[] = {UVM_CHANNEL_TYPE_CPU_TO_GPU,
                                   UVM_CHANNEL_TYPE_GPU_TO_CPU,
                                   UVM_CHANNEL_TYPE_GPU_INTERNAL,
                                   UVM_CHANNEL_TYPE_GPU_TO_GPU,
                                   UVM_CHANNEL_TYPE_MEMOPS};
+
+    UVM_ASSERT(!g_uvm_global.conf_computing_enabled);
+
+    pick_ces_for_channel_types(manager, ce_caps, types, ARRAY_SIZE(types), preferred_ce);
+}
+
+static void pick_ces_conf_computing(uvm_channel_manager_t *manager,
+                                    const UvmGpuCopyEngineCaps *ce_caps,
+                                    unsigned *preferred_ce)
+{
+    unsigned best_wlc_ce;
+
+    // The WLC type must go last so an unused CE is chosen, if available
+    uvm_channel_type_t types[] = {UVM_CHANNEL_TYPE_CPU_TO_GPU,
+                                  UVM_CHANNEL_TYPE_GPU_TO_CPU,
+                                  UVM_CHANNEL_TYPE_GPU_INTERNAL,
+                                  UVM_CHANNEL_TYPE_MEMOPS,
+                                  UVM_CHANNEL_TYPE_WLC};
+
+    UVM_ASSERT(g_uvm_global.conf_computing_enabled);
+
+    pick_ces_for_channel_types(manager, ce_caps, types, ARRAY_SIZE(types), preferred_ce);
+
+    // Direct transfers between GPUs are disallowed in Confidential Computing,
+    // but the preferred CE is still set to an arbitrary value for consistency.
+    preferred_ce[UVM_CHANNEL_TYPE_GPU_TO_GPU] = preferred_ce[UVM_CHANNEL_TYPE_GPU_TO_CPU];
+
+    best_wlc_ce = preferred_ce[UVM_CHANNEL_TYPE_WLC];
+
+    // TODO: Bug 4576908: in HCC, the WLC type should not share a CE with any
+    // channel type other than LCIC. The assertion should be a check instead.
+    UVM_ASSERT(ce_usage_count(best_wlc_ce, preferred_ce) == 0);
+}
+
+static NV_STATUS channel_manager_pick_ces(uvm_channel_manager_t *manager, unsigned *preferred_ce)
+{
+    NV_STATUS status;
+    UvmGpuCopyEnginesCaps *ces_caps;
+    uvm_channel_type_t type;
+
+    for (type = 0; type < UVM_CHANNEL_TYPE_COUNT; type++)
+        preferred_ce[type] = UVM_COPY_ENGINE_COUNT_MAX;
 
     ces_caps = uvm_kvmalloc_zero(sizeof(*ces_caps));
     if (!ces_caps)
@@ -2566,16 +2594,14 @@ static NV_STATUS channel_manager_pick_copy_engines(uvm_channel_manager_t *manage
     if (status != NV_OK)
         goto out;
 
-   // The order of picking CEs for each type matters as it's affected by the
-   // usage count of each CE and it increases every time a CE is selected.
-   // MEMOPS has the least priority as it only cares about low usage of the
-   // CE to improve latency
-    for (i = 0; i < ARRAY_SIZE(types); ++i) {
-        status = pick_ce_for_channel_type(manager, ces_caps->copyEngineCaps, types[i], preferred_ce);
-        if (status != NV_OK)
-            goto out;
-    }
+    status = ces_validate(manager, ces_caps->copyEngineCaps);
+    if (status != NV_OK)
+        goto out;
 
+    if (g_uvm_global.conf_computing_enabled)
+        pick_ces_conf_computing(manager, ces_caps->copyEngineCaps, preferred_ce);
+    else
+        pick_ces(manager, ces_caps->copyEngineCaps, preferred_ce);
 out:
     uvm_kvfree(ces_caps);
 
@@ -2641,7 +2667,7 @@ static const char *buffer_location_to_string(UVM_BUFFER_LOCATION loc)
     else if (loc == UVM_BUFFER_LOCATION_DEFAULT)
         return "auto";
 
-    UVM_ASSERT_MSG(false, "Invalid buffer locationvalue %d\n", loc);
+    UVM_ASSERT_MSG(false, "Invalid buffer location value %d\n", loc);
     return NULL;
 }
 
@@ -2818,7 +2844,9 @@ static NV_STATUS channel_manager_create_ce_pools(uvm_channel_manager_t *manager,
     // A pool is created for each usable CE, even if it has not been selected as
     // the preferred CE for any type, because as more information is discovered
     // (for example, a pair of peer GPUs is added) we may start using the
-    // previously idle pools.
+    // previously idle pools. Configurations where non-preferred CEs are
+    // guaranteed to remain unused are allowed to avoid marking those engines as
+    // usable.
     for_each_set_bit(ce, manager->ce_mask, UVM_COPY_ENGINE_COUNT_MAX) {
         NV_STATUS status;
         uvm_channel_pool_t *pool = NULL;
@@ -3005,17 +3033,15 @@ static NV_STATUS setup_lcic_schedule(uvm_channel_t *paired_wlc, uvm_channel_t *l
     // Reuse WLC sysmem allocation
     NvU64 gpu_unprotected = uvm_rm_mem_get_gpu_uvm_va(paired_wlc->conf_computing.static_pb_unprotected_sysmem, gpu);
     char *cpu_unprotected = paired_wlc->conf_computing.static_pb_unprotected_sysmem_cpu;
-    uvm_gpu_semaphore_t *lcic_gpu_semaphore = &lcic->tracking_sem.semaphore;
+
+    uvm_gpu_semaphore_t *lcic_semaphore = &lcic->tracking_sem.semaphore;
     uvm_gpu_address_t notifier_src_entry_addr = lcic->conf_computing.static_notifier_entry_unprotected_sysmem_gpu_va;
     uvm_gpu_address_t notifier_src_exit_addr = lcic->conf_computing.static_notifier_exit_unprotected_sysmem_gpu_va;
-    uvm_gpu_address_t notifier_dst_addr = uvm_rm_mem_get_gpu_va(lcic_gpu_semaphore->conf_computing.notifier,
-                                                                gpu,
-                                                                false);
-    uvm_gpu_address_t encrypted_payload_gpu_va =
-        uvm_rm_mem_get_gpu_va(lcic_gpu_semaphore->conf_computing.encrypted_payload, gpu, false);
+    uvm_gpu_address_t notifier_dst_addr = uvm_gpu_semaphore_get_notifier_gpu_va(lcic_semaphore);
+    uvm_gpu_address_t encrypted_payload_gpu_va = uvm_gpu_semaphore_get_encrypted_payload_gpu_va(lcic_semaphore);
+    uvm_gpu_address_t auth_tag_gpu_va = uvm_gpu_semaphore_get_auth_tag_gpu_va(lcic_semaphore);
     uvm_gpu_address_t semaphore_gpu_va = uvm_gpu_address_virtual(uvm_channel_tracking_semaphore_get_gpu_va(lcic));
-    uvm_gpu_address_t auth_tag_gpu_va = uvm_rm_mem_get_gpu_va(lcic_gpu_semaphore->conf_computing.auth_tag, gpu, false);
-    NvU32 payload_size = sizeof(*lcic->tracking_sem.semaphore.payload);
+    NvU32 payload_size = sizeof(*uvm_gpu_semaphore_get_encrypted_payload_cpu_va(lcic_semaphore));
     NvU32 notifier_size = sizeof(*lcic->conf_computing.static_notifier_entry_unprotected_sysmem_cpu);
 
     NvU64 *lcic_gpfifo_entries;
@@ -3194,12 +3220,8 @@ static NV_STATUS channel_manager_create_conf_computing_pools(uvm_channel_manager
 
     manager->pool_to_use.default_for_type[UVM_CHANNEL_TYPE_SEC2] = sec2_pool;
 
-    // Use the same CE as CPU TO GPU channels for WLC/LCIC
-    // Both need to use the same engine for the fixed schedule to work.
-    // TODO: Bug 3981928: [hcc][uvm] Optimize parameters of WLC/LCIC secure
-    // work launch
-    // Find a metric to select the best CE to use
-    wlc_lcic_ce_index = preferred_ce[UVM_CHANNEL_TYPE_CPU_TO_GPU];
+    // WLC and LCIC must use the same engine for the fixed schedule to work.
+    wlc_lcic_ce_index = preferred_ce[UVM_CHANNEL_TYPE_WLC];
 
     // Create WLC/LCIC pools. This should be done early, CE channels use
     // them for secure launch. The WLC pool must be created before the LCIC.
@@ -3228,14 +3250,10 @@ static NV_STATUS channel_manager_create_conf_computing_pools(uvm_channel_manager
 static NV_STATUS channel_manager_create_pools(uvm_channel_manager_t *manager)
 {
     NV_STATUS status;
-    uvm_channel_type_t type;
     unsigned max_channel_pools;
-    unsigned preferred_ce[UVM_CHANNEL_TYPE_CE_COUNT];
+    unsigned preferred_ce[UVM_CHANNEL_TYPE_COUNT];
 
-    for (type = 0; type < ARRAY_SIZE(preferred_ce); type++)
-        preferred_ce[type] = UVM_COPY_ENGINE_COUNT_MAX;
-
-    status = channel_manager_pick_copy_engines(manager, preferred_ce);
+    status = channel_manager_pick_ces(manager, preferred_ce);
     if (status != NV_OK)
         return status;
 
@@ -3496,7 +3514,7 @@ static void uvm_channel_print_info(uvm_channel_t *channel, struct seq_file *s)
     UVM_SEQ_OR_DBG_PRINT(s, "get                %u\n", channel->gpu_get);
     UVM_SEQ_OR_DBG_PRINT(s, "put                %u\n", channel->cpu_put);
     UVM_SEQ_OR_DBG_PRINT(s, "Semaphore GPU VA   0x%llx\n", uvm_channel_tracking_semaphore_get_gpu_va(channel));
-    UVM_SEQ_OR_DBG_PRINT(s, "Semaphore CPU VA   0x%llx\n", (NvU64)(uintptr_t)channel->tracking_sem.semaphore.payload);
+    UVM_SEQ_OR_DBG_PRINT(s, "Semaphore CPU VA   0x%llx\n", (NvU64)uvm_gpu_semaphore_get_cpu_va(&channel->tracking_sem.semaphore));
 
     channel_pool_unlock(channel->pool);
 }

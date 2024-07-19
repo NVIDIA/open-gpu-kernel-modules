@@ -123,7 +123,6 @@ struct VaSpaceApi {
 
     // Data members
     struct OBJVASPACE *pVASpace;
-    NvBool bDuped;
 };
 
 #ifndef __NVOC_CLASS_VaSpaceApi_TYPEDEF__

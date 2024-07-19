@@ -34,9 +34,9 @@
 #include "published/turing/tu102/dev_vm.h"
 #include "published/turing/tu102/hwproject.h"
 #include "published/turing/tu102/dev_nv_xve.h"
+#include "published/turing/tu102/dev_nv_xve3g_vf.h"
 #include "published/turing/tu102/dev_gc6_island.h"
 #include "published/turing/tu102/dev_gc6_island_addendum.h"
-#include "published/turing/tu102/dev_falcon_v4.h"
 
 /*!
  * @brief Returns SR-IOV capabilities
@@ -456,60 +456,40 @@ gpuWaitForGfwBootComplete_TU102
     OBJGPU    *pGpu
 )
 {
-    NvU32     timeoutUs = GPU_GFW_BOOT_COMPLETION_TIMEOUT_US;
-    NvU32     gfwBootProgressVal = 0;
-    RMTIMEOUT timeout;
-    NV_STATUS status = NV_OK;
+    NvU32        timeoutUs = GPU_GFW_BOOT_COMPLETION_TIMEOUT_US;
+    NvU32        gfwBootProgressVal = 0;
+    NV_STATUS    status = NV_OK;
     KernelGsp    *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
     KernelFalcon *pKernelFalcon = staticCast(pKernelGsp, KernelFalcon);
+    NvBool       bGfwBootCompleted = NV_FALSE;
 
-    // Use the OS timer since the GPU timer is not ready yet
-    gpuSetTimeout(pGpu, gpuScaleTimeout(pGpu, timeoutUs), &timeout,
-                  GPU_TIMEOUT_FLAGS_OSTIMER);
+    timeoutUs = gpuScaleTimeout(pGpu, timeoutUs);
 
-    while (status == NV_OK)
-    {
-        if (_gpuIsGfwBootCompleted_TU102(pGpu, NULL, &gfwBootProgressVal))
-        {
-            status = NV_OK;
-            break;
-        }
+    status = kflcnWaitForHalt_HAL(pGpu, pKernelFalcon, timeoutUs, GPU_TIMEOUT_FLAGS_OSTIMER);
 
-        status = gpuCheckTimeout(pGpu, &timeout);
-    }
+    // Get GFW boot progress irrespective of falcon halt status
+    bGfwBootCompleted = _gpuIsGfwBootCompleted_TU102(pGpu, NULL, &gfwBootProgressVal);
 
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "failed to wait for GFW_BOOT: (progress 0x%x)\n",
-                  gfwBootProgressVal);
+        NV_PRINTF(LEVEL_ERROR, "GSP failed to halt with GFW_BOOT: (progress 0x%x)\n", gfwBootProgressVal);
         return status;
     }
 
-    //
-    // GFW runs on GSP, so wait for GSP to halt as well
-    // OS timer need to be used here, hence not using wrapper kflcnWaitForHalt_HAL
-    //
-    while (status == NV_OK)
+    if (!bGfwBootCompleted)
     {
-        if (FLD_TEST_DRF(_PFALCON, _FALCON, _CPUCTL_HALTED, _TRUE,
-                         kflcnRegRead_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_CPUCTL)))
-        {
-            return NV_OK;
-        }
-
-        status = gpuCheckTimeout(pGpu, &timeout);
+        NV_PRINTF(LEVEL_ERROR, "failed to wait for GFW_BOOT: (progress 0x%x)\n", gfwBootProgressVal);
+        return NV_ERR_NOT_READY;
     }
 
-    NV_PRINTF(LEVEL_ERROR, "GSP failed to halt after GFW completion\n");
-
-    return status;
+    return NV_OK;
 }
 
 //
 // Workaround for Bug 3809777.
 //
 // This function is not created through HAL infrastructure. It needs to be
-// called when OBJGPU is not created. HAL infrastructure can’t be used for
+// called when OBJGPU is not created. HAL infrastructure can't be used for
 // this case, so it has been added manually. It will be invoked directly by
 // gpumgrIsDeviceMsixAllowed() after checking the GPU architecture.
 //
@@ -521,7 +501,7 @@ gpuWaitForGfwBootComplete_TU102
 // devinit will run in the background. During this time, the hypervisor can
 // assume that MSI-X capability is present in the GPU and configure the guest
 // GPU PCIe device instance with MSI-X capability. When GPU tries to use the
-// MSI-X interrupts later, then interrupt won’t be triggered. To identify
+// MSI-X interrupts later, then interrupt won't be triggered. To identify
 // this case, wait for GPU devinit completion and check if MSI-X capability
 // is not hidden.
 //

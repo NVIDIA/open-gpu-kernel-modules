@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -87,7 +87,7 @@ halmgrCreateHal_IMPL
     return NV_OK;
 }
 
-POBJHAL
+OBJHAL *
 halmgrGetHal_IMPL
 (
     OBJHALMGR *pHalMgr,
@@ -138,7 +138,7 @@ _halmgrIsChipSupported
 
     if (pPmcBoot42)
     {
-        if ((DRF_VAL(_PMC, _BOOT_42, _ARCHITECTURE, pPmcBoot42) == chipID[publicHalID].arch) &&
+        if ((gpuGetArchitectureFromPmcBoot42(pPmcBoot42) == chipID[publicHalID].arch) &&
             (DRF_VAL(_PMC, _BOOT_42, _IMPLEMENTATION, pPmcBoot42) == chipID[publicHalID].impl))
         {
             retVal = NV_TRUE;

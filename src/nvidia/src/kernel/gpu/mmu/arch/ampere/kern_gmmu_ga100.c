@@ -317,7 +317,7 @@ kgmmuIsP2PUnboundInstFault_GA100
 )
 {
     if ((faultType ==  NV_PFAULT_FAULT_TYPE_UNBOUND_INST_BLOCK) &&
-       ((faultClientId >= NV_PFAULT_CLIENT_HUB_PTP_X0 && faultClientId <= NV_PFAULT_CLIENT_HUB_PTP_X5)))
+       ((faultClientId >= NV_PFAULT_CLIENT_HUB_PTP_X0 && faultClientId <= NV_PFAULT_CLIENT_HUB_PTP_X7)))
     {
         return NV_TRUE;
     }
@@ -342,7 +342,7 @@ kgmmuIsP2PUnboundInstFault_GA100
 NV_STATUS
 kgmmuServiceMmuFault_GA100
 (
-    POBJGPU                  pGpu,
+    OBJGPU                  *pGpu,
     KernelGmmu              *pKernelGmmu,
     NvP64                    pParsedFaultInfo,
     FIFO_MMU_EXCEPTION_DATA *pMmuExceptionData

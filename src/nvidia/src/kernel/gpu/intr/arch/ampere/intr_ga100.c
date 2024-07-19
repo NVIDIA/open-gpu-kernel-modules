@@ -24,7 +24,7 @@
 #include "core/core.h"
 #include "kernel/gpu/intr/intr.h"
 #include "gpu/gpu.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "os/os.h"
 
 #include "published/ampere/ga100/dev_vm.h"

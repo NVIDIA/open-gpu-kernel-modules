@@ -491,6 +491,7 @@ typedef enum
     UvmFaultTypeUnsupportedKind                                                = 13,
     UvmFaultTypeRegionViolation                                                = 14,
     UvmFaultTypePoison                                                         = 15,
+    UvmFaultTypeCcViolation                                                    = 16,
     // ---- Add new values above this line
     UvmEventNumFaultTypes
 } UvmEventFaultType;

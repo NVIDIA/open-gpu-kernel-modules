@@ -5946,10 +5946,10 @@ static void SetHDRLayerCaps(NVDevEvoPtr pDevEvo)
          * TODO: Rework API for per-head layerCaps if this assert trips.
          */
         nvAssert(!hdrLayerCapSet[numLayers[head]] ||
-                 (pDevEvo->caps.layerCaps[numLayers[head]].supportsHDR ==
+                 (pDevEvo->caps.layerCaps[numLayers[head]].supportsICtCp ==
                   pWinCaps->tmoPresent));
 
-        pDevEvo->caps.layerCaps[numLayers[head]].supportsHDR = pWinCaps->tmoPresent;
+        pDevEvo->caps.layerCaps[numLayers[head]].supportsICtCp = pWinCaps->tmoPresent;
 
 #if defined(DEBUG)
         hdrLayerCapSet[numLayers[head]] = TRUE;
@@ -7042,14 +7042,14 @@ static void ForceFlipToNull(
     NVDevEvoPtr pDevEvo,
     NVEvoChannelPtr pChannel,
     NvU32 sd,
-    NVEvoUpdateState *updateState)
+    NVEvoUpdateState *updateState,
+    const NVFlipChannelEvoHwState *pNullHwState)
 {
-    NVFlipChannelEvoHwState hwState = { };
     const NvU32 subDeviceMask = (1 << sd);
 
     nvPushEvoSubDevMask(pDevEvo, subDeviceMask);
 
-    pDevEvo->hal->Flip(pDevEvo, pChannel, &hwState, updateState,
+    pDevEvo->hal->Flip(pDevEvo, pChannel, pNullHwState, updateState,
                        FALSE /* bypassComposition */);
 
     nvPopEvoSubDevMask(pDevEvo);
@@ -7108,6 +7108,7 @@ typedef struct {
         NvU32 accelerators;
         NvBool overridden;
     } window[NVKMS_MAX_WINDOWS_PER_DISP];
+    NVFlipChannelEvoHwState nullEvoHwState;
 } EvoIdleChannelAcceleratorState;
 
 static NvBool EvoForceIdleSatelliteChannelsWithAccel(
@@ -7162,8 +7163,16 @@ static NvBool EvoForceIdleSatelliteChannelsWithAccel(
                 }
                 pAcceleratorState[sd].window[window].overridden = TRUE;
 
-                /* Push a flip to null in this channel. */
-                ForceFlipToNull(pDevEvo, pChannel, sd, &updateState);
+                /*
+                 * Push a flip to null in this channel.
+                 *
+                 * XXX nullEvoHwState isn't a valid state for NULL flip, for
+                 * example 'csc' will be all 0s instead of the identity. This
+                 * will also lead to the HW state being out of sync with the SW
+                 * state.
+                 */
+                ForceFlipToNull(pDevEvo, pChannel, sd, &updateState,
+                                &pAcceleratorState->nullEvoHwState);
             }
         }
     }

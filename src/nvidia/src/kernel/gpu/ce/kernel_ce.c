@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,12 +25,15 @@
 #include "gpu/ce/kernel_ce.h"
 #include "gpu/ce/kernel_ce_private.h"
 #include "gpu/eng_desc.h"
+#include "gpu/mem_mgr/ce_utils.h"
 #include "gpu_mgr/gpu_mgr.h"
 #include "kernel/gpu/intr/intr_service.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "kernel/gpu/nvlink/common_nvlink.h"
 #include "vgpu/sdk-structures.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
+
+#include "gpu/conf_compute/ccsl.h"
 
 NV_STATUS kceConstructEngine_IMPL(OBJGPU *pGpu, KernelCE *pKCe, ENGDESCRIPTOR engDesc)
 {
@@ -42,6 +45,9 @@ NV_STATUS kceConstructEngine_IMPL(OBJGPU *pGpu, KernelCE *pKCe, ENGDESCRIPTOR en
 
     pKCe->publicID = thisPublicID;
     pKCe->bShimOwner = NV_FALSE;
+
+    pKCe->shimInstance = 0;
+    kceSetShimInstance_HAL(pGpu, pKCe);
 
     pKCe->bIsAutoConfigEnabled = NV_TRUE;
     pKCe->bUseGen4Mapping = NV_FALSE;
@@ -90,6 +96,196 @@ NvBool kceIsNewMissingEngineRemovalSequenceEnabled_IMPL(OBJGPU *pGpu, KernelCE *
     return NV_TRUE;
 }
 
+#define CE_FIPS_SELF_TEST_DATA_SIZE 16
+#define CE_FIPS_SELF_TEST_AUTH_TAG_SIZE 16
+#define CE_FIPS_SELF_TEST_IV_SIZE 12
+
+NV_STATUS
+kceRunFipsSelfTest
+(
+    OBJGPU   *pGpu,
+    void     *pArg
+)
+{
+    KernelCE          *pKCe              = pArg;
+    MemoryManager     *pMemoryManager    = GPU_GET_MEMORY_MANAGER(pGpu);
+    KernelMIGManager  *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    MEMORY_DESCRIPTOR *pSrcMemDesc       = NULL;
+    MEMORY_DESCRIPTOR *pDstMemDesc       = NULL;
+    MEMORY_DESCRIPTOR *pAuthMemDesc      = NULL;
+    MEMORY_DESCRIPTOR *pIvMemDesc        = NULL;
+    CeUtils           *pCeUtils          = NULL;
+    pCcslContext       pCcslCtx          = NULL;
+    NV_STATUS          status;
+    NV0050_ALLOCATION_PARAMETERS ceUtilsParams = {0};
+    CEUTILS_MEMCOPY_PARAMS params = {0};
+
+    NvU8 ceTestPlaintext[CE_FIPS_SELF_TEST_DATA_SIZE] = {
+        0x2d, 0x71, 0xbc, 0xfa, 0x91, 0x4e, 0x4a, 0xc0,
+        0x45, 0xb2, 0xaa, 0x60, 0x95, 0x5f, 0xad, 0x24
+    };
+    NvU8 decryptedData[CE_FIPS_SELF_TEST_DATA_SIZE] = { 0 };
+    NvU8 encryptedData[CE_FIPS_SELF_TEST_DATA_SIZE] = { 0 };
+    NvU8 dataAuth[CE_FIPS_SELF_TEST_AUTH_TAG_SIZE] = { 0 };
+
+    NV_ASSERT_OR_RETURN(gpuIsCCFeatureEnabled(pGpu), NV_ERR_NOT_SUPPORTED);
+
+    if (!gpuCheckEngineTable(pGpu, RM_ENGINE_TYPE_COPY(pKCe->publicID)) ||
+        ceIsCeGrce(pGpu, RM_ENGINE_TYPE_COPY(pKCe->publicID)))
+    {
+        // CE doesn't support encryption
+        return NV_OK;
+    }
+
+    if (kmigmgrIsMIGSupported(pGpu, pKernelMIGManager) &&
+        kmigmgrGetStaticInfo(pGpu, pKernelMIGManager) == NULL)
+    {
+        // Wait for KernelMigManager, as it might remap CEs
+        return NV_WARN_MORE_PROCESSING_REQUIRED;
+    }
+
+    NV_PRINTF(LEVEL_INFO, "Running FIPS test for CE%u\n", pKCe->publicID);
+
+    ceUtilsParams.flags |= DRF_DEF(0050_CEUTILS, _FLAGS, _FORCE_CE_ID, _TRUE);
+    ceUtilsParams.flags |= DRF_DEF(0050_CEUTILS, _FLAGS, _CC_SECURE, _TRUE);
+    ceUtilsParams.forceCeId = pKCe->publicID;
+
+    NV_ASSERT_OK_OR_GOTO(status,
+        objCreate(&pCeUtils, pMemoryManager, CeUtils, ENG_GET_GPU(pMemoryManager), NULL, &ceUtilsParams), failed);
+
+    NV_ASSERT_OK_OR_GOTO(status,
+        ccslContextInitViaChannel_HAL(&pCcslCtx, pCeUtils->pChannel->hClient,
+                                      pCeUtils->pChannel->subdeviceId,
+                                      pCeUtils->pChannel->channelId),
+        failed);
+
+    NV_ASSERT_OK_OR_GOTO(status, memdescCreate(&pSrcMemDesc, pGpu, sizeof ceTestPlaintext, 0, NV_TRUE, ADDR_FBMEM,
+                         NV_MEMORY_UNCACHED, MEMDESC_ALLOC_FLAGS_PROTECTED), failed);
+    NV_ASSERT_OK_OR_GOTO(status, memdescAlloc(pSrcMemDesc), failed);
+
+    NV_ASSERT_OK_OR_GOTO(status, memdescCreate(&pDstMemDesc, pGpu, sizeof encryptedData, 0, NV_TRUE, ADDR_SYSMEM,
+                         NV_MEMORY_UNCACHED, MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY), failed);
+    NV_ASSERT_OK_OR_GOTO(status, memdescAlloc(pDstMemDesc), failed);
+
+    NV_ASSERT_OK_OR_GOTO(status, memdescCreate(&pAuthMemDesc, pGpu, sizeof dataAuth, 0, NV_TRUE, ADDR_SYSMEM,
+                         NV_MEMORY_UNCACHED, MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY), failed);
+    NV_ASSERT_OK_OR_GOTO(status, memdescAlloc(pAuthMemDesc), failed);
+
+    NV_ASSERT_OK_OR_GOTO(status, memdescCreate(&pIvMemDesc, pGpu, CE_FIPS_SELF_TEST_IV_SIZE, 0, NV_TRUE, ADDR_SYSMEM,
+                         NV_MEMORY_UNCACHED, MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY), failed);
+    NV_ASSERT_OK_OR_GOTO(status, memdescAlloc(pIvMemDesc), failed);
+
+    TRANSFER_SURFACE srcSurface  = { .pMemDesc = pSrcMemDesc,  .offset = 0 };
+    TRANSFER_SURFACE dstSurface  = { .pMemDesc = pDstMemDesc,  .offset = 0 };
+    TRANSFER_SURFACE authSurface = { .pMemDesc = pAuthMemDesc, .offset = 0 };
+
+    // Write data to allocations, encrypt using CE, and read back the results
+    NV_ASSERT_OK_OR_GOTO(status, memmgrMemDescMemSet(pMemoryManager, pDstMemDesc, 0, 0), failed);
+    NV_ASSERT_OK_OR_GOTO(status, memmgrMemDescMemSet(pMemoryManager, pAuthMemDesc, 0, 0), failed);
+    NV_ASSERT_OK_OR_GOTO(status,
+        memmgrMemWrite(pMemoryManager, &srcSurface, ceTestPlaintext, sizeof ceTestPlaintext, TRANSFER_FLAGS_NONE),
+        failed);
+
+    params.bSecureCopy    = NV_TRUE;
+    params.authTagAddr    = memdescGetPhysAddr(pAuthMemDesc, AT_GPU, 0);
+    params.encryptIvAddr  = memdescGetPhysAddr(pIvMemDesc, AT_GPU, 0);
+    params.pDstMemDesc    = pDstMemDesc;
+    params.dstOffset      = 0;
+    params.pSrcMemDesc    = pSrcMemDesc;
+    params.srcOffset      = 0;
+    params.length         = sizeof ceTestPlaintext;
+    params.bEncrypt       = NV_TRUE;
+    NV_ASSERT_OK_OR_GOTO(status, ceutilsMemcopy(pCeUtils, &params), failed);
+
+    NV_ASSERT_OK_OR_GOTO(status,
+        memmgrMemRead(pMemoryManager, &dstSurface, encryptedData, sizeof encryptedData, TRANSFER_FLAGS_NONE), failed);
+    NV_ASSERT_OK_OR_GOTO(status,
+        memmgrMemRead(pMemoryManager, &authSurface, dataAuth, sizeof dataAuth, TRANSFER_FLAGS_NONE), failed);
+
+    // Decrypt using CPU and validate
+    NV_ASSERT_OK_OR_GOTO(status,
+        ccslDecrypt_HAL(pCcslCtx, sizeof decryptedData, encryptedData, NULL, NV_U32_MAX, NULL, 0, decryptedData, dataAuth),
+        failed);
+
+    NV_ASSERT_TRUE_OR_GOTO(status, portMemCmp(decryptedData, ceTestPlaintext, sizeof ceTestPlaintext) == 0,
+        NV_ERR_INVALID_STATE, failed);
+
+    // Encrypt using CPU
+    NV_ASSERT_OK_OR_GOTO(status,
+        ccslEncrypt_HAL(pCcslCtx, sizeof ceTestPlaintext, ceTestPlaintext, NULL, 0, encryptedData, dataAuth), failed);
+
+    // Write data to allocations, decrypt using CE, read back, and validate
+    NV_ASSERT_OK_OR_GOTO(status,
+        memmgrMemWrite(pMemoryManager, &dstSurface, encryptedData, sizeof encryptedData, TRANSFER_FLAGS_NONE), failed);
+    NV_ASSERT_OK_OR_GOTO(status,
+        memmgrMemWrite(pMemoryManager, &authSurface, dataAuth, sizeof dataAuth, TRANSFER_FLAGS_NONE), failed);
+    NV_ASSERT_OK_OR_GOTO(status, memmgrMemDescMemSet(pMemoryManager, pSrcMemDesc, 0, 0), failed);
+
+    params.pDstMemDesc = pSrcMemDesc;
+    params.dstOffset   = 0;
+    params.pSrcMemDesc = pDstMemDesc;
+    params.srcOffset   = 0;
+    params.length      = sizeof ceTestPlaintext;
+    params.bEncrypt    = NV_FALSE;
+    NV_ASSERT_OK_OR_GOTO(status, ceutilsMemcopy(pCeUtils, &params), failed);
+
+    NV_ASSERT_OK_OR_GOTO(status,
+        memmgrMemRead(pMemoryManager, &srcSurface, decryptedData, sizeof decryptedData, TRANSFER_FLAGS_NONE), failed);
+
+    NV_ASSERT_TRUE_OR_GOTO(status, portMemCmp(decryptedData, ceTestPlaintext, sizeof ceTestPlaintext) == 0,
+        NV_ERR_INVALID_STATE, failed);
+
+failed:
+    ccslContextClear(pCcslCtx);
+    objDelete(pCeUtils);
+    memdescFree(pSrcMemDesc);
+    memdescDestroy(pSrcMemDesc);
+    memdescFree(pDstMemDesc);
+    memdescDestroy(pDstMemDesc);
+    memdescFree(pAuthMemDesc);
+    memdescDestroy(pAuthMemDesc);
+    memdescFree(pIvMemDesc);
+    memdescDestroy(pIvMemDesc);
+
+    NV_PRINTF(LEVEL_INFO, "Test finished with status 0x%x\n", status);
+
+    return status;
+}
+
+NV_STATUS
+kceStateInitLocked_IMPL
+(
+    OBJGPU   *pGpu,
+    KernelCE *pKCe
+)
+{
+    if (!gpuIsCCFeatureEnabled(pGpu) || !IS_SILICON(pGpu))
+    {
+        pKCe->bCcFipsSelfTestRequired = NV_FALSE;
+    }
+
+    if (pKCe->bCcFipsSelfTestRequired)
+    {
+        NV_ASSERT_OK_OR_RETURN(
+            kfifoAddSchedulingHandler(pGpu, GPU_GET_KERNEL_FIFO(pGpu), kceRunFipsSelfTest, pKCe, NULL, NULL));
+    }
+
+    return NV_OK;
+}
+
+void
+kceStateDestroy_IMPL
+(
+    OBJGPU   *pGpu,
+    KernelCE *pKCe
+)
+{
+    if (pKCe->bCcFipsSelfTestRequired)
+    {
+        kfifoRemoveSchedulingHandler(pGpu, GPU_GET_KERNEL_FIFO(pGpu), kceRunFipsSelfTest, pKCe, NULL, NULL);
+    }
+}
+
 static void printCaps(OBJGPU *pGpu, KernelCE *pKCe, RM_ENGINE_TYPE rmEngineType, const NvU8 *capsTbl)
 {
     NV_PRINTF(LEVEL_INFO, "LCE%d caps (engineType = %d (%d))\n", pKCe->publicID,
@@ -106,8 +302,8 @@ static void printCaps(OBJGPU *pGpu, KernelCE *pKCe, RM_ENGINE_TYPE rmEngineType,
     PRINT_CAP(_CE_BL_SIZE_GT_64K_SUPPORTED);
     PRINT_CAP(_CE_SUPPORTS_NONPIPELINED_BL);
     PRINT_CAP(_CE_SUPPORTS_PIPELINED_BL);
-
     PRINT_CAP(_CE_CC_SECURE);
+    PRINT_CAP(_CE_DECOMP_SUPPORTED);
 }
 
 void kceGetNvlinkCaps_IMPL(OBJGPU *pGpu, KernelCE *pKCe, NvU8 *pKCeCaps)
@@ -210,7 +406,7 @@ kceGetCeFromNvlinkConfig_IMPL
     {
         // Check if GPU supports NVLink for SYSMEM
         if (NV2080_CTRL_NVLINK_GET_CAP(nvlinkCaps, NV2080_CTRL_NVLINK_CAPS_SYSMEM_ACCESS))
-            kceGetSysmemRWLCEs(pKCe, pSysmemReadCE, pSysmemWriteCE);
+            kceGetSysmemRWLCEs(pGpu, pKCe, pSysmemReadCE, pSysmemWriteCE);
 
         // Check if GPU supports NVLink for P2P
         if (NV2080_CTRL_NVLINK_GET_CAP(nvlinkCaps, NV2080_CTRL_NVLINK_CAPS_P2P_SUPPORTED))
@@ -376,7 +572,7 @@ NV_STATUS kceTopLevelPceLceMappingsUpdate_IMPL(OBJGPU *pGpu, KernelCE *pKCe)
     // exposeCeMask will be 0x0 when bUpdateNvlinkPceLce is NV_FALSE.
     //
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-    NV2080_CTRL_CE_UPDATE_PCE_LCE_MAPPINGS_PARAMS params = {0};
+    NV2080_CTRL_CE_UPDATE_PCE_LCE_MAPPINGS_V2_PARAMS params = {0};
 
     if (bUpdateNvlinkPceLce)
     {
@@ -395,10 +591,11 @@ NV_STATUS kceTopLevelPceLceMappingsUpdate_IMPL(OBJGPU *pGpu, KernelCE *pKCe)
     params.bUpdateNvlinkPceLce = bUpdateNvlinkPceLce;
 
     // For GSP clients, the update needs to be routed through ctrl call
+    params.shimInstance = pKCe->shimInstance;
     status = pRmApi->Control(pRmApi,
                              pGpu->hInternalClient,
                              pGpu->hInternalSubdevice,
-                             NV2080_CTRL_CMD_CE_UPDATE_PCE_LCE_MAPPINGS,
+                             NV2080_CTRL_CMD_CE_UPDATE_PCE_LCE_MAPPINGS_V2,
                              &params,
                              sizeof(params));
     if (status != NV_OK)
@@ -460,26 +657,29 @@ kceGetAvailableHubPceMask_IMPL
 )
 {
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-    NV2080_CTRL_CE_GET_HUB_PCE_MASK_PARAMS params = {0};
 
     NV_ASSERT_OR_RETURN(pTopoParams != NULL, NV_ERR_INVALID_ARGUMENT);
-    ct_assert(NV_ARRAY_ELEMENTS(pTopoParams->pceAvailableMaskPerHshub) == NV_ARRAY_ELEMENTS(params.hshubPceMasks));
 
+    NV2080_CTRL_CE_GET_HUB_PCE_MASK_V2_PARAMS params = {0};
+    params.shimInstance = pKCe->shimInstance;
+
+    ct_assert(NV_ARRAY_ELEMENTS(pTopoParams->pceAvailableMaskPerConnectingHub) ==
+              NV_ARRAY_ELEMENTS(params.connectingHubPceMasks));
     NV_ASSERT_OK_OR_RETURN(
         pRmApi->Control(pRmApi,
                         pGpu->hInternalClient,
                         pGpu->hInternalSubdevice,
-                        NV2080_CTRL_CMD_CE_GET_HUB_PCE_MASK,
+                        NV2080_CTRL_CMD_CE_GET_HUB_PCE_MASK_V2,
                         &params,
                         sizeof(params))
     );
 
-    portMemCopy(pTopoParams->pceAvailableMaskPerHshub,
-                sizeof(pTopoParams->pceAvailableMaskPerHshub),
-                params.hshubPceMasks,
-                sizeof(pTopoParams->pceAvailableMaskPerHshub));
-    pTopoParams->fbhubPceMask = params.fbhubPceMask;
+    portMemCopy(pTopoParams->pceAvailableMaskPerConnectingHub,
+                sizeof(pTopoParams->pceAvailableMaskPerConnectingHub),
+                params.connectingHubPceMasks,
+                sizeof(pTopoParams->pceAvailableMaskPerConnectingHub));
 
+    pTopoParams->fbhubPceMask = params.fbhubPceMask;
     return NV_OK;
 }
 
@@ -512,8 +712,8 @@ kceFindShimOwner_IMPL
 {
     KernelCE *pKCeLoop;
 
-    KCE_ITER_ALL_BEGIN(pGpu, pKCeLoop, 0)
-        if (pKCeLoop->bShimOwner)
+    KCE_ITER_BEGIN(pGpu, pKCe, pKCeLoop, 0)
+        if (pKCeLoop->bShimOwner && pKCeLoop->shimInstance == pKCe->shimInstance)
         {
             *ppShimKCe = pKCeLoop;
             return NV_OK;
@@ -521,4 +721,87 @@ kceFindShimOwner_IMPL
     KCE_ITER_END
 
     return NV_ERR_INSUFFICIENT_RESOURCES;
+}
+
+/**
+ * Return as mask of LCEs available
+ *
+ * @param[in]   pGpu     OBJGPU pointer
+ *
+ * @return Mask of all available LCEs
+ */
+NvU32
+kceGetLceMask_IMPL
+(
+    OBJGPU *pGpu
+)
+{
+    NvU32 lceAvailableMask = 0;
+    NvU32 i;
+
+    for (i = 0; i < GPU_MAX_CES; i++)
+    {
+        KernelCE *pKCe = GPU_GET_KCE(pGpu, i);
+        if (pKCe != NULL)
+        {
+            lceAvailableMask |= NVBIT(i);
+        }
+    }
+
+    return lceAvailableMask;
+}
+
+/**
+ * Returns the PCE config for the specified LCE type.
+ *
+ * @param[in] pGpu                  OBJGPU pointer
+ * @param[in] pKCe                  CE object pointer
+ * @param[in] lceType               LCE type
+ * @param[out] pNumPcesPerLce       Number of PCEs per LCE
+ * @param[out] pNumLces             Number of LCEs
+ * @param[out] pSupportedPceMask    Mask of PCEs that support the specified LCE type
+ * @param[out] pSupportedLceMask    Mask of LCEs that support the specified LCE type
+ * @param[out] pPcesPerHshub        Number of PCEs that can be assigned per HSHUB for the given LCE type
+ *
+ * @return NV_OK
+ */
+NV_STATUS
+kceGetPceConfigForLceType_IMPL
+(
+    OBJGPU      *pGpu,
+    KernelCE    *pKCe,
+    NvU32       lceType,
+    NvU32       *pNumPcesPerLce,
+    NvU32       *pNumLces,
+    NvU32       *pSupportedPceMask,
+    NvU32       *pSupportedLceMask,
+    NvU32       *pPcesPerHshub
+)
+{
+    RM_API   *pRmApi    = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+    NV_ASSERT_OR_RETURN(pNumPcesPerLce != NULL,     NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pNumLces != NULL,           NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pSupportedPceMask != NULL,  NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pSupportedLceMask != NULL,  NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pPcesPerHshub != NULL,      NV_ERR_INVALID_ARGUMENT);
+
+    NV2080_CTRL_INTERNAL_CE_GET_PCE_CONFIG_FOR_LCE_TYPE_PARAMS pceConfigParams;
+    portMemSet(&pceConfigParams, 0, sizeof(pceConfigParams));
+    pceConfigParams.lceType = lceType;
+
+    NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                                           pGpu->hInternalClient,
+                                           pGpu->hInternalSubdevice,
+                                           NV2080_CTRL_CMD_INTERNAL_CE_GET_PCE_CONFIG_FOR_LCE_TYPE,
+                                           &pceConfigParams,
+                                           sizeof(pceConfigParams)));
+
+    *pNumPcesPerLce       = pceConfigParams.numPces;
+    *pNumLces             = pceConfigParams.numLces;
+    *pSupportedPceMask    = pceConfigParams.supportedPceMask;
+    *pSupportedLceMask    = pceConfigParams.supportedLceMask;
+    *pPcesPerHshub        = pceConfigParams.pcePerHshub;
+
+    return NV_OK;
 }

@@ -82,12 +82,23 @@ MAKE_INTRUSIVE_MAP(SEM_INDEX_LISTENERS,
                    node);
 
 typedef struct {
+    NvHandle hEvent;
+    NvU32 nUsers;
+
+    MapNode node;
+} SEM_NOTIFIER_NODE;
+
+MAKE_INTRUSIVE_MAP(SEM_NOTIFIER,
+                   SEM_NOTIFIER_NODE,
+                   node);
+
+typedef struct {
     PORT_SPINLOCK *pSpinlock;
 
     /* Internal interrupt handler callback data */
     NvHandle hClient;
-    NvHandle hDevice;
-    NvHandle hSubDevice;
+    NvHandle hDevice[NV_MAX_DEVICES];
+    NvHandle hSubDevice[NV_MAX_DEVICES];
     NvHandle hSemaphoreMem;
     NvHandle hMaxSubmittedMem;
     NvHandle *phEvents;
@@ -107,8 +118,18 @@ typedef struct {
     /* Client active CPU waiters list XXX Should be per (offset,value) pair */
     SEM_INDEX_LISTENERS listenerMap;
 
+    /* Map of registered interrupt callbacks by notifier index XXX Should be per (device instance, notifier index) */
+    SEM_NOTIFIER notifierMap;
+
     /* Number of semaphore surface objects sharing this data */
     NvU32 refCount;
+
+    /*
+     * GPU instance used to instantiate this shared data. This can be used to
+     * find the hDevice/hSubDevice handles corresponding to the memory objects
+     * duplicated into the shared data's private RM client.
+     */
+    NvU32 memGpuIdx;
 
     /* True if this semaphore surface supports 64-bit semaphores */
     NvBool bIs64Bit;
@@ -116,6 +137,18 @@ typedef struct {
     /* True if the GPU supports conditional traps/monitored fence */
     NvBool bHasMonitoredFence;
 } SEM_SHARED_DATA;
+
+typedef struct {
+    MapNode node;
+
+    NvU32 gpuIdx;
+    NvU32 numNotifyIndices;
+    NvU32 notifyIndices[NV_SEMAPHORE_SURFACE_CTRL_CMD_BIND_CHANNEL_MAX_INDICES];
+} SEM_CHANNEL_NODE;
+
+MAKE_INTRUSIVE_MAP(SEM_CHANNEL_BINDING,
+                   SEM_CHANNEL_NODE,
+                   node);
 
 
 // Private field names are wrapped in PRIVATE_FIELD, which does nothing for
@@ -144,10 +177,11 @@ struct SemaphoreSurface {
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct SemaphoreSurface *__nvoc_pbase_SemaphoreSurface;    // semsurf
 
-    // Vtable with 30 per-object function pointers
+    // Vtable with 31 per-object function pointers
     NvBool (*__semsurfCanCopy__)(struct SemaphoreSurface * /*this*/);  // inline virtual override (res) base (gpures) body
     NV_STATUS (*__semsurfCtrlCmdRefMemory__)(struct SemaphoreSurface * /*this*/, NV_SEMAPHORE_SURFACE_CTRL_REF_MEMORY_PARAMS *);  // exported (id=0xda0001)
     NV_STATUS (*__semsurfCtrlCmdBindChannel__)(struct SemaphoreSurface * /*this*/, NV_SEMAPHORE_SURFACE_CTRL_BIND_CHANNEL_PARAMS *);  // exported (id=0xda0002)
+    NV_STATUS (*__semsurfCtrlCmdUnbindChannel__)(struct SemaphoreSurface * /*this*/, NV_SEMAPHORE_SURFACE_CTRL_UNBIND_CHANNEL_PARAMS *);  // exported (id=0xda0006)
     NV_STATUS (*__semsurfCtrlCmdRegisterWaiter__)(struct SemaphoreSurface * /*this*/, NV_SEMAPHORE_SURFACE_CTRL_REGISTER_WAITER_PARAMS *);  // exported (id=0xda0003)
     NV_STATUS (*__semsurfCtrlCmdSetValue__)(struct SemaphoreSurface * /*this*/, NV_SEMAPHORE_SURFACE_CTRL_SET_VALUE_PARAMS *);  // exported (id=0xda0004)
     NV_STATUS (*__semsurfCtrlCmdUnregisterWaiter__)(struct SemaphoreSurface * /*this*/, NV_SEMAPHORE_SURFACE_CTRL_UNREGISTER_WAITER_PARAMS *);  // exported (id=0xda0005)
@@ -178,6 +212,7 @@ struct SemaphoreSurface {
 
     // Data members
     SEM_SHARED_DATA *pShared;
+    SEM_CHANNEL_BINDING boundChannelMap;
 };
 
 #ifndef __NVOC_CLASS_SemaphoreSurface_TYPEDEF__
@@ -216,6 +251,8 @@ NV_STATUS __nvoc_objCreate_SemaphoreSurface(SemaphoreSurface**, Dynamic*, NvU32,
 #define semsurfCtrlCmdRefMemory(pSemaphoreSurf, pParams) semsurfCtrlCmdRefMemory_DISPATCH(pSemaphoreSurf, pParams)
 #define semsurfCtrlCmdBindChannel_FNPTR(pSemaphoreSurf) pSemaphoreSurf->__semsurfCtrlCmdBindChannel__
 #define semsurfCtrlCmdBindChannel(pSemaphoreSurf, pParams) semsurfCtrlCmdBindChannel_DISPATCH(pSemaphoreSurf, pParams)
+#define semsurfCtrlCmdUnbindChannel_FNPTR(pSemaphoreSurf) pSemaphoreSurf->__semsurfCtrlCmdUnbindChannel__
+#define semsurfCtrlCmdUnbindChannel(pSemaphoreSurf, pParams) semsurfCtrlCmdUnbindChannel_DISPATCH(pSemaphoreSurf, pParams)
 #define semsurfCtrlCmdRegisterWaiter_FNPTR(pSemaphoreSurf) pSemaphoreSurf->__semsurfCtrlCmdRegisterWaiter__
 #define semsurfCtrlCmdRegisterWaiter(pSemaphoreSurf, pParams) semsurfCtrlCmdRegisterWaiter_DISPATCH(pSemaphoreSurf, pParams)
 #define semsurfCtrlCmdSetValue_FNPTR(pSemaphoreSurf) pSemaphoreSurf->__semsurfCtrlCmdSetValue__
@@ -282,6 +319,10 @@ static inline NV_STATUS semsurfCtrlCmdRefMemory_DISPATCH(struct SemaphoreSurface
 
 static inline NV_STATUS semsurfCtrlCmdBindChannel_DISPATCH(struct SemaphoreSurface *pSemaphoreSurf, NV_SEMAPHORE_SURFACE_CTRL_BIND_CHANNEL_PARAMS *pParams) {
     return pSemaphoreSurf->__semsurfCtrlCmdBindChannel__(pSemaphoreSurf, pParams);
+}
+
+static inline NV_STATUS semsurfCtrlCmdUnbindChannel_DISPATCH(struct SemaphoreSurface *pSemaphoreSurf, NV_SEMAPHORE_SURFACE_CTRL_UNBIND_CHANNEL_PARAMS *pParams) {
+    return pSemaphoreSurf->__semsurfCtrlCmdUnbindChannel__(pSemaphoreSurf, pParams);
 }
 
 static inline NV_STATUS semsurfCtrlCmdRegisterWaiter_DISPATCH(struct SemaphoreSurface *pSemaphoreSurf, NV_SEMAPHORE_SURFACE_CTRL_REGISTER_WAITER_PARAMS *pParams) {
@@ -399,6 +440,8 @@ static inline NvBool semsurfCanCopy_0c883b(struct SemaphoreSurface *pSemSurf) {
 NV_STATUS semsurfCtrlCmdRefMemory_IMPL(struct SemaphoreSurface *pSemaphoreSurf, NV_SEMAPHORE_SURFACE_CTRL_REF_MEMORY_PARAMS *pParams);
 
 NV_STATUS semsurfCtrlCmdBindChannel_IMPL(struct SemaphoreSurface *pSemaphoreSurf, NV_SEMAPHORE_SURFACE_CTRL_BIND_CHANNEL_PARAMS *pParams);
+
+NV_STATUS semsurfCtrlCmdUnbindChannel_IMPL(struct SemaphoreSurface *pSemaphoreSurf, NV_SEMAPHORE_SURFACE_CTRL_UNBIND_CHANNEL_PARAMS *pParams);
 
 NV_STATUS semsurfCtrlCmdRegisterWaiter_IMPL(struct SemaphoreSurface *pSemaphoreSurf, NV_SEMAPHORE_SURFACE_CTRL_REGISTER_WAITER_PARAMS *pParams);
 

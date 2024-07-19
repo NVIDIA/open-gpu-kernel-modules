@@ -104,7 +104,8 @@ struct CrashCatReport {
     struct Object *__nvoc_pbase_Object;    // obj super
     struct CrashCatReport *__nvoc_pbase_CrashCatReport;    // crashcatReport
 
-    // Vtable with 2 per-object function pointers
+    // Vtable with 3 per-object function pointers
+    NV_CRASHCAT_CONTAINMENT (*__crashcatReportSourceContainment__)(struct CrashCatReport * /*this*/);  // halified (2 hals)
     void (*__crashcatReportLogReporter__)(struct CrashCatReport * /*this*/);  // halified (3 hals)
     void (*__crashcatReportLogSource__)(struct CrashCatReport * /*this*/);  // halified (3 hals)
 
@@ -146,6 +147,9 @@ NV_STATUS __nvoc_objCreate_CrashCatReport(CrashCatReport**, Dynamic*, NvU32,
 
 
 // Wrapper macros
+#define crashcatReportSourceContainment_FNPTR(arg_this) arg_this->__crashcatReportSourceContainment__
+#define crashcatReportSourceContainment(arg_this) crashcatReportSourceContainment_DISPATCH(arg_this)
+#define crashcatReportSourceContainment_HAL(arg_this) crashcatReportSourceContainment_DISPATCH(arg_this)
 #define crashcatReportLogReporter_FNPTR(arg_this) arg_this->__crashcatReportLogReporter__
 #define crashcatReportLogReporter(arg_this) crashcatReportLogReporter_DISPATCH(arg_this)
 #define crashcatReportLogReporter_HAL(arg_this) crashcatReportLogReporter_DISPATCH(arg_this)
@@ -154,6 +158,10 @@ NV_STATUS __nvoc_objCreate_CrashCatReport(CrashCatReport**, Dynamic*, NvU32,
 #define crashcatReportLogSource_HAL(arg_this) crashcatReportLogSource_DISPATCH(arg_this)
 
 // Dispatch functions
+static inline NV_CRASHCAT_CONTAINMENT crashcatReportSourceContainment_DISPATCH(struct CrashCatReport *arg_this) {
+    return arg_this->__crashcatReportSourceContainment__(arg_this);
+}
+
 static inline void crashcatReportLogReporter_DISPATCH(struct CrashCatReport *arg_this) {
     arg_this->__crashcatReportLogReporter__(arg_this);
 }
@@ -301,6 +309,12 @@ static inline void crashcatReportLogIo32State(struct CrashCatReport *arg1) {
 #endif //__nvoc_crashcat_report_h_disabled
 
 #define crashcatReportLogIo32State_HAL(arg1) crashcatReportLogIo32State(arg1)
+
+static inline NV_CRASHCAT_CONTAINMENT crashcatReportSourceContainment_3e9f29(struct CrashCatReport *arg1) {
+    return NV_CRASHCAT_CONTAINMENT_UNSPECIFIED;
+}
+
+NV_CRASHCAT_CONTAINMENT crashcatReportSourceContainment_V1_LIBOS3(struct CrashCatReport *arg1);
 
 void crashcatReportLogReporter_V1_GENERIC(struct CrashCatReport *arg1);
 

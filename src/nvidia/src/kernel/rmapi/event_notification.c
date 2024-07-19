@@ -40,7 +40,7 @@
 #include "mem_mgr/mem.h"
 #include "kernel/gpu/gpu_engine_type.h"
 #include "platform/sli/sli.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 
@@ -453,6 +453,36 @@ eventGetEngineTypeFromSubNotifyIndex
         case NV2080_NOTIFIERS_CE9:
             *pRmEngineId = RM_ENGINE_TYPE_COPY9;
             break;
+        case NV2080_NOTIFIERS_CE10:
+            *pRmEngineId = RM_ENGINE_TYPE_COPY10;
+            break;
+        case NV2080_NOTIFIERS_CE11:
+            *pRmEngineId = RM_ENGINE_TYPE_COPY11;
+            break;
+        case NV2080_NOTIFIERS_CE12:
+            *pRmEngineId = RM_ENGINE_TYPE_COPY12;
+            break;
+        case NV2080_NOTIFIERS_CE13:
+            *pRmEngineId = RM_ENGINE_TYPE_COPY13;
+            break;
+        case NV2080_NOTIFIERS_CE14:
+            *pRmEngineId = RM_ENGINE_TYPE_COPY14;
+            break;
+        case NV2080_NOTIFIERS_CE15:
+            *pRmEngineId = RM_ENGINE_TYPE_COPY15;
+            break;
+        case NV2080_NOTIFIERS_CE16:
+            *pRmEngineId = RM_ENGINE_TYPE_COPY16;
+            break;
+        case NV2080_NOTIFIERS_CE17:
+            *pRmEngineId = RM_ENGINE_TYPE_COPY17;
+            break;
+        case NV2080_NOTIFIERS_CE18:
+            *pRmEngineId = RM_ENGINE_TYPE_COPY18;
+            break;
+        case NV2080_NOTIFIERS_CE19:
+            *pRmEngineId = RM_ENGINE_TYPE_COPY19;
+            break;
         case NV2080_NOTIFIERS_GR0:
             *pRmEngineId = RM_ENGINE_TYPE_GR0;
             break;
@@ -547,6 +577,9 @@ eventGetEngineTypeFromSubNotifyIndex
             break;
         case NV2080_NOTIFIERS_OFA0:
             *pRmEngineId = RM_ENGINE_TYPE_OFA0;
+            break;
+        case NV2080_NOTIFIERS_OFA1:
+            *pRmEngineId = RM_ENGINE_TYPE_OFA1;
             break;
         default:
             NV_PRINTF(LEVEL_WARNING,

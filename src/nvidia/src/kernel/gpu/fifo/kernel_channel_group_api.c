@@ -43,6 +43,7 @@
 #include "gpu/mem_mgr/vaspace_api.h"
 #include "vgpu/rpc.h"
 #include "rmapi/rs_utils.h"
+#include "containers/eheap_old.h"
 
 NV_STATUS
 kchangrpapiConstruct_IMPL
@@ -1431,3 +1432,4 @@ kchangrpapiCtrlCmdGetInterleaveLevel_IMPL
 
     return NV_OK;
 }
+

@@ -94,6 +94,16 @@ void __nvoc_init_halspec_ChipHal(ChipHal *pChipHal, NvU32 arch, NvU32 impl, NvU3
     {
         pChipHal->__nvoc_HalVarIdx = 60;
     }
+    // GB100
+    else if(arch == 0x1A && impl == 0x0)
+    {
+        pChipHal->__nvoc_HalVarIdx = 62;
+    }
+    // GB102
+    else if(arch == 0x1A && impl == 0x2)
+    {
+        pChipHal->__nvoc_HalVarIdx = 63;
+    }
 }
 
 void __nvoc_init_halspec_TegraChipHal(TegraChipHal *pTegraChipHal, TEGRA_CHIP_TYPE tegraType)

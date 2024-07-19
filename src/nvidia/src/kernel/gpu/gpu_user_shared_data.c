@@ -35,8 +35,8 @@
 
 static NV_STATUS _gpushareddataInitGsp(OBJGPU *pGpu);
 static NV_STATUS _gpushareddataRequestDataPoll(GpuUserSharedData *pData, NvU64 polledDataMask);
-static inline void _gpushareddataUpdateSeqOpen(NV00DE_SHARED_DATA *pSharedData);
-static inline void _gpushareddataUpdateSeqClose(NV00DE_SHARED_DATA *pSharedData);
+static inline void _gpushareddataUpdateSeqOpen(volatile NvU64 *pSeq);
+static inline void _gpushareddataUpdateSeqClose(volatile NvU64 *pSeq);
 
 NV_STATUS
 gpushareddataConstruct_IMPL
@@ -101,35 +101,39 @@ gpushareddataDestruct_IMPL(GpuUserSharedData *pData)
     memDestructCommon(pMemory);
 }
 
+// Called before starting a non-polled data write, changes seq valid->invalid
 static inline void
 _gpushareddataUpdateSeqOpen
 (
-    NV00DE_SHARED_DATA *pSharedData
+    volatile NvU64 *pSeq
 )
 {
-    portAtomicExAddU64(&pSharedData->seq, RUSD_SEQ_BASE0);
+    // Initialize seq to RUSD_SEQ_START at first write. If never written before, seq is treated as an invalid timestamp
+    if (*pSeq == 0LLU)
+    {
+        portAtomicExSetU64(pSeq, RUSD_SEQ_START + 1);
+    }
+    else
+    {
+        portAtomicExIncrementU64(pSeq);
+    }
+
     portAtomicMemoryFenceStore();
+
+    NV_ASSERT(!RUSD_SEQ_DATA_VALID(*pSeq));
 }
 
+// Called after finishing a non-polled data write, changes seq invalid->valid
 static inline void
 _gpushareddataUpdateSeqClose
 (
-    NV00DE_SHARED_DATA *pSharedData
+    volatile NvU64 *pSeq
 )
 {
-    NvU64 curVal, coeff1;
+    portAtomicExIncrementU64(pSeq);
     portAtomicMemoryFenceStore();
-    curVal = portAtomicExAddU64(&pSharedData->seq, RUSD_SEQ_BASE1);
-    coeff1 = RUSD_SEQ_COEFF1(curVal);
 
-    // Debug assert to ensure we're not in an invalid state
-    NV_ASSERT(coeff1 <= RUSD_SEQ_COEFF0(curVal));
-
-    if ((coeff1 % RUSD_SEQ_WRAP_VAL) == 0)
-    {
-        portAtomicExSubU64(&pSharedData->seq, RUSD_SEQ_WRAP_VAL * (RUSD_SEQ_BASE1 + RUSD_SEQ_BASE0));
-    }
-    portAtomicMemoryFenceStore();
+    NV_ASSERT(RUSD_SEQ_DATA_VALID(*pSeq));
 }
 
 
@@ -139,28 +143,39 @@ gpushareddataCanCopy_IMPL(GpuUserSharedData *pData)
     return NV_TRUE;
 }
 
-NV00DE_SHARED_DATA * gpushareddataWriteStart(OBJGPU *pGpu)
+NV00DE_SHARED_DATA * gpushareddataWriteStart_INTERNAL(OBJGPU *pGpu, NvU64 offset)
 {
     NV00DE_SHARED_DATA *pSharedData = (NV00DE_SHARED_DATA *) pGpu->userSharedData.pMapBuffer;
+
     if (pSharedData == NULL)
     {
         pSharedData = &pGpu->userSharedData.data;
     }
     
-    _gpushareddataUpdateSeqOpen(pSharedData);
+    _gpushareddataUpdateSeqOpen((volatile NvU64*)(((NvU8*)pSharedData) + offset));
 
     return pSharedData;
 }
 
-void gpushareddataWriteFinish(OBJGPU *pGpu)
+void gpushareddataWriteFinish_INTERNAL(OBJGPU *pGpu, NvU64 offset)
 {
     NV00DE_SHARED_DATA *pSharedData = (NV00DE_SHARED_DATA *) pGpu->userSharedData.pMapBuffer;
+
     if (pSharedData == NULL)
     {
         pSharedData = &pGpu->userSharedData.data;
     }
-    
-    _gpushareddataUpdateSeqClose(pSharedData);
+
+    _gpushareddataUpdateSeqClose((volatile NvU64*)(((NvU8*)pSharedData) + offset));
+
+    // Clone data until UMDs can migrate to new data locations across branches
+    // TODO Remove this
+    if (offset == NV_OFFSETOF(NV00DE_SHARED_DATA, bar1MemoryInfo))
+    {
+        pSharedData->bar1Size = pSharedData->bar1MemoryInfo.bar1Size;
+        pSharedData->bar1AvailSize = pSharedData->bar1MemoryInfo.bar1AvailSize;
+        pSharedData->seq = pSharedData->bar1MemoryInfo.lastModifiedTimestamp;
+    }
 }
 
 static NV_STATUS

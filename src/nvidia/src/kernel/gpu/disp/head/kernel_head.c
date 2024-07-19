@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,8 +22,9 @@
  */
 
 #define RM_STRICT_CONFIG_EMIT_DISP_ENGINE_DEFINITIONS     0
+#include "gpu/disp/kern_disp.h"
 #include "gpu/disp/head/kernel_head.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 
 NV_STATUS
 kheadConstruct_IMPL(KernelHead *pKernelHead)
@@ -407,6 +408,31 @@ kheadWriteVblankIntrState_IMPL
     {
         kheadWriteVblankIntrEnable_HAL(pGpu, pKernelHead, enablehw);
 
+    }
+}
+
+void
+kheadProcessRgLineCallbacks_KERNEL
+(
+    OBJGPU       *pGpu,
+    KernelHead   *pKernelHead,
+    NvU32         head,
+    NvU32        *headIntrMask,
+    NvU32        *clearIntrMask,
+    NvBool        bIsIrqlIsr
+)
+{
+    KernelDisplay *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+    NvU32 rgIntrMask[MAX_RG_LINE_CALLBACKS_PER_HEAD] = {headIntr_RgLineA, headIntr_RgLineB};
+    NvU32 rgIntr;
+
+    for (rgIntr = 0; rgIntr < MAX_RG_LINE_CALLBACKS_PER_HEAD; rgIntr++)
+    {
+        if (*headIntrMask & rgIntrMask[rgIntr])
+        {
+            kdispInvokeRgLineCallback(pKernelDisplay, head, rgIntr, bIsIrqlIsr);
+            *clearIntrMask |= rgIntrMask[rgIntr];
+        }
     }
 }
 

@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -344,6 +344,8 @@ static inline NV_STATUS zbcapiConstructHal_56cd7a(struct ZbcApi *pZbcApi, struct
     return NV_OK;
 }
 
+NV_STATUS zbcapiConstructHal_IMPL(struct ZbcApi *pZbcApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+
 
 #ifdef __nvoc_zbc_api_h_disabled
 static inline NV_STATUS zbcapiConstructHal(struct ZbcApi *pZbcApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
@@ -359,6 +361,8 @@ static inline NV_STATUS zbcapiConstructHal(struct ZbcApi *pZbcApi, struct CALL_C
 static inline void zbcapiDestruct_b3696a(struct ZbcApi *pZbcApi) {
     return;
 }
+
+void zbcapiDestruct_IMPL(struct ZbcApi *pZbcApi);
 
 
 #define __nvoc_zbcapiDestruct(pZbcApi) zbcapiDestruct_b3696a(pZbcApi)

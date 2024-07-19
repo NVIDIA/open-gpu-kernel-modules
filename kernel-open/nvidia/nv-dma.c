@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1089,40 +1089,3 @@ void NV_API_CALL nv_dma_release_sgt
 {
 }
 #endif /* NV_LINUX_DMA_BUF_H_PRESENT && NV_DRM_AVAILABLE && NV_DRM_DRM_GEM_H_PRESENT */
-
-#if defined(NV_LINUX_DMA_BUF_H_PRESENT)
-#endif /* NV_LINUX_DMA_BUF_H_PRESENT */
-
-#ifndef IMPORT_DMABUF_FUNCTIONS_DEFINED
-
-NV_STATUS NV_API_CALL nv_dma_import_dma_buf
-(
-    nv_dma_device_t *dma_dev,
-    struct dma_buf *dma_buf,
-    NvU32 *size,
-    struct sg_table **sgt,
-    nv_dma_buf_t **import_priv
-)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS NV_API_CALL nv_dma_import_from_fd
-(
-    nv_dma_device_t *dma_dev,
-    NvS32 fd,
-    NvU32 *size,
-    struct sg_table **sgt,
-    nv_dma_buf_t **import_priv
-)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-void NV_API_CALL nv_dma_release_dma_buf
-(
-    nv_dma_buf_t *import_priv
-)
-{
-}
-#endif /* !IMPORT_DMABUF_FUNCTIONS_DEFINED */

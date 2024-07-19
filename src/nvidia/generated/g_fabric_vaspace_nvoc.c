@@ -147,12 +147,12 @@ static NV_STATUS __nvoc_up_thunk_OBJVASPACE_fabricvaspaceReserveMempool(struct F
 }
 
 // fabricvaspaceGetHeap: inline virtual inherited (vaspace) base (vaspace) body
-static struct OBJEHEAP * __nvoc_up_thunk_OBJVASPACE_fabricvaspaceGetHeap(struct FABRIC_VASPACE *pVAS) {
+static OBJEHEAP * __nvoc_up_thunk_OBJVASPACE_fabricvaspaceGetHeap(struct FABRIC_VASPACE *pVAS) {
     return vaspaceGetHeap((struct OBJVASPACE *)(((unsigned char *) pVAS) + __nvoc_rtti_FABRIC_VASPACE_OBJVASPACE.offset));
 }
 
 // fabricvaspaceGetMapPageSize: inline virtual inherited (vaspace) base (vaspace) body
-static NvU64 __nvoc_up_thunk_OBJVASPACE_fabricvaspaceGetMapPageSize(struct FABRIC_VASPACE *pVAS, struct OBJGPU *pGpu, struct EMEMBLOCK *pMemBlock) {
+static NvU64 __nvoc_up_thunk_OBJVASPACE_fabricvaspaceGetMapPageSize(struct FABRIC_VASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock) {
     return vaspaceGetMapPageSize((struct OBJVASPACE *)(((unsigned char *) pVAS) + __nvoc_rtti_FABRIC_VASPACE_OBJVASPACE.offset), pGpu, pMemBlock);
 }
 

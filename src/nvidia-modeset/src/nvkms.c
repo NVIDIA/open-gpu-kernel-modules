@@ -2694,7 +2694,7 @@ static NvBool RegisterSurface(struct NvKmsPerOpen *pOpen,
 
     nvEvoRegisterSurface(pOpenDev->pDevEvo, pOpenDev, pParams,
                          NvHsMapPermissionsReadOnly);
-    return TRUE;
+    return pParams->reply.surfaceHandle != 0;
 }
 
 
@@ -4899,6 +4899,24 @@ static NvBool AccelVblankSemControls(
                 hwHeadMask);
 }
 
+static NvBool VrrSignalSemaphore(
+    struct NvKmsPerOpen *pOpen,
+    void *pParamsVoid)
+{
+    struct NvKmsPerOpenDev *pOpenDev;
+
+    const struct NvKmsVrrSignalSemaphoreParams *pParams = pParamsVoid;
+    NvS32 vrrSemaphoreIndex = pParams->request.vrrSemaphoreIndex;
+
+    pOpenDev = GetPerOpenDev(pOpen, pParams->request.deviceHandle);
+    if (pOpenDev == NULL) {
+        return FALSE;
+    }
+
+    nvVrrSignalSemaphore(pOpenDev->pDevEvo, vrrSemaphoreIndex);
+    return TRUE;
+}
+
 /*!
  * Perform the ioctl operation requested by the client.
  *
@@ -5024,6 +5042,7 @@ NvBool nvKmsIoctl(
         ENTRY(NVKMS_IOCTL_ENABLE_VBLANK_SEM_CONTROL, EnableVblankSemControl),
         ENTRY(NVKMS_IOCTL_DISABLE_VBLANK_SEM_CONTROL, DisableVblankSemControl),
         ENTRY(NVKMS_IOCTL_ACCEL_VBLANK_SEM_CONTROLS, AccelVblankSemControls),
+        ENTRY(NVKMS_IOCTL_VRR_SIGNAL_SEMAPHORE, VrrSignalSemaphore),
     };
 
     struct NvKmsPerOpen *pOpen = pOpenVoid;

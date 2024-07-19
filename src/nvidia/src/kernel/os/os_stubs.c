@@ -30,55 +30,34 @@
 
 #include "os/os_stub.h"
 
-//
-// Here's a little debugging tool. It is possible that some code is stubbed for
-// certain OS's that shouldn't be. In debug mode, the stubs below will dump out
-// a stub 'number' to help you identify any stubs that are getting called. You
-// can then evaluate whether or not that is correct.
-//
-// Highest used STUB_CHECK is 237.
-//
-#if defined(DEBUG)
-#define STUB_CHECK(n) _stubCallCheck(n)
-
-int enableOsStubCallCheck = 0;
-
-static void _stubCallCheck(int funcNumber)
-{
-    if (enableOsStubCallCheck) {
-        NV_PRINTF(LEVEL_INFO, "STUB CALL: %d \r\n", funcNumber);
-    }
-}
-
-#else
-#define STUB_CHECK(n)
-#endif // DEBUG
-
-struct OBJCL;
-
 void osQADbgRegistryInit(void)
 {
     return;
 }
 
-NvU32 stubOsnv_rdcr4(OBJOS *pOS)
+#if !(RMCFG_FEATURE_PLATFORM_WINDOWS && NVCPU_IS_X86_64) &&            \
+    !(RMCFG_FEATURE_PLATFORM_UNIX && NVCPU_IS_X86_64) &&               \
+    !RMCFG_FEATURE_PLATFORM_MODS
+NvU32 osNv_rdcr4(void)
 {
-    STUB_CHECK(76);
+    return 0;
+}
+#endif
+
+NvU64 osNv_rdxcr0(void)
+{
     return 0;
 }
 
-NvU64 stubOsnv_rdxcr0(OBJOS *pOs)
+#if !(RMCFG_FEATURE_PLATFORM_WINDOWS && NVCPU_IS_X86_64) &&            \
+    !(RMCFG_FEATURE_PLATFORM_UNIX && NVCPU_IS_X86_64) &&               \
+    !RMCFG_FEATURE_PLATFORM_MODS
+int osNv_cpuid(int arg1, int arg2, NvU32 *arg3,
+               NvU32 *arg4, NvU32 *arg5, NvU32 *arg6)
 {
-    STUB_CHECK(237);
     return 0;
 }
-
-int stubOsnv_cpuid(OBJOS *pOS, int arg1, int arg2, NvU32 *arg3,
-                   NvU32 *arg4, NvU32 *arg5, NvU32 *arg6)
-{
-    STUB_CHECK(77);
-    return 0;
-}
+#endif
 
 NV_STATUS osSimEscapeWrite(OBJGPU *pGpu, const char *path, NvU32 Index, NvU32 Size, NvU32 Value)
 {
@@ -209,12 +188,6 @@ NV_STATUS osSetupVBlank(OBJGPU *pGpu, void * pProc,
                         void * pParm1, void * pParm2, NvU32 Head, void * pParm3)
 {
     return NV_OK;
-}
-
-NV_STATUS stubOsObjectEventNotification(NvHandle hClient, NvHandle hObject, NvU32 hClass, PEVENTNOTIFICATION pNotifyEvent,
-                                    NvU32 notifyIndex, void * pEventData, NvU32 eventDataSize)
-{
-    return NV_ERR_NOT_SUPPORTED;
 }
 
 RmPhysAddr
@@ -824,3 +797,11 @@ osTegraSocDpUphyPllDeInit(OS_GPU_INFO *pOsGpuInfo)
 #endif
 
 
+NV_STATUS osGetPcieCplAtomicsCaps
+(
+    OS_GPU_INFO *pOsGpuInfo,
+    NvU32       *pMask
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}

@@ -22,7 +22,7 @@
  */
 
 #include "core/core.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "os/os.h"
 #include "gpu/gpu.h"
 #include "class/cl0080.h"
@@ -327,4 +327,19 @@ gpuGetSkuInfo_VF
                 sizeof(NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS));
 
     return NV_OK;
+}
+
+void
+gpuDetermineMIGSupport_VF
+(
+    OBJGPU *pGpu
+)
+{
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+
+    if (pVSI->gpuPartitionInfo.swizzId == KMIGMGR_SWIZZID_INVALID)
+    {
+            pGpu->setProperty(pGpu, PDB_PROP_GPU_MIG_SUPPORTED, NV_FALSE);
+    }
+
 }

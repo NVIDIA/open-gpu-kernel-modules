@@ -372,6 +372,9 @@ _gmmuPrintPte
 
     switch (mmuFmtLevelPageSize(pFmtLevel))
     {
+        case RM_PAGE_SIZE_256G:
+            NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "PTE_256G");
+            break;
         case RM_PAGE_SIZE_512M:
             NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "PTE_512M");
             break;

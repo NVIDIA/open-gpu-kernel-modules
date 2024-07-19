@@ -37,6 +37,7 @@
 #include "uvm_global.h"
 #include "uvm_gpu.h"
 #include "uvm_mmu.h"
+#include "uvm_hal.h"
 #include "uvm_push_macros.h"
 #include "uvm_pascal_fault_buffer.h"
 #include "hwref/pascal/gp100/dev_fault.h"

@@ -37,6 +37,7 @@ typedef enum _NVAModelConfig {
     NV_AMODEL_AMPERE,
     NV_AMODEL_ADA,
     NV_AMODEL_HOPPER,
+    NV_AMODEL_BLACKWELL,
 } NVAModelConfig;
 
 #endif /* __NV_AMODEL_ENUM_H__ */

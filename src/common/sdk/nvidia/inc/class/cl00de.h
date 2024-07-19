@@ -36,36 +36,54 @@ extern "C" {
 #define RUSD_TIMESTAMP_WRITE_IN_PROGRESS (NV_U64_MAX)
 #define RUSD_TIMESTAMP_INVALID           0
 
-// seq = c_0 * b_0 + c_1 * (b_0 - 1)  where c_0 == open_count and c_1 == close_count
-// When they are equal, data is valid, otherwise data is being written.
-// b_0 == 1 mod (b_0 - 1) and b_0 - 1 == (-1) mod b_0
-// So, c_0 == seq mod (b_0 - 1) and c_1 == (-1 * seq) mod b_0
-// c_1 cannot be calculated quite so naively because negative modulos aren't fun, so we
-// instead do c_1 == (b_0 - (seq mod b_0)) mod b_0
-//
-#define RUSD_SEQ_BASE_SHIFT 20llu
-#define RUSD_SEQ_BASE0 (1llu << RUSD_SEQ_BASE_SHIFT)
-#define RUSD_SEQ_BASE1 (RUSD_SEQ_BASE0 - 1llu)
-#define RUSD_SEQ_COEFF1(x) ((RUSD_SEQ_BASE0 - ((x) % RUSD_SEQ_BASE0)) % RUSD_SEQ_BASE0)
-#define RUSD_SEQ_COEFF0(x) ((x) % RUSD_SEQ_BASE1)
-#define RUSD_SEQ_WRAP_SHIFT 18llu
-#define RUSD_SEQ_WRAP_VAL (1llu << RUSD_SEQ_WRAP_SHIFT)
-#define RUSD_SEQ_DATA_VALID(x) (RUSD_SEQ_COEFF0(x) == RUSD_SEQ_COEFF1(x))
+#define RUSD_SEQ_START (0xFF00000000000000LLU)
+
+#define RUSD_SEQ_DATA_VALID(x) \
+    ((((x) < RUSD_SEQ_START)  && ((x) != RUSD_TIMESTAMP_INVALID)) || \
+     (((x) >= RUSD_SEQ_START) && (((x) & 0x1LLU) == 0x0LLU)))
 
 //
 // Helper macros to check seq before reading RUSD.
 // No dowhile wrap as it is using continue/break
 //
-#define RUSD_SEQ_CHECK1(SHARED_DATA)    \
-    NvU64 seq = (SHARED_DATA)->seq;     \
-    portAtomicMemoryFenceLoad();        \
-    if (!RUSD_SEQ_DATA_VALID(seq))      \
+#define RUSD_SEQ_CHECK1(dataField)                           \
+    NvU64 RUSD_SEQ = (dataField)->lastModifiedTimestamp;     \
+    portAtomicMemoryFenceLoad();                             \
+    if (!RUSD_SEQ_DATA_VALID(RUSD_SEQ))                      \
          continue;
 
-#define RUSD_SEQ_CHECK2(SHARED_DATA)    \
-    portAtomicMemoryFenceLoad();        \
-    if (seq == (SHARED_DATA)->seq)      \
+#define RUSD_SEQ_CHECK2(dataField)                           \
+    portAtomicMemoryFenceLoad();                             \
+    if (RUSD_SEQ == (dataField)->lastModifiedTimestamp)      \
          break;
+
+//
+// Read RUSD data field `dataField` from NV00DE_SHARED_DATA struct `pSharedData` into destination pointer `pDst`
+// `pDst` should be the data struct type matching `dataField`
+// Check (pDst)->lastModifiedTimestamp using RUSD_IS_DATA_STALE to verify data validity.
+//
+#define RUSD_READ_DATA(pSharedData,dataField,pDst)                                        \
+do {                                                                                      \
+    portMemSet((pDst), 0, sizeof(*pDst));                                                 \
+    for (NvU32 RUSD_READ_DATA_ATTEMPTS = 0; RUSD_READ_DATA_ATTEMPTS < 10; ++RUSD_READ_DATA_ATTEMPTS) \
+    {                                                                                     \
+        RUSD_SEQ_CHECK1(&((pSharedData)->dataField));                                     \
+        portMemCopy((pDst), sizeof(*pDst), &((pSharedData)->dataField), sizeof(*pDst));   \
+        RUSD_SEQ_CHECK2(&((pSharedData)->dataField));                                     \
+    }                                                                                     \
+} while(0);
+
+//
+// Check if RUSD data timestamp is stale.
+// For polled data, returns true if data is older than `staleThreshold`
+// For non-polled data, returns true if data was successfully read
+//
+#define RUSD_IS_DATA_STALE(timestamp,currentTime,staleThreshold)        \
+    ((((timestamp) < (RUSD_SEQ_START)) &&           /* Polled Data */   \
+      (((timestamp) == (RUSD_TIMESTAMP_INVALID)) || /* Invalid */       \
+       (((currentTime) - (timestamp)) > (staleThreshold)))) ||          \
+     (((timestamp) >= (RUSD_SEQ_START)) &&      /* Non-Polled Data */   \
+      (((timestamp) & (0x1LLU)) == 1LLU)))
 
 enum {
     RUSD_CLK_PUBLIC_DOMAIN_GRAPHICS = 0,
@@ -88,6 +106,18 @@ enum {
     RUSD_CLK_THROTTLE_REASON_HW_POWER_BRAKES_SLOWDOWN         = NVBIT(7), 
     RUSD_CLK_THROTTLE_REASON_DISPLAY_CLOCK_SETTING            = NVBIT(8), 
 };
+
+typedef struct RUSD_BAR1_MEMORY_INFO {
+    volatile NvU64 lastModifiedTimestamp;
+    NvU32 bar1Size;
+    NvU32 bar1AvailSize;
+} RUSD_BAR1_MEMORY_INFO;
+
+typedef struct RUSD_PMA_MEMORY_INFO {
+    volatile NvU64 lastModifiedTimestamp;
+    NvU64 totalPmaMemory;
+    NvU64 freePmaMemory;
+} RUSD_PMA_MEMORY_INFO;
 
 typedef struct RUSD_CLK_PUBLIC_DOMAIN_INFO {
     NvU32 targetClkMHz;
@@ -212,17 +242,22 @@ typedef struct RUSD_SHADOW_ERR_CONT {
 } RUSD_SHADOW_ERR_CONT;
 
 typedef struct NV00DE_SHARED_DATA {
+    // Temporarily duplicated - to be removed by nested structs below
     volatile NvU64 seq;
 
     NvU32 bar1Size;
     NvU32 bar1AvailSize;
-    NvU64 totalPmaMemory;
-    NvU64 freePmaMemory;
+
+    NV_DECLARE_ALIGNED(RUSD_BAR1_MEMORY_INFO bar1MemoryInfo, 8);
+
+    NV_DECLARE_ALIGNED(RUSD_PMA_MEMORY_INFO pmaMemoryInfo, 8);
+
+    NV_DECLARE_ALIGNED(RUSD_SHADOW_ERR_CONT shadowErrCont, 8);
 
     // gpuUpdateUserSharedData is sensitive to these two sections being contiguous
 
     //
-    // GSP polling data section
+    // Polled data section
     // All data structs are a volatile NvU64 timestamp followed by data contents.
     // Access by reading timestamp, then copying the struct contents, then reading the timestamp again.
     // If time0 matches time1, data has not changed during the read, and contents are valid.
@@ -260,9 +295,6 @@ typedef struct NV00DE_SHARED_DATA {
 
     // POLL_POWER
     NV_DECLARE_ALIGNED(RUSD_INST_POWER_USAGE instPowerUsage, 8);
-
-    // Non-polled GSP data section
-    NV_DECLARE_ALIGNED(RUSD_SHADOW_ERR_CONT shadowErrCont, 8);
 } NV00DE_SHARED_DATA;
 
 //

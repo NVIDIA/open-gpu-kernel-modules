@@ -542,7 +542,7 @@ struct uvm_va_block_wrapper_struct
         // uvm_cpu_chunk_allocation_sizes module parameter.
         NvU32 cpu_chunk_allocation_size_mask;
 
-        // Subsequent operations that need to allocate CPU pages will fail. As
+        // Subsequent operations that need to allocate CPU chunks will fail. As
         // opposed to other error injection settings, this one fails N times
         // and then succeeds instead of failing on the Nth try. A value of ~0u
         // means fail indefinitely.
@@ -550,7 +550,7 @@ struct uvm_va_block_wrapper_struct
         // the state of the VA blocks after the failure. However, some tests
         // use kernels to trigger migrations and a fault replay could trigger
         // a successful migration if this error flag is cleared.
-        NvU32 inject_cpu_pages_allocation_error_count;
+        NvU32 inject_cpu_chunk_allocation_error_count;
 
         // A NUMA node ID on which any CPU chunks will be allocated from.
         // This will override any other setting and/or policy.
@@ -1157,11 +1157,6 @@ NV_STATUS uvm_va_block_add_gpu_va_space(uvm_va_block_t *va_block, uvm_gpu_va_spa
 void uvm_va_block_remove_gpu_va_space(uvm_va_block_t *va_block,
                                       uvm_gpu_va_space_t *gpu_va_space,
                                       uvm_va_block_context_t *block_context);
-
-// Creates any mappings necessary in this VA block between the two GPUs, in
-// either direction.
-// LOCKING: The caller must hold the va_block lock
-NV_STATUS uvm_va_block_enable_peer(uvm_va_block_t *va_block, uvm_gpu_t *gpu0, uvm_gpu_t *gpu1);
 
 // Unmaps all page tables in this VA block which have peer mappings between
 // the two GPUs, in either direction.

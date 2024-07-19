@@ -427,9 +427,11 @@ typedef struct NV208F_CTRL_FB_ECC_INJECTION_SUPPORTED_PARAMS {
     NvBool bUncorrectableSupported;
 } NV208F_CTRL_FB_ECC_INJECTION_SUPPORTED_PARAMS;
 
-#define NV208F_CTRL_FB_ECC_INJECTION_SUPPORTED_LOC          0:0
-#define NV208F_CTRL_FB_ECC_INJECTION_SUPPORTED_LOC_LTC  (0x00000000)
-#define NV208F_CTRL_FB_ECC_INJECTION_SUPPORTED_LOC_DRAM (0x00000001)
+#define NV208F_CTRL_FB_ECC_INJECTION_SUPPORTED_LOC          1:0
+#define NV208F_CTRL_FB_ECC_INJECTION_SUPPORTED_LOC_LTC   (0x00000000)
+#define NV208F_CTRL_FB_ECC_INJECTION_SUPPORTED_LOC_DRAM  (0x00000001)
+#define NV208F_CTRL_FB_ECC_INJECTION_SUPPORTED_LOC_LRC   (0x00000002)
+#define NV208F_CTRL_FB_ECC_INJECTION_SUPPORTED_LOC_SYSL2 (0x00000003)
 
 /*
  * NV208F_CTRL_CMD_FB_ECC_SET_WRITE_KILL
@@ -451,7 +453,7 @@ typedef struct NV208F_CTRL_FB_ECC_INJECTION_SUPPORTED_PARAMS {
  *   address
  *      The physical DRAM address to be targeted by the write kill
  */
-#define NV208F_CTRL_CMD_FB_ECC_SET_WRITE_KILL           (0x208f0511) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_FB_INTERFACE_ID << 8) | NV208F_CTRL_FB_ECC_SET_WRITE_KILL_PARAMS_MESSAGE_ID" */
+#define NV208F_CTRL_CMD_FB_ECC_SET_WRITE_KILL            (0x208f0511) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_FB_INTERFACE_ID << 8) | NV208F_CTRL_FB_ECC_SET_WRITE_KILL_PARAMS_MESSAGE_ID" */
 
 #define NV208F_CTRL_FB_ECC_SET_WRITE_KILL_PARAMS_MESSAGE_ID (0x11U)
 
@@ -590,5 +592,66 @@ typedef struct NV208F_CTRL_FB_CLEAR_REMAPPED_ROWS_PARAMS {
     NvU32  sourceMask;
     NvBool bForcePurge;
 } NV208F_CTRL_FB_CLEAR_REMAPPED_ROWS_PARAMS;
+
+
+
+/*
+ * NV208F_CTRL_CMD_FB_INJECT_LRC_ECC_ERROR
+ *
+ * This API allows a client to inject ECC errors in the LRC.
+ *
+ *   lrcc:
+ *      The physical LRCC number to inject the error into.
+ *   lrc:
+ *      THe physical LRC number within the LRCC to inject the error into.
+ *   locationMask
+ *      LTC location subtype(s) where error is to be injected. (Valid on Ampere and later)
+ *   errorType
+ *      Type of error to inject
+ *      NV208F_CTRL_FB_ERROR_TYPE_CORRECTABLE for SBE.
+ *      NV208F_CTRL_FB_ERROR_TYPE_UNCORRECTABLE for DBE.
+ *
+ */
+#define NV208F_CTRL_CMD_FB_INJECT_LRC_ECC_ERROR (0x208f0516) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_FB_INTERFACE_ID << 8) | NV208F_CTRL_FB_INJECT_LRC_ECC_ERROR_PARAMS_MESSAGE_ID" */
+
+#define NV208F_CTRL_FB_INJECT_LRC_ECC_ERROR_PARAMS_MESSAGE_ID (0x16U)
+
+typedef struct NV208F_CTRL_FB_INJECT_LRC_ECC_ERROR_PARAMS {
+    NvU8                      lrcc;
+    NvU8                      lrc;
+    NvU8                      locationMask;
+    NV208F_CTRL_FB_ERROR_TYPE errorType;
+} NV208F_CTRL_FB_INJECT_LRC_ECC_ERROR_PARAMS;
+
+/*
+ * NV208F_CTRL_CMD_FB_INJECT_SYSLTC_ECC_ERROR
+ *
+ * This API allows a client to inject ECC errors in the SYSLTC.
+ *
+ *   group:
+ *      The physical group number to inject the error into.
+ *   instance:
+ *      The physical instance number within the group to inject the error into.
+ *   instance:
+ *      The physical slice number within the instance to inject the error into.
+ *   locationMask
+ *      SYSLTC location subtype(s) where error is to be injected. Same as LTC.
+ *   errorType
+ *      Type of error to inject
+ *      NV208F_CTRL_FB_ERROR_TYPE_CORRECTABLE for SBE.
+ *      NV208F_CTRL_FB_ERROR_TYPE_UNCORRECTABLE for DBE.
+ *
+ */
+#define NV208F_CTRL_CMD_FB_INJECT_SYSLTC_ECC_ERROR (0x208f0517) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_FB_INTERFACE_ID << 8) | NV208F_CTRL_FB_INJECT_SYSLTC_ECC_ERROR_PARAMS_MESSAGE_ID" */
+
+#define NV208F_CTRL_FB_INJECT_SYSLTC_ECC_ERROR_PARAMS_MESSAGE_ID (0x17U)
+
+typedef struct NV208F_CTRL_FB_INJECT_SYSLTC_ECC_ERROR_PARAMS {
+    NvU8                      group;
+    NvU8                      instance;
+    NvU8                      slice;
+    NvU8                      locationMask;
+    NV208F_CTRL_FB_ERROR_TYPE errorType;
+} NV208F_CTRL_FB_INJECT_SYSLTC_ECC_ERROR_PARAMS;
 
 /* _ctrl208ffb_h_ */

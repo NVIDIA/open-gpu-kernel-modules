@@ -100,12 +100,12 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_MemoryMapper =
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_MemoryMapper[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x808u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) memmapperCtrlCmdSubmitOperations_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
-        /*flags=*/      0x8u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x808u)
+        /*flags=*/      0x808u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xfe0101u,
         /*paramSize=*/  sizeof(NV00FE_CTRL_SUBMIT_OPERATIONS_PARAMS),
@@ -301,7 +301,7 @@ static void __nvoc_init_funcTable_MemoryMapper_1(MemoryMapper *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
     // memmapperCtrlCmdSubmitOperations -- exported (id=0xfe0101)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x808u)
     pThis->__memmapperCtrlCmdSubmitOperations__ = &memmapperCtrlCmdSubmitOperations_IMPL;
 #endif
 

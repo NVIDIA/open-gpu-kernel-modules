@@ -36,7 +36,7 @@
 #include "class/cl84a0.h"
 #include "vgpu/rpc_headers.h"
 #include "gpu/dce_client/dce_client.h"
-#include "objrpc.h"
+#include "gpu/rpc/objrpc.h"
 #include "rpc_vgpu.h"
 
 #include "vgpu_events.h"

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -102,6 +102,8 @@
 
 #define UVM_SUBCHANNEL_C86F UVM_SUBCHANNEL_HOST
 #define UVM_SUBCHANNEL_C8B5 UVM_SUBCHANNEL_CE
+
+#define UVM_SUBCHANNEL_C96F UVM_SUBCHANNEL_HOST
 
 // Channel for UVM SW methods. This is defined in nv_uvm_types.h. RM does not
 // care about the specific number as long as it's bigger than the largest HW

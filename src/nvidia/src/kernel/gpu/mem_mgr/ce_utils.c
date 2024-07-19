@@ -170,11 +170,14 @@ ceutilsConstruct_IMPL
     // Variable to indicate usage of either BAR1 or BAR2
     pChannel->bUseBar1 = FLD_TEST_DRF(0050_CEUTILS, _FLAGS, _NO_BAR1_USE, _FALSE, allocFlags);
 
+    pChannel->bSecure = FLD_TEST_DRF(0050_CEUTILS, _FLAGS, _CC_SECURE, _TRUE, allocFlags);
+
     // Detect if we can enable fast scrub on this channel
     status = memmgrMemUtilsGetCopyEngineClass_HAL(pGpu, pMemoryManager, &pCeUtils->hTdCopyClass);
     NV_ASSERT_OR_GOTO(status == NV_OK, free_channel);
 
     if (((pCeUtils->hTdCopyClass == HOPPER_DMA_COPY_A)
+        || (pCeUtils->hTdCopyClass == BLACKWELL_DMA_COPY_A)
         ) && !pChannel->bUseVasForCeCopy)
     {
         pChannel->type = FAST_SCRUBBER_CHANNEL;
@@ -620,6 +623,11 @@ ceutilsMemcopy_IMPL
 
     channelPbInfo.srcCpuCacheAttrib = pSrcMemDesc->_cpuCacheAttrib;
     channelPbInfo.dstCpuCacheAttrib = pDstMemDesc->_cpuCacheAttrib;
+
+    channelPbInfo.bSecureCopy = pParams->bSecureCopy;
+    channelPbInfo.bEncrypt = pParams->bEncrypt;
+    channelPbInfo.authTagAddr = pParams->authTagAddr;
+    channelPbInfo.encryptIvAddr = pParams->encryptIvAddr;
 
     srcPageGranularity = pSrcMemDesc->pageArrayGranularity;
     dstPageGranularity = pDstMemDesc->pageArrayGranularity;

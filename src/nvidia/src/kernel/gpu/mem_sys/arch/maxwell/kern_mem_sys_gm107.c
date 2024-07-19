@@ -461,7 +461,7 @@ kmemsysGetMaximumBlacklistPages_GM107
 NV_STATUS
 kmemsysPrepareForXVEReset_GM107
 (
-    POBJGPU             pGpu,
+    OBJGPU             *pGpu,
     KernelMemorySystem *pKernelMemorySystem
 )
 {

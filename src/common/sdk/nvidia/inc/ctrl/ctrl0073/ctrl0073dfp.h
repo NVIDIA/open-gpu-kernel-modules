@@ -107,8 +107,6 @@
  *         This indicates whether this SOR uses DSI-A, DSI-B or both (ganged mode).
  *       NV0073_CTRL_DFP_FLAGS_DYNAMIC_MUX_CAPABLE
  *         This indicates whether this DFP supports DDS (NV dynamic display mux).
- *       NV0073_CTRL_DFP_FLAGS_MDM
- *         This indicates whether this DFP supports MDM (Microsoft dynamic display mux).
  *   UHBRSupportedByDfp
  *     Bitmask to specify the UHBR link rates supported by this dfp.
  *
@@ -196,9 +194,6 @@ typedef struct NV0073_CTRL_DFP_GET_INFO_PARAMS {
 #define NV0073_CTRL_DFP_FLAGS_DYNAMIC_MUX_CAPABLE                        30:30
 #define NV0073_CTRL_DFP_FLAGS_DYNAMIC_MUX_CAPABLE_FALSE         (0x00000000U)
 #define NV0073_CTRL_DFP_FLAGS_DYNAMIC_MUX_CAPABLE_TRUE          (0x00000001U)
-#define NV0073_CTRL_DFP_FLAGS_MDM                                        31:31
-#define NV0073_CTRL_DFP_FLAGS_MDM_DISABLED                      (0x00000000U)
-#define NV0073_CTRL_DFP_FLAGS_MDM_ENABLED                       (0x00000001U)
 
 
 
@@ -469,7 +464,6 @@ typedef struct NV0073_CTRL_DFP_SET_AUDIO_ENABLE_PARAMS {
     NvU32  displayId;
     NvBool enable;
 } NV0073_CTRL_DFP_SET_AUDIO_ENABLE_PARAMS;
-
 
 
 /*
@@ -1306,16 +1300,16 @@ typedef struct NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS {
  *   hwOkToGateLatencyUs
  *     Duration in microseconds that HW took to assert ok_to_gate.
  *     Only valid when displayId is not equal to 0xFFFFFFFF
- *   jadeApiLatencyUs
- *     Duration in microseconds that Jade took to service 'Enter
- *     Display Power Gating' command
+ *   carApiLatencyUs
+ *     Duration in microseconds that CAR (Clock and Reset) block took to
+ *     service 'Enter Display Power Gating' command
  *
  */
 
 typedef struct NV0073_CTRL_DFP_ENTER_DISPLAY_POWER_GATING_DIAGNOSTIC_DATA {
     NvU32 totalRmEntryLatencyUs;
     NvU32 hwOkToGateLatencyUs;
-    NvU32 jadeEntryApiLatencyUs;
+    NvU32 carEntryApiLatencyUs;
 } NV0073_CTRL_DFP_ENTER_DISPLAY_POWER_GATING_DIAGNOSTIC_DATA;
 
 /*
@@ -1376,15 +1370,15 @@ typedef struct NV0073_CTRL_CMD_DFP_ENTER_DISPLAY_POWER_GATING_PARAMS {
  *     sequence including the below parameters.
  *   riscvBootupLatencyUs
  *     Duration in microseconds that LTM RISCV took to bootup.
- *   jadeExitApiLatencyUs
- *     Duration in microseconds that Jade took to service 'Exit
- *     Display Power Gating' command
+ *   carExitApiLatencyUs
+ *     Duration in microseconds that CAR (Clock and Reset) block took
+ *     to service 'Exit Display Power Gating' command
  *
  */
 typedef struct NV0073_CTRL_DFP_EXIT_DISPLAY_POWER_GATING_DIAGNOSTIC_DATA {
     NvU32 totalRmExitLatencyUs;
     NvU32 riscvBootupLatencyUs;
-    NvU32 jadeExitApiLatencyUs;
+    NvU32 carExitApiLatencyUs;
 } NV0073_CTRL_DFP_EXIT_DISPLAY_POWER_GATING_DIAGNOSTIC_DATA;
 
 /*
@@ -1454,5 +1448,7 @@ typedef struct NV0073_CTRL_DFP_EDP_DRIVER_UNLOAD_PARAMS {
     NvU32 subDeviceInstance;
     NvU32 displayId;
 } NV0073_CTRL_DFP_EDP_DRIVER_UNLOAD_PARAMS;
+
+
 
 /* _ctrl0073dfp_h_ */

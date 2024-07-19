@@ -1082,11 +1082,11 @@ _virtmemAllocKernelMapping
                 }
             }
 
-            status = kbusMapFbAperture_HAL(pGpu, pKernelBus,
-                                           pMemoryInfo->pMemDesc, offset,
-                                           &pDmaMappingInfo->FbAperture[gpuSubDevInst],
-                                           &pDmaMappingInfo->FbApertureLen[gpuSubDevInst],
-                                           BUS_MAP_FB_FLAGS_MAP_UNICAST, pDevice);
+            status = kbusMapFbApertureSingle(pGpu, pKernelBus,
+                                             pMemoryInfo->pMemDesc, offset,
+                                             &pDmaMappingInfo->FbAperture[gpuSubDevInst],
+                                             &pDmaMappingInfo->FbApertureLen[gpuSubDevInst],
+                                             BUS_MAP_FB_FLAGS_MAP_UNICAST, pDevice);
 
             if (status != NV_OK)
             {
@@ -1168,12 +1168,12 @@ _virtmemFreeKernelMapping
         else
         {
             KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
-            kbusUnmapFbAperture_HAL(pGpu,
-                                    pKernelBus,
-                                    pDmaMappingInfo->pMemDesc,
-                                    pDmaMappingInfo->FbAperture[gpuSubDevInst],
-                                    pDmaMappingInfo->FbApertureLen[gpuSubDevInst],
-                                    BUS_MAP_FB_FLAGS_MAP_UNICAST);
+            kbusUnmapFbApertureSingle(pGpu,
+                                      pKernelBus,
+                                      pDmaMappingInfo->pMemDesc,
+                                      pDmaMappingInfo->FbAperture[gpuSubDevInst],
+                                      pDmaMappingInfo->FbApertureLen[gpuSubDevInst],
+                                      BUS_MAP_FB_FLAGS_MAP_UNICAST);
         }
         pDmaMappingInfo->FbAperture[gpuSubDevInst] = 0;
         pDmaMappingInfo->FbApertureLen[gpuSubDevInst] = 0;

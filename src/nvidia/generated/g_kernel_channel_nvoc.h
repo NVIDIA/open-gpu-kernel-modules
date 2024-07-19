@@ -351,6 +351,7 @@ struct KernelChannel {
     MEMORY_DESCRIPTOR *pKeyRotationNotifierMemDesc;
     NvNotification *pKeyRotationNotifier;
     NvBool bCCSecureChannel;
+    NvBool bUseScrubKey;
 };
 
 #ifndef __NVOC_CLASS_KernelChannel_TYPEDEF__

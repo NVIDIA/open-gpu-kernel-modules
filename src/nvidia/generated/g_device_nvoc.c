@@ -595,12 +595,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Device[]
 #endif
     },
     {               /*  [33] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) deviceCtrlCmdFifoStartSelectedChannels_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
-        /*flags=*/      0x248u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+        /*flags=*/      0x48u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x801705u,
         /*paramSize=*/  sizeof(NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS),
@@ -718,7 +718,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Device[]
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) deviceCtrlCmdFifoIdleChannels_IMPL,
+        /*pFunc=*/      (void (*)(void)) deviceCtrlCmdFifoIdleChannels_DISPATCH,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
         /*flags=*/      0x109u,
         /*accessRight=*/0x0u,
@@ -1387,7 +1387,7 @@ static void __nvoc_init_funcTable_Device_1(Device *pThis, RmHalspecOwner *pRmhal
 #endif
 
     // deviceCtrlCmdFifoStartSelectedChannels -- exported (id=0x801705)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x248u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
     pThis->__deviceCtrlCmdFifoStartSelectedChannels__ = &deviceCtrlCmdFifoStartSelectedChannels_IMPL;
 #endif
 
@@ -1431,10 +1431,15 @@ static void __nvoc_init_funcTable_Device_1(Device *pThis, RmHalspecOwner *pRmhal
     pThis->__deviceCtrlCmdFifoSetChannelProperties__ = &deviceCtrlCmdFifoSetChannelProperties_IMPL;
 #endif
 
-    // deviceCtrlCmdFifoIdleChannels -- exported (id=0x801714)
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
-    pThis->__deviceCtrlCmdFifoIdleChannels__ = &deviceCtrlCmdFifoIdleChannels_IMPL;
-#endif
+    // deviceCtrlCmdFifoIdleChannels -- halified (2 hals) exported (id=0x801714) body
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__deviceCtrlCmdFifoIdleChannels__ = &deviceCtrlCmdFifoIdleChannels_46f6a7;
+    }
+    else
+    {
+        pThis->__deviceCtrlCmdFifoIdleChannels__ = &deviceCtrlCmdFifoIdleChannels_IMPL;
+    }
 
     // deviceCtrlCmdHostGetCaps -- exported (id=0x801401)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x118u)
@@ -1654,7 +1659,7 @@ static void __nvoc_init_funcTable_Device_1(Device *pThis, RmHalspecOwner *pRmhal
 
     // deviceAddAdditionalDependants -- virtual inherited (res) base (gpures)
     pThis->__deviceAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_deviceAddAdditionalDependants;
-} // End __nvoc_init_funcTable_Device_1 with approximately 97 basic block(s).
+} // End __nvoc_init_funcTable_Device_1 with approximately 98 basic block(s).
 
 
 // Initialize vtable(s) for 88 virtual method(s).

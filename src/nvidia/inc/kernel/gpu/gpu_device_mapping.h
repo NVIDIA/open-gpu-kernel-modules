@@ -23,6 +23,7 @@
 #ifndef _GPU_DEVICE_MAPPING_H_
 #define _GPU_DEVICE_MAPPING_H_
 
+
 // Defines the enum type DEVICE_INDEX used for identifying the device type being accessed
 typedef enum
 {
@@ -45,7 +46,7 @@ typedef enum
 {
     SOC_DEV_MAPPING_DISP = 0,
     SOC_DEV_MAPPING_DPAUX0,
-    SOC_DEV_MAPPING_DPAUX1,  // Update NV_MAX_SOC_DPAUX_NUM_DEVICES if adding new DPAUX mappings
+    SOC_DEV_MAPPING_DPAUX1,
     SOC_DEV_MAPPING_HDACODEC,
     SOC_DEV_MAPPING_MIPICAL,
     SOC_DEV_MAPPING_MAX

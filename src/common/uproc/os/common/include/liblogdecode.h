@@ -34,7 +34,7 @@ extern "C" {
 
 #        define LIBOS_LOG_TO_NVLOG 1
 
-#    define LIBOS_LOG_MAX_LOGS      5   // Max logs per GPU
+#    define LIBOS_LOG_MAX_LOGS      7   // Max logs per GPU
 
 #elif defined(LIBOS_LOG_OFFLINE_DECODER)
 #    include "nvlog_decoder.h"
@@ -180,7 +180,7 @@ void libosLogInitEx(
     NvBool bDecodeStrFmt, NvU64 elfSize);
 #endif // LIBOS_LOG_DECODE_ENABLE
 
-NvBool libosLogSymbolicateAddress(LIBOS_LOG_DECODE *logDecode, char *decodedLine, NvLength decodedLineSize, NvUPtr addr);
+NvBool libosLogSymbolicateAddress(LIBOS_LOG_DECODE *logDecode, char *decodedLine, NvLength decodedLineSize, NvUPtr addr, NvBool bPrintDirectory);
 
 void libosLogDestroy(LIBOS_LOG_DECODE *logDecode);
 

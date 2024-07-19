@@ -52,19 +52,6 @@ extern "C" {
 
 #define NV_IOVA_DOMAIN_NONE (~(NvU32)0)
 
-typedef struct OBJIOVASPACE *POBJIOVASPACE;
-
-#ifndef __NVOC_CLASS_OBJIOVASPACE_TYPEDEF__
-#define __NVOC_CLASS_OBJIOVASPACE_TYPEDEF__
-typedef struct OBJIOVASPACE OBJIOVASPACE;
-#endif /* __NVOC_CLASS_OBJIOVASPACE_TYPEDEF__ */
-
-#ifndef __nvoc_class_id_OBJIOVASPACE
-#define __nvoc_class_id_OBJIOVASPACE 0x28ed9c
-#endif /* __nvoc_class_id_OBJIOVASPACE */
-
-
-
 typedef struct IOVAMAPPING IOVAMAPPING;
 typedef struct IOVAMAPPING *PIOVAMAPPING;
 
@@ -180,8 +167,8 @@ struct OBJIOVASPACE {
     NV_STATUS (*__iovaspaceMap__)(struct OBJIOVASPACE * /*this*/, struct OBJGPU *, const NvU64, const NvU64, const MMU_MAP_TARGET *, const VAS_MAP_FLAGS);  // inline virtual inherited (vaspace) base (vaspace) body
     void (*__iovaspaceUnmap__)(struct OBJIOVASPACE * /*this*/, struct OBJGPU *, const NvU64, const NvU64);  // inline virtual inherited (vaspace) base (vaspace) body
     NV_STATUS (*__iovaspaceReserveMempool__)(struct OBJIOVASPACE * /*this*/, struct OBJGPU *, struct Device *, NvU64, NvU64, NvU32);  // inline virtual inherited (vaspace) base (vaspace) body
-    struct OBJEHEAP * (*__iovaspaceGetHeap__)(struct OBJIOVASPACE * /*this*/);  // inline virtual inherited (vaspace) base (vaspace) body
-    NvU64 (*__iovaspaceGetMapPageSize__)(struct OBJIOVASPACE * /*this*/, struct OBJGPU *, struct EMEMBLOCK *);  // inline virtual inherited (vaspace) base (vaspace) body
+    OBJEHEAP * (*__iovaspaceGetHeap__)(struct OBJIOVASPACE * /*this*/);  // inline virtual inherited (vaspace) base (vaspace) body
+    NvU64 (*__iovaspaceGetMapPageSize__)(struct OBJIOVASPACE * /*this*/, struct OBJGPU *, EMEMBLOCK *);  // inline virtual inherited (vaspace) base (vaspace) body
     NvU64 (*__iovaspaceGetBigPageSize__)(struct OBJIOVASPACE * /*this*/);  // inline virtual inherited (vaspace) base (vaspace) body
     NvBool (*__iovaspaceIsMirrored__)(struct OBJIOVASPACE * /*this*/);  // inline virtual inherited (vaspace) base (vaspace) body
     NvBool (*__iovaspaceIsFaultCapable__)(struct OBJIOVASPACE * /*this*/);  // inline virtual inherited (vaspace) base (vaspace) body
@@ -340,11 +327,11 @@ static inline NV_STATUS iovaspaceReserveMempool_DISPATCH(struct OBJIOVASPACE *pV
     return pVAS->__iovaspaceReserveMempool__(pVAS, pGpu, pDevice, size, pageSizeLockMask, flags);
 }
 
-static inline struct OBJEHEAP * iovaspaceGetHeap_DISPATCH(struct OBJIOVASPACE *pVAS) {
+static inline OBJEHEAP * iovaspaceGetHeap_DISPATCH(struct OBJIOVASPACE *pVAS) {
     return pVAS->__iovaspaceGetHeap__(pVAS);
 }
 
-static inline NvU64 iovaspaceGetMapPageSize_DISPATCH(struct OBJIOVASPACE *pVAS, struct OBJGPU *pGpu, struct EMEMBLOCK *pMemBlock) {
+static inline NvU64 iovaspaceGetMapPageSize_DISPATCH(struct OBJIOVASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock) {
     return pVAS->__iovaspaceGetMapPageSize__(pVAS, pGpu, pMemBlock);
 }
 

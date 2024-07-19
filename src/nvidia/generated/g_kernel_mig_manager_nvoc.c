@@ -87,57 +87,57 @@ static NV_STATUS __nvoc_down_thunk_KernelMIGManager_engstateStateUnload(OBJGPU *
 // 11 up-thunk(s) defined to bridge methods in KernelMIGManager to superclasses
 
 // kmigmgrInitMissing: virtual inherited (engstate) base (engstate)
-static void __nvoc_up_thunk_OBJENGSTATE_kmigmgrInitMissing(POBJGPU pGpu, struct KernelMIGManager *pEngstate) {
+static void __nvoc_up_thunk_OBJENGSTATE_kmigmgrInitMissing(struct OBJGPU *pGpu, struct KernelMIGManager *pEngstate) {
     engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelMIGManager_OBJENGSTATE.offset));
 }
 
 // kmigmgrStatePreInitLocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kmigmgrStatePreInitLocked(POBJGPU pGpu, struct KernelMIGManager *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kmigmgrStatePreInitLocked(struct OBJGPU *pGpu, struct KernelMIGManager *pEngstate) {
     return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelMIGManager_OBJENGSTATE.offset));
 }
 
 // kmigmgrStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kmigmgrStatePreInitUnlocked(POBJGPU pGpu, struct KernelMIGManager *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kmigmgrStatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelMIGManager *pEngstate) {
     return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelMIGManager_OBJENGSTATE.offset));
 }
 
 // kmigmgrStateInitUnlocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kmigmgrStateInitUnlocked(POBJGPU pGpu, struct KernelMIGManager *pEngstate) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kmigmgrStateInitUnlocked(struct OBJGPU *pGpu, struct KernelMIGManager *pEngstate) {
     return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelMIGManager_OBJENGSTATE.offset));
 }
 
 // kmigmgrStatePreLoad: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kmigmgrStatePreLoad(POBJGPU pGpu, struct KernelMIGManager *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kmigmgrStatePreLoad(struct OBJGPU *pGpu, struct KernelMIGManager *pEngstate, NvU32 arg3) {
     return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelMIGManager_OBJENGSTATE.offset), arg3);
 }
 
 // kmigmgrStateLoad: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kmigmgrStateLoad(POBJGPU pGpu, struct KernelMIGManager *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kmigmgrStateLoad(struct OBJGPU *pGpu, struct KernelMIGManager *pEngstate, NvU32 arg3) {
     return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelMIGManager_OBJENGSTATE.offset), arg3);
 }
 
 // kmigmgrStatePostLoad: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kmigmgrStatePostLoad(POBJGPU pGpu, struct KernelMIGManager *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kmigmgrStatePostLoad(struct OBJGPU *pGpu, struct KernelMIGManager *pEngstate, NvU32 arg3) {
     return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelMIGManager_OBJENGSTATE.offset), arg3);
 }
 
 // kmigmgrStatePreUnload: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kmigmgrStatePreUnload(POBJGPU pGpu, struct KernelMIGManager *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kmigmgrStatePreUnload(struct OBJGPU *pGpu, struct KernelMIGManager *pEngstate, NvU32 arg3) {
     return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelMIGManager_OBJENGSTATE.offset), arg3);
 }
 
 // kmigmgrStatePostUnload: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kmigmgrStatePostUnload(POBJGPU pGpu, struct KernelMIGManager *pEngstate, NvU32 arg3) {
+static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kmigmgrStatePostUnload(struct OBJGPU *pGpu, struct KernelMIGManager *pEngstate, NvU32 arg3) {
     return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelMIGManager_OBJENGSTATE.offset), arg3);
 }
 
 // kmigmgrStateDestroy: virtual inherited (engstate) base (engstate)
-static void __nvoc_up_thunk_OBJENGSTATE_kmigmgrStateDestroy(POBJGPU pGpu, struct KernelMIGManager *pEngstate) {
+static void __nvoc_up_thunk_OBJENGSTATE_kmigmgrStateDestroy(struct OBJGPU *pGpu, struct KernelMIGManager *pEngstate) {
     engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelMIGManager_OBJENGSTATE.offset));
 }
 
 // kmigmgrIsPresent: virtual inherited (engstate) base (engstate)
-static NvBool __nvoc_up_thunk_OBJENGSTATE_kmigmgrIsPresent(POBJGPU pGpu, struct KernelMIGManager *pEngstate) {
+static NvBool __nvoc_up_thunk_OBJENGSTATE_kmigmgrIsPresent(struct OBJGPU *pGpu, struct KernelMIGManager *pEngstate) {
     return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelMIGManager_OBJENGSTATE.offset));
 }
 
@@ -278,7 +278,7 @@ static void __nvoc_init_funcTable_KernelMIGManager_1(KernelMIGManager *pThis, Rm
     }
 
     // kmigmgrCreateGPUInstanceCheck -- halified (2 hals)
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000400UL) )) /* ChipHal: GA100 | GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000400UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 */ 
     {
         pThis->__kmigmgrCreateGPUInstanceCheck__ = &kmigmgrCreateGPUInstanceCheck_GA100;
     }
@@ -310,7 +310,7 @@ static void __nvoc_init_funcTable_KernelMIGManager_1(KernelMIGManager *pThis, Rm
     {
         pThis->__kmigmgrIsGPUInstanceCombinationValid__ = &kmigmgrIsGPUInstanceCombinationValid_GA100;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
         pThis->__kmigmgrIsGPUInstanceCombinationValid__ = &kmigmgrIsGPUInstanceCombinationValid_GH100;
     }
@@ -320,7 +320,7 @@ static void __nvoc_init_funcTable_KernelMIGManager_1(KernelMIGManager *pThis, Rm
         pThis->__kmigmgrIsGPUInstanceCombinationValid__ = &kmigmgrIsGPUInstanceCombinationValid_491d52;
     }
 
-    // kmigmgrIsGPUInstanceFlagValid -- halified (3 hals)
+    // kmigmgrIsGPUInstanceFlagValid -- halified (4 hals)
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GA100 */ 
     {
         pThis->__kmigmgrIsGPUInstanceFlagValid__ = &kmigmgrIsGPUInstanceFlagValid_GA100;
@@ -328,6 +328,10 @@ static void __nvoc_init_funcTable_KernelMIGManager_1(KernelMIGManager *pThis, Rm
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kmigmgrIsGPUInstanceFlagValid__ = &kmigmgrIsGPUInstanceFlagValid_GH100;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
+    {
+        pThis->__kmigmgrIsGPUInstanceFlagValid__ = &kmigmgrIsGPUInstanceFlagValid_GB100;
     }
     // default
     else
@@ -368,7 +372,7 @@ static void __nvoc_init_funcTable_KernelMIGManager_1(KernelMIGManager *pThis, Rm
     }
 
     // kmigmgrIsMemoryPartitioningRequested -- halified (2 hals)
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000400UL) )) /* ChipHal: GA100 | GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000400UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 */ 
     {
         pThis->__kmigmgrIsMemoryPartitioningRequested__ = &kmigmgrIsMemoryPartitioningRequested_GA100;
     }
@@ -378,7 +382,7 @@ static void __nvoc_init_funcTable_KernelMIGManager_1(KernelMIGManager *pThis, Rm
     }
 
     // kmigmgrIsMemoryPartitioningNeeded -- halified (2 hals)
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000400UL) )) /* ChipHal: GA100 | GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000400UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 */ 
     {
         pThis->__kmigmgrIsMemoryPartitioningNeeded__ = &kmigmgrIsMemoryPartitioningNeeded_GA100;
     }
@@ -394,7 +398,7 @@ static void __nvoc_init_funcTable_KernelMIGManager_1(KernelMIGManager *pThis, Rm
     }
     else
     {
-        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000400UL) )) /* ChipHal: GA100 | GH100 */ 
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000400UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 */ 
         {
             pThis->__kmigmgrMemSizeFlagToSwizzIdRange__ = &kmigmgrMemSizeFlagToSwizzIdRange_GA100;
         }
@@ -405,7 +409,7 @@ static void __nvoc_init_funcTable_KernelMIGManager_1(KernelMIGManager *pThis, Rm
     }
 
     // kmigmgrSwizzIdToSpan -- halified (2 hals)
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000400UL) )) /* ChipHal: GA100 | GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000400UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 */ 
     {
         pThis->__kmigmgrSwizzIdToSpan__ = &kmigmgrSwizzIdToSpan_GA100;
     }
@@ -424,15 +428,22 @@ static void __nvoc_init_funcTable_KernelMIGManager_1(KernelMIGManager *pThis, Rm
         pThis->__kmigmgrSetMIGState__ = &kmigmgrSetMIGState_FWCLIENT;
     }
 
-    // kmigmgrIsCTSAlignmentRequired -- halified (2 hals)
-    // default
-    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    // kmigmgrIsCTSAlignmentRequired -- halified (3 hals)
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
     {
-        pThis->__kmigmgrIsCTSAlignmentRequired__ = &kmigmgrIsCTSAlignmentRequired_VF;
+        pThis->__kmigmgrIsCTSAlignmentRequired__ = &kmigmgrIsCTSAlignmentRequired_cbe027;
     }
+    // default
     else
     {
-        pThis->__kmigmgrIsCTSAlignmentRequired__ = &kmigmgrIsCTSAlignmentRequired_PF;
+        if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+        {
+            pThis->__kmigmgrIsCTSAlignmentRequired__ = &kmigmgrIsCTSAlignmentRequired_VF;
+        }
+        else
+        {
+            pThis->__kmigmgrIsCTSAlignmentRequired__ = &kmigmgrIsCTSAlignmentRequired_PF;
+        }
     }
 
     // kmigmgrRestoreFromBootConfig -- halified (2 hals) body
@@ -477,7 +488,7 @@ static void __nvoc_init_funcTable_KernelMIGManager_1(KernelMIGManager *pThis, Rm
 
     // kmigmgrIsPresent -- virtual inherited (engstate) base (engstate)
     pThis->__kmigmgrIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_kmigmgrIsPresent;
-} // End __nvoc_init_funcTable_KernelMIGManager_1 with approximately 63 basic block(s).
+} // End __nvoc_init_funcTable_KernelMIGManager_1 with approximately 65 basic block(s).
 
 
 // Initialize vtable(s) for 35 virtual method(s).

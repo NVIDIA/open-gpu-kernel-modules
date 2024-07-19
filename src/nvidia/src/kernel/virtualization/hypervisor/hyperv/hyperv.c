@@ -50,8 +50,8 @@ static NV_STATUS _childPartitionDetection(OBJOS *pOS, NvBool *result)
     NV_ASSERT(result != NULL);
     *result = NV_FALSE;
     // See if we are in parent/child partition
-    if ((pOS->osNv_cpuid(pOS, FEATURE_IDENTIFICATION_LEAF, 0, &dummyRegister, &ebx, &dummyRegister, &dummyRegister) == 0) ||
-        (pOS->osNv_cpuid(pOS, IMPLEMENTATION_RECOMMENDATIONS_LEAF, 0, &eax, &dummyRegister, &dummyRegister, &dummyRegister) == 0))
+    if ((osNv_cpuid(FEATURE_IDENTIFICATION_LEAF, 0, &dummyRegister, &ebx, &dummyRegister, &dummyRegister) == 0) ||
+        (osNv_cpuid(IMPLEMENTATION_RECOMMENDATIONS_LEAF, 0, &eax, &dummyRegister, &dummyRegister, &dummyRegister) == 0))
     {
         NV_PRINTF(LEVEL_WARNING, "CPUID is NOT supported!\n");
             return NV_ERR_NOT_SUPPORTED;

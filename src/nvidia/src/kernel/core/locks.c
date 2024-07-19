@@ -33,7 +33,7 @@
 #include "core/locks.h"
 #include "core/thread_state.h"
 #include "diagnostics/tracer.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include <os/os.h>
 #include <nv_ref.h>
 #include "gpu_mgr/gpu_mgr.h"
@@ -1543,6 +1543,7 @@ static void _gpuLocksReleaseHandleDeferredWork(NvU32 gpuMask)
         // This WAR should be removed once per-GPU locks are implemented.
         //
         osDeferredIsr(pGpu);
+        osRunQueued1HzCallbacksUnderLock(pGpu);
     }
 }
 

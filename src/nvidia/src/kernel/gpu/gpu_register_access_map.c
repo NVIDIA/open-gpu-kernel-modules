@@ -27,7 +27,7 @@
 #include "os/os.h"
 #include "lib/base_utils.h"
 #include "lib/zlib/inflate.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "virtualization/hypervisor/hypervisor.h"
 
 /**

@@ -39,7 +39,7 @@
 #include "os/os.h"
 #include "gpuvideo/video_event.h"
 #include "gpuvideo/videoeventlist.h"
-#include "objtmr.h"
+#include "kernel/gpu/timer/objtmr.h"
 #include "kernel/gpu/video/kernel_video_engine.h"
 #include "kernel/gpu/fifo/kernel_channel_group.h"
 #include "kernel/gpu/bus/kern_bus.h"
@@ -384,7 +384,7 @@ _videoTimerCallback
 {
     NV_STATUS status;
 
-    NV_CHECK_OK(status, LEVEL_ERROR, osQueueWorkItemWithFlags(pGpu, _videoOsWorkItem, NULL, OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE_RW));
+    NV_CHECK_OK(status, LEVEL_ERROR, osQueueWorkItemWithFlags(pGpu, _videoOsWorkItem, NULL, OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE));
 
     // TMR_FLAG_RECUR does not work, so reschedule it here.
     NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(status, LEVEL_ERROR, tmrEventScheduleRel(pTmr, pTmrEvent, NV_VIDEO_TRACE_CALLBACK_TIME_NS));

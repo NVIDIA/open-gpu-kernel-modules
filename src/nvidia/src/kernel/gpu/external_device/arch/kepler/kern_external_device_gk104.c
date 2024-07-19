@@ -27,7 +27,7 @@
 #include "ctrl/ctrl402c.h"
 
 #include "gpu/external_device/dac_p2060.h"
-#include "dev_p2060.h"
+#include "gpu/external_device/dev_p2060.h"
 
 NV_STATUS
 gpuExtdevConstruct_GK104(OBJGPU *pGpu)

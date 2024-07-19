@@ -235,71 +235,54 @@
 #define NV_ROUTE_CMD_ROUTE_TABLE3_RFUN31_ALTERNATE         0x00000003      /* RW--V */
 #define NV_ROUTE_ERR_STATUS_0                              0x00005400      /* RW-4R */
 #define NV_ROUTE_ERR_STATUS_0_ROUTEBUFERR                  0:0             /* RWDVF */
-#define NV_ROUTE_ERR_STATUS_0_ROUTEBUFERR__ONWRITE         "oneToClear"    /*       */
 #define NV_ROUTE_ERR_STATUS_0_ROUTEBUFERR_NONE             0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_STATUS_0_ROUTEBUFERR_CLEAR            0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_STATUS_0_NOPORTDEFINEDERR             1:1             /* RWDVF */
-#define NV_ROUTE_ERR_STATUS_0_NOPORTDEFINEDERR__ONWRITE    "oneToClear"    /*       */
 #define NV_ROUTE_ERR_STATUS_0_NOPORTDEFINEDERR_NONE        0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_STATUS_0_NOPORTDEFINEDERR_CLEAR       0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_STATUS_0_INVALIDROUTEPOLICYERR        2:2             /* RWDVF */
-#define NV_ROUTE_ERR_STATUS_0_INVALIDROUTEPOLICYERR__ONWRITE "oneToClear"  /*       */
 #define NV_ROUTE_ERR_STATUS_0_INVALIDROUTEPOLICYERR_NONE   0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_STATUS_0_INVALIDROUTEPOLICYERR_CLEAR  0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_STATUS_0_GLT_ECC_LIMIT_ERR            3:3             /* RWDVF */
-#define NV_ROUTE_ERR_STATUS_0_GLT_ECC_LIMIT_ERR__ONWRITE   "oneToClear"    /*       */
 #define NV_ROUTE_ERR_STATUS_0_GLT_ECC_LIMIT_ERR_NONE       0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_STATUS_0_GLT_ECC_LIMIT_ERR_CLEAR      0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_STATUS_0_GLT_ECC_DBE_ERR              4:4             /* RWDVF */
-#define NV_ROUTE_ERR_STATUS_0_GLT_ECC_DBE_ERR__ONWRITE     "oneToClear"    /*       */
 #define NV_ROUTE_ERR_STATUS_0_GLT_ECC_DBE_ERR_NONE         0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_STATUS_0_GLT_ECC_DBE_ERR_CLEAR        0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_STATUS_0_PDCTRLPARERR                 6:6             /* RWDVF */
-#define NV_ROUTE_ERR_STATUS_0_PDCTRLPARERR__ONWRITE        "oneToClear"    /*       */
 #define NV_ROUTE_ERR_STATUS_0_PDCTRLPARERR_NONE            0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_STATUS_0_PDCTRLPARERR_CLEAR           0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_STATUS_0_NVS_ECC_LIMIT_ERR            7:7             /* RWDVF */
-#define NV_ROUTE_ERR_STATUS_0_NVS_ECC_LIMIT_ERR__ONWRITE   "oneToClear"    /*       */
 #define NV_ROUTE_ERR_STATUS_0_NVS_ECC_LIMIT_ERR_NONE       0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_STATUS_0_NVS_ECC_LIMIT_ERR_CLEAR      0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_STATUS_0_NVS_ECC_DBE_ERR              8:8             /* RWDVF */
-#define NV_ROUTE_ERR_STATUS_0_NVS_ECC_DBE_ERR__ONWRITE     "oneToClear"    /*       */
 #define NV_ROUTE_ERR_STATUS_0_NVS_ECC_DBE_ERR_NONE         0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_STATUS_0_NVS_ECC_DBE_ERR_CLEAR        0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_STATUS_0_CDTPARERR                    9:9             /* RWDVF */
-#define NV_ROUTE_ERR_STATUS_0_CDTPARERR__ONWRITE           "oneToClear"    /*       */
 #define NV_ROUTE_ERR_STATUS_0_CDTPARERR_NONE               0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_STATUS_0_CDTPARERR_CLEAR              0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_STATUS_0_MCRID_ECC_LIMIT_ERR          10:10           /* RWDVF */
-#define NV_ROUTE_ERR_STATUS_0_MCRID_ECC_LIMIT_ERR__ONWRITE "oneToClear"    /*       */
 #define NV_ROUTE_ERR_STATUS_0_MCRID_ECC_LIMIT_ERR_NONE     0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_STATUS_0_MCRID_ECC_LIMIT_ERR_CLEAR    0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_STATUS_0_MCRID_ECC_DBE_ERR            11:11           /* RWDVF */
-#define NV_ROUTE_ERR_STATUS_0_MCRID_ECC_DBE_ERR__ONWRITE   "oneToClear"    /*       */
 #define NV_ROUTE_ERR_STATUS_0_MCRID_ECC_DBE_ERR_NONE       0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_STATUS_0_MCRID_ECC_DBE_ERR_CLEAR      0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_STATUS_0_EXTMCRID_ECC_LIMIT_ERR       12:12           /* RWDVF */
-#define NV_ROUTE_ERR_STATUS_0_EXTMCRID_ECC_LIMIT_ERR__ONWRITE "oneToClear" /*       */
 #define NV_ROUTE_ERR_STATUS_0_EXTMCRID_ECC_LIMIT_ERR_NONE  0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_STATUS_0_EXTMCRID_ECC_LIMIT_ERR_CLEAR 0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_STATUS_0_EXTMCRID_ECC_DBE_ERR         13:13           /* RWDVF */
-#define NV_ROUTE_ERR_STATUS_0_EXTMCRID_ECC_DBE_ERR__ONWRITE "oneToClear"   /*       */
 #define NV_ROUTE_ERR_STATUS_0_EXTMCRID_ECC_DBE_ERR_NONE    0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_STATUS_0_EXTMCRID_ECC_DBE_ERR_CLEAR   0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_STATUS_0_RAM_ECC_LIMIT_ERR            14:14           /* RWDVF */
-#define NV_ROUTE_ERR_STATUS_0_RAM_ECC_LIMIT_ERR__ONWRITE   "oneToClear"    /*       */
 #define NV_ROUTE_ERR_STATUS_0_RAM_ECC_LIMIT_ERR_NONE       0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_STATUS_0_RAM_ECC_LIMIT_ERR_CLEAR      0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_STATUS_0_RAM_ECC_DBE_ERR              15:15           /* RWDVF */
-#define NV_ROUTE_ERR_STATUS_0_RAM_ECC_DBE_ERR__ONWRITE     "oneToClear"    /*       */
 #define NV_ROUTE_ERR_STATUS_0_RAM_ECC_DBE_ERR_NONE         0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_STATUS_0_RAM_ECC_DBE_ERR_CLEAR        0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_STATUS_0_INVALID_MCRID_ERR            16:16           /* RWDVF */
-#define NV_ROUTE_ERR_STATUS_0_INVALID_MCRID_ERR__ONWRITE   "oneToClear"    /*       */
 #define NV_ROUTE_ERR_STATUS_0_INVALID_MCRID_ERR_NONE       0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_STATUS_0_INVALID_MCRID_ERR_CLEAR      0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_STATUS_0_MC_TRIGGER_ERR               17:17           /* RWDVF */
-#define NV_ROUTE_ERR_STATUS_0_MC_TRIGGER_ERR__ONWRITE      "oneToClear"    /*       */
 #define NV_ROUTE_ERR_STATUS_0_MC_TRIGGER_ERR_NONE          0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_STATUS_0_MC_TRIGGER_ERR_CLEAR         0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_LOG_EN_0                              0x00005404      /* RW-4R */
@@ -553,71 +536,54 @@
 #define NV_ROUTE_ERR_CONTAIN_EN_0_MC_TRIGGER_ERR_ENABLE    0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_FIRST_0                               0x0000541c      /* RW-4R */
 #define NV_ROUTE_ERR_FIRST_0_ROUTEBUFERR                   0:0             /* RWDVF */
-#define NV_ROUTE_ERR_FIRST_0_ROUTEBUFERR__ONWRITE          "oneToClear"    /*       */
 #define NV_ROUTE_ERR_FIRST_0_ROUTEBUFERR_NONE              0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_FIRST_0_ROUTEBUFERR_CLEAR             0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_FIRST_0_NOPORTDEFINEDERR              1:1             /* RWDVF */
-#define NV_ROUTE_ERR_FIRST_0_NOPORTDEFINEDERR__ONWRITE     "oneToClear"    /*       */
 #define NV_ROUTE_ERR_FIRST_0_NOPORTDEFINEDERR_NONE         0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_FIRST_0_NOPORTDEFINEDERR_CLEAR        0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_FIRST_0_INVALIDROUTEPOLICYERR         2:2             /* RWDVF */
-#define NV_ROUTE_ERR_FIRST_0_INVALIDROUTEPOLICYERR__ONWRITE "oneToClear"   /*       */
 #define NV_ROUTE_ERR_FIRST_0_INVALIDROUTEPOLICYERR_NONE    0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_FIRST_0_INVALIDROUTEPOLICYERR_CLEAR   0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_FIRST_0_GLT_ECC_LIMIT_ERR             3:3             /* RWDVF */
-#define NV_ROUTE_ERR_FIRST_0_GLT_ECC_LIMIT_ERR__ONWRITE    "oneToClear"    /*       */
 #define NV_ROUTE_ERR_FIRST_0_GLT_ECC_LIMIT_ERR_NONE        0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_FIRST_0_GLT_ECC_LIMIT_ERR_CLEAR       0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_FIRST_0_GLT_ECC_DBE_ERR               4:4             /* RWDVF */
-#define NV_ROUTE_ERR_FIRST_0_GLT_ECC_DBE_ERR__ONWRITE      "oneToClear"    /*       */
 #define NV_ROUTE_ERR_FIRST_0_GLT_ECC_DBE_ERR_NONE          0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_FIRST_0_GLT_ECC_DBE_ERR_CLEAR         0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_FIRST_0_PDCTRLPARERR                  6:6             /* RWDVF */
-#define NV_ROUTE_ERR_FIRST_0_PDCTRLPARERR__ONWRITE         "oneToClear"    /*       */
 #define NV_ROUTE_ERR_FIRST_0_PDCTRLPARERR_NONE             0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_FIRST_0_PDCTRLPARERR_CLEAR            0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_FIRST_0_NVS_ECC_LIMIT_ERR             7:7             /* RWDVF */
-#define NV_ROUTE_ERR_FIRST_0_NVS_ECC_LIMIT_ERR__ONWRITE    "oneToClear"    /*       */
 #define NV_ROUTE_ERR_FIRST_0_NVS_ECC_LIMIT_ERR_NONE        0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_FIRST_0_NVS_ECC_LIMIT_ERR_CLEAR       0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_FIRST_0_NVS_ECC_DBE_ERR               8:8             /* RWDVF */
-#define NV_ROUTE_ERR_FIRST_0_NVS_ECC_DBE_ERR__ONWRITE      "oneToClear"    /*       */
 #define NV_ROUTE_ERR_FIRST_0_NVS_ECC_DBE_ERR_NONE          0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_FIRST_0_NVS_ECC_DBE_ERR_CLEAR         0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_FIRST_0_CDTPARERR                     9:9             /* RWDVF */
-#define NV_ROUTE_ERR_FIRST_0_CDTPARERR__ONWRITE            "oneToClear"    /*       */
 #define NV_ROUTE_ERR_FIRST_0_CDTPARERR_NONE                0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_FIRST_0_CDTPARERR_CLEAR               0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_FIRST_0_MCRID_ECC_LIMIT_ERR           10:10           /* RWDVF */
-#define NV_ROUTE_ERR_FIRST_0_MCRID_ECC_LIMIT_ERR__ONWRITE  "oneToClear"    /*       */
 #define NV_ROUTE_ERR_FIRST_0_MCRID_ECC_LIMIT_ERR_NONE      0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_FIRST_0_MCRID_ECC_LIMIT_ERR_CLEAR     0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_FIRST_0_MCRID_ECC_DBE_ERR             11:11           /* RWDVF */
-#define NV_ROUTE_ERR_FIRST_0_MCRID_ECC_DBE_ERR__ONWRITE    "oneToClear"    /*       */
 #define NV_ROUTE_ERR_FIRST_0_MCRID_ECC_DBE_ERR_NONE        0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_FIRST_0_MCRID_ECC_DBE_ERR_CLEAR       0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_FIRST_0_EXTMCRID_ECC_LIMIT_ERR        12:12           /* RWDVF */
-#define NV_ROUTE_ERR_FIRST_0_EXTMCRID_ECC_LIMIT_ERR__ONWRITE "oneToClear"  /*       */
 #define NV_ROUTE_ERR_FIRST_0_EXTMCRID_ECC_LIMIT_ERR_NONE   0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_FIRST_0_EXTMCRID_ECC_LIMIT_ERR_CLEAR  0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_FIRST_0_EXTMCRID_ECC_DBE_ERR          13:13           /* RWDVF */
-#define NV_ROUTE_ERR_FIRST_0_EXTMCRID_ECC_DBE_ERR__ONWRITE "oneToClear"    /*       */
 #define NV_ROUTE_ERR_FIRST_0_EXTMCRID_ECC_DBE_ERR_NONE     0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_FIRST_0_EXTMCRID_ECC_DBE_ERR_CLEAR    0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_FIRST_0_RAM_ECC_LIMIT_ERR             14:14           /* RWDVF */
-#define NV_ROUTE_ERR_FIRST_0_RAM_ECC_LIMIT_ERR__ONWRITE    "oneToClear"    /*       */
 #define NV_ROUTE_ERR_FIRST_0_RAM_ECC_LIMIT_ERR_NONE        0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_FIRST_0_RAM_ECC_LIMIT_ERR_CLEAR       0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_FIRST_0_RAM_ECC_DBE_ERR               15:15           /* RWDVF */
-#define NV_ROUTE_ERR_FIRST_0_RAM_ECC_DBE_ERR__ONWRITE      "oneToClear"    /*       */
 #define NV_ROUTE_ERR_FIRST_0_RAM_ECC_DBE_ERR_NONE          0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_FIRST_0_RAM_ECC_DBE_ERR_CLEAR         0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_FIRST_0_INVALID_MCRID_ERR             16:16           /* RWDVF */
-#define NV_ROUTE_ERR_FIRST_0_INVALID_MCRID_ERR__ONWRITE    "oneToClear"    /*       */
 #define NV_ROUTE_ERR_FIRST_0_INVALID_MCRID_ERR_NONE        0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_FIRST_0_INVALID_MCRID_ERR_CLEAR       0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_FIRST_0_MC_TRIGGER_ERR                17:17           /* RWDVF */
-#define NV_ROUTE_ERR_FIRST_0_MC_TRIGGER_ERR__ONWRITE       "oneToClear"    /*       */
 #define NV_ROUTE_ERR_FIRST_0_MC_TRIGGER_ERR_NONE           0x00000000      /* RWD-V */
 #define NV_ROUTE_ERR_FIRST_0_MC_TRIGGER_ERR_CLEAR          0x00000001      /* RW--V */
 #define NV_ROUTE_ERR_HEADER_LOG_4                          0x00005430      /* R--4R */

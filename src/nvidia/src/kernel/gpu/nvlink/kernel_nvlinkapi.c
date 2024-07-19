@@ -239,3 +239,23 @@ subdeviceCtrlCmdNvlinkSetNvlinkPeer_IMPL
     return status;
 }
 
+NV_STATUS
+subdeviceCtrlCmdNvlinkGetSupportedCounters_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_NVLINK_GET_SUPPORTED_COUNTERS_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    NvBool bMIGNvLinkP2PSupported = ((pKernelMIGManager != NULL) &&
+                                     kmigmgrIsMIGNvlinkP2PSupported(pGpu, pKernelMIGManager));
+    if ((pKernelNvlink == NULL) || !bMIGNvLinkP2PSupported)
+    {
+        NV_PRINTF(LEVEL_INFO, "NVLink unavailable. Return\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+    return knvlinkGetSupportedCounters_HAL(pGpu, pKernelNvlink, pParams);
+}
+

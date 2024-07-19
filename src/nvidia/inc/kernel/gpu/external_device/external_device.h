@@ -26,7 +26,7 @@
 
 /* ------------------------ Includes --------------------------------------- */
 #include "Nvcm.h"
-#include "sweng/dispsw.h"
+#include "gpu/disp/dispsw.h"
 
 /* ------------------------ Types definitions ------------------------------ */
 typedef struct DACEXTERNALDEVICE DACEXTERNALDEVICE, *PDACEXTERNALDEVICE;
@@ -103,6 +103,8 @@ struct DACEXTERNALDEVICE
     struct {
         NvBool   Scheduled;
         NvU32    TimeOut;
+
+        TMR_EVENT *pTimerEvent;
     } WatchdogControl;
 };
 
@@ -126,7 +128,6 @@ NV_STATUS readregu008_extdeviceTargeted(OBJGPU *, PDACEXTERNALDEVICE, NvU8, NvU8
 void      extdevDestroy  (OBJGPU *);
 NV_STATUS extdevScheduleWatchdog(OBJGPU *, PDACEXTERNALDEVICE);
 NV_STATUS extdevCancelWatchdog  (OBJGPU *, PDACEXTERNALDEVICE);
-NV_STATUS extdevServiceWatchdog (OBJGPU *, struct OBJTMR *, void *); // OBJTMR routine signature (TIMERPROC).
 void      extdevGsyncService(OBJGPU *,      NvU8, NvU8, NvU8, NvBool);
 
 #endif

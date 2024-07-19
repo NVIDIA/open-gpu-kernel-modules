@@ -28,7 +28,7 @@
 
 /* ------------------------- Includes --------------------------------------- */
 #include "gpu/gpu.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "gpu/fsp/kern_fsp.h"
 #include "published/hopper/gh100/dev_vm.h"
 #include "published/hopper/gh100/dev_timer.h"

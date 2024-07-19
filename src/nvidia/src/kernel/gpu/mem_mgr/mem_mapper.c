@@ -27,7 +27,6 @@
 #include "core/locks.h"
 #include "gpu/subdevice/subdevice.h"
 #include "gpu/device/device.h"
-#include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/sem_surf.h"
 #include "mem_mgr/vaspace.h"
 #include "gpu/mem_mgr/virt_mem_allocator.h"
@@ -64,15 +63,16 @@ memmapperExecuteMap
     NvU64 dmaOffset = baseVirtAddr + pMap->virtualOffset;
     NvU64 newDmaOffset = dmaOffset;
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        pRmApi->Map(pRmApi,
-                    RES_GET_CLIENT_HANDLE(pMemoryMapper),
-                    RES_GET_PARENT_HANDLE(pMemoryMapper->pSubdevice),
-                    pMap->hVirtualMemory,
-                    pMap->hPhysicalMemory,
-                    pMap->physicalOffset,
-                    pMap->size,
-                    pMap->dmaFlags | DRF_DEF(OS46, _FLAGS, _DMA_OFFSET_FIXED, _TRUE),
-                    &newDmaOffset));
+        pRmApi->MapWithSecInfo(pRmApi,
+                               RES_GET_CLIENT_HANDLE(pMemoryMapper),
+                               RES_GET_PARENT_HANDLE(pMemoryMapper->pSubdevice),
+                               pMap->hVirtualMemory,
+                               pMap->hPhysicalMemory,
+                               pMap->physicalOffset,
+                               pMap->size,
+                               pMap->dmaFlags | DRF_DEF(OS46, _FLAGS, _DMA_OFFSET_FIXED, _TRUE),
+                               &newDmaOffset,
+                               &pMemoryMapper->secInfo));
     NV_ASSERT_OR_RETURN(newDmaOffset == dmaOffset, NV_ERR_INVALID_STATE);
 
     return NV_OK;
@@ -98,13 +98,14 @@ memmapperExecuteUnmap
         pUnmap->hVirtualMemory, pUnmap->virtualOffset, pUnmap->size, pUnmap->dmaFlags);
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        pRmApi->Unmap(pRmApi,
-                      RES_GET_CLIENT_HANDLE(pMemoryMapper),
-                      RES_GET_PARENT_HANDLE(pMemoryMapper->pSubdevice),
-                      pUnmap->hVirtualMemory,
-                      pUnmap->dmaFlags,
-                      baseVirtAddr + pUnmap->virtualOffset,
-                      pUnmap->size));
+        pRmApi->UnmapWithSecInfo(pRmApi,
+                                 RES_GET_CLIENT_HANDLE(pMemoryMapper),
+                                 RES_GET_PARENT_HANDLE(pMemoryMapper->pSubdevice),
+                                 pUnmap->hVirtualMemory,
+                                 pUnmap->dmaFlags,
+                                 baseVirtAddr + pUnmap->virtualOffset,
+                                 pUnmap->size,
+                                 &pMemoryMapper->secInfo));
 
     return NV_OK;
 }
@@ -154,24 +155,17 @@ memmapperExecuteSemaphoreSignal
 static void
 memmapperSetError
 (
-    MemoryMapper *pMemoryMapper,
-    NV_STATUS     errorStatus
+    MemoryMapper                         *pMemoryMapper,
+    NV_STATUS                             errorStatus
 )
 {
-    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(GPU_RES_GET_GPU(pMemoryMapper));
-
     NV_ASSERT_OR_RETURN_VOID(errorStatus != NV_OK);
 
-    NV_PRINTF(LEVEL_ERROR, "MemoryMapper encountered an error, not processing more commands.\n");
-
-    pMemoryMapper->bError = NV_TRUE;
-
-    NV_MEMORY_MAPPER_NOTIFICATION notification = {0};
-    notification.status = errorStatus;
-    TRANSFER_SURFACE dstSurf = {0};
-    dstSurf.pMemDesc = pMemoryMapper->pNotificationMemory->pMemDesc;
-    dstSurf.offset   = pMemoryMapper->notificationOffset;
-    NV_CHECK(LEVEL_ERROR, memmgrMemWrite(pMemoryManager, &dstSurf, &notification, sizeof(notification), 0) == NV_OK);
+    if (!pMemoryMapper->bError)
+    {
+        pMemoryMapper->pNotification->status = errorStatus;
+        pMemoryMapper->bError = NV_TRUE;
+    }
 }
 
 static void
@@ -300,11 +294,18 @@ memmapperConstruct_IMPL
     NV_MEMORY_MAPPER_ALLOCATION_PARAMS *pAllocParams   = pParams->pAllocParams;
     NV_STATUS                           status;
 
-    if (!GPU_GET_DMA(pGpu)->bMemoryMapperApiEnabled)
-        return NV_ERR_NOT_SUPPORTED;
+    // Store secInfo used at MemoryMapper creation for RMAPI calls on behalf of the client
+    pMemoryMapper->secInfo = pCallContext->secInfo;
+    pMemoryMapper->secInfo.paramLocation = PARAM_LOCATION_KERNEL;
 
     pMemoryMapper->pSubdevice = dynamicCast(pParentRef->pResource, Subdevice);
     NV_ASSERT_OR_RETURN(pMemoryMapper->pSubdevice != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    NV_ASSERT_OR_RETURN(pAllocParams->maxQueueSize != 0, NV_ERR_INVALID_ARGUMENT);
+    pMemoryMapper->operationQueueLen = pAllocParams->maxQueueSize;
+    pMemoryMapper->pOperationQueue =
+        portMemAllocNonPaged(pMemoryMapper->operationQueueLen * sizeof(*pMemoryMapper->pOperationQueue));
+    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pMemoryMapper->pOperationQueue != NULL, NV_ERR_NO_MEMORY, failed);
 
     RsResourceRef *pNotificationMemoryRef;
     NV_ASSERT_OK_OR_GOTO(status,
@@ -313,13 +314,12 @@ memmapperConstruct_IMPL
     pMemoryMapper->pNotificationMemory = dynamicCast(pNotificationMemoryRef->pResource, Memory);
     NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR,
         pMemoryMapper->pNotificationMemory != NULL, NV_ERR_INVALID_ARGUMENT, failed);
-    pMemoryMapper->notificationOffset = pAllocParams->notificationOffset;
-
-    NV_ASSERT_OR_RETURN(pAllocParams->maxQueueSize != 0, NV_ERR_INVALID_ARGUMENT);
-    pMemoryMapper->operationQueueLen = pAllocParams->maxQueueSize;
-    pMemoryMapper->pOperationQueue =
-        portMemAllocNonPaged(pMemoryMapper->operationQueueLen * sizeof(*pMemoryMapper->pOperationQueue));
-    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pMemoryMapper->pOperationQueue != NULL, NV_ERR_NO_MEMORY, failed);
+    pMemoryMapper->notificationSurface.pMemDesc = pMemoryMapper->pNotificationMemory->pMemDesc;
+    pMemoryMapper->notificationSurface.offset = pAllocParams->notificationOffset;
+    pMemoryMapper->pNotification = (NV_MEMORY_MAPPER_NOTIFICATION *)memmgrMemBeginTransfer(
+        pMemoryManager, &pMemoryMapper->notificationSurface,
+        sizeof (NV_MEMORY_MAPPER_NOTIFICATION), TRANSFER_FLAGS_USE_BAR1);
+    NV_ASSERT_TRUE_OR_GOTO(status, pMemoryMapper->pNotification != NULL, NV_ERR_NO_MEMORY, failed);
 
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
         pRmApi->DupObject(pRmApi,
@@ -339,7 +339,7 @@ memmapperConstruct_IMPL
         clientGetResourceRef(pInternalRsClient, pMemoryMapper->hInternalSemaphoreSurface, &pSemSurfRef),
         failed);
     pMemoryMapper->pSemSurf = dynamicCast(pSemSurfRef->pResource, SemaphoreSurface);
-    NV_CHECK_OR_RETURN(LEVEL_ERROR, pMemoryMapper->pSemSurf != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_TRUE_OR_GOTO(status, LEVEL_ERROR, pMemoryMapper->pSemSurf != NULL, NV_ERR_INVALID_ARGUMENT, failed);
 
     pMemoryMapper->pWorkerParams = portMemAllocNonPaged(sizeof(*pMemoryMapper->pWorkerParams));
     pMemoryMapper->pWorkerParams->pMemoryMapper = pMemoryMapper;
@@ -354,6 +354,12 @@ memmapperConstruct_IMPL
 failed:
     if (status != NV_OK)
     {
+        if (pMemoryMapper->pNotification != NULL)
+        {
+            memmgrMemEndTransfer(pMemoryManager, &pMemoryMapper->notificationSurface,
+                                 sizeof (NV_MEMORY_MAPPER_NOTIFICATION), TRANSFER_FLAGS_USE_BAR1);
+        }
+
         if (pMemoryMapper->hInternalSemaphoreSurface != NV01_NULL_OBJECT)
         {
             pRmApi->Free(pRmApi, pMemoryManager->hClient, pMemoryMapper->hInternalSemaphoreSurface);
@@ -374,6 +380,9 @@ memmapperDestruct_IMPL
 {
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(GPU_RES_GET_GPU(pMemoryMapper));
     RM_API        *pRmApi         = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+
+    memmgrMemEndTransfer(pMemoryManager, &pMemoryMapper->notificationSurface,
+                         sizeof (NV_MEMORY_MAPPER_NOTIFICATION), TRANSFER_FLAGS_USE_BAR1);
 
     refRemoveDependant(RES_GET_REF(pMemoryMapper->pNotificationMemory), RES_GET_REF(pMemoryMapper));
     pRmApi->Free(pRmApi, pMemoryManager->hClient, pMemoryMapper->hInternalSemaphoreSurface);
@@ -422,7 +431,13 @@ memmapperCtrlCmdSubmitOperations_IMPL
 {
     NV00FE_CTRL_OPERATION        *pOperataionsParams = pParams->pOperations;
     NV_STATUS                     status             = NV_OK;
+    CALL_CONTEXT                 *pCallContext       = resservGetTlsCallContext();
     NvU32                         i;
+
+    // Check that the client hasn't dropped privileges
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pCallContext->secInfo.privLevel == pMemoryMapper->secInfo.privLevel,
+        NV_ERR_INVALID_STATE);
+
     // If the queue is not empty, worker from previous commands will do the job
     NvBool bQueueWorker = (pMemoryMapper->operationQueuePut == pMemoryMapper->operationQueueGet);
 

@@ -21,12 +21,12 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "sweng/dispsw.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "gpu_mgr/gpu_mgr.h"
 #include "rmapi/control.h"
 #include "rmapi/mapping_list.h"
 #include "gpu/device/device.h"
+#include "gpu/disp/dispsw.h"
 #include "gpu/disp/kern_disp.h"
 #include "gpu/disp/head/kernel_head.h"
 #include "gpu/mem_mgr/virt_mem_allocator_common.h"

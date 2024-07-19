@@ -59,7 +59,7 @@ static void tlb_batch_flush_invalidate_per_va(uvm_tlb_batch_t *batch, uvm_push_t
         // Use the depth of the max page size as it's the broadest
         NvU32 depth = tree->hal->page_table_depth(max_page_size);
 
-        UVM_ASSERT(hweight32(entry->page_sizes) > 0);
+        UVM_ASSERT(hweight64(entry->page_sizes) > 0);
 
         // Do the required membar only after the last invalidate
         if (i == batch->count - 1)

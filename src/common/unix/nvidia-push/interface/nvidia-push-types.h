@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -108,6 +108,7 @@ typedef struct _NvPushDeviceRec {
 
     NvBool          hostLBoverflowBug1667921 : 1;
     NvBool          clientSli : 1;   /* Provided by the host driver */
+    NvBool          hasFb : 1;       /* Computed from supportedClasses[] */
 
     NvU32           clientHandle;    /* Provided by the host driver */
     NvU32           numSubDevices;   /* Provided by the host driver */

@@ -589,7 +589,7 @@ static NV_STATUS uvm_migrate_ranges(uvm_va_space_t *va_space,
                     skipped_migrate = true;
             }
             else if (uvm_processor_mask_test(&va_range->uvm_lite_gpus, dest_id) &&
-                     !uvm_id_equal(dest_id, policy->preferred_location)) {
+                     !uvm_va_policy_preferred_location_equal(policy, dest_id, NUMA_NO_NODE)) {
                 // Don't migrate to a non-faultable GPU that is in UVM-Lite mode,
                 // unless it's the preferred location
                 status = NV_ERR_INVALID_DEVICE;

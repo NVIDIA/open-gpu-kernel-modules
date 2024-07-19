@@ -174,6 +174,21 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Semaphor
         /*func=*/       "semsurfCtrlCmdUnregisterWaiter"
 #endif
     },
+    {               /*  [5] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x108u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) semsurfCtrlCmdUnbindChannel_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x108u)
+        /*flags=*/      0x108u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0xda0006u,
+        /*paramSize=*/  sizeof(NV_SEMAPHORE_SURFACE_CTRL_UNBIND_CHANNEL_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_SemaphoreSurface.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "semsurfCtrlCmdUnbindChannel"
+#endif
+    },
 
 };
 
@@ -310,7 +325,7 @@ static void __nvoc_up_thunk_RsResource_semsurfAddAdditionalDependants(struct RsC
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_SemaphoreSurface = 
 {
-    /*numEntries=*/     5,
+    /*numEntries=*/     6,
     /*pExportEntries=*/ __nvoc_exported_method_def_SemaphoreSurface
 };
 
@@ -360,6 +375,11 @@ static void __nvoc_init_funcTable_SemaphoreSurface_1(SemaphoreSurface *pThis) {
     // semsurfCtrlCmdBindChannel -- exported (id=0xda0002)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x108u)
     pThis->__semsurfCtrlCmdBindChannel__ = &semsurfCtrlCmdBindChannel_IMPL;
+#endif
+
+    // semsurfCtrlCmdUnbindChannel -- exported (id=0xda0006)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x108u)
+    pThis->__semsurfCtrlCmdUnbindChannel__ = &semsurfCtrlCmdUnbindChannel_IMPL;
 #endif
 
     // semsurfCtrlCmdRegisterWaiter -- exported (id=0xda0003)
@@ -448,13 +468,13 @@ static void __nvoc_init_funcTable_SemaphoreSurface_1(SemaphoreSurface *pThis) {
 
     // semsurfAddAdditionalDependants -- virtual inherited (res) base (gpures)
     pThis->__semsurfAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_semsurfAddAdditionalDependants;
-} // End __nvoc_init_funcTable_SemaphoreSurface_1 with approximately 31 basic block(s).
+} // End __nvoc_init_funcTable_SemaphoreSurface_1 with approximately 32 basic block(s).
 
 
-// Initialize vtable(s) for 30 virtual method(s).
+// Initialize vtable(s) for 31 virtual method(s).
 void __nvoc_init_funcTable_SemaphoreSurface(SemaphoreSurface *pThis) {
 
-    // Initialize vtable(s) with 30 per-object function pointer(s).
+    // Initialize vtable(s) with 31 per-object function pointer(s).
     __nvoc_init_funcTable_SemaphoreSurface_1(pThis);
 }
 

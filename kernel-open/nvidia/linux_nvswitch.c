@@ -49,7 +49,7 @@
 
 #include "ioctl_nvswitch.h"
 
-const static struct
+static const struct
 {
     NvlStatus status;
     int err;

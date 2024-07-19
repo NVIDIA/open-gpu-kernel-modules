@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2017-2023 NVIDIA Corporation
+    Copyright (c) 2017-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -279,20 +279,6 @@ uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_volta(NvU64 big_page_size)
     }
 
     return &volta_mmu_mode_hal;
-}
-
-uvm_mmu_engine_type_t uvm_hal_volta_mmu_engine_id_to_type(NvU16 mmu_engine_id)
-{
-    if (mmu_engine_id >= NV_PFAULT_MMU_ENG_ID_HOST0 && mmu_engine_id <= NV_PFAULT_MMU_ENG_ID_HOST13)
-        return UVM_MMU_ENGINE_TYPE_HOST;
-
-    if (mmu_engine_id >= NV_PFAULT_MMU_ENG_ID_CE0 && mmu_engine_id <= NV_PFAULT_MMU_ENG_ID_CE8)
-        return UVM_MMU_ENGINE_TYPE_CE;
-
-    // We shouldn't be servicing faults from any other engines
-    UVM_ASSERT_MSG(mmu_engine_id >= NV_PFAULT_MMU_ENG_ID_GRAPHICS, "Unexpected engine ID: 0x%x\n", mmu_engine_id);
-
-    return UVM_MMU_ENGINE_TYPE_GRAPHICS;
 }
 
 NvU16 uvm_hal_volta_mmu_client_id_to_utlb_id(NvU16 client_id)

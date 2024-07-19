@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2020 NVIDIA Corporation
+    Copyright (c) 2020-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -21,6 +21,7 @@
 
 *******************************************************************************/
 
+#include "uvm_hal.h"
 #include "uvm_hal_types.h"
 #include "hwref/hopper/gh100/dev_fault.h"
 
@@ -39,4 +40,50 @@ NvU8 uvm_hal_hopper_fault_buffer_get_ve_id(NvU16 mmu_engine_id, uvm_mmu_engine_t
     else {
         return 0;
     }
+}
+
+static bool client_id_ce(NvU16 client_id)
+{
+    if (client_id >= NV_PFAULT_CLIENT_HUB_HSCE0 && client_id <= NV_PFAULT_CLIENT_HUB_HSCE9)
+        return true;
+
+    if (client_id >= NV_PFAULT_CLIENT_HUB_HSCE10 && client_id <= NV_PFAULT_CLIENT_HUB_HSCE15)
+        return true;
+
+    switch (client_id) {
+        case NV_PFAULT_CLIENT_HUB_CE0:
+        case NV_PFAULT_CLIENT_HUB_CE1:
+        case NV_PFAULT_CLIENT_HUB_CE2:
+        case NV_PFAULT_CLIENT_HUB_CE3:
+            return true;
+    }
+
+    return false;
+}
+
+uvm_mmu_engine_type_t uvm_hal_hopper_fault_buffer_get_mmu_engine_type(NvU16 mmu_engine_id,
+                                                                      uvm_fault_client_type_t client_type,
+                                                                      NvU16 client_id)
+{
+    // Servicing CE and Host (HUB clients) faults.
+    if (client_type == UVM_FAULT_CLIENT_TYPE_HUB) {
+        if (client_id_ce(client_id)) {
+            UVM_ASSERT(mmu_engine_id >= NV_PFAULT_MMU_ENG_ID_CE0 && mmu_engine_id <= NV_PFAULT_MMU_ENG_ID_CE9);
+
+            return UVM_MMU_ENGINE_TYPE_CE;
+        }
+
+        if (client_id == NV_PFAULT_CLIENT_HUB_HOST || client_id == NV_PFAULT_CLIENT_HUB_ESC) {
+            UVM_ASSERT(mmu_engine_id >= NV_PFAULT_MMU_ENG_ID_HOST0 && mmu_engine_id <= NV_PFAULT_MMU_ENG_ID_HOST44);
+
+            return UVM_MMU_ENGINE_TYPE_HOST;
+        }
+    }
+
+    // We shouldn't be servicing faults from any other engines other than GR.
+    UVM_ASSERT_MSG(client_id <= NV_PFAULT_CLIENT_GPC_ROP_3, "Unexpected client ID: 0x%x\n", client_id);
+    UVM_ASSERT_MSG(mmu_engine_id >= NV_PFAULT_MMU_ENG_ID_GRAPHICS, "Unexpected engine ID: 0x%x\n", mmu_engine_id);
+    UVM_ASSERT(client_type == UVM_FAULT_CLIENT_TYPE_GPC);
+
+    return UVM_MMU_ENGINE_TYPE_GRAPHICS;
 }

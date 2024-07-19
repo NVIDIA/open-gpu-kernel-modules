@@ -132,12 +132,12 @@ static NV_STATUS __nvoc_up_thunk_OBJVASPACE_iovaspaceReserveMempool(struct OBJIO
 }
 
 // iovaspaceGetHeap: inline virtual inherited (vaspace) base (vaspace) body
-static struct OBJEHEAP * __nvoc_up_thunk_OBJVASPACE_iovaspaceGetHeap(struct OBJIOVASPACE *pVAS) {
+static OBJEHEAP * __nvoc_up_thunk_OBJVASPACE_iovaspaceGetHeap(struct OBJIOVASPACE *pVAS) {
     return vaspaceGetHeap((struct OBJVASPACE *)(((unsigned char *) pVAS) + __nvoc_rtti_OBJIOVASPACE_OBJVASPACE.offset));
 }
 
 // iovaspaceGetMapPageSize: inline virtual inherited (vaspace) base (vaspace) body
-static NvU64 __nvoc_up_thunk_OBJVASPACE_iovaspaceGetMapPageSize(struct OBJIOVASPACE *pVAS, struct OBJGPU *pGpu, struct EMEMBLOCK *pMemBlock) {
+static NvU64 __nvoc_up_thunk_OBJVASPACE_iovaspaceGetMapPageSize(struct OBJIOVASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock) {
     return vaspaceGetMapPageSize((struct OBJVASPACE *)(((unsigned char *) pVAS) + __nvoc_rtti_OBJIOVASPACE_OBJVASPACE.offset), pGpu, pMemBlock);
 }
 

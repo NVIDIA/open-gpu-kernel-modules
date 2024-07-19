@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1305,6 +1305,132 @@ nv_dma_buf_export(
     return status;
 #else
     return NV_ERR_NOT_SUPPORTED;
+#endif // CONFIG_DMA_SHARED_BUFFER
+}
+
+NV_STATUS NV_API_CALL nv_dma_import_dma_buf
+(
+    nv_dma_device_t *dma_dev,
+    struct dma_buf *dma_buf,
+    NvU32 *size,
+    struct sg_table **sgt,
+    nv_dma_buf_t **import_priv
+)
+{
+#if defined(CONFIG_DMA_SHARED_BUFFER)
+    nv_dma_buf_t *nv_dma_buf = NULL;
+    struct dma_buf_attachment *dma_attach = NULL;
+    struct sg_table *map_sgt = NULL;
+    NV_STATUS status = NV_OK;
+
+    if ((dma_dev == NULL) ||
+        (dma_buf == NULL) ||
+        (size == NULL) ||
+        (sgt  == NULL) ||
+        (import_priv == NULL))
+    {
+        nv_printf(NV_DBG_ERRORS, "Import arguments are NULL!\n");
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    status = os_alloc_mem((void **)&nv_dma_buf, sizeof(*nv_dma_buf));
+    if (status != NV_OK)
+    {
+        nv_printf(NV_DBG_ERRORS, "Can't allocate mem for nv_buf!\n");
+        return status;
+    }
+
+    get_dma_buf(dma_buf);
+
+    dma_attach = dma_buf_attach(dma_buf, dma_dev->dev);
+    if (IS_ERR_OR_NULL(dma_attach))
+    {
+        nv_printf(NV_DBG_ERRORS, "Can't attach dma_buf!\n");
+        status = NV_ERR_OPERATING_SYSTEM;
+
+        goto dma_buf_attach_fail;
+    }
+
+    map_sgt = dma_buf_map_attachment(dma_attach, DMA_BIDIRECTIONAL);
+    if (IS_ERR_OR_NULL(map_sgt))
+    {
+        nv_printf(NV_DBG_ERRORS, "Can't map dma attachment!\n");
+        status = NV_ERR_OPERATING_SYSTEM;
+
+        goto dma_buf_map_fail;
+    }
+
+    nv_dma_buf->dma_buf = dma_buf;
+    nv_dma_buf->dma_attach = dma_attach;
+    nv_dma_buf->sgt = map_sgt;
+
+    *size = dma_buf->size;
+    *import_priv = nv_dma_buf;
+    *sgt = map_sgt;
+
+    return NV_OK;
+
+dma_buf_map_fail:
+    dma_buf_detach(dma_buf, dma_attach);
+dma_buf_attach_fail:
+    os_free_mem(nv_dma_buf);
+    dma_buf_put(dma_buf);
+
+    return status;
+#else
+    return NV_ERR_NOT_SUPPORTED;
+#endif // CONFIG_DMA_SHARED_BUFFER
+}
+
+NV_STATUS NV_API_CALL nv_dma_import_from_fd
+(
+    nv_dma_device_t *dma_dev,
+    NvS32 fd,
+    NvU32 *size,
+    struct sg_table **sgt,
+    nv_dma_buf_t **import_priv
+)
+{
+#if defined(CONFIG_DMA_SHARED_BUFFER)
+    struct dma_buf *dma_buf = dma_buf_get(fd);
+    NV_STATUS status;
+
+    if (IS_ERR_OR_NULL(dma_buf))
+    {
+        nv_printf(NV_DBG_ERRORS, "Can't get dma_buf from fd!\n");
+        return NV_ERR_OPERATING_SYSTEM;
+    }
+
+    status = nv_dma_import_dma_buf(dma_dev,
+                                   dma_buf, size, sgt, import_priv);
+    dma_buf_put(dma_buf);
+
+    return status;
+#else
+    return NV_ERR_NOT_SUPPORTED;
+#endif // CONFIG_DMA_SHARED_BUFFER
+}
+
+void NV_API_CALL nv_dma_release_dma_buf
+(
+    nv_dma_buf_t *import_priv
+)
+{
+#if defined(CONFIG_DMA_SHARED_BUFFER)
+    nv_dma_buf_t *nv_dma_buf = NULL;
+
+    if (import_priv == NULL)
+    {
+        return;
+    }
+
+    nv_dma_buf = (nv_dma_buf_t *)import_priv;
+    dma_buf_unmap_attachment(nv_dma_buf->dma_attach, nv_dma_buf->sgt,
+                                DMA_BIDIRECTIONAL);
+    dma_buf_detach(nv_dma_buf->dma_buf, nv_dma_buf->dma_attach);
+    dma_buf_put(nv_dma_buf->dma_buf);
+
+    os_free_mem(nv_dma_buf);
 #endif // CONFIG_DMA_SHARED_BUFFER
 }
 

@@ -91,19 +91,19 @@ struct KernelIoctrl {
     NV_STATUS (*__kioctrlConstructEngine__)(struct OBJGPU *, struct KernelIoctrl * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
     NvBool (*__kioctrlGetMinionEnableDefault__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kioctrlMinionConstruct__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // halified (2 hals) body
-    void (*__kioctrlInitMissing__)(POBJGPU, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStatePreInitLocked__)(POBJGPU, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStatePreInitUnlocked__)(POBJGPU, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStateInitLocked__)(POBJGPU, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStateInitUnlocked__)(POBJGPU, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStatePreLoad__)(POBJGPU, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStateLoad__)(POBJGPU, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStatePostLoad__)(POBJGPU, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStatePreUnload__)(POBJGPU, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStateUnload__)(POBJGPU, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStatePostUnload__)(POBJGPU, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    void (*__kioctrlStateDestroy__)(POBJGPU, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__kioctrlIsPresent__)(POBJGPU, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
+    void (*__kioctrlInitMissing__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kioctrlStatePreInitLocked__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kioctrlStatePreInitUnlocked__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kioctrlStateInitLocked__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kioctrlStateInitUnlocked__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kioctrlStatePreLoad__)(struct OBJGPU *, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kioctrlStateLoad__)(struct OBJGPU *, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kioctrlStatePostLoad__)(struct OBJGPU *, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kioctrlStatePreUnload__)(struct OBJGPU *, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kioctrlStateUnload__)(struct OBJGPU *, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kioctrlStatePostUnload__)(struct OBJGPU *, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    void (*__kioctrlStateDestroy__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__kioctrlIsPresent__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
 
     // 4 PDB properties
     NvBool PDB_PROP_KIOCTRL_MINION_AVAILABLE;
@@ -138,19 +138,19 @@ struct KernelIoctrl_PRIVATE {
     NV_STATUS (*__kioctrlConstructEngine__)(struct OBJGPU *, struct KernelIoctrl * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
     NvBool (*__kioctrlGetMinionEnableDefault__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__kioctrlMinionConstruct__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // halified (2 hals) body
-    void (*__kioctrlInitMissing__)(POBJGPU, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStatePreInitLocked__)(POBJGPU, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStatePreInitUnlocked__)(POBJGPU, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStateInitLocked__)(POBJGPU, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStateInitUnlocked__)(POBJGPU, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStatePreLoad__)(POBJGPU, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStateLoad__)(POBJGPU, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStatePostLoad__)(POBJGPU, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStatePreUnload__)(POBJGPU, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStateUnload__)(POBJGPU, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kioctrlStatePostUnload__)(POBJGPU, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    void (*__kioctrlStateDestroy__)(POBJGPU, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__kioctrlIsPresent__)(POBJGPU, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
+    void (*__kioctrlInitMissing__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kioctrlStatePreInitLocked__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kioctrlStatePreInitUnlocked__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kioctrlStateInitLocked__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kioctrlStateInitUnlocked__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kioctrlStatePreLoad__)(struct OBJGPU *, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kioctrlStateLoad__)(struct OBJGPU *, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kioctrlStatePostLoad__)(struct OBJGPU *, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kioctrlStatePreUnload__)(struct OBJGPU *, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kioctrlStateUnload__)(struct OBJGPU *, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kioctrlStatePostUnload__)(struct OBJGPU *, struct KernelIoctrl * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    void (*__kioctrlStateDestroy__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__kioctrlIsPresent__)(struct OBJGPU *, struct KernelIoctrl * /*this*/);  // virtual inherited (engstate) base (engstate)
 
     // 4 PDB properties
     NvBool PDB_PROP_KIOCTRL_MINION_AVAILABLE;
@@ -255,55 +255,55 @@ static inline NV_STATUS kioctrlMinionConstruct_DISPATCH(struct OBJGPU *pGpu, str
     return pKernelIoctrl->__kioctrlMinionConstruct__(pGpu, pKernelIoctrl);
 }
 
-static inline void kioctrlInitMissing_DISPATCH(POBJGPU pGpu, struct KernelIoctrl *pEngstate) {
+static inline void kioctrlInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate) {
     pEngstate->__kioctrlInitMissing__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kioctrlStatePreInitLocked_DISPATCH(POBJGPU pGpu, struct KernelIoctrl *pEngstate) {
+static inline NV_STATUS kioctrlStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate) {
     return pEngstate->__kioctrlStatePreInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kioctrlStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct KernelIoctrl *pEngstate) {
+static inline NV_STATUS kioctrlStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate) {
     return pEngstate->__kioctrlStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kioctrlStateInitLocked_DISPATCH(POBJGPU pGpu, struct KernelIoctrl *pEngstate) {
+static inline NV_STATUS kioctrlStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate) {
     return pEngstate->__kioctrlStateInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kioctrlStateInitUnlocked_DISPATCH(POBJGPU pGpu, struct KernelIoctrl *pEngstate) {
+static inline NV_STATUS kioctrlStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate) {
     return pEngstate->__kioctrlStateInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kioctrlStatePreLoad_DISPATCH(POBJGPU pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
+static inline NV_STATUS kioctrlStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
     return pEngstate->__kioctrlStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS kioctrlStateLoad_DISPATCH(POBJGPU pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
+static inline NV_STATUS kioctrlStateLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
     return pEngstate->__kioctrlStateLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS kioctrlStatePostLoad_DISPATCH(POBJGPU pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
+static inline NV_STATUS kioctrlStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
     return pEngstate->__kioctrlStatePostLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS kioctrlStatePreUnload_DISPATCH(POBJGPU pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
+static inline NV_STATUS kioctrlStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
     return pEngstate->__kioctrlStatePreUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS kioctrlStateUnload_DISPATCH(POBJGPU pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
+static inline NV_STATUS kioctrlStateUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
     return pEngstate->__kioctrlStateUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS kioctrlStatePostUnload_DISPATCH(POBJGPU pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
+static inline NV_STATUS kioctrlStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate, NvU32 arg3) {
     return pEngstate->__kioctrlStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline void kioctrlStateDestroy_DISPATCH(POBJGPU pGpu, struct KernelIoctrl *pEngstate) {
+static inline void kioctrlStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate) {
     pEngstate->__kioctrlStateDestroy__(pGpu, pEngstate);
 }
 
-static inline NvBool kioctrlIsPresent_DISPATCH(POBJGPU pGpu, struct KernelIoctrl *pEngstate) {
+static inline NvBool kioctrlIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelIoctrl *pEngstate) {
     return pEngstate->__kioctrlIsPresent__(pGpu, pEngstate);
 }
 

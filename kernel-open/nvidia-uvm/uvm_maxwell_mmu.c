@@ -38,6 +38,7 @@
 #include "uvm_forward_decl.h"
 #include "uvm_gpu.h"
 #include "uvm_mmu.h"
+#include "uvm_hal.h"
 #include "uvm_push_macros.h"
 #include "hwref/maxwell/gm107/dev_mmu.h"
 
@@ -373,12 +374,6 @@ void uvm_hal_maxwell_mmu_enable_prefetch_faults_unsupported(uvm_parent_gpu_t *pa
 void uvm_hal_maxwell_mmu_disable_prefetch_faults_unsupported(uvm_parent_gpu_t *parent_gpu)
 {
     UVM_ASSERT_MSG(false, "mmu disable_prefetch_faults called on Maxwell GPU\n");
-}
-
-uvm_mmu_engine_type_t uvm_hal_maxwell_mmu_engine_id_to_type_unsupported(NvU16 mmu_engine_id)
-{
-    UVM_ASSERT(0);
-    return UVM_MMU_ENGINE_TYPE_COUNT;
 }
 
 NvU16 uvm_hal_maxwell_mmu_client_id_to_utlb_id_unsupported(NvU16 client_id)

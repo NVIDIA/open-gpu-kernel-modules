@@ -87,6 +87,7 @@ typedef NvUFXP32                                                    NvUFXP28_4;
 typedef NvUFXP64                                                   NvUFXP40_24;
 typedef NvUFXP64                                                   NvUFXP48_16;
 typedef NvUFXP64                                                   NvUFXP52_12;
+typedef NvUFXP64                                                    NvUFXP60_4;
 
 /*!
  * Utility macros used in converting between signed integers and fixed-point
@@ -370,6 +371,11 @@ typedef NvSFXP24_8              NvTemp;
  * Macro to convert SFXP 11.5 to NvTemp.
  */
 #define NV_TYPES_NVSFXP11_5_TO_NV_TEMP(x) ((NvTemp)(x) << 3)
+
+/*!
+ * Macro to convert UFXP 5.3 to NvTemp.
+ */
+#define NV_TYPES_NVUFXP5_3_TO_NV_TEMP(x) ((NvTemp)(x) << 5)
 
 /*!
  * Macro to convert UFXP11.5 Watts to NvU32 milli-Watts.

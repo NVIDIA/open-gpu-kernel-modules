@@ -67,6 +67,9 @@ extern "C" {
 #define NVBIT64(b)                NVBIT_TYPE(b, NvU64)
 #endif
 
+//Concatenate 2 32bit values to a 64bit value
+#define NV_CONCAT_32_TO_64(hi, lo) ((((NvU64)hi) << 32) | ((NvU64)lo))
+
 // Helper macro's for 32 bit bitmasks
 #define NV_BITMASK32_ELEMENT_SIZE            (sizeof(NvU32) << 3)
 #define NV_BITMASK32_IDX(chId)               (((chId) & ~(0x1F)) >> 5)  

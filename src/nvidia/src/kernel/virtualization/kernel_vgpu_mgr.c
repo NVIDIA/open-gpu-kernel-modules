@@ -38,6 +38,7 @@
 #include "gpu/mem_sys/kern_mem_sys.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/heap.h"
+#include "containers/eheap_old.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "nvdevid.h"
 #include "nvmisc.h"
@@ -157,6 +158,13 @@ kvgpumgrGetPgpuIndex(KernelVgpuMgr *pKernelVgpuMgr, NvU32 gpuPciId, NvU32* index
 
 NvBool
 kvgpumgrIsHeterogeneousVgpuSupported(void)
+{
+    /*This support is currently limited to VMware and KVM*/
+    return (osIsVgpuVfioPresent() == NV_OK);
+}
+
+NvBool
+kvgpumgrIsVgpuWarmUpdateSupported(void)
 {
     /*This support is currently limited to VMware and KVM*/
     return (osIsVgpuVfioPresent() == NV_OK);
@@ -825,7 +833,7 @@ kvgpumgrHeterogeneousGetChidOffset(NvU32 vgpuTypeId, NvU16 placementId,
     if ((status = kvgpumgrGetVgpuTypeInfo(vgpuTypeId, &pVgpuTypeInfo)) != NV_OK)
         return status;
 
-    if ((placementId == NVA081_PLACEMENT_ID_INVALID))
+    if (placementId == NVA081_PLACEMENT_ID_INVALID)
         return NV_ERR_INVALID_ARGUMENT;
 
     /* Channel count provided by plugin and calculated by RM should be same */
@@ -2715,7 +2723,7 @@ _kvgpumgrSetHeterogeneousResources(OBJGPU *pGpu, KERNEL_PHYS_GPU_INFO *pPgpuInfo
      * at the start.
      */
     newVmmuSegMax = ((vmmuSegMin + vmmuSegMax) / 2);
-    if ((isCarveOutGspHeap == NV_TRUE))
+    if (isCarveOutGspHeap)
     {
         NV_ASSERT((gspHeapOffsetMin == 0));
 
@@ -2744,7 +2752,7 @@ _kvgpumgrSetHeterogeneousResources(OBJGPU *pGpu, KERNEL_PHYS_GPU_INFO *pPgpuInfo
      * at the end.
      */
     newVmmuSegMin = (vmmuSegMin + vmmuSegMax) / 2;
-    if ((isCarveOutGspHeap == NV_TRUE))
+    if (isCarveOutGspHeap)
     {
         newVmmuSegMax = vmmuSegMax - 1;
         newGspHeapOffsetMin = newVmmuSegMax * vmmuSegSize;

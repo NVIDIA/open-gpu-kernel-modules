@@ -51,7 +51,7 @@ namespace DisplayPort
     {
     public:
         //
-        //  IOCTL access to RM class DISPLAY_COMMON and NV50_DISPLAY
+
         //
         virtual NvU32 rmControl0073(NvU32 command, void * params, NvU32 paramSize) = 0;
         virtual NvU32 rmControl5070(NvU32 command, void * params, NvU32 paramSize) = 0;
@@ -157,7 +157,6 @@ namespace DisplayPort
         bool _useDfpMaxLinkRateCaps;
         bool _applyLinkBwOverrideWarRegVal;
         bool _isDynamicMuxCapable;
-        bool _isMDMEnabled;
         bool _enableMSAOverrideOverMST;
         bool _isLTPhyRepeaterSupported;
         bool _isMSTPCONCapsReadDisabled;
@@ -236,10 +235,9 @@ namespace DisplayPort
             if ((_applyLinkBwOverrideWarRegVal || _useDfpMaxLinkRateCaps) &&
                 (_maxLinkRateSupportedDfp < _maxLinkRateSupportedGpu))
             {
-                return _maxLinkRateSupportedDfp;
+                return (LINK_RATE_TO_DATA_RATE_8B_10B(_maxLinkRateSupportedDfp));
             }
-
-            return _maxLinkRateSupportedGpu;
+            return (LINK_RATE_TO_DATA_RATE_8B_10B(_maxLinkRateSupportedGpu));
         }
 
         virtual bool isForceRmEdidRequired()
@@ -258,11 +256,6 @@ namespace DisplayPort
         virtual bool isInternalPanelDynamicMuxCapable()
         {
             return (_isDynamicMuxCapable && _isEDP);
-        }
-
-        virtual bool isMDMEnabled()
-        {
-            return (_isMDMEnabled && _isEDP);
         }
 
         virtual bool isDownspreadSupported()

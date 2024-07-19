@@ -218,6 +218,9 @@ rmclientConstruct_IMPL
     if (status == NV_OK && pParams->pAllocParams != NULL)
         *(NvHandle*)(pParams->pAllocParams) = pParams->hClient;
 
+    NV_PRINTF(LEVEL_INFO, "New RM Client: hClient=0x%08x (%c), ProcID=%u, name='%s'\n",
+        pRsClient->hClient, (pRsClient->type == CLIENT_TYPE_USER) ? 'U' : 'K', pClient->ProcID, pClient->name);
+
 out:
     if (status != NV_OK)
     {

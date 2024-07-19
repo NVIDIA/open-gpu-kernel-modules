@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,7 +29,7 @@
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "gpu/bus/kern_bus.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "kernel/gpu/intr/intr.h"
 
@@ -60,6 +60,8 @@
 #include "class/clc8b5.h"   // HOPPER_DMA_COPY_A
 
 #include "class/clc86f.h"   // HOPPER_CHANNEL_GPFIFO_A
+
+#include "class/clc9b5.h"      // BLACKWELL_DMA_COPY_A
 
 static NvU64  _scrubCheckProgress(OBJMEMSCRUB *pScrubber);
 static NvU64  _searchScrubList(OBJMEMSCRUB *pScrubber, RmPhysAddr base, NvU64 size);
@@ -175,7 +177,8 @@ scrubberConstruct
         {
             NV_ASSERT_OK_OR_GOTO(status, objCreate(&pScrubber->pCeUtils, pHeap, CeUtils, pGpu, pKernelMIGGPUInstance, &ceUtilsAllocParams),
                destroyscrublist);
-            pScrubber->engineType = NV2080_ENGINE_TYPE_COPY2;
+
+            pScrubber->engineType = gpuGetFirstAsyncLce_HAL(pGpu);
         }
         NV_ASSERT_OK_OR_GOTO(status, pmaRegMemScrub(pPma, pScrubber), destroyscrublist);
     }

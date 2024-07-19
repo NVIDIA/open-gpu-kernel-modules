@@ -197,7 +197,7 @@ plxPex8747GetFirmwareInfo
 // Do not perform per-gpu memory tracking as pCl remains
 // during the SLI transitions.
 //
-static POBJHWBC
+static OBJHWBC *
 objClFindUpperHWBC
 (
     OBJCL *pCl,

@@ -32,10 +32,11 @@
 #include "os/os.h"
 #include "nvrm_registry.h"
 #include "gpu_mgr/gpu_mgr.h"
+#include "fsp/fsp_clock_boost_rpc.h"
 
 #if RMCFG_MODULE_ENABLED (GSP)
 #include "gpu/gsp/gsp.h"
-#include "objflcnable.h"
+#include "gpu/falcon/objflcnable.h"
 #endif
 
 #define ASYNC_FSP_POLL_PERIOD_MS 50
@@ -134,6 +135,14 @@ kfspInitRegistryOverrides
     {
         pKernelFsp->setProperty(pKernelFsp, PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM, NV_TRUE);
     }
+
+    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_DISABLE_FSP_FUSE_ERROR_CHECK, &data) == NV_OK) &&
+        (data == NV_REG_STR_RM_DISABLE_FSP_FUSE_ERROR_CHECK_YES))
+    {
+        NV_PRINTF(LEVEL_ERROR, "FSP's fuse error detection status check "
+                               "during boot is disabled using the regkey.\n");
+        pKernelFsp->setProperty(pKernelFsp, PDB_PROP_KFSP_FSP_FUSE_ERROR_CHECK_ENABLED, NV_FALSE);
+    }
 }
 
 
@@ -181,6 +190,16 @@ kfspCleanupBootState_IMPL
         pKernelFsp->pGspBootArgsMemdesc = NULL;
     }
 
+    if (pKernelFsp->bClockBoostSupported)
+    {
+        NV_STATUS status = kfspSendClockBoostRpc_HAL(pGpu, pKernelFsp,
+                                                     FSP_CLOCK_BOOST_FEATURE_DISABLE_SUBMESSAGE_ID);
+
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,"Clock boost disbalement via FSP failed with error 0x%x\n", status);
+        }
+    }
 }
 
 /*!
@@ -825,7 +844,7 @@ kfspPollForAsyncResponse
     {
         status = osQueueWorkItemWithFlags(pGpu, kfspProcessAsyncResponseCallback, NULL,
                                           OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
-                                          OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE_RW);
+                                          OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE);
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR, "Failed to schedule work item, status=%x\n", status);

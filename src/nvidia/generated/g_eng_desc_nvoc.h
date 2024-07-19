@@ -1610,7 +1610,7 @@ typedef struct KernelCcu KernelCcu;
 
 // Indexed CE engine tag reference
 #define ENG_CE(x)                MKENGDESC(classId(OBJCE),               x)
-#define ENG_CE__SIZE_1           10
+#define ENG_CE__SIZE_1           20
 #define IS_CE(engDesc)           (ENGDESC_FIELD(engDesc, _CLASS) == classId(OBJCE))
 #define GET_CE_IDX(engDesc)      ENGDESC_FIELD(engDesc, _INST)
 
@@ -1658,7 +1658,8 @@ typedef struct KernelCcu KernelCcu;
 
 // Indexed HSHUB engine tag reference
 #define ENG_HSHUB(x)             MKENGDESC(classId(Hshub),            x)
-#define ENG_HSHUB__SIZE_1        5
+// Bug 3748354 - Use this new value for all chips once Blackwell is released
+#define ENG_HSHUB__SIZE_1        12
 #define IS_HSHUB(engDesc)        (ENGDESC_FIELD(engDesc, _CLASS) == classId(Hshub))
 #define GET_HSHUB_IDX(engDesc)   ENGDESC_FIELD(engDesc, _INST)
 
@@ -1670,7 +1671,7 @@ typedef struct KernelCcu KernelCcu;
 
 // Indexed OFA engine tag reference
 #define ENG_OFA(x)                  MKENGDESC(classId(OBJOFA),              x)
-#define ENG_OFA__SIZE_1             1
+#define ENG_OFA__SIZE_1             2
 #define IS_OFA(engDesc)             (ENGDESC_FIELD(engDesc, _CLASS) == classId(OBJOFA))
 #define GET_OFA_IDX(engDesc)        ENGDESC_FIELD(engDesc, _INST)
 #endif // _ENG_DESC_H_

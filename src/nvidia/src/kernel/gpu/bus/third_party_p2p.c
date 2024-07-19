@@ -870,11 +870,11 @@ static NV_STATUS _thirdpartyp2pDelMappingInfoByKey
                     }
                     else
                     {
-                        status = kbusUnmapFbAperture_HAL(pGpu, pKernelBus,
-                                                         pExtentInfo->pMemDesc,
-                                                         pExtentInfo->fbApertureOffset,
-                                                         pExtentInfo->length,
-                                                         BUS_MAP_FB_FLAGS_MAP_UNICAST);
+                        status = kbusUnmapFbApertureSingle(pGpu, pKernelBus,
+                                                           pExtentInfo->pMemDesc,
+                                                           pExtentInfo->fbApertureOffset,
+                                                           pExtentInfo->length,
+                                                           BUS_MAP_FB_FLAGS_MAP_UNICAST);
                     }
                     NV_ASSERT(status == NV_OK);
 

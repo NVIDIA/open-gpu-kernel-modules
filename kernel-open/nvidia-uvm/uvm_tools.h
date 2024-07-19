@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2019 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -109,6 +109,11 @@ void uvm_tools_broadcast_replay_sync(uvm_gpu_t *gpu, NvU32 batch_id, uvm_fault_c
 void uvm_tools_broadcast_access_counter(uvm_gpu_t *gpu,
                                         const uvm_access_counter_buffer_entry_t *buffer_entry,
                                         bool on_managed_phys);
+
+void uvm_tools_record_access_counter(uvm_va_space_t *va_space,
+                                     uvm_gpu_id_t gpu_id,
+                                     const uvm_access_counter_buffer_entry_t *buffer_entry,
+                                     bool on_managed_phys);
 
 void uvm_tools_test_hmm_split_invalidate(uvm_va_space_t *va_space);
 

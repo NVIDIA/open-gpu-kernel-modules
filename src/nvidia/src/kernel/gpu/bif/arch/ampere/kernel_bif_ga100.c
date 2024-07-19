@@ -423,13 +423,9 @@ kbifPrepareForFullChipReset_GA100
         DBG_BREAKPOINT();
     }
 
-    //
-    // This code was added to solve a problem that we are seeing with the Microsoft new Win8 Tdr Tests
-    // The GPU is not hung but given more work then it can consume in 2 seconds.  As a result we have some
-    // outstanding IO operations that will cause us issues in the future
-    //
-    oldPmc       = kmcReadPmcEnableReg_HAL(pGpu, pKernelMc, NV_FALSE);
-    oldPmcDevice = kmcReadPmcEnableReg_HAL(pGpu, pKernelMc, NV_TRUE);
+    // First Reset PMC
+    oldPmc       = GPU_REG_RD32(pGpu, NV_PMC_ENABLE);
+    oldPmcDevice = GPU_REG_RD32(pGpu, NV_PMC_DEVICE_ENABLE(0));
     kbifResetHostEngines_HAL(pGpu, pKernelBif, pKernelMc);
 
     if (!pCl->getProperty(pCl, PDB_PROP_CL_PCIE_CONFIG_ACCESSIBLE)
@@ -466,7 +462,10 @@ kbifResetHostEngines_GA100
 
     // First Reset engines in NV_PMC_ENABLE
     engineMask = kbifGetValidEnginesToReset_HAL(pGpu, pKernelBif);
-    NV_ASSERT(kmcWritePmcEnableReg_HAL(pGpu, pKernelMc, engineMask, NV_FALSE, NV_FALSE) == NV_OK);
+    if (engineMask)
+    {
+        NV_ASSERT_OK(kmcWritePmcEnableReg_HAL(pGpu, pKernelMc, engineMask, NV_FALSE, NV_FALSE));
+    }
 
     //
     // Reset engines in NV_PMC_DEVICE_ENABLE. For Ampere and later chips,

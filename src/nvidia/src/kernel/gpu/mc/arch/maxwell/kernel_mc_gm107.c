@@ -113,30 +113,3 @@ kmcWritePmcEnableReg_GM107
 
     return NV_OK;
 }
-
-/*!
- * @brief  Returns PMC_ENABLE or PMC_DEVICE_ENABLE register based on bIsPmcDeviceEngine.
- *  If bIsPmcDeviceEngine is NV_TRUE, then return 0 on pre-Ampere,
- *                      as NV_PMC_DEVICE_ENABLE is available from Ampere, else
- *  If bIsPmcDeviceEngine is NV_FALSE, then return NV_PMC_ENABLE.
- *
- * @param[in]  pGpu     GPU object pointer
- * @param[in]  pKernelMc
- * @param[in]  bIsPmcDeviceEngine if true return 0 else return PMC_ENABLE register.
- *
- * @return  NvU32 containing register data
- */
-NvU32
-kmcReadPmcEnableReg_GM107
-(
-    OBJGPU *pGpu,
-    KernelMc *pKernelMc,
-    NvBool bIsPmcDeviceEngine
-)
-{
-    // Ensure that caller never sets bIsPmcDeviceEngine = NV_TRUE for pre-Ampere.
-    NV_ASSERT(bIsPmcDeviceEngine == NV_FALSE);
-
-    return bIsPmcDeviceEngine ? 0 :
-           GPU_REG_RD32(pGpu, NV_PMC_ENABLE);
-}

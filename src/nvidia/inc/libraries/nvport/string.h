@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -146,6 +146,19 @@ NvLength portStringBufferToHex(char *str, NvLength strSize, const NvU8 *buf, NvL
  * terminator (i.e. strlen(str))
  */
 NvLength portStringBufferToHexGroups(char *str, NvLength strSize, const NvU8 *buf, NvLength bufSize, NvLength groupCount, const NvU32 *groups, const char *separator);
+
+/**
+ * @brief Breaks the string into series of tokens using the delimiter
+ *
+ * @returns The number of characters in destination buffer
+ */
+char *portStringTok(char *str, const char *delim, char **saveptr);
+
+/**
+ * @brief Returns pointer to the first occurrence of substr in the str
+ *
+ */
+char *portStringStrStr(char *str, char *substr);
 
 /// @} End core functions
 

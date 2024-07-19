@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -81,7 +81,6 @@ typedef struct ENGSTATE_TRANSITION_DATA
     NvU64 transitionStartTimeNs;
 } ENGSTATE_TRANSITION_DATA;
 
-typedef struct OBJENGSTATE *POBJENGSTATE;
 
 #define ENG_GET_FIFO(p)                 (engstateGetFifo(staticCast((p), OBJENGSTATE)))
 #define ENG_GET_ENG_DESC(p)             (staticCast((p), OBJENGSTATE)->engDesc)
@@ -115,20 +114,20 @@ struct OBJENGSTATE {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate
 
     // Vtable with 14 per-object function pointers
-    NV_STATUS (*__engstateConstructEngine__)(POBJGPU, struct OBJENGSTATE * /*this*/, ENGDESCRIPTOR);  // virtual
-    void (*__engstateInitMissing__)(POBJGPU, struct OBJENGSTATE * /*this*/);  // virtual
-    NV_STATUS (*__engstateStatePreInitLocked__)(POBJGPU, struct OBJENGSTATE * /*this*/);  // virtual
-    NV_STATUS (*__engstateStatePreInitUnlocked__)(POBJGPU, struct OBJENGSTATE * /*this*/);  // virtual
-    NV_STATUS (*__engstateStateInitLocked__)(POBJGPU, struct OBJENGSTATE * /*this*/);  // virtual
-    NV_STATUS (*__engstateStateInitUnlocked__)(POBJGPU, struct OBJENGSTATE * /*this*/);  // virtual
-    NV_STATUS (*__engstateStatePreLoad__)(POBJGPU, struct OBJENGSTATE * /*this*/, NvU32);  // virtual
-    NV_STATUS (*__engstateStateLoad__)(POBJGPU, struct OBJENGSTATE * /*this*/, NvU32);  // virtual
-    NV_STATUS (*__engstateStatePostLoad__)(POBJGPU, struct OBJENGSTATE * /*this*/, NvU32);  // virtual
-    NV_STATUS (*__engstateStatePreUnload__)(POBJGPU, struct OBJENGSTATE * /*this*/, NvU32);  // virtual
-    NV_STATUS (*__engstateStateUnload__)(POBJGPU, struct OBJENGSTATE * /*this*/, NvU32);  // virtual
-    NV_STATUS (*__engstateStatePostUnload__)(POBJGPU, struct OBJENGSTATE * /*this*/, NvU32);  // virtual
-    void (*__engstateStateDestroy__)(POBJGPU, struct OBJENGSTATE * /*this*/);  // virtual
-    NvBool (*__engstateIsPresent__)(POBJGPU, struct OBJENGSTATE * /*this*/);  // virtual
+    NV_STATUS (*__engstateConstructEngine__)(struct OBJGPU *, struct OBJENGSTATE * /*this*/, ENGDESCRIPTOR);  // virtual
+    void (*__engstateInitMissing__)(struct OBJGPU *, struct OBJENGSTATE * /*this*/);  // virtual
+    NV_STATUS (*__engstateStatePreInitLocked__)(struct OBJGPU *, struct OBJENGSTATE * /*this*/);  // virtual
+    NV_STATUS (*__engstateStatePreInitUnlocked__)(struct OBJGPU *, struct OBJENGSTATE * /*this*/);  // virtual
+    NV_STATUS (*__engstateStateInitLocked__)(struct OBJGPU *, struct OBJENGSTATE * /*this*/);  // virtual
+    NV_STATUS (*__engstateStateInitUnlocked__)(struct OBJGPU *, struct OBJENGSTATE * /*this*/);  // virtual
+    NV_STATUS (*__engstateStatePreLoad__)(struct OBJGPU *, struct OBJENGSTATE * /*this*/, NvU32);  // virtual
+    NV_STATUS (*__engstateStateLoad__)(struct OBJGPU *, struct OBJENGSTATE * /*this*/, NvU32);  // virtual
+    NV_STATUS (*__engstateStatePostLoad__)(struct OBJGPU *, struct OBJENGSTATE * /*this*/, NvU32);  // virtual
+    NV_STATUS (*__engstateStatePreUnload__)(struct OBJGPU *, struct OBJENGSTATE * /*this*/, NvU32);  // virtual
+    NV_STATUS (*__engstateStateUnload__)(struct OBJGPU *, struct OBJENGSTATE * /*this*/, NvU32);  // virtual
+    NV_STATUS (*__engstateStatePostUnload__)(struct OBJGPU *, struct OBJENGSTATE * /*this*/, NvU32);  // virtual
+    void (*__engstateStateDestroy__)(struct OBJGPU *, struct OBJENGSTATE * /*this*/);  // virtual
+    NvBool (*__engstateIsPresent__)(struct OBJGPU *, struct OBJENGSTATE * /*this*/);  // virtual
 
     // 1 PDB property
     NvBool PDB_PROP_ENGSTATE_IS_MISSING;
@@ -205,89 +204,138 @@ NV_STATUS __nvoc_objCreate_OBJENGSTATE(OBJENGSTATE**, Dynamic*, NvU32);
 #define engstateIsPresent(pGpu, pEngstate) engstateIsPresent_DISPATCH(pGpu, pEngstate)
 
 // Dispatch functions
-static inline NV_STATUS engstateConstructEngine_DISPATCH(POBJGPU pGpu, struct OBJENGSTATE *pEngstate, ENGDESCRIPTOR arg3) {
+static inline NV_STATUS engstateConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate, ENGDESCRIPTOR arg3) {
     return pEngstate->__engstateConstructEngine__(pGpu, pEngstate, arg3);
 }
 
-static inline void engstateInitMissing_DISPATCH(POBJGPU pGpu, struct OBJENGSTATE *pEngstate) {
+static inline void engstateInitMissing_DISPATCH(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate) {
     pEngstate->__engstateInitMissing__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS engstateStatePreInitLocked_DISPATCH(POBJGPU pGpu, struct OBJENGSTATE *pEngstate) {
+static inline NV_STATUS engstateStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate) {
     return pEngstate->__engstateStatePreInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS engstateStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct OBJENGSTATE *pEngstate) {
+static inline NV_STATUS engstateStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate) {
     return pEngstate->__engstateStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS engstateStateInitLocked_DISPATCH(POBJGPU pGpu, struct OBJENGSTATE *pEngstate) {
+static inline NV_STATUS engstateStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate) {
     return pEngstate->__engstateStateInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS engstateStateInitUnlocked_DISPATCH(POBJGPU pGpu, struct OBJENGSTATE *pEngstate) {
+static inline NV_STATUS engstateStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate) {
     return pEngstate->__engstateStateInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS engstateStatePreLoad_DISPATCH(POBJGPU pGpu, struct OBJENGSTATE *pEngstate, NvU32 arg3) {
+static inline NV_STATUS engstateStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate, NvU32 arg3) {
     return pEngstate->__engstateStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS engstateStateLoad_DISPATCH(POBJGPU pGpu, struct OBJENGSTATE *pEngstate, NvU32 arg3) {
+static inline NV_STATUS engstateStateLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate, NvU32 arg3) {
     return pEngstate->__engstateStateLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS engstateStatePostLoad_DISPATCH(POBJGPU pGpu, struct OBJENGSTATE *pEngstate, NvU32 arg3) {
+static inline NV_STATUS engstateStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate, NvU32 arg3) {
     return pEngstate->__engstateStatePostLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS engstateStatePreUnload_DISPATCH(POBJGPU pGpu, struct OBJENGSTATE *pEngstate, NvU32 arg3) {
+static inline NV_STATUS engstateStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate, NvU32 arg3) {
     return pEngstate->__engstateStatePreUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS engstateStateUnload_DISPATCH(POBJGPU pGpu, struct OBJENGSTATE *pEngstate, NvU32 arg3) {
+static inline NV_STATUS engstateStateUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate, NvU32 arg3) {
     return pEngstate->__engstateStateUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS engstateStatePostUnload_DISPATCH(POBJGPU pGpu, struct OBJENGSTATE *pEngstate, NvU32 arg3) {
+static inline NV_STATUS engstateStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate, NvU32 arg3) {
     return pEngstate->__engstateStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline void engstateStateDestroy_DISPATCH(POBJGPU pGpu, struct OBJENGSTATE *pEngstate) {
+static inline void engstateStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate) {
     pEngstate->__engstateStateDestroy__(pGpu, pEngstate);
 }
 
-static inline NvBool engstateIsPresent_DISPATCH(POBJGPU pGpu, struct OBJENGSTATE *pEngstate) {
+static inline NvBool engstateIsPresent_DISPATCH(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate) {
     return pEngstate->__engstateIsPresent__(pGpu, pEngstate);
 }
 
-NV_STATUS engstateConstructEngine_IMPL(POBJGPU pGpu, POBJENGSTATE pEngstate, ENGDESCRIPTOR arg3);
+NV_STATUS engstateConstructEngine_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate, ENGDESCRIPTOR arg3);
 
-void engstateInitMissing_IMPL(POBJGPU pGpu, POBJENGSTATE pEngstate);
+void engstateInitMissing_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate);
 
-NV_STATUS engstateStatePreInitLocked_IMPL(POBJGPU pGpu, POBJENGSTATE pEngstate);
+NV_STATUS engstateStatePreInitLocked_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate);
 
-NV_STATUS engstateStatePreInitUnlocked_IMPL(POBJGPU pGpu, POBJENGSTATE pEngstate);
+NV_STATUS engstateStatePreInitUnlocked_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate);
 
-NV_STATUS engstateStateInitLocked_IMPL(POBJGPU pGpu, POBJENGSTATE pEngstate);
+NV_STATUS engstateStateInitLocked_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate);
 
-NV_STATUS engstateStateInitUnlocked_IMPL(POBJGPU pGpu, POBJENGSTATE pEngstate);
+NV_STATUS engstateStateInitUnlocked_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate);
 
-NV_STATUS engstateStatePreLoad_IMPL(POBJGPU pGpu, POBJENGSTATE pEngstate, NvU32 arg3);
+NV_STATUS engstateStatePreLoad_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate, NvU32 arg3);
 
-NV_STATUS engstateStateLoad_IMPL(POBJGPU pGpu, POBJENGSTATE pEngstate, NvU32 arg3);
+NV_STATUS engstateStateLoad_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate, NvU32 arg3);
 
-NV_STATUS engstateStatePostLoad_IMPL(POBJGPU pGpu, POBJENGSTATE pEngstate, NvU32 arg3);
+NV_STATUS engstateStatePostLoad_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate, NvU32 arg3);
 
-NV_STATUS engstateStatePreUnload_IMPL(POBJGPU pGpu, POBJENGSTATE pEngstate, NvU32 arg3);
+NV_STATUS engstateStatePreUnload_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate, NvU32 arg3);
 
-NV_STATUS engstateStateUnload_IMPL(POBJGPU pGpu, POBJENGSTATE pEngstate, NvU32 arg3);
+NV_STATUS engstateStateUnload_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate, NvU32 arg3);
 
-NV_STATUS engstateStatePostUnload_IMPL(POBJGPU pGpu, POBJENGSTATE pEngstate, NvU32 arg3);
+NV_STATUS engstateStatePostUnload_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate, NvU32 arg3);
 
-void engstateStateDestroy_IMPL(POBJGPU pGpu, POBJENGSTATE pEngstate);
+void engstateStateDestroy_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate);
 
-NvBool engstateIsPresent_IMPL(POBJGPU pGpu, POBJENGSTATE pEngstate);
+NvBool engstateIsPresent_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate);
+
+void engstateDestruct_IMPL(struct OBJENGSTATE *pEngstate);
+
+#define __nvoc_engstateDestruct(pEngstate) engstateDestruct_IMPL(pEngstate)
+NV_STATUS engstateStatePreInit_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate);
+
+#ifdef __nvoc_eng_state_h_disabled
+static inline NV_STATUS engstateStatePreInit(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate) {
+    NV_ASSERT_FAILED_PRECOMP("OBJENGSTATE was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_eng_state_h_disabled
+#define engstateStatePreInit(pGpu, pEngstate) engstateStatePreInit_IMPL(pGpu, pEngstate)
+#endif //__nvoc_eng_state_h_disabled
+
+NV_STATUS engstateStateInit_IMPL(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate);
+
+#ifdef __nvoc_eng_state_h_disabled
+static inline NV_STATUS engstateStateInit(struct OBJGPU *pGpu, struct OBJENGSTATE *pEngstate) {
+    NV_ASSERT_FAILED_PRECOMP("OBJENGSTATE was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_eng_state_h_disabled
+#define engstateStateInit(pGpu, pEngstate) engstateStateInit_IMPL(pGpu, pEngstate)
+#endif //__nvoc_eng_state_h_disabled
+
+ENGDESCRIPTOR engstateGetDescriptor_IMPL(struct OBJENGSTATE *pEngstate);
+
+#ifdef __nvoc_eng_state_h_disabled
+static inline ENGDESCRIPTOR engstateGetDescriptor(struct OBJENGSTATE *pEngstate) {
+    NV_ASSERT_FAILED_PRECOMP("OBJENGSTATE was disabled!");
+    ENGDESCRIPTOR ret;
+    portMemSet(&ret, 0, sizeof(ENGDESCRIPTOR));
+    return ret;
+}
+#else //__nvoc_eng_state_h_disabled
+#define engstateGetDescriptor(pEngstate) engstateGetDescriptor_IMPL(pEngstate)
+#endif //__nvoc_eng_state_h_disabled
+
+struct OBJFIFO *engstateGetFifo_IMPL(struct OBJENGSTATE *pEngstate);
+
+#ifdef __nvoc_eng_state_h_disabled
+static inline struct OBJFIFO *engstateGetFifo(struct OBJENGSTATE *pEngstate) {
+    NV_ASSERT_FAILED_PRECOMP("OBJENGSTATE was disabled!");
+    return NULL;
+}
+#else //__nvoc_eng_state_h_disabled
+#define engstateGetFifo(pEngstate) engstateGetFifo_IMPL(pEngstate)
+#endif //__nvoc_eng_state_h_disabled
 
 NV_STATUS engstateConstructBase_IMPL(struct OBJENGSTATE *arg1, struct OBJGPU *arg2, ENGDESCRIPTOR arg3);
 
@@ -329,55 +377,6 @@ static inline const char *engstateGetName(struct OBJENGSTATE *arg1) {
 }
 #else //__nvoc_eng_state_h_disabled
 #define engstateGetName(arg1) engstateGetName_IMPL(arg1)
-#endif //__nvoc_eng_state_h_disabled
-
-void engstateDestruct_IMPL(POBJENGSTATE pEngstate);
-
-#define __nvoc_engstateDestruct(pEngstate) engstateDestruct_IMPL(pEngstate)
-NV_STATUS engstateStatePreInit_IMPL(POBJGPU pGpu, POBJENGSTATE pEngstate);
-
-#ifdef __nvoc_eng_state_h_disabled
-static inline NV_STATUS engstateStatePreInit(POBJGPU pGpu, POBJENGSTATE pEngstate) {
-    NV_ASSERT_FAILED_PRECOMP("OBJENGSTATE was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_eng_state_h_disabled
-#define engstateStatePreInit(pGpu, pEngstate) engstateStatePreInit_IMPL(pGpu, pEngstate)
-#endif //__nvoc_eng_state_h_disabled
-
-NV_STATUS engstateStateInit_IMPL(POBJGPU pGpu, POBJENGSTATE pEngstate);
-
-#ifdef __nvoc_eng_state_h_disabled
-static inline NV_STATUS engstateStateInit(POBJGPU pGpu, POBJENGSTATE pEngstate) {
-    NV_ASSERT_FAILED_PRECOMP("OBJENGSTATE was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_eng_state_h_disabled
-#define engstateStateInit(pGpu, pEngstate) engstateStateInit_IMPL(pGpu, pEngstate)
-#endif //__nvoc_eng_state_h_disabled
-
-ENGDESCRIPTOR engstateGetDescriptor_IMPL(POBJENGSTATE pEngstate);
-
-#ifdef __nvoc_eng_state_h_disabled
-static inline ENGDESCRIPTOR engstateGetDescriptor(POBJENGSTATE pEngstate) {
-    NV_ASSERT_FAILED_PRECOMP("OBJENGSTATE was disabled!");
-    ENGDESCRIPTOR ret;
-    portMemSet(&ret, 0, sizeof(ENGDESCRIPTOR));
-    return ret;
-}
-#else //__nvoc_eng_state_h_disabled
-#define engstateGetDescriptor(pEngstate) engstateGetDescriptor_IMPL(pEngstate)
-#endif //__nvoc_eng_state_h_disabled
-
-struct OBJFIFO *engstateGetFifo_IMPL(POBJENGSTATE pEngstate);
-
-#ifdef __nvoc_eng_state_h_disabled
-static inline struct OBJFIFO *engstateGetFifo(POBJENGSTATE pEngstate) {
-    NV_ASSERT_FAILED_PRECOMP("OBJENGSTATE was disabled!");
-    return NULL;
-}
-#else //__nvoc_eng_state_h_disabled
-#define engstateGetFifo(pEngstate) engstateGetFifo_IMPL(pEngstate)
 #endif //__nvoc_eng_state_h_disabled
 
 #undef PRIVATE_FIELD

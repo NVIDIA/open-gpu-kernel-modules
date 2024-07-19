@@ -49,6 +49,8 @@ extern "C" {
 *
 ******************************************************************************/
 
+#include "rmconfig.h"
+#include "nvrm_registry.h"
 #include "gpu/gpu.h"
 #include "gpu/eng_state.h"
 #include "liblogdecode.h"
@@ -94,21 +96,22 @@ struct KernelPmu {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct KernelPmu *__nvoc_pbase_KernelPmu;    // kpmu
 
-    // Vtable with 14 per-object function pointers
+    // Vtable with 15 per-object function pointers
     NV_STATUS (*__kpmuConstructEngine__)(struct OBJGPU *, struct KernelPmu * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
     void (*__kpmuStateDestroy__)(struct OBJGPU *, struct KernelPmu * /*this*/);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__kpmuStateInitLocked__)(struct OBJGPU *, struct KernelPmu * /*this*/);  // virtual override (engstate) base (engstate)
-    void (*__kpmuInitMissing__)(POBJGPU, struct KernelPmu * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kpmuStatePreInitLocked__)(POBJGPU, struct KernelPmu * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kpmuStatePreInitUnlocked__)(POBJGPU, struct KernelPmu * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kpmuStateInitUnlocked__)(POBJGPU, struct KernelPmu * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kpmuStatePreLoad__)(POBJGPU, struct KernelPmu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kpmuStateLoad__)(POBJGPU, struct KernelPmu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kpmuStatePostLoad__)(POBJGPU, struct KernelPmu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kpmuStatePreUnload__)(POBJGPU, struct KernelPmu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kpmuStateUnload__)(POBJGPU, struct KernelPmu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kpmuStatePostUnload__)(POBJGPU, struct KernelPmu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__kpmuIsPresent__)(POBJGPU, struct KernelPmu * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__kpmuGetIsSelfInit__)(struct KernelPmu * /*this*/);  // halified (2 hals) body
+    void (*__kpmuInitMissing__)(struct OBJGPU *, struct KernelPmu * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kpmuStatePreInitLocked__)(struct OBJGPU *, struct KernelPmu * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kpmuStatePreInitUnlocked__)(struct OBJGPU *, struct KernelPmu * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kpmuStateInitUnlocked__)(struct OBJGPU *, struct KernelPmu * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kpmuStatePreLoad__)(struct OBJGPU *, struct KernelPmu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kpmuStateLoad__)(struct OBJGPU *, struct KernelPmu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kpmuStatePostLoad__)(struct OBJGPU *, struct KernelPmu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kpmuStatePreUnload__)(struct OBJGPU *, struct KernelPmu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kpmuStateUnload__)(struct OBJGPU *, struct KernelPmu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kpmuStatePostUnload__)(struct OBJGPU *, struct KernelPmu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__kpmuIsPresent__)(struct OBJGPU *, struct KernelPmu * /*this*/);  // virtual inherited (engstate) base (engstate)
 
     // Data members
     LIBOS_LOG_DECODE logDecode;
@@ -158,6 +161,9 @@ NV_STATUS __nvoc_objCreate_KernelPmu(KernelPmu**, Dynamic*, NvU32);
 #define kpmuStateDestroy(pGpu, pKernelPmu) kpmuStateDestroy_DISPATCH(pGpu, pKernelPmu)
 #define kpmuStateInitLocked_FNPTR(pKernelPmu) pKernelPmu->__kpmuStateInitLocked__
 #define kpmuStateInitLocked(pGpu, pKernelPmu) kpmuStateInitLocked_DISPATCH(pGpu, pKernelPmu)
+#define kpmuGetIsSelfInit_FNPTR(pKernelPmu) pKernelPmu->__kpmuGetIsSelfInit__
+#define kpmuGetIsSelfInit(pKernelPmu) kpmuGetIsSelfInit_DISPATCH(pKernelPmu)
+#define kpmuGetIsSelfInit_HAL(pKernelPmu) kpmuGetIsSelfInit_DISPATCH(pKernelPmu)
 #define kpmuInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateInitMissing__
 #define kpmuInitMissing(pGpu, pEngstate) kpmuInitMissing_DISPATCH(pGpu, pEngstate)
 #define kpmuStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreInitLocked__
@@ -194,47 +200,51 @@ static inline NV_STATUS kpmuStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct
     return pKernelPmu->__kpmuStateInitLocked__(pGpu, pKernelPmu);
 }
 
-static inline void kpmuInitMissing_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate) {
+static inline NvBool kpmuGetIsSelfInit_DISPATCH(struct KernelPmu *pKernelPmu) {
+    return pKernelPmu->__kpmuGetIsSelfInit__(pKernelPmu);
+}
+
+static inline void kpmuInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelPmu *pEngstate) {
     pEngstate->__kpmuInitMissing__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kpmuStatePreInitLocked_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate) {
+static inline NV_STATUS kpmuStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelPmu *pEngstate) {
     return pEngstate->__kpmuStatePreInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kpmuStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate) {
+static inline NV_STATUS kpmuStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelPmu *pEngstate) {
     return pEngstate->__kpmuStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kpmuStateInitUnlocked_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate) {
+static inline NV_STATUS kpmuStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelPmu *pEngstate) {
     return pEngstate->__kpmuStateInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kpmuStatePreLoad_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate, NvU32 arg3) {
+static inline NV_STATUS kpmuStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelPmu *pEngstate, NvU32 arg3) {
     return pEngstate->__kpmuStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS kpmuStateLoad_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate, NvU32 arg3) {
+static inline NV_STATUS kpmuStateLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelPmu *pEngstate, NvU32 arg3) {
     return pEngstate->__kpmuStateLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS kpmuStatePostLoad_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate, NvU32 arg3) {
+static inline NV_STATUS kpmuStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelPmu *pEngstate, NvU32 arg3) {
     return pEngstate->__kpmuStatePostLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS kpmuStatePreUnload_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate, NvU32 arg3) {
+static inline NV_STATUS kpmuStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelPmu *pEngstate, NvU32 arg3) {
     return pEngstate->__kpmuStatePreUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS kpmuStateUnload_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate, NvU32 arg3) {
+static inline NV_STATUS kpmuStateUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelPmu *pEngstate, NvU32 arg3) {
     return pEngstate->__kpmuStateUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS kpmuStatePostUnload_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate, NvU32 arg3) {
+static inline NV_STATUS kpmuStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelPmu *pEngstate, NvU32 arg3) {
     return pEngstate->__kpmuStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NvBool kpmuIsPresent_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate) {
+static inline NvBool kpmuIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelPmu *pEngstate) {
     return pEngstate->__kpmuIsPresent__(pGpu, pEngstate);
 }
 
@@ -243,6 +253,14 @@ NV_STATUS kpmuConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelPmu *pKerne
 void kpmuStateDestroy_IMPL(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu);
 
 NV_STATUS kpmuStateInitLocked_IMPL(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu);
+
+static inline NvBool kpmuGetIsSelfInit_cbe027(struct KernelPmu *pKernelPmu) {
+    return ((NvBool)(0 == 0));
+}
+
+static inline NvBool kpmuGetIsSelfInit_491d52(struct KernelPmu *pKernelPmu) {
+    return ((NvBool)(0 != 0));
+}
 
 void kpmuDestruct_IMPL(struct KernelPmu *pKernelPmu);
 

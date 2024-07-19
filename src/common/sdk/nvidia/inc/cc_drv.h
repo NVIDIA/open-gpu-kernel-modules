@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -57,13 +57,14 @@ typedef enum ROTATE_IV_TYPE {
 
 // Status value written into NvNotification.Info16
 typedef enum KEY_ROTATION_STATUS {
-    KEY_ROTATION_STATUS_IDLE = 0,             // Key rotation complete/not in progress
-    KEY_ROTATION_STATUS_PENDING = 1,          // RM is waiting for clients to report their channels are idle for key rotation
-    KEY_ROTATION_STATUS_IN_PROGRESS = 2,      // Key rotation is in progress
-    KEY_ROTATION_STATUS_FAILED_TIMEOUT = 3,   // Key rotation timeout failure, RM will RC non-idle channels
-    KEY_ROTATION_STATUS_FAILED_THRESHOLD = 4, // Key rotation failed because upper threshold was crossed, RM will RC non-idle channels
-    KEY_ROTATION_STATUS_FAILED_ROTATION = 5,  // Internal RM failure while rotating keys for a certain channel, RM will RC the channel.
-    KEY_ROTATION_STATUS_MAX_COUNT = 6,
+    KEY_ROTATION_STATUS_IDLE = 0,                    // Key rotation complete/not in progress
+    KEY_ROTATION_STATUS_PENDING = 1,                 // RM is waiting for clients to report their channels are idle for key rotation
+    KEY_ROTATION_STATUS_IN_PROGRESS = 2,             // Key rotation is in progress
+    KEY_ROTATION_STATUS_FAILED_TIMEOUT = 3,          // Key rotation timeout failure, RM will RC non-idle channels
+    KEY_ROTATION_STATUS_FAILED_THRESHOLD = 4,        // Key rotation failed because upper threshold was crossed, RM will RC non-idle channels
+    KEY_ROTATION_STATUS_FAILED_ROTATION = 5,         // Internal RM failure while rotating keys for a certain channel, RM will RC the channel
+    KEY_ROTATION_STATUS_PENDING_TIMER_SUSPENDED = 6, // Key rotation timer suspended waiting for kernel key rotation to complete
+    KEY_ROTATION_STATUS_MAX_COUNT = 7,
 } KEY_ROTATION_STATUS;
 
 typedef struct CC_AES_CRYPTOBUNDLE {

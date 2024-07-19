@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -126,32 +126,31 @@ struct VirtMemAllocator {
     NV_STATUS (*__dmaAllocBar1P2PMapping__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/, DMA_BAR1P2P_MAPPING_PRARAMS *);  // halified (2 hals) body
     void (*__dmaFreeBar1P2PMapping__)(struct VirtMemAllocator * /*this*/, CLI_DMA_MAPPING_INFO *);  // halified (2 hals) body
     NV_STATUS (*__dmaStatePostLoad__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
-    void (*__dmaInitMissing__)(POBJGPU, struct VirtMemAllocator * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dmaStatePreInitLocked__)(POBJGPU, struct VirtMemAllocator * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dmaStatePreInitUnlocked__)(POBJGPU, struct VirtMemAllocator * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dmaStateInitUnlocked__)(POBJGPU, struct VirtMemAllocator * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dmaStatePreLoad__)(POBJGPU, struct VirtMemAllocator * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dmaStateLoad__)(POBJGPU, struct VirtMemAllocator * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dmaStatePreUnload__)(POBJGPU, struct VirtMemAllocator * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dmaStateUnload__)(POBJGPU, struct VirtMemAllocator * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__dmaStatePostUnload__)(POBJGPU, struct VirtMemAllocator * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    void (*__dmaStateDestroy__)(POBJGPU, struct VirtMemAllocator * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__dmaIsPresent__)(POBJGPU, struct VirtMemAllocator * /*this*/);  // virtual inherited (engstate) base (engstate)
+    void (*__dmaInitMissing__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__dmaStatePreInitLocked__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__dmaStatePreInitUnlocked__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__dmaStateInitUnlocked__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__dmaStatePreLoad__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__dmaStateLoad__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__dmaStatePreUnload__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__dmaStateUnload__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__dmaStatePostUnload__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    void (*__dmaStateDestroy__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__dmaIsPresent__)(struct OBJGPU *, struct VirtMemAllocator * /*this*/);  // virtual inherited (engstate) base (engstate)
 
-    // 8 PDB properties
+    // 7 PDB properties
     NvBool PDB_PROP_DMA_MMU_INVALIDATE_DISABLE;
     NvBool PDB_PROP_DMA_ENFORCE_32BIT_POINTER;
     NvBool PDB_PROP_DMA_MEMORY_MAP_OVERRIDE;
     NvBool PDB_PROP_DMA_SHADER_ACCESS_SUPPORTED;
     NvBool PDB_PROP_DMA_IS_SUPPORTED_SPARSE_VIRTUAL;
     NvBool PDB_PROP_DMA_ENABLE_FULL_COMP_TAG_LINE;
-    NvBool PDB_PROP_DMA_RESTRICT_VA_RANGE;
     NvBool PDB_PROP_DMA_MULTIPLE_VASPACES_SUPPORTED;
 
     // Data members
-    NvBool bMemoryMapperApiEnabled;
     NvU32 gpuGartCaps;
     NvU32 increaseRsvdPages;
+    NvBool bDmaRestrictVaRange;
     struct ENG_INFO_LINK_NODE *infoList;
 };
 
@@ -180,8 +179,6 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_VirtMemAllocator;
 // Property macros
 #define PDB_PROP_DMA_MMU_INVALIDATE_DISABLE_BASE_CAST
 #define PDB_PROP_DMA_MMU_INVALIDATE_DISABLE_BASE_NAME PDB_PROP_DMA_MMU_INVALIDATE_DISABLE
-#define PDB_PROP_DMA_RESTRICT_VA_RANGE_BASE_CAST
-#define PDB_PROP_DMA_RESTRICT_VA_RANGE_BASE_NAME PDB_PROP_DMA_RESTRICT_VA_RANGE
 #define PDB_PROP_DMA_IS_SUPPORTED_SPARSE_VIRTUAL_BASE_CAST
 #define PDB_PROP_DMA_IS_SUPPORTED_SPARSE_VIRTUAL_BASE_NAME PDB_PROP_DMA_IS_SUPPORTED_SPARSE_VIRTUAL
 #define PDB_PROP_DMA_ENFORCE_32BIT_POINTER_BASE_CAST
@@ -262,47 +259,47 @@ static inline NV_STATUS dmaStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct Vi
     return pDma->__dmaStatePostLoad__(pGpu, pDma, arg3);
 }
 
-static inline void dmaInitMissing_DISPATCH(POBJGPU pGpu, struct VirtMemAllocator *pEngstate) {
+static inline void dmaInitMissing_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate) {
     pEngstate->__dmaInitMissing__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS dmaStatePreInitLocked_DISPATCH(POBJGPU pGpu, struct VirtMemAllocator *pEngstate) {
+static inline NV_STATUS dmaStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate) {
     return pEngstate->__dmaStatePreInitLocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS dmaStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct VirtMemAllocator *pEngstate) {
+static inline NV_STATUS dmaStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate) {
     return pEngstate->__dmaStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS dmaStateInitUnlocked_DISPATCH(POBJGPU pGpu, struct VirtMemAllocator *pEngstate) {
+static inline NV_STATUS dmaStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate) {
     return pEngstate->__dmaStateInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS dmaStatePreLoad_DISPATCH(POBJGPU pGpu, struct VirtMemAllocator *pEngstate, NvU32 arg3) {
+static inline NV_STATUS dmaStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate, NvU32 arg3) {
     return pEngstate->__dmaStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS dmaStateLoad_DISPATCH(POBJGPU pGpu, struct VirtMemAllocator *pEngstate, NvU32 arg3) {
+static inline NV_STATUS dmaStateLoad_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate, NvU32 arg3) {
     return pEngstate->__dmaStateLoad__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS dmaStatePreUnload_DISPATCH(POBJGPU pGpu, struct VirtMemAllocator *pEngstate, NvU32 arg3) {
+static inline NV_STATUS dmaStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate, NvU32 arg3) {
     return pEngstate->__dmaStatePreUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS dmaStateUnload_DISPATCH(POBJGPU pGpu, struct VirtMemAllocator *pEngstate, NvU32 arg3) {
+static inline NV_STATUS dmaStateUnload_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate, NvU32 arg3) {
     return pEngstate->__dmaStateUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NV_STATUS dmaStatePostUnload_DISPATCH(POBJGPU pGpu, struct VirtMemAllocator *pEngstate, NvU32 arg3) {
+static inline NV_STATUS dmaStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate, NvU32 arg3) {
     return pEngstate->__dmaStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline void dmaStateDestroy_DISPATCH(POBJGPU pGpu, struct VirtMemAllocator *pEngstate) {
+static inline void dmaStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate) {
     pEngstate->__dmaStateDestroy__(pGpu, pEngstate);
 }
 
-static inline NvBool dmaIsPresent_DISPATCH(POBJGPU pGpu, struct VirtMemAllocator *pEngstate) {
+static inline NvBool dmaIsPresent_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pEngstate) {
     return pEngstate->__dmaIsPresent__(pGpu, pEngstate);
 }
 
@@ -525,6 +522,7 @@ static inline NV_STATUS dmaFreeMap(struct OBJGPU *pGpu, struct VirtMemAllocator 
 #define VAS_PAGESIZE_IDX_BIG   1
 #define VAS_PAGESIZE_IDX_HUGE  2
 #define VAS_PAGESIZE_IDX_512M  3
+#define VAS_PAGESIZE_IDX_256G  4
 
 // VMM-TODO Used by old VAS Object
 #define VAS_NUM_PAGESIZE_TYPES VAS_PAGESIZE_IDX_BIG+1

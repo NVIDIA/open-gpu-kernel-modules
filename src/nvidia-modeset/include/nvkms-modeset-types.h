@@ -44,6 +44,7 @@ typedef struct {
     NvBool hdrInfoFrameOverride;
     NvU32 hdrStaticMetadataLayerMask;
     NvBool colorSpaceSpecified : 1;
+    NvBool colorBpcSpecified   : 1;
     NvBool colorRangeSpecified : 1;
     NvBool hs10bpcHint         : 1;
     NvBool changed             : 1;

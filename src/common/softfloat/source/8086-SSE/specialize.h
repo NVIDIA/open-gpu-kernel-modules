@@ -112,6 +112,14 @@ uint_fast16_t softfloat_commonNaNToF16UI( const struct commonNaN *aPtr );
 #define softfloat_isSigNaNF32UI( uiA ) ((((uiA) & 0x7FC00000) == 0x7F800000) && ((uiA) & 0x003FFFFF))
 
 /*----------------------------------------------------------------------------
+| Assuming 'uiA' has the bit pattern of a 16-bit floating-point NaN, converts
+| this NaN to the common NaN form, and stores the resulting common NaN at the
+| location pointed to by 'zPtr'.  If the NaN is a signaling NaN, the invalid
+| exception is raised.
+*----------------------------------------------------------------------------*/
+void softfloat_f16UIToCommonNaN( uint_fast16_t uiA, struct commonNaN *zPtr );
+
+/*----------------------------------------------------------------------------
 | Assuming `uiA' has the bit pattern of a 32-bit floating-point NaN, converts
 | this NaN to the common NaN form, and stores the resulting common NaN at the
 | location pointed to by `zPtr'.  If the NaN is a signaling NaN, the invalid

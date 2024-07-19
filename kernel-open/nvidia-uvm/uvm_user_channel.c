@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2023 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -959,6 +959,7 @@ NV_STATUS uvm_test_check_channel_va_space(UVM_TEST_CHECK_CHANNEL_VA_SPACE_PARAMS
     uvm_va_space_t *va_space = NULL;
     uvm_va_space_t *channel_va_space;
     uvm_gpu_t *gpu;
+    uvm_gpu_t *channel_gpu;
     uvm_fault_buffer_entry_t fault_entry;
     UvmGpuChannelInstanceInfo *channel_info;
     NV_STATUS status;
@@ -1003,7 +1004,7 @@ NV_STATUS uvm_test_check_channel_va_space(UVM_TEST_CHECK_CHANNEL_VA_SPACE_PARAMS
         goto out;
     }
 
-    // Craft enough of the fault entry to do a VA space translation
+    // Craft enough of the fault entry to do a VA space translation.
     fault_entry.fault_type = UVM_FAULT_TYPE_INVALID_PTE;
 
     if (channel_info->sysmem)
@@ -1034,10 +1035,13 @@ NV_STATUS uvm_test_check_channel_va_space(UVM_TEST_CHECK_CHANNEL_VA_SPACE_PARAMS
     // We can ignore the return code because this ioctl only cares about whether
     // the provided channel + VEID matches the provided VA space. In all of the
     // non-NV_OK cases the translation will fail and we should return
-    // NV_ERR_INVALID_CHANNEL. channel_va_space == NULL for all such cases.
-    (void)uvm_parent_gpu_fault_entry_to_va_space(gpu->parent, &fault_entry, &channel_va_space);
+    // NV_ERR_INVALID_CHANNEL. channel_gpu_va_space == NULL for all such cases.
+    (void)uvm_parent_gpu_fault_entry_to_va_space(gpu->parent,
+                                                 &fault_entry,
+                                                 &channel_va_space,
+                                                 &channel_gpu);
 
-    if (channel_va_space == va_space)
+    if (channel_va_space == va_space && channel_gpu == gpu)
         status = NV_OK;
     else
         status = NV_ERR_INVALID_CHANNEL;

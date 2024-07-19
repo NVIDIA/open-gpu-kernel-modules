@@ -67,6 +67,12 @@ typedef struct
     NvU64 length;
     NvU64 flags;
     NvU64 submittedWorkId;   // Payload to poll for async completion
+
+    NvBool bSecureCopy; // The copy encrypts/decrypts when copying to/from unprotected memory
+    NvBool bEncrypt; // Toggle encrypt/decrypt
+    NvU64 authTagAddr; // encryption authTag address. Same aperture as unencrypted operand assumed. 16 byte aligned
+    NvU64 encryptIvAddr; // IV value that was used for ecryption, requirements are the same as for authTagAddr. Required
+
 } CEUTILS_MEMCOPY_PARAMS;
 
 

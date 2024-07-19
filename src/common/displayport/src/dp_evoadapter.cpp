@@ -95,8 +95,6 @@ const struct
     {NV_DP_REGKEY_POWER_DOWN_PHY,                   &dpRegkeyDatabase.bPowerDownPhyBeforeD3,           DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_REASSESS_MAX_LINK,                &dpRegkeyDatabase.bReassessMaxLink,                DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED,      &dpRegkeyDatabase.bMSTPCONCapsReadDisabled,        DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_FORCE_DSC_ON_SINK,                &dpRegkeyDatabase.bForceDscOnSink,                 DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_ENABLE_SKIP_DPCD_READS_WAR,       &dpRegkeyDatabase.bSkipFakeDeviceDpcdAccess,       DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_FLUSH_TIMESLOT_INFO_WHEN_DIRTY,   &dpRegkeyDatabase.bFlushTimeslotWhenDirty,         DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_DISABLE_TUNNEL_BW_ALLOCATION,     &dpRegkeyDatabase.bForceDisableTunnelBwAllocation, DP_REG_VAL_BOOL}
 };
@@ -117,7 +115,6 @@ EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :
     this->applyRegkeyOverrides();
 
     _isDynamicMuxCapable       = false;
-    _isMDMEnabled              = false;
     _isLTPhyRepeaterSupported  = true;
     _rmPhyRepeaterCount        = 0;
     dpMemZero(&_DSC, sizeof(_DSC));
@@ -289,18 +286,18 @@ bool EvoMainLink::queryGPUCapability()
     _gpuSupportedDpVersions         = dpParams.dpVersionsSupported;
 
     if (FLD_TEST_DRF(0073, _CTRL_CMD_DP_GET_CAPS, _MAX_LINK_RATE, _1_62, dpParams.maxLinkRate))
-        _maxLinkRateSupportedGpu = RBR; //in Hz
+        _maxLinkRateSupportedGpu = dp2LinkRate_1_62Gbps; // in 10Mbps
     else if (FLD_TEST_DRF(0073, _CTRL_CMD_DP_GET_CAPS, _MAX_LINK_RATE, _2_70, dpParams.maxLinkRate))
-        _maxLinkRateSupportedGpu = HBR; //in Hz
+        _maxLinkRateSupportedGpu = dp2LinkRate_2_70Gbps; // in 10Mbps
     else if (FLD_TEST_DRF(0073, _CTRL_CMD_DP_GET_CAPS, _MAX_LINK_RATE, _5_40, dpParams.maxLinkRate))
-        _maxLinkRateSupportedGpu = HBR2; //in Hz
+        _maxLinkRateSupportedGpu = dp2LinkRate_5_40Gbps; // in 10Mbps
     else if (FLD_TEST_DRF(0073, _CTRL_CMD_DP_GET_CAPS, _MAX_LINK_RATE, _8_10, dpParams.maxLinkRate))
-        _maxLinkRateSupportedGpu = HBR3; //in Hz
+        _maxLinkRateSupportedGpu = dp2LinkRate_8_10Gbps; // in 10Mbps
     else
     {
         DP_ASSERT(0 && "Unable to get max link rate");
         // Assume that we can at least support RBR.
-        _maxLinkRateSupportedGpu = RBR;
+        _maxLinkRateSupportedGpu = dp2LinkRate_1_62Gbps;
     }
 
     if (!_isDscDisabledByRegkey)
@@ -787,7 +784,7 @@ AuxBus::status EvoAuxBus::transaction(Action action, Type type, int address,
     {
         if (devicePlugged)
         {
-            DP_PRINTF(DP_ERROR, "DP> AuxChCtl Failing, if a device is connected you shouldn't be seeing this");
+            DP_PRINTF(DP_WARNING, "DP> AuxChCtl Failing, if a device is connected you shouldn't be seeing this");
         }
         return nack;
     }
@@ -1047,15 +1044,15 @@ bool EvoMainLink::train(const LinkConfiguration & link, bool force,
 
         switch (linkrate)
         {
-            case RBR:
-            case EDP_2_16GHZ:
-            case EDP_2_43GHZ:
-            case HBR:
-            case EDP_3_24GHZ:
-            case EDP_4_32GHZ:
-            case HBR2:
-            case HBR3:
-                linkBw = linkrate / DP_LINK_BW_FREQ_MULTI_MBPS;
+            case dp2LinkRate_1_62Gbps:
+            case dp2LinkRate_2_16Gbps:
+            case dp2LinkRate_2_43Gbps:
+            case dp2LinkRate_2_70Gbps:
+            case dp2LinkRate_3_24Gbps:
+            case dp2LinkRate_4_32Gbps:
+            case dp2LinkRate_5_40Gbps:
+            case dp2LinkRate_8_10Gbps:
+                linkBw = LINK_RATE_10MHZ_TO_270MHZ(linkrate);
                 dpCtrlData = FLD_SET_DRF_NUM(0073_CTRL, _DP_DATA, _SET_LINK_BW,
                                              linkBw, dpCtrlData);
                 break;
@@ -1161,7 +1158,7 @@ bool EvoMainLink::train(const LinkConfiguration & link, bool force,
         if (FLD_TEST_DRF(0073_CTRL_DP, _ERR, _CLOCK_RECOVERY, _ERR, err))
         {
             // If failed CR, check if we need to fallback.
-            if (requestRmLC.peakRate != RBR)
+            if (requestRmLC.peakRate != dp2LinkRate_1_62Gbps)
             {
                 //
                 // We need to fallback on link rate if the following conditions are met:
@@ -1214,7 +1211,7 @@ bool EvoMainLink::train(const LinkConfiguration & link, bool force,
             if (FLD_TEST_DRF(0073_CTRL_DP, _ERR, _CR_DONE_LANE, _0_LANE, err))
             {
                 //Per spec, if link rate has already been reduced to RBR, exit fallback
-                if(requestRmLC.peakRate == RBR || !requestRmLC.lowerConfig())
+                if(requestRmLC.peakRate == dp2LinkRate_1_62Gbps || !requestRmLC.lowerConfig())
                     break;
             }
             else
@@ -1418,22 +1415,21 @@ bool EvoMainLink::queryAndUpdateDfpParams()
             DP_ASSERT(0 && "maxLinkRate is set improperly in dfp object.");
             // intentionally fall-thru.
         case NV0073_CTRL_DFP_FLAGS_DP_LINK_BW_1_62GBPS:
-            _maxLinkRateSupportedDfp = RBR;
+            _maxLinkRateSupportedDfp = dp2LinkRate_1_62Gbps;
             break;
         case NV0073_CTRL_DFP_FLAGS_DP_LINK_BW_2_70GBPS:
-            _maxLinkRateSupportedDfp = HBR;
+            _maxLinkRateSupportedDfp = dp2LinkRate_2_70Gbps;
             break;
         case NV0073_CTRL_DFP_FLAGS_DP_LINK_BW_5_40GBPS:
-            _maxLinkRateSupportedDfp = HBR2;
+            _maxLinkRateSupportedDfp = dp2LinkRate_5_40Gbps;
             break;
         case NV0073_CTRL_DFP_FLAGS_DP_LINK_BW_8_10GBPS:
-            _maxLinkRateSupportedDfp = HBR3;
+            _maxLinkRateSupportedDfp = dp2LinkRate_8_10Gbps;
             break;
     }
 
 
     _isDynamicMuxCapable = FLD_TEST_DRF(0073, _CTRL_DFP_FLAGS, _DYNAMIC_MUX_CAPABLE, _TRUE, dfpFlags);
-    _isMDMEnabled = FLD_TEST_DRF(0073, _CTRL_DFP_FLAGS, _MDM, _ENABLED, dfpFlags);
 
     return true;
 }
@@ -1822,15 +1818,15 @@ bool EvoMainLink::configureLinkRateTable
         {
             switch (params.linkBwTbl[i])
             {
-                case linkBW_1_62Gbps:
-                case linkBW_2_16Gbps:
-                case linkBW_2_43Gbps:
-                case linkBW_2_70Gbps:
-                case linkBW_3_24Gbps:
-                case linkBW_4_32Gbps:
-                case linkBW_5_40Gbps:
-                case linkBW_8_10Gbps:
-                    pLinkRates->import((NvU8)params.linkBwTbl[i]);
+                case dp2LinkRate_1_62Gbps:
+                case dp2LinkRate_2_16Gbps:
+                case dp2LinkRate_2_43Gbps:
+                case dp2LinkRate_2_70Gbps:
+                case dp2LinkRate_3_24Gbps:
+                case dp2LinkRate_4_32Gbps:
+                case dp2LinkRate_5_40Gbps:
+                case dp2LinkRate_8_10Gbps:
+                    pLinkRates->import((NvU16)params.linkBwTbl[i]);
                     break;
                 default:
                     DP_PRINTF(DP_ERROR, "DP_EVO> %s: Unsupported link rate received",

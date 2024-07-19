@@ -48,6 +48,7 @@ extern "C" {
 #include "gpu/gpu_resource.h"
 #include "rmapi/event.h"
 #include "rmapi/control.h"
+#include "gpu/gpu_halspec.h"
 
 /*!
  * RM internal class representing NV20_SUBDEVICE_DIAG
@@ -87,7 +88,7 @@ struct DiagApi {
     NV_STATUS (*__diagapiControlFilter__)(struct DiagApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (gpures)
     NV_STATUS (*__diagapiCtrlCmdFifoCheckEngineContext__)(struct DiagApi * /*this*/, NV208F_CTRL_FIFO_CHECK_ENGINE_CONTEXT_PARAMS *);  // exported (id=0x208f0401)
     NV_STATUS (*__diagapiCtrlCmdFifoEnableVirtualContext__)(struct DiagApi * /*this*/, NV208F_CTRL_FIFO_ENABLE_VIRTUAL_CONTEXT_PARAMS *);  // exported (id=0x208f0402)
-    NV_STATUS (*__diagapiCtrlCmdFifoGetChannelState__)(struct DiagApi * /*this*/, NV208F_CTRL_FIFO_GET_CHANNEL_STATE_PARAMS *);  // exported (id=0x208f0403)
+    NV_STATUS (*__diagapiCtrlCmdFifoGetChannelState__)(struct DiagApi * /*this*/, NV208F_CTRL_FIFO_GET_CHANNEL_STATE_PARAMS *);  // halified (2 hals) exported (id=0x208f0403) body
     NV_STATUS (*__diagapiCtrlCmdFbCtrlGpuCache__)(struct DiagApi * /*this*/, NV208F_CTRL_FB_CTRL_GPU_CACHE_PARAMS *);  // exported (id=0x208f0506)
     NV_STATUS (*__diagapiCtrlCmdFbEccSetKillPtr__)(struct DiagApi * /*this*/, NV208F_CTRL_FB_ECC_SET_KILL_PTR_PARAMS *);  // exported (id=0x208f050e)
     NV_STATUS (*__diagapiCtrlCmdFbClearRemappedRows__)(struct DiagApi * /*this*/, NV208F_CTRL_FB_CLEAR_REMAPPED_ROWS_PARAMS *);  // exported (id=0x208f0515)
@@ -174,6 +175,7 @@ NV_STATUS __nvoc_objCreate_DiagApi(DiagApi**, Dynamic*, NvU32, struct CALL_CONTE
 #define diagapiCtrlCmdFifoEnableVirtualContext(pDiagApi, pEnableVCParams) diagapiCtrlCmdFifoEnableVirtualContext_DISPATCH(pDiagApi, pEnableVCParams)
 #define diagapiCtrlCmdFifoGetChannelState_FNPTR(pDiagApi) pDiagApi->__diagapiCtrlCmdFifoGetChannelState__
 #define diagapiCtrlCmdFifoGetChannelState(pDiagApi, pChannelStateParams) diagapiCtrlCmdFifoGetChannelState_DISPATCH(pDiagApi, pChannelStateParams)
+#define diagapiCtrlCmdFifoGetChannelState_HAL(pDiagApi, pChannelStateParams) diagapiCtrlCmdFifoGetChannelState_DISPATCH(pDiagApi, pChannelStateParams)
 #define diagapiCtrlCmdFbCtrlGpuCache_FNPTR(pDiagApi) pDiagApi->__diagapiCtrlCmdFbCtrlGpuCache__
 #define diagapiCtrlCmdFbCtrlGpuCache(pDiagApi, pGpuCacheParams) diagapiCtrlCmdFbCtrlGpuCache_DISPATCH(pDiagApi, pGpuCacheParams)
 #define diagapiCtrlCmdFbEccSetKillPtr_FNPTR(pDiagApi) pDiagApi->__diagapiCtrlCmdFbEccSetKillPtr__
@@ -449,6 +451,10 @@ NV_STATUS diagapiControlFilter_IMPL(struct DiagApi *pDiagApi, struct CALL_CONTEX
 NV_STATUS diagapiCtrlCmdFifoCheckEngineContext_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_FIFO_CHECK_ENGINE_CONTEXT_PARAMS *pCheckEngineContextParams);
 
 NV_STATUS diagapiCtrlCmdFifoEnableVirtualContext_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_FIFO_ENABLE_VIRTUAL_CONTEXT_PARAMS *pEnableVCParams);
+
+static inline NV_STATUS diagapiCtrlCmdFifoGetChannelState_46f6a7(struct DiagApi *pDiagApi, NV208F_CTRL_FIFO_GET_CHANNEL_STATE_PARAMS *pChannelStateParams) {
+    return NV_ERR_NOT_SUPPORTED;
+}
 
 NV_STATUS diagapiCtrlCmdFifoGetChannelState_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_FIFO_GET_CHANNEL_STATE_PARAMS *pChannelStateParams);
 

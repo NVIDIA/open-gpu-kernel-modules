@@ -46,6 +46,7 @@
 #include "class/clc7c0.h"
 #include "class/clc9c0.h"
 #include "class/clcbc0.h"
+#include "class/clcdc0.h"
 // GFX
 #include "class/clb097.h"
 #include "class/clb197.h"
@@ -57,11 +58,13 @@
 #include "class/clc797.h"
 #include "class/clc997.h"
 #include "class/clcb97.h"
+#include "class/clcd97.h"
 // TWOD
 #include "class/cl902d.h"
 
 // MEM2MEM
 #include "class/cla140.h"
+#include "class/clcd40.h"
 
 static NvBool
 _kgrmgrGPUInstanceHasComputeInstances
@@ -110,6 +113,7 @@ kgrmgrGetGrObjectType_IMPL
         case AMPERE_COMPUTE_B:
         case ADA_COMPUTE_A:
         case HOPPER_COMPUTE_A:
+        case BLACKWELL_COMPUTE_A:
             *pObjectType = GR_OBJECT_TYPE_COMPUTE;
             break;
         case MAXWELL_A:
@@ -122,12 +126,14 @@ kgrmgrGetGrObjectType_IMPL
         case AMPERE_B:
         case ADA_A:
         case HOPPER_A:
+        case BLACKWELL_A:
             *pObjectType = GR_OBJECT_TYPE_3D;
             break;
         case FERMI_TWOD_A:
             *pObjectType = GR_OBJECT_TYPE_2D;
             break;
         case KEPLER_INLINE_TO_MEMORY_B:
+        case BLACKWELL_INLINE_TO_MEMORY_A:
             *pObjectType = GR_OBJECT_TYPE_MEM;
             break;
         default:

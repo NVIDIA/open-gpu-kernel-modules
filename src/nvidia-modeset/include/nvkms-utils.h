@@ -118,8 +118,8 @@ static inline NvBool nvExceedsTimeoutUSec(
 {
     const NvU64 currentTime = nvkms_get_usec();
 
-    if (nvIsEmulationEvo(pDevEvo)) {
-        return FALSE;
+    if (nvIsEmulationEvo(pDevEvo) && !nvIsDfpgaEvo(pDevEvo)) {
+        timeoutPeriod *= 100;
     }
 
     if (*pStartTime == 0) {

@@ -290,6 +290,7 @@ _mmuPrintPte
 
     pageSize = mmuFmtLevelPageSize(pFmtLevel);
     if ((RM_PAGE_SIZE_HUGE != pageSize) &&
+        (RM_PAGE_SIZE_256G != pageSize) &&
         (RM_PAGE_SIZE_512M != pageSize))
     {
         level++; // Indent one more level for PTE
@@ -303,6 +304,9 @@ _mmuPrintPte
 
         switch (pageSize)
         {
+        case RM_PAGE_SIZE_256G:
+            NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "PTE_256G");
+            break;
         case RM_PAGE_SIZE_512M:
             NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "PTE_512M");
             break;

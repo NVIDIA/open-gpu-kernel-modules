@@ -99,7 +99,7 @@ typedef struct OBJMEMSCRUB {
     struct OBJGPU                     *pGpu;
     VGPU_GUEST_PMA_SCRUB_BUFFER_RING   vgpuScrubBuffRing;
     NvBool                             bVgpuScrubberEnabled;
-} OBJMEMSCRUB, *POBJMEMSCRUB;
+} OBJMEMSCRUB;
 
 ct_assert(VGPU_GUEST_PMA_MAX_SCRUB_ITEMS == MAX_SCRUB_ITEMS);
 

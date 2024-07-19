@@ -33,7 +33,9 @@
 
 #include "ctrl/ctrl0080.h"
 #include "ctrl/ctrl2080.h"
+#include "ctrl/ctrl402c.h"
 #include "ctrl/ctrl90cc.h"
+#include "ctrl/ctrl90e7/ctrl90e7bbx.h"
 
 NV_STATUS
 rmapiutilAllocClientAndDeviceHandles
@@ -218,6 +220,21 @@ NvBool rmapiutilSkipErrorMessageForUnsupportedVgpuGuestControl(NvU32 cmd)
         case NV90CC_CTRL_CMD_POWER_RELEASE_FEATURES:
         case NV2080_CTRL_CMD_FLCN_USTREAMER_QUEUE_INFO:
         case NV2080_CTRL_CMD_INTERNAL_NVLINK_ENABLE_COMPUTE_PEER_ADDR:
+        case NV0000_CTRL_CMD_SYSTEM_PFM_REQ_HNDLR_CTRL:
+        case NV2080_CTRL_CMD_BIOS_GET_NBSI_V2:
+        case NV2080_CTRL_CMD_BIOS_GET_UEFI_SUPPORT:
+        case NV2080_CTRL_CMD_BUS_GET_PCIE_LTR_LATENCY:
+        case NV2080_CTRL_CMD_BUS_SET_PCIE_LTR_LATENCY:
+        case NV2080_CTRL_CMD_BUS_SET_PCIE_SPEED:
+        case NV2080_CTRL_CMD_FB_GET_CALIBRATION_LOCK_FAILED:
+        case NV2080_CTRL_CMD_GPU_GET_ILLUM:
+        case NV2080_CTRL_CMD_GPU_GET_VPR_CAPS:
+        case NV2080_CTRL_CMD_GPU_QUERY_FUNCTION_STATUS:
+        case NV2080_CTRL_CMD_GPU_SET_ILLUM:
+        case NV2080_CTRL_CMD_LPWR_DIFR_CTRL:
+        case NV2080_CTRL_CMD_PMGR_GET_MODULE_INFO:
+        case NV402C_CTRL_CMD_I2C_GET_PORT_SPEED:
+        case NV90E7_CTRL_CMD_BBX_GET_LAST_FLUSH_TIME:
             return NV_TRUE;
 
         default:

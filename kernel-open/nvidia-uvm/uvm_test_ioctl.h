@@ -552,9 +552,9 @@ typedef struct
 // If user_pages_allocation_retry_force_count is non-0 then the next count user
 // memory allocations under the VA block will be forced to do allocation-retry.
 //
-// If cpu_pages_allocation_error_count is not zero, the subsequent operations
-// that need to allocate CPU pages will fail with NV_ERR_NO_MEMORY for
-// cpu_pages_allocation_error_count times. If cpu_pages_allocation_error_count
+// If cpu_chunk_allocation_error_count is not zero, the subsequent operations
+// that need to allocate CPU chunks will fail with NV_ERR_NO_MEMORY for
+// cpu_chunk_allocation_error_count times. If cpu_chunk_allocation_error_count
 // is equal to ~0U, the count is infinite.
 //
 // If eviction_failure is NV_TRUE, the next eviction attempt from the VA block
@@ -591,10 +591,10 @@ typedef struct
     NvU64     lookup_address NV_ALIGN_BYTES(8);         // In
     NvU32     page_table_allocation_retry_force_count;  // In
     NvU32     user_pages_allocation_retry_force_count;  // In
-    NvU32     cpu_chunk_allocation_size_mask;           // In
+    NvU64     cpu_chunk_allocation_size_mask;           // In
     NvS32     cpu_chunk_allocation_target_id;           // In
     NvS32     cpu_chunk_allocation_actual_id;           // In
-    NvU32     cpu_pages_allocation_error_count;         // In
+    NvU32     cpu_chunk_allocation_error_count;         // In
     NvBool    eviction_error;                           // In
     NvBool    populate_error;                           // In
     NV_STATUS rmStatus;                                 // Out
@@ -648,7 +648,7 @@ typedef struct
 
     // The size of the virtual mapping covering lookup_address on each
     // mapped_on processor.
-    NvU32                           page_size[UVM_MAX_PROCESSORS];                      // Out
+    NvU64                           page_size[UVM_MAX_PROCESSORS];                      // Out
 
     // Array of processors which have physical memory populated that would back
     // lookup_address if it was resident.
@@ -879,7 +879,7 @@ typedef struct
 typedef struct
 {
     NvProcessorUuid                 gpu_uuid;                                           // In
-    NvU32                           page_size;
+    NvU64                           page_size;
     NvBool                          contiguous;
     NvU64                           num_pages                        NV_ALIGN_BYTES(8); // In
     NvU64                           phys_begin                       NV_ALIGN_BYTES(8); // In
@@ -1065,12 +1065,6 @@ typedef struct
     NV_STATUS                       rmStatus;                                           // Out
 } UVM_TEST_PMM_REVERSE_MAP_PARAMS;
 
-#define UVM_TEST_PMM_INDIRECT_PEERS                      UVM_TEST_IOCTL_BASE(66)
-typedef struct
-{
-    NV_STATUS                       rmStatus;                                           // Out
-} UVM_TEST_PMM_INDIRECT_PEERS_PARAMS;
-
 // Calls uvm_va_space_mm_retain on a VA space, operates on the mm, optionally
 // sleeps for a while, then releases the va_space_mm and returns. The idea is to
 // simulate retaining a va_space_mm from a thread like the GPU fault handler
@@ -1210,8 +1204,6 @@ typedef struct
 typedef struct
 {
     NvProcessorUuid                 gpu_uuid;                                           // In
-    NvHandle                        client;                                             // In
-    NvHandle                        smc_part_ref;                                       // In
 
     NV_STATUS                       rmStatus;                                           // Out
 } UVM_TEST_NUMA_CHECK_AFFINITY_PARAMS;
@@ -1387,7 +1379,7 @@ typedef struct
 #define UVM_TEST_GET_CPU_CHUNK_ALLOC_SIZES               UVM_TEST_IOCTL_BASE(91)
 typedef struct
 {
-    NvU32                           alloc_size_mask;                                    // Out
+    NvU64                           alloc_size_mask;                                    // Out
     NvU32                           rmStatus;                                           // Out
 } UVM_TEST_GET_CPU_CHUNK_ALLOC_SIZES_PARAMS;
 

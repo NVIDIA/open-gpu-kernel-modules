@@ -95,7 +95,7 @@ struct RmClientResource {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super
     struct RmClientResource *__nvoc_pbase_RmClientResource;    // clires
 
-    // Vtable with 128 per-object function pointers
+    // Vtable with 129 per-object function pointers
     NvBool (*__cliresAccessCallback__)(struct RmClientResource * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual override (res) base (clientres)
     NvBool (*__cliresShareCallback__)(struct RmClientResource * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual override (res) base (clientres)
     NV_STATUS (*__cliresControl_Prologue__)(struct RmClientResource * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (clientres)
@@ -169,6 +169,7 @@ struct RmClientResource {
     NV_STATUS (*__cliresCtrlCmdIdleChannels__)(struct RmClientResource * /*this*/, NV0000_CTRL_GPU_IDLE_CHANNELS_PARAMS *);  // exported (id=0x283)
     NV_STATUS (*__cliresCtrlCmdPushGspUcode__)(struct RmClientResource * /*this*/, NV0000_CTRL_GPU_PUSH_GSP_UCODE_PARAMS *);  // exported (id=0x285)
     NV_STATUS (*__cliresCtrlCmdGpuGetVideoLinks__)(struct RmClientResource * /*this*/, NV0000_CTRL_GPU_GET_VIDEO_LINKS_PARAMS *);  // exported (id=0x219)
+    NV_STATUS (*__cliresCtrlCmdSystemGetVrrCookiePresent__)(struct RmClientResource * /*this*/, NV0000_CTRL_SYSTEM_GET_VRR_COOKIE_PRESENT_PARAMS *);  // exported (id=0x107)
     NV_STATUS (*__cliresCtrlCmdGsyncGetAttachedIds__)(struct RmClientResource * /*this*/, NV0000_CTRL_GSYNC_GET_ATTACHED_IDS_PARAMS *);  // exported (id=0x301)
     NV_STATUS (*__cliresCtrlCmdGsyncGetIdInfo__)(struct RmClientResource * /*this*/, NV0000_CTRL_GSYNC_GET_ID_INFO_PARAMS *);  // exported (id=0x302)
     NV_STATUS (*__cliresCtrlCmdDiagProfileRpc__)(struct RmClientResource * /*this*/, NV0000_CTRL_DIAG_PROFILE_RPC_PARAMS *);  // exported (id=0x488)
@@ -402,6 +403,8 @@ NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32,
 #define cliresCtrlCmdPushGspUcode(pRmCliRes, pParams) cliresCtrlCmdPushGspUcode_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdGpuGetVideoLinks_FNPTR(pRmCliRes) pRmCliRes->__cliresCtrlCmdGpuGetVideoLinks__
 #define cliresCtrlCmdGpuGetVideoLinks(pRmCliRes, pParams) cliresCtrlCmdGpuGetVideoLinks_DISPATCH(pRmCliRes, pParams)
+#define cliresCtrlCmdSystemGetVrrCookiePresent_FNPTR(pRmCliRes) pRmCliRes->__cliresCtrlCmdSystemGetVrrCookiePresent__
+#define cliresCtrlCmdSystemGetVrrCookiePresent(pRmCliRes, pParams) cliresCtrlCmdSystemGetVrrCookiePresent_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdGsyncGetAttachedIds_FNPTR(pRmCliRes) pRmCliRes->__cliresCtrlCmdGsyncGetAttachedIds__
 #define cliresCtrlCmdGsyncGetAttachedIds(pRmCliRes, pGsyncAttachedIds) cliresCtrlCmdGsyncGetAttachedIds_DISPATCH(pRmCliRes, pGsyncAttachedIds)
 #define cliresCtrlCmdGsyncGetIdInfo_FNPTR(pRmCliRes) pRmCliRes->__cliresCtrlCmdGsyncGetIdInfo__
@@ -806,6 +809,10 @@ static inline NV_STATUS cliresCtrlCmdGpuGetVideoLinks_DISPATCH(struct RmClientRe
     return pRmCliRes->__cliresCtrlCmdGpuGetVideoLinks__(pRmCliRes, pParams);
 }
 
+static inline NV_STATUS cliresCtrlCmdSystemGetVrrCookiePresent_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GET_VRR_COOKIE_PRESENT_PARAMS *pParams) {
+    return pRmCliRes->__cliresCtrlCmdSystemGetVrrCookiePresent__(pRmCliRes, pParams);
+}
+
 static inline NV_STATUS cliresCtrlCmdGsyncGetAttachedIds_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_GSYNC_GET_ATTACHED_IDS_PARAMS *pGsyncAttachedIds) {
     return pRmCliRes->__cliresCtrlCmdGsyncGetAttachedIds__(pRmCliRes, pGsyncAttachedIds);
 }
@@ -1171,6 +1178,8 @@ NV_STATUS cliresCtrlCmdIdleChannels_IMPL(struct RmClientResource *pRmCliRes, NV0
 NV_STATUS cliresCtrlCmdPushGspUcode_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_PUSH_GSP_UCODE_PARAMS *pParams);
 
 NV_STATUS cliresCtrlCmdGpuGetVideoLinks_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_GET_VIDEO_LINKS_PARAMS *pParams);
+
+NV_STATUS cliresCtrlCmdSystemGetVrrCookiePresent_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GET_VRR_COOKIE_PRESENT_PARAMS *pParams);
 
 NV_STATUS cliresCtrlCmdGsyncGetAttachedIds_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GSYNC_GET_ATTACHED_IDS_PARAMS *pGsyncAttachedIds);
 

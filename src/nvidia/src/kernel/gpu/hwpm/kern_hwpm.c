@@ -38,7 +38,7 @@ static RefcntStateChangeCallback _khwpmProfilerPmaVaSpaceAllocStateChange;
 static NV_STATUS
 _khwpmProfilerPmaVaSpaceAllocStateChange
 (
-    POBJREFCNT   pRefcnt,
+    OBJREFCNT   *pRefcnt,
     Dynamic     *pDynamic,
     REFCNT_STATE oldState,
     REFCNT_STATE newState
@@ -48,7 +48,7 @@ _khwpmProfilerPmaVaSpaceAllocStateChange
     NvBool      bCreateVaSpace = NV_FALSE;
     KernelHwpm *pKernelHwpm    = dynamicCast(pDynamic, KernelHwpm);
     NvU32       bpcIdx;
-    POBJGPU     pGpu;
+    OBJGPU     *pGpu;
 
     if (pRefcnt == NULL)
     {
@@ -113,7 +113,7 @@ _khwpmProfilerPmaVaSpaceAllocStateChange
 static NV_STATUS
 _khwpmProfilerPmaVaSpaceRefcntInit
 (
-    POBJGPU     pGpu,
+    OBJGPU     *pGpu,
     KernelHwpm *pKernelHwpm,
     NvU32       bpcIdx
 )

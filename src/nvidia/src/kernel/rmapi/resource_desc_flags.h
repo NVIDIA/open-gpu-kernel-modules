@@ -28,11 +28,9 @@
 
 #define RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_ALLOC       NVBIT(0)   ///< GPUs Lock is acquired on allocation
 #define RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_FREE        NVBIT(1)   ///< GPUs Lock is acquired for free
-#define RS_FLAGS_ACQUIRE_GPUS_LOCK                (RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_ALLOC | RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_FREE)
 
 #define RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_ALLOC  NVBIT(2)   ///< GPU Group Lock is acquired on allocation
 #define RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_FREE   NVBIT(3)   ///< GPU Group Lock is acquired for free
-#define RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK           (RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_ALLOC | RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_FREE)
 
 #define RS_FLAGS_ALLOC_RPC_TO_VGPU_HOST           NVBIT(4)   ///< Issue RPC to host to allocate resource for virtual GPUs
 
@@ -76,5 +74,12 @@
 #define RS_FLAGS_ALLOC_ALL_VGPU_PLUGINS           (RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_VGPU_GSP | RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_SRIOV | RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_LEGACY | RS_FLAGS_ALLOC_GSP_PLUGIN_FOR_VGPU_GSP)
 
 #define RS_FLAGS_DUAL_CLIENT_LOCK                 NVBIT(15)  ///< Class needs to lock two clients when being allocated, must update serverAllocLookupSecondClient in order to use
+
+#define RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_DUP         NVBIT(16)  ///< GPUs Lock is acquired on dup
+
+#define RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_DUP    NVBIT(17)  ///< GPU Group Lock is acquired for dup
+
+#define RS_FLAGS_ACQUIRE_GPUS_LOCK                (RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_ALLOC | RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_FREE | RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_DUP)
+#define RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK           (RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_ALLOC | RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_FREE | RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_DUP)
 
 #endif // _RESOURCE_DESC_FLAGS_H_

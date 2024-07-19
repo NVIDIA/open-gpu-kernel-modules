@@ -60,9 +60,14 @@ kmemsysGetFbInfos_VF(OBJGPU *pGpu, KernelMemorySystem *pKernelMemorySystem, RsCl
                 data = nvPopCount64(pVSI->fbioMask);
                 break;
             }
-            case NV2080_CTRL_FB_INFO_INDEX_PARTITION_MASK:
+            case NV2080_CTRL_FB_INFO_INDEX_PARTITION_MASK_0:
             {
-                data = pVSI->fbioMask;
+                data = NvU64_LO32((NvU64)pVSI->fbioMask);
+                break;
+            }
+            case NV2080_CTRL_FB_INFO_INDEX_PARTITION_MASK_1:
+            {
+                data = NvU64_HI32((NvU64)pVSI->fbioMask);
                 break;
             }
             case NV2080_CTRL_FB_INFO_INDEX_FBP_MASK:
@@ -90,9 +95,14 @@ kmemsysGetFbInfos_VF(OBJGPU *pGpu, KernelMemorySystem *pKernelMemorySystem, RsCl
                 data = pVSI->ltsCount;
                 break;
             }
-            case NV2080_CTRL_FB_INFO_INDEX_LTC_MASK:
+            case NV2080_CTRL_FB_INFO_INDEX_LTC_MASK_0:
             {
-                data = pVSI->ltcMask;
+                data = NvU64_LO32((NvU64)pVSI->ltcMask);
+                break;
+            }
+            case NV2080_CTRL_FB_INFO_INDEX_LTC_MASK_1:
+            {
+                data = NvU64_HI32((NvU64)pVSI->ltcMask);
                 break;
             }
             case NV2080_CTRL_FB_INFO_INDEX_L2CACHE_SIZE:

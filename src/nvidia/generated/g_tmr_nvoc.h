@@ -77,7 +77,7 @@ typedef struct OBJTMR OBJTMR;
 #define TIMER_STATE_IDLE        0
 #define TIMER_STATE_BUSY        1
 
-typedef NV_STATUS (*TIMEPROC)(OBJGPU *, struct OBJTMR *, PTMR_EVENT);
+typedef NV_STATUS (*TIMEPROC)(OBJGPU *, struct OBJTMR *, TMR_EVENT *);
 typedef NV_STATUS (*TIMEPROC_OBSOLETE)(OBJGPU *, struct OBJTMR *, void *);
 typedef NV_STATUS (*TIMEPROC_COUNTDOWN)(OBJGPU *, THREAD_STATE_NODE *);
 

@@ -44,7 +44,7 @@
 #include "class/cl83de.h" // GT200_DEBUGGER
 #include "gpu/gr/kernel_sm_debugger_session.h"
 #include "kernel/gpu/rc/kernel_rc.h"
-#include "tmr.h"
+#include "gpu/timer/tmr.h"
 
 //
 // RM Alloc & Free internal flags -- code should be migrated to use rsresdesc

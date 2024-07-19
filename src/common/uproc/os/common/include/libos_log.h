@@ -273,8 +273,12 @@ void LibosLogTokens(const libosLogMetadata * metadata, const LibosPrintfArgument
  * The only exception is renaming headers with prints inside static inline functions; since these don't overlap
  * with basenames, and we can't reliably get a nonvolatile version of a header file name here, such name changes
  * alone won't be able to trigger ucode releases.
+ *
+ * Section .logging_const contains only strings. We set SHF_MERGE and SHF_STRINGS ELF section
+ * flags with entsize=1 so that strings get merged by LD. Comment character # works around GCC
+ * appending its own default flags.
  */
-#    define LIBOS_SECTION_LOGGING_CONST    __attribute__((section(".logging_const")))
+#    define LIBOS_SECTION_LOGGING_CONST    __attribute__((section(".logging_const, \"MSa\", @progbits, 1 #")))
 #    define LIBOS_SECTION_LOGGING_METADATA __attribute__((section(".logging_metadata")))
 #    define LIBOS_LOGGING_AUX_METADATA_DUMP \
     static const LIBOS_SECTION_LOGGING_CONST int  libos_dummy_line[] LIBOS_ATTR_USED = {__LINE__};

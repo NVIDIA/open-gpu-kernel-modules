@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -199,11 +199,10 @@ namespace DisplayPort
         TriState bAsyncSDPCapable;
         bool bMSAOverMSTCapable;
         bool bDscPassThroughColorFormatWar;
-        bool bSkipFakeDeviceDpcdAccess;
 
-        DeviceImpl(DPCDHAL * hal, ConnectorImpl * connector, DeviceImpl * parent, bool bSkipFakeDeviceDpcdAccess);
         NvU64 maxModeBwRequired;
 
+        DeviceImpl(DPCDHAL * hal, ConnectorImpl * connector, DeviceImpl * parent);
         ~DeviceImpl();
 
         virtual bool isCableOk();

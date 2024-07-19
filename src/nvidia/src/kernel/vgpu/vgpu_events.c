@@ -44,10 +44,10 @@
 #include "gpu/bus/kern_bus.h"
 #include "gpu/device/device.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
+#include "gpu/timer/objtmr.h"
 
 #include "Nvcm.h"
 #include "gpu/mem_mgr/mem_desc.h"
-#include "objtmr.h"
 #include "os/os.h"
 #include "vgpu/dev_vgpu.h"
 #include "vgpu/rpc.h"
@@ -95,9 +95,6 @@ NV_STATUS _setupGspEventInfrastructure(OBJGPU *pGpu, OBJVGPU *pVGpu)
     NV_ADDRESS_SPACE addressSpace = ADDR_FBMEM;
     NvU32 memFlags = 0;
     KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
-
-    if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus))
-        memFlags = MEMDESC_FLAGS_CPU_ONLY;
 
     if (IsGH100orBetter(pGpu) && (!kbusIsBar2Initialized(pKernelBus)))
         addressSpace = ADDR_SYSMEM;
@@ -292,7 +289,7 @@ void vgpuServiceEventPstate(OBJGPU *pGpu, OBJVGPU *pVGpu)
     status = osQueueWorkItemWithFlags(pGpu,
                                       _rmPstateEventCallback,
                                       (void *)pCurrPstate,
-                                      OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE_RW |
+                                      OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE |
                                       OS_QUEUE_WORKITEM_FLAGS_DONT_FREE_PARAMS);
     if (status != NV_OK)
     {

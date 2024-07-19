@@ -105,8 +105,6 @@ ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Co
       bFECEnable(false),
       bDscCapBasedOnParent(false),
       allocatedDpTunnelBw(0),
-      bClientRequestedDpTunnelBwAllocation(false),
-      bIsDpTunnelBwAllocationEnabled(false),
       inTransitionHeadMask(0x0),
       ResStatus(this)
 {
@@ -147,6 +145,8 @@ ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Co
     hal->applyRegkeyOverrides(dpRegkeyDatabase);
 
     highestAssessedLC = getMaxLinkConfig();
+    highestAssessedLC.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(highestAssessedLC.peakRate);
+    highestAssessedLC.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(highestAssessedLC.peakRatePossible);
 
 }
 
@@ -171,14 +171,16 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
         this->bKeepLinkAliveSST = dpRegkeyDatabase.bOptLinkKeptAliveSst;
     }
     this->bReportDeviceLostBeforeNew       = dpRegkeyDatabase.bReportDeviceLostBeforeNew;
-    this->maxLinkRateFromRegkey            = dpRegkeyDatabase.applyMaxLinkRateOverrides;
     this->bDisableSSC                      = dpRegkeyDatabase.bSscDisabled;
     this->bEnableFastLT                    = dpRegkeyDatabase.bFastLinkTrainingEnabled;
     this->bDscMstCapBug3143315             = dpRegkeyDatabase.bDscMstCapBug3143315;
     this->bPowerDownPhyBeforeD3            = dpRegkeyDatabase.bPowerDownPhyBeforeD3;
     this->bReassessMaxLink                 = dpRegkeyDatabase.bReassessMaxLink;
+    if (dpRegkeyDatabase.applyMaxLinkRateOverrides)
+    {
+        this->maxLinkRateFromRegkey        = hal->mapLinkBandiwdthToLinkrate(dpRegkeyDatabase.applyMaxLinkRateOverrides); // BW to linkrate
+    }
     this->bForceDisableTunnelBwAllocation  = dpRegkeyDatabase.bForceDisableTunnelBwAllocation;
-    this->bSkipFakeDeviceDpcdAccess        = dpRegkeyDatabase.bSkipFakeDeviceDpcdAccess;
     this->bFlushTimeslotWhenDirty          = dpRegkeyDatabase.bFlushTimeslotWhenDirty;
 }
 
@@ -483,7 +485,7 @@ create:
     }
     else
     {
-        newDev = new DeviceImpl(hal, this, parent, this->bSkipFakeDeviceDpcdAccess);
+        newDev = new DeviceImpl(hal, this, parent);
     }
 
     if (parent)
@@ -540,10 +542,17 @@ create:
         //
         int retries = 0;
 
-        while((retries < WAR_MAX_REASSESS_ATTEMPT) && (highestAssessedLC != getMaxLinkConfig()))
+    LinkConfiguration maxLinkConfig = getMaxLinkConfig();
+    maxLinkConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRate);
+    maxLinkConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRatePossible);
+
+        while((retries < WAR_MAX_REASSESS_ATTEMPT) && (highestAssessedLC != maxLinkConfig))
         {
             DP_PRINTF(DP_WARNING, "DP> Assessed link is not equal to highest possible config. Reassess link.");
             this->assessLink();
+            maxLinkConfig = getMaxLinkConfig();
+            maxLinkConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRate);
+            maxLinkConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRatePossible);
             retries++;
         }
     }
@@ -753,21 +762,22 @@ LinkRates* ConnectorImpl::importDpLinkRates()
 
         // Get maximal link rate supported by GPU
         linkRate = main->maxLinkRateSupported();
+        linkRate = DATA_RATE_8B_10B_TO_LINK_RATE(linkRate);
 
         // Insert by order
         pConnectorLinkRates->clear();
 
-        if (linkRate >= RBR)
-            pConnectorLinkRates->import((NvU8)linkBW_1_62Gbps);
+        if (linkRate >= dp2LinkRate_1_62Gbps)
+            pConnectorLinkRates->import((NvU16)dp2LinkRate_1_62Gbps);
 
-        if (linkRate >= HBR)
-            pConnectorLinkRates->import((NvU8)linkBW_2_70Gbps);
+        if (linkRate >= dp2LinkRate_2_70Gbps)
+            pConnectorLinkRates->import((NvU16)dp2LinkRate_2_70Gbps);
 
-        if (linkRate >= HBR2)
-            pConnectorLinkRates->import((NvU8)linkBW_5_40Gbps);
+        if (linkRate >= dp2LinkRate_5_40Gbps)
+            pConnectorLinkRates->import((NvU16)dp2LinkRate_5_40Gbps);
 
-        if (linkRate >= HBR3)
-            pConnectorLinkRates->import((NvU8)linkBW_8_10Gbps);
+        if (linkRate >= dp2LinkRate_8_10Gbps)
+            pConnectorLinkRates->import((NvU16)dp2LinkRate_8_10Gbps);
     }
     return pConnectorLinkRates;
 }
@@ -1000,6 +1010,7 @@ Device * ConnectorImpl::enumDevices(Device * previousDevice)
 LinkConfiguration ConnectorImpl::getMaxLinkConfig()
 {
     NvU64 maxLinkRate;
+    NvU64 gpuMaxLinkRate;
 
     DP_ASSERT(hal);
 
@@ -1008,11 +1019,7 @@ LinkConfiguration ConnectorImpl::getMaxLinkConfig()
         // Regkey is supported on eDP panels only
         maxLinkRate = maxLinkRateFromRegkey;
         // Check if valid value is present in regkey
-        if (maxLinkRate && (IS_VALID_LINKBW(maxLinkRate)))
-        {
-            maxLinkRate = maxLinkRate * DP_LINK_BW_FREQ_MULTI_MBPS;
-        }
-        else
+        if (!(maxLinkRate && (IS_VALID_LINKBW_10M(maxLinkRate))))
         {
             maxLinkRate = hal->getMaxLinkRate();
         }
@@ -1022,13 +1029,18 @@ LinkConfiguration ConnectorImpl::getMaxLinkConfig()
         maxLinkRate = hal->getMaxLinkRate();
     }
 
+    gpuMaxLinkRate = main->maxLinkRateSupported();
+    gpuMaxLinkRate = DATA_RATE_8B_10B_TO_LINK_RATE(gpuMaxLinkRate);
+
     LinkRate linkRate = maxLinkRate ?
-                        DP_MIN(maxLinkRate, main->maxLinkRateSupported()) :
-                        main->maxLinkRateSupported();
+                        DP_MIN(maxLinkRate, gpuMaxLinkRate) :
+                        gpuMaxLinkRate;
 
     unsigned laneCount = hal->getMaxLaneCount() ?
                          DP_MIN(hal->getMaxLaneCountSupportedAtLinkRate(linkRate), hal->getMaxLaneCount()) :
                          4U;
+
+    linkRate = LINK_RATE_TO_DATA_RATE_8B_10B(linkRate);
 
     return LinkConfiguration (&this->linkPolicy,
                               laneCount, linkRate,
@@ -1042,6 +1054,13 @@ LinkConfiguration ConnectorImpl::getActiveLinkConfig()
 {
     DP_ASSERT(hal);
 
+    return LinkConfiguration (&activeLinkConfig.policy,
+                              activeLinkConfig.lanes,
+                              (LINK_RATE_TO_DATA_RATE_8B_10B(activeLinkConfig.peakRate)),
+                              activeLinkConfig.enhancedFraming,
+                              activeLinkConfig.multistream,
+                              false,  /* disablePostLTRequest */
+                              activeLinkConfig.bEnableFEC);
     return activeLinkConfig;
 }
 
@@ -1152,7 +1171,7 @@ bool ConnectorImpl::compoundQueryAttachTunneling(const DpModesetParams &modesetP
                                                  DscParams *pDscParams,
                                                  DP_IMP_ERROR *pErrorCode)
 {
-    if (!bIsDpTunnelBwAllocationEnabled)
+    if (!hal->isDpTunnelBwAllocationEnabled())
     {
         return true;
     }
@@ -1495,9 +1514,9 @@ bool ConnectorImpl::compoundQueryAttachMSTDsc(Group * target,
         }
     }
 
-    availableBandwidthBitsPerSecond = localInfo->lc.minRate * 8 * localInfo->lc.lanes;
+    availableBandwidthBitsPerSecond = localInfo->lc.convertMinRateToDataRate() * 8 * localInfo->lc.lanes;
 
-    warData.dpData.linkRateHz = localInfo->lc.peakRate;
+    warData.dpData.linkRateHz = localInfo->lc.convertLinkRateToDataRate(localInfo->lc.peakRate);
     warData.dpData.laneCount = localInfo->lc.lanes;
     warData.dpData.dpMode = DSC_DP_MST;
     warData.dpData.hBlank = modesetParams.modesetInfo.rasterWidth - modesetParams.modesetInfo.surfaceWidth;
@@ -1847,9 +1866,9 @@ bool ConnectorImpl::compoundQueryAttachSST(Group * target,
                     DP_PRINTF(DP_WARNING, "Current version is 1.1");
                 }
 
-                availableBandwidthBitsPerSecond = lc.minRate * 8 * lc.lanes;
+                availableBandwidthBitsPerSecond = lc.convertMinRateToDataRate() * 8 * lc.lanes;
 
-                warData.dpData.linkRateHz = lc.peakRate;
+                warData.dpData.linkRateHz = lc.convertLinkRateToDataRate(lc.peakRate);
                 warData.dpData.laneCount = lc.lanes;
                 warData.dpData.hBlank = modesetParams.modesetInfo.rasterWidth - modesetParams.modesetInfo.surfaceWidth;
                 warData.dpData.dpMode = DSC_DP_SST;
@@ -2573,6 +2592,8 @@ bool ConnectorImpl::isHeadShutDownNeeded(Group * target,               // Group 
     bool bSkipLowestConfigCheck = false;
     bool bIsModeSupported = false;
     LinkConfiguration maxLc = getMaxLinkConfig();
+    maxLc.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(maxLc.peakRate);
+    maxLc.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(maxLc.peakRatePossible);
     lowestSelected = maxLc;
     GroupImpl* targetImpl = (GroupImpl*)target;
 
@@ -2642,7 +2663,7 @@ bool ConnectorImpl::isHeadShutDownNeeded(Group * target,               // Group 
         // mode, we will hang the HW since head would still be driving
         // the higher mode at the time of link train.
         //
-        else if ((lowestSelected.peakRate * lowestSelected.lanes) >= (activeLinkConfig.peakRate * activeLinkConfig.lanes))
+        else if ((lowestSelected.getTotalDataRate()) >= (activeLinkConfig.getTotalDataRate()))
         {
             bHeadShutdownNeeded = false;
         }
@@ -2666,6 +2687,8 @@ bool ConnectorImpl::isLinkTrainingNeededForModeset (ModesetInfo modesetInfo)
     bool bSkipLowestConfigCheck      = false;
     bool bIsModeSupported            = false;
     LinkConfiguration lowestSelected = getMaxLinkConfig();
+    lowestSelected.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(lowestSelected.peakRate);
+    lowestSelected.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(lowestSelected.peakRatePossible);
 
     if (linkUseMultistream())
     {
@@ -2674,7 +2697,7 @@ bool ConnectorImpl::isLinkTrainingNeededForModeset (ModesetInfo modesetInfo)
             // If MST, we always need to link train if link is not active
             return true;
         }
-        else if (getMaxLinkConfig() != activeLinkConfig)
+        else if (lowestSelected != activeLinkConfig)
         {
             //
             // If the link is active, we have to retrain, if active Link Config is
@@ -3037,7 +3060,7 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
     bool     bEnableFEC;
     bool     bEnablePassThroughForPCON = modesetParams.modesetInfo.bEnablePassThroughForPCON;
 
-    if (bIsDpTunnelBwAllocationEnabled &&
+    if (hal->isDpTunnelBwAllocationEnabled() &&
         ((allocatedDpTunnelBwShadow != 0) ||
          (allocatedDpTunnelBw == 0)))
     {
@@ -3202,9 +3225,13 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
         }
     }
 
+    LinkConfiguration maxLinkConfig = getMaxLinkConfig();
+    maxLinkConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRate);
+    maxLinkConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRatePossible);
+
     // if failed, we're guaranteed that assessed link rate didn't meet the mode requirements
     // isZombie() will catch this
-    bLinkTrainingStatus = trainLinkOptimized(getMaxLinkConfig());
+    bLinkTrainingStatus = trainLinkOptimized(maxLinkConfig);
 
     // If panel supports DSC, set DSC enabled/disabled
     // according to the mode requested.
@@ -3665,7 +3692,11 @@ bool ConnectorImpl::assessPCONLinkCapability(PCONLinkControl *pConControl)
 
     // Step 3: Assess DP Link capability.
     LinkConfiguration lConfig = getMaxLinkConfig();
+    lConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(lConfig.peakRate);
+    lConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(lConfig.peakRatePossible);
     highestAssessedLC = getMaxLinkConfig();
+    highestAssessedLC.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(highestAssessedLC.peakRate);
+    highestAssessedLC.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(highestAssessedLC.peakRatePossible);
 
     hal->updateDPCDOffline();
     if (hal->isDpcdOffline())
@@ -3773,6 +3804,8 @@ bool ConnectorImpl::willLinkSupportModeSST(const LinkConfiguration & linkConfig,
 void ConnectorImpl::forceLinkTraining()
 {
     LinkConfiguration forcedMaxConfig(getMaxLinkConfig());
+    forcedMaxConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(forcedMaxConfig.peakRate);
+    forcedMaxConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(forcedMaxConfig.peakRatePossible);
     train(forcedMaxConfig, true);
 }
 
@@ -3782,7 +3815,7 @@ void ConnectorImpl::powerdownLink(bool bPowerdownPanel)
 
     LinkConfiguration powerOff = getMaxLinkConfig();
     powerOff.lanes             = 0;
-    powerOff.peakRate          = RBR; // Set to lowest peakRate
+    powerOff.peakRate          = dp2LinkRate_1_62Gbps; // Set to lowest peakRate
 
     if (linkUseMultistream() && bPowerDownPhyBeforeD3)
     {
@@ -3926,6 +3959,20 @@ TriState ConnectorImpl::requestDpTunnelBw(NvU8 requestBw)
 }
 
 /*!
+ * @brief Interface to allow client to enable BW allocation support
+ */
+void ConnectorImpl::enableDpTunnelingBwAllocationSupport()
+{
+    // If regkey is set to disable, return early
+    if (bForceDisableTunnelBwAllocation)
+    {
+        return;
+    }
+
+    hal->enableDpTunnelingBwAllocationSupport();
+}
+
+/*!
  * @brief Allocate the requested Tunnel BW
  *
  * @return      maximum tunnel bw required for this connector
@@ -3933,7 +3980,7 @@ TriState ConnectorImpl::requestDpTunnelBw(NvU8 requestBw)
  */
 NvU64 ConnectorImpl::getMaxTunnelBw()
 {
-    return highestAssessedLC.peakRate * highestAssessedLC.lanes * 8;
+    return highestAssessedLC.getTotalDataRate() * 8;
 }
 
 /*!
@@ -3950,8 +3997,9 @@ bool ConnectorImpl::allocateDpTunnelBw(NvU64 bandwidth)
     NvU8      requestBw             = 0;
     TriState  requestStatus         = Indeterminate;
 
-    if (!bIsDpTunnelBwAllocationEnabled)
+    if (!hal->isDpTunnelBwAllocationEnabled())
     {
+        DP_PRINTF(DP_NOTICE, "Bw allocation not enabled");
         return false;
     }
 
@@ -3970,6 +4018,10 @@ bool ConnectorImpl::allocateDpTunnelBw(NvU64 bandwidth)
     {
         return false;
     }
+
+    DP_PRINTF(DP_INFO, "Estimated BW: %d Mbps, Requested BW: %d Mbps",
+              ((NvU64) estimatedBw * 1000) / (NvU64) granularityMultiplier,
+              bandwidth / (1000 * 1000));
 
     //
     // Granularity is in Gbps. Eg: 0.25 Gpbs, 0.5 Gpbs, 1 Gbps
@@ -3990,6 +4042,7 @@ bool ConnectorImpl::allocateDpTunnelBw(NvU64 bandwidth)
     // This shouldn't be Indeterminate. The request can succeed or fail. Indeterminate means something else went wrong
     if (requestStatus == Indeterminate)
     {
+        DP_PRINTF(DP_ERROR, "Tunneling chip didn't reply for the BW request\n");
         return false;
     }
 
@@ -4005,6 +4058,9 @@ bool ConnectorImpl::allocateDpTunnelBw(NvU64 bandwidth)
         {
             return false;
         }
+
+        DP_PRINTF(DP_INFO, "Failed to get requested BW, requesting updated Estimated BW: %d\n",
+                  ((NvU64) estimatedBw * 1000) / (NvU64) granularityMultiplier);
 
         requestBw = estimatedBw;
         requestStatus = requestDpTunnelBw(requestBw);
@@ -4023,6 +4079,7 @@ bool ConnectorImpl::allocateDpTunnelBw(NvU64 bandwidth)
         // Convert this back to bps and record the allocated BW
         this->allocatedDpTunnelBw       = ((NvU64) requestBw * 1000 * 1000 * 1000) / (NvU64) granularityMultiplier;
         this->allocatedDpTunnelBwShadow = 0;
+        DP_PRINTF(DP_INFO, "Allocated BW: %d Mbps", this->allocatedDpTunnelBw / (1000 * 1000));
     }
 
     return requestStatus;
@@ -4030,7 +4087,7 @@ bool ConnectorImpl::allocateDpTunnelBw(NvU64 bandwidth)
 
 bool ConnectorImpl::allocateMaxDpTunnelBw()
 {
-    if (!bIsDpTunnelBwAllocationEnabled)
+    if (!hal->isDpTunnelBwAllocationEnabled())
     {
         return true;
     }
@@ -4051,6 +4108,14 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
     this->bSkipLt = false;  // Assesslink should never skip LT, so let's reset it in case it was set.
     bool bLinkStateToggle = false;
     LinkConfiguration _maxLinkConfig = getMaxLinkConfig();
+    _maxLinkConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(_maxLinkConfig.peakRate);
+    _maxLinkConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(_maxLinkConfig.peakRatePossible);
+
+    // Cap system max link configuration to preferredLinkConfig
+    if (preferredLinkConfig.isValid() && this->forcePreferredLinkConfig)
+    {
+        _maxLinkConfig = preferredLinkConfig;
+    }
 
     if (bSkipAssessLinkForPCon)
     {
@@ -4063,7 +4128,6 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
         train(preferredLinkConfig, false, trainType);
         return;
     }
-
 
     if (isLinkQuiesced ||
         (firmwareGroup && ((GroupImpl *)firmwareGroup)->headInFirmware))
@@ -4087,19 +4151,19 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
 
                 if (linkRateFromUefi == 0x6)
                 {
-                    linkRate = RBR;
+                    linkRate = dp2LinkRate_1_62Gbps;
                 }
                 else if (linkRateFromUefi == 0xA)
                 {
-                    linkRate = HBR;
+                    linkRate = dp2LinkRate_2_70Gbps;
                 }
                 else if (linkRateFromUefi == 0x14)
                 {
-                    linkRate = HBR2;
+                    linkRate = dp2LinkRate_5_40Gbps;
                 }
                 else if (linkRateFromUefi == 0x1E)
                 {
-                    linkRate = HBR3;
+                    linkRate = dp2LinkRate_8_10Gbps;
                 }
                 else
                 {
@@ -4107,8 +4171,8 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
                     linkGuessed = true;
                 }
 
-                if ((highestAssessedLC.peakRate == HBR3) &&
-                    (linkRate != HBR3))
+                if ((highestAssessedLC.peakRate == dp2LinkRate_8_10Gbps) &&
+                    (linkRate != dp2LinkRate_8_10Gbps))
                 {
                     //
                     // UEFI does not support HBR3 yet (The support will be added in Volta).
@@ -4155,6 +4219,7 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
 
                 // Get the currently applied linkconfig and update SW state
                 getCurrentLinkConfig(laneCount, linkRate);
+                linkRate = DATA_RATE_8B_10B_TO_LINK_RATE(linkRate);
 
                 activeLinkConfig = LinkConfiguration (&this->linkPolicy,
                                                       laneCount, linkRate,
@@ -4604,7 +4669,7 @@ bool ConnectorImpl::trainLinkOptimizedSingleHeadMultipleSST(GroupImpl *pGroupAtt
     }
 
     // Order for 2-SST link training and must be with 4 lanes
-    unsigned linkRateList[] = {RBR, HBR, HBR2, HBR3};
+    unsigned linkRateList[] = {dp2LinkRate_1_62Gbps, dp2LinkRate_2_70Gbps, dp2LinkRate_5_40Gbps, dp2LinkRate_8_10Gbps};
     NvU8     linkRateCount = sizeof(linkRateList) / sizeof(unsigned);
 
     for (NvU8 i = 0; i < linkRateCount; i++)
@@ -4623,6 +4688,8 @@ bool ConnectorImpl::trainLinkOptimizedSingleHeadMultipleSST(GroupImpl *pGroupAtt
                 {
                     // Re-train max link config
                     linkCfg = getMaxLinkConfig();
+                    linkCfg.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(linkCfg.peakRate);
+                    linkCfg.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(linkCfg.peakRatePossible);
                     linkCfg.policy.setSkipFallBack(true);
                     if (!train(linkCfg, false))
                     {
@@ -4664,8 +4731,8 @@ bool ConnectorImpl::isNoActiveStreamAndPowerdown()
             (!bKeepLinkAliveForPCON) &&
             (!bIsDiscoveryDetectActive) &&
             (pendingRemoteHdcpDetections == 0) &&
-            (!main->isInternalPanelDynamicMuxCapable()) &&
-            (!main->isMDMEnabled()))
+            (!main->isInternalPanelDynamicMuxCapable())
+            )
         {
             powerdownLink();
 
@@ -4732,6 +4799,8 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
     }
 
     lowestSelected = getMaxLinkConfig();
+    lowestSelected.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(lowestSelected.peakRate);
+    lowestSelected.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(lowestSelected.peakRatePossible);
 
     if (!activeLinkConfig.multistream)
     {
@@ -4881,8 +4950,11 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
             }
             if (!bLinkTrainingSuccessful)
             {
-                // If optimized link config fails, try max link config with fallback. 
-                if (!train(getMaxLinkConfig(), false))
+                LinkConfiguration maxLinkConfig = getMaxLinkConfig();
+                maxLinkConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRate);
+                maxLinkConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRatePossible);
+                // If optimized link config fails, try max link config with fallback.
+                if (!train(maxLinkConfig, false))
                 {
                     //
                     // Note here that if highest link config fails and a lower
@@ -4922,9 +4994,11 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
                 if (!(bEnteredFlushMode = this->enableFlush()))
                     return false;
             }
-
+            LinkConfiguration maxLinkConfig = getMaxLinkConfig();
+            maxLinkConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRate);
+            maxLinkConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRatePossible);
             // Mode wasn't possible at any assessed configuration.
-            train(getMaxLinkConfig(), true);
+            train(maxLinkConfig, true);
 
             // Mark link training as failed since we forced it
             bLinkTrainingSuccessful = false;
@@ -5007,8 +5081,11 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
             train(desired, false);
             if (!activeLinkConfig.isValid())
             {
+                LinkConfiguration maxLinkConfig = getMaxLinkConfig();
+                maxLinkConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRate);
+                maxLinkConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRatePossible);
                 DP_PRINTF(DP_ERROR, "DPCONN> Unable to train link (at all).  Forcing training (picture won't show up)");
-                train(getMaxLinkConfig(), true);
+                train(maxLinkConfig, true);
 
                 // Mark link training as failed since we forced it
                 bLinkTrainingSuccessful = false;
@@ -5287,6 +5364,8 @@ void ConnectorImpl::populateUpdatedLaneSettings(NvU8* voltageSwingLane, NvU8* pr
 
 bool ConnectorImpl::validateLinkConfiguration(const LinkConfiguration & lConfig)
 {
+    NvU64 linkRate10M = lConfig.peakRate;
+
     if (!IS_VALID_LANECOUNT(lConfig.lanes))
         return false;
 
@@ -5295,13 +5374,13 @@ bool ConnectorImpl::validateLinkConfiguration(const LinkConfiguration & lConfig)
 
     if (lConfig.lanes != 0)
     {
-        if (!IS_VALID_LINKBW(lConfig.peakRate/DP_LINK_BW_FREQ_MULTI_MBPS))
+        if (!IS_VALID_LINKBW_10M(linkRate10M))
             return false;
 
-        if (lConfig.peakRate > hal->getMaxLinkRate())
+        if (linkRate10M > hal->getMaxLinkRate())
             return false;
 
-        if (IS_INTERMEDIATE_LINKBW(lConfig.peakRate/DP_LINK_BW_FREQ_MULTI_MBPS))
+        if (IS_INTERMEDIATE_LINKBW_10M(linkRate10M))
         {
             NvU16 *ilrTable;
             NvU32 i;
@@ -5312,10 +5391,10 @@ bool ConnectorImpl::validateLinkConfiguration(const LinkConfiguration & lConfig)
             for (i = 0; i < NV0073_CTRL_DP_MAX_INDEXED_LINK_RATES; i++)
             {
                 //
-                // lConfig.peakRate is in MBPS and ilrTable entries are the values read from DPCD
-                // Convert the ilrTable value to MBPS before the comparison
+                // linkRate10M is in 10M convention and ilrTable entries are the values read from DPCD in 200Kunits
+                // Convert the ilrTable value to 10M convention before the comparison
                 //
-                if (LINK_RATE_KHZ_TO_MBPS(ilrTable[i] * DP_LINK_RATE_TABLE_MULTIPLIER_KHZ) == lConfig.peakRate)
+                if (LINK_RATE_200KHZ_TO_10MHZ(ilrTable[i]) == linkRate10M)
                     break;
                 if (ilrTable[i] == 0)
                     return false;
@@ -5324,7 +5403,6 @@ bool ConnectorImpl::validateLinkConfiguration(const LinkConfiguration & lConfig)
                 return false;
         }
     }
-
     return true;
 }
 
@@ -6267,8 +6345,8 @@ void ConnectorImpl::notifyLongPulse(bool statusConnected)
 
     if (previousPlugged && statusConnected)
     {
-        if (main->isInternalPanelDynamicMuxCapable() ||
-            main->isMDMEnabled())
+        if (main->isInternalPanelDynamicMuxCapable()
+            )
         {
             return;
         }
@@ -6315,9 +6393,8 @@ void ConnectorImpl::notifyLongPulse(bool statusConnected)
 bool ConnectorImpl::updateDpTunnelBwAllocation()
 {
     NvU64 connectorTunnelBw = 0;
-    if (!bIsDpTunnelBwAllocationEnabled)
+    if (!hal->isDpTunnelBwAllocationEnabled())
     {
-        DP_PRINTF(DP_NOTICE, "Bw allocation not enabled");
         return true;
     }
 
@@ -6328,49 +6405,22 @@ bool ConnectorImpl::updateDpTunnelBwAllocation()
         connectorTunnelBw += devMaxModeBwRequired;
     }
 
+    DP_PRINTF(DP_INFO, "Required Connector Tunnel BW: %d Mbps", connectorTunnelBw / (1000 * 1000));
+
     NvU64 maxTunnelBw = getMaxTunnelBw();
     if (connectorTunnelBw > maxTunnelBw)
     {
+        DP_PRINTF(DP_INFO, "Requested connector tunnel BW is larger than max Tunnel BW of %d Mbps. Overriding Max Tunnel BW\n",
+                  maxTunnelBw / (1000 * 1000));
         connectorTunnelBw = maxTunnelBw;
     }
 
     if (!allocateDpTunnelBw(connectorTunnelBw))
     {
-        DP_PRINTF(DP_ERROR, "Failed to allocate Dp Tunnel BW: %d", connectorTunnelBw);
+        DP_PRINTF(DP_ERROR, "Failed to allocate Dp Tunnel BW: %d Mbps", connectorTunnelBw / (1000 * 1000));
         return false;
     }
     return true;
-}
-
-/*!
- * @brief Enable/Disable DP Tunnel BW allocation depending on support and client request
- *
- * @return      Boolean to indicate success or failure
- */
-void ConnectorImpl::configureDpTunnelBwAllocation()
-{
-    bool bIsDpTunnelBwAllocationSupported = hal->getDpTunnelBwAllocationSupported();
-
-    if (this->bForceDisableTunnelBwAllocation)
-    {
-        bIsDpTunnelBwAllocationEnabled = false;
-        return;
-    }
-
-    bIsDpTunnelBwAllocationSupported = bIsDpTunnelBwAllocationSupported && bClientRequestedDpTunnelBwAllocation;
-
-    if (bIsDpTunnelBwAllocationEnabled == bIsDpTunnelBwAllocationSupported)
-    {
-        DP_PRINTF(DP_NOTICE, "Bw Allocation already in requested state: %d", bIsDpTunnelBwAllocationSupported);
-        return;
-    }
-
-    bIsDpTunnelBwAllocationEnabled = hal->setDpTunnelBwAllocation(bIsDpTunnelBwAllocationSupported);
-
-    if (bIsDpTunnelBwAllocationEnabled != bIsDpTunnelBwAllocationSupported)
-    {
-        DP_PRINTF(DP_WARNING, "Unable to set BW allocation to requested state: %d", bIsDpTunnelBwAllocationSupported);
-    }
 }
 
 //
@@ -6383,8 +6433,11 @@ void ConnectorImpl::configureDpTunnelBwAllocation()
 //
 void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
 {
-    // start from scratch
-    preferredLinkConfig = LinkConfiguration();
+    // start from scratch when forcePreferredLinkConfig is not set
+    if (!(preferredLinkConfig.isValid() && this->forcePreferredLinkConfig))
+    {
+        preferredLinkConfig = LinkConfiguration();
+    }
 
     bPConConnected = false;
     bSkipAssessLinkForPCon = false;
@@ -6517,12 +6570,17 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
         discoveryManager = 0;
 
         cancelHdcpCallbacks();
-        configureDpTunnelBwAllocation();
         if (hal->getSupportsMultistream() && main->hasMultistream())
         {
             bool bDeleteFirmwareVC = false;
 
             DP_PRINTF(DP_NOTICE, "DP> Multistream panel detected, building message manager");
+
+            // Update preferredLinkConfig multistream status to MST
+            if (preferredLinkConfig.isValid() && this->forcePreferredLinkConfig)
+            {
+                preferredLinkConfig.multistream = true;
+            }
 
             //
             // Rebuild the message manager to reset and half received messages
@@ -6591,6 +6649,11 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
             bool isComplianceForEdidTest = false;
             dev.address = Address();
 
+            // Update preferredLinkConfig multistream status to SST
+            if (preferredLinkConfig.isValid() && this->forcePreferredLinkConfig)
+            {
+                preferredLinkConfig.multistream = false;
+            }
 
             //  We will report a dongle as new device with videoSink flag as false.
             if (hal->getSinkCount() == 0)
@@ -6715,7 +6778,8 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
             }
 
             LinkConfiguration maxLinkConfig = getMaxLinkConfig();
-
+            maxLinkConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRate);
+            maxLinkConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRatePossible);
             if (bPConConnected ||
                 (main->isEDP() && this->bSkipAssessLinkForEDP) ||
                 (main->isInternalPanelDynamicMuxCapable()))
@@ -6808,6 +6872,9 @@ completed:
 void ConnectorImpl::handleDpTunnelingIrq()
 {
     bool notifyClient = false;
+    // Unconditionally reset the BW request status
+    hal->clearDpTunnelingBwRequestStatus();
+
     if (hal->hasDpTunnelEstimatedBwChanged())
     {
         NvU64 previousAllocatedDpTunnelBw = allocatedDpTunnelBw;
@@ -6816,24 +6883,20 @@ void ConnectorImpl::handleDpTunnelingIrq()
         {
             notifyClient = true;
         }
+
+        hal->clearDpTunnelingEstimatedBwStatus();
     }
 
     if (hal->hasDpTunnelBwAllocationCapabilityChanged())
     {
-        bool bIsDpTunnelBwAllocationPreviouslyEnabled = bIsDpTunnelBwAllocationEnabled;
-        // Enables/disables the BW allocation support by reading the capability and client request
-        configureDpTunnelBwAllocation();
-
-        // Tunneling BW Capability has changed. Notify client
-        if (bIsDpTunnelBwAllocationPreviouslyEnabled != bIsDpTunnelBwAllocationEnabled)
+        notifyClient = true;
+        // Try to allocate max tunnel BW if we enabled BW allocation above
+        if (hal->isDpTunnelBwAllocationEnabled())
         {
-            notifyClient = true;
-            // Try to allocate max tunnel BW if we enabled BW allocation above
-            if (bIsDpTunnelBwAllocationEnabled)
-            {
-                allocateMaxDpTunnelBw();
-            }
+            allocateMaxDpTunnelBw();
         }
+
+        hal->clearDpTunnelingBwAllocationCapStatus();
     }
 
     if (notifyClient)
@@ -7034,7 +7097,10 @@ void ConnectorImpl::notifyShortPulse()
                                         train(lc, true);
                                     disableFlush();
                                     // Don't force/commit. Only keep the request.
-                                    setPreferredLinkConfig(lc, false, false);
+                                    LinkConfiguration lc_dr(lc);
+                                    lc_dr.peakRate = LINK_RATE_TO_DATA_RATE_8B_10B(lc_dr.peakRate);
+                                    lc_dr.peakRatePossible = LINK_RATE_TO_DATA_RATE_8B_10B(lc_dr.peakRatePossible);
+                                    setPreferredLinkConfig(lc_dr, false, false);
                                 }
                             }
                             else // linkconfig is not supporting bandwidth. Fallback to default edid and notify DD.
@@ -7177,8 +7243,20 @@ bool ConnectorImpl::detectSinkCountChange()
     return ((existingDev->videoSink || existingDev->audioSink) != hasSink);
 }
 
+/*!
+ * @brief Sets the preferred link config which the tool has requested to train to.
+ *
+ * @param[in]   lc                       client requested link configuration
+ * @param[in]   commit                   initiate assessLink with lc
+ * @param[in]   force                    link train to lc. Flush Mode is used.
+ * @param[in]   trainType                parameter for assessLink for NORMAL, NO, FAST LT
+ * @param[in]   forcePreferredLinkConfig cap system LT configuration during NLP, IMP, NAB
+ *
+ * @return      Boolean to indicate success or failure
+ */
 bool ConnectorImpl::setPreferredLinkConfig(LinkConfiguration & lc, bool commit,
-                                           bool force, LinkTrainingType trainType)
+                                           bool force, LinkTrainingType trainType,
+                                           bool forcePreferredLinkConfig)
 {
     bool bEnteredFlushMode;
     Device *dev;
@@ -7195,6 +7273,8 @@ bool ConnectorImpl::setPreferredLinkConfig(LinkConfiguration & lc, bool commit,
         return false;
     }
 
+    lc.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(lc.peakRatePossible);
+    lc.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(lc.peakRate);
     if (!validateLinkConfiguration(lc))
     {
         DP_PRINTF(DP_ERROR, "Client requested bad LinkConfiguration.");
@@ -7205,6 +7285,10 @@ bool ConnectorImpl::setPreferredLinkConfig(LinkConfiguration & lc, bool commit,
     preferredLinkConfig.enhancedFraming = hal->getEnhancedFraming();
     preferredLinkConfig.multistream = this->linkUseMultistream();
     preferredLinkConfig.policy = this->linkPolicy;
+
+    // need to force assessLink and during NotifyAttachBegin
+    this->forcePreferredLinkConfig = forcePreferredLinkConfig;
+
     if (force)
     {
         // Do flushmode
@@ -7222,12 +7306,14 @@ bool ConnectorImpl::setPreferredLinkConfig(LinkConfiguration & lc, bool commit,
             assessLink(trainType);
         }
     }
+
     return true;
 }
 
 bool ConnectorImpl::resetPreferredLinkConfig(bool force)
 {
     preferredLinkConfig = LinkConfiguration();
+    this->forcePreferredLinkConfig = false;
 
     if (force)
         assessLink();
@@ -7361,7 +7447,7 @@ void ConnectorImpl::createFakeMuxDevice(const NvU8 *buffer, NvU32 bufferSize)
         return;
     }
 
-    DeviceImpl *newDev = new DeviceImpl(hal, this, NULL, this->bSkipFakeDeviceDpcdAccess);
+    DeviceImpl *newDev = new DeviceImpl(hal, this, NULL);
     if (!newDev)
     {
         return;
@@ -7588,7 +7674,9 @@ void ConnectorImpl::getCurrentLinkConfig(unsigned & laneCount, NvU64 & linkRate)
 unsigned ConnectorImpl::getPanelDataClockMultiplier()
 {
     LinkConfiguration linkConfig = getMaxLinkConfig();
-    return getDataClockMultiplier(linkConfig.peakRatePossible, linkConfig.lanes);
+    linkConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(linkConfig.peakRate);
+    linkConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(linkConfig.peakRatePossible);
+    return getDataClockMultiplier(linkConfig.convertLinkRateToDataRate(linkConfig.peakRatePossible), linkConfig.lanes);
 }
 
 unsigned ConnectorImpl::getGpuDataClockMultiplier()
@@ -7597,7 +7685,6 @@ unsigned ConnectorImpl::getGpuDataClockMultiplier()
     NvU64 linkRate;
     // Need to get the GPU caps, not monitor caps.
     linkRate = maxLinkRateSupported();
-
     laneCount = laneCount_4;
 
     return getDataClockMultiplier(linkRate, laneCount);
@@ -7802,9 +7889,13 @@ void ConnectorImpl::notifyHBR2WAREngage()
 {
     bool peakBwChanged = false;
     LinkConfiguration preLc = getMaxLinkConfig();
+    preLc.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(preLc.peakRate);
+    preLc.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(preLc.peakRatePossible);
     // Update GPU capabilities
     this->notifyGPUCapabilityChange();
     LinkConfiguration postLc = getMaxLinkConfig();
+    postLc.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(postLc.peakRate);
+    postLc.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(postLc.peakRatePossible);
 
     peakBwChanged = (preLc.peakRatePossible != postLc.peakRatePossible);
 
@@ -7846,7 +7937,6 @@ void ConnectorImpl::configInit()
     bForceClearPendingMsg = false;
     allocatedDpTunnelBw = 0;
     allocatedDpTunnelBwShadow = 0;
-    bIsDpTunnelBwAllocationEnabled = false;
 }
 
 bool ConnectorImpl::dpUpdateDscStream(Group *target, NvU32 dscBpp)
@@ -7854,3 +7944,4 @@ bool ConnectorImpl::dpUpdateDscStream(Group *target, NvU32 dscBpp)
     // TODO : Implement logic
     return true;
 }
+

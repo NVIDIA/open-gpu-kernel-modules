@@ -42,7 +42,7 @@
 #include "core/thread_state.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
 
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "kernel/gpu/rc/kernel_rc.h"
 #include "Nvcm.h"
 #include "gpu/bus/p2p_api.h"
@@ -246,62 +246,6 @@ subdeviceInternalControlForward_IMPL
 )
 {
     return gpuresInternalControlForward_IMPL(staticCast(pSubdevice, GpuResource), command, pParams, size);
-}
-
-NV_STATUS
-subdeviceControlFilter_IMPL(Subdevice *pSubdevice,
-                            CALL_CONTEXT *pCallContext,
-                            RS_RES_CONTROL_PARAMS_INTERNAL *pParams)
-{
-    RmCtrlParams *pRmCtrlParams = pParams->pLegacyParams;
-    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
-
-    if (IS_VIRTUAL(pGpu))
-    {
-        // For vGPU proceed with RM ctrls supported on host OS.
-        switch (DRF_VAL(XXXX, _CTRL_CMD, _CATEGORY, pRmCtrlParams->cmd))
-        {
-            case NV2080_CTRL_ACR:
-            case NV2080_CTRL_LPWR:
-            case NV2080_CTRL_SPI:
-            case NV2080_CTRL_VOLT:
-            case NV2080_CTRL_POWER:
-            case NV2080_CTRL_PMGR:
-                return NV_ERR_NOT_SUPPORTED;
-                break;
-            case NV2080_CTRL_NVLINK:
-                switch (pRmCtrlParams->cmd)
-                {
-                    case NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS:
-                    case NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS:
-                    case NV2080_CTRL_CMD_NVLINK_INBAND_SEND_DATA:
-                        break;
-
-                    default:
-                        return NV_ERR_NOT_SUPPORTED;
-                        break;
-                }
-                break;
-            case NV2080_CTRL_PERF:
-                switch (pRmCtrlParams->cmd)
-                {
-                    case NV2080_CTRL_CMD_PERF_BOOST:
-                    case NV2080_CTRL_CMD_PERF_NOTIFY_VIDEOEVENT:
-                    case NV2080_CTRL_CMD_PERF_GET_CURRENT_PSTATE:
-                    case NV2080_CTRL_CMD_PERF_GET_VID_ENG_PERFMON_SAMPLE:
-                    case NV2080_CTRL_CMD_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_V2:
-                    case NV2080_CTRL_CMD_PERF_GET_POWERSTATE:
-                    case NV2080_CTRL_CMD_PERF_RATED_TDP_SET_CONTROL:
-                        break;
-
-                    default:
-                        return NV_ERR_NOT_SUPPORTED;
-                        break;
-                }
-                break;
-        }
-    }
-    return NV_OK;
 }
 
 NV_STATUS

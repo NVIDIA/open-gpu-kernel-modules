@@ -42,7 +42,7 @@
 #include "platform/sli/sli.h"
 
 #include "nv_ref.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "nvmisc.h"
 
 
@@ -880,7 +880,6 @@ intrStateInitLocked_IMPL
             MC_ENGINE_BITVECTOR engines;
 
             bitVectorClrAll(&engines);
-            bitVectorSet(&engines, MC_ENGINE_IDX_FIFO);
             bitVectorSet(&engines, MC_ENGINE_IDX_DISP);
 
             intrSetIntrMaskUnblocked(pIntr, &engines);
@@ -993,9 +992,6 @@ _intrInitRegistryOverrides
                         pIntr->setProperty(pIntr, PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING, NV_TRUE);
                     }
                 }
-                break;
-
-                case NV_REG_STR_RM_LOCKING_MODE_LAZY_INTR_DISABLE:
                 break;
 
                 default:

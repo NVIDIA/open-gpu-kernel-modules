@@ -967,7 +967,7 @@ void gpumgrGetRmFirmwarePolicy
     NvU32   enableFirmwareRegVal,
     NvBool *pbRequestFirmware,
     NvBool *pbAllowFallbackToMonolithicRm,
-    NvBool  bIsMcdm
+    NvBool  bIsTccOrMcdm
 )
 {
     NvBool bFirmwareCapable = NV_FALSE;
@@ -982,7 +982,7 @@ void gpumgrGetRmFirmwarePolicy
     bFirmwareCapable = gpumgrIsDeviceRmFirmwareCapable(pmcBoot42,
                                                        bIsSoc,
                                                        &bEnableByDefault,
-                                                       bIsMcdm);
+                                                       bIsTccOrMcdm);
 
     *pbRequestFirmware =
         (bFirmwareCapable &&
@@ -992,26 +992,16 @@ void gpumgrGetRmFirmwarePolicy
 
 static NvBool _gpumgrIsRmFirmwareCapableChip(NvU32 pmcBoot42)
 {
-    return (DRF_VAL(_PMC, _BOOT_42, _ARCHITECTURE, pmcBoot42) >= NV_PMC_BOOT_42_ARCHITECTURE_TU100);
+    return (gpuGetArchitectureFromPmcBoot42(pmcBoot42) >= NV_PMC_BOOT_42_ARCHITECTURE_TU100);
 }
 
 NvBool gpumgrIsVgxRmFirmwareCapableChip(NvU32 pmcBoot42)
 {
-    if (FLD_TEST_DRF(_PMC, _BOOT_42, _ARCHITECTURE, _GH100, pmcBoot42))
+    if (gpuGetArchitectureFromPmcBoot42(pmcBoot42) == NV_PMC_BOOT_42_ARCHITECTURE_GH100)
         return NV_TRUE;
 
-    if (FLD_TEST_DRF(_PMC, _BOOT_42, _ARCHITECTURE, _AD100, pmcBoot42))
+    if (gpuGetArchitectureFromPmcBoot42(pmcBoot42) == NV_PMC_BOOT_42_ARCHITECTURE_AD100)
         return NV_TRUE;
-
-    return NV_FALSE;
-}
-
-static NvBool _gpumgrIsMcdmRmFirmwareDefaultChip(NvU32 pmcBoot42)
-{
-    if (FLD_TEST_DRF(_PMC, _BOOT_42, _ARCHITECTURE, _GH100, pmcBoot42))
-    {
-        return NV_TRUE;
-    }
 
     return NV_FALSE;
 }
@@ -1026,7 +1016,7 @@ NvBool gpumgrIsDeviceRmFirmwareCapable
     NvU32 pmcBoot42,
     NvBool bIsSoc,
     NvBool *pbEnabledByDefault,
-    NvBool bIsMcdm
+    NvBool bIsTccOrMcdm
 )
 {
     NvBool bEnabledByDefault = NV_FALSE;
@@ -1051,7 +1041,8 @@ NvBool gpumgrIsDeviceRmFirmwareCapable
     // Disable default enablement for GSP on PowerPC until it is fully tested
     bEnabledByDefault = NV_FALSE;
     goto finish;
-#else
+#endif
+
     if (hypervisorIsVgxHyper())
     {
         if (_gpumgrIsVgxRmFirmwareDefaultChip(pmcBoot42))
@@ -1060,12 +1051,6 @@ NvBool gpumgrIsDeviceRmFirmwareCapable
         }
     }
     else
-    {
-        bEnabledByDefault = NV_TRUE;
-    }
-#endif
-    // enable GSP-RM by default on Hopper+ chips in MCDM mode
-    if (bIsMcdm && _gpumgrIsMcdmRmFirmwareDefaultChip(pmcBoot42))
     {
         bEnabledByDefault = NV_TRUE;
     }
@@ -1243,7 +1228,7 @@ _gpumgrCreateGpu(NvU32 gpuInstance, GPUATTACHARG *pAttachArg)
 
     // create OBJGPU with halspec factor initialization value
     status = objCreate(&pGpu, pSys, OBJGPU,
-                    /* ChipHal_arch = */ DRF_VAL(_PMC, _BOOT_42, _ARCHITECTURE, chipId1),
+                    /* ChipHal_arch = */ gpuGetArchitectureFromPmcBoot42(chipId1),
                     /* ChipHal_impl = */ DRF_VAL(_PMC, _BOOT_42, _IMPLEMENTATION, chipId1),
                   /* ChipHal_hidrev = */ hidrev,
           /* RmVariantHal_rmVariant = */ rmVariant,
@@ -2308,7 +2293,14 @@ gpumgrGetGpuIdInfoV2(NV0000_CTRL_GPU_GET_ID_INFO_V2_PARAMS *pGpuInfo)
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    subDeviceInstance = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
+    if (pGpu->subdeviceInstanceOverrideMask != 0)
+    {
+        subDeviceInstance = BIT_IDX_32(pGpu->subdeviceInstanceOverrideMask);
+    }
+    else
+    {
+        subDeviceInstance = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
+    }
 
     pGpuInfo->gpuInstance = pGpu->gpuInstance;
     pGpuInfo->deviceInstance = deviceInstance;
@@ -3292,7 +3284,8 @@ gpumgrGetSystemNvlinkTopo_IMPL
                 pTopoParams->maxTopoIdx = pGpuMgr->nvlinkTopologyInfo[i].params.maxTopoIdx;
                 for (idx = 0; idx < NV2080_CTRL_CE_MAX_HSHUBS; idx++)
                 {
-                    pTopoParams->pceAvailableMaskPerHshub[idx] = pGpuMgr->nvlinkTopologyInfo[i].params.pceAvailableMaskPerHshub[idx];
+                    pTopoParams->pceAvailableMaskPerConnectingHub[idx] =
+                        pGpuMgr->nvlinkTopologyInfo[i].params.pceAvailableMaskPerConnectingHub[idx];
                 }
             }
             return NV_TRUE;
@@ -3347,7 +3340,8 @@ gpumgrUpdateSystemNvlinkTopo_IMPL
             pGpuMgr->nvlinkTopologyInfo[i].params.maxTopoIdx = pTopoParams->maxTopoIdx;
             for (idx = 0; idx < NV2080_CTRL_CE_MAX_HSHUBS; idx++)
             {
-                pGpuMgr->nvlinkTopologyInfo[i].params.pceAvailableMaskPerHshub[idx] = pTopoParams->pceAvailableMaskPerHshub[idx];
+                pGpuMgr->nvlinkTopologyInfo[i].params.pceAvailableMaskPerConnectingHub[idx] =
+                    pTopoParams->pceAvailableMaskPerConnectingHub[idx];
             }
             return;
         }
@@ -4471,7 +4465,7 @@ NvBool gpumgrIsDeviceMsixAllowed
         return NV_TRUE;
     }
 
-    chipArch = DRF_VAL(_PMC, _BOOT_42, _ARCHITECTURE, pmcBoot42);
+    chipArch = gpuGetArchitectureFromPmcBoot42(pmcBoot42);
     if ((chipArch != NV_PMC_BOOT_42_ARCHITECTURE_AD100) &&
         (chipArch != NV_PMC_BOOT_42_ARCHITECTURE_GA100))
     {

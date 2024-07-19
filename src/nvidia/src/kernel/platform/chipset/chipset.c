@@ -31,7 +31,7 @@
 #include "platform/platform.h"
 #include "platform/chipset/chipset_info.h"
 #include "os/os.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "nvpcie.h"
 #include "nv_ref.h"
 #include "kernel/gpu/bif/kernel_bif.h"

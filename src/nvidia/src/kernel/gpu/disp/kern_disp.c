@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -42,7 +42,7 @@
 #include "gpu/disp/head/kernel_head.h"
 #include "gpu/disp/disp_objs.h"
 #include "gpu_mgr/gpu_mgr.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "core/locks.h"
 #include "ctrl/ctrl402c.h"
 #include "platform/acpi_common.h"
@@ -292,6 +292,8 @@ kdispStatePreInitLocked_IMPL(OBJGPU        *pGpu,
 
     // NOTE: KernelDisplay IpVersion _HAL functions can only be called after this point.
     status = gpuInitDispIpHal(pGpu, ctrlParams.ipVersion);
+
+    kdispUpdatePdbAfterIpHalInit(pKernelDisplay);
 
     kdispInitRegistryOverrides_HAL(pGpu, pKernelDisplay);
 
@@ -1405,4 +1407,59 @@ kdispInvokeDisplayModesetCallback_KERNEL
     // is possible.
     //
     NV_ASSERT_OK(status);
+}
+
+/*! Get the supported display mask */
+NvU32
+kdispGetSupportedDisplayMask_IMPL
+(
+    OBJGPU *pGpu,
+    KernelDisplay *pKernelDisplay
+)
+{
+    NV0073_CTRL_SYSTEM_GET_SUPPORTED_PARAMS supportParams = { 0 };
+    NV_STATUS status;
+
+    RM_API   *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+
+    NV_ASSERT_OK_OR_ELSE(status,
+        pRmApi->Control(pRmApi,
+                        kdispGetInternalClientHandle(pKernelDisplay),
+                        kdispGetDispCommonHandle(pKernelDisplay),
+                        NV0073_CTRL_CMD_SYSTEM_GET_SUPPORTED,
+                        &supportParams,
+                        sizeof(supportParams)),
+        return 0U);
+
+    return supportParams.displayMask;
+}
+
+/*! This determines if a GPU has a display attached on any head. */
+NvBool
+kdispIsDisplayConnected_IMPL
+(
+    OBJGPU *pGpu,
+    KernelDisplay *pKernelDisplay
+)
+{
+    NV_STATUS   status;
+    NvU32       supportedMask = 0U;
+    RM_API     *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+
+    supportedMask = kdispGetSupportedDisplayMask(pGpu, pKernelDisplay);
+
+    NV0073_CTRL_SYSTEM_GET_CONNECT_STATE_PARAMS connectParams = { 0 };
+    connectParams.displayMask = supportedMask;
+    connectParams.flags = NV0073_CTRL_SYSTEM_GET_CONNECT_STATE_FLAGS_METHOD_CACHED;
+
+    NV_ASSERT_OK_OR_ELSE(status,
+        pRmApi->Control(pRmApi,
+                        kdispGetInternalClientHandle(pKernelDisplay),
+                        kdispGetDispCommonHandle(pKernelDisplay),
+                        NV0073_CTRL_CMD_SYSTEM_GET_CONNECT_STATE,
+                        &connectParams,
+                        sizeof(connectParams)),
+        return NV_FALSE);
+
+    return connectParams.displayMask != 0U;
 }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,34 +23,6 @@
 
 #include "gpu/disp/head/kernel_head.h"
 #include "published/disp/v04_00/dev_disp.h"
-
-void kheadResetPendingVblank_KERNEL(OBJGPU *pGpu, KernelHead *pKernelHead, THREAD_STATE_NODE *pThreadState)
-{
-    NvU32  writeIntr   = GPU_REG_RD32(pGpu, NV_PDISP_FE_EVT_STAT_HEAD_TIMING(pKernelHead->PublicId));
-
-    writeIntr = DRF_DEF(_PDISP, _FE_EVT_STAT_HEAD_TIMING, _LAST_DATA, _RESET);
-
-    GPU_REG_WR32(pGpu, NV_PDISP_FE_EVT_STAT_HEAD_TIMING(pKernelHead->PublicId), writeIntr);
-}
-
-NvBool kheadReadPendingVblank_KERNEL(OBJGPU *pGpu, KernelHead *pKernelHead, NvU32 *pCachedIntr, THREAD_STATE_NODE *pThreadState)
-{
-    NvU32    intr = GPU_REG_RD32(pGpu, NV_PDISP_FE_RM_INTR_DISPATCH);
-
-    if (!FLD_IDX_TEST_DRF(_PDISP, _FE_RM_INTR_DISPATCH, _HEAD_TIMING, pKernelHead->PublicId, _PENDING, intr))
-    {
-        return NV_FALSE;
-    }
-
-    intr = GPU_REG_RD32(pGpu, NV_PDISP_FE_RM_INTR_STAT_HEAD_TIMING(pKernelHead->PublicId));
-
-    if (FLD_TEST_DRF(_PDISP, _FE_EVT_STAT_HEAD_TIMING, _LAST_DATA, _PENDING, intr))
-    {
-        return NV_TRUE;
-    }
-
-    return NV_FALSE;
-}
 
 NvBool kheadGetDisplayInitialized_KERNEL
 (

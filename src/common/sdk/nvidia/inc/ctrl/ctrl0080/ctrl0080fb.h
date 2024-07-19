@@ -92,6 +92,7 @@ typedef struct NV0080_CTRL_FB_GET_CAPS_PARAMS {
 #define NV0080_CTRL_FB_CAPS_VIDMEM_ALLOCS_ARE_CLEARED                               2:0x02
 #define NV0080_CTRL_FB_CAPS_DISABLE_PLC_GLOBALLY                                    2:0x04
 #define NV0080_CTRL_FB_CAPS_PLC_BUG_3046774                                         2:0x08
+#define NV0080_CTRL_FB_CAPS_PARTIAL_UNMAP                                           2:0x10
 
 
 /* size in bytes of fb caps table */

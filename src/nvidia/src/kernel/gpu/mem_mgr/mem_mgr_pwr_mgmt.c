@@ -263,23 +263,17 @@ _memmgrAllocFbsrReservedRanges
     MemoryManager *pMemoryManager
 )
 {
-    NvU64      size       = 0;
     NV_STATUS  status     = NV_OK;
     KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+    NvU64      rsvdMemEnd = pMemoryManager->rsvdMemoryBase + pMemoryManager->rsvdMemorySize;
+    // We need to skip BAR2 CPU visible range during restore, as it needs to be up before allocations are restored
+    NvU64 bar2CpuVisiblePteStart = pKernelBus->bar2[GPU_GFID_PF].pteBase;
+    NvU64 bar2CpuVisiblePteEnd   = bar2CpuVisiblePteStart + pKernelBus->bar2[GPU_GFID_PF].cpuVisiblePgTblSize;
 
     // Alloc the Memory descriptors for Fbsr Reserved regions, if not allocated.
     if (pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_BEFORE_BAR2PTE] == NULL)
     {
-        if(IS_VIRTUAL_WITH_SRIOV(pGpu))
-        {
-            // Allocate Vid Mem descriptor for RM INSTANCE memory from start to BAR2 PDE base.
-            size = memdescGetPhysAddr(pKernelBus->virtualBar2[GPU_GFID_PF].pPageLevelsMemDesc, AT_GPU, 0) - pMemoryManager->rsvdMemoryBase;
-        }
-        else
-        {
-             // Allocate Vid Mem descriptor for RM INSTANCE memory from start to BAR2PTE
-            size = memdescGetPhysAddr(pKernelBus->virtualBar2[GPU_GFID_PF].pPTEMemDesc, AT_GPU, 0) - pMemoryManager->rsvdMemoryBase;
-        }
+        NvU64 size = bar2CpuVisiblePteStart - pMemoryManager->rsvdMemoryBase;
 
         NV_ASSERT_OK_OR_GOTO(status,
                              memdescCreate(&pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_BEFORE_BAR2PTE],
@@ -293,9 +287,20 @@ _memmgrAllocFbsrReservedRanges
 
     if (pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_AFTER_BAR2PTE] == NULL)
     {
-        RmPhysAddr afterBar2PteRegionStart = 0;
-        NvU64 afterBar2PteRegionSize = 0;
+        NvU64 size = rsvdMemEnd - bar2CpuVisiblePteEnd;
 
+        NV_ASSERT_OK_OR_GOTO(status,
+                             memdescCreate(&pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_AFTER_BAR2PTE],
+                                           pGpu, size, 0, NV_TRUE, ADDR_FBMEM,
+                                           NV_MEMORY_UNCACHED, MEMDESC_FLAGS_NONE),
+                             fail);
+        memdescDescribe(pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_AFTER_BAR2PTE],
+                        ADDR_FBMEM,
+                        bar2CpuVisiblePteEnd, size);
+    }
+
+    if (pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_GSP_HEAP] == NULL)
+    {
         /*
          * Allocate memdesc for AFTER_BAR2PTE and GSP WPR regions.
          * Allocate sysmem to save GSP allocations
@@ -303,38 +308,19 @@ _memmgrAllocFbsrReservedRanges
         if (IS_GSP_CLIENT(pGpu))
         {
             KernelGsp *pKernelGsp              = GPU_GET_KERNEL_GSP(pGpu);
-            NvU64      afterBar2PteRegionEnd   = 0;
-
-            afterBar2PteRegionStart            = memdescGetPhysAddr(pKernelBus->virtualBar2[GPU_GFID_PF].pPTEMemDesc, AT_GPU, 0) +
-                                                 pKernelBus->virtualBar2[GPU_GFID_PF].pPTEMemDesc->Size;
-            afterBar2PteRegionEnd              = pMemoryManager->rsvdMemoryBase + pMemoryManager->rsvdMemorySize;
-            afterBar2PteRegionSize             = afterBar2PteRegionEnd - afterBar2PteRegionStart;
-
-            // Create memdesc of AFTER BAR2PTE region
-            NV_ASSERT_OK_OR_GOTO(status,
-                                 memdescCreate(&pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_AFTER_BAR2PTE],
-                                                pGpu, afterBar2PteRegionSize, 0, NV_TRUE,
-                                                ADDR_FBMEM, NV_MEMORY_UNCACHED, MEMDESC_FLAGS_NONE),
-                                 fail);
-
-            // Describe memdesc of AFTER BAR2PTE region
-            memdescDescribe(pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_AFTER_BAR2PTE],
-                            ADDR_FBMEM,
-                            afterBar2PteRegionStart,
-                            afterBar2PteRegionSize);
 
             /*
              * Calculate sysmem required to save all GSP allocations
              * This is sum of GSP Heap, GSP non WPR and VGA workspace regions
              * This will also include CBC region if the corresponding flag is set
-             * 
+             *
              * SYSMEM required for GSP allocations will be created and allocated
              * into fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_GSP_HEAP]
              *
              * TODO: Query GSP for size of its allocation instead of this calculation
              */
-            size =  (pKernelGsp->pWprMeta->gspFwWprStart - afterBar2PteRegionEnd) +  // GSP Heap start to end of NON WPR region
-                     pKernelGsp->pWprMeta->vgaWorkspaceSize;                         // VGA Workspace
+            NvU64 size = (pKernelGsp->pWprMeta->gspFwWprStart - rsvdMemEnd) + // GSP Heap start to end of NON WPR region
+                          pKernelGsp->pWprMeta->vgaWorkspaceSize;             // VGA Workspace
 
             // Check if CBC region needs to be saved
             if (GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu)->bPreserveComptagBackingStoreOnSuspend)
@@ -373,37 +359,6 @@ _memmgrAllocFbsrReservedRanges
             }
 
         }
-        // Allocate Vid Mem descriptor for RM INSTANCE memory, specific to VGA  i.e. after BAR2PTE to end.
-        else
-        {
-            if (IS_VIRTUAL_WITH_SRIOV(pGpu))
-            {
-                /*
-                 * From BAR2 region we skip BAR2 PDEs and CPU visible region PTEs as we rebuild them on restore.
-                 * But we need to save CPU invisible region PTEs across S/R, hence AFTER_BAR2PTE range starts
-                 * after CPU visible region PTEs ends.
-                 */
-                afterBar2PteRegionStart = pKernelBus->bar2[GPU_GFID_PF].pteBase +
-                                          pKernelBus->bar2[GPU_GFID_PF].cpuVisiblePgTblSize;
-            }
-            else
-            {
-                afterBar2PteRegionStart = memdescGetPhysAddr(pKernelBus->virtualBar2[GPU_GFID_PF].pPTEMemDesc, AT_GPU, 0) +
-                                          pKernelBus->virtualBar2[GPU_GFID_PF].pPTEMemDesc->Size;
-            }
-
-            afterBar2PteRegionSize  = pMemoryManager->rsvdMemoryBase + pMemoryManager->rsvdMemorySize - afterBar2PteRegionStart;
-
-            NV_ASSERT_OK_OR_GOTO(status,
-                                 memdescCreate(&pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_AFTER_BAR2PTE],
-                                               pGpu, afterBar2PteRegionSize, 0, NV_TRUE, ADDR_FBMEM,
-                                               NV_MEMORY_UNCACHED, MEMDESC_FLAGS_NONE),
-                                 fail);
-            memdescDescribe(pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_AFTER_BAR2PTE],
-                            ADDR_FBMEM,
-                            afterBar2PteRegionStart, afterBar2PteRegionSize);
-
-        }
     }
     return status;
 
@@ -429,7 +384,7 @@ fail:
 
 /*!
  * Accessor for list of video memory regions that need to be preserved. This
- * routine calls POBJFBSR::fbsrCopyMemory[|MemDesc] per-region.
+ * routine calls fbsrCopyMemory[|MemDesc] per-region.
  *
  * @param[in]   pFbsr     OBJFBSR pointer
  *

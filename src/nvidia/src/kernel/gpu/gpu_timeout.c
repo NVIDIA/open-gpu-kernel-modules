@@ -30,7 +30,7 @@
 
 #include "lib/base_utils.h"
 #include "gpu/gpu.h"
-#include "objtmr.h"
+#include "gpu/timer/objtmr.h"
 #include "nvrm_registry.h"
 #include "core/thread_state.h"
 #include "core/locks.h"

@@ -191,12 +191,12 @@ NV_STATUS uvm_conf_computing_fault_decrypt(uvm_parent_gpu_t *parent_gpu,
                                            NvU8 valid);
 
 // Increment the CPU-side decrypt IV of the CSL context associated with
-// replayable faults. The function is a no-op if the given increment is zero.
+// replayable faults.
 //
 // The IV associated with a fault CSL context is a 64-bit counter.
 //
 // Locking: this function must be invoked while holding the replayable ISR lock.
-void uvm_conf_computing_fault_increment_decrypt_iv(uvm_parent_gpu_t *parent_gpu, NvU64 increment);
+void uvm_conf_computing_fault_increment_decrypt_iv(uvm_parent_gpu_t *parent_gpu);
 
 // Query the number of remaining messages before IV needs to be rotated.
 void uvm_conf_computing_query_message_pools(uvm_channel_t *channel,

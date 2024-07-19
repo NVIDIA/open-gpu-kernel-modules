@@ -29,7 +29,7 @@
 
 #include "gpu/gpu.h"
 #include "gpu/ce/kernel_ce.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 
 //
 // NVLINK Override Configuration

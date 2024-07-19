@@ -671,6 +671,9 @@ static NV_STATUS va_block_set_read_duplication_locked(uvm_va_block_t *va_block,
 
     uvm_assert_mutex_locked(&va_block->lock);
 
+    // Force CPU page residency to be on the preferred NUMA node.
+    va_block_context->make_resident.dest_nid = uvm_va_range_get_policy(va_block->va_range)->preferred_nid;
+
     for_each_id_in_mask(src_id, &va_block->resident) {
         NV_STATUS status;
         uvm_page_mask_t *resident_mask = uvm_va_block_resident_mask_get(va_block, src_id, NUMA_NO_NODE);

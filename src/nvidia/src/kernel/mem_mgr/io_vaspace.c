@@ -156,6 +156,7 @@ iovaspaceApplyDefaultAlignment_IMPL
                                 NV_ERR_INVALID_ARGUMENT);
                 maxPageSize = RM_PAGE_SIZE_512M;
                 break;
+            case RM_ATTR_PAGE_SIZE_256GB:
             default:
                 break;
         }

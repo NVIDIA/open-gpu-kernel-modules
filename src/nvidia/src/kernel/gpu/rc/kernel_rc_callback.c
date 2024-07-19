@@ -29,6 +29,7 @@
 #include "kernel/gpu/fifo/kernel_channel_group.h"
 #include "kernel/gpu/fifo/kernel_channel_group_api.h"
 #include "kernel/gpu/mmu/kern_gmmu.h"
+#include "kernel/gpu/timer/objtmr.h"
 #include "kernel/os/os.h"
 #include "rmapi/client.h"
 #include "rmapi/rs_utils.h"
@@ -38,7 +39,6 @@
 #include "libraries/utils/nvprintf.h"
 #include "nverror.h"
 #include "nvtypes.h"
-#include "objtmr.h"
 #include "vgpu/rpc.h"
 
 

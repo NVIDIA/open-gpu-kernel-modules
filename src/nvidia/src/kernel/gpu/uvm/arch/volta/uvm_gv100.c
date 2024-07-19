@@ -27,7 +27,7 @@
  */
 
 #include "core/core.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "gpu/gpu.h"
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/uvm/uvm.h"

@@ -36,11 +36,12 @@ nvGetAllowedDpyVrrType(const NVDpyEvoRec *pDpyEvo,
                        enum NvKmsStereoMode stereoMode,
                        const NvBool allowGsync,
                        const enum NvKmsAllowAdaptiveSync allowAdaptiveSync);
-void nvAdjustHwModeTimingsForVrrEvo(NVHwModeTimingsEvoPtr pTimings,
-                                    const enum NvKmsDpyVRRType vrrType,
-                                    const NvU32 edidTimeoutMicroseconds,
-                                    const NvU32 vrrOverrideMinRefreshRate,
-                                    const NvBool needsSwFramePacing);
+void nvAdjustHwModeTimingsForVrrEvo(
+    const NVDpyEvoRec *pDpyEvo,
+    const enum NvKmsDpyVRRType vrrType,
+    const NvU32 vrrOverrideMinRefreshRate,
+    const NvBool needsSwFramePacing,
+    NVHwModeTimingsEvoPtr pTimings);
 NvU16 nvPrepareNextVrrNotifier(NVEvoChannelPtr pChannel, NvU32 sd, NvU32 head);
 void nvTrackAndDelayFlipForVrrSwFramePacing(NVDispEvoPtr pDispEvo,
     const struct NvKmsVrrFramePacingInfo *pVrrFramePacingInfo,
@@ -70,6 +71,8 @@ void nvGetDpyMinRefreshRateValidValues(
 NvBool nvDispSupportsVrr(const NVDispEvoRec *pDispEvo);
 
 NvBool nvExportVrrSemaphoreSurface(const NVDevEvoRec *pDevEvo, int fd);
+
+void nvVrrSignalSemaphore(NVDevEvoPtr pDevEvo, NvS32 vrrSemaphoreIndex);
 
 #ifdef __cplusplus
 };

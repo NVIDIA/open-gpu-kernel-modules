@@ -269,6 +269,11 @@
 #define NV_REG_STR_RM_INST_LOC_2_PMUPG_COH                       NV_REG_STR_RM_INST_LOC_COH
 #define NV_REG_STR_RM_INST_LOC_2_PMUPG_NCOH                      NV_REG_STR_RM_INST_LOC_NCOH
 #define NV_REG_STR_RM_INST_LOC_2_PMUPG_VID                       NV_REG_STR_RM_INST_LOC_VID
+//
+// Note: on Blackwell-and-later, the location of the PMU_LOGGER cannot be
+// independently controlled. If the regkey is set and the PMU_LOGGER is not
+// already being placed in the specified surface, the driver will fail to load.
+//
 #define NV_REG_STR_RM_INST_LOC_2_PMU_LOGGER                      31:30
 #define NV_REG_STR_RM_INST_LOC_2_PMU_LOGGER_DEFAULT              NV_REG_STR_RM_INST_LOC_DEFAULT
 #define NV_REG_STR_RM_INST_LOC_2_PMU_LOGGER_COH                  NV_REG_STR_RM_INST_LOC_COH
@@ -456,6 +461,15 @@
 #define NV_REG_STR_RM_INST_LOC_4_GFXP_SETUP_BUFFER_NCOH       NV_REG_STR_RM_INST_LOC_NCOH
 #define NV_REG_STR_RM_INST_LOC_4_GFXP_SETUP_BUFFER_VID        NV_REG_STR_RM_INST_LOC_VID
 
+//
+// Overrides for the VIDEO ENGINE BOOTARGS buffer
+//
+#define NV_REG_STR_RM_INST_LOC_4_VIDEO_ENGINE_BOOTARGS            27:26           // VIDEO_ENGINE BOOTARGS buffer
+#define NV_REG_STR_RM_INST_LOC_4_VIDEO_ENGINE_BOOTARGS_DEFAULT    NV_REG_STR_RM_INST_LOC_DEFAULT
+#define NV_REG_STR_RM_INST_LOC_4_VIDEO_ENGINE_BOOTARGS_COH        NV_REG_STR_RM_INST_LOC_COH
+#define NV_REG_STR_RM_INST_LOC_4_VIDEO_ENGINE_BOOTARGS_NCOH       NV_REG_STR_RM_INST_LOC_NCOH
+#define NV_REG_STR_RM_INST_LOC_4_VIDEO_ENGINE_BOOTARGS_VID        NV_REG_STR_RM_INST_LOC_VID
+
 #define NV_REG_STR_RM_GSP_STATUS_QUEUE_SIZE         "RmGspStatusQueueSize"
 // TYPE DWORD
 // Set the GSP status queue size in KB (for GSP to CPU RPC status and event communication)
@@ -490,6 +504,14 @@
 // Saves the last compute mode rule set by the client.
 // Encoding:
 // Bits 31:0 : Last compute mode rule set by the client
+
+#define NV_REG_STR_ILLUM_ATTRIB_LOGO_BRIGHTNESS         "RmIllumLogoBrightness"
+// Type DWORD:
+// contains Logo Illumination Brightness in percent to be used on driver load.
+
+#define NV_REG_STR_ILLUM_ATTRIB_SLI_BRIGHTNESS          "RmIllumSLIBrightness"
+// Type DWORD:
+// contains SLI Illumination Brightness in percent to be used on driver load.
 
 
 #define NV_REG_STR_RM_NVLOG_EXTRA_BUFFER_1        "RMNvLogExtraBuffer1"
@@ -1144,14 +1166,6 @@
 // Disable noncontig vidmem allocation
 //
 
-// Type DWORD
-// Encoding -- 0 -- Disable
-//          -- 1 -- Enable
-// Enable  MemoryMapper API (in-development). Currently disabled by default
-#define NV_REG_ENABLE_MEMORY_MAPPER_API                 "RMEnableMemoryMapperApi"
-#define NV_REG_ENABLE_MEMORY_MAPPER_API_FALSE           0
-#define NV_REG_ENABLE_MEMORY_MAPPER_API_TRUE            1
-
 #define NV_REG_STR_RM_FBSR_PAGED_DMA                         "RmFbsrPagedDMA"
 #define NV_REG_STR_RM_FBSR_PAGED_DMA_ENABLE                  1
 #define NV_REG_STR_RM_FBSR_PAGED_DMA_DISABLE                 0
@@ -1251,7 +1265,6 @@
 // Default 0
 #define NV_REG_STR_RM_LOCKING_MODE_DEFAULT               (0x00000000)
 #define NV_REG_STR_RM_LOCKING_MODE_INTR_MASK             (0x00000001)
-#define NV_REG_STR_RM_LOCKING_MODE_LAZY_INTR_DISABLE     (0x00000002)
 
 #define NV_REG_STR_RM_PER_INTR_DPC_QUEUING        "RMDisablePerIntrDPCQueueing"
 // Type DWORD
@@ -1519,15 +1532,6 @@
 #define NV_REG_STR_RM_NVLINK_LINK_PM_CONTROL_L2_MODE_ENABLE             (0x00000001)
 #define NV_REG_STR_RM_NVLINK_LINK_PM_CONTROL_L2_MODE_DISABLE            (0x00000002)
 #define NV_REG_STR_RM_NVLINK_LINK_PM_CONTROL_RESERVED                   31:8
-
-//
-// Type DWORD
-// Boolean to enable NVLink clock gating. WAR for JIRA BR-421.
-//
-#define NV_REG_STR_RM_NVLINK_ENABLE_CLOCK_GATING                   "RMNvLinkEnableClockGating"
-#define NV_REG_STR_RM_NVLINK_ENABLE_CLOCK_GATING_FALSE             (0x00000000)
-#define NV_REG_STR_RM_NVLINK_ENABLE_CLOCK_GATING_TRUE              (0x00000001)
-#define NV_REG_STR_RM_NVLINK_ENABLE_CLOCK_GATING_DEFAULT           (NV_REG_STR_RM_NVLINK_ENABLE_CLOCK_GATING_FALSE)
 
 //
 // Type DWORD
@@ -1842,11 +1846,6 @@
 //
 // This option is only for Hopper+ GPU with NVLINK version 4.0.
 
-#define NV_REG_STR_RM_CLIENT_HANDLE_LOOKUP                  "RmClientHandleLookup"
-// Type DWORD (Boolean)
-// 1 - Store active RM clients in a multimap to speed up lookups (currently only in thirdpartyp2p)
-// 0 - (Default) Linear list search for clients
-
 //
 // Type DWORD (Boolean)
 // 1 - Measure API and GPU lock hold/wait times which can be retrieved with the
@@ -2006,6 +2005,11 @@
 #define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_USER_KEYS_NO       0x00000000
 #define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_USER_KEYS_YES      0x00000001
 
+// if internal RM keys should be considered for key rotation
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_INTERNAL_KEYS      12:12
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_INTERNAL_KEYS_NO   0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_INTERNAL_KEYS_YES  0x00000001
+
 //
 // Enable/disable dummy key rotation in Confidential Compute.
 // This is a temp reg key that will be removed once all RM clients
@@ -2105,6 +2109,14 @@
 // Note that setting the attacker advantage via SMI/NVML will overwrite this value.
 //
 #define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_UPPER_THRESHOLD "RmKeyRotationUpperThreshold"
+
+//
+// Set threshold for rotation of internal (RM only) keys.
+// Value is in units of (amount of data encrypted in units of 16 bytes + number of encryption invocations)
+// Value must be greater than minimum of (0x7FFFFFF).
+// This value cannot be changed at runtime, only via this registry key at boot time.
+//
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_INTERNAL_THRESHOLD "RmKeyRotationInternalThreshold"
 
 //
 // Set lower threshold for dummy key rotation.
@@ -2473,10 +2485,28 @@
 
 //
 // Type: Dword
+// This regkey is used to enable Nvlink Encryption. By default it is disabled
+//
+#define NV_REG_STR_RM_NVLINK_ENCRYPTION                   "RmNvlinkEncryption"
+#define NV_REG_STR_RM_NVLINK_ENCRYPTION_MODE              0:0
+#define NV_REG_STR_RM_NVLINK_ENCRYPTION_MODE_DEFAULT      0x00000000
+#define NV_REG_STR_RM_NVLINK_ENCRYPTION_MODE_ENABLE       0x00000001
+
+//
+// Type: Dword
 // This regkey overrides the state of the GR scrubber channel and determines
 // whether it should be created or not.
 //
 #define NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL             "RmForceGrScrubberChannel"
 #define NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL_DISABLE     0x00000000
 #define NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL_ENABLE      0x00000001
+
+#define NV_REG_STR_RM_DISABLE_FSP_FUSE_ERROR_CHECK           "RmDisableFspFuseErrorCheck"
+#define NV_REG_STR_RM_DISABLE_FSP_FUSE_ERROR_CHECK_YES       (0x00000001)
+#define NV_REG_STR_RM_DISABLE_FSP_FUSE_ERROR_CHECK_NO        (0x00000000)
+#define NV_REG_STR_RM_DISABLE_FSP_FUSE_ERROR_CHECK_DEFAULT   (0x00000000)
+// Type DWORD (Boolean)
+// Disable the check for FSP's fuse error detection status during boot.
+// By default, the check would be enabled and we would bail out during boot on error.
+
 #endif // NVRM_REGISTRY_H

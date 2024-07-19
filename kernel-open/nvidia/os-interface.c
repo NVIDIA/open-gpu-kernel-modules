@@ -1325,6 +1325,16 @@ NV_STATUS NV_API_CALL os_get_version_info(os_version_info * pOsVersionInfo)
     return status;
 }
 
+NV_STATUS NV_API_CALL os_get_is_openrm(NvBool *bIsOpenRm)
+{
+#if defined(NVCPU_X86_64) || defined(NVCPU_AARCH64)
+    *bIsOpenRm = NV_TRUE;
+    return NV_OK;
+#else // defined(NVCPU_X86_64) || defined(NVCPU_AARCH64)
+    return NV_ERR_NOT_SUPPORTED;
+#endif // defined(NVCPU_X86_64) || defined(NVCPU_AARCH64)
+}
+
 NvBool NV_API_CALL os_is_xen_dom0(void)
 {
 #if defined(NV_DOM0_KERNEL_PRESENT)

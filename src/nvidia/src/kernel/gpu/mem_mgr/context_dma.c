@@ -108,10 +108,10 @@ _ctxdmaDestroyFBMappings
             if (!IS_VIRTUAL(pGpu) && !IS_GSP_CLIENT(pGpu) &&
                 (pContextDma->FbApertureLen[gpuSubDevInst] != 0))
             {
-                kbusUnmapFbAperture_HAL(pGpu, pKernelBus, pContextDma->pMemDesc,
-                                        pContextDma->FbAperture[gpuSubDevInst],
-                                        pContextDma->FbApertureLen[gpuSubDevInst],
-                                        BUS_MAP_FB_FLAGS_MAP_UNICAST);
+                kbusUnmapFbApertureSingle(pGpu, pKernelBus, pContextDma->pMemDesc,
+                                          pContextDma->FbAperture[gpuSubDevInst],
+                                          pContextDma->FbApertureLen[gpuSubDevInst],
+                                          BUS_MAP_FB_FLAGS_MAP_UNICAST);
                 pContextDma->FbAperture[gpuSubDevInst]    = (NvU64)-1;
                 pContextDma->FbApertureLen[gpuSubDevInst] = 0;
             }
@@ -621,11 +621,11 @@ _ctxdmaConstruct
             }
             else
             {
-                rmStatus = kbusMapFbAperture_HAL(pGpu, pKernelBus,
-                                                 pMemDesc, offset,
-                                                 &pContextDma->FbAperture[gpuSubDevInst],
-                                                 &pContextDma->FbApertureLen[gpuSubDevInst],
-                                                 BUS_MAP_FB_FLAGS_MAP_UNICAST, pDevice);
+                rmStatus = kbusMapFbApertureSingle(pGpu, pKernelBus,
+                                                   pMemDesc, offset,
+                                                   &pContextDma->FbAperture[gpuSubDevInst],
+                                                   &pContextDma->FbApertureLen[gpuSubDevInst],
+                                                   BUS_MAP_FB_FLAGS_MAP_UNICAST, pDevice);
 
                 if (rmStatus != NV_OK)
                 {

@@ -33,6 +33,7 @@
 #include "kernel/gpu/gr/kernel_graphics.h"
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/bus/kern_bus.h"
+#include "containers/eheap_old.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "platform/sli/sli.h"
 #include "nvrm_registry.h"
@@ -184,6 +185,11 @@ memmgrAllocDetermineAlignment_GM107
             NV_ASSERT_OR_RETURN(kgmmuIsPageSize512mbSupported(pKernelGmmu),
                               NV_ERR_INVALID_ARGUMENT);
             hwAlignment = NV_MAX(hwAlignment, RM_PAGE_SIZE_512M - 1);
+            break;
+        case RM_ATTR_PAGE_SIZE_256GB:
+            NV_ASSERT_OR_RETURN(kgmmuIsPageSize256gbSupported(pKernelGmmu),
+                                NV_ERR_INVALID_ARGUMENT);
+            hwAlignment = NV_MAX(hwAlignment, RM_PAGE_SIZE_256G - 1);
             break;
         case RM_ATTR_PAGE_SIZE_DEFAULT:
         case RM_ATTR_PAGE_SIZE_INVALID:
@@ -481,7 +487,6 @@ memmgrAllocHal_GM107
     if (FLD_TEST_DRF(OS32, _ATTR2, _ZBC_SKIP_ZBCREFCOUNT, _NO, pFbAllocInfo->pageFormat->attr2))
     {
         if (
-            !IS_MIG_ENABLED(pGpu) &&
             memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_ZBC, pFbAllocInfo->pageFormat->kind) &&
             !(pFbAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_VIRTUAL))
         {
@@ -543,13 +548,6 @@ memmgrFreeHal_GM107
     if (pFbAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_SKIP_RESOURCE_ALLOC)
     {
         // for vGPU, we set this flag in memmgrAllocHwResources
-        return NV_OK;
-    }
-
-    // We might want to move this check to higher-level
-    if (IS_MIG_ENABLED(pGpu))
-    {
-        // In SMC mode, we do not program ZCULL or ZBC
         return NV_OK;
     }
 
@@ -632,7 +630,7 @@ memmgrGetBAR1InfoForDevice_GM107
         return status;
     }
 
-    if (!KBUS_CPU_VISIBLE_BAR12_DISABLED(pGpu))
+    if (!kbusIsBar1Disabled(pKernelBus))
     {
         pBar1VAS = kbusGetBar1VASpace_HAL(pGpu, pKernelBus);
         NV_ASSERT_OR_RETURN(pBar1VAS != NULL, NV_ERR_INVALID_STATE);
@@ -662,7 +660,7 @@ memmgrGetBAR1InfoForDevice_GM107
     return NV_OK;
 }
 
-NvU32
+NvU64
 memmgrGetReservedHeapSizeMb_GM107
 (
     OBJGPU        *pGpu,
@@ -686,7 +684,7 @@ memmgrGetReservedHeapSizeMb_GM107
 
     rsvdSize = rsvdSize / (1024 * 1024);   // convert byte to MB
 
-    return (NvU64_LO32(rsvdSize));
+    return rsvdSize;
 }
 
 /*!
@@ -870,7 +868,7 @@ memmgrInitReservedMemory_GM107
     // Align reserved memory to 64K granularity
     pMemoryManager->rsvdMemorySize = NV_ALIGN_UP(pMemoryManager->rsvdMemorySize, 0x10000);
 
-    NV_PRINTF(LEVEL_INFO, "Final reserved memory size = 0x%x\n", pMemoryManager->rsvdMemorySize);
+    NV_PRINTF(LEVEL_INFO, "Final reserved memory size = 0x%llx\n", pMemoryManager->rsvdMemorySize);
 
     if (!IS_VIRTUAL(pGpu))
     {
@@ -882,7 +880,7 @@ memmgrInitReservedMemory_GM107
             memmgrCheckReservedMemorySize_HAL(pGpu, pMemoryManager) == NV_OK, NV_ERR_INSUFFICIENT_RESOURCES);
     }
 
-    NV_PRINTF(LEVEL_INFO, "RESERVED Memory size: 0x%x\n", pMemoryManager->rsvdMemorySize);
+    NV_PRINTF(LEVEL_INFO, "RESERVED Memory size: 0x%llx\n", pMemoryManager->rsvdMemorySize);
 
     // ***************************************************************
     // Done sizing reserved memory
@@ -965,7 +963,7 @@ memmgrInitReservedMemory_GM107
         }
         tmpAddr = rsvdTopOfMem - pMemoryManager->rsvdMemorySize;
         pMemoryManager->rsvdMemoryBase = RM_ALIGN_DOWN(tmpAddr, rsvdAlignment);
-        pMemoryManager->rsvdMemorySize = NvU64_LO32(rsvdTopOfMem - pMemoryManager->rsvdMemoryBase);
+        pMemoryManager->rsvdMemorySize = rsvdTopOfMem - pMemoryManager->rsvdMemoryBase;
 
         // make sure we didn't just blindly truncate that...
         NV_ASSERT(0 == NvU64_HI32(rsvdTopOfMem - pMemoryManager->rsvdMemoryBase));
@@ -1005,6 +1003,16 @@ memmgrInitReservedMemory_GM107
         rsvdFbRegion.rsvdSize = pMemoryManager->rsvdMemorySize;
         rsvdFbRegion.bProtected = bMemoryProtectionEnabled;
         rsvdFbRegion.bInternalHeap = NV_TRUE;
+
+        if (RMCFG_FEATURE_PLATFORM_GSP)
+        {
+            rsvdFbRegion.bPreserveOnSuspend = NV_TRUE;
+        }
+        else
+        {
+            // Reserved region is explicitly saved as before/after Bar2 PTE region.
+            rsvdFbRegion.bLostOnSuspend = NV_TRUE;
+        }
 
         memmgrInsertFbRegion(pGpu, pMemoryManager, &rsvdFbRegion);
     }
@@ -1233,6 +1241,13 @@ memmgrSetMemDescPageSize_GM107
                 NV_ASSERT_OR_RETURN(0 == (physAddr & (RM_PAGE_SIZE_512M - 1)), NV_ERR_INVALID_OFFSET);
                 newPageSize = RM_PAGE_SIZE_512M;
                 break;
+            case RM_ATTR_PAGE_SIZE_256GB:
+                NV_ASSERT_OR_RETURN(kgmmuIsPageSize256gbSupported(pKernelGmmu),
+                                  NV_ERR_NOT_SUPPORTED);
+                // If forcing the 256GB page size the underlying memory must be aligned
+                NV_ASSERT_OR_RETURN(0 == (physAddr & (RM_PAGE_SIZE_256G - 1)), NV_ERR_INVALID_OFFSET);
+                newPageSize = RM_PAGE_SIZE_256G;
+                break;
         }
     }
     else if (ADDR_FBMEM == addrSpace)
@@ -1285,6 +1300,13 @@ memmgrSetMemDescPageSize_GM107
                 // If forcing the 512MB page size the underlying memory must be aligned
                 NV_ASSERT_OR_RETURN(0 == (physAddr & (RM_PAGE_SIZE_512M - 1)), NV_ERR_INVALID_OFFSET);
                 newPageSize = RM_PAGE_SIZE_512M;
+                break;
+            case RM_ATTR_PAGE_SIZE_256GB:
+                NV_ASSERT_OR_RETURN(kgmmuIsPageSize256gbSupported(pKernelGmmu),
+                                  NV_ERR_NOT_SUPPORTED);
+                // If forcing the 256GB page size the underlying memory must be aligned
+                NV_ASSERT_OR_RETURN(0 == (physAddr & (RM_PAGE_SIZE_256G - 1)), NV_ERR_INVALID_OFFSET);
+                newPageSize = RM_PAGE_SIZE_256G;
                 break;
         }
     }
@@ -1439,7 +1461,7 @@ memmgrScrubRegistryOverrides_GM107
  *  @returns the physical address space size of FB, which is greater
  *      than or equal to the populated FB memory size
  */
-NvU32
+NvU64
 memmgrGetAddrSpaceSizeMB_GM107
 (
     OBJGPU        *pGpu,
@@ -1448,13 +1470,13 @@ memmgrGetAddrSpaceSizeMB_GM107
 {
     NV_ASSERT(pMemoryManager->Ram.fbAddrSpaceSizeMb != 0);
 
-    return NvU64_LO32(pMemoryManager->Ram.fbAddrSpaceSizeMb);
+    return pMemoryManager->Ram.fbAddrSpaceSizeMb;
 }
 
 //
 // Get fb ram size (usable and mappable).
 //
-NvU32
+NvU64
 memmgrGetUsableMemSizeMB_GM107
 (
     OBJGPU        *pGpu,
@@ -1465,7 +1487,7 @@ memmgrGetUsableMemSizeMB_GM107
 
     // we shouldn't ever need this, but...
     NV_ASSERT(0 == NvU64_HI32(pMemoryManager->Ram.fbUsableMemSize >> 20));
-    return NvU64_LO32(pMemoryManager->Ram.fbUsableMemSize >> 20);
+    return (pMemoryManager->Ram.fbUsableMemSize >> 20);
 }
 
 #define _MAX_COVG (100*NVOS32_ALLOC_COMPR_COVG_SCALE)
@@ -1989,10 +2011,9 @@ memmgrPreInitReservedMemory_GM107
     //
     // Store the size of rsvd memory excluding VBIOS space. Size finalized in memmgrStateInitReservedMemory.
     //
-    NV_ASSERT(NvU64_LO32(tmpAddr) == tmpAddr);
-    pMemoryManager->rsvdMemorySize = NvU64_LO32(tmpAddr);
+    pMemoryManager->rsvdMemorySize = tmpAddr;
 
-    NV_PRINTF(LEVEL_INFO, "Calculated size of reserved memory = 0x%x. Size finalized in StateInit.\n", pMemoryManager->rsvdMemorySize);
+    NV_PRINTF(LEVEL_INFO, "Calculated size of reserved memory = 0x%llx. Size finalized in StateInit.\n", pMemoryManager->rsvdMemorySize);
 
     return status;
 }

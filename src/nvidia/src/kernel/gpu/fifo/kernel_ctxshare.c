@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,6 +34,7 @@
 #include "gpu/mem_mgr/vaspace_api.h"
 #include "rmapi/rs_utils.h"
 #include "platform/sli/sli.h"
+#include "containers/eheap_old.h"
 
 #define SUBCTXID_EHEAP_OWNER NvU32_BUILD('n','v','r','m')
 

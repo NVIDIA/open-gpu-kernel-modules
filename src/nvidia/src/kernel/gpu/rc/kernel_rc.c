@@ -27,16 +27,16 @@
 #include "kernel/core/system.h"
 #include "kernel/gpu/bif/kernel_bif.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
+#include "kernel/gpu/timer/objtmr.h"
 #include "kernel/os/os.h"
 #include "kernel/platform/chipset/chipset.h"
 #include "kernel/rmapi/client.h"
 
 
 #include "libraries/utils/nvprintf.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "nverror.h"
 #include "nvtypes.h"
-#include "objtmr.h"
 
 
 static void _krcInitRegistryOverrides(OBJGPU *pGpu, KernelRc *pKernelRc);

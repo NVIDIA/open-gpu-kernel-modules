@@ -118,21 +118,34 @@
 #define SPI_PMU_RPC_WRITE_FAIL                          (123)
 #define SPI_PMU_RPC_ERASE_FAIL                          (124)
 #define INFOROM_FS_ERROR                                (125)
+#define ROBUST_CHANNEL_CE10_ERROR                       (126)
+#define ROBUST_CHANNEL_CE11_ERROR                       (127)
+#define ROBUST_CHANNEL_CE12_ERROR                       (128)
+#define ROBUST_CHANNEL_CE13_ERROR                       (129)
+#define ROBUST_CHANNEL_CE14_ERROR                       (130)
+#define ROBUST_CHANNEL_CE15_ERROR                       (131)
+#define ROBUST_CHANNEL_CE16_ERROR                       (132)
+#define ROBUST_CHANNEL_CE17_ERROR                       (133)
+#define ROBUST_CHANNEL_CE18_ERROR                       (134)
+#define ROBUST_CHANNEL_CE19_ERROR                       (135)
 #define ALI_TRAINING_FAIL                               (136)
 #define NVLINK_FLA_PRIV_ERR                             (137)
 #define ROBUST_CHANNEL_DLA_ERROR                        (138)
+#define ROBUST_CHANNEL_OFA1_ERROR                       (139)
 #define UNRECOVERABLE_ECC_ERROR_ESCAPE                  (140)
 #define ROBUST_CHANNEL_FAST_PATH_ERROR                  (141)
 #define GPU_INIT_ERROR                                  (143)
-#define RESERVED0_ERROR                                 (144)
-#define RESERVED1_ERROR                                 (145)
-#define RESERVED2_ERROR                                 (146)
-#define RESERVED3_ERROR                                 (147)
-#define RESERVED4_ERROR                                 (148)
-#define RESERVED5_ERROR                                 (149)
-#define RESERVED6_ERROR                                 (150)
+#define NVLINK_SAW_ERROR                                (144)
+#define NVLINK_RLW_ERROR                                (145)
+#define NVLINK_TLW_ERROR                                (146)
+#define NVLINK_TREX_ERROR                               (147)
+#define NVLINK_NVLPW_CTRL_ERROR                         (148)
+#define NVLINK_NETIR_ERROR                              (149)
+#define NVLINK_MSE_ERROR                                (150)
 #define ROBUST_CHANNEL_KEY_ROTATION_ERROR               (151)
-#define ROBUST_CHANNEL_LAST_ERROR                       (151)
+#define RESERVED7_ERROR                                 (152)
+#define RESERVED8_ERROR                                 (153)
+#define ROBUST_CHANNEL_LAST_ERROR                       (153)
 
 
 // Indexed CE reference
@@ -143,14 +156,21 @@
         (ROBUST_CHANNEL_CE3_ERROR + (x - 3)) :                            \
      ((x < 9) ?                                                           \
         (ROBUST_CHANNEL_CE6_ERROR + (x - 6)) :                            \
-        (ROBUST_CHANNEL_CE9_ERROR))))
+     ((x == 9) ?                                                          \
+        (ROBUST_CHANNEL_CE9_ERROR) :                                      \
+        (ROBUST_CHANNEL_CE10_ERROR + (x - 10))))))
 
 #define ROBUST_CHANNEL_IS_CE_ERROR(x)                                        \
     ((x == ROBUST_CHANNEL_CE0_ERROR) || (x == ROBUST_CHANNEL_CE1_ERROR) ||   \
      (x == ROBUST_CHANNEL_CE2_ERROR) || (x == ROBUST_CHANNEL_CE3_ERROR) ||   \
      (x == ROBUST_CHANNEL_CE4_ERROR) || (x == ROBUST_CHANNEL_CE5_ERROR) ||   \
      (x == ROBUST_CHANNEL_CE6_ERROR) || (x == ROBUST_CHANNEL_CE7_ERROR) ||   \
-     (x == ROBUST_CHANNEL_CE8_ERROR) || (x == ROBUST_CHANNEL_CE9_ERROR))
+     (x == ROBUST_CHANNEL_CE8_ERROR) || (x == ROBUST_CHANNEL_CE9_ERROR) ||   \
+     (x == ROBUST_CHANNEL_CE10_ERROR) || (x == ROBUST_CHANNEL_CE11_ERROR) || \
+     (x == ROBUST_CHANNEL_CE12_ERROR) || (x == ROBUST_CHANNEL_CE13_ERROR) || \
+     (x == ROBUST_CHANNEL_CE14_ERROR) || (x == ROBUST_CHANNEL_CE15_ERROR) || \
+     (x == ROBUST_CHANNEL_CE16_ERROR) || (x == ROBUST_CHANNEL_CE17_ERROR) || \
+     (x == ROBUST_CHANNEL_CE18_ERROR) || (x == ROBUST_CHANNEL_CE19_ERROR))
 
 #define ROBUST_CHANNEL_CE_ERROR_IDX(x)                                       \
     (((x >= ROBUST_CHANNEL_CE0_ERROR) && (x <= ROBUST_CHANNEL_CE2_ERROR)) ?  \
@@ -159,7 +179,9 @@
          (x - ROBUST_CHANNEL_CE3_ERROR + 3) :                                \
      (((x >= ROBUST_CHANNEL_CE6_ERROR) && (x <= ROBUST_CHANNEL_CE8_ERROR)) ? \
          (x - ROBUST_CHANNEL_CE6_ERROR + 6) :                                \
-         (x - ROBUST_CHANNEL_CE9_ERROR + 9))))
+     ((x == ROBUST_CHANNEL_CE9_ERROR) ?                                      \
+         (x - ROBUST_CHANNEL_CE9_ERROR + 9) :                                \
+         (x - ROBUST_CHANNEL_CE10_ERROR + 10)))))
 
 // Indexed NVDEC reference
 #define ROBUST_CHANNEL_NVDEC_ERROR(x)                   \
@@ -229,14 +251,20 @@
          (x - ROBUST_CHANNEL_NVJPG0_ERROR) :            \
          (x - ROBUST_CHANNEL_NVJPG1_ERROR + 1))
 
+// Indexed OFA reference
 #define ROBUST_CHANNEL_OFA_ERROR(x)                    \
-        (ROBUST_CHANNEL_OFA0_ERROR)
+    ((x == 0) ?                                        \
+        (ROBUST_CHANNEL_OFA0_ERROR) :                  \
+        (ROBUST_CHANNEL_OFA1_ERROR))
 
 #define ROBUST_CHANNEL_IS_OFA_ERROR(x)                 \
-        (x == ROBUST_CHANNEL_OFA0_ERROR)
+    ((x == ROBUST_CHANNEL_OFA0_ERROR) ||               \
+     (x == ROBUST_CHANNEL_OFA1_ERROR))
 
 #define ROBUST_CHANNEL_OFA_ERROR_IDX(x)                 \
-        (x - ROBUST_CHANNEL_OFA0_ERROR)
+    ((x == ROBUST_CHANNEL_OFA0_ERROR) ?                 \
+        (x - ROBUST_CHANNEL_OFA0_ERROR) :               \
+        (x - ROBUST_CHANNEL_OFA1_ERROR + 1))
 
 // Error Levels
 #define ROBUST_CHANNEL_ERROR_RECOVERY_LEVEL_INFO      (0)

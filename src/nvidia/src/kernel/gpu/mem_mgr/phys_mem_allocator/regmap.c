@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -676,22 +676,64 @@ static NvS64 _scanContiguousSearchLoop
     NvU64 localEnd,
     NvU64 frameAlignment,
     NvU64 frameAlignmentPadding,
+    NvU64 localStride,
+    NvU32 strideStart,
+    NvU64 strideAlignmentPadding,
+    NvU64 strideRegionAlignmentPadding,
     NvBool bSearchEvictable
 )
 {
-    NvU64 frameBaseIdx = alignUpToMod(localStart, frameAlignment, frameAlignmentPadding);
+    NvU64 frameBaseIdx = alignUpToMod(localStart, frameAlignment, frameAlignmentPadding); // this is already done by the caller
+    NvU64 nextStrideStart;
+    NvU64 latestFree[PMA_BITS_PER_PAGE];
+    NvU64 i;
+
+    // can't allocate contiguous memory > stride. This is guaranteed by the caller, but be sure here
+    if ((localStride != 0) && (numFrames > localStride))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
     //
     // latestFree stores the highest '0' seen in the given map array in the current run
     // ie we have the needed pages if frameBaseIdx + numPages == latestFree. Initialize to first aligned frame
     //
-    NvU64 latestFree[PMA_BITS_PER_PAGE];
-    NvU64 i;
     for (i = 0; i < PMA_BITS_PER_PAGE; i++)
     {
-            latestFree[i] = frameBaseIdx;
+        latestFree[i] = frameBaseIdx;
     }
 
 loop_begin:
+    if (localStride != 0)
+    {
+        // Put the address into the correct strideStart
+        if ((((frameBaseIdx - frameAlignmentPadding) / localStride) % 2) != strideStart)
+        {
+            // align up to next stride
+            frameBaseIdx = alignUpToMod((frameBaseIdx + 1), localStride, strideAlignmentPadding);
+        }
+    }
+
+    if (localStride != 0)
+    {
+        // we're always in the correct stride at this point
+        nextStrideStart = alignUpToMod(frameBaseIdx + 1, localStride, strideAlignmentPadding);
+
+        // Won't fit within current stride, need to align up again.
+        if ((frameBaseIdx + numFrames) > nextStrideStart)
+        {
+            // even if it's in the correct stride, it won't fit here, so force it to the next one
+            frameBaseIdx = nextStrideStart;
+
+            // Put the address into the correct strideStart
+            if ((((frameBaseIdx - frameAlignmentPadding) / localStride) % 2) != strideStart)
+            {
+                // align up to next stride
+                frameBaseIdx = alignUpToMod((frameBaseIdx + 1), localStride, strideAlignmentPadding);
+            }
+        }
+    }
+
     //
     // Always start a loop iteration with an updated frameBaseIdx by ensuring that latestFree is always >= frameBaseIdx
     // frameBaseIdx == latestFree[i] means that there are no observed 0s so far in the current run
@@ -715,6 +757,7 @@ loop_begin:
         {
             continue;
         }
+
         while (latestFree[i] < (frameBaseIdx + numFrames))
         {
             //
@@ -878,16 +921,17 @@ _scanDiscontiguousSearchLoop
     NvU64 localEnd,
     NvU64 frameAlignment,
     NvU64 frameAlignmentPadding,
+    NvU64 localStride,
+    NvU32 strideStart,
+    NvU64 strideAlignmentPadding,
+    NvU64 strideRegionAlignmentPadding,
     NvU64 *pPages,
     NvU64 *pNumEvictablePages
 )
 {
+    // discontig doesn't align it before starting the search, should be cleaned up
     NvU64 frameBaseIdx = alignUpToMod(localStart, frameAlignment, frameAlignmentPadding);
-
-    //
-    // latestFree stores the lowest '0' seen in the given map array in the current run
-    // ie we have the needed pages if frameBaseIdx - numPages == latestFree. Initialize to last aligned frame
-    //
+    NvU64 nextStrideStart;
     NvU64 latestFree[PMA_BITS_PER_PAGE];
     NvU64 totalFound = 0;
 
@@ -896,11 +940,45 @@ _scanDiscontiguousSearchLoop
     NvBool bEvictablePage = NV_FALSE;
     NvU64 i;
 
+    //
+    // latestFree stores the lowest '0' seen in the given map array in the current run
+    // ie we have the needed pages if frameBaseIdx - numPages == latestFree. Initialize to last aligned frame
+    //
     for (i = 0; i < PMA_BITS_PER_PAGE; i++)
     {
         latestFree[i] = frameBaseIdx;
     }
 loop_begin:
+    if (localStride != 0)
+    {
+        // Put the address into the correct strideStart
+        if ((((frameBaseIdx - frameAlignmentPadding) / localStride) % 2) != strideStart)
+        {
+            // align up to next stride
+            frameBaseIdx = alignUpToMod((frameBaseIdx + 1), localStride, strideAlignmentPadding);
+        }
+    }
+
+    if (localStride != 0)
+    {
+        // we're always in the correct stride at this point
+        nextStrideStart = alignUpToMod(frameBaseIdx + 1, localStride, strideAlignmentPadding);
+
+        // Won't fit within current stride, need to align up again.
+        if ((frameBaseIdx + framesPerPage) > nextStrideStart)
+        {
+            // even if it's in the correct stride, it won't fit here, so force it to the next one
+            frameBaseIdx = nextStrideStart;
+
+            // Put the address into the correct strideStart
+            if ((((frameBaseIdx - frameAlignmentPadding) / localStride) % 2) != strideStart)
+            {
+                // align up to next stride
+                frameBaseIdx = alignUpToMod((frameBaseIdx + 1), localStride, strideAlignmentPadding);
+            }
+        }
+    }
+
     //
     // Always start a loop iteration with an updated frameBaseIdx by ensuring that latestFree is always >= frameBaseIdx
     // frameBaseIdx == latestFree[i] means that there are no observed 0s so far in the current run
@@ -925,6 +1003,7 @@ loop_begin:
 
     for (i = 0; i < PMA_BITS_PER_PAGE; i++)
     {
+
         // If array is not already full of evictable and free pages, go to evictable loop
         if ((i != MAP_IDX_ALLOC_UNPIN) || (curEvictPage <= totalFound))
         {
@@ -1194,26 +1273,53 @@ pmaRegmapScanContiguous
     NvU64 *freeList,
     NvU64 pageSize,
     NvU64 alignment,
+    NvU64 stride,
+    NvU32 strideStart,
     NvU64 *numPagesAlloc,
     NvBool bSkipEvict,
     NvBool bReverseAlloc
 )
 {
     NvU64 numFrames, localStart, localEnd, framesPerPage;
-    NvU64 frameAlignment, alignedAddrBase, frameAlignmentPadding;
+    NvU64 frameAlignment, alignedAddrBase, frameAlignmentPadding, localStride;
+    NvU64 strideAlignmentPadding = 0, strideRegionAlignmentPadding = 0;
     NvS64 frameFound;
     PMA_REGMAP *pRegmap = (PMA_REGMAP *)pMap;
 
     framesPerPage = pageSize >> PMA_PAGE_SHIFT;
     numFrames = framesPerPage * numPages;
     frameAlignment = alignment >> PMA_PAGE_SHIFT;
+    localStride = stride >> PMA_PAGE_SHIFT;
+
+    if (stride != 0)
+    {
+        if (bReverseAlloc)
+        {
+            return NV_ERR_INVALID_ARGUMENT;
+        }
+
+        // assume stride is larger than alignment. Both must be pow2
+        if (alignment > stride)
+        {
+            return NV_ERR_INVALID_ARGUMENT;
+        }
+    }
 
     //
-    // Find how much is the base address short of the alignment requirements
+    // Find how much is the base address short of the alignment and stride requirements
     // and adjust that value in the scanning range before starting the scan.
     //
     alignedAddrBase       = NV_ALIGN_UP(addrBase, alignment);
     frameAlignmentPadding = (alignedAddrBase - addrBase) >> PMA_PAGE_SHIFT;
+
+    if (stride != 0)
+    {
+        alignedAddrBase       = NV_ALIGN_UP(addrBase, stride);
+        strideAlignmentPadding = (alignedAddrBase - addrBase) >> PMA_PAGE_SHIFT;
+
+        alignedAddrBase       = NV_ALIGN_UP(addrBase, stride * 2);
+        strideRegionAlignmentPadding = (alignedAddrBase - addrBase) >> PMA_PAGE_SHIFT;
+    }
 
     // Handle restricted allocations
     if (rangeStart != 0 || rangeEnd != 0)
@@ -1228,10 +1334,21 @@ pmaRegmapScanContiguous
     }
     localStart = alignUpToMod(localStart, frameAlignment, frameAlignmentPadding);
 
+    if (localStride != 0)
+    {
+        // Put the address into the correct strideStart
+        if ((((localStart - frameAlignmentPadding) / localStride) % 2) != strideStart)
+        {
+            // align up to next stride
+            localStart = alignUpToMod((localStart + 1), localStride, strideAlignmentPadding);
+        }
+    }
+
     if (!bReverseAlloc)
     {
         frameFound = _scanContiguousSearchLoop(pRegmap, numFrames, localStart, localEnd,
-                                               frameAlignment, frameAlignmentPadding, NV_FALSE);
+                                               frameAlignment, frameAlignmentPadding, localStride, strideStart,
+                                               strideAlignmentPadding, strideRegionAlignmentPadding, NV_FALSE);
     }
     else
     {
@@ -1254,7 +1371,8 @@ pmaRegmapScanContiguous
     if (!bReverseAlloc)
     {
         frameFound = _scanContiguousSearchLoop(pRegmap, numFrames, localStart, localEnd,
-                                               frameAlignment, frameAlignmentPadding, NV_TRUE);
+                                               frameAlignment, frameAlignmentPadding, localStride, strideStart,
+                                               strideAlignmentPadding, strideRegionAlignmentPadding, NV_TRUE);
     }
     else
     {
@@ -1284,13 +1402,16 @@ pmaRegmapScanDiscontiguous
     NvU64 *freeList,
     NvU64 pageSize,
     NvU64 alignment,
+    NvU64 stride,
+    NvU32 strideStart,
     NvU64 *numPagesAlloc,
     NvBool bSkipEvict,
     NvBool bReverseAlloc
 )
 {
     PMA_REGMAP *pRegmap = (PMA_REGMAP*) pMap;
-    NvU64 localStart, localEnd, framesPerPage, alignedAddrBase, frameAlignmentPadding;
+    NvU64 localStart, localEnd, framesPerPage, alignedAddrBase, frameAlignmentPadding, localStride;
+    NvU64 strideAlignmentPadding = 0, strideRegionAlignmentPadding = 0;
     NvU64 freeFound = 0, evictFound = 0;
     NvU64 totalFound = 0;
     NV_STATUS status = NV_OK;
@@ -1299,13 +1420,37 @@ pmaRegmapScanDiscontiguous
     NV_ASSERT(alignment == pageSize);
 
     framesPerPage = pageSize >> PMA_PAGE_SHIFT;
+    localStride = stride >> PMA_PAGE_SHIFT;
+
+    if (stride != 0)
+    {
+        if (bReverseAlloc)
+        {
+            return NV_ERR_INVALID_ARGUMENT;
+        }
+
+        // assume stride is larger than alignment. Both must be pow2
+        if (alignment > stride)
+        {
+            return NV_ERR_INVALID_ARGUMENT;
+        }
+    }
 
     //
-    // Find how much is the base address short of the alignment requirements
+    // Find how much is the base address short of the alignment and stride requirements
     // and adjust that value in the scanning range before starting the scan.
     //
     alignedAddrBase       = NV_ALIGN_UP(addrBase, alignment);
     frameAlignmentPadding = (alignedAddrBase - addrBase) >> PMA_PAGE_SHIFT;
+
+    if (stride != 0)
+    {
+        alignedAddrBase       = NV_ALIGN_UP(addrBase, stride);
+        strideAlignmentPadding = (alignedAddrBase - addrBase) >> PMA_PAGE_SHIFT;
+
+        alignedAddrBase       = NV_ALIGN_UP(addrBase, stride * 2);
+        strideRegionAlignmentPadding = (alignedAddrBase - addrBase) >> PMA_PAGE_SHIFT;
+    }
 
     // Handle restricted allocations
     if (rangeStart != 0 || rangeEnd != 0)
@@ -1333,7 +1478,9 @@ pmaRegmapScanDiscontiguous
     {
         freeFound = _scanDiscontiguousSearchLoop(pRegmap, numPages, framesPerPage,
             localStart, localEnd, alignment >> PMA_PAGE_SHIFT,
-            frameAlignmentPadding, freeList, &evictFound);
+            frameAlignmentPadding, localStride, strideStart, strideAlignmentPadding,
+            strideRegionAlignmentPadding,
+            freeList, &evictFound);
     }
     else
     {
