@@ -97,5 +97,6 @@ NV_HEADER_PRESENCE_TESTS = \
   linux/sync_file.h \
   linux/cc_platform.h \
   asm/cpufeature.h \
-  linux/mpi.h
+  linux/mpi.h \
+  asm/mshyperv.h
 

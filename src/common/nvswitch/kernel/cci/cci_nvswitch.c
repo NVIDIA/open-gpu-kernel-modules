@@ -325,9 +325,17 @@ cciInit
     NvU32               pci_device_id
 )
 {
-    nvswitch_task_create(device, _nvswitch_cci_poll_callback,
-                         NVSWITCH_INTERVAL_1SEC_IN_NS / NVSWITCH_CCI_POLLING_RATE_HZ,
-                         0);
+    if (!nvswitch_is_tnvl_mode_enabled(device))
+    {
+        nvswitch_task_create(device, _nvswitch_cci_poll_callback,
+                             NVSWITCH_INTERVAL_1SEC_IN_NS / NVSWITCH_CCI_POLLING_RATE_HZ,
+                             0);
+    }
+    else
+    {
+        NVSWITCH_PRINT(device, INFO, "Skipping CCI background task when TNVL is enabled\n");
+    }
+
     return NVL_SUCCESS;
 }
 

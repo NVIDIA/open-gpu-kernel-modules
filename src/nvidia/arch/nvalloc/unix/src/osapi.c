@@ -1559,24 +1559,6 @@ failed:
     return status;
 }
 
-static void
-RmHandleNvpcfEvents(
-    nv_state_t *pNv
-)
-{
-    OBJGPU *pGpu = NV_GET_NV_PRIV_PGPU(pNv);
-    THREAD_STATE_NODE threadState;
-
-    if (RmUnixRmApiPrologue(pNv, &threadState, RM_LOCK_MODULES_ACPI) == NULL)
-    {
-        return;
-    }
-
-    gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_NVPCF_EVENTS, NULL, 0, 0, 0);
-
-    RmUnixRmApiEpilogue(pNv, &threadState);
-}
-
 /*
  * ---------------------------------------------------------------------------
  *
@@ -4312,7 +4294,6 @@ void NV_API_CALL rm_power_source_change_event(
     THREAD_STATE_NODE threadState;
     void       *fp;
     nv_state_t *nv;
-    OBJGPU *pGpu       = gpumgrGetGpu(0);
     NV_STATUS rmStatus = NV_OK;
 
     NV_ENTER_RM_RUNTIME(sp,fp);
@@ -4321,6 +4302,7 @@ void NV_API_CALL rm_power_source_change_event(
     // LOCK: acquire API lock
     if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_EVENT)) == NV_OK)
     {
+        OBJGPU *pGpu = gpumgrGetGpu(0);
         if (pGpu != NULL)
         {
             nv = NV_GET_NV_STATE(pGpu);
@@ -5940,16 +5922,32 @@ void NV_API_CALL rm_acpi_nvpcf_notify(
     nvidia_stack_t *sp
 )
 {
-    void       *fp;
-    OBJGPU *pGpu = gpumgrGetGpu(0);
+    void              *fp;
+    THREAD_STATE_NODE threadState;
+    NV_STATUS         rmStatus = NV_OK;
 
     NV_ENTER_RM_RUNTIME(sp,fp);
-
-    if (pGpu != NULL)
+    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
+ 
+    // LOCK: acquire API lock
+    if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE,
+                                     RM_LOCK_MODULES_EVENT)) == NV_OK)
     {
-        nv_state_t *nv = NV_GET_NV_STATE(pGpu);
-        RmHandleNvpcfEvents(nv);
+        OBJGPU *pGpu = gpumgrGetGpu(0);
+        if (pGpu != NULL)
+        {
+            nv_state_t *nv = NV_GET_NV_STATE(pGpu);
+            if ((rmStatus = os_ref_dynamic_power(nv, NV_DYNAMIC_PM_FINE)) ==
+                                                                         NV_OK)
+            {
+               gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_NVPCF_EVENTS,
+                                       NULL, 0, 0, 0);
+            }
+            os_unref_dynamic_power(nv, NV_DYNAMIC_PM_FINE);
+        }
+        rmapiLockRelease();
     }
 
+    threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
     NV_EXIT_RM_RUNTIME(sp,fp);
 }

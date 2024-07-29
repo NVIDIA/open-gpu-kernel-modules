@@ -5928,11 +5928,18 @@ nvswitch_create_deferred_link_state_check_task_ls10
         pErrorReportParams->nvlipt_instance = nvlipt_instance;
         pErrorReportParams->link = link;
 
-        status = nvswitch_task_create_args(device, (void*)pErrorReportParams,
-                                           &_nvswitch_deferred_link_state_check_ls10,
-                                           NVSWITCH_DEFERRED_LINK_STATE_CHECK_INTERVAL_NS,
-                                           NVSWITCH_TASK_TYPE_FLAGS_RUN_ONCE |
-                                           NVSWITCH_TASK_TYPE_FLAGS_VOID_PTR_ARGS);
+        if (!nvswitch_is_tnvl_mode_enabled(device))
+        {
+            status = nvswitch_task_create_args(device, (void*)pErrorReportParams,
+                                               &_nvswitch_deferred_link_state_check_ls10,
+                                               NVSWITCH_DEFERRED_LINK_STATE_CHECK_INTERVAL_NS,
+                                               NVSWITCH_TASK_TYPE_FLAGS_RUN_ONCE |
+                                               NVSWITCH_TASK_TYPE_FLAGS_VOID_PTR_ARGS);
+        }
+        else
+        {
+            NVSWITCH_PRINT(device, INFO, "Skipping Deferred link state background task when TNVL is enabled\n");
+        }
     }
 
     if (status == NVL_SUCCESS)
@@ -6013,11 +6020,14 @@ _nvswitch_create_deferred_link_errors_task_ls10
         pErrorReportParams->nvlipt_instance = nvlipt_instance;
         pErrorReportParams->link = link;
 
-        status = nvswitch_task_create_args(device, (void*)pErrorReportParams,
-                                           &_nvswitch_deferred_link_errors_check_ls10,
-                                           NVSWITCH_DEFERRED_FAULT_UP_CHECK_INTERVAL_NS,
-                                           NVSWITCH_TASK_TYPE_FLAGS_RUN_ONCE |
-                                           NVSWITCH_TASK_TYPE_FLAGS_VOID_PTR_ARGS);
+        if (!nvswitch_is_tnvl_mode_enabled(device))
+        {
+            status = nvswitch_task_create_args(device, (void*)pErrorReportParams,
+                                               &_nvswitch_deferred_link_errors_check_ls10,
+                                               NVSWITCH_DEFERRED_FAULT_UP_CHECK_INTERVAL_NS,
+                                               NVSWITCH_TASK_TYPE_FLAGS_RUN_ONCE |
+                                               NVSWITCH_TASK_TYPE_FLAGS_VOID_PTR_ARGS);
+        }
     }
 
     if (status == NVL_SUCCESS)
@@ -7416,7 +7426,7 @@ nvswitch_lib_service_interrupts_ls10
     // 3. Run leaf specific interrupt handler
     //
     val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_NVLW_NON_FATAL);
-    val = DRF_NUM(_CTRL, _CPU_INTR_NVLW_NON_FATAL, _MASK, val);
+    val = DRF_VAL(_CTRL, _CPU_INTR_NVLW_NON_FATAL, _MASK, val);
     if (val != 0)
     {
         NVSWITCH_PRINT(device, INFO, "%s: NVLW NON_FATAL interrupts pending = 0x%x\n",
@@ -7438,7 +7448,7 @@ nvswitch_lib_service_interrupts_ls10
     }
 
     val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_NVLW_FATAL);
-    val = DRF_NUM(_CTRL, _CPU_INTR_NVLW_FATAL, _MASK, val);
+    val = DRF_VAL(_CTRL, _CPU_INTR_NVLW_FATAL, _MASK, val);
     if (val != 0)
     {
         NVSWITCH_PRINT(device, INFO, "%s: NVLW FATAL interrupts pending = 0x%x\n",
@@ -7462,7 +7472,7 @@ nvswitch_lib_service_interrupts_ls10
     }
 
     val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_NVLW_CORRECTABLE);
-    val = DRF_NUM(_CTRL, _CPU_INTR_NVLW_CORRECTABLE, _MASK, val);
+    val = DRF_VAL(_CTRL, _CPU_INTR_NVLW_CORRECTABLE, _MASK, val);
     if (val != 0)
     {
         NVSWITCH_PRINT(device, ERROR, "%s: NVLW CORRECTABLE interrupts pending = 0x%x\n",
@@ -7472,7 +7482,7 @@ nvswitch_lib_service_interrupts_ls10
 
     // Check NPG
     val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_NPG_FATAL);
-    val = DRF_NUM(_CTRL, _CPU_INTR_NPG_FATAL, _MASK, val);
+    val = DRF_VAL(_CTRL, _CPU_INTR_NPG_FATAL, _MASK, val);
     if (val != 0)
     {
         NVSWITCH_PRINT(device, INFO, "%s: NPG FATAL interrupts pending = 0x%x\n",
@@ -7494,7 +7504,7 @@ nvswitch_lib_service_interrupts_ls10
     }
 
     val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_NPG_NON_FATAL);
-    val = DRF_NUM(_CTRL, _CPU_INTR_NPG_NON_FATAL, _MASK, val);
+    val = DRF_VAL(_CTRL, _CPU_INTR_NPG_NON_FATAL, _MASK, val);
     if (val != 0)
     {
         NVSWITCH_PRINT(device, INFO, "%s: NPG NON_FATAL interrupts pending = 0x%x\n",
@@ -7516,7 +7526,7 @@ nvswitch_lib_service_interrupts_ls10
     }
 
     val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_NPG_CORRECTABLE);
-    val = DRF_NUM(_CTRL, _CPU_INTR_NPG_CORRECTABLE, _MASK, val);
+    val = DRF_VAL(_CTRL, _CPU_INTR_NPG_CORRECTABLE, _MASK, val);
     if (val != 0)
     {
         NVSWITCH_PRINT(device, ERROR, "%s: NPG CORRECTABLE interrupts pending = 0x%x\n",
@@ -7526,7 +7536,7 @@ nvswitch_lib_service_interrupts_ls10
 
     // Check NXBAR
     val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_NXBAR_FATAL);
-    val = DRF_NUM(_CTRL, _CPU_INTR_NXBAR_FATAL, _MASK, val);
+    val = DRF_VAL(_CTRL, _CPU_INTR_NXBAR_FATAL, _MASK, val);
     if (val != 0)
     {
         NVSWITCH_PRINT(device, INFO, "%s: NXBAR FATAL interrupts pending = 0x%x\n",
@@ -7605,9 +7615,9 @@ nvswitch_lib_service_interrupts_ls10
                     NVSWITCH_PRINT(device, ERROR, "%s: Problem servicing SOE",
                         __FUNCTION__);
                     return_status = status;
-    }
+                }
             }
-    }
+        }
     }
 
     // step 4 -- retrigger engine interrupts

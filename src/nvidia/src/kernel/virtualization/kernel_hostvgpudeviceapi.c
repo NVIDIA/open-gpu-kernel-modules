@@ -273,6 +273,10 @@ kernelhostvgpudeviceapiConstruct_IMPL
         status = pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
                                  NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK,
                                  pBootloadParams, sizeof(*pBootloadParams));
+
+        // Preserve any captured vGPU Partition logs
+        NV_ASSERT_OK(kgspPreserveVgpuPartitionLogging(pGpu, pKernelGsp, pAllocParams->gfid));
+
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR, "Failed to call NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK\n");
@@ -374,7 +378,7 @@ destroyKernelHostVgpuDeviceShare(OBJGPU *pGpu, KernelHostVgpuDeviceShr* pShare)
 {
 
     NV_CHECK_OR_RETURN_VOID(LEVEL_NOTICE, pShare != NULL);
-    
+
     KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice = pShare->pDevice;
     RsShared *pShared = staticCast(pShare, RsShared);
     NvS32 refCount;

@@ -361,6 +361,7 @@ struct KernelGsp {
     NvU64 (*__kgspGetMaxWprHeapSizeMB__)(struct OBJGPU *, struct KernelGsp *);
     NvU32 (*__kgspGetFwHeapParamOsCarveoutSize__)(struct OBJGPU *, struct KernelGsp *);
     NV_STATUS (*__kgspInitVgpuPartitionLogging__)(struct OBJGPU *, struct KernelGsp *, NvU32, NvU64, NvU64, NvU64, NvU64);
+    NV_STATUS (*__kgspPreserveVgpuPartitionLogging__)(struct OBJGPU *, struct KernelGsp *, NvU32);
     NV_STATUS (*__kgspFreeVgpuPartitionLogging__)(struct OBJGPU *, struct KernelGsp *, NvU32);
     const char *(*__kgspGetSignatureSectionNamePrefix__)(struct OBJGPU *, struct KernelGsp *);
     NV_STATUS (*__kgspSetupGspFmcArgs__)(struct OBJGPU *, struct KernelGsp *, GSP_FIRMWARE *);
@@ -580,6 +581,8 @@ NV_STATUS __nvoc_objCreate_KernelGsp(KernelGsp**, Dynamic*, NvU32);
 #define kgspGetFwHeapParamOsCarveoutSize_HAL(pGpu, pKernelGsp) kgspGetFwHeapParamOsCarveoutSize_DISPATCH(pGpu, pKernelGsp)
 #define kgspInitVgpuPartitionLogging(pGpu, pKernelGsp, gfid, initTaskLogBUffOffset, initTaskLogBUffSize, vgpuTaskLogBUffOffset, vgpuTaskLogBuffSize) kgspInitVgpuPartitionLogging_DISPATCH(pGpu, pKernelGsp, gfid, initTaskLogBUffOffset, initTaskLogBUffSize, vgpuTaskLogBUffOffset, vgpuTaskLogBuffSize)
 #define kgspInitVgpuPartitionLogging_HAL(pGpu, pKernelGsp, gfid, initTaskLogBUffOffset, initTaskLogBUffSize, vgpuTaskLogBUffOffset, vgpuTaskLogBuffSize) kgspInitVgpuPartitionLogging_DISPATCH(pGpu, pKernelGsp, gfid, initTaskLogBUffOffset, initTaskLogBUffSize, vgpuTaskLogBUffOffset, vgpuTaskLogBuffSize)
+#define kgspPreserveVgpuPartitionLogging(pGpu, pKernelGsp, gfid) kgspPreserveVgpuPartitionLogging_DISPATCH(pGpu, pKernelGsp, gfid)
+#define kgspPreserveVgpuPartitionLogging_HAL(pGpu, pKernelGsp, gfid) kgspPreserveVgpuPartitionLogging_DISPATCH(pGpu, pKernelGsp, gfid)
 #define kgspFreeVgpuPartitionLogging(pGpu, pKernelGsp, gfid) kgspFreeVgpuPartitionLogging_DISPATCH(pGpu, pKernelGsp, gfid)
 #define kgspFreeVgpuPartitionLogging_HAL(pGpu, pKernelGsp, gfid) kgspFreeVgpuPartitionLogging_DISPATCH(pGpu, pKernelGsp, gfid)
 #define kgspGetSignatureSectionNamePrefix(pGpu, pKernelGsp) kgspGetSignatureSectionNamePrefix_DISPATCH(pGpu, pKernelGsp)
@@ -1175,6 +1178,16 @@ NV_STATUS kgspInitVgpuPartitionLogging_IMPL(struct OBJGPU *pGpu, struct KernelGs
 
 static inline NV_STATUS kgspInitVgpuPartitionLogging_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, NvU32 gfid, NvU64 initTaskLogBUffOffset, NvU64 initTaskLogBUffSize, NvU64 vgpuTaskLogBUffOffset, NvU64 vgpuTaskLogBuffSize) {
     return pKernelGsp->__kgspInitVgpuPartitionLogging__(pGpu, pKernelGsp, gfid, initTaskLogBUffOffset, initTaskLogBUffSize, vgpuTaskLogBUffOffset, vgpuTaskLogBuffSize);
+}
+
+static inline NV_STATUS kgspPreserveVgpuPartitionLogging_395e98(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, NvU32 gfid) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS kgspPreserveVgpuPartitionLogging_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, NvU32 gfid);
+
+static inline NV_STATUS kgspPreserveVgpuPartitionLogging_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, NvU32 gfid) {
+    return pKernelGsp->__kgspPreserveVgpuPartitionLogging__(pGpu, pKernelGsp, gfid);
 }
 
 static inline NV_STATUS kgspFreeVgpuPartitionLogging_395e98(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, NvU32 gfid) {

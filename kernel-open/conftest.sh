@@ -5102,6 +5102,42 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_CC_PLATFORM_PRESENT" "" "functions"
         ;;
 
+        cc_attr_guest_sev_snp)
+            #
+            # Determine if 'CC_ATTR_GUEST_SEV_SNP' is present.
+            #
+            # Added by commit aa5a461171f9 ("x86/mm: Extend cc_attr to
+            # include AMD SEV-SNP") in v5.19.
+            #
+            CODE="
+            #if defined(NV_LINUX_CC_PLATFORM_H_PRESENT)
+            #include <linux/cc_platform.h>
+            #endif
+
+            enum cc_attr cc_attributes = CC_ATTR_GUEST_SEV_SNP;
+            "
+
+            compile_check_conftest "$CODE" "NV_CC_ATTR_SEV_SNP" "" "types"
+        ;;
+
+        hv_get_isolation_type)
+            #
+            # Determine if 'hv_get_isolation_type()' is present.
+            # Added by commit faff44069ff5 ("x86/hyperv: Add Write/Read MSR
+            # registers via ghcb page") in v5.16.
+            #
+            CODE="
+            #if defined(NV_ASM_MSHYPERV_H_PRESENT)
+            #include <asm/mshyperv.h>
+            #endif
+            void conftest_hv_get_isolation_type(void) {
+                int i;
+                hv_get_isolation_type(i);
+            }"
+
+            compile_check_conftest "$CODE" "NV_HV_GET_ISOLATION_TYPE" "" "functions"
+        ;;
+
         drm_prime_pages_to_sg_has_drm_device_arg)
             #
             # Determine if drm_prime_pages_to_sg() has 'dev' argument.

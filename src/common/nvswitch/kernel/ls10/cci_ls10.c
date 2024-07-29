@@ -386,6 +386,13 @@ nvswitch_is_cci_supported_ls10
     nvswitch_device *device
 )
 {
+    // Skip CCI on TNVL mode
+    if (nvswitch_is_tnvl_mode_enabled(device))
+    {
+        NVSWITCH_PRINT(device, INFO, "CCI is not supported on TNVL mode\n");
+        return NV_FALSE;
+    }
+
     if (FLD_TEST_DRF(_SWITCH_REGKEY, _CCI_CONTROL, _ENABLE, _FALSE,
             device->regkeys.cci_control))
     {

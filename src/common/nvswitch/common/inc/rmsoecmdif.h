@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -49,6 +49,7 @@
 #include "soe/soeifsmbpbi.h"
 #include "soe/soeifcore.h"
 #include "soe/soeifchnmgmt.h"
+#include "soe/soeiftnvl.h"
 #include "soe/soeifcci.h"
 #include "soe/soeifheartbeat.h"
 
@@ -71,6 +72,7 @@ typedef struct
         RM_SOE_BIF_CMD       bif;
         RM_SOE_CORE_CMD      core;
         RM_SOE_CHNMGMT_CMD   chnmgmt;
+        RM_SOE_TNVL_CMD      tnvl;
         RM_SOE_CCI_CMD       cci;
     } cmd;
 } RM_FLCN_CMD_SOE,
@@ -126,8 +128,9 @@ typedef struct
 #define RM_SOE_TASK_ID_CCI          0x0D
 #define RM_SOE_TASK_ID_FSPMGMT      0x0E
 #define RM_SOE_TASK_ID_HEARTBEAT    0x0F
+#define RM_SOE_TASK_ID_TNVL         0x10
 // Add new task ID here...
-#define RM_SOE_TASK_ID__END         0x10
+#define RM_SOE_TASK_ID__END         0x11
 
 /*!
  * Unit-identifiers:
@@ -151,8 +154,9 @@ typedef struct
 #define  RM_SOE_UNIT_CHNMGMT         (0x0D)
 #define  RM_SOE_UNIT_CCI             (0x0E)
 #define  RM_SOE_UNIT_HEARTBEAT       (0x0F)
+#define  RM_SOE_UNIT_TNVL            (0x10)
 // Add new unit ID here...
-#define  RM_SOE_UNIT_END             (0x10)
+#define  RM_SOE_UNIT_END             (0x11)
 
 #endif // _RMSOECMDIF_H_
 

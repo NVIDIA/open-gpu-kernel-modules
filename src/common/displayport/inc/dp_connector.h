@@ -282,6 +282,7 @@ namespace DisplayPort
         virtual void    markDeviceForDeletion() = 0;
 
         virtual bool getRawDscCaps(NvU8 *buffer, NvU32 bufferSize) = 0;
+        virtual bool setRawDscCaps(NvU8 *buffer, NvU32 bufferSize) = 0;
 
         // This interface is still nascent. Please don't use it. Read size limit is 16 bytes.
         virtual AuxBus::status getDpcdData(unsigned offset, NvU8 * buffer,

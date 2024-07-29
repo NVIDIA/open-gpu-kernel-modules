@@ -3145,21 +3145,21 @@ static inline NvBool gpuIsCCEnabledInHw_DISPATCH(struct OBJGPU *pGpu) {
     return pGpu->__gpuIsCCEnabledInHw__(pGpu);
 }
 
-NvBool gpuIsDevModeEnabledInHw_GH100(struct OBJGPU *pGpu);
-
 static inline NvBool gpuIsDevModeEnabledInHw_491d52(struct OBJGPU *pGpu) {
     return ((NvBool)(0 != 0));
 }
+
+NvBool gpuIsDevModeEnabledInHw_GH100(struct OBJGPU *pGpu);
 
 static inline NvBool gpuIsDevModeEnabledInHw_DISPATCH(struct OBJGPU *pGpu) {
     return pGpu->__gpuIsDevModeEnabledInHw__(pGpu);
 }
 
-NvBool gpuIsProtectedPcieEnabledInHw_GH100(struct OBJGPU *pGpu);
-
 static inline NvBool gpuIsProtectedPcieEnabledInHw_491d52(struct OBJGPU *pGpu) {
     return ((NvBool)(0 != 0));
 }
+
+NvBool gpuIsProtectedPcieEnabledInHw_GH100(struct OBJGPU *pGpu);
 
 static inline NvBool gpuIsProtectedPcieEnabledInHw_DISPATCH(struct OBJGPU *pGpu) {
     return pGpu->__gpuIsProtectedPcieEnabledInHw__(pGpu);

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,9 +26,14 @@
 #include "common_nvswitch.h"
 #include "haldef_nvswitch.h"
 #include "ls10/ls10.h"
+#include "ls10/soe_ls10.h"
 
 #include "nvswitch/ls10/dev_nvlsaw_ip.h"
 #include "nvswitch/ls10/dev_nvlsaw_ip_addendum.h"
+#include "nvswitch/ls10/dev_ctrl_ip.h"
+#include "nvswitch/ls10/dev_ctrl_ip_addendum.h"
+#include "nvswitch/ls10/dev_cpr_ip.h"
+#include "nvswitch/ls10/dev_npg_ip.h"
 
 #include <stddef.h>
 
@@ -947,6 +952,9 @@ nvswitch_detect_tnvl_mode_ls10
     val = NVSWITCH_SAW_RD32_LS10(device, _NVLSAW, _TNVL_MODE);
     if (FLD_TEST_DRF(_NVLSAW, _TNVL_MODE, _STATUS, _ENABLED, val))
     {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: TNVL Mode Detected\n",
+            __FUNCTION__);
         device->tnvl_mode = NVSWITCH_DEVICE_TNVL_MODE_ENABLED;
     }
 
@@ -1048,3 +1056,119 @@ nvswitch_tnvl_get_status_ls10
     params->status = device->tnvl_mode;
     return NVL_SUCCESS;
 }
+
+static NvBool
+_nvswitch_reg_cpu_write_allow_list_ls10
+(
+    nvswitch_device *device,
+    NVSWITCH_ENGINE_ID eng_id,
+    NvU32 offset
+)
+{
+    switch (eng_id)
+    {
+        case NVSWITCH_ENGINE_ID_SOE:
+        case NVSWITCH_ENGINE_ID_GIN:
+        case NVSWITCH_ENGINE_ID_FSP:
+            return NV_TRUE;
+        case NVSWITCH_ENGINE_ID_SAW:
+        {
+            if (offset == NV_NVLSAW_DRIVER_ATTACH_DETACH)
+                return NV_TRUE;
+            break;
+        }
+        case NVSWITCH_ENGINE_ID_NPG:
+        {
+            if ((offset == NV_NPG_INTR_RETRIGGER(0)) ||
+                (offset == NV_NPG_INTR_RETRIGGER(1)))
+                   return NV_TRUE;
+            break;
+        }
+        case NVSWITCH_ENGINE_ID_CPR:
+        {
+            if ((offset == NV_CPR_SYS_INTR_RETRIGGER(0)) ||
+                (offset == NV_CPR_SYS_INTR_RETRIGGER(1)))
+                   return NV_TRUE;
+            break;
+        }
+        default :
+            return NV_FALSE;
+    }
+
+    return NV_FALSE;
+}
+
+void
+nvswitch_tnvl_reg_wr_32_ls10
+(
+    nvswitch_device *device,
+    NVSWITCH_ENGINE_ID eng_id,
+    NvU32 eng_bcast,
+    NvU32 eng_instance,
+    NvU32 base_addr,
+    NvU32 offset,
+    NvU32 data
+)
+{
+    if (!nvswitch_is_tnvl_mode_enabled(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+           "%s: TNVL mode is not enabled\n",
+           __FUNCTION__);
+        NVSWITCH_ASSERT(0);
+        return;
+    }
+
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+           "%s: TNVL mode is locked\n",
+           __FUNCTION__);
+        NVSWITCH_ASSERT(0);
+        return;
+    }
+
+    if (_nvswitch_reg_cpu_write_allow_list_ls10(device, eng_id, offset))
+    {
+        nvswitch_reg_write_32(device, base_addr + offset,  data);
+    }
+    else
+    {
+        if (nvswitch_soe_reg_wr_32_ls10(device, base_addr + offset, data) != NVL_SUCCESS)
+        {
+            NVSWITCH_PRINT(device, ERROR,
+                "%s: SOE ENG_WR failed for 0x%x[%d] %s @0x%08x+0x%06x = 0x%08x\n",
+                __FUNCTION__,
+                eng_id, eng_instance,
+                (
+                    (eng_bcast == NVSWITCH_GET_ENG_DESC_TYPE_UNICAST) ? "UC" :
+                    (eng_bcast == NVSWITCH_GET_ENG_DESC_TYPE_BCAST) ? "BC" :
+                    (eng_bcast == NVSWITCH_GET_ENG_DESC_TYPE_MULTICAST) ? "MC" :
+                    "??"
+                ),
+                base_addr, offset, data);
+            NVSWITCH_ASSERT(0);
+        }
+    }
+}
+
+void
+nvswitch_tnvl_disable_interrupts_ls10
+(
+    nvswitch_device *device
+)
+{
+    //
+    // In TNVL locked disable non-fatal NVLW, NPG, and legacy interrupt,
+    // disable additional non-fatals on those partitions.
+    //
+    NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NVLW_NON_FATAL_IDX),
+        0xFFFF);
+
+    NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+        0xFFFF);
+
+    NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_UNITS_IDX),
+        0xFFFFFFFF);
+}
+

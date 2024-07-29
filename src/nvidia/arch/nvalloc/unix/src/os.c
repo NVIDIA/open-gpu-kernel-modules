@@ -2675,6 +2675,8 @@ void osInitSystemStaticConfig(SYS_STATIC_CONFIG *pConfig)
     pConfig->bIsNotebook = rm_is_system_notebook();
     pConfig->osType = nv_get_os_type();
     pConfig->bOsCCEnabled = os_cc_enabled;
+    pConfig->bOsCCSevSnpEnabled = os_cc_sev_snp_enabled;
+    pConfig->bOsCCSnpVtomEnabled = os_cc_snp_vtom_enabled;
     pConfig->bOsCCTdxEnabled = os_cc_tdx_enabled;
 }
 

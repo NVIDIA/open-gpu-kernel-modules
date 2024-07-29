@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -50,5 +50,6 @@ void      nvswitch_heartbeat_soe_callback_ls10(nvswitch_device *device, RM_FLCN_
 NvlStatus nvswitch_soe_set_nport_interrupts_ls10(nvswitch_device *device, NvU32 nport, NvBool bEnable);
 void      nvswitch_soe_disable_nport_fatal_interrupts_ls10(nvswitch_device *device, NvU32 nport,
                                                         NvU32 nportIntrEnable, NvU8 nportIntrType);
-
+NvlStatus nvswitch_soe_issue_ingress_stop_ls10(nvswitch_device *device, NvU32 nport, NvBool bStop);
+NvlStatus nvswitch_soe_reg_wr_32_ls10(nvswitch_device *device, NvU32 offset, NvU32 data);
 #endif //_SOE_LS10_H_

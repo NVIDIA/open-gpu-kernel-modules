@@ -241,7 +241,6 @@ subdeviceCtrlCmdEventSetSemaphoreMemory_IMPL
     pMemory->vgpuNsIntr.guestMSIAddr = 0;
     pMemory->vgpuNsIntr.guestMSIData = 0;
     pMemory->vgpuNsIntr.guestDomainId = 0;
-    pMemory->vgpuNsIntr.pVgpuVfioRef = NULL;
     pMemory->vgpuNsIntr.isSemaMemValidationEnabled = NV_TRUE;
 
     return NV_OK;

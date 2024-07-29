@@ -2390,6 +2390,31 @@ error_cleanup:
     return nvStatus;
 }
 
+/*!
+ * Preserve vGPU Partition log buffers between VM reboots
+ */
+NV_STATUS
+kgspPreserveVgpuPartitionLogging_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp,
+    NvU32 gfid
+)
+{
+    if ((gfid == 0) || (gfid > MAX_PARTITIONS_WITH_GFID))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    // Make sure this this NvLog buffer is pushed
+    kgspDumpGspLogsUnlocked(pKernelGsp, NV_FALSE);
+
+    // Preserve any captured vGPU Partition logs
+    libosPreserveLogs(&pKernelGsp->logDecodeVgpuPartition[gfid - 1]);
+
+    return NV_OK;
+}
+
 void kgspNvlogFlushCb(void *pKernelGsp)
 {
     if (pKernelGsp != NULL)
@@ -3449,7 +3474,9 @@ kgspDumpGspLogsUnlocked_IMPL
     NvBool bSyncNvLog
 )
 {
-    if (pKernelGsp->bInInit || pKernelGsp->pLogElf || bSyncNvLog)
+    if (pKernelGsp->bInInit || pKernelGsp->pLogElf || bSyncNvLog
+      || pKernelGsp->bHasVgpuLogs
+    )
     {
         libosExtractLogs(&pKernelGsp->logDecode, bSyncNvLog);
 
@@ -3479,7 +3506,9 @@ kgspDumpGspLogs_IMPL
     NvBool bSyncNvLog
 )
 {
-    if (pKernelGsp->bInInit || pKernelGsp->pLogElf || bSyncNvLog)
+    if (pKernelGsp->bInInit || pKernelGsp->pLogElf || bSyncNvLog
+      || pKernelGsp->bHasVgpuLogs
+    )
     {
         if (pKernelGsp->pNvlogFlushMtx != NULL)
             portSyncMutexAcquire(pKernelGsp->pNvlogFlushMtx);

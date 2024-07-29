@@ -710,4 +710,5 @@ NvlStatus nvswitch_fsp_error_code_to_nvlstatus_map_lr10(nvswitch_device *device,
 NvlStatus nvswitch_tnvl_get_attestation_certificate_chain_lr10(nvswitch_device *device, NVSWITCH_GET_ATTESTATION_CERTIFICATE_CHAIN_PARAMS *params);
 NvlStatus nvswitch_tnvl_get_attestation_report_lr10(nvswitch_device *device, NVSWITCH_GET_ATTESTATION_REPORT_PARAMS *params);
 NvlStatus nvswitch_tnvl_get_status_lr10(nvswitch_device *device, NVSWITCH_GET_TNVL_STATUS_PARAMS *params);
+void      nvswitch_tnvl_disable_interrupts_lr10(nvswitch_device *device);
 #endif //_LR10_H_

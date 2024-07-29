@@ -212,8 +212,15 @@ _inforom_nvlink_start_correctable_error_recording
 
     pNvlinkState->bCallbackPending = NV_FALSE;
 
-    nvswitch_task_create(device, &_nvswitch_nvlink_1hz_callback,
-                         NVSWITCH_INTERVAL_1SEC_IN_NS, 0);
+    if (!nvswitch_is_tnvl_mode_enabled(device))
+    {
+        nvswitch_task_create(device, &_nvswitch_nvlink_1hz_callback,
+                             NVSWITCH_INTERVAL_1SEC_IN_NS, 0);
+    }
+    else
+    {
+        NVSWITCH_PRINT(device, INFO, "Skipping NVLINK heartbeat task when TNVL is enabled\n");
+    }
 }
 
 NvlStatus

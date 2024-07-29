@@ -308,6 +308,12 @@ typedef struct SYS_STATIC_CONFIG
     /*! Indicates confidentail compute OS support is enabled or not */
     NvBool bOsCCEnabled;
 
+    /*! Indicates SEV-SNP confidential compute OS support is enabled or not */
+    NvBool bOsCCSevSnpEnabled;
+
+    /*! Indicates SEV-SNP vTOM confidential compute OS support is enabled or not */
+    NvBool bOsCCSnpVtomEnabled;
+
     /*! Indicates Intel TDX confidentail compute OS support is enabled or not */
     NvBool bOsCCTdxEnabled;
 } SYS_STATIC_CONFIG;

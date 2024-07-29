@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -62,5 +62,13 @@
  * Number of register read needed for reset signal propagation
  */
 #define FLCN_RESET_PROPAGATION_DELAY_COUNT    10
+
+/*!
+ * Used by FALCON_DMATRFCMD polling functions to wait for _FULL==FALSE or _IDLE==TRUE
+ */
+typedef enum {
+    FLCN_DMA_POLL_QUEUE_NOT_FULL = 0,
+    FLCN_DMA_POLL_ENGINE_IDLE = 1
+} FlcnDmaPollMode;
 
 #endif  // FALCON_COMMON_H

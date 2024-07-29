@@ -119,7 +119,6 @@ typedef struct _def_client_vgpu_ns_intr
     NvU64                   guestDomainId; // guest ID that we need to use to inject interrupt
     NvU64                   guestMSIAddr; // MSI address allocated by guest OS
     NvU32                   guestMSIData; // MSI data value set by guest OS
-    void                    *pVgpuVfioRef; // Reference to vgpu device in nvidia-vgpu-vfio module
     void                    *pEventDpc; // DPC event to pass the interrupt
 } VGPU_NS_INTR;
 

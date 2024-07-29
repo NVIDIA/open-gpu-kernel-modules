@@ -52,6 +52,8 @@ NvU32 os_page_size  = PAGE_SIZE;
 NvU64 os_page_mask  = NV_PAGE_MASK;
 NvU8  os_page_shift = PAGE_SHIFT;
 NvBool os_cc_enabled = 0;
+NvBool os_cc_sev_snp_enabled = 0;
+NvBool os_cc_snp_vtom_enabled = 0;
 NvBool os_cc_tdx_enabled = 0;
 
 #if defined(CONFIG_DMA_SHARED_BUFFER)

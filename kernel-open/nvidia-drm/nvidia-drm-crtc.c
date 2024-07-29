@@ -1689,7 +1689,7 @@ int nv_drm_get_crtc_crc32_v2_ioctl(struct drm_device *dev,
     struct NvKmsKapiCrcs crc32;
 
     if (!drm_core_check_feature(dev, DRIVER_MODESET)) {
-        return -ENOENT;
+        return -EOPNOTSUPP;
     }
 
     crtc = nv_drm_crtc_find(dev, filep, params->crtc_id);
@@ -1717,7 +1717,7 @@ int nv_drm_get_crtc_crc32_ioctl(struct drm_device *dev,
     struct NvKmsKapiCrcs crc32;
 
     if (!drm_core_check_feature(dev, DRIVER_MODESET)) {
-        return -ENOENT;
+        return -EOPNOTSUPP;
     }
 
     crtc = nv_drm_crtc_find(dev, filep, params->crtc_id);

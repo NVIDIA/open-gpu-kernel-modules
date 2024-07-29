@@ -1118,6 +1118,23 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
     }
 
+    // Hal function -- kgspPreserveVgpuPartitionLogging
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kgspPreserveVgpuPartitionLogging__ = &kgspPreserveVgpuPartitionLogging_395e98;
+    }
+    else
+    {
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
+        {
+            pThis->__kgspPreserveVgpuPartitionLogging__ = &kgspPreserveVgpuPartitionLogging_395e98;
+        }
+        else
+        {
+            pThis->__kgspPreserveVgpuPartitionLogging__ = &kgspPreserveVgpuPartitionLogging_IMPL;
+        }
+    }
+
     // Hal function -- kgspFreeVgpuPartitionLogging
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {

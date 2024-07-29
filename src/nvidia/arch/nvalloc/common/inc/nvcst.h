@@ -361,7 +361,8 @@ ARMCSALLOWLISTINFO armChipsetAllowListInfo[] =
     {PCI_VENDOR_ID_MELLANOX,    0xA2D0, CS_MELLANOX_BLUEFIELD}, // Mellanox BlueField
     {PCI_VENDOR_ID_MELLANOX,    0xA2D4, CS_MELLANOX_BLUEFIELD2},// Mellanox BlueField 2
     {PCI_VENDOR_ID_MELLANOX,    0xA2D5, CS_MELLANOX_BLUEFIELD2},// Mellanox BlueField 2 Crypto disabled
-    {PCI_VENDOR_ID_MELLANOX,    0xA2DB, CS_MELLANOX_BLUEFIELD3},// Mellanox BlueField 3
+    {PCI_VENDOR_ID_MELLANOX,    0xA2DB, CS_MELLANOX_BLUEFIELD3},// Mellanox BlueField 3 Crypto disabled
+    {PCI_VENDOR_ID_MELLANOX,    0xA2DA, CS_MELLANOX_BLUEFIELD3},// Mellanox BlueField 3 Crypto enabled
     {PCI_VENDOR_ID_AMAZON,      0x0200, CS_AMAZON_GRAVITRON2},  // Amazon Gravitron2
     {PCI_VENDOR_ID_FUJITSU,     0x1952, CS_FUJITSU_A64FX},      // Fujitsu A64FX
     {PCI_VENDOR_ID_CADENCE,     0xDC01, CS_PHYTIUM_S2500},      // Phytium S2500

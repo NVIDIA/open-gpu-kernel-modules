@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 550.100.
+version 550.107.02.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-550.100 driver release.  This can be achieved by installing
+550.107.02 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -188,7 +188,7 @@ encountered specific to them.
 For details on feature support and limitations, see the NVIDIA GPU driver
 end user README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/550.100/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/550.107.02/README/kernel_open.html
 
 For vGPU support, please refer to the README.vgpu packaged in the vGPU Host
 Package for more details.
@@ -834,10 +834,12 @@ Subsystem Device ID.
 | NVIDIA GeForce RTX 2050                         | 25AD           |
 | NVIDIA RTX A1000                                | 25B0 1028 1878 |
 | NVIDIA RTX A1000                                | 25B0 103C 1878 |
+| NVIDIA RTX A1000                                | 25B0 103C 8D96 |
 | NVIDIA RTX A1000                                | 25B0 10DE 1878 |
 | NVIDIA RTX A1000                                | 25B0 17AA 1878 |
 | NVIDIA RTX A400                                 | 25B2 1028 1879 |
 | NVIDIA RTX A400                                 | 25B2 103C 1879 |
+| NVIDIA RTX A400                                 | 25B2 103C 8D95 |
 | NVIDIA RTX A400                                 | 25B2 10DE 1879 |
 | NVIDIA RTX A400                                 | 25B2 17AA 1879 |
 | NVIDIA A16                                      | 25B6 10DE 14A9 |
@@ -912,6 +914,7 @@ Subsystem Device ID.
 | NVIDIA GeForce RTX 4060 Ti                      | 2805           |
 | NVIDIA GeForce RTX 4060                         | 2808           |
 | NVIDIA GeForce RTX 4070 Laptop GPU              | 2820           |
+| NVIDIA GeForce RTX 3050 A Laptop GPU            | 2822           |
 | NVIDIA RTX 3000 Ada Generation Laptop GPU       | 2838           |
 | NVIDIA GeForce RTX 4070 Laptop GPU              | 2860           |
 | NVIDIA GeForce RTX 4060                         | 2882           |

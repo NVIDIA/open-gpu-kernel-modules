@@ -44,6 +44,7 @@ namespace DisplayPort
     #define HDCP_BCAPS_DDC_EN_BIT 0x80
     #define HDCP_BCAPS_DP_EN_BIT  0x01
     #define HDCP_I2C_CLIENT_ADDR  0x74
+    #define DSC_CAPS_SIZE         16
 
     struct GroupImpl;
     struct ConnectorImpl;
@@ -421,6 +422,7 @@ namespace DisplayPort
         virtual void    markDeviceForDeletion() {bisMarkedForDeletion = true;};
         virtual bool    isMarkedForDeletion() {return bisMarkedForDeletion;};
         virtual bool    getRawDscCaps(NvU8 *buffer, NvU32 bufferSize);
+        virtual bool    setRawDscCaps(NvU8 *buffer, NvU32 bufferSize);
 
         virtual AuxBus::status dscCrcControl(NvBool bEnable, gpuDscCrc *dataGpu, sinkDscCrc *dataSink);
 
