@@ -1593,6 +1593,17 @@ tmrStatePreInitLocked_IMPL
     return NV_OK;
 }
 
+NV_STATUS
+tmrStateInitLocked_IMPL
+(
+    OBJGPU *pGpu,
+    OBJTMR *pTmr
+)
+{
+
+    return NV_OK;
+}
+
 /*!
  * TODO: document
  */

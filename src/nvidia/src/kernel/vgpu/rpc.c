@@ -8874,6 +8874,9 @@ NV_STATUS rpcGspSetSystemInfo_v17_00
             // Cache FLR and 64b Bar0 support
             rpcInfo->bFlrSupported     = pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_FLR_SUPPORTED);
             rpcInfo->b64bBar0Supported = pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_64BIT_BAR0_SUPPORTED);
+
+            // Cache pcie link capabilities from config space
+            rpcInfo->pcieConfigReg.linkCap = pKernelBif->pcieConfigReg.linkCap;
         }
 
         if (IS_SIMULATION(pGpu))

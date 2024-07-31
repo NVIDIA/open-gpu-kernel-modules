@@ -143,7 +143,7 @@ struct Subdevice {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super
     struct Subdevice *__nvoc_pbase_Subdevice;    // subdevice
 
-    // Vtable with 623 per-object function pointers
+    // Vtable with 621 per-object function pointers
     void (*__subdevicePreDestruct__)(struct Subdevice * /*this*/);  // virtual override (res) base (gpures)
     NV_STATUS (*__subdeviceInternalControlForward__)(struct Subdevice * /*this*/, NvU32, void *, NvU32);  // virtual override (gpures) base (gpures)
     NV_STATUS (*__subdeviceCtrlCmdBiosGetInfoV2__)(struct Subdevice * /*this*/, NV2080_CTRL_BIOS_GET_INFO_V2_PARAMS *);  // halified (2 hals) exported (id=0x20800810) body
@@ -260,14 +260,12 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdNvlinkPRMAccessMTWE__)(struct Subdevice * /*this*/, NV2080_CTRL_NVLINK_PRM_ACCESS_MTWE_PARAMS *);  // exported (id=0x2080305d)
     NV_STATUS (*__subdeviceCtrlCmdNvlinkPRMAccessMTEWE__)(struct Subdevice * /*this*/, NV2080_CTRL_NVLINK_PRM_ACCESS_MTEWE_PARAMS *);  // exported (id=0x2080305e)
     NV_STATUS (*__subdeviceCtrlCmdNvlinkPRMAccessMTSDE__)(struct Subdevice * /*this*/, NV2080_CTRL_NVLINK_PRM_ACCESS_MTSDE_PARAMS *);  // exported (id=0x2080305f)
-    NV_STATUS (*__subdeviceCtrlCmdNvlinkPRMAccessMGCR__)(struct Subdevice * /*this*/, NV2080_CTRL_NVLINK_PRM_ACCESS_MGCR_PARAMS *);  // exported (id=0x20803060)
     NV_STATUS (*__subdeviceCtrlCmdNvlinkPRMAccessMTCAP__)(struct Subdevice * /*this*/, NV2080_CTRL_NVLINK_PRM_ACCESS_MTCAP_PARAMS *);  // exported (id=0x20803061)
     NV_STATUS (*__subdeviceCtrlCmdNvlinkPRMAccessPMTU__)(struct Subdevice * /*this*/, NV2080_CTRL_NVLINK_PRM_ACCESS_PMTU_PARAMS *);  // exported (id=0x20803062)
     NV_STATUS (*__subdeviceCtrlCmdNvlinkPRMAccessMCIA__)(struct Subdevice * /*this*/, NV2080_CTRL_NVLINK_PRM_ACCESS_MCIA_PARAMS *);  // exported (id=0x20803063)
     NV_STATUS (*__subdeviceCtrlCmdNvlinkPRMAccessPMLP__)(struct Subdevice * /*this*/, NV2080_CTRL_NVLINK_PRM_ACCESS_PMLP_PARAMS *);  // exported (id=0x20803064)
     NV_STATUS (*__subdeviceCtrlCmdNvlinkPRMAccessGHPKT__)(struct Subdevice * /*this*/, NV2080_CTRL_NVLINK_PRM_ACCESS_GHPKT_PARAMS *);  // exported (id=0x20803065)
     NV_STATUS (*__subdeviceCtrlCmdNvlinkPRMAccessPDDR__)(struct Subdevice * /*this*/, NV2080_CTRL_NVLINK_PRM_ACCESS_PDDR_PARAMS *);  // exported (id=0x20803066)
-    NV_STATUS (*__subdeviceCtrlCmdNvlinkPRMAccessMTMP__)(struct Subdevice * /*this*/, NV2080_CTRL_NVLINK_PRM_ACCESS_MTMP_PARAMS *);  // exported (id=0x20803067)
     NV_STATUS (*__subdeviceCtrlCmdNvlinkPRMAccessPPTT__)(struct Subdevice * /*this*/, NV2080_CTRL_NVLINK_PRM_ACCESS_PPTT_PARAMS *);  // exported (id=0x20803068)
     NV_STATUS (*__subdeviceCtrlCmdNvlinkPRMAccessPPCNT__)(struct Subdevice * /*this*/, NV2080_CTRL_NVLINK_PRM_ACCESS_PPCNT_PARAMS *);  // exported (id=0x20803069)
     NV_STATUS (*__subdeviceCtrlCmdNvlinkPRMAccessMGIR__)(struct Subdevice * /*this*/, NV2080_CTRL_NVLINK_PRM_ACCESS_MGIR_PARAMS *);  // exported (id=0x2080306a)
@@ -1073,8 +1071,6 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdNvlinkPRMAccessMTEWE(arg_this, arg2) subdeviceCtrlCmdNvlinkPRMAccessMTEWE_DISPATCH(arg_this, arg2)
 #define subdeviceCtrlCmdNvlinkPRMAccessMTSDE_FNPTR(arg_this) arg_this->__subdeviceCtrlCmdNvlinkPRMAccessMTSDE__
 #define subdeviceCtrlCmdNvlinkPRMAccessMTSDE(arg_this, arg2) subdeviceCtrlCmdNvlinkPRMAccessMTSDE_DISPATCH(arg_this, arg2)
-#define subdeviceCtrlCmdNvlinkPRMAccessMGCR_FNPTR(arg_this) arg_this->__subdeviceCtrlCmdNvlinkPRMAccessMGCR__
-#define subdeviceCtrlCmdNvlinkPRMAccessMGCR(arg_this, arg2) subdeviceCtrlCmdNvlinkPRMAccessMGCR_DISPATCH(arg_this, arg2)
 #define subdeviceCtrlCmdNvlinkPRMAccessMTCAP_FNPTR(arg_this) arg_this->__subdeviceCtrlCmdNvlinkPRMAccessMTCAP__
 #define subdeviceCtrlCmdNvlinkPRMAccessMTCAP(arg_this, arg2) subdeviceCtrlCmdNvlinkPRMAccessMTCAP_DISPATCH(arg_this, arg2)
 #define subdeviceCtrlCmdNvlinkPRMAccessPMTU_FNPTR(arg_this) arg_this->__subdeviceCtrlCmdNvlinkPRMAccessPMTU__
@@ -1087,8 +1083,6 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdNvlinkPRMAccessGHPKT(arg_this, arg2) subdeviceCtrlCmdNvlinkPRMAccessGHPKT_DISPATCH(arg_this, arg2)
 #define subdeviceCtrlCmdNvlinkPRMAccessPDDR_FNPTR(arg_this) arg_this->__subdeviceCtrlCmdNvlinkPRMAccessPDDR__
 #define subdeviceCtrlCmdNvlinkPRMAccessPDDR(arg_this, arg2) subdeviceCtrlCmdNvlinkPRMAccessPDDR_DISPATCH(arg_this, arg2)
-#define subdeviceCtrlCmdNvlinkPRMAccessMTMP_FNPTR(arg_this) arg_this->__subdeviceCtrlCmdNvlinkPRMAccessMTMP__
-#define subdeviceCtrlCmdNvlinkPRMAccessMTMP(arg_this, arg2) subdeviceCtrlCmdNvlinkPRMAccessMTMP_DISPATCH(arg_this, arg2)
 #define subdeviceCtrlCmdNvlinkPRMAccessPPTT_FNPTR(arg_this) arg_this->__subdeviceCtrlCmdNvlinkPRMAccessPPTT__
 #define subdeviceCtrlCmdNvlinkPRMAccessPPTT(arg_this, arg2) subdeviceCtrlCmdNvlinkPRMAccessPPTT_DISPATCH(arg_this, arg2)
 #define subdeviceCtrlCmdNvlinkPRMAccessPPCNT_FNPTR(arg_this) arg_this->__subdeviceCtrlCmdNvlinkPRMAccessPPCNT__
@@ -2591,10 +2585,6 @@ static inline NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessMTSDE_DISPATCH(struct Sub
     return arg_this->__subdeviceCtrlCmdNvlinkPRMAccessMTSDE__(arg_this, arg2);
 }
 
-static inline NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessMGCR_DISPATCH(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_PRM_ACCESS_MGCR_PARAMS *arg2) {
-    return arg_this->__subdeviceCtrlCmdNvlinkPRMAccessMGCR__(arg_this, arg2);
-}
-
 static inline NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessMTCAP_DISPATCH(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_PRM_ACCESS_MTCAP_PARAMS *arg2) {
     return arg_this->__subdeviceCtrlCmdNvlinkPRMAccessMTCAP__(arg_this, arg2);
 }
@@ -2617,10 +2607,6 @@ static inline NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessGHPKT_DISPATCH(struct Sub
 
 static inline NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessPDDR_DISPATCH(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_PRM_ACCESS_PDDR_PARAMS *arg2) {
     return arg_this->__subdeviceCtrlCmdNvlinkPRMAccessPDDR__(arg_this, arg2);
-}
-
-static inline NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessMTMP_DISPATCH(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_PRM_ACCESS_MTMP_PARAMS *arg2) {
-    return arg_this->__subdeviceCtrlCmdNvlinkPRMAccessMTMP__(arg_this, arg2);
 }
 
 static inline NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessPPTT_DISPATCH(struct Subdevice *arg_this, NV2080_CTRL_NVLINK_PRM_ACCESS_PPTT_PARAMS *arg2) {
@@ -4895,8 +4881,6 @@ NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessMTEWE_IMPL(struct Subdevice *arg1, NV20
 
 NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessMTSDE_IMPL(struct Subdevice *arg1, NV2080_CTRL_NVLINK_PRM_ACCESS_MTSDE_PARAMS *arg2);
 
-NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessMGCR_IMPL(struct Subdevice *arg1, NV2080_CTRL_NVLINK_PRM_ACCESS_MGCR_PARAMS *arg2);
-
 NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessMTCAP_IMPL(struct Subdevice *arg1, NV2080_CTRL_NVLINK_PRM_ACCESS_MTCAP_PARAMS *arg2);
 
 NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessPMTU_IMPL(struct Subdevice *arg1, NV2080_CTRL_NVLINK_PRM_ACCESS_PMTU_PARAMS *arg2);
@@ -4908,8 +4892,6 @@ NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessPMLP_IMPL(struct Subdevice *arg1, NV208
 NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessGHPKT_IMPL(struct Subdevice *arg1, NV2080_CTRL_NVLINK_PRM_ACCESS_GHPKT_PARAMS *arg2);
 
 NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessPDDR_IMPL(struct Subdevice *arg1, NV2080_CTRL_NVLINK_PRM_ACCESS_PDDR_PARAMS *arg2);
-
-NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessMTMP_IMPL(struct Subdevice *arg1, NV2080_CTRL_NVLINK_PRM_ACCESS_MTMP_PARAMS *arg2);
 
 NV_STATUS subdeviceCtrlCmdNvlinkPRMAccessPPTT_IMPL(struct Subdevice *arg1, NV2080_CTRL_NVLINK_PRM_ACCESS_PPTT_PARAMS *arg2);
 

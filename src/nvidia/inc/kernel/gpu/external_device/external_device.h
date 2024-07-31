@@ -104,7 +104,7 @@ struct DACEXTERNALDEVICE
         NvBool   Scheduled;
         NvU32    TimeOut;
 
-        TMR_EVENT *pTimerEvent;
+        TMR_EVENT *pTimerEvents[NV_MAX_DEVICES];
     } WatchdogControl;
 };
 
@@ -126,6 +126,7 @@ NV_STATUS readregu008_extdevice(OBJGPU *, PDACEXTERNALDEVICE, NvU8, NvU8*);
 NV_STATUS readregu008_extdeviceTargeted(OBJGPU *, PDACEXTERNALDEVICE, NvU8, NvU8*);
 
 void      extdevDestroy  (OBJGPU *);
+NV_STATUS extdevServiceWatchdog(OBJGPU *, OBJTMR *, TMR_EVENT *);
 NV_STATUS extdevScheduleWatchdog(OBJGPU *, PDACEXTERNALDEVICE);
 NV_STATUS extdevCancelWatchdog  (OBJGPU *, PDACEXTERNALDEVICE);
 void      extdevGsyncService(OBJGPU *,      NvU8, NvU8, NvU8, NvBool);

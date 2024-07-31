@@ -4556,6 +4556,23 @@ cliresCtrlCmdSyncGpuBoostGroupInfo_IMPL
 }
 
 NV_STATUS
+cliresCtrlCmdVgpuVfioNotifyRMStatus_IMPL
+(
+    RmClientResource *pRmCliRes,
+    NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS *pVgpuStatusParams
+)
+{
+
+    if (osIsVgpuVfioPresent() != NV_OK)
+        return NV_ERR_NOT_SUPPORTED;
+
+    osWakeRemoveVgpu(pVgpuStatusParams->gpuId, pVgpuStatusParams->returnStatus);
+
+    return NV_OK;
+}
+
+
+NV_STATUS
 cliresCtrlCmdVgpuGetVgpuVersion_IMPL
 (
     RmClientResource *pRmCliRes,

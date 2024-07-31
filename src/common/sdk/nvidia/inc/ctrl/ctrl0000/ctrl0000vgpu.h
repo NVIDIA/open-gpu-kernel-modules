@@ -155,24 +155,24 @@ typedef struct NV0000_CTRL_VGPU_DELETE_DEVICE_PARAMS {
 } NV0000_CTRL_VGPU_DELETE_DEVICE_PARAMS;
 
 /*
- * NV0000_CTRL_CMD_VGPU_VFIO_UNREGISTER_STATUS
+ * NV0000_CTRL_CMD_VGPU_VFIO_NOTIFY_RM_STATUS
  *
- * This command informs RM the status vgpu-vfio unregister for a GPU.
+ * This command informs RM the status of vgpu-vfio GPU operations such as probe and unregister.
  *
  *   returnStatus [IN]
- *     This parameter provides the status vgpu-vfio unregister operation.
+ *     This parameter provides the status of vgpu-vfio GPU operation.
  *
  *   gpuPciId [IN]
  *     This parameter provides the gpu id of the GPU
  */
 
-#define NV0000_CTRL_CMD_VGPU_VFIO_UNREGISTER_STATUS (0xc05) /* finn: Evaluated from "(FINN_NV01_ROOT_VGPU_INTERFACE_ID << 8) | NV0000_CTRL_VGPU_VFIO_UNREGISTER_STATUS_PARAMS_MESSAGE_ID" */
+#define NV0000_CTRL_CMD_VGPU_VFIO_NOTIFY_RM_STATUS (0xc05) /* finn: Evaluated from "(FINN_NV01_ROOT_VGPU_INTERFACE_ID << 8) | NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS_MESSAGE_ID" */
 
-#define NV0000_CTRL_VGPU_VFIO_UNREGISTER_STATUS_PARAMS_MESSAGE_ID (0x5U)
+#define NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS_MESSAGE_ID (0x5U)
 
-typedef struct NV0000_CTRL_VGPU_VFIO_UNREGISTER_STATUS_PARAMS {
+typedef struct NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS {
     NvU32 returnStatus;
     NvU32 gpuId;
-} NV0000_CTRL_VGPU_VFIO_UNREGISTER_STATUS_PARAMS;
+} NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS;
 
 /* _ctrl0000vgpu_h_ */

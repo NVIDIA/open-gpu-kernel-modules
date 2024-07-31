@@ -54,6 +54,13 @@ typedef struct GSP_VF_INFO
     NvBool b64bitBar2;
 } GSP_VF_INFO;
 
+// Cache config registers from pcie space
+typedef struct
+{
+    // Link capabilities
+    NvU32 linkCap;
+} GSP_PCIE_CONFIG_REG;
+
 typedef struct GspSMInfo_t
 {
     NvU32 version;
@@ -210,6 +217,7 @@ typedef struct GspSystemInfo
     GSP_VF_INFO gspVFInfo;
     NvBool bIsPrimary;
     NvBool isGridBuild;
+    GSP_PCIE_CONFIG_REG pcieConfigReg;
     NvU32 gridBuildCsp;
     NvBool bPreserveVideoMemoryAllocations;
     NvBool bTdrEventSupported;

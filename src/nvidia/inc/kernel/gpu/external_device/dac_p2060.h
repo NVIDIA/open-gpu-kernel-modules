@@ -137,7 +137,7 @@ struct DACP2060EXTERNALDEVICE
         NvBool enableFrmCmpMatchIntSlave;      // Enable the frmCmpMatchInt for slave, if this bit is set.
         NvBool isFrmCmpMatchIntMasterEnabled;  // To enable frmCmpMatchInt for master when gsync framecount exceeds (2^24 - 1000)
 
-        TMR_EVENT *pTimerEvent;                // Used for supporting gsyncFrameCountTimerService_P2060
+        TMR_EVENT *pTimerEvents[NV_MAX_DEVICES]; // Used for supporting gsyncFrameCountTimerService_P2060
     } FrameCountData;
 
     struct {

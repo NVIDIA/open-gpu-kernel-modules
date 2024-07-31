@@ -3638,18 +3638,6 @@ typedef struct NV2080_CTRL_NVLINK_PRM_ACCESS_MTSDE_PARAMS {
     NvU8                        slot_index;
 } NV2080_CTRL_NVLINK_PRM_ACCESS_MTSDE_PARAMS;
 
-#define NV2080_CTRL_CMD_NVLINK_PRM_ACCESS_MGCR (0x20803060U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_PRM_ACCESS_MGCR_PARAMS_MESSAGE_ID" */
-
-#define NV2080_CTRL_NVLINK_PRM_ACCESS_MGCR_PARAMS_MESSAGE_ID (0x60U)
-
-typedef struct NV2080_CTRL_NVLINK_PRM_ACCESS_MGCR_PARAMS {
-    NvBool                      bWrite;
-    NV2080_CTRL_NVLINK_PRM_DATA prm;
-    NvU8                        segment;
-    NvU32                       GPIO_set;
-    NvU32                       GPIO_clear;
-} NV2080_CTRL_NVLINK_PRM_ACCESS_MGCR_PARAMS;
-
 #define NV2080_CTRL_CMD_NVLINK_PRM_ACCESS_MTCAP (0x20803061U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_PRM_ACCESS_MTCAP_PARAMS_MESSAGE_ID" */
 
 #define NV2080_CTRL_NVLINK_PRM_ACCESS_MTCAP_PARAMS_MESSAGE_ID (0x61U)
@@ -3738,25 +3726,6 @@ typedef struct NV2080_CTRL_NVLINK_PRM_ACCESS_PDDR_PARAMS {
     NvU8                        page_select;
     NvU8                        module_info_ext;
 } NV2080_CTRL_NVLINK_PRM_ACCESS_PDDR_PARAMS;
-
-#define NV2080_CTRL_CMD_NVLINK_PRM_ACCESS_MTMP (0x20803067U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_PRM_ACCESS_MTMP_PARAMS_MESSAGE_ID" */
-
-#define NV2080_CTRL_NVLINK_PRM_ACCESS_MTMP_PARAMS_MESSAGE_ID (0x67U)
-
-typedef struct NV2080_CTRL_NVLINK_PRM_ACCESS_MTMP_PARAMS {
-    NvBool                      bWrite;
-    NV2080_CTRL_NVLINK_PRM_DATA prm;
-    NvU16                       sensor_index;
-    NvU8                        slot_index;
-    NvU8                        sdme;
-    NvU8                        weme;
-    NvU8                        mtr;
-    NvU8                        mte;
-    NvU16                       temperature_threshold_hi;
-    NvU8                        sdee;
-    NvU8                        tee;
-    NvU16                       temperature_threshold_lo;
-} NV2080_CTRL_NVLINK_PRM_ACCESS_MTMP_PARAMS;
 
 #define NV2080_CTRL_CMD_NVLINK_PRM_ACCESS_PPTT (0x20803068U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_PRM_ACCESS_PPTT_PARAMS_MESSAGE_ID" */
 

@@ -143,6 +143,12 @@ typedef struct
     NvU32   xveDevCtrl;
 } KBIF_CACHE_DATA;
 
+typedef struct
+{
+    // Cache link capabilities from pcie config space
+    NvU32 linkCap;
+} KBIF_CACHE_PCIE_CONFIG_REG;
+
 typedef struct KERNEL_HOST_VGPU_DEVICE KERNEL_HOST_VGPU_DEVICE;
 
 
@@ -287,6 +293,7 @@ struct KernelBif {
     KBIF_XVE_REGMAP_REF xveRegmapRef[2];
     NvBool bMnocAvailable;
     NvU32 barRegOffsets[7];
+    KBIF_CACHE_PCIE_CONFIG_REG pcieConfigReg;
 };
 
 #ifndef __NVOC_CLASS_KernelBif_TYPEDEF__
@@ -872,6 +879,20 @@ void kbifDestruct_GM107(struct KernelBif *pKernelBif);
 
 
 #define __nvoc_kbifDestruct(pKernelBif) kbifDestruct_GM107(pKernelBif)
+NvU32 kbifGetGpuLinkCapabilities_IMPL(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
+
+
+#ifdef __nvoc_kernel_bif_h_disabled
+static inline NvU32 kbifGetGpuLinkCapabilities(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
+    NV_ASSERT_FAILED_PRECOMP("KernelBif was disabled!");
+    return 0;
+}
+#else //__nvoc_kernel_bif_h_disabled
+#define kbifGetGpuLinkCapabilities(pGpu, pKernelBif) kbifGetGpuLinkCapabilities_IMPL(pGpu, pKernelBif)
+#endif //__nvoc_kernel_bif_h_disabled
+
+#define kbifGetGpuLinkCapabilities_HAL(pGpu, pKernelBif) kbifGetGpuLinkCapabilities(pGpu, pKernelBif)
+
 void kbifClearConfigErrors_IMPL(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvBool arg3, NvU32 arg4);
 
 
@@ -1418,17 +1439,6 @@ static inline NV_STATUS kbifPollDeviceOnBus(struct OBJGPU *pGpu, struct KernelBi
 }
 #else //__nvoc_kernel_bif_h_disabled
 #define kbifPollDeviceOnBus(pGpu, pKernelBif) kbifPollDeviceOnBus_IMPL(pGpu, pKernelBif)
-#endif //__nvoc_kernel_bif_h_disabled
-
-NvU32 kbifGetGpuLinkCapabilities_IMPL(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
-
-#ifdef __nvoc_kernel_bif_h_disabled
-static inline NvU32 kbifGetGpuLinkCapabilities(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
-    NV_ASSERT_FAILED_PRECOMP("KernelBif was disabled!");
-    return 0;
-}
-#else //__nvoc_kernel_bif_h_disabled
-#define kbifGetGpuLinkCapabilities(pGpu, pKernelBif) kbifGetGpuLinkCapabilities_IMPL(pGpu, pKernelBif)
 #endif //__nvoc_kernel_bif_h_disabled
 
 NvU32 kbifGetGpuLinkControlStatus_IMPL(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);

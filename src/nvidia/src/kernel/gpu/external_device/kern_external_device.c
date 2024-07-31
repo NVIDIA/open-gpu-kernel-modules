@@ -47,44 +47,12 @@ PDACEXTERNALDEVICE extdevGetExtDev
     return NULL;
 }
 
-// Service the Watchdog
-static
-NV_STATUS extdevServiceWatchdog
-(
-    OBJGPU *pGpu,
-    OBJTMR *pTmr,
-    TMR_EVENT *pTmrEvent
-)
-{
-    PDACEXTERNALDEVICE pExtDevice = NULL;
-    PDACEXTERNALDEVICEIFACE pdsif = NULL;
-
-    pExtDevice = extdevGetExtDev(pGpu);
-
-    // No gsync and no gvo, return NV_ERR_GENERIC
-    if (!pExtDevice)
-    {
-        return NV_ERR_GENERIC;
-    }
-
-    pdsif = pExtDevice->pI;
-
-    // lower the flag, since it's no longer waiting to run
-    pExtDevice->WatchdogControl.Scheduled = NV_FALSE;
-
-    return pdsif->Watchdog(pGpu, pTmr, pExtDevice);
-}
-
 //
 // RMCONFIG: when the EXTDEV feature is disabled there are #defines in
 // extdev.h that stub this routine out.
 //
 void extdevDestroy_Base(OBJGPU *pGpu, PDACEXTERNALDEVICE pExternalDevice)
 {
-    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
-
-    tmrEventDestroy(pTmr, pExternalDevice->WatchdogControl.pTimerEvent);
-    pExternalDevice->WatchdogControl.pTimerEvent = NULL;
     portMemFree(pExternalDevice->pI);
 }
 
@@ -128,32 +96,13 @@ extdevConstruct_Base
 
     // Init data members
     {
-        OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
-        NV_STATUS status;
-
         pThis->MaxGpus                 = 1; // default, only connect to 1 gpu
 
         pThis->WatchdogControl.Scheduled = NV_FALSE;
         pThis->WatchdogControl.TimeOut = 1000000000; // 1 second in ns
-
-        status = tmrEventCreate(pTmr,
-                                &pThis->WatchdogControl.pTimerEvent,
-                                extdevServiceWatchdog,
-                                pThis,
-                                TMR_FLAG_RECUR);
-        if (status != NV_OK)
-        {
-            goto fail_tmr_event_create;
-        }
     }
 
     return pThis;
-
-fail_tmr_event_create:
-    portMemFree(pThis->pI);
-    pThis->pI = NULL;
-
-    return NULL;
 }
 
 void
@@ -177,6 +126,33 @@ extdevDestroy(OBJGPU *pGpu)
     }
 }
 
+// Service the Watchdog
+NV_STATUS extdevServiceWatchdog
+(
+    OBJGPU *pGpu,
+    OBJTMR *pTmr,
+    TMR_EVENT *pTmrEvent
+)
+{
+    PDACEXTERNALDEVICE pExtDevice = NULL;
+    PDACEXTERNALDEVICEIFACE pdsif = NULL;
+
+    pExtDevice = extdevGetExtDev(pGpu);
+
+    // No gsync and no gvo, return NV_ERR_GENERIC
+    if (!pExtDevice)
+    {
+        return NV_ERR_GENERIC;
+    }
+
+    pdsif = pExtDevice->pI;
+
+    // lower the flag, since it's no longer waiting to run
+    pExtDevice->WatchdogControl.Scheduled = NV_FALSE;
+
+    return pdsif->Watchdog(pGpu, pTmr, pExtDevice);
+}
+
 // Schedule Watchdog
 NV_STATUS extdevScheduleWatchdog
 (
@@ -193,7 +169,7 @@ NV_STATUS extdevScheduleWatchdog
         pExtDevice->WatchdogControl.Scheduled = NV_TRUE;
 
         rmStatus = tmrEventScheduleRel(pTmr,
-                                       pExtDevice->WatchdogControl.pTimerEvent,
+                                       pExtDevice->WatchdogControl.pTimerEvents[gpuGetInstance(pGpu)],
                                        pExtDevice->WatchdogControl.TimeOut);
 
         if (NV_OK != rmStatus)
@@ -215,7 +191,7 @@ NV_STATUS extdevCancelWatchdog
     OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
 
     // cancel first...
-    tmrEventCancel(pTmr, pExtDevice->WatchdogControl.pTimerEvent);
+    tmrEventCancel(pTmr, pExtDevice->WatchdogControl.pTimerEvents[gpuGetInstance(pGpu)]);
 
     // ... then lower the flag!
     pExtDevice->WatchdogControl.Scheduled = NV_FALSE;

@@ -34,6 +34,9 @@
 #include "os/os.h"
 #include "nverror.h"
 
+#include "published/blackwell/gb100/dev_boot.h"
+#include "published/blackwell/gb100/dev_boot_addendum.h"
+
 #include "published/blackwell/gb100/dev_pcfg_pf0.h"
 
 //
@@ -143,6 +146,38 @@ gpuGetChildrenPresent_GB102(OBJGPU *pGpu, NvU32 *pNumEntries)
 {
     *pNumEntries = NV_ARRAY_ELEMENTS(gpuChildrenPresent_GB102);
     return gpuChildrenPresent_GB102;
+}
+
+/*!
+ * @brief Read the non-private registers on vGPU through mirror space
+ *
+ * @param[in]  pGpu   GPU object pointer
+ * @param[in]  index  Register offset in PCIe config space
+ * @param[out] pData  Value of the register
+ *
+ * @returns    NV_OK on success
+ */
+NV_STATUS
+gpuReadPassThruConfigReg_GB100
+(
+    OBJGPU *pGpu,
+    NvU32   index,
+    NvU32  *pData
+)
+{
+    NvU32 domain   = gpuGetDomain(pGpu);
+    NvU8  bus      = gpuGetBus(pGpu);
+    NvU8  device   = gpuGetDevice(pGpu);
+    NvU8  function = 0;
+
+    if (pGpu->hPci == NULL)
+    {
+        pGpu->hPci = osPciInitHandle(domain, bus, device, function, NULL, NULL);
+    }
+
+    *pData = osPciReadDword(pGpu->hPci, index);
+
+    return NV_OK;
 }
 
 /*!
@@ -292,3 +327,34 @@ gpuHandleSecFault_GB100
                             0,
                             SEC_FAULT_ERROR);
 }
+
+/*!
+ * Check if CC bit has been set in the scratch register
+ *
+ * @param[in]  pGpu  GPU object pointer
+ */
+NvBool
+gpuIsCCEnabledInHw_GB100
+(
+    OBJGPU *pGpu
+)
+{
+    NvU32 val = GPU_REG_RD32(pGpu, NV_PMC_SCRATCH_RESET_2_CC);
+    return FLD_TEST_DRF(_PMC, _SCRATCH_RESET_2_CC, _MODE_ENABLED, _TRUE, val);
+}
+
+/*!
+ * Check if dev mode bit has been set in the scratch register
+ *
+ * @param[in]  pGpu  GPU object pointer
+ */
+NvBool
+gpuIsDevModeEnabledInHw_GB100
+(
+    OBJGPU *pGpu
+)
+{
+    NvU32 val = GPU_REG_RD32(pGpu, NV_PMC_SCRATCH_RESET_2_CC);
+    return FLD_TEST_DRF(_PMC, _SCRATCH_RESET_2_CC, _DEV_ENABLED, _TRUE, val);
+}
+

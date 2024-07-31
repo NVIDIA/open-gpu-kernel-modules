@@ -373,6 +373,11 @@ typedef NvSFXP24_8              NvTemp;
 #define NV_TYPES_NVSFXP11_5_TO_NV_TEMP(x) ((NvTemp)(x) << 3)
 
 /*!
+ * Macro to convert NvTemp to SFXP 11.5.
+ */
+#define NV_TYPES_NV_TEMP_TO_NVSFXP11_5(x) ((NvSFXP11_5)(x) >> 3)
+
+/*!
  * Macro to convert UFXP 5.3 to NvTemp.
  */
 #define NV_TYPES_NVUFXP5_3_TO_NV_TEMP(x) ((NvTemp)(x) << 5)

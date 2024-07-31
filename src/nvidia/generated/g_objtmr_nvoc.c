@@ -75,7 +75,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJTMR =
     /*pExportInfo=*/        &__nvoc_export_info_OBJTMR
 };
 
-// 9 down-thunk(s) defined to bridge methods in OBJTMR from superclasses
+// 10 down-thunk(s) defined to bridge methods in OBJTMR from superclasses
 
 // tmrRegisterIntrService: virtual override (intrserv) base (intrserv)
 static void __nvoc_down_thunk_OBJTMR_intrservRegisterIntrService(OBJGPU *pGpu, struct IntrService *pTmr, IntrServiceRecord pRecords[175]) {
@@ -102,6 +102,11 @@ static NV_STATUS __nvoc_down_thunk_OBJTMR_engstateStatePreInitLocked(OBJGPU *pGp
     return tmrStatePreInitLocked(pGpu, (struct OBJTMR *)(((unsigned char *) pTmr) - __nvoc_rtti_OBJTMR_OBJENGSTATE.offset));
 }
 
+// tmrStateInitLocked: virtual override (engstate) base (engstate)
+static NV_STATUS __nvoc_down_thunk_OBJTMR_engstateStateInitLocked(OBJGPU *pGpu, struct OBJENGSTATE *pTmr) {
+    return tmrStateInitLocked(pGpu, (struct OBJTMR *)(((unsigned char *) pTmr) - __nvoc_rtti_OBJTMR_OBJENGSTATE.offset));
+}
+
 // tmrStateInitUnlocked: virtual override (engstate) base (engstate)
 static NV_STATUS __nvoc_down_thunk_OBJTMR_engstateStateInitUnlocked(OBJGPU *pGpu, struct OBJENGSTATE *pTmr) {
     return tmrStateInitUnlocked(pGpu, (struct OBJTMR *)(((unsigned char *) pTmr) - __nvoc_rtti_OBJTMR_OBJENGSTATE.offset));
@@ -123,7 +128,7 @@ static void __nvoc_down_thunk_OBJTMR_engstateStateDestroy(OBJGPU *pGpu, struct O
 }
 
 
-// 9 up-thunk(s) defined to bridge methods in OBJTMR to superclasses
+// 8 up-thunk(s) defined to bridge methods in OBJTMR to superclasses
 
 // tmrInitMissing: virtual inherited (engstate) base (engstate)
 static void __nvoc_up_thunk_OBJENGSTATE_tmrInitMissing(struct OBJGPU *pGpu, struct OBJTMR *pEngstate) {
@@ -133,11 +138,6 @@ static void __nvoc_up_thunk_OBJENGSTATE_tmrInitMissing(struct OBJGPU *pGpu, stru
 // tmrStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
 static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_tmrStatePreInitUnlocked(struct OBJGPU *pGpu, struct OBJTMR *pEngstate) {
     return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJTMR_OBJENGSTATE.offset));
-}
-
-// tmrStateInitLocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_tmrStateInitLocked(struct OBJGPU *pGpu, struct OBJTMR *pEngstate) {
-    return engstateStateInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_OBJTMR_OBJENGSTATE.offset));
 }
 
 // tmrStatePreLoad: virtual inherited (engstate) base (engstate)
@@ -240,6 +240,17 @@ void __nvoc_init_dataField_OBJTMR(OBJTMR *pThis, RmHalspecOwner *pRmhalspecowner
     {
         pThis->setProperty(pThis, PDB_PROP_TMR_USE_SECOND_COUNTDOWN_TIMER_FOR_SWRL, ((NvBool)(0 != 0)));
     }
+
+    // NVOC Property Hal field -- PDB_PROP_TMR_WAR_FOR_BUG_4679970_DEF
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
+    {
+        pThis->setProperty(pThis, PDB_PROP_TMR_WAR_FOR_BUG_4679970_DEF, ((NvBool)(0 == 0)));
+    }
+    // default
+    else
+    {
+        pThis->setProperty(pThis, PDB_PROP_TMR_WAR_FOR_BUG_4679970_DEF, ((NvBool)(0 != 0)));
+    }
 }
 
 NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE* );
@@ -317,6 +328,10 @@ static void __nvoc_init_funcTable_OBJTMR_1(OBJTMR *pThis, RmHalspecOwner *pRmhal
     // tmrStatePreInitLocked -- virtual override (engstate) base (engstate)
     pThis->__tmrStatePreInitLocked__ = &tmrStatePreInitLocked_IMPL;
     pThis->__nvoc_base_OBJENGSTATE.__engstateStatePreInitLocked__ = &__nvoc_down_thunk_OBJTMR_engstateStatePreInitLocked;
+
+    // tmrStateInitLocked -- virtual override (engstate) base (engstate)
+    pThis->__tmrStateInitLocked__ = &tmrStateInitLocked_IMPL;
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__ = &__nvoc_down_thunk_OBJTMR_engstateStateInitLocked;
 
     // tmrStateInitUnlocked -- virtual override (engstate) base (engstate)
     pThis->__tmrStateInitUnlocked__ = &tmrStateInitUnlocked_IMPL;
@@ -427,9 +442,6 @@ static void __nvoc_init_funcTable_OBJTMR_1(OBJTMR *pThis, RmHalspecOwner *pRmhal
     // tmrStatePreInitUnlocked -- virtual inherited (engstate) base (engstate)
     pThis->__tmrStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_tmrStatePreInitUnlocked;
 
-    // tmrStateInitLocked -- virtual inherited (engstate) base (engstate)
-    pThis->__tmrStateInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_tmrStateInitLocked;
-
     // tmrStatePreLoad -- virtual inherited (engstate) base (engstate)
     pThis->__tmrStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_tmrStatePreLoad;
 
@@ -447,7 +459,7 @@ static void __nvoc_init_funcTable_OBJTMR_1(OBJTMR *pThis, RmHalspecOwner *pRmhal
 
     // tmrServiceNotificationInterrupt -- virtual inherited (intrserv) base (intrserv)
     pThis->__tmrServiceNotificationInterrupt__ = &__nvoc_up_thunk_IntrService_tmrServiceNotificationInterrupt;
-} // End __nvoc_init_funcTable_OBJTMR_1 with approximately 48 basic block(s).
+} // End __nvoc_init_funcTable_OBJTMR_1 with approximately 49 basic block(s).
 
 
 // Initialize vtable(s) for 27 virtual method(s).

@@ -163,8 +163,6 @@ extdevConstruct_P2060
     KernelDisplay          *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
     NvU32 iface, head, i;
     NvU32 numHeads = kdispGetNumHeads(pKernelDisplay);
-    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
-    NV_STATUS status;
 
     if ( !extdevConstruct_Base(pGpu, pExternalDevice) )
     {
@@ -209,15 +207,6 @@ extdevConstruct_P2060
     pThis->FrameCountData.enableFrmCmpMatchIntSlave     = NV_FALSE;
     pThis->FrameCountData.head                          = NV_P2060_MAX_HEADS_PER_GPU;
     pThis->FrameCountData.iface                         = NV_P2060_MAX_IFACES_PER_GSYNC;
-    status = tmrEventCreate(pTmr,
-                            &pThis->FrameCountData.pTimerEvent,
-                            gsyncFrameCountTimerService_P2060,
-                            pThis,
-                            TMR_FLAG_RECUR);
-    if (status != NV_OK)
-    {
-        goto fail_tmr_event_create;
-    }
 
     for (iface = 0; iface < NV_P2060_MAX_IFACES_PER_GSYNC; iface++)
     {
@@ -251,10 +240,6 @@ extdevConstruct_P2060
     }
 
     return pExternalDevice;
-
-fail_tmr_event_create:
-    extdevDestroy_Base(pGpu, pExternalDevice);
-    return NULL;
 }
 
 /*
@@ -535,9 +520,12 @@ gsyncAttachExternalDevice_P2060
     OBJGSYNCMGR *pGsyncMgr = SYS_GET_GSYNCMGR(pSys);
     OBJGSYNC *pGsync = NULL;
     OBJGPU   *pOtherGpu = NULL;
+    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
     DACP2060EXTERNALDEVICE *pThis, *pExt2060Temp;
+    PDACEXTERNALDEVICE pExtdev;
     NvU8  i, id = 0, regCtrl2 = 0;
     NvU32 iface, connector, uniqueId = 0, pOtherGpuId = 0, bSkipResetForVM = 0, index = 0;
+    NvU32 gpuInstance = gpuGetInstance(pGpu);
     NvU32 tempIface;
     NvBool bExtDevFound = NV_FALSE;
     NV_STATUS rmStatus = NV_OK;
@@ -664,7 +652,8 @@ gsyncAttachExternalDevice_P2060
         }
     }
 
-    pThis = (PDACP2060EXTERNALDEVICE)*ppExtdevs;
+    pExtdev = *ppExtdevs;
+    pThis = (PDACP2060EXTERNALDEVICE)pExtdev;
 
     if (uniqueId == 0x0)
     {
@@ -700,6 +689,36 @@ gsyncAttachExternalDevice_P2060
     connector = iface + 1;
 
     //
+    // Create timer events per GPU attached to a DACEXTERNALDEVICE instance.
+    // These events should be deleted when a GPU instance decrements its
+    // reference to a DACEXTERNALDEVICE instance. This is not done in the base
+    // instance that utilizes the timer events since the base uses a nop
+    // attachment logic that will not be executed by the child instance types.
+    //
+
+    rmStatus = tmrEventCreate(pTmr,
+                              &pExtdev->WatchdogControl.pTimerEvents[gpuInstance],
+                              extdevServiceWatchdog,
+                              pExtdev,
+                              TMR_FLAG_RECUR);
+    if (rmStatus != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "failed to create P2060 watchdog timer event.\n");
+        return NV_FALSE;
+    }
+
+    rmStatus = tmrEventCreate(pTmr,
+                              &pThis->FrameCountData.pTimerEvents[gpuInstance],
+                              gsyncFrameCountTimerService_P2060,
+                              pThis,
+                              TMR_FLAG_RECUR);
+    if (rmStatus != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "failed to create P2060 frame count timer event.\n");
+        goto fail_tmr_event_create;
+    }
+
+    //
     // If adding a check before the gsyncAttachGpu call and returning before
     // that please add the following code:
     // pThis->gpuAttachMask &= ~NVBIT(pGpu->gpuInstance);
@@ -719,7 +738,7 @@ gsyncAttachExternalDevice_P2060
     if (rmStatus != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "failed to attach P2060 gsync to gpu.\n");
-        return NV_FALSE;
+        goto fail_tmr_event_create;
     }
 
     if (pThis->ExternalDevice.deviceId == DAC_EXTERNAL_DEVICE_P2061)
@@ -739,13 +758,26 @@ gsyncAttachExternalDevice_P2060
         {
             NV_PRINTF(LEVEL_ERROR,
                       "Failed to enable non-framelock interrupts on gsync GPU.\n");
-            return NV_FALSE;
+            goto fail_tmr_event_create;
         }
         pThis->isNonFramelockInterruptEnabled = NV_TRUE;
         pThis->interruptEnabledInterface = iface;
     }
 
     return NV_TRUE;
+
+fail_tmr_event_create:
+    if (pThis->FrameCountData.pTimerEvents[gpuInstance] != NULL)
+    {
+        tmrEventDestroy(pTmr, pThis->FrameCountData.pTimerEvents[gpuInstance]);
+        pThis->FrameCountData.pTimerEvents[gpuInstance] = NULL;
+    }
+    if (pExtdev->WatchdogControl.pTimerEvents[gpuInstance])
+    {
+        tmrEventDestroy(pTmr, pExtdev->WatchdogControl.pTimerEvents[gpuInstance]);
+        pExtdev->WatchdogControl.pTimerEvents[gpuInstance] = NULL;
+    }
+    return NV_FALSE;
 }
 
 /*
@@ -771,8 +803,15 @@ extdevDestroy_P2060
     {
         if (pThis->Iface[iface].GpuInfo.gpuId == pGpu->gpuId)
         {
+            NvU32 gpuInstance = gpuGetInstance(pGpu);
+
             pThis->gpuAttachMask &= ~NVBIT(pGpu->gpuInstance);
             pExternalDevice->ReferenceCount--;
+
+            tmrEventDestroy(pTmr, pThis->FrameCountData.pTimerEvents[gpuInstance]);
+            pThis->FrameCountData.pTimerEvents[gpuInstance] = NULL;
+            tmrEventDestroy(pTmr, pExternalDevice->WatchdogControl.pTimerEvents[gpuInstance]);
+            pExternalDevice->WatchdogControl.pTimerEvents[gpuInstance] = NULL;
 
             if (pThis->Iface[iface].GpuInfo.connected)
             {
@@ -833,10 +872,8 @@ extdevDestroy_P2060
 cleanup:
     if (pExternalDevice->ReferenceCount == 0)
     {
-       // And continue the chain running.
-       tmrEventDestroy(pTmr, pThis->FrameCountData.pTimerEvent);
-       pThis->FrameCountData.pTimerEvent = NULL;
-       extdevDestroy_Base(pGpu, pExternalDevice);
+        // And continue the chain running.
+        extdevDestroy_Base(pGpu, pExternalDevice);
     }
 }
 
@@ -5032,7 +5069,7 @@ NV_STATUS gsyncFrameCountTimerService_P2060
     pThis = (PDACP2060EXTERNALDEVICE)pGsync->pExtDev;
 
     // disable the timer callback
-    tmrEventCancel(pTmr, pThis->FrameCountData.pTimerEvent);
+    tmrEventCancel(pTmr, pThis->FrameCountData.pTimerEvents[gpuGetInstance(pGpu)]);
 
     //
     // read the gsync and gpu frame count values.Cache the difference between them.
@@ -5290,7 +5327,7 @@ gsyncUpdateFrameCount_P2060
         OBJTMR *pTmr  = GPU_GET_TIMER(pGpu);
 
         status = tmrEventScheduleRel(pTmr,
-                                     pThis->FrameCountData.pTimerEvent,
+                                     pThis->FrameCountData.pTimerEvents[gpuGetInstance(pGpu)],
                                      (NV_P2060_FRAME_COUNT_TIMER_INTERVAL / 5));
 
         if (status == NV_OK)

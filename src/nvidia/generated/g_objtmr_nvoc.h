@@ -220,6 +220,7 @@ struct OBJTMR {
     NvU32 (*__tmrServiceInterrupt__)(OBJGPU *, struct OBJTMR * /*this*/, IntrServiceServiceInterruptArguments *);  // virtual halified (3 hals) override (intrserv) base (intrserv) body
     NV_STATUS (*__tmrConstructEngine__)(OBJGPU *, struct OBJTMR * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__tmrStatePreInitLocked__)(OBJGPU *, struct OBJTMR * /*this*/);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__tmrStateInitLocked__)(OBJGPU *, struct OBJTMR * /*this*/);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__tmrStateInitUnlocked__)(OBJGPU *, struct OBJTMR * /*this*/);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__tmrStateLoad__)(OBJGPU *, struct OBJTMR * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__tmrStateUnload__)(OBJGPU *, struct OBJTMR * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
@@ -234,7 +235,6 @@ struct OBJTMR {
     NV_STATUS (*__tmrGetGpuPtimerOffset__)(OBJGPU *, struct OBJTMR * /*this*/, NvU32 *, NvU32 *);  // halified (2 hals) body
     void (*__tmrInitMissing__)(struct OBJGPU *, struct OBJTMR * /*this*/);  // virtual inherited (engstate) base (engstate)
     NV_STATUS (*__tmrStatePreInitUnlocked__)(struct OBJGPU *, struct OBJTMR * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__tmrStateInitLocked__)(struct OBJGPU *, struct OBJTMR * /*this*/);  // virtual inherited (engstate) base (engstate)
     NV_STATUS (*__tmrStatePreLoad__)(struct OBJGPU *, struct OBJTMR * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
     NV_STATUS (*__tmrStatePostLoad__)(struct OBJGPU *, struct OBJTMR * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
     NV_STATUS (*__tmrStatePreUnload__)(struct OBJGPU *, struct OBJTMR * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
@@ -242,13 +242,14 @@ struct OBJTMR {
     NvBool (*__tmrIsPresent__)(struct OBJGPU *, struct OBJTMR * /*this*/);  // virtual inherited (engstate) base (engstate)
     NV_STATUS (*__tmrServiceNotificationInterrupt__)(OBJGPU *, struct OBJTMR * /*this*/, IntrServiceServiceNotificationInterruptArguments *);  // virtual inherited (intrserv) base (intrserv)
 
-    // 6 PDB properties
+    // 7 PDB properties
     NvBool PDB_PROP_TMR_USE_COUNTDOWN_TIMER_FOR_RM_CALLBACKS;
     NvBool PDB_PROP_TMR_ALARM_INTR_REMOVED_FROM_PMC_TREE;
     NvBool PDB_PROP_TMR_USE_OS_TIMER_FOR_CALLBACKS;
     NvBool PDB_PROP_TMR_USE_PTIMER_FOR_OSTIMER_CALLBACKS;
     NvBool PDB_PROP_TMR_USE_POLLING_FOR_CALLBACKS;
     NvBool PDB_PROP_TMR_USE_SECOND_COUNTDOWN_TIMER_FOR_SWRL;
+    NvBool PDB_PROP_TMR_WAR_FOR_BUG_4679970_DEF;
 
     // Data members
     struct TMR_EVENT_PVT *pRmActiveEventList;
@@ -303,6 +304,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJTMR;
 #define PDB_PROP_TMR_USE_SECOND_COUNTDOWN_TIMER_FOR_SWRL_BASE_NAME PDB_PROP_TMR_USE_SECOND_COUNTDOWN_TIMER_FOR_SWRL
 #define PDB_PROP_TMR_USE_POLLING_FOR_CALLBACKS_BASE_CAST
 #define PDB_PROP_TMR_USE_POLLING_FOR_CALLBACKS_BASE_NAME PDB_PROP_TMR_USE_POLLING_FOR_CALLBACKS
+#define PDB_PROP_TMR_WAR_FOR_BUG_4679970_DEF_BASE_CAST
+#define PDB_PROP_TMR_WAR_FOR_BUG_4679970_DEF_BASE_NAME PDB_PROP_TMR_WAR_FOR_BUG_4679970_DEF
 #define PDB_PROP_TMR_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
 #define PDB_PROP_TMR_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
 #define PDB_PROP_TMR_ALARM_INTR_REMOVED_FROM_PMC_TREE_BASE_CAST
@@ -330,6 +333,8 @@ NV_STATUS __nvoc_objCreate_OBJTMR(OBJTMR**, Dynamic*, NvU32);
 #define tmrConstructEngine(pGpu, pTmr, arg3) tmrConstructEngine_DISPATCH(pGpu, pTmr, arg3)
 #define tmrStatePreInitLocked_FNPTR(pTmr) pTmr->__tmrStatePreInitLocked__
 #define tmrStatePreInitLocked(pGpu, pTmr) tmrStatePreInitLocked_DISPATCH(pGpu, pTmr)
+#define tmrStateInitLocked_FNPTR(pTmr) pTmr->__tmrStateInitLocked__
+#define tmrStateInitLocked(pGpu, pTmr) tmrStateInitLocked_DISPATCH(pGpu, pTmr)
 #define tmrStateInitUnlocked_FNPTR(pTmr) pTmr->__tmrStateInitUnlocked__
 #define tmrStateInitUnlocked(pGpu, pTmr) tmrStateInitUnlocked_DISPATCH(pGpu, pTmr)
 #define tmrStateLoad_FNPTR(pTmr) pTmr->__tmrStateLoad__
@@ -366,8 +371,6 @@ NV_STATUS __nvoc_objCreate_OBJTMR(OBJTMR**, Dynamic*, NvU32);
 #define tmrInitMissing(pGpu, pEngstate) tmrInitMissing_DISPATCH(pGpu, pEngstate)
 #define tmrStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreInitUnlocked__
 #define tmrStatePreInitUnlocked(pGpu, pEngstate) tmrStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define tmrStateInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__
-#define tmrStateInitLocked(pGpu, pEngstate) tmrStateInitLocked_DISPATCH(pGpu, pEngstate)
 #define tmrStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreLoad__
 #define tmrStatePreLoad(pGpu, pEngstate, arg3) tmrStatePreLoad_DISPATCH(pGpu, pEngstate, arg3)
 #define tmrStatePostLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePostLoad__
@@ -404,6 +407,10 @@ static inline NV_STATUS tmrConstructEngine_DISPATCH(OBJGPU *pGpu, struct OBJTMR 
 
 static inline NV_STATUS tmrStatePreInitLocked_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr) {
     return pTmr->__tmrStatePreInitLocked__(pGpu, pTmr);
+}
+
+static inline NV_STATUS tmrStateInitLocked_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr) {
+    return pTmr->__tmrStateInitLocked__(pGpu, pTmr);
 }
 
 static inline NV_STATUS tmrStateInitUnlocked_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr) {
@@ -460,10 +467,6 @@ static inline void tmrInitMissing_DISPATCH(struct OBJGPU *pGpu, struct OBJTMR *p
 
 static inline NV_STATUS tmrStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct OBJTMR *pEngstate) {
     return pEngstate->__tmrStatePreInitUnlocked__(pGpu, pEngstate);
-}
-
-static inline NV_STATUS tmrStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct OBJTMR *pEngstate) {
-    return pEngstate->__tmrStateInitLocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS tmrStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJTMR *pEngstate, NvU32 arg3) {
@@ -879,6 +882,8 @@ NvU32 tmrServiceInterrupt_GA100(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceSe
 NV_STATUS tmrConstructEngine_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr, ENGDESCRIPTOR arg3);
 
 NV_STATUS tmrStatePreInitLocked_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr);
+
+NV_STATUS tmrStateInitLocked_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
 NV_STATUS tmrStateInitUnlocked_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr);
 

@@ -93,7 +93,7 @@ gpuReadBusConfigReg_GH100
  * @returns    NV_OK on success
  */
 NV_STATUS
-gpuReadVgpuConfigReg_GH100
+gpuReadPassThruConfigReg_GH100
 (
     OBJGPU    *pGpu,
     NvU32      index,

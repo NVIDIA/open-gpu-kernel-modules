@@ -5199,7 +5199,7 @@ gpuReadBusConfigCycle_IMPL
 
     if (IS_PASSTHRU(pGpu) && !bIsCCFeatureEnabled)
     {
-        gpuReadVgpuConfigReg_HAL(pGpu, index, pData);
+        gpuReadPassThruConfigReg_HAL(pGpu, index, pData);
     }
     else
     {

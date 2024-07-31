@@ -85,6 +85,9 @@ kbifConstructEngine_IMPL
     // Cache VF info
     kbifCacheVFInfo_HAL(pGpu, pKernelBif);
 
+    // Cache GPU link capabilities
+    kbifGetGpuLinkCapabilities(pGpu, pKernelBif);
+
     // Used to track when the link has gone into Recovery, which can cause CEs.
     pKernelBif->EnteredRecoverySinceErrorsLastChecked = NV_FALSE;
 
@@ -842,8 +845,11 @@ kbifGetGpuLinkCapabilities_IMPL
     if (NV_OK != GPU_BUS_CFG_RD32(pGpu, addrLinkCap, &data))
     {
         NV_PRINTF(LEVEL_ERROR, "Unable to read %x\n", addrLinkCap);
-        return 0;
+        data = 0;
     }
+
+    // Cache link capabilities here to be used by GSP-RM
+    pKernelBif->pcieConfigReg.linkCap = data;
 
     return data;
 }

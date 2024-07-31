@@ -468,6 +468,7 @@ struct OBJSYS {
     struct OBJHALMGR *pHalMgr;
     struct Fabric *pFabric;
     struct GpuDb *pGpuDb;
+    NvBool bIsGridBuild;
 };
 
 #ifndef __NVOC_CLASS_OBJSYS_TYPEDEF__

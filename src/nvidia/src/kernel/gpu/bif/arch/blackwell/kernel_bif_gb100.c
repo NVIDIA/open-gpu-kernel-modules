@@ -750,6 +750,17 @@ kbifCacheMnocSupport_GB100
 
     pKernelBif->bMnocAvailable = NV_FALSE;
 
+    if (IS_PASSTHRU(pGpu))
+    {
+        //
+        // Long story short, when in recovery mode, RM will never come into picture
+        // Conversely, if RM is up, that means we have the valid boot ROM image
+        // and thus MNOC capability will always be available
+        //
+        pKernelBif->bMnocAvailable = NV_TRUE;
+        return;
+    }
+
     // Read vendorID from DVSEC
     if (GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_PF0_DESIGNATED_VENDOR_SPECIFIC_0_HEADER_1,
                                &regVal) != NV_OK)

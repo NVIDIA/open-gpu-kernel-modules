@@ -95,7 +95,7 @@ struct RmClientResource {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super
     struct RmClientResource *__nvoc_pbase_RmClientResource;    // clires
 
-    // Vtable with 129 per-object function pointers
+    // Vtable with 130 per-object function pointers
     NvBool (*__cliresAccessCallback__)(struct RmClientResource * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual override (res) base (clientres)
     NvBool (*__cliresShareCallback__)(struct RmClientResource * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual override (res) base (clientres)
     NV_STATUS (*__cliresControl_Prologue__)(struct RmClientResource * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (clientres)
@@ -196,6 +196,7 @@ struct RmClientResource {
     NV_STATUS (*__cliresCtrlCmdSyncGpuBoostGroupInfo__)(struct RmClientResource * /*this*/, NV0000_SYNC_GPU_BOOST_GROUP_INFO_PARAMS *);  // exported (id=0xa04)
     NV_STATUS (*__cliresCtrlCmdVgpuGetVgpuVersion__)(struct RmClientResource * /*this*/, NV0000_CTRL_VGPU_GET_VGPU_VERSION_PARAMS *);  // exported (id=0x137)
     NV_STATUS (*__cliresCtrlCmdVgpuSetVgpuVersion__)(struct RmClientResource * /*this*/, NV0000_CTRL_VGPU_SET_VGPU_VERSION_PARAMS *);  // exported (id=0x138)
+    NV_STATUS (*__cliresCtrlCmdVgpuVfioNotifyRMStatus__)(struct RmClientResource * /*this*/, NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS *);  // exported (id=0xc05)
     NV_STATUS (*__cliresCtrlCmdSystemNVPCFGetPowerModeInfo__)(struct RmClientResource * /*this*/, NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *);  // exported (id=0x13b)
     NV_STATUS (*__cliresCtrlCmdSystemSyncExternalFabricMgmt__)(struct RmClientResource * /*this*/, NV0000_CTRL_CMD_SYSTEM_SYNC_EXTERNAL_FABRIC_MGMT_PARAMS *);  // exported (id=0x13c)
     NV_STATUS (*__cliresCtrlCmdSystemPfmreqhndlrCtrl__)(struct RmClientResource * /*this*/, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_CTRL_PARAMS *);  // exported (id=0x142)
@@ -457,6 +458,8 @@ NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32,
 #define cliresCtrlCmdVgpuGetVgpuVersion(pRmCliRes, vgpuVersionInfo) cliresCtrlCmdVgpuGetVgpuVersion_DISPATCH(pRmCliRes, vgpuVersionInfo)
 #define cliresCtrlCmdVgpuSetVgpuVersion_FNPTR(pRmCliRes) pRmCliRes->__cliresCtrlCmdVgpuSetVgpuVersion__
 #define cliresCtrlCmdVgpuSetVgpuVersion(pRmCliRes, vgpuVersionInfo) cliresCtrlCmdVgpuSetVgpuVersion_DISPATCH(pRmCliRes, vgpuVersionInfo)
+#define cliresCtrlCmdVgpuVfioNotifyRMStatus_FNPTR(pRmCliRes) pRmCliRes->__cliresCtrlCmdVgpuVfioNotifyRMStatus__
+#define cliresCtrlCmdVgpuVfioNotifyRMStatus(pRmCliRes, pVgpuDeleteParams) cliresCtrlCmdVgpuVfioNotifyRMStatus_DISPATCH(pRmCliRes, pVgpuDeleteParams)
 #define cliresCtrlCmdSystemNVPCFGetPowerModeInfo_FNPTR(pRmCliRes) pRmCliRes->__cliresCtrlCmdSystemNVPCFGetPowerModeInfo__
 #define cliresCtrlCmdSystemNVPCFGetPowerModeInfo(pRmCliRes, pParams) cliresCtrlCmdSystemNVPCFGetPowerModeInfo_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemSyncExternalFabricMgmt_FNPTR(pRmCliRes) pRmCliRes->__cliresCtrlCmdSystemSyncExternalFabricMgmt__
@@ -917,6 +920,10 @@ static inline NV_STATUS cliresCtrlCmdVgpuSetVgpuVersion_DISPATCH(struct RmClient
     return pRmCliRes->__cliresCtrlCmdVgpuSetVgpuVersion__(pRmCliRes, vgpuVersionInfo);
 }
 
+static inline NV_STATUS cliresCtrlCmdVgpuVfioNotifyRMStatus_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS *pVgpuDeleteParams) {
+    return pRmCliRes->__cliresCtrlCmdVgpuVfioNotifyRMStatus__(pRmCliRes, pVgpuDeleteParams);
+}
+
 static inline NV_STATUS cliresCtrlCmdSystemNVPCFGetPowerModeInfo_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams) {
     return pRmCliRes->__cliresCtrlCmdSystemNVPCFGetPowerModeInfo__(pRmCliRes, pParams);
 }
@@ -1232,6 +1239,8 @@ NV_STATUS cliresCtrlCmdSyncGpuBoostGroupInfo_IMPL(struct RmClientResource *pRmCl
 NV_STATUS cliresCtrlCmdVgpuGetVgpuVersion_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_VGPU_GET_VGPU_VERSION_PARAMS *vgpuVersionInfo);
 
 NV_STATUS cliresCtrlCmdVgpuSetVgpuVersion_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_VGPU_SET_VGPU_VERSION_PARAMS *vgpuVersionInfo);
+
+NV_STATUS cliresCtrlCmdVgpuVfioNotifyRMStatus_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS *pVgpuDeleteParams);
 
 NV_STATUS cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams);
 
