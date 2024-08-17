@@ -73,6 +73,10 @@
 #include <drm/drm_fbdev_generic.h>
 #endif
 
+#if defined(NV_DRM_DRM_FBDEV_TTM_H_PRESENT)
+#include <drm/drm_fbdev_ttm.h>
+#endif
+
 #include <linux/pci.h>
 #include <linux/workqueue.h>
 
@@ -1851,7 +1855,11 @@ void nv_drm_register_drm_device(const nv_gpu_info_t *gpu_info)
             drm_aperture_remove_conflicting_pci_framebuffers(pdev, nv_drm_driver.name);
 #endif
         }
+#if defined(NV_DRM_FBDEV_TTM_AVAILABLE)
+        drm_fbdev_ttm_setup(dev, 32);
+#else
         drm_fbdev_generic_setup(dev, 32);
+#endif
     }
 #endif /* defined(NV_DRM_FBDEV_GENERIC_AVAILABLE) */
 

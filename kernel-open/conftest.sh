@@ -6610,6 +6610,25 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_FBDEV_GENERIC_SETUP_PRESENT" "" "functions"
         ;;
 
+        drm_fbdev_ttm_setup)
+            #
+            # Determine whether drm_fbdev_ttm_setup is present.
+            #
+            # Added by commit 9060d7f49376 ("drm/fb-helper: Finish the
+            # generic fbdev emulation") in v4.19.
+            #
+            CODE="
+            #include <drm/drm_fb_helper.h>
+            #if defined(NV_DRM_DRM_FBDEV_TTM_H_PRESENT)
+            #include <drm/drm_fbdev_ttm.h>
+            #endif
+            void conftest_drm_fbdev_ttm_setup(void) {
+                drm_fbdev_ttm_setup();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_FBDEV_TTM_SETUP_PRESENT" "" "functions"
+        ;;
+
         drm_aperture_remove_conflicting_pci_framebuffers)
             #
             # Determine whether drm_aperture_remove_conflicting_pci_framebuffers is present.
