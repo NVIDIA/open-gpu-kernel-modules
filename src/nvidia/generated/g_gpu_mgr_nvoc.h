@@ -137,6 +137,7 @@ typedef struct CONF_COMPUTE_CAPS
     NvBool bAcceptClientRequest;
     NvBool bMultiGpuProtectedPcieModeEnabled;
     NvBool bFatalFailure;
+    NvBool bNvlEncryptionEnabled;
 } CONF_COMPUTE_CAPS;
 
 //

@@ -6716,7 +6716,8 @@ static NvBool GetDfpHdmiProtocol(const NVDpyEvoRec *pDpyEvo,
         nvDpyGetOutputColorFormatInfo(pDpyEvo);
     const NvBool forceHdmiFrlIsSupported = FALSE;
 
-    nvAssert(rmProtocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_A ||
+    nvAssert(rmProtocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_DUAL_TMDS ||
+             rmProtocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_A ||
              rmProtocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_B);
 
     /* Override protocol if this mode requires HDMI FRL. */
@@ -6743,10 +6744,25 @@ static NvBool GetDfpHdmiProtocol(const NVDpyEvoRec *pDpyEvo,
         if (nvHdmiGetEffectivePixelClockKHz(pDpyEvo, pTimings, pDpyColor) <=
                pDpyEvo->maxSingleLinkPixelClockKHz) {
 
-            *pTimingsProtocol = (rmProtocol ==
-                NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_A) ?
-                NVKMS_PROTOCOL_SOR_SINGLE_TMDS_A :
-                NVKMS_PROTOCOL_SOR_SINGLE_TMDS_B;
+            switch (rmProtocol) {
+                case NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_DUAL_TMDS:
+                    /*
+                     * Force single link TMDS protocol. HDMI does not support
+                     * physically support dual link TMDS.
+                     *
+                     * TMDS_A: "use A side of the link"
+                     */
+                    *pTimingsProtocol = NVKMS_PROTOCOL_SOR_SINGLE_TMDS_A;
+                    break;
+                case NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_A:
+                    *pTimingsProtocol = NVKMS_PROTOCOL_SOR_SINGLE_TMDS_A;
+                    break;
+                case NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_B:
+                    *pTimingsProtocol = NVKMS_PROTOCOL_SOR_SINGLE_TMDS_B;
+                    break;
+                default:
+                    return FALSE;
+            }
             return TRUE;
         }
     } while (nvDowngradeColorSpaceAndBpc(&colorFormatsInfo,

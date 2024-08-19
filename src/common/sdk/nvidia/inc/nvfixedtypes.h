@@ -84,9 +84,11 @@ typedef NvUFXP32                                                    NvUFXP25_7;
 typedef NvUFXP32                                                    NvUFXP26_6;
 typedef NvUFXP32                                                    NvUFXP28_4;
 
+typedef NvUFXP64                                                   NvUFXP37_27;
 typedef NvUFXP64                                                   NvUFXP40_24;
 typedef NvUFXP64                                                   NvUFXP48_16;
 typedef NvUFXP64                                                   NvUFXP52_12;
+typedef NvUFXP64                                                   NvUFXP54_10;
 typedef NvUFXP64                                                    NvUFXP60_4;
 
 /*!

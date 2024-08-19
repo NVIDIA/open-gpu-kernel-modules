@@ -137,6 +137,15 @@ NV_STATUS uvm_populate_pageable_vma(struct vm_area_struct *vma,
     if (status != NV_OK)
         goto out;
 
+    // Kernel v6.6 introduced a bug in set_pte_range() around the handling of AF
+    // bit. Instead of setting the AF bit, the bit is incorrectly being cleared
+    // in set_pte_range() during first-touch fault handling. Calling
+    // handle_mm_fault() again takes a different code path which correctly sets
+    // the AF bit.
+    status = handle_fault(vma, start, vma_num_pages, !!(gup_flags & FOLL_WRITE));
+    if (status != NV_OK)
+        goto out;
+
     if (touch)
         ret = NV_PIN_USER_PAGES_REMOTE(mm, start, vma_num_pages, gup_flags, pages, NULL);
     else

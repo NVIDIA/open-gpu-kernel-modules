@@ -1425,7 +1425,7 @@ struct NvKmsKapiFunctionsTable {
     );
 
     /*!
-     * Immediately reset the specified display semaphore to the pending state.
+     * Immediately initialize the specified display semaphore to the pending state.
      *
      * Must be called prior to applying a mode set that utilizes the specified
      * display semaphore for synchronization.
@@ -1438,7 +1438,7 @@ struct NvKmsKapiFunctionsTable {
      *                            for the specified device.
      */
     NvBool
-    (*resetDisplaySemaphore)
+    (*tryInitDisplaySemaphore)
     (
         struct NvKmsKapiDevice *device,
         NvU32 semaphoreIndex
@@ -1447,7 +1447,7 @@ struct NvKmsKapiFunctionsTable {
     /*!
      * Immediately set the specified display semaphore to the displayable state.
      *
-     * Must be called after \ref resetDisplaySemaphore to indicate a mode
+     * Must be called after \ref tryInitDisplaySemaphore to indicate a mode
      * configuration change that utilizes the specified display semaphore for
      * synchronization may proceed.
      *
@@ -1471,7 +1471,7 @@ struct NvKmsKapiFunctionsTable {
      *
      * This can be used by clients to restore a semaphore to a consistent state
      * when they have prepared it for use by previously calling
-     * \ref resetDisplaySemaphore() on it, but are then prevented from
+     * \ref tryInitDisplaySemaphore() on it, but are then prevented from
      * submitting the associated hardware operations to consume it due to the
      * subsequent failure of some software or hardware operation.
      *

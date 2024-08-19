@@ -189,6 +189,36 @@ _gpumgrDetermineConfComputeCapabilities
     return NV_OK;
 }
 
+static NV_STATUS
+_gpumgrDetermineNvlinkEncryptionCapabilities
+(
+    OBJGPUMGR *pGpuMgr,
+    OBJGPU    *pGpu
+)
+{
+    NvBool bNvlEncryptionEnabled = NV_FALSE;
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+    bNvlEncryptionEnabled = (pKernelNvlink != NULL) &&
+                             pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED);
+
+    // First GPU
+    if (ONEBITSET(pGpuMgr->gpuAttachMask))
+    {
+        pGpuMgr->ccCaps.bNvlEncryptionEnabled = bNvlEncryptionEnabled;
+    }
+    else
+    {
+        //
+        // If one of the GPUs is not NVLE capable, the system as a whole
+        // is not NVLE capable
+        //
+        NV_ASSERT_OR_RETURN(pGpuMgr->ccCaps.bNvlEncryptionEnabled ==
+            bNvlEncryptionEnabled, NV_ERR_INVALID_STATE);
+    }
+
+    return NV_OK;
+}
+
 static void
 _gpumgrCacheClearMIGGpuIdInfo(NvU32 gpuId)
 {
@@ -1416,6 +1446,9 @@ gpumgrAttachGpu(NvU32 gpuInstance, GPUATTACHARG *pAttachArg)
 
     // Determine conf compute params
     NV_ASSERT_OK_OR_RETURN(_gpumgrDetermineConfComputeCapabilities(pGpuMgr, pGpu));
+
+    // Determine nvlink encryption params
+    NV_ASSERT_OK_OR_RETURN(_gpumgrDetermineNvlinkEncryptionCapabilities(pGpuMgr, pGpu));
 
     if (!IS_GSP_CLIENT(pGpu))
         pGpuMgr->gpuMonolithicRmMask |= NVBIT(gpuInstance);

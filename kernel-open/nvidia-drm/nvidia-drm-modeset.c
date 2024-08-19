@@ -192,6 +192,7 @@ static int __nv_drm_convert_in_fences(
         &to_nv_crtc_state(crtc_state)->req_config;
     struct nv_drm_plane_fence_cb_data *fence_data;
     uint32_t semaphore_index;
+    uint32_t idx_count;
     int ret, i;
 
     if (!crtc_state->active) {
@@ -244,9 +245,14 @@ static int __nv_drm_convert_in_fences(
             return -EINVAL;
         }
 
-        semaphore_index = nv_drm_next_display_semaphore(nv_dev);
+        for (idx_count = 0; idx_count < nv_dev->display_semaphores.count; idx_count++) {
+            semaphore_index = nv_drm_next_display_semaphore(nv_dev);
+            if (nvKms->tryInitDisplaySemaphore(nv_dev->pDevice, semaphore_index)) {
+                break;
+            }
+        }
 
-        if (!nvKms->resetDisplaySemaphore(nv_dev->pDevice, semaphore_index)) {
+        if (idx_count == nv_dev->display_semaphores.count) {
             NV_DRM_DEV_LOG_ERR(
                 nv_dev,
                 "Failed to initialize semaphore for plane fence");

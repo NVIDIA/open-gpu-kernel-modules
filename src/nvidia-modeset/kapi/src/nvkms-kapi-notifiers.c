@@ -286,8 +286,8 @@ NvBool nvKmsKapiAllocateSemaphores(struct NvKmsKapiDevice *device,
     return NV_TRUE;
 }
 
-NvBool nvKmsKapiResetDisplaySemaphore(struct NvKmsKapiDevice *device,
-                                      NvU32 index)
+NvBool nvKmsKapiTryInitDisplaySemaphore(struct NvKmsKapiDevice *device,
+                                        NvU32 index)
 {
     struct nvKmsParsedSemaphore semParsed;
 
@@ -297,12 +297,6 @@ NvBool nvKmsKapiResetDisplaySemaphore(struct NvKmsKapiDevice *device,
                         &semParsed);
 
     if (semParsed.payload != NVKMS_KAPI_SEMAPHORE_VALUE_DONE) {
-        nvKmsKapiLogDeviceDebug(
-            device,
-            "Attempt to reuse semaphore at index %u with pending status 0x%08x",
-            index,
-            semParsed.payload);
-
         return NV_FALSE;
     }
 

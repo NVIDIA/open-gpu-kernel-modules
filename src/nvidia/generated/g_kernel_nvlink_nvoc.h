@@ -311,6 +311,7 @@ struct KernelNvlink {
     NvBool PDB_PROP_KNVLINK_ENCRYPTION_ENABLED;
 
     // Data members
+    NvU32 gspProxyRegkeys;
     struct KernelIoctrl *PRIVATE_FIELD(pKernelIoctrl)[3];
     NvU32 PRIVATE_FIELD(ioctrlMask);
     NvU32 PRIVATE_FIELD(ipVerNvlink);
@@ -444,6 +445,7 @@ struct KernelNvlink_PRIVATE {
     NvBool PDB_PROP_KNVLINK_ENCRYPTION_ENABLED;
 
     // Data members
+    NvU32 gspProxyRegkeys;
     struct KernelIoctrl *pKernelIoctrl[3];
     NvU32 ioctrlMask;
     NvU32 ipVerNvlink;

@@ -28,6 +28,9 @@
 #include "nvrm_registry.h"
 #include "os/os.h"
 
+#include "gpu/conf_compute/conf_compute.h"
+#include "gsp/gsp_proxy_reg.h"
+
 /*!
  * @brief Apply NVLink overrides from Registry
  *
@@ -278,12 +281,34 @@ knvlinkApplyRegkeyOverrides_IMPL
     if (NV_OK == osReadRegistryDword(pGpu,
                  NV_REG_STR_RM_NVLINK_ENCRYPTION, &regdata))
     {
+        //
+        // Nvlink Encryption PDB PROP is set when Nvlink Encryption regkey has been enabled AND
+        // either we are running in MODS or CC is enabled
+        //
         if (FLD_TEST_DRF(_REG_STR_RM, _NVLINK_ENCRYPTION, _MODE, _ENABLE, regdata))
         {
-            pKernelNvlink->setProperty(pGpu, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED, NV_TRUE);
-            NV_PRINTF(LEVEL_INFO,
-                      "Nvlink Encryption is enabled\n");
-        }        
+            if (RMCFG_FEATURE_MODS_FEATURES)
+            {
+                pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED, NV_TRUE);
+                pKernelNvlink->gspProxyRegkeys = DRF_DEF(GSP, _PROXY_REG, _NVLINK_ENCRYPTION, _ENABLE);
+                NV_PRINTF(LEVEL_INFO,
+                          "Nvlink Encryption is enabled via regkey\n");
+                return NV_OK;
+            }
+            else
+            {
+                ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
+                NvBool bCCFeatureEnabled = (pCC != NULL) && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED);
+                if (bCCFeatureEnabled)
+                {
+                    pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_ENCRYPTION_ENABLED, NV_TRUE);
+                    pKernelNvlink->gspProxyRegkeys = DRF_DEF(GSP, _PROXY_REG, _NVLINK_ENCRYPTION, _ENABLE);
+                    NV_PRINTF(LEVEL_INFO,
+                              "Nvlink Encryption is enabled via regkey\n");
+                    return NV_OK;
+                }
+            }
+        }
     }
 
     return NV_OK;

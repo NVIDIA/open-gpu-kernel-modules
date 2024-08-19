@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,5 +39,9 @@
 #define NVGSP_PROXY_REG_CONF_COMPUTE_MULTI_GPU_MODE                 4:3
 #define NVGSP_PROXY_REG_CONF_COMPUTE_MULTI_GPU_MODE_NONE            0x00000000
 #define NVGSP_PROXY_REG_CONF_COMPUTE_MULTI_GPU_MODE_PROTECTED_PCIE  0x00000001
+
+#define NVGSP_PROXY_REG_NVLINK_ENCRYPTION                           5:5
+#define NVGSP_PROXY_REG_NVLINK_ENCRYPTION_DISABLE                   0x00000000
+#define NVGSP_PROXY_REG_NVLINK_ENCRYPTION_ENABLE                    0x00000001
 
 #endif // NVGSP_PROXY_REG_H

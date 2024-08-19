@@ -84,8 +84,8 @@ NvBool nvKmsKapiIsNotifierFinish(const struct NvKmsKapiDevice *device,
 void nvKmsKapiNotifierSetNotBegun(struct NvKmsKapiDevice *device,
                                   NvU32 head, NvU32 layer, NvU32 index);
 
-NvBool nvKmsKapiResetDisplaySemaphore(struct NvKmsKapiDevice *device,
-                                      NvU32 index);
+NvBool nvKmsKapiTryInitDisplaySemaphore(struct NvKmsKapiDevice *device,
+                                        NvU32 index);
 
 void nvKmsKapiSignalDisplaySemaphore(struct NvKmsKapiDevice *device,
                                      NvU32 index);

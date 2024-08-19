@@ -3607,7 +3607,7 @@ NvBool nvKmsKapiGetFunctionsTableInternal
         nvKmsKapiSetSemaphoreSurfaceValue;
     funcsTable->setSuspendResumeCallback = nvKmsKapiSetSuspendResumeCallback;
 
-    funcsTable->resetDisplaySemaphore = nvKmsKapiResetDisplaySemaphore;
+    funcsTable->tryInitDisplaySemaphore = nvKmsKapiTryInitDisplaySemaphore;
     funcsTable->signalDisplaySemaphore = nvKmsKapiSignalDisplaySemaphore;
     funcsTable->cancelDisplaySemaphore = nvKmsKapiCancelDisplaySemaphore;
     funcsTable->signalVrrSemaphore = SignalVrrSemaphore;

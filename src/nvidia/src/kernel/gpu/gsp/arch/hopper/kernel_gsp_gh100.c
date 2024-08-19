@@ -41,6 +41,8 @@
 #include "published/hopper/gh100/dev_riscv_pri.h"
 #include "published/hopper/gh100/dev_vm.h"
 
+#include "gpu/nvlink/kernel_nvlink.h"
+
 #define RISCV_BR_ADDR_ALIGNMENT                 (8)
 
 const char*
@@ -407,6 +409,12 @@ kgspSetupGspFmcArgs_GH100
     if (pCC != NULL)
     {
         pGspFmcBootParams->initParams.regkeys = pCC->gspProxyRegkeys;
+    }
+
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+    if (pKernelNvlink != NULL)
+    {
+        pGspFmcBootParams->initParams.regkeys |= pKernelNvlink->gspProxyRegkeys;
     }
 
     pGspFmcBootParams->bootGspRmParams.gspRmDescOffset = memdescGetPhysAddr(pKernelGsp->pWprMetaDescriptor, AT_GPU, 0);
