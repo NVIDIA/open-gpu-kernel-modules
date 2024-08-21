@@ -58,8 +58,11 @@ typedef struct nv_timer nv_drm_timer;
 #error "Need to define kernel timer callback primitives for this OS"
 #endif
 
-#if defined(NV_DRM_FBDEV_GENERIC_SETUP_PRESENT) && defined(NV_DRM_APERTURE_REMOVE_CONFLICTING_PCI_FRAMEBUFFERS_PRESENT)
+#if defined(NV_DRM_FBDEV_GENERIC_SETUP_PRESENT) || defined(NV_DRM_FBDEV_TTM_SETUP_PRESENT) && defined(NV_DRM_APERTURE_REMOVE_CONFLICTING_PCI_FRAMEBUFFERS_PRESENT)
 #define NV_DRM_FBDEV_GENERIC_AVAILABLE
+#if defined(NV_DRM_FBDEV_TTM_SETUP_PRESENT)
+#define NV_DRM_FBDEV_TTM_AVAILABLE
+#endif
 #endif
 
 struct page;
