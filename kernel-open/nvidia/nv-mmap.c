@@ -172,7 +172,7 @@ nvidia_vma_access(
     }
     else if (IS_FB_OFFSET(nv, offset, length))
     {
-        addr = (offset & PAGE_MASK);
+        addr = (offset & PAGE_MASK) + pageIndex * PAGE_SIZE;
         kernel_mapping = os_map_kernel_space(addr, PAGE_SIZE, NV_MEMORY_UNCACHED);
         if (kernel_mapping == NULL)
             return -ENOMEM;
