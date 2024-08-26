@@ -130,7 +130,7 @@ libspdm_return_t libspdm_receive_response(void *context, const uint32_t *session
 
     if (spdm_context->crypto_request) {
         timeout = spdm_context->local_context.capability.rtt +
-                  ((uint64_t)2 << spdm_context->connection_info.capability.ct_exponent);
+                  ((uint64_t)1 << spdm_context->connection_info.capability.ct_exponent);
     } else {
         timeout = spdm_context->local_context.capability.rtt +
                   spdm_context->local_context.capability.st1;
