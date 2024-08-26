@@ -14,6 +14,8 @@
 #include "library/spdm_device_secret_lib.h"
 
 #define INVALID_SESSION_ID 0
+#define LIBSPDM_MAX_CT_EXPONENT 31
+#define LIBSPDM_MAX_RDT_EXPONENT 31
 
 typedef struct {
     uint8_t spdm_version_count;

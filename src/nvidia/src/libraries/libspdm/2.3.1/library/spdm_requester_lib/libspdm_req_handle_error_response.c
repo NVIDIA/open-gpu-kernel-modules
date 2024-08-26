@@ -167,13 +167,16 @@ static libspdm_return_t libspdm_handle_response_not_ready(libspdm_context_t *spd
     if (extend_error_data->request_code != original_request_code) {
         return LIBSPDM_STATUS_INVALID_MSG_FIELD;
     }
+    if (extend_error_data->rd_exponent > LIBSPDM_MAX_RDT_EXPONENT) {
+        return LIBSPDM_STATUS_INVALID_MSG_FIELD;
+    }
 
     spdm_context->error_data.rd_exponent = extend_error_data->rd_exponent;
     spdm_context->error_data.request_code = extend_error_data->request_code;
     spdm_context->error_data.token = extend_error_data->token;
     spdm_context->error_data.rd_tm = extend_error_data->rd_tm;
 
-    libspdm_sleep_in_us((2 << extend_error_data->rd_exponent));
+    libspdm_sleep_in_us((uint64_t)1 << extend_error_data->rd_exponent);
     return libspdm_requester_respond_if_ready(spdm_context, session_id,
                                               response_size, response,
                                               expected_response_code,

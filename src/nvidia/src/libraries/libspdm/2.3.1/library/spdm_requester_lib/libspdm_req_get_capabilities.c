@@ -279,6 +279,11 @@ static libspdm_return_t libspdm_try_get_capabilities(libspdm_context_t *spdm_con
         }
     }
 
+    if (spdm_response->ct_exponent > LIBSPDM_MAX_CT_EXPONENT) {
+        status = LIBSPDM_STATUS_INVALID_MSG_FIELD;
+        goto receive_done;
+    }
+
     /* -=[Process Response Phase]=- */
     status = libspdm_append_message_a(spdm_context, spdm_request, spdm_request_size);
     if (LIBSPDM_STATUS_IS_ERROR(status)) {
