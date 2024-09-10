@@ -325,9 +325,12 @@ knvlinkCoreUpdateDeviceUUID_IMPL
 
         status = nvlink_lib_update_uuid_and_device_name(&devInfo, pGidString, pKernelNvlink->deviceName);
 
-        // Freeing pGidString here as it is malloc'd as part of gpuGetGidInfo_IMPL
-        if (pGidString != NULL)
-            portMemFree(pGidString);
+        //
+        // pGidString is malloc'd as part of gpuGetGidInfo_IMPL
+        // Store pGidString within pKernelNvlink so we can free it during
+        // knvlinkStatePostUnload to maintain alloc/free symmetry
+        //
+        pKernelNvlink->pGidString = pGidString;
     }
 
 #endif

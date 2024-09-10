@@ -318,6 +318,7 @@ struct KernelNvlink {
     NvU32 PRIVATE_FIELD(deviceLockRefcount);
     char *PRIVATE_FIELD(driverName);
     char *PRIVATE_FIELD(deviceName);
+    NvU8 *PRIVATE_FIELD(pGidString);
     NvBool PRIVATE_FIELD(bVerifTrainingEnable);
     NvBool PRIVATE_FIELD(bL2Entry);
     NvBool PRIVATE_FIELD(bSkipLinkTraining);
@@ -434,6 +435,7 @@ struct KernelNvlink_PRIVATE {
     NvU32 deviceLockRefcount;
     char *driverName;
     char *deviceName;
+    NvU8 *pGidString;
     NvBool bVerifTrainingEnable;
     NvBool bL2Entry;
     NvBool bSkipLinkTraining;

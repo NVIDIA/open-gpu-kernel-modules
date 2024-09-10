@@ -1032,6 +1032,18 @@ _knvlinkPurgeState
         }
     }
 
+    //
+    // pGidString is allocated within knvlinkStatePostLoad -> knvlinkCoreUpdateDeviceUUID
+    // so need to free it during destruct
+    // Freeing it within knvlinkCoreRemoveDevice could create problems if
+    // AddDevice/RemoveDevice are used outside StateLoad/StatePostUnload/StateDestroy in the future
+    //
+    if (pKernelNvlink->pGidString)
+    {
+        portMemFree(pKernelNvlink->pGidString);
+        pKernelNvlink->pGidString = NULL;
+    }
+
 _knvlinkPurgeState_end:
 
 #endif
