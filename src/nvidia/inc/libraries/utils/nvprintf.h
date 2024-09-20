@@ -351,7 +351,7 @@ void NVRM_PRINTF_FUNCTION(const char *file,
 // In MODS builds, we allow all printfs, but don't automatically include the
 // __FILE__ or __FUNCTION__ references.
 //
-#if NV_PRINTF_STRINGS_ALLOWED && (!defined(NV_MODS) || defined(SIM_BUILD) || defined(DEBUG) || defined(NV_MODS_INTERNAL))
+#if NV_PRINTF_STRINGS_ALLOWED && (!defined(NV_MODS) || defined(SIM_BUILD) || defined(DEBUG) || defined(DEVELOP) || defined(NV_MODS_INTERNAL))
 #define NV_FILE_STR      __FILE__
 #define NV_FILE          __FILE__
 #define NV_FILE_FMT      "%s"

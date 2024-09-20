@@ -2274,7 +2274,7 @@ NV_STATUS uvm_va_block_populate_page_cpu(uvm_va_block_t *va_block,
 // returns NV_ERR_MORE_PROCESSING_REQUIRED and this makes it clear that the
 // block's state is not locked across these calls.
 #define UVM_VA_BLOCK_LOCK_RETRY(va_block, block_retry, call) ({     \
-    NV_STATUS status;                                               \
+    NV_STATUS __status;                                             \
     uvm_va_block_t *__block = (va_block);                           \
     uvm_va_block_retry_t *__retry = (block_retry);                  \
                                                                     \
@@ -2283,14 +2283,14 @@ NV_STATUS uvm_va_block_populate_page_cpu(uvm_va_block_t *va_block,
     uvm_mutex_lock(&__block->lock);                                 \
                                                                     \
     do {                                                            \
-        status = (call);                                            \
-    } while (status == NV_ERR_MORE_PROCESSING_REQUIRED);            \
+        __status = (call);                                          \
+    } while (__status == NV_ERR_MORE_PROCESSING_REQUIRED);          \
                                                                     \
     uvm_mutex_unlock(&__block->lock);                               \
                                                                     \
     uvm_va_block_retry_deinit(__retry, __block);                    \
                                                                     \
-    status;                                                         \
+    __status;                                                       \
 })
 
 // A helper macro for handling allocation-retry
@@ -2305,7 +2305,7 @@ NV_STATUS uvm_va_block_populate_page_cpu(uvm_va_block_t *va_block,
 // to be already taken. Notably the block's lock might be unlocked and relocked
 // as part of the call.
 #define UVM_VA_BLOCK_RETRY_LOCKED(va_block, block_retry, call) ({   \
-    NV_STATUS status;                                               \
+    NV_STATUS __status;                                             \
     uvm_va_block_t *__block = (va_block);                           \
     uvm_va_block_retry_t *__retry = (block_retry);                  \
                                                                     \
@@ -2314,12 +2314,12 @@ NV_STATUS uvm_va_block_populate_page_cpu(uvm_va_block_t *va_block,
     uvm_assert_mutex_locked(&__block->lock);                        \
                                                                     \
     do {                                                            \
-        status = (call);                                            \
-    } while (status == NV_ERR_MORE_PROCESSING_REQUIRED);            \
+        __status = (call);                                          \
+    } while (__status == NV_ERR_MORE_PROCESSING_REQUIRED);          \
                                                                     \
     uvm_va_block_retry_deinit(__retry, __block);                    \
                                                                     \
-    status;                                                         \
+    __status;                                                       \
 })
 
 #endif // __UVM_VA_BLOCK_H__

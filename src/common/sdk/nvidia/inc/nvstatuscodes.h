@@ -152,6 +152,8 @@ NV_STATUS_CODE(NV_ERR_FABRIC_MANAGER_NOT_PRESENT,      0x0000007A, "Fabric Manag
 NV_STATUS_CODE(NV_ERR_ALREADY_SIGNALLED,               0x0000007B, "Semaphore Surface value already >= requested wait value")
 NV_STATUS_CODE(NV_ERR_QUEUE_TASK_SLOT_NOT_AVAILABLE,   0x0000007C, "PMU RPC error due to no queue slot available for this event")
 NV_STATUS_CODE(NV_ERR_KEY_ROTATION_IN_PROGRESS,        0x0000007D, "Operation not allowed as key rotation is in progress")
+NV_STATUS_CODE(NV_ERR_NVSWITCH_FABRIC_NOT_READY,       0x00000081, "Nvswitch Fabric Status or Fabric Probe is not yet complete, caller needs to retry")
+NV_STATUS_CODE(NV_ERR_NVSWITCH_FABRIC_FAILURE,         0x00000082, "Nvswitch Fabric Probe failed")
 
 // Warnings:
 NV_STATUS_CODE(NV_WARN_HOT_SWITCH,                     0x00010001, "WARNING Hot switch")

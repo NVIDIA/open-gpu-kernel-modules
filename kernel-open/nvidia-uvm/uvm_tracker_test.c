@@ -149,7 +149,7 @@ done:
 static NV_STATUS test_tracker_basic(uvm_va_space_t *va_space)
 {
     uvm_gpu_t *gpu;
-    uvm_channel_t *channel;
+    uvm_channel_t *any_channel;
     uvm_tracker_t tracker;
     uvm_tracker_entry_t entry;
     NvU32 count = 0;
@@ -159,15 +159,15 @@ static NV_STATUS test_tracker_basic(uvm_va_space_t *va_space)
     if (gpu == NULL)
         return NV_ERR_INVALID_STATE;
 
-    channel = uvm_channel_any(gpu->channel_manager);
-    if (channel == NULL)
+    any_channel = uvm_channel_any(gpu->channel_manager);
+    if (any_channel == NULL)
         return NV_ERR_INVALID_STATE;
 
     uvm_tracker_init(&tracker);
     TEST_CHECK_GOTO(assert_tracker_is_completed(&tracker) == NV_OK, done);
 
     // Some channel
-    entry.channel = channel;
+    entry.channel = any_channel;
     entry.value = 1;
 
     status = uvm_tracker_add_entry(&tracker, &entry);
@@ -258,7 +258,7 @@ done:
 static NV_STATUS test_tracker_overwrite(uvm_va_space_t *va_space)
 {
     uvm_gpu_t *gpu;
-    uvm_channel_t *channel;
+    uvm_channel_t *any_channel;
     uvm_tracker_t tracker, dup_tracker;
     uvm_tracker_entry_t entry;
     uvm_tracker_entry_t *entry_iter, *dup_entry_iter;
@@ -270,15 +270,15 @@ static NV_STATUS test_tracker_overwrite(uvm_va_space_t *va_space)
     if (gpu == NULL)
         return NV_ERR_INVALID_STATE;
 
-    channel = uvm_channel_any(gpu->channel_manager);
-    if (channel == NULL)
+    any_channel = uvm_channel_any(gpu->channel_manager);
+    if (any_channel == NULL)
         return NV_ERR_INVALID_STATE;
 
     uvm_tracker_init(&tracker);
     TEST_CHECK_GOTO(assert_tracker_is_completed(&tracker) == NV_OK, done);
 
     // Some channel
-    entry.channel = channel;
+    entry.channel = any_channel;
     entry.value = 1;
 
     status = uvm_tracker_add_entry(&tracker, &entry);
@@ -351,7 +351,7 @@ done:
 static NV_STATUS test_tracker_add_tracker(uvm_va_space_t *va_space)
 {
     uvm_gpu_t *gpu;
-    uvm_channel_t *channel;
+    uvm_channel_t *any_channel;
     uvm_tracker_t tracker, dup_tracker;
     uvm_tracker_entry_t entry;
     uvm_tracker_entry_t *entry_iter, *dup_entry_iter;
@@ -362,8 +362,8 @@ static NV_STATUS test_tracker_add_tracker(uvm_va_space_t *va_space)
     if (gpu == NULL)
         return NV_ERR_INVALID_STATE;
 
-    channel = uvm_channel_any(gpu->channel_manager);
-    if (channel == NULL)
+    any_channel = uvm_channel_any(gpu->channel_manager);
+    if (any_channel == NULL)
         return NV_ERR_INVALID_STATE;
 
     uvm_tracker_init(&tracker);
@@ -371,7 +371,7 @@ static NV_STATUS test_tracker_add_tracker(uvm_va_space_t *va_space)
     TEST_CHECK_GOTO(assert_tracker_is_completed(&tracker) == NV_OK, done);
 
     // Some channel
-    entry.channel = channel;
+    entry.channel = any_channel;
     entry.value = 1;
 
     status = uvm_tracker_add_entry(&tracker, &entry);

@@ -59,14 +59,20 @@ typedef struct nv_timer nv_drm_timer;
 #endif
 
 #if defined(NV_DRM_FBDEV_GENERIC_SETUP_PRESENT) && defined(NV_DRM_APERTURE_REMOVE_CONFLICTING_PCI_FRAMEBUFFERS_PRESENT)
+#define NV_DRM_FBDEV_AVAILABLE
 #define NV_DRM_FBDEV_GENERIC_AVAILABLE
+#endif
+
+#if defined(NV_DRM_FBDEV_TTM_SETUP_PRESENT) && defined(NV_DRM_APERTURE_REMOVE_CONFLICTING_PCI_FRAMEBUFFERS_PRESENT)
+#define NV_DRM_FBDEV_AVAILABLE
+#define NV_DRM_FBDEV_TTM_AVAILABLE
 #endif
 
 struct page;
 
 /* Set to true when the atomic modeset feature is enabled. */
 extern bool nv_drm_modeset_module_param;
-#if defined(NV_DRM_FBDEV_GENERIC_AVAILABLE)
+#if defined(NV_DRM_FBDEV_AVAILABLE)
 /* Set to true when the nvidia-drm driver should install a framebuffer device */
 extern bool nv_drm_fbdev_module_param;
 #endif

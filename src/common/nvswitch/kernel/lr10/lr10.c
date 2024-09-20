@@ -8204,6 +8204,26 @@ nvswitch_tnvl_disable_interrupts_lr10
     return;
 }
 
+void
+nvswitch_reg_write_32_lr10
+(
+    nvswitch_device *device,
+    NvU32 offset,
+    NvU32 data
+)
+{
+    if (device->nvlink_device->pciInfo.bars[0].pBar == NULL)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: register write failed at offset 0x%x\n",
+            __FUNCTION__, offset);
+        return;
+    }
+
+    // Write the register
+    nvswitch_os_mem_write32((NvU8 *)device->nvlink_device->pciInfo.bars[0].pBar + offset, data);
+}
+
 //
 // This function auto creates the lr10 HAL connectivity from the NVSWITCH_INIT_HAL
 // macro in haldef_nvswitch.h

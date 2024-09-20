@@ -4409,11 +4409,11 @@ nvswitch_eng_wr_ls10
 
     if (nvswitch_is_tnvl_mode_enabled(device))
     {
-        nvswitch_tnvl_reg_wr_32_ls10(device, eng_id, eng_bcast, eng_instance, base_addr, offset,  data);
+        nvswitch_tnvl_eng_wr_32_ls10(device, eng_id, eng_bcast, eng_instance, base_addr, offset, data);
     }
     else
     {
-        nvswitch_reg_write_32(device, base_addr + offset,  data);
+        nvswitch_reg_write_32(device, base_addr + offset, data);
     }
 
 #if defined(DEVELOP) || defined(DEBUG) || defined(NV_MODS)
@@ -4429,6 +4429,33 @@ nvswitch_eng_wr_ls10
             data);
     }
 #endif  //defined(DEVELOP) || defined(DEBUG) || defined(NV_MODS)
+}
+
+void
+nvswitch_reg_write_32_ls10
+(
+    nvswitch_device *device,
+    NvU32 offset,
+    NvU32 data
+)
+{
+    if (device->nvlink_device->pciInfo.bars[0].pBar == NULL)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: register write failed at offset 0x%x\n",
+            __FUNCTION__, offset);
+        return;
+    }
+
+    if (nvswitch_is_tnvl_mode_enabled(device))
+    {
+        nvswitch_tnvl_reg_wr_32_ls10(device, offset, data);
+    }
+    else
+    {
+        // Write the register
+        nvswitch_os_mem_write32((NvU8 *)device->nvlink_device->pciInfo.bars[0].pBar + offset, data);
+    }
 }
 
 NvU32

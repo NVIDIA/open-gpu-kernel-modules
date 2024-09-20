@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -82,6 +82,7 @@ typedef struct
 #define NVPCF_CONTROLLER_STATIC_TABLE_VERSION_21                          (0x21)
 #define NVPCF_CONTROLLER_STATIC_TABLE_VERSION_22                          (0x22)
 #define NVPCF_CONTROLLER_STATIC_TABLE_VERSION_23                          (0x23)
+#define NVPCF_CONTROLLER_STATIC_TABLE_VERSION_24                          (0x24)
 
 // format for 2.0 and 2.1
 #define NVPCF_CONTROLLER_STATIC_TABLE_HEADER_V20_SIZE_05                 (0x05U)

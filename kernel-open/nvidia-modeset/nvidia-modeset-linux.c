@@ -1070,7 +1070,7 @@ static void nvkms_kapi_event_kthread_q_callback(void *arg)
     nvKmsKapiHandleEventQueueChange(device);
 }
 
-struct nvkms_per_open *nvkms_open_common(enum NvKmsClientType type,
+static struct nvkms_per_open *nvkms_open_common(enum NvKmsClientType type,
                                          struct NvKmsKapiDevice *device,
                                          int *status)
 {
@@ -1122,7 +1122,7 @@ failed:
     return NULL;
 }
 
-void nvkms_close_pm_locked(struct nvkms_per_open *popen)
+static void nvkms_close_pm_locked(struct nvkms_per_open *popen)
 {
     /*
      * Don't use down_interruptible(): we need to free resources
@@ -1185,7 +1185,7 @@ static void nvkms_close_popen(struct nvkms_per_open *popen)
     }
 }
 
-int nvkms_ioctl_common
+static int nvkms_ioctl_common
 (
     struct nvkms_per_open *popen,
     NvU32 cmd, NvU64 address, const size_t size

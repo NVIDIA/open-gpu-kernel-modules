@@ -136,6 +136,8 @@
 
 #include <kernel/gpu/conf_compute/ccsl.h>
 
+#include "gpu/gpu_fabric_probe.h"
+
 #define NV_GPU_OPS_NUM_GPFIFO_ENTRIES_DEFAULT 1024
 #define NV_GPU_SMALL_PAGESIZE (4 * 1024)
 
@@ -5930,8 +5932,6 @@ void nvGpuOpsMemoryFree(struct gpuAddressSpace *vaSpace, NvU64 pointer)
     portMemFree(memDesc);
 }
 
-
-
 NV_STATUS nvGpuOpsQueryCesCaps(struct gpuDevice *device,
                                gpuCesCaps *cesCaps)
 {
@@ -5959,6 +5959,99 @@ NV_STATUS nvGpuOpsQueryCesCaps(struct gpuDevice *device,
     _nvGpuOpsLocksRelease(&acquiredLocks);
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
     return status;
+}
+
+static NV_STATUS _convertSystemFabricStateToErrorCode
+(
+    NV0000_CTRL_SYSTEM_GET_FABRIC_STATUS_PARAMS fabricParams
+)
+{
+    switch (fabricParams.fabricStatus)
+    {
+        case NV0000_CTRL_GET_SYSTEM_FABRIC_STATUS_SKIP:
+        case NV0000_CTRL_GET_SYSTEM_FABRIC_STATUS_INITIALIZED:
+            return NV_OK;
+
+        case NV0000_CTRL_GET_SYSTEM_FABRIC_STATUS_IN_PROGRESS:
+        case NV0000_CTRL_GET_SYSTEM_FABRIC_STATUS_UNINITIALIZED:
+            return NV_ERR_NVSWITCH_FABRIC_NOT_READY;
+
+        default:
+            NV_PRINTF(LEVEL_ERROR, "Invalid Fabric State\n");
+            return NV_ERR_INVALID_STATE;
+    }
+}
+
+static NV_STATUS _convertGpuFabricProbeStateToErrorCode
+(
+    NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS fabricProbeParams
+)
+{
+    switch (fabricProbeParams.state)
+    {
+        case NV2080_CTRL_GPU_FABRIC_PROBE_STATE_UNSUPPORTED:
+            return NV_OK;
+
+        case NV2080_CTRL_GPU_FABRIC_PROBE_STATE_IN_PROGRESS:
+        case NV2080_CTRL_GPU_FABRIC_PROBE_STATE_NOT_STARTED:
+            return NV_ERR_NVSWITCH_FABRIC_NOT_READY;
+
+        case NV2080_CTRL_GPU_FABRIC_PROBE_STATE_COMPLETE:
+        {
+            //
+            // When state is NV2080_CTRL_GPU_FABRIC_PROBE_STATE_COMPLETE
+            // status has to be checked for probe response success/failure.
+            //
+            if (fabricProbeParams.status != NV_OK)
+                return NV_ERR_NVSWITCH_FABRIC_FAILURE;
+            else
+                return NV_OK;
+        }
+
+        default:
+            NV_PRINTF(LEVEL_ERROR, "Invalid Fabric Probe State\n");
+            return NV_ERR_INVALID_STATE;
+    }
+}
+
+static NV_STATUS _gpuGetFabricStatus
+(
+    struct gpuDevice *pDevice,
+    RM_API *pRmApi
+)
+{
+    // When MIG is enabled, P2P is not supported, hence return early
+    if (pDevice->info.smcEnabled)
+    {
+        return NV_OK;
+    }
+
+    if (isDeviceHopperPlus(pDevice))
+    {
+        NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS fabricProbeParams = {0};
+
+        NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                                               pDevice->session->handle,
+                                               pDevice->subhandle,
+                                               NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO,
+                                               &fabricProbeParams,
+                                               sizeof(fabricProbeParams)));
+
+        return _convertGpuFabricProbeStateToErrorCode(fabricProbeParams);
+    }
+    else
+    {
+        NV0000_CTRL_SYSTEM_GET_FABRIC_STATUS_PARAMS fabricParams = {0};
+
+        NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                                               pDevice->session->handle,
+                                               pDevice->session->handle,
+                                               NV0000_CTRL_CMD_SYSTEM_GET_FABRIC_STATUS,
+                                               &fabricParams,
+                                               sizeof(fabricParams)));
+
+        return _convertSystemFabricStateToErrorCode(fabricParams);
+    }
 }
 
 NV_STATUS nvGpuOpsQueryCaps(struct gpuDevice *device, gpuCaps *caps)
@@ -5993,6 +6086,8 @@ NV_STATUS nvGpuOpsQueryCaps(struct gpuDevice *device, gpuCaps *caps)
         caps->numaEnabled = NV_TRUE;
         caps->numaNodeId = infoParams.numaId;
     }
+
+    status = _gpuGetFabricStatus(device, pRmApi);
 
 cleanup:
     _nvGpuOpsLocksRelease(&acquiredLocks);
@@ -6225,28 +6320,18 @@ nvGpuOpsQueryGpuConfidentialComputeCaps(NvHandle hClient,
 {
     NV_CONFIDENTIAL_COMPUTE_ALLOC_PARAMS confComputeAllocParams = {0};
     NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_GET_CAPABILITIES_PARAMS confComputeParams = {0};
-    NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE_PARAMS keyRotationParams = {0};
     RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
     NvHandle hConfCompute = 0;
     NV_STATUS status = NV_OK;
 
     confComputeAllocParams.hClient = hClient;
-    status = pRmApi->Alloc(pRmApi,
-                           hClient,
-                           hClient,
-                           &hConfCompute,
-                           NV_CONFIDENTIAL_COMPUTE,
-                           &confComputeAllocParams,
-                           sizeof(confComputeAllocParams));
-    if (status == NV_ERR_INVALID_CLASS)
-    {
-        pGpuConfComputeCaps->mode = UVM_GPU_CONF_COMPUTE_MODE_NONE;
-        return NV_OK;
-    }
-    else
-    {
-        NV_ASSERT_OK_OR_RETURN(status);
-    }
+    NV_ASSERT_OK_OR_RETURN(pRmApi->Alloc(pRmApi,
+                                         hClient,
+                                         hClient,
+                                         &hConfCompute,
+                                         NV_CONFIDENTIAL_COMPUTE,
+                                         &confComputeAllocParams,
+                                         sizeof(confComputeAllocParams)));
 
     NV_ASSERT_OK_OR_GOTO(status,
         pRmApi->Control(pRmApi,
@@ -6259,27 +6344,45 @@ nvGpuOpsQueryGpuConfidentialComputeCaps(NvHandle hClient,
 
     if (confComputeParams.ccFeature == NV_CONF_COMPUTE_SYSTEM_FEATURE_APM_ENABLED)
     {
-        pGpuConfComputeCaps->mode = UVM_GPU_CONF_COMPUTE_MODE_APM;
+        NV_ASSERT_OK_OR_GOTO(status, NV_ERR_NOT_SUPPORTED, cleanup);
     }
-    else if (confComputeParams.ccFeature == NV_CONF_COMPUTE_SYSTEM_FEATURE_HCC_ENABLED)
+    //
+    // Although protected pcie uses the same HW features as HCC, we don't advertise
+    // PPCIe as a multi-gpu extension of HCC. This is because PPCIe does not meet
+    // the security bar of a full blown HCC solution. For PPCIe, we have traded off
+    // security for higher performance. Hence, RM does not report both HCC and PPCIe
+    // ON at the same time. Internally however we use the same code paths for HCC and
+    // PPCIe.
+    //
+    else if (confComputeParams.ccFeature == NV_CONF_COMPUTE_SYSTEM_FEATURE_HCC_ENABLED ||
+             confComputeParams.multiGpuMode == NV_CONF_COMPUTE_SYSTEM_MULTI_GPU_MODE_PROTECTED_PCIE)
     {
         pGpuConfComputeCaps->mode = UVM_GPU_CONF_COMPUTE_MODE_HCC;
     }
-
-    keyRotationParams.hSubDevice = hSubdevice;
-    NV_ASSERT_OK_OR_GOTO(status,
-        pRmApi->Control(pRmApi,
-                        hClient,
-                        hConfCompute,
-                        NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE,
-                        &keyRotationParams,
-                        sizeof(keyRotationParams)),
-        cleanup);
-
-    if ((keyRotationParams.keyRotationState == NV_CONF_COMPUTE_CTRL_CMD_GPU_KEY_ROTATION_KERN_ENABLED) ||
-        (keyRotationParams.keyRotationState == NV_CONF_COMPUTE_CTRL_CMD_GPU_KEY_ROTATION_BOTH_ENABLED))
+    else
     {
-        pGpuConfComputeCaps->bKeyRotationEnabled = NV_TRUE;
+        pGpuConfComputeCaps->mode = UVM_GPU_CONF_COMPUTE_MODE_NONE;
+    }
+
+    if (pGpuConfComputeCaps->mode != UVM_GPU_CONF_COMPUTE_MODE_NONE)
+    {
+        NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE_PARAMS keyRotationParams = {0};
+
+        keyRotationParams.hSubDevice = hSubdevice;
+        NV_ASSERT_OK_OR_GOTO(status,
+            pRmApi->Control(pRmApi,
+                            hClient,
+                            hConfCompute,
+                            NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE,
+                            &keyRotationParams,
+                            sizeof(keyRotationParams)),
+            cleanup);
+
+        if ((keyRotationParams.keyRotationState == NV_CONF_COMPUTE_CTRL_CMD_GPU_KEY_ROTATION_KERN_ENABLED) ||
+            (keyRotationParams.keyRotationState == NV_CONF_COMPUTE_CTRL_CMD_GPU_KEY_ROTATION_BOTH_ENABLED))
+        {
+            pGpuConfComputeCaps->bKeyRotationEnabled = NV_TRUE;
+        }
     }
 cleanup:
     pRmApi->Free(pRmApi, hClient, hConfCompute);

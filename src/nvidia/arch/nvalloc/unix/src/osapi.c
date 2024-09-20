@@ -481,6 +481,11 @@ static NV_STATUS allocate_os_event(
         status = NV_ERR_NO_MEMORY;
         goto done;
     }
+    new_event->hParent  = hParent;
+    new_event->nvfp     = nvfp;
+    new_event->fd       = fd;
+    new_event->active   = NV_TRUE;
+    new_event->refcount = 0;
 
     portSyncSpinlockAcquire(nv->event_spinlock);
     for (event = nv->event_list; event; event = event->next)
@@ -501,12 +506,6 @@ static NV_STATUS allocate_os_event(
 done:
     if (status == NV_OK)
     {
-        new_event->hParent  = hParent;
-        new_event->nvfp     = nvfp;
-        new_event->fd       = fd;
-        new_event->active   = NV_TRUE;
-        new_event->refcount = 0;
-
         nvfp->bCleanupRmapi = NV_TRUE;
 
         NV_PRINTF(LEVEL_INFO, "allocated OS event:\n");

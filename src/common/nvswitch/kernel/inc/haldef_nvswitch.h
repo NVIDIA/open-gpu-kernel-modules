@@ -213,6 +213,7 @@
     _op(NvU32,     nvswitch_get_eng_count,  (nvswitch_device *device, NVSWITCH_ENGINE_ID eng_id, NvU32 eng_bcast), _arch)  \
     _op(NvU32,     nvswitch_eng_rd,         (nvswitch_device *device, NVSWITCH_ENGINE_ID eng_id, NvU32 eng_bcast, NvU32 eng_instance, NvU32 offset), _arch)  \
     _op(void,      nvswitch_eng_wr,         (nvswitch_device *device, NVSWITCH_ENGINE_ID eng_id, NvU32 eng_bcast, NvU32 eng_instance, NvU32 offset, NvU32 data), _arch)  \
+    _op(void,      nvswitch_reg_write_32,      (nvswitch_device *device, NvU32 offset, NvU32 data), _arch) \
     _op(NvU32,     nvswitch_get_link_eng_inst,  (nvswitch_device *device, NvU32 link_id, NVSWITCH_ENGINE_ID eng_id), _arch)  \
     _op(void *,    nvswitch_alloc_chipdevice,   (nvswitch_device *device), _arch)  \
     _op(NvlStatus, nvswitch_init_thermal,       (nvswitch_device *device), _arch)  \

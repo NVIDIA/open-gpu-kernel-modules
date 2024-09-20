@@ -27,7 +27,6 @@
 #include "core/core.h"
 #include "core/locks.h"
 #include "os/os.h"
-#include "virtualization/kernel_hostvgpudeviceapi.h"
 #include "dev_ctrl_defines.h"
 #include "mem_mgr/mem.h"
 #include "kernel/gpu/bif/kernel_bif.h"
@@ -87,6 +86,7 @@ kernelhostvgpudeviceapiConstruct_IMPL
     RsShared *pShared;
     Device *pDevice;
     RsClient *pClient = NULL;
+    NvBool bPreserveLogBufferFull = NV_FALSE;
 
     // Forbid allocation of this class on Guest-RM
     // to avoid fuzzing this class in such cases. See bug 3529160.
@@ -247,7 +247,8 @@ kernelhostvgpudeviceapiConstruct_IMPL
                                                                  pBootloadParams->initTaskLogBuffOffset,
                                                                  pBootloadParams->initTaskLogBuffSize,
                                                                  pBootloadParams->vgpuTaskLogBuffOffset,
-                                                                 pBootloadParams->vgpuTaskLogBuffSize),
+                                                                 pBootloadParams->vgpuTaskLogBuffSize,
+                                                                 &bPreserveLogBufferFull),
                                 done);
         }
 
@@ -274,8 +275,11 @@ kernelhostvgpudeviceapiConstruct_IMPL
                                  NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK,
                                  pBootloadParams, sizeof(*pBootloadParams));
 
-        // Preserve any captured vGPU Partition logs
-        NV_ASSERT_OK(kgspPreserveVgpuPartitionLogging(pGpu, pKernelGsp, pAllocParams->gfid));
+        if (!bPreserveLogBufferFull)
+        {
+            // Preserve any captured vGPU Partition logs
+            NV_ASSERT_OK(kgspPreserveVgpuPartitionLogging(pGpu, pKernelGsp, pAllocParams->gfid));
+        }
 
         if (status != NV_OK)
         {

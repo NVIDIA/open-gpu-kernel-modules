@@ -172,8 +172,7 @@ confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
     portMemSet(pConfCompute->aggregateStats, 0, sizeof(pConfCompute->aggregateStats));
     portMemSet(pConfCompute->freedChannelAggregateStats, 0, sizeof(pConfCompute->freedChannelAggregateStats));
     pConfCompute->keyRotationEnableMask = 0;
-    NV_ASSERT_OK_OR_RETURN(confComputeEnableKeyRotationSupport_HAL(pGpu, pConfCompute));
-    NV_ASSERT_OK_OR_RETURN(confComputeEnableInternalKeyRotationSupport_HAL(pGpu, pConfCompute));
+    pConfCompute->keyRotationInternalThreshold = 0;
 
     return NV_OK;
 }

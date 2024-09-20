@@ -158,6 +158,12 @@ static NvU32 uvm_channel_update_progress_with_max(uvm_channel_t *channel,
 
     NvU64 completed_value = uvm_channel_update_completed_value(channel);
 
+    // LCIC channels don't use gpfifo entries after the static schedule is up.
+    // They can only have one entry active at a time so use the state of the
+    // tracking semaphore to represent progress.
+    if (uvm_channel_is_lcic(channel) && uvm_channel_manager_is_wlc_ready(channel->pool->manager))
+        return uvm_gpu_tracking_semaphore_is_completed(&channel->tracking_sem) ? 0 : 1;
+
     channel_pool_lock(channel->pool);
 
     // Completed value should never exceed the queued value
@@ -397,18 +403,15 @@ static NV_STATUS channel_pool_rotate_key_locked(uvm_channel_pool_t *pool)
     uvm_assert_mutex_locked(&pool->conf_computing.key_rotation.mutex);
 
     uvm_for_each_channel_in_pool(channel, pool) {
-        NV_STATUS status = uvm_channel_wait(channel);
+        // WLC channels share CE with LCIC pushes and LCIC waits for
+        // WLC work to complete using WFI, so it's enough to wait
+        // for the latter one.
+        uvm_channel_t *wait_channel = uvm_channel_is_wlc(channel) ? uvm_channel_wlc_get_paired_lcic(channel) : channel;
+
+        NV_STATUS status = uvm_channel_wait(wait_channel);
         if (status != NV_OK)
             return status;
 
-        if (uvm_channel_pool_is_wlc(pool)) {
-            uvm_spin_loop_t spin;
-            uvm_channel_t *lcic_channel = uvm_channel_wlc_get_paired_lcic(channel);
-
-            // LCIC pushes don't exist as such. Rely on the tracking semaphore
-            // to determine completion, instead of uvm_channel_wait
-            UVM_SPIN_WHILE(!uvm_gpu_tracking_semaphore_is_completed(&lcic_channel->tracking_sem), &spin);
-        }
     }
 
     return uvm_conf_computing_rotate_pool_key(pool);
@@ -1051,13 +1054,21 @@ static void internal_channel_submit_work_wlc(uvm_push_t *push)
     UvmCslIv *iv_cpu_addr = lcic_semaphore->conf_computing.ivs;
     uvm_gpu_semaphore_notifier_t *last_pushed_notifier;
     NvU32 iv_index;
-    uvm_spin_loop_t spin;
+    NV_STATUS status;
     void* auth_tag_cpu = get_channel_unprotected_sysmem_cpu(wlc_channel) + WLC_SYSMEM_PUSHBUFFER_AUTH_TAG_OFFSET;
 
 
     // Wait for the WLC/LCIC to be primed. This means that PUT == GET + 2
     // and a WLC doorbell ring is enough to start work.
-    UVM_SPIN_WHILE(!uvm_gpu_tracking_semaphore_is_completed(&lcic_channel->tracking_sem), &spin);
+    status = uvm_channel_wait(lcic_channel);
+    if (status != NV_OK) {
+        UVM_ASSERT(uvm_global_get_status() != NV_OK);
+
+        // If there's a global fatal error we can't communicate with the GPU
+        // and the below launch sequence doesn't work.
+        UVM_ERR_PRINT_NV_STATUS("Failed to wait for LCIC channel (%s) completion.", status, lcic_channel->name);
+        return;
+    }
 
     // Executing WLC adds an extra job to LCIC
     ++lcic_channel->tracking_sem.queued_value;
@@ -1852,14 +1863,14 @@ static uvm_gpfifo_entry_t *uvm_channel_get_first_pending_entry(uvm_channel_t *ch
 NV_STATUS uvm_channel_get_status(uvm_channel_t *channel)
 {
     uvm_gpu_t *gpu;
-    NvNotification *errorNotifier;
+    NvNotification *error_notifier;
 
     if (uvm_channel_is_proxy(channel))
-        errorNotifier = channel->proxy.channel_info.shadowErrorNotifier;
+        error_notifier = channel->proxy.channel_info.shadowErrorNotifier;
     else
-        errorNotifier = channel->channel_info.errorNotifier;
+        error_notifier = channel->channel_info.errorNotifier;
 
-    if (errorNotifier->status == 0)
+    if (error_notifier->status == 0)
         return NV_OK;
 
     // In case we hit a channel error, check the ECC error notifier as well so
@@ -2986,16 +2997,18 @@ out:
 
 // Return the pool corresponding to the given CE index
 //
-// This function cannot be used to access the proxy pool in SR-IOV heavy.
+// Used to retrieve pools of type UVM_CHANNEL_POOL_TYPE_CE only.
 static uvm_channel_pool_t *channel_manager_ce_pool(uvm_channel_manager_t *manager, NvU32 ce)
 {
-    uvm_channel_pool_t *pool;
+    uvm_channel_pool_t *pool = uvm_channel_pool_first(manager, UVM_CHANNEL_POOL_TYPE_CE);
 
+    UVM_ASSERT(pool != NULL);
     UVM_ASSERT(test_bit(ce, manager->ce_mask));
 
-    // The index of the pool associated with 'ce' is the number of usable CEs
-    // in [0, ce)
-    pool = manager->channel_pools + bitmap_weight(manager->ce_mask, ce);
+    // Pools of type UVM_CHANNEL_POOL_TYPE_CE are stored contiguously. The
+    // offset of the pool associated with 'ce' is the number of usable CEs in
+    // [0, ce).
+    pool += bitmap_weight(manager->ce_mask, ce);
 
     UVM_ASSERT(pool->pool_type == UVM_CHANNEL_POOL_TYPE_CE);
     UVM_ASSERT(pool->engine_index == ce);
@@ -3009,6 +3022,8 @@ void uvm_channel_manager_set_p2p_ce(uvm_channel_manager_t *manager, uvm_gpu_t *p
 
     UVM_ASSERT(manager->gpu != peer);
     UVM_ASSERT(optimal_ce < UVM_COPY_ENGINE_COUNT_MAX);
+    UVM_ASSERT(manager->gpu->parent->peer_copy_mode != UVM_GPU_PEER_COPY_MODE_UNSUPPORTED);
+    UVM_ASSERT(peer->parent->peer_copy_mode != UVM_GPU_PEER_COPY_MODE_UNSUPPORTED);
 
     manager->pool_to_use.gpu_to_gpu[peer_gpu_index] = channel_manager_ce_pool(manager, optimal_ce);
 }
@@ -3213,6 +3228,7 @@ static unsigned channel_manager_get_max_pools(uvm_channel_manager_t *manager)
 static NV_STATUS channel_manager_create_ce_pools(uvm_channel_manager_t *manager, unsigned *preferred_ce)
 {
     unsigned ce;
+    unsigned type;
 
     // A pool is created for each usable CE, even if it has not been selected as
     // the preferred CE for any type, because as more information is discovered
@@ -3222,18 +3238,20 @@ static NV_STATUS channel_manager_create_ce_pools(uvm_channel_manager_t *manager,
     // usable.
     for_each_set_bit(ce, manager->ce_mask, UVM_COPY_ENGINE_COUNT_MAX) {
         NV_STATUS status;
-        unsigned type;
         uvm_channel_pool_t *pool = NULL;
 
         status = channel_pool_add(manager, UVM_CHANNEL_POOL_TYPE_CE, ce, &pool);
         if (status != NV_OK)
             return status;
+    }
 
-        for (type = 0; type < UVM_CHANNEL_TYPE_CE_COUNT; type++) {
-            // Set pool type if it hasn't been set before.
-            if (preferred_ce[type] == ce && manager->pool_to_use.default_for_type[type] == NULL)
-                manager->pool_to_use.default_for_type[type] = pool;
-        }
+    for (type = 0; type < UVM_CHANNEL_TYPE_CE_COUNT; type++) {
+        // Avoid overwriting previously set defaults.
+        if (manager->pool_to_use.default_for_type[type] != NULL)
+            continue;
+
+        ce = preferred_ce[type];
+        manager->pool_to_use.default_for_type[type] = channel_manager_ce_pool(manager, ce);
     }
 
     return NV_OK;
@@ -3739,11 +3757,15 @@ static void channel_manager_stop_wlc(uvm_channel_manager_t *manager)
     NV_STATUS status;
 
     uvm_for_each_channel_in_pool(channel, lcic_pool) {
-        uvm_spin_loop_t spin;
-
         // Wait for the WLC/LCIC to be primed. This means that PUT == GET + 2
         // and a WLC doorbell ring is enough to start work.
-        UVM_SPIN_WHILE(!uvm_gpu_tracking_semaphore_is_completed(&channel->tracking_sem), &spin);
+        status = uvm_channel_wait(channel);
+        if (status != NV_OK)
+            UVM_ERR_PRINT_NV_STATUS("Failed to wait for LCIC channel (%s) completion", status, channel->name);
+
+        // Continue on error and attempt to stop WLC below. This can lead to
+        // channel destruction with mismatched GET and PUT pointers. RM will
+        // print errors if that's the case, but channel destruction succeeeds.
     }
 
     status = uvm_push_begin(manager, UVM_CHANNEL_TYPE_SEC2, &push, "Stop WLC channels");

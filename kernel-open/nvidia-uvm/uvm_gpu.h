@@ -962,6 +962,8 @@ struct uvm_parent_gpu_struct
     // Whether CE supports physical addressing mode for writes to vidmem
     bool ce_phys_vidmem_write_supported;
 
+    // Addressing mode(s) supported for CE transfers between this GPU and its
+    // peers: none, physical only, physical and virtual, etc.
     uvm_gpu_peer_copy_mode_t peer_copy_mode;
 
     // Virtualization mode of the GPU.

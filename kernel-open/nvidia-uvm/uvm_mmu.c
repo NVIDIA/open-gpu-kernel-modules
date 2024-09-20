@@ -50,18 +50,18 @@
 // because that type is normally associated with the LCE mapped to the most
 // PCEs. The higher bandwidth is beneficial when doing bulk operations such as
 // clearing PTEs, or initializing a page directory/table.
-#define page_tree_begin_acquire(tree, tracker, push, format, ...) ({                                                        \
-    NV_STATUS status;                                                                                                       \
-    uvm_channel_manager_t *manager = (tree)->gpu->channel_manager;                                                          \
-                                                                                                                            \
-    if (manager == NULL)                                                                                                    \
-        status = uvm_push_begin_fake((tree)->gpu, (push));                                                                  \
-    else if (uvm_parent_gpu_is_virt_mode_sriov_heavy((tree)->gpu->parent))                                                  \
-        status = uvm_push_begin_acquire(manager, UVM_CHANNEL_TYPE_MEMOPS, (tracker), (push), (format), ##__VA_ARGS__);      \
-    else                                                                                                                    \
-        status = uvm_push_begin_acquire(manager, UVM_CHANNEL_TYPE_GPU_INTERNAL, (tracker), (push), (format), ##__VA_ARGS__);\
-                                                                                                                            \
-    status;                                                                                                                 \
+#define page_tree_begin_acquire(tree, tracker, push, format, ...) ({                                                            \
+    NV_STATUS __status;                                                                                                         \
+    uvm_channel_manager_t *__manager = (tree)->gpu->channel_manager;                                                            \
+                                                                                                                                \
+    if (__manager == NULL)                                                                                                      \
+        __status = uvm_push_begin_fake((tree)->gpu, (push));                                                                    \
+    else if (uvm_parent_gpu_is_virt_mode_sriov_heavy((tree)->gpu->parent))                                                      \
+        __status = uvm_push_begin_acquire(__manager, UVM_CHANNEL_TYPE_MEMOPS, (tracker), (push), (format), ##__VA_ARGS__);      \
+    else                                                                                                                        \
+        __status = uvm_push_begin_acquire(__manager, UVM_CHANNEL_TYPE_GPU_INTERNAL, (tracker), (push), (format), ##__VA_ARGS__);\
+                                                                                                                                \
+    __status;                                                                                                                   \
 })
 
 // Default location of page table allocations

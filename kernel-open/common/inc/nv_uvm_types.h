@@ -595,10 +595,8 @@ typedef struct UvmGpuClientInfo_tag
 
 typedef enum
 {
-    UVM_GPU_CONF_COMPUTE_MODE_NONE,
-    UVM_GPU_CONF_COMPUTE_MODE_APM,
-    UVM_GPU_CONF_COMPUTE_MODE_HCC,
-    UVM_GPU_CONF_COMPUTE_MODE_COUNT
+    UVM_GPU_CONF_COMPUTE_MODE_NONE = 0,
+    UVM_GPU_CONF_COMPUTE_MODE_HCC = 2
 } UvmGpuConfComputeMode;
 
 typedef struct UvmGpuConfComputeCaps_tag

@@ -1254,6 +1254,7 @@ typedef struct rpc_rc_triggered_v17_02
 {
     NvU32      nv2080EngineType;
     NvU32      chid;
+    NvU32      gfid;
     NvU32      exceptType;
     NvU32      scope;
     NvU16      partitionAttributionId;
@@ -6784,6 +6785,13 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rc_triggered_v17_02[] = {
         .offset               = NV_OFFSETOF(rpc_rc_triggered_v17_02, chid),
         #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "chid"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_rc_triggered_v17_02, gfid),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "gfid"
         #endif
     },
     {

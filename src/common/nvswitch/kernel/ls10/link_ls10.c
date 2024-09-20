@@ -160,6 +160,13 @@ nvswitch_corelib_training_complete_ls10
 {
     nvswitch_device *device = link->dev->pDevInfo;
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return;     // NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
     nvswitch_init_dlpl_interrupts(link);
     _nvswitch_configure_reserved_throughput_counters(link);
 
@@ -265,6 +272,13 @@ nvswitch_corelib_set_tx_mode_ls10
     NvU32 val;
     NvlStatus status = NVL_SUCCESS;
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
     if (!NVSWITCH_IS_LINK_ENG_VALID_LS10(device, NVLDL, link->linkNumber))
     {
         NVSWITCH_PRINT(device, ERROR,
@@ -351,6 +365,13 @@ nvswitch_corelib_set_dl_link_mode_ls10
     NvlStatus        status = NVL_SUCCESS;
     NvBool           keepPolling;
     NVSWITCH_TIMEOUT timeout;
+
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
 
     if (!NVSWITCH_IS_LINK_ENG_VALID_LS10(device, NVLDL, link->linkNumber))
     {
@@ -494,6 +515,13 @@ nvswitch_corelib_get_rx_detect_ls10
     NvlStatus status;
     nvswitch_device *device = link->dev->pDevInfo;
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
     status = nvswitch_minion_get_rxdet_status_ls10(device, link->linkNumber);
 
     if (status != NVL_SUCCESS)
@@ -590,13 +618,22 @@ nvswitch_corelib_get_tl_link_mode_ls10
     {
         case NV_NVLIPT_LNK_CTRL_LINK_STATE_STATUS_CURRENTLINKSTATE_ACTIVE:
 
-            // If using ALI, ensure that the request to active completed
-            if (link->dev->enableALI)
+            if (nvswitch_is_tnvl_mode_locked(device))
             {
-                status = nvswitch_wait_for_tl_request_ready_ls10(link);
+                NVSWITCH_PRINT(device, ERROR,
+                    "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+                *mode = NVLINK_LINKSTATE_HS;
             }
+            else
+            {
+                // If using ALI, ensure that the request to active completed
+                if (link->dev->enableALI)
+                {
+                    status = nvswitch_wait_for_tl_request_ready_ls10(link);
+                }
 
-            *mode = (status == NVL_SUCCESS) ? NVLINK_LINKSTATE_HS:NVLINK_LINKSTATE_OFF;
+                *mode = (status == NVL_SUCCESS) ? NVLINK_LINKSTATE_HS:NVLINK_LINKSTATE_OFF;
+            }
             break;
 
         case NV_NVLIPT_LNK_CTRL_LINK_STATE_STATUS_CURRENTLINKSTATE_L2:
@@ -994,6 +1031,13 @@ nvswitch_launch_ALI_link_training_ls10
 )
 {
     NvlStatus status = NVL_SUCCESS;
+
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s(%d): Security locked\n", __FUNCTION__, __LINE__);
+        return NVL_ERR_INSUFFICIENT_PERMISSIONS;
+    }
 
     if ((link == NULL) ||
         !NVSWITCH_IS_LINK_ENG_VALID_LS10(device, NVLIPT_LNK, link->linkNumber) ||

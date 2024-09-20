@@ -4186,6 +4186,7 @@ static NvBool SwitchMux(
 {
     struct NvKmsSwitchMuxParams *pParams = pParamsVoid;
     const struct NvKmsSwitchMuxRequest *r = &pParams->request;
+    struct NvKmsPerOpenDev *pOpenDev;
     NVDpyEvoPtr pDpyEvo;
 
     pDpyEvo = GetPerOpenDpy(pOpen, r->deviceHandle, r->dispHandle, r->dpyId);
@@ -4193,7 +4194,12 @@ static NvBool SwitchMux(
         return FALSE;
     }
 
-    if (!nvKmsOpenDevHasSubOwnerPermissionOrBetter(GetPerOpenDev(pOpen, r->deviceHandle))) {
+    pOpenDev = GetPerOpenDev(pOpen, r->deviceHandle);
+    if (pOpenDev == NULL) {
+        return FALSE;
+    }
+
+    if (!nvKmsOpenDevHasSubOwnerPermissionOrBetter(pOpenDev)) {
         return FALSE;
     }
 

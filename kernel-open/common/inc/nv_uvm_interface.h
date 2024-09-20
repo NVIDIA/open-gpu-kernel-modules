@@ -592,6 +592,13 @@ void nvUvmInterfaceChannelDestroy(uvmGpuChannelHandle channel);
     Error codes:
       NV_ERR_GENERIC
       NV_ERR_NO_MEMORY
+      NV_ERR_INVALID_STATE
+      NV_ERR_NOT_SUPPORTED
+      NV_ERR_NOT_READY
+      NV_ERR_INVALID_LOCK_STATE
+      NV_ERR_INVALID_STATE
+      NV_ERR_NVSWITCH_FABRIC_NOT_READY
+      NV_ERR_NVSWITCH_FABRIC_FAILURE
 */
 NV_STATUS nvUvmInterfaceQueryCaps(uvmGpuDeviceHandle device,
                                   UvmGpuCaps *caps);

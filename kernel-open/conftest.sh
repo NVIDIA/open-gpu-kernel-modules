@@ -6579,7 +6579,9 @@ compile_test() {
             # Determine whether drm_fbdev_generic_setup is present.
             #
             # Added by commit 9060d7f49376 ("drm/fb-helper: Finish the
-            # generic fbdev emulation") in v4.19.
+            # generic fbdev emulation") in v4.19. Removed by commit
+            # aae4682e5d66 ("drm/fbdev-generic: Convert to fbdev-ttm")
+            # in v6.11.
             #
             CODE="
             #include <drm/drm_fb_helper.h>
@@ -6591,6 +6593,48 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_DRM_FBDEV_GENERIC_SETUP_PRESENT" "" "functions"
+            ;;
+
+        drm_fbdev_ttm_setup)
+            #
+            # Determine whether drm_fbdev_ttm_setup is present.
+            #
+            # Added by commit aae4682e5d66 ("drm/fbdev-generic:
+            # Convert to fbdev-ttm") in v6.11.
+            #
+            CODE="
+            #include <drm/drm_fb_helper.h>
+            #if defined(NV_DRM_DRM_FBDEV_TTM_H_PRESENT)
+            #include <drm/drm_fbdev_ttm.h>
+            #endif
+            void conftest_drm_fbdev_ttm_setup(void) {
+                drm_fbdev_ttm_setup();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_FBDEV_TTM_SETUP_PRESENT" "" "functions"
+        ;;
+
+        drm_output_poll_changed)
+            #
+            # Determine whether drm_mode_config_funcs.output_poll_changed
+            # callback is present
+            #
+            # Removed by commit 446d0f4849b1 ("drm: Remove struct
+            # drm_mode_config_funcs.output_poll_changed") in v6.12. Hotplug
+            # event support is handled through the fbdev emulation interface
+            # going forward.
+            #
+            CODE="
+            #if defined(NV_DRM_DRM_MODE_CONFIG_H_PRESENT)
+            #include <drm/drm_mode_config.h>
+            #else
+            #include <drm/drm_crtc.h>
+            #endif
+            int conftest_drm_output_poll_changed_available(void) {
+                return offsetof(struct drm_mode_config_funcs, output_poll_changed);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_OUTPUT_POLL_CHANGED_PRESENT" "" "types"
         ;;
 
         drm_aperture_remove_conflicting_pci_framebuffers)

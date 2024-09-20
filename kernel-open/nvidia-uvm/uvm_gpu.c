@@ -2256,7 +2256,10 @@ static void set_optimal_p2p_write_ces(const UvmGpuP2PCapsParams *p2p_caps_params
     bool sorted;
     NvU32 ce0, ce1;
 
-    if (peer_caps->link_type < UVM_GPU_LINK_NVLINK_1)
+    UVM_ASSERT(peer_caps->ref_count);
+    UVM_ASSERT(gpu0->parent->peer_copy_mode == gpu1->parent->peer_copy_mode);
+
+    if (gpu0->parent->peer_copy_mode == UVM_GPU_PEER_COPY_MODE_UNSUPPORTED)
         return;
 
     sorted = uvm_id_value(gpu0->id) < uvm_id_value(gpu1->id);
@@ -2282,7 +2285,7 @@ static void set_optimal_p2p_write_ces(const UvmGpuP2PCapsParams *p2p_caps_params
 static int nv_procfs_read_gpu_peer_caps(struct seq_file *s, void *v)
 {
     if (!uvm_down_read_trylock(&g_uvm_global.pm.lock))
-            return -EAGAIN;
+        return -EAGAIN;
 
     gpu_peer_caps_print((uvm_gpu_t **)s->private, s);
 

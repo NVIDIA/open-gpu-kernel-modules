@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -81,7 +81,7 @@
 #define NUM_Q_ITEMS_IN_MULTITHREAD_TEST (NUM_TEST_Q_ITEMS * NUM_TEST_KTHREADS)
 
 // This exists in order to have a function to place a breakpoint on:
-void on_nvq_assert(void)
+static void on_nvq_assert(void)
 {
     (void)NULL;
 }

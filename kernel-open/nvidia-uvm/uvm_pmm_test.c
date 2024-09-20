@@ -1127,7 +1127,6 @@ static NV_STATUS test_pmm_reverse_map_many_blocks(uvm_gpu_t *gpu, uvm_va_space_t
     // incrementally. Therefore, the reverse translations will show them in
     // order.
     uvm_for_each_va_range_in(va_range, va_space, addr, addr + size - 1) {
-        uvm_va_block_t *va_block;
 
         for_each_va_block_in_va_range(va_range, va_block) {
             NvU32 num_va_block_pages = 0;

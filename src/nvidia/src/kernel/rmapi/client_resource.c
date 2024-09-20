@@ -2522,6 +2522,7 @@ _controllerParseStaticTable_v22
 
     switch (header.version)
     {
+        case NVPCF_CONTROLLER_STATIC_TABLE_VERSION_24:
         case NVPCF_CONTROLLER_STATIC_TABLE_VERSION_23:
         case NVPCF_CONTROLLER_STATIC_TABLE_VERSION_22:
         {

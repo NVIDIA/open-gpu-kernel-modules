@@ -117,8 +117,6 @@ struct ConfidentialCompute {
     NV_STATUS (*__confComputeTriggerKeyRotation__)(struct OBJGPU *, struct ConfidentialCompute *);
     void (*__confComputeGetKeyPairForKeySpace__)(struct OBJGPU *, struct ConfidentialCompute *, NvU32, NvBool, NvU32 *, NvU32 *);
     NV_STATUS (*__confComputeEnableKeyRotationCallback__)(struct OBJGPU *, struct ConfidentialCompute *, NvBool);
-    NV_STATUS (*__confComputeEnableKeyRotationSupport__)(struct OBJGPU *, struct ConfidentialCompute *);
-    NV_STATUS (*__confComputeEnableInternalKeyRotationSupport__)(struct OBJGPU *, struct ConfidentialCompute *);
     NvBool (*__confComputeIsDebugModeEnabled__)(struct OBJGPU *, struct ConfidentialCompute *);
     NvBool (*__confComputeIsGpuCcCapable__)(struct OBJGPU *, struct ConfidentialCompute *);
     NV_STATUS (*__confComputeEstablishSpdmSessionAndKeys__)(struct OBJGPU *, struct ConfidentialCompute *);
@@ -272,10 +270,6 @@ NV_STATUS __nvoc_objCreate_ConfidentialCompute(ConfidentialCompute**, Dynamic*, 
 #define confComputeGetKeyPairForKeySpace_HAL(pGpu, pConfCompute, arg0, arg1, arg2, arg3) confComputeGetKeyPairForKeySpace_DISPATCH(pGpu, pConfCompute, arg0, arg1, arg2, arg3)
 #define confComputeEnableKeyRotationCallback(pGpu, pConfCompute, bEnable) confComputeEnableKeyRotationCallback_DISPATCH(pGpu, pConfCompute, bEnable)
 #define confComputeEnableKeyRotationCallback_HAL(pGpu, pConfCompute, bEnable) confComputeEnableKeyRotationCallback_DISPATCH(pGpu, pConfCompute, bEnable)
-#define confComputeEnableKeyRotationSupport(pGpu, pConfCompute) confComputeEnableKeyRotationSupport_DISPATCH(pGpu, pConfCompute)
-#define confComputeEnableKeyRotationSupport_HAL(pGpu, pConfCompute) confComputeEnableKeyRotationSupport_DISPATCH(pGpu, pConfCompute)
-#define confComputeEnableInternalKeyRotationSupport(pGpu, pConfCompute) confComputeEnableInternalKeyRotationSupport_DISPATCH(pGpu, pConfCompute)
-#define confComputeEnableInternalKeyRotationSupport_HAL(pGpu, pConfCompute) confComputeEnableInternalKeyRotationSupport_DISPATCH(pGpu, pConfCompute)
 #define confComputeIsDebugModeEnabled(pGpu, pConfCompute) confComputeIsDebugModeEnabled_DISPATCH(pGpu, pConfCompute)
 #define confComputeIsDebugModeEnabled_HAL(pGpu, pConfCompute) confComputeIsDebugModeEnabled_DISPATCH(pGpu, pConfCompute)
 #define confComputeIsGpuCcCapable(pGpu, pConfCompute) confComputeIsGpuCcCapable_DISPATCH(pGpu, pConfCompute)
@@ -549,26 +543,6 @@ static inline NV_STATUS confComputeEnableKeyRotationCallback_56cd7a(struct OBJGP
 
 static inline NV_STATUS confComputeEnableKeyRotationCallback_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvBool bEnable) {
     return pConfCompute->__confComputeEnableKeyRotationCallback__(pGpu, pConfCompute, bEnable);
-}
-
-NV_STATUS confComputeEnableKeyRotationSupport_GH100(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute);
-
-static inline NV_STATUS confComputeEnableKeyRotationSupport_56cd7a(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute) {
-    return NV_OK;
-}
-
-static inline NV_STATUS confComputeEnableKeyRotationSupport_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute) {
-    return pConfCompute->__confComputeEnableKeyRotationSupport__(pGpu, pConfCompute);
-}
-
-NV_STATUS confComputeEnableInternalKeyRotationSupport_GH100(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute);
-
-static inline NV_STATUS confComputeEnableInternalKeyRotationSupport_56cd7a(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute) {
-    return NV_OK;
-}
-
-static inline NV_STATUS confComputeEnableInternalKeyRotationSupport_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute) {
-    return pConfCompute->__confComputeEnableInternalKeyRotationSupport__(pGpu, pConfCompute);
 }
 
 NvBool confComputeIsDebugModeEnabled_GH100(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute);

@@ -45,6 +45,7 @@
 #include "gpu/bus/kern_bus.h"
 #include <nv_ref.h>               // NV_PMC_BOOT_1_VGPU
 #include "nvdevid.h"
+#include "ctrl/ctrl0000/ctrl0000vgpu.h"
 
 #include "g_vgpu_chip_flags.h"    // vGPU device names
 
@@ -845,9 +846,9 @@ void osWakeRemoveVgpu(NvU32 gpuId, NvU32 returnStatus)
     vgpu_vfio_info vgpu_info;
 
     vgpu_info.return_status = returnStatus;
-    vgpu_info.domain = gpuDecodeDomain(gpuId);
-    vgpu_info.bus = gpuDecodeBus(gpuId);
-    vgpu_info.device = gpuDecodeDevice(gpuId);
+    vgpu_info.domain = GPU_32_BIT_ID_DECODE_DOMAIN(gpuId);
+    vgpu_info.bus = GPU_32_BIT_ID_DECODE_BUS(gpuId);
+    vgpu_info.device = GPU_32_BIT_ID_DECODE_DEVICE(gpuId);
 
     os_call_vgpu_vfio((void *)&vgpu_info, CMD_VFIO_WAKE_REMOVE_GPU);
 }

@@ -631,7 +631,15 @@ static NV_STATUS fault_buffer_flush_locked(uvm_gpu_t *gpu,
 
     while (get != put) {
         // Wait until valid bit is set
-        UVM_SPIN_WHILE(!parent_gpu->fault_buffer_hal->entry_is_valid(parent_gpu, get), &spin);
+        UVM_SPIN_WHILE(!parent_gpu->fault_buffer_hal->entry_is_valid(parent_gpu, get), &spin) {
+            // Channels might be idle (e.g. in teardown) so check for errors
+            // actively.
+            status = uvm_channel_manager_check_errors(gpu->channel_manager);
+            if (status != NV_OK) {
+                write_get(parent_gpu, get);
+                return status;
+            }
+        }
 
         fault_buffer_skip_replayable_entry(parent_gpu, get);
         ++get;
@@ -863,6 +871,10 @@ static NV_STATUS fetch_fault_buffer_entries(uvm_gpu_t *gpu,
         UVM_SPIN_WHILE(!gpu->parent->fault_buffer_hal->entry_is_valid(gpu->parent, get), &spin) {
             // We have some entry to work on. Let's do the rest later.
             if (fetch_mode == FAULT_FETCH_MODE_BATCH_READY && fault_index > 0)
+                goto done;
+            
+            status = uvm_global_get_status();
+            if (status != NV_OK)
                 goto done;
         }
 

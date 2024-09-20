@@ -623,11 +623,8 @@ static NV_STATUS _initSysmemPfnRing(OBJGPU *pGpu)
     KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     NvU32 memFlags = 0;
 
-    if (!pVGpu->bGspPlugin)
-    {
-        if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus))
-            memFlags = MEMDESC_FLAGS_CPU_ONLY;
-    }
+    if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus))
+        memFlags = MEMDESC_FLAGS_CPU_ONLY;
 
     status = _allocRpcMemDesc(pGpu,
                               RM_PAGE_SIZE,

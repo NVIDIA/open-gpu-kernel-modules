@@ -3493,8 +3493,6 @@ static NV_STATUS block_copy_begin_push(uvm_va_block_t *va_block,
     }
 
     if (UVM_ID_IS_CPU(src_id) && UVM_ID_IS_CPU(dst_id)) {
-        uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
-
         gpu = uvm_va_space_find_first_gpu_attached_to_cpu_node(va_space, copy_state->src.nid);
         if (!gpu)
             gpu = uvm_va_space_find_first_gpu(va_space);
@@ -4486,8 +4484,6 @@ static NV_STATUS block_copy_resident_pages_mask(uvm_va_block_t *block,
     uvm_processor_mask_copy(search_mask, src_processor_mask);
 
     for_each_closest_id(src_id, search_mask, dst_id, va_space) {
-        NV_STATUS status;
-
         if (UVM_ID_IS_CPU(src_id)) {
             int nid;
 
@@ -8939,13 +8935,13 @@ NV_STATUS uvm_va_block_revoke_prot(uvm_va_block_t *va_block,
     uvm_processor_mask_copy(resident_procs, &va_block->resident);
 
     for_each_closest_id(resident_id, resident_procs, gpu->id, va_space) {
-        NV_STATUS status = block_revoke_prot_gpu_to(va_block,
-                                                    va_block_context,
-                                                    gpu,
-                                                    resident_id,
-                                                    running_page_mask,
-                                                    prot_to_revoke,
-                                                    out_tracker);
+        status = block_revoke_prot_gpu_to(va_block,
+                                          va_block_context,
+                                          gpu,
+                                          resident_id,
+                                          running_page_mask,
+                                          prot_to_revoke,
+                                          out_tracker);
         if (status != NV_OK)
             break;
 
@@ -12208,16 +12204,16 @@ NV_STATUS uvm_va_block_service_finish(uvm_processor_id_t processor_id,
 
         // Map pages that are thrashing
         if (service_context->thrashing_pin_count > 0) {
-            uvm_page_index_t page_index;
+            uvm_page_index_t pinned_page_index;
 
-            for_each_va_block_page_in_region_mask(page_index,
+            for_each_va_block_page_in_region_mask(pinned_page_index,
                                                   &service_context->thrashing_pin_mask,
                                                   service_context->region) {
                 uvm_processor_mask_t *map_thrashing_processors = NULL;
-                NvU64 page_addr = uvm_va_block_cpu_page_address(va_block, page_index);
+                NvU64 page_addr = uvm_va_block_cpu_page_address(va_block, pinned_page_index);
 
                 // Check protection type
-                if (!uvm_page_mask_test(caller_page_mask, page_index))
+                if (!uvm_page_mask_test(caller_page_mask, pinned_page_index))
                     continue;
 
                 map_thrashing_processors = uvm_perf_thrashing_get_thrashing_processors(va_block, page_addr);
@@ -12226,7 +12222,7 @@ NV_STATUS uvm_va_block_service_finish(uvm_processor_id_t processor_id,
                                                                    service_context->block_context,
                                                                    new_residency,
                                                                    processor_id,
-                                                                   uvm_va_block_region_for_page(page_index),
+                                                                   uvm_va_block_region_for_page(pinned_page_index),
                                                                    caller_page_mask,
                                                                    new_prot,
                                                                    map_thrashing_processors);

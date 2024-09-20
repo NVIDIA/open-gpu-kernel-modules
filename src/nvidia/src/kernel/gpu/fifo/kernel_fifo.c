@@ -1708,22 +1708,25 @@ kfifoGetChannelIterator_IMPL
 )
 {
     portMemSet(pIt, 0, sizeof(*pIt));
-    pIt->physicalChannelID = 0;
-    pIt->pFifoDataBlock    = NULL;
-    pIt->runlistId         = 0;
-    pIt->numRunlists       = 1;
 
-    // Do we want to ierate all runlist channels
     if (runlistId == INVALID_RUNLIST_ID)
     {
-        if (kfifoIsPerRunlistChramEnabled(pKernelFifo))
-        {
-            pIt->numRunlists = kfifoGetMaxNumRunlists_HAL(pGpu, pKernelFifo);
-        }
+        pIt->runlistId = 0;
+
+        // Resulting iterator will iterate over constructed CHID_MGRs only
+        pIt->numRunlists = pKernelFifo->numChidMgrs;
     }
     else
     {
         pIt->runlistId = runlistId;
+
+        //
+        // kfifoGetChidMgr() ignores the runlistId argument if per-runlist channel RAM is disabled.
+        // If there's no valid CHID_MGR for the given runlist ID, we can't iterate through the
+        // channels on the runlist, so we return an empty iterator instead.
+        //
+        CHID_MGR *pChidMgr = kfifoGetChidMgr(pGpu, pKernelFifo, pIt->runlistId);
+        pIt->numRunlists = (pChidMgr == NULL) ? 0 : 1;
     }
 }
 

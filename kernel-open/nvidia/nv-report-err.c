@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,7 +29,7 @@
 
 nv_report_error_cb_t nv_error_cb_handle = NULL;
 
-int nv_register_error_cb(nv_report_error_cb_t report_error_cb)
+int nvidia_register_error_cb(nv_report_error_cb_t report_error_cb)
 {
     if (report_error_cb == NULL)
         return -EINVAL;
@@ -41,9 +41,9 @@ int nv_register_error_cb(nv_report_error_cb_t report_error_cb)
     return 0;
 }
 
-EXPORT_SYMBOL(nv_register_error_cb);
+EXPORT_SYMBOL(nvidia_register_error_cb);
 
-int nv_unregister_error_cb(void)
+int nvidia_unregister_error_cb(void)
 {
     if (nv_error_cb_handle == NULL)
         return -EPERM;
@@ -52,9 +52,7 @@ int nv_unregister_error_cb(void)
     return 0;
 }
 
-EXPORT_SYMBOL(nv_unregister_error_cb);
-
-struct pci_dev;
+EXPORT_SYMBOL(nvidia_unregister_error_cb);
 
 void nv_report_error(
     struct pci_dev *dev,
@@ -63,27 +61,17 @@ void nv_report_error(
     va_list         ap
 )
 {
-    va_list ap_copy;
     char *buffer;
-    int length = 0;
-    int status = NV_OK;
+    gfp_t gfp = NV_MAY_SLEEP() ? NV_GFP_NO_OOM : NV_GFP_ATOMIC;
 
-    if (nv_error_cb_handle != NULL)
-    {
-        va_copy(ap_copy, ap);
-        length = vsnprintf(NULL, 0, format, ap);
-        va_end(ap_copy);
+    if (nv_error_cb_handle == NULL)
+        return;
 
-        if (length > 0)
-        {
-            status = os_alloc_mem((void *)&buffer, (length + 1)*sizeof(char));
+    buffer = kvasprintf(gfp, format, ap);
 
-            if (status == NV_OK)
-            {
-                vsnprintf(buffer, length, format, ap);
-                nv_error_cb_handle(dev, error_number, buffer, length + 1);
-                os_free_mem(buffer);
-            }
-        }
-    }
+    if (buffer == NULL)
+        return;
+
+    nv_error_cb_handle(dev, error_number, buffer, strlen(buffer) + 1);
+    kfree(buffer);
 }
