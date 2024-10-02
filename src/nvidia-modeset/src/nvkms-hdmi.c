@@ -1027,6 +1027,7 @@ static NvBool FillELDBuffer(const NVDpyEvoRec *pDpyEvo,
     monitorNameLen = 0;
 
     status = NvTiming_GetProductName(&pParsedEdid->info, name, sizeof(name));
+
     if (status == NVT_STATUS_SUCCESS) {
         /*
          * NvTiming_GetProductName() returns a nul-terminated string, but the
