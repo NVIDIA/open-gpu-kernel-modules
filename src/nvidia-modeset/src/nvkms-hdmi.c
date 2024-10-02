@@ -1039,7 +1039,7 @@ static NvBool FillELDBuffer(const NVDpyEvoRec *pDpyEvo,
          * Put back these special characters.
          */
 //        NvBool pastTerminator = FALSE;
-        NvU32 i;
+//        NvU32 i;
 
 //        for (i = 0; i < NVT_EDID_LDD_PAYLOAD_SIZE; i++) {
 //            if (pastTerminator) {
