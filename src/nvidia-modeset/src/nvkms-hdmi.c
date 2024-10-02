@@ -151,7 +151,7 @@ static void CalculateVideoInfoFrameColorFormat(
 }
 
 /*
- * GetHDMISupportCap() - find the HDMI capabilities of 
+ * GetHDMISupportCap() - find the HDMI capabilities of
  * the gpu and the display device.
  */
 
@@ -1027,11 +1027,6 @@ static NvBool FillELDBuffer(const NVDpyEvoRec *pDpyEvo,
     monitorNameLen = 0;
 
     status = NvTiming_GetProductName(&pParsedEdid->info, name, sizeof(name));
-    /*
-     * NvTiming_GetProductName() returns a nul-terminated string, but the
-     * string in the EDID is terminated with 0x0A and padded with 0x20.
-     * We do not keep the special characters.
-     */
     if (status == NVT_STATUS_SUCCESS) {
         /*
          * NvTiming_GetProductName() returns a nul-terminated string, but the
