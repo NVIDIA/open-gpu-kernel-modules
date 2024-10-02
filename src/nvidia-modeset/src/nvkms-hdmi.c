@@ -1032,6 +1032,30 @@ static NvBool FillELDBuffer(const NVDpyEvoRec *pDpyEvo,
      * string in the EDID is terminated with 0x0A and padded with 0x20.
      * We do not keep the special characters.
      */
+    if (status == NVT_STATUS_SUCCESS) {
+        /*
+         * NvTiming_GetProductName() returns a nul-terminated string, but the
+         * string in the EDID is terminated with 0x0A and padded with 0x20.
+         * Put back these special characters.
+         */
+//        NvBool pastTerminator = FALSE;
+        NvU32 i;
+
+//        for (i = 0; i < NVT_EDID_LDD_PAYLOAD_SIZE; i++) {
+//            if (pastTerminator) {
+//                name[i] = 0x20;
+//            }
+//            if (name[i] == '\0') {
+//                name[i] = 0x0A;
+//                pastTerminator = TRUE;
+//            }
+//        }
+
+        monitorNameLen = NVT_EDID_LDD_PAYLOAD_SIZE;
+        pEld->buffer[4] |= NVT_EDID_LDD_PAYLOAD_SIZE;
+        nvkms_memcpy(&pEld->buffer[20], name,
+                     NVT_EDID_LDD_PAYLOAD_SIZE);
+    }
 
     /* offset 20 + MNL ~ 20 + MNL + (3 * SAD_Count) - 1 : CEA_SADs */
     if (SADCount) {
