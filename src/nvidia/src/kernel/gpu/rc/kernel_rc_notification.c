@@ -445,12 +445,14 @@ krcErrorSendEventNotifications_KERNEL
 )
 {
     NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);
-    NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_CHANNEL);
 
-    NV_ASSERT_OK_OR_RETURN(
-        krcErrorSendEventNotificationsCtxDma_HAL(pGpu, pKernelRc,
-                                                 pKernelChannel,
-                                                 scope));
+    if (pKernelChannel != NULL)
+    {
+        NV_ASSERT_OK_OR_RETURN(
+            krcErrorSendEventNotificationsCtxDma_HAL(pGpu, pKernelRc,
+                                                     pKernelChannel,
+                                                     scope));
+    }
 
     gpuNotifySubDeviceEvent(pGpu,
                             NV2080_NOTIFIERS_RC_ERROR,

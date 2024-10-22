@@ -1675,14 +1675,10 @@ kfifoGetChannelIterator_IMPL
 )
 {
     portMemSet(pIt, 0, sizeof(*pIt));
-    pIt->physicalChannelID = 0;
-    pIt->pFifoDataBlock    = NULL;
-    pIt->runlistId         = 0;
-    pIt->numRunlists       = 1;
-    if (kfifoIsPerRunlistChramEnabled(pKernelFifo))
-    {
-        pIt->numRunlists = kfifoGetMaxNumRunlists_HAL(pGpu, pKernelFifo);
-    }
+    pIt->runlistId = 0;
+
+    // Resulting iterator will iterate over constructed CHID_MGRs only
+    pIt->numRunlists = pKernelFifo->numChidMgrs;
 }
 
 /**

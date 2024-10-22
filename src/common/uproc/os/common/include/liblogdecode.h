@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -189,6 +189,7 @@ void libosLogDestroy(LIBOS_LOG_DECODE *logDecode);
 void libosExtractLogs(LIBOS_LOG_DECODE *logDecode, NvBool bSyncNvLog);
 
 void libosPreserveLogs(LIBOS_LOG_DECODE *pLogDecode);
+NvBool isLibosPreserveLogBufferFull(LIBOS_LOG_DECODE *pLogDecode, NvU32 gpuInstance);
 
 #ifdef __cplusplus
 }

@@ -105,6 +105,7 @@ static const char* nv_get_input_colorspace_name(
 
 #if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
 
+#if defined(NV_DRM_OUTPUT_POLL_CHANGED_PRESENT)
 static void nv_drm_output_poll_changed(struct drm_device *dev)
 {
     struct drm_connector *connector = NULL;
@@ -148,6 +149,7 @@ static void nv_drm_output_poll_changed(struct drm_device *dev)
     nv_drm_connector_list_iter_end(&conn_iter);
 #endif
 }
+#endif /* NV_DRM_OUTPUT_POLL_CHANGED_PRESENT */
 
 static struct drm_framebuffer *nv_drm_framebuffer_create(
     struct drm_device *dev,
@@ -185,7 +187,9 @@ static const struct drm_mode_config_funcs nv_mode_config_funcs = {
     .atomic_check  = nv_drm_atomic_check,
     .atomic_commit = nv_drm_atomic_commit,
 
+    #if defined(NV_DRM_OUTPUT_POLL_CHANGED_PRESENT)
     .output_poll_changed = nv_drm_output_poll_changed,
+    #endif
 };
 
 static void nv_drm_event_callback(const struct NvKmsKapiEvent *event)

@@ -506,7 +506,7 @@ _kgraphicsPostSchedulingEnableHandler
     }
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kgraphicsCreateGoldenImageChannel(pGpu, pKernelGraphics));
-    if (kgraphicsIsBug4208224WARNeeded_HAL(pGpu, pKernelGraphics))
+    if (kgraphicsIsBug4208224WARNeeded_HAL(pGpu, pKernelGraphics) && !pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_RESUME_CODEPATH))
     {
         return kgraphicsInitializeBug4208224WAR_HAL(pGpu, pKernelGraphics);
     }

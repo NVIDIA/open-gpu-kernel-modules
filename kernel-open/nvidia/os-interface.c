@@ -373,7 +373,7 @@ NvS32 NV_API_CALL os_string_compare(const char *str1, const char *str2)
     return strcmp(str1, str2);
 }
 
-void *os_mem_copy_custom(
+static void *os_mem_copy_custom(
     void       *dstPtr,
     const void *srcPtr,
     NvU32       length

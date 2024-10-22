@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,6 +35,67 @@
 #include "published/ampere/ga102/dev_falcon_second_pri.h"
 #include "published/ampere/ga102/dev_fbif_v4.h"
 
+static GpuWaitConditionFunc s_dmaPollCondFunc;
+
+typedef struct {
+    KernelFalcon *pKernelFlcn;
+    NvU32 pollMask;
+    NvU32 pollValue;
+} DmaPollCondData;
+
+static NvBool
+s_dmaPollCondFunc
+(
+    OBJGPU *pGpu,
+    void *pVoid
+)
+{
+    DmaPollCondData *pData = (DmaPollCondData *)pVoid;
+    return ((kflcnRegRead_HAL(pGpu, pData->pKernelFlcn, NV_PFALCON_FALCON_DMATRFCMD) & pData->pollMask) == pData->pollValue);
+}
+
+/*!
+ * Poll on either _FULL or _IDLE field of NV_PFALCON_FALCON_DMATRFCMD
+ *
+ * @param[in]     pGpu            GPU object pointer
+ * @param[in]     pKernelFlcn     pKernelFlcn object pointer
+ * @param[in]     mode            FLCN_DMA_POLL_QUEUE_NOT_FULL for poll on _FULL; return when _FULL is false
+ *                                FLCN_DMA_POLL_ENGINE_IDLE    for poll on _IDLE; return when _IDLE is true
+ */
+static NV_STATUS
+s_dmaPoll_GA102
+(
+    OBJGPU *pGpu,
+    KernelFalcon *pKernelFlcn,
+    FlcnDmaPollMode mode
+)
+{
+    NV_STATUS status;
+    DmaPollCondData data;
+
+    data.pKernelFlcn = pKernelFlcn;
+    if (mode == FLCN_DMA_POLL_QUEUE_NOT_FULL)
+    {
+        data.pollMask = DRF_SHIFTMASK(NV_PFALCON_FALCON_DMATRFCMD_FULL);
+        data.pollValue = DRF_DEF(_PFALCON, _FALCON_DMATRFCMD, _FULL, _FALSE);
+    }
+    else
+    {
+        data.pollMask = DRF_SHIFTMASK(NV_PFALCON_FALCON_DMATRFCMD_IDLE);
+        data.pollValue = DRF_DEF(_PFALCON, _FALCON_DMATRFCMD, _IDLE, _TRUE);
+    }
+
+    status = gpuTimeoutCondWait(pGpu, s_dmaPollCondFunc, &data, NULL);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Error while waiting for Falcon DMA; mode: %d, status: 0x%08x\n", mode, status);
+        DBG_BREAKPOINT();
+        return status;
+    }
+
+    return NV_OK;
+}
+
 static NV_STATUS
 s_dmaTransfer_GA102
 (
@@ -48,15 +109,20 @@ s_dmaTransfer_GA102
 )
 {
     NV_STATUS status = NV_OK;
-    RMTIMEOUT timeout;
     NvU32 data;
     NvU32 bytesXfered = 0;
+
+    // Ensure request queue initially has space or writing base registers will corrupt DMA transfer.
+    NV_CHECK_OK_OR_RETURN(LEVEL_SILENT, s_dmaPoll_GA102(pGpu, pKernelFlcn, FLCN_DMA_POLL_QUEUE_NOT_FULL));
 
     kflcnRegWrite_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_DMATRFBASE, NvU64_LO32(srcPhysAddr >> 8));
     kflcnRegWrite_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_DMATRFBASE1, NvU64_HI32(srcPhysAddr >> 8) & 0x1FF);
 
     while (bytesXfered < sizeInBytes)
     {
+        // Poll for non-full request queue as writing control registers when full will corrupt DMA transfer.
+        NV_CHECK_OK_OR_RETURN(LEVEL_SILENT, s_dmaPoll_GA102(pGpu, pKernelFlcn, FLCN_DMA_POLL_QUEUE_NOT_FULL));
+
         data = FLD_SET_DRF_NUM(_PFALCON, _FALCON_DMATRFMOFFS, _OFFS, dest, 0);
         kflcnRegWrite_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_DMATRFMOFFS, data);
 
@@ -66,27 +132,16 @@ s_dmaTransfer_GA102
         // Write the command
         kflcnRegWrite_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_DMATRFCMD, dmaCmd);
 
-        // Poll for completion
-        data = kflcnRegRead_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_DMATRFCMD);
-
-        gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
-        while(FLD_TEST_DRF(_PFALCON_FALCON, _DMATRFCMD, _IDLE, _FALSE, data))
-        {
-            status = gpuCheckTimeout(pGpu, &timeout);
-            if (status == NV_ERR_TIMEOUT)
-            {
-                NV_PRINTF(LEVEL_ERROR, "Timeout waiting for Falcon DMA to finish\n");
-                DBG_BREAKPOINT();
-                return status;
-            }
-            osSpinLoop();
-            data = kflcnRegRead_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_DMATRFCMD);
-        }
-
         bytesXfered += FLCN_BLK_ALIGNMENT;
         dest        += FLCN_BLK_ALIGNMENT;
         memOff      += FLCN_BLK_ALIGNMENT;
     }
+
+    //
+    // Poll for completion. GA10x+ does not have TCM tagging so DMA operations to/from TCM should
+    // wait for DMA to complete before launching another operation to avoid memory ordering problems.
+    //
+    NV_CHECK_OK_OR_RETURN(LEVEL_SILENT, s_dmaPoll_GA102(pGpu, pKernelFlcn, FLCN_DMA_POLL_ENGINE_IDLE));
 
     return status;
 }

@@ -722,7 +722,17 @@ static void internal_channel_submit_work_wlc(uvm_push_t *push)
 
     // Wait for the WLC/LCIC to be primed. This means that PUT == GET + 2
     // and a WLC doorbell ring is enough to start work.
-    UVM_SPIN_WHILE(!uvm_gpu_tracking_semaphore_is_completed(&lcic_channel->tracking_sem), &spin);
+    UVM_SPIN_WHILE(!uvm_gpu_tracking_semaphore_is_completed(&lcic_channel->tracking_sem), &spin) {
+        NV_STATUS status = uvm_channel_check_errors(lcic_channel);
+        if (status != NV_OK) {
+            UVM_ASSERT(uvm_global_get_status() != NV_OK);
+
+            // If there's a global fatal error we can't communicate with the GPU
+            // and the below launch sequence doesn't work.
+            UVM_ERR_PRINT_NV_STATUS("Failed to wait for LCIC channel (%s) completion.", status, lcic_channel->name);
+            return;
+        }
+    }
 
     // Executing WLC adds an extra job to LCIC
     ++lcic_channel->tracking_sem.queued_value;
@@ -3250,7 +3260,17 @@ static void channel_manager_stop_wlc(uvm_channel_manager_t *manager)
 
         // Wait for the WLC/LCIC to be primed. This means that PUT == GET + 2
         // and a WLC doorbell ring is enough to start work.
-        UVM_SPIN_WHILE(!uvm_gpu_tracking_semaphore_is_completed(&channel->tracking_sem), &spin);
+        UVM_SPIN_WHILE(!uvm_gpu_tracking_semaphore_is_completed(&channel->tracking_sem), &spin) {
+            status = uvm_channel_check_errors(channel);
+            if (status != NV_OK) {
+                UVM_ERR_PRINT_NV_STATUS("Failed to wait for LCIC channel (%s) completion", status, channel->name);
+                break;
+            }
+        }
+
+        // Continue on error and attempt to stop WLC below. This can lead to
+        // channel destruction with mismatched GET and PUT pointers. RM will
+        // print errors if that's the case, but channel destruction succeeeds.
     }
 
     status = uvm_push_begin(manager, UVM_CHANNEL_TYPE_SEC2, &push, "Stop WLC channels");

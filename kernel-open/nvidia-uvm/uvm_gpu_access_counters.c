@@ -680,7 +680,10 @@ static void access_counter_buffer_flush_locked(uvm_gpu_t *gpu, uvm_gpu_buffer_fl
 
     while (get != put) {
         // Wait until valid bit is set
-        UVM_SPIN_WHILE(!gpu->parent->access_counter_buffer_hal->entry_is_valid(gpu->parent, get), &spin);
+        UVM_SPIN_WHILE(!gpu->parent->access_counter_buffer_hal->entry_is_valid(gpu->parent, get), &spin) {
+            if (uvm_global_get_status() != NV_OK)
+                goto done;
+        }
 
         gpu->parent->access_counter_buffer_hal->entry_clear_valid(gpu->parent, get);
         ++get;
@@ -688,6 +691,7 @@ static void access_counter_buffer_flush_locked(uvm_gpu_t *gpu, uvm_gpu_buffer_fl
             get = 0;
     }
 
+done:
     write_get(gpu->parent, get);
 }
 
@@ -813,12 +817,18 @@ static NvU32 fetch_access_counter_buffer_entries(uvm_gpu_t *gpu,
            (fetch_mode == NOTIFICATION_FETCH_MODE_ALL || notification_index < access_counters->max_batch_size)) {
         uvm_access_counter_buffer_entry_t *current_entry = &notification_cache[notification_index];
 
-        // We cannot just wait for the last entry (the one pointed by put) to become valid, we have to do it
-        // individually since entries can be written out of order
+        // We cannot just wait for the last entry (the one pointed by put) to
+        // become valid, we have to do it individually since entries can be
+        // written out of order
         UVM_SPIN_WHILE(!gpu->parent->access_counter_buffer_hal->entry_is_valid(gpu->parent, get), &spin) {
             // We have some entry to work on. Let's do the rest later.
             if (fetch_mode != NOTIFICATION_FETCH_MODE_ALL && notification_index > 0)
                 goto done;
+
+            // There's no entry to work on and something has gone wrong. Ignore
+            // the rest.
+            if (uvm_global_get_status() != NV_OK)
+               goto done;
         }
 
         // Prevent later accesses being moved above the read of the valid bit

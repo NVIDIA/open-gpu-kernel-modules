@@ -110,7 +110,7 @@ NvBool nvHsIoctlMoveCursor(
 {
     NVHsChannelEvoRec *pHsChannel;
 
-    if (apiHead > ARRAY_LEN(pDispEvo->pHsChannel)) {
+    if (apiHead >= ARRAY_LEN(pDispEvo->pHsChannel)) {
         return FALSE;
     }
 
@@ -206,7 +206,7 @@ NvBool nvHsIoctlSetCursorImage(
     NVHsChannelEvoRec *pHsChannel;
     NVSurfaceEvoRec *pSurfaceEvo = NULL;
 
-    if (apiHead > ARRAY_LEN(pDispEvo->pHsChannel)) {
+    if (apiHead >= ARRAY_LEN(pDispEvo->pHsChannel)) {
         return FALSE;
     }
 

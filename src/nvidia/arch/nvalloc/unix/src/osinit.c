@@ -59,6 +59,7 @@
 #include <gpu/gsp/kernel_gsp.h>
 #include "liblogdecode.h"
 #include <gpu/fsp/kern_fsp.h>
+#include  <gpu/gsp/kernel_gsp.h>
 
 #include <mem_mgr/virt_mem_mgr.h>
 #include <virtualization/kernel_vgpu_mgr.h>
@@ -384,6 +385,13 @@ osHandleGpuLost
         }
 
         gpuSetDisconnectedProperties(pGpu);
+
+        if (IS_GSP_CLIENT(pGpu))
+        {
+            // Notify all channels of the error so that UVM can fail gracefully
+            KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
+            kgspRcAndNotifyAllChannels(pGpu, pKernelGsp, ROBUST_CHANNEL_GPU_HAS_FALLEN_OFF_THE_BUS, NV_FALSE);
+        }
 
         // Trigger the OS's PCI recovery mechanism
         if (nv_pci_trigger_recovery(nv) != NV_OK)

@@ -825,11 +825,12 @@ NvBool osRemoveGpuSupported(void);
 
 void initVGXSpecificRegistry(OBJGPU *);
 
-NV_STATUS osVgpuVfioWake(void *waitQueue);
-NV_STATUS osVgpuInjectInterrupt(void *pArg1);
-NV_STATUS osVgpuRegisterMdev(OS_GPU_INFO  *pArg1);
+NV_STATUS nv_vgpu_rm_get_bar_info(OBJGPU *pGpu, const NvU8 *pMdevUuid, NvU64 *barSizes,
+                                  NvU64 *sparseOffsets, NvU64 *sparseSizes,
+                                  NvU32 *sparseCount, NvU8 *configParams);
 NV_STATUS osIsVgpuVfioPresent(void);
 NV_STATUS osIsVfioPciCorePresent(void);
+void osWakeRemoveVgpu(NvU32, NvU32);
 NV_STATUS rm_is_vgpu_supported_device(OS_GPU_INFO *pNv, NvU32 pmc_boot_1);
 NV_STATUS osLockPageableDataSection(RM_PAGEABLE_SECTION   *pSection);
 NV_STATUS osUnlockPageableDataSection(RM_PAGEABLE_SECTION   *pSection);

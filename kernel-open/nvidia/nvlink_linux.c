@@ -27,6 +27,7 @@
 #include "nvlink_linux.h"
 #include "nvlink_errors.h"
 #include "nvlink_export.h"
+#include "nvlink_proto.h"
 #include "nv-linux.h"
 #include "nv-procfs.h"
 #include "nv-time.h"

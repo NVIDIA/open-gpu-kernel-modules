@@ -246,7 +246,7 @@ namespace DisplayPort
         virtual bool             getOuiSupported() = 0;
         virtual AuxRetry::status setOuiSource(unsigned ouiId, const char * model, size_t modelNameLength, NvU8 chipRevision) = 0;
         virtual bool             getOuiSource(unsigned &ouiId, char * modelName, size_t modelNameBufferSize, NvU8 & chipRevision) = 0;
-        virtual bool             getOuiSink(unsigned &ouiId, char * modelName, size_t modelNameBufferSize, NvU8 & chipRevision) = 0;
+        virtual bool             getOuiSink(unsigned &ouiId, unsigned char * modelName, size_t modelNameBufferSize, NvU8 & chipRevision) = 0;
     };
 
     class HDCP

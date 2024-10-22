@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 200-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -630,6 +630,7 @@ enum {
 ,     CS_INTEL_1B81
 ,     CS_INTEL_18DC
 ,     CS_INTEL_7A04
+,     CS_INTEL_5795
 ,     CS_AMPERE_AMPEREONE
 ,     CS_MAX_PCIE
 };

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -190,6 +190,7 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_INTEL,       0x7A8A, CS_INTEL_1B81,      "Intel-SapphireRapids", NULL},
     {PCI_VENDOR_ID_INTEL,       0x18DC, CS_INTEL_18DC,      "Intel-IceLake",        NULL},
     {PCI_VENDOR_ID_INTEL,       0x7A04, CS_INTEL_7A04,      "Intel-RaptorLake",     Intel_7A04_setupFunc},
+    {PCI_VENDOR_ID_INTEL,       0x5795, CS_INTEL_5795,      "Intel-GraniteRapids",  NULL},
 
     {PCI_VENDOR_ID_NVIDIA,      0x0FAE, CS_NVIDIA_T210,      "T210",      Nvidia_T210_setupFunc},
     {PCI_VENDOR_ID_NVIDIA,      0x0FAF, CS_NVIDIA_T210,      "T210",      Nvidia_T210_setupFunc},
@@ -354,7 +355,8 @@ ARMCSALLOWLISTINFO armChipsetAllowListInfo[] =
     {PCI_VENDOR_ID_MELLANOX,    0xA2D0, CS_MELLANOX_BLUEFIELD}, // Mellanox BlueField
     {PCI_VENDOR_ID_MELLANOX,    0xA2D4, CS_MELLANOX_BLUEFIELD2},// Mellanox BlueField 2
     {PCI_VENDOR_ID_MELLANOX,    0xA2D5, CS_MELLANOX_BLUEFIELD2},// Mellanox BlueField 2 Crypto disabled
-    {PCI_VENDOR_ID_MELLANOX,    0xA2DB, CS_MELLANOX_BLUEFIELD3},// Mellanox BlueField 3
+    {PCI_VENDOR_ID_MELLANOX,    0xA2DB, CS_MELLANOX_BLUEFIELD3},// Mellanox BlueField 3 Crypto disabled
+    {PCI_VENDOR_ID_MELLANOX,    0xA2DA, CS_MELLANOX_BLUEFIELD3},// Mellanox BlueField 3 Crypto enabled
     {PCI_VENDOR_ID_AMAZON,      0x0200, CS_AMAZON_GRAVITRON2},  // Amazon Gravitron2
     {PCI_VENDOR_ID_FUJITSU,     0x1952, CS_FUJITSU_A64FX},      // Fujitsu A64FX
     {PCI_VENDOR_ID_CADENCE,     0xDC01, CS_PHYTIUM_S2500},      // Phytium S2500

@@ -196,6 +196,11 @@ kgraphicsInitializeBug4208224WAR_TU102
     RM_API     *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     NV2080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS params = {0};
 
+    if (pKernelGraphics->bug4208224Info.bConstructed)
+    {
+        return NV_OK;
+    }
+
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         kgraphicsCreateBug4208224Channel_HAL(pGpu, pKernelGraphics));
 

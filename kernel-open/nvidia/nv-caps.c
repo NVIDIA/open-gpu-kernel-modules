@@ -266,7 +266,7 @@ static void nv_cap_procfs_exit(void)
     nv_cap_procfs_dir = NULL;
 }
 
-int nv_cap_procfs_init(void)
+static int nv_cap_procfs_init(void)
 {
     static struct proc_dir_entry *file_entry;
 

@@ -137,6 +137,7 @@ kvgpumgrGuestRegister(OBJGPU *pGpu,
                       NvU32 swizzId,
                       NvU32 vgpuDeviceInstanceId,
                       NvBool bDisableDefaultSmcExecPartRestore,
+                      NvU8 *pVgpuDevName,
                       KERNEL_HOST_VGPU_DEVICE **ppKernelHostVgpuDevice)
 {
     return NV_ERR_NOT_SUPPORTED;
@@ -271,13 +272,6 @@ kvgpumgrSetVgpuEncoderCapacity(OBJGPU *pGpu, NvU8 *vgpuUuid, NvU32 encoderCapaci
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NV_STATUS
-kvgpumgrStart(const NvU8 *pMdevUuid, void *waitQueue, NvS32 *returnStatus,
-              NvU8 *vmName, NvU32 qemuPid)
-{
-    return NV_ERR_OBJECT_NOT_FOUND;
-}
-
 //
 // Add vGPU info received on mdev_create sysfs call to REQUEST_VGPU_INFO_NODE
 // list. REQUEST_VGPU_INFO_NODE is currently used only for vGPU on KVM.
@@ -301,6 +295,17 @@ NV_STATUS
 kvgpumgrDeleteRequestVgpu(const NvU8 *pMdevUuid, NvU16 vgpuId)
 {
     return NV_ERR_OBJECT_NOT_FOUND;
+}
+
+NV_STATUS kvgpumgrGetAvailableInstances(
+    NvU32     *availInstances,
+    OBJGPU    *pGpu,
+    VGPU_TYPE *vgpuTypeInfo,
+    NvU32      pgpuIndex,
+    NvU8       devfn
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
 }
 
 NV_STATUS

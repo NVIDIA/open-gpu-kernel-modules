@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -176,7 +176,7 @@ static struct task_struct *thread_create_on_node(int (*threadfn)(void *data),
 {
 
     unsigned i, j;
-    const static unsigned attempts = 3;
+    static const unsigned attempts = 3;
     struct task_struct *thread[3];
 
     for (i = 0;; i++) {

@@ -36,10 +36,28 @@ static inline int nv_follow_pfn(struct vm_area_struct *vma,
                                 unsigned long address,
                                 unsigned long *pfn)
 {
-#if defined(NV_UNSAFE_FOLLOW_PFN_PRESENT)
-    return unsafe_follow_pfn(vma, address, pfn);
-#else
+#if defined(NV_FOLLOW_PFN_PRESENT)
     return follow_pfn(vma, address, pfn);
+#else
+#if NV_IS_EXPORT_SYMBOL_PRESENT_follow_pte
+    int status = 0;
+    spinlock_t *ptl;
+    pte_t *ptep;
+
+    if (!(vma->vm_flags & (VM_IO | VM_PFNMAP)))
+        return status;
+
+    status = follow_pte(vma, address, &ptep, &ptl);
+    if (status)
+        return status;
+    *pfn = pte_pfn(ptep_get(ptep));
+
+    // The lock is acquired inside follow_pte()
+    pte_unmap_unlock(ptep, ptl);
+    return 0;
+#else // NV_IS_EXPORT_SYMBOL_PRESENT_follow_pte
+    return -1;
+#endif // NV_IS_EXPORT_SYMBOL_PRESENT_follow_pte
 #endif
 }
 

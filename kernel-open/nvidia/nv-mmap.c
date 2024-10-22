@@ -368,7 +368,7 @@ int nv_encode_caching(
     return 0;
 }
 
-int static nvidia_mmap_peer_io(
+static int nvidia_mmap_peer_io(
     struct vm_area_struct *vma,
     nv_alloc_t *at,
     NvU64 page_index,
@@ -389,7 +389,7 @@ int static nvidia_mmap_peer_io(
     return ret;
 }
 
-int static nvidia_mmap_sysmem(
+static int nvidia_mmap_sysmem(
     struct vm_area_struct *vma,
     nv_alloc_t *at,
     NvU64 page_index,

@@ -31,6 +31,7 @@
 #include "nvCpuUuid.h"
 #include "nv-time.h"
 #include "nvlink_caps.h"
+#include "nvlink_proto.h"
 
 #include <linux/module.h>
 #include <linux/interrupt.h>
@@ -49,7 +50,7 @@
 
 #include "ioctl_nvswitch.h"
 
-const static struct
+static const struct
 {
     NvlStatus status;
     int err;

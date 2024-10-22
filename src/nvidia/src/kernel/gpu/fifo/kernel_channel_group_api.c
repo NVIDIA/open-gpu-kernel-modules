@@ -548,11 +548,18 @@ done:
     if (bLockAcquired)
         rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
 
-    if (bReserveMem)
+    if ((rmStatus == NV_OK) && bReserveMem)
     {
         // GPU lock should not be held when reserving memory for ctxBufPool
-        NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(rmStatus,
+        NV_CHECK_OK(rmStatus, LEVEL_ERROR,
             ctxBufPoolReserve(pGpu, pKernelChannelGroup->pCtxBufPool, bufInfoList, bufCount));
+        if (rmStatus != NV_OK)
+        {
+            // Acquire the lock again for the cleanup path
+            NV_ASSERT_OK_OR_RETURN(rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_FIFO));
+            bLockAcquired = NV_TRUE;
+            goto failed;
+        }
     }
 
     portMemFree(bufInfoList);

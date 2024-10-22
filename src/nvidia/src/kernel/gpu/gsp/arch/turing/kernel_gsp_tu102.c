@@ -867,7 +867,7 @@ exit_health_check:
 
         if (bFirstFatal)
         {
-            kgspRcAndNotifyAllUserChannels(pGpu, pKernelGsp, GSP_ERROR);
+            kgspRcAndNotifyAllChannels(pGpu, pKernelGsp, GSP_ERROR, NV_TRUE);
         }
 
         gpuCheckEccCounts_HAL(pGpu);

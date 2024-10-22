@@ -31,7 +31,7 @@ extern "C" {
 /*event values*/
 #define NV0000_NOTIFIERS_DISPLAY_CHANGE                            (0)
 #define NV0000_NOTIFIERS_EVENT_NONE_PENDING                        (1)
-#define NV0000_NOTIFIERS_VM_START                                  (2)
+#define NV0000_NOTIFIERS_GPU_UNBIND_EVENT                          (2)
 #define NV0000_NOTIFIERS_GPU_BIND_EVENT                            (3)
 #define NV0000_NOTIFIERS_NVTELEMETRY_REPORT_EVENT                  (4)
 #define NV0000_NOTIFIERS_MAXCOUNT                                  (5)

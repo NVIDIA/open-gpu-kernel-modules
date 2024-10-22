@@ -762,6 +762,16 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         pThis->__kgspInitVgpuPartitionLogging__ = &kgspInitVgpuPartitionLogging_IMPL;
     }
 
+    // Hal function -- kgspPreserveVgpuPartitionLogging
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
+    {
+        pThis->__kgspPreserveVgpuPartitionLogging__ = &kgspPreserveVgpuPartitionLogging_395e98;
+    }
+    else
+    {
+        pThis->__kgspPreserveVgpuPartitionLogging__ = &kgspPreserveVgpuPartitionLogging_IMPL;
+    }
+
     // Hal function -- kgspFreeVgpuPartitionLogging
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
     {

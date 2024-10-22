@@ -1461,18 +1461,18 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_RmClient
 #endif
     },
     {               /*  [84] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) cliresCtrlCmdVgpuGetStartData_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+        /*pFunc=*/      (void (*)(void)) cliresCtrlCmdVgpuVfioNotifyRMStatus_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+        /*flags=*/      0x4u,
         /*accessRight=*/0x0u,
-        /*methodId=*/   0xc01u,
-        /*paramSize=*/  sizeof(NV0000_CTRL_VGPU_GET_START_DATA_PARAMS),
+        /*methodId=*/   0xc05u,
+        /*paramSize=*/  sizeof(NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS),
         /*pClassInfo=*/ &(__nvoc_class_def_RmClientResource.classInfo),
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*func=*/       "cliresCtrlCmdVgpuGetStartData"
+        /*func=*/       "cliresCtrlCmdVgpuVfioNotifyRMStatus"
 #endif
     },
     {               /*  [85] */
@@ -2094,15 +2094,15 @@ static void __nvoc_init_funcTable_RmClientResource_1(RmClientResource *pThis) {
 #endif
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-    pThis->__cliresCtrlCmdVgpuGetStartData__ = &cliresCtrlCmdVgpuGetStartData_IMPL;
-#endif
-
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
     pThis->__cliresCtrlCmdVgpuGetVgpuVersion__ = &cliresCtrlCmdVgpuGetVgpuVersion_IMPL;
 #endif
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
     pThis->__cliresCtrlCmdVgpuSetVgpuVersion__ = &cliresCtrlCmdVgpuSetVgpuVersion_IMPL;
+#endif
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+    pThis->__cliresCtrlCmdVgpuVfioNotifyRMStatus__ = &cliresCtrlCmdVgpuVfioNotifyRMStatus_IMPL;
 #endif
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -36,24 +36,36 @@
 #include "ctrl/ctrla081.h"
 #include "class/cl0000.h"
 #include "nv_vgpu_types.h"
+
+/* DRF macros for OBJGPU::gpuId */
+#define NV0000_BUSDEVICE_DOMAIN      31:16
+#define NV0000_BUSDEVICE_BUS         15:8
+#define NV0000_BUSDEVICE_DEVICE       7:0
+
+#define GPU_32_BIT_ID_DECODE_DOMAIN(gpuId)      (NvU16)DRF_VAL(0000, _BUSDEVICE, _DOMAIN, gpuId);
+#define GPU_32_BIT_ID_DECODE_BUS(gpuId)         (NvU8) DRF_VAL(0000, _BUSDEVICE, _BUS,    gpuId);
+#define GPU_32_BIT_ID_DECODE_DEVICE(gpuId)      (NvU8) DRF_VAL(0000, _BUSDEVICE, _DEVICE, gpuId);
+
 /*
- * NV0000_CTRL_CMD_VGPU_GET_START_DATA
+ * NV0000_CTRL_CMD_VGPU_CREATE_DEVICE
  *
- * This command gets data associated with NV0000_NOTIFIERS_VGPU_MGR_START to
- * start VGPU process.
+ * This command informs RM to create a vGPU device on KVM.
  *
- *   mdevUuid
- *     This parameter gives mdev device UUID for which nvidia-vgpu-mgr should
- *     init process.
+ *   vgpuName [IN]
+ *     This parameter provides the MDEV UUID or VF BDF depending on whether MDEV
+ *     or vfio-pci-core framework is used. 
  *
- *   qemuPid
- *     This parameter specifies the QEMU process ID of the VM.
- *
- *   gpuPciId
+ *   gpuPciId [IN]
  *     This parameter provides gpuId of GPU on which vgpu device is created.
  *
- *   configParams
- *     This parameter specifies the configuration parameters for vGPU
+ *   gpuPciBdf
+ *     This parameter specifies the BDF of the VF. (Same as PF for non-sriov)
+ *
+ *   vgpuTypeId [IN]
+ *     This parameter specifies the vGPU type ID for the device to be created.
+ *
+ *   vgpuId [OUT]
+ *     This parameter returns the vgpu id allocated by RM for the device
  *
  * Possible status values returned are:
  *   NV_OK
@@ -62,17 +74,114 @@
  *   NV_ERR_INVALID_CLIENT
  *
  */
-#define NV0000_CTRL_CMD_VGPU_GET_START_DATA (0xc01) /* finn: Evaluated from "(FINN_NV01_ROOT_VGPU_INTERFACE_ID << 8) | NV0000_CTRL_VGPU_GET_START_DATA_PARAMS_MESSAGE_ID" */
 
-#define NV0000_CTRL_VGPU_GET_START_DATA_PARAMS_MESSAGE_ID (0x1U)
+#define NV0000_CTRL_CMD_VGPU_CREATE_DEVICE (0xc02) /* finn: Evaluated from "(FINN_NV01_ROOT_VGPU_INTERFACE_ID << 8) | NV0000_CTRL_VGPU_CREATE_DEVICE_PARAMS_MESSAGE_ID" */
 
-typedef struct NV0000_CTRL_VGPU_GET_START_DATA_PARAMS {
-    NvU8  mdevUuid[VM_UUID_SIZE];
-    NvU8  configParams[1024];
-    NvU32 qemuPid;
+#define NV0000_CTRL_VGPU_CREATE_DEVICE_PARAMS_MESSAGE_ID (0x2U)
+
+typedef struct NV0000_CTRL_VGPU_CREATE_DEVICE_PARAMS {
+    NvU8  vgpuName[VM_UUID_SIZE];
     NvU32 gpuPciId;
-    NvU16 vgpuId;
     NvU32 gpuPciBdf;
-} NV0000_CTRL_VGPU_GET_START_DATA_PARAMS;
+    NvU32 vgpuTypeId;
+    NvU16 vgpuId;
+} NV0000_CTRL_VGPU_CREATE_DEVICE_PARAMS;
+
+/*
+ * NV0000_CTRL_CMD_VGPU_GET_INSTANCES
+ *
+ * This command queries RM for available instances for a particular vGPU type ID
+ * on KVM.
+ *
+ *   gpuPciId [IN]
+ *     This parameter specifies gpuId of GPU on which vGPU instances are being
+ *     queried.
+ *
+ *   gpuPciBdf [IN]
+ *     This parameter specifies the BDF of the VF. (Same as PF for non-sriov)
+ *
+ *   numVgpuTypes [IN]
+ *     This parameter specifies the count of vgpuTypeIds supplied and the
+ *     count of availableInstances values to be returned.
+ *
+ *   vgpuTypeIds [IN]
+ *     This parameter specifies a total of numVgpuTypes vGPU type IDs for which
+ *     the available instances are to be queried.
+ *
+ *   availableInstances [OUT]
+ *     This parameter returns a total of numVgpuTypes available instances for
+ *     the respective vGPU type IDs supplied in vgpuTypeIds input parameter.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_EVENT
+ *   NV_ERR_OBJECT_NOT_FOUND
+ *   NV_ERR_INVALID_CLIENT
+ *   NV_ERR_INVALID_STATE
+ *
+ */
+
+#define NV0000_CTRL_CMD_VGPU_GET_INSTANCES (0xc03) /* finn: Evaluated from "(FINN_NV01_ROOT_VGPU_INTERFACE_ID << 8) | NV0000_CTRL_VGPU_GET_INSTANCES_PARAMS_MESSAGE_ID" */
+
+#define NV0000_CTRL_VGPU_GET_INSTANCES_PARAMS_MESSAGE_ID (0x3U)
+
+typedef struct NV0000_CTRL_VGPU_GET_INSTANCES_PARAMS {
+    NvU32 gpuPciId;
+    NvU32 gpuPciBdf;
+    NvU32 numVgpuTypes;
+    NvU32 vgpuTypeIds[NVA081_MAX_VGPU_TYPES_PER_PGPU];
+    NvU32 availableInstances[NVA081_MAX_VGPU_TYPES_PER_PGPU];
+} NV0000_CTRL_VGPU_GET_INSTANCES_PARAMS;
+
+/*
+ * NV0000_CTRL_CMD_VGPU_DELETE_DEVICE
+ *
+ * This command informs RM to delete a vGPU device on KVM.
+ *
+ *   vgpuName [IN]
+ *     This parameter provides the MDEV UUID or VF BDF depending on whether MDEV
+ *     or vfio-pci-core framework is used.
+ *
+ *   vgpuId [IN]
+ *     This parameter provides the vgpu id allocated by RM for the device to be
+ *     deleted.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_EVENT
+ *   NV_ERR_OBJECT_NOT_FOUND
+ *   NV_ERR_INVALID_CLIENT
+ *
+ */
+
+#define NV0000_CTRL_CMD_VGPU_DELETE_DEVICE (0xc04) /* finn: Evaluated from "(FINN_NV01_ROOT_VGPU_INTERFACE_ID << 8) | NV0000_CTRL_VGPU_DELETE_DEVICE_PARAMS_MESSAGE_ID" */
+
+#define NV0000_CTRL_VGPU_DELETE_DEVICE_PARAMS_MESSAGE_ID (0x4U)
+
+typedef struct NV0000_CTRL_VGPU_DELETE_DEVICE_PARAMS {
+    NvU8  vgpuName[VM_UUID_SIZE];
+    NvU16 vgpuId;
+} NV0000_CTRL_VGPU_DELETE_DEVICE_PARAMS;
+
+/*
+ * NV0000_CTRL_CMD_VGPU_VFIO_NOTIFY_RM_STATUS
+ *
+ * This command informs RM the status of vgpu-vfio GPU operations such as probe and unregister.
+ *
+ *   returnStatus [IN]
+ *     This parameter provides the status of vgpu-vfio GPU operation.
+ *
+ *   gpuPciId [IN]
+ *     This parameter provides the gpu id of the GPU
+ */
+
+#define NV0000_CTRL_CMD_VGPU_VFIO_NOTIFY_RM_STATUS (0xc05) /* finn: Evaluated from "(FINN_NV01_ROOT_VGPU_INTERFACE_ID << 8) | NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS_MESSAGE_ID" */
+
+#define NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS_MESSAGE_ID (0x5U)
+
+typedef struct NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS {
+    NvU32 returnStatus;
+    NvU32 gpuId;
+} NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS;
 
 /* _ctrl0000vgpu_h_ */

@@ -5198,22 +5198,23 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_PCI_CLASS_MULTIMEDIA_HD_AUDIO_PRESENT" "" "generic"
         ;;
 
-        unsafe_follow_pfn)
+        follow_pfn)
             #
-            # Determine if unsafe_follow_pfn() is present.
+            # Determine if follow_pfn() is present.
             #
-            # unsafe_follow_pfn() was added by commit 69bacee7f9ad
-            # ("mm: Add unsafe_follow_pfn") in v5.13-rc1.
+            # follow_pfn() was added by commit 3b6748e2dd69
+            # ("mm: introduce follow_pfn()") in v2.6.31-rc1, and removed
+            # by commit 233eb0bf3b94 ("mm: remove follow_pfn")
+            # from linux-next 233eb0bf3b94.
             #
             CODE="
             #include <linux/mm.h>
-            void conftest_unsafe_follow_pfn(void) {
-                unsafe_follow_pfn();
+            void conftest_follow_pfn(void) {
+                follow_pfn();
             }"
 
-            compile_check_conftest "$CODE" "NV_UNSAFE_FOLLOW_PFN_PRESENT" "" "functions"
+            compile_check_conftest "$CODE" "NV_FOLLOW_PFN_PRESENT" "" "functions"
         ;;
-
         drm_plane_atomic_check_has_atomic_state_arg)
             #
             # Determine if drm_plane_helper_funcs::atomic_check takes 'state'
@@ -6359,6 +6360,29 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_MEMORY_FAILURE_MF_SW_SIMULATED_DEFINED" "" "types"
+        ;;
+
+        drm_output_poll_changed)
+            #
+            # Determine whether drm_mode_config_funcs.output_poll_changed
+            # callback is present
+            #
+            # Removed by commit 446d0f4849b1 ("drm: Remove struct
+            # drm_mode_config_funcs.output_poll_changed") in v6.12. Hotplug
+            # event support is handled through the fbdev emulation interface
+            # going forward.
+            #
+            CODE="
+            #if defined(NV_DRM_DRM_MODE_CONFIG_H_PRESENT)
+            #include <drm/drm_mode_config.h>
+            #else
+            #include <drm/drm_crtc.h>
+            #endif
+            int conftest_drm_output_poll_changed_available(void) {
+                return offsetof(struct drm_mode_config_funcs, output_poll_changed);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_OUTPUT_POLL_CHANGED_PRESENT" "" "types"
         ;;
 
         crypto_tfm_ctx_aligned)

@@ -164,9 +164,9 @@ struct RmClientResource {
     NV_STATUS (*__cliresCtrlCmdSyncGpuBoostGroupCreate__)(struct RmClientResource *, NV0000_SYNC_GPU_BOOST_GROUP_CREATE_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSyncGpuBoostGroupDestroy__)(struct RmClientResource *, NV0000_SYNC_GPU_BOOST_GROUP_DESTROY_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSyncGpuBoostGroupInfo__)(struct RmClientResource *, NV0000_SYNC_GPU_BOOST_GROUP_INFO_PARAMS *);
-    NV_STATUS (*__cliresCtrlCmdVgpuGetStartData__)(struct RmClientResource *, NV0000_CTRL_VGPU_GET_START_DATA_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdVgpuGetVgpuVersion__)(struct RmClientResource *, NV0000_CTRL_VGPU_GET_VGPU_VERSION_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdVgpuSetVgpuVersion__)(struct RmClientResource *, NV0000_CTRL_VGPU_SET_VGPU_VERSION_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdVgpuVfioNotifyRMStatus__)(struct RmClientResource *, NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemNVPCFGetPowerModeInfo__)(struct RmClientResource *, NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemSyncExternalFabricMgmt__)(struct RmClientResource *, NV0000_CTRL_CMD_SYSTEM_SYNC_EXTERNAL_FABRIC_MGMT_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemPfmreqhndlrCtrl__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_CTRL_PARAMS *);
@@ -316,9 +316,9 @@ NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32,
 #define cliresCtrlCmdSyncGpuBoostGroupCreate(pRmCliRes, pParams) cliresCtrlCmdSyncGpuBoostGroupCreate_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSyncGpuBoostGroupDestroy(pRmCliRes, pParams) cliresCtrlCmdSyncGpuBoostGroupDestroy_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSyncGpuBoostGroupInfo(pRmCliRes, pParams) cliresCtrlCmdSyncGpuBoostGroupInfo_DISPATCH(pRmCliRes, pParams)
-#define cliresCtrlCmdVgpuGetStartData(pRmCliRes, pVgpuStartParams) cliresCtrlCmdVgpuGetStartData_DISPATCH(pRmCliRes, pVgpuStartParams)
 #define cliresCtrlCmdVgpuGetVgpuVersion(pRmCliRes, vgpuVersionInfo) cliresCtrlCmdVgpuGetVgpuVersion_DISPATCH(pRmCliRes, vgpuVersionInfo)
 #define cliresCtrlCmdVgpuSetVgpuVersion(pRmCliRes, vgpuVersionInfo) cliresCtrlCmdVgpuSetVgpuVersion_DISPATCH(pRmCliRes, vgpuVersionInfo)
+#define cliresCtrlCmdVgpuVfioNotifyRMStatus(pRmCliRes, pVgpuDeleteParams) cliresCtrlCmdVgpuVfioNotifyRMStatus_DISPATCH(pRmCliRes, pVgpuDeleteParams)
 #define cliresCtrlCmdSystemNVPCFGetPowerModeInfo(pRmCliRes, pParams) cliresCtrlCmdSystemNVPCFGetPowerModeInfo_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemSyncExternalFabricMgmt(pRmCliRes, pExtFabricMgmtParams) cliresCtrlCmdSystemSyncExternalFabricMgmt_DISPATCH(pRmCliRes, pExtFabricMgmtParams)
 #define cliresCtrlCmdSystemPfmreqhndlrCtrl(pRmCliRes, pParams) cliresCtrlCmdSystemPfmreqhndlrCtrl_DISPATCH(pRmCliRes, pParams)
@@ -888,12 +888,6 @@ static inline NV_STATUS cliresCtrlCmdSyncGpuBoostGroupInfo_DISPATCH(struct RmCli
     return pRmCliRes->__cliresCtrlCmdSyncGpuBoostGroupInfo__(pRmCliRes, pParams);
 }
 
-NV_STATUS cliresCtrlCmdVgpuGetStartData_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_VGPU_GET_START_DATA_PARAMS *pVgpuStartParams);
-
-static inline NV_STATUS cliresCtrlCmdVgpuGetStartData_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_VGPU_GET_START_DATA_PARAMS *pVgpuStartParams) {
-    return pRmCliRes->__cliresCtrlCmdVgpuGetStartData__(pRmCliRes, pVgpuStartParams);
-}
-
 NV_STATUS cliresCtrlCmdVgpuGetVgpuVersion_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_VGPU_GET_VGPU_VERSION_PARAMS *vgpuVersionInfo);
 
 static inline NV_STATUS cliresCtrlCmdVgpuGetVgpuVersion_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_VGPU_GET_VGPU_VERSION_PARAMS *vgpuVersionInfo) {
@@ -904,6 +898,12 @@ NV_STATUS cliresCtrlCmdVgpuSetVgpuVersion_IMPL(struct RmClientResource *pRmCliRe
 
 static inline NV_STATUS cliresCtrlCmdVgpuSetVgpuVersion_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_VGPU_SET_VGPU_VERSION_PARAMS *vgpuVersionInfo) {
     return pRmCliRes->__cliresCtrlCmdVgpuSetVgpuVersion__(pRmCliRes, vgpuVersionInfo);
+}
+
+NV_STATUS cliresCtrlCmdVgpuVfioNotifyRMStatus_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS *pVgpuDeleteParams);
+
+static inline NV_STATUS cliresCtrlCmdVgpuVfioNotifyRMStatus_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_VGPU_VFIO_NOTIFY_RM_STATUS_PARAMS *pVgpuDeleteParams) {
+    return pRmCliRes->__cliresCtrlCmdVgpuVfioNotifyRMStatus__(pRmCliRes, pVgpuDeleteParams);
 }
 
 NV_STATUS cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams);

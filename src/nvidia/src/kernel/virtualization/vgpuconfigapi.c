@@ -122,16 +122,6 @@ vgpuconfigapiCtrlCmdVgpuConfigEventSetNotification_IMPL
 }
 
 NV_STATUS
-vgpuconfigapiCtrlCmdVgpuConfigNotifyStart_IMPL
-(
-    VgpuConfigApi *pVgpuConfigApi,
-    NVA081_CTRL_VGPU_CONFIG_NOTIFY_START_PARAMS *pNotifyParams
-)
-{
-    return NV_ERR_OBJECT_NOT_FOUND;
-}
-
-NV_STATUS
 vgpuconfigapiCtrlCmdVgpuConfigMdevRegister_IMPL
 (
     VgpuConfigApi *pVgpuConfigApi
@@ -237,6 +227,17 @@ vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId_IMPL
 (
     VgpuConfigApi *pVgpuConfigApi,
     NVA081_CTRL_VGPU_CONFIG_VALIDATE_SWIZZID_PARAMS *pParams
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+
+NV_STATUS
+vgpuconfigapiCtrlCmdVgpuSetVmName_IMPL
+(
+    VgpuConfigApi *pVgpuConfigApi,
+    NVA081_CTRL_VGPU_SET_VM_NAME_PARAMS *pParams
 )
 {
     return NV_ERR_NOT_SUPPORTED;
