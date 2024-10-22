@@ -66,6 +66,10 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJRCDB =
     /*pExportInfo=*/        &__nvoc_export_info_OBJRCDB
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+
+// Up-thunk(s) to bridge methods to ancestors (if any)
+
 const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJRCDB = 
 {
     /*numEntries=*/     0,
@@ -83,7 +87,7 @@ void __nvoc_dtor_OBJRCDB(OBJRCDB *pThis) {
 
 void __nvoc_init_dataField_OBJRCDB(OBJRCDB *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-    pThis->setProperty(pThis, PDB_PROP_RCDB_COMPRESS, ((NvBool)(0 == 0)));
+    pThis->setProperty(pThis, PDB_PROP_RCDB_COMPRESS, NV_TRUE);
 }
 
 NV_STATUS __nvoc_ctor_Object(Object* );

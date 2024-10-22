@@ -412,7 +412,7 @@ void uvm_global_set_fatal_error_impl(NV_STATUS error)
 
     UVM_ASSERT(error != NV_OK);
 
-    previous_error = nv_atomic_cmpxchg(&g_uvm_global.fatal_error, NV_OK, error);
+    previous_error = atomic_cmpxchg(&g_uvm_global.fatal_error, NV_OK, error);
 
     if (previous_error == NV_OK) {
         UVM_ERR_PRINT("Encountered a global fatal error: %s\n", nvstatusToString(error));
@@ -421,6 +421,8 @@ void uvm_global_set_fatal_error_impl(NV_STATUS error)
         UVM_ERR_PRINT("Encountered a global fatal error: %s after a global error has been already set: %s\n",
                 nvstatusToString(error), nvstatusToString(previous_error));
     }
+
+    nvUvmInterfaceReportFatalError(error);
 }
 
 NV_STATUS uvm_global_reset_fatal_error(void)
@@ -430,7 +432,7 @@ NV_STATUS uvm_global_reset_fatal_error(void)
         return NV_ERR_INVALID_STATE;
     }
 
-    return nv_atomic_xchg(&g_uvm_global.fatal_error, NV_OK);
+    return atomic_xchg(&g_uvm_global.fatal_error, NV_OK);
 }
 
 void uvm_global_gpu_retain(const uvm_processor_mask_t *mask)

@@ -146,6 +146,30 @@ typedef enum
 
 typedef enum
 {
+    // Uses 8b/10b channel encoding
+    // Link Data Rate = link rate * (8 / 10) / 8
+    //                = link rate * 0.1
+    dataRate_1_62Gbps                = 162000000,
+    dataRate_2_16Gbps                = 216000000,
+    dataRate_2_43Gbps                = 243000000,
+    dataRate_2_70Gbps                = 270000000,
+    dataRate_3_24Gbps                = 324000000,
+    dataRate_4_32Gbps                = 432000000,
+    dataRate_5_40Gbps                = 540000000,
+    dataRate_8_10Gbps                = 810000000
+} DP_LINK_8B_10B_DATA_RATES;
+
+#define IS_8B_10B_CODING(dataRate) (((NvU64)(val)== dataRate_1_62Gbps) || \
+                                    ((NvU64)(val)== dataRate_2_16Gbps) || \
+                                    ((NvU64)(val)== dataRate_2_43Gbps) || \
+                                    ((NvU64)(val)== dataRate_2_70Gbps) || \
+                                    ((NvU64)(val)== dataRate_3_24Gbps) || \
+                                    ((NvU64)(val)== dataRate_4_32Gbps) || \
+                                    ((NvU64)(val)== dataRate_5_40Gbps) || \
+                                    ((NvU64)(val)== dataRate_8_10Gbps))
+
+typedef enum
+{
     linkSpeedId_1_62Gbps                = 0x00,
     linkSpeedId_2_70Gbps                = 0x01,
     linkSpeedId_5_40Gbps                = 0x02,
@@ -190,7 +214,7 @@ typedef enum
     trainingPattern_1               = 0x1,
     trainingPattern_2               = 0x2,
     trainingPattern_3               = 0x3,
-    trainingPattern_4               = 0xB,
+    trainingPattern_4               = 0xB
 } DP_TRAININGPATTERN;
 
 typedef enum
@@ -655,8 +679,9 @@ typedef struct
 //
 // Phy Repeater count read from DPCD offset F0002h is an
 // 8 bit value where each bit represents the total count
-// 80h = 1 repeater, 40h = 2 , 20h = 3 ... 01h = 8
+// 80h = 1 repeater, 40h = 2 , 20h = 3 ... 04h = 6
 // This function maps it to decimal system
+// Note: From DP2.x max count of LTTPR is set to 6.
 //
 static NV_INLINE NvU32 mapPhyRepeaterVal(NvU32 value)
 {
@@ -676,10 +701,6 @@ static NV_INLINE NvU32 mapPhyRepeaterVal(NvU32 value)
             return 5;
         case NV_DPCD14_PHY_REPEATER_CNT_VAL_6:
             return 6;
-        case NV_DPCD14_PHY_REPEATER_CNT_VAL_7:
-            return 7;
-        case NV_DPCD14_PHY_REPEATER_CNT_VAL_8:
-            return 8;
         default:
             return 0;
     }

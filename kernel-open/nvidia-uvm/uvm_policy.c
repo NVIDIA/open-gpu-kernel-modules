@@ -53,7 +53,7 @@ static bool uvm_is_valid_vma_range(struct mm_struct *mm, NvU64 start, NvU64 leng
 
 uvm_api_range_type_t uvm_api_range_type_check(uvm_va_space_t *va_space, struct mm_struct *mm, NvU64 base, NvU64 length)
 {
-    uvm_va_range_t *va_range, *va_range_last;
+    uvm_va_range_managed_t *managed_range, *managed_range_last;
     const NvU64 last_address = base + length - 1;
 
     if (mm)
@@ -81,17 +81,17 @@ uvm_api_range_type_t uvm_api_range_type_check(uvm_va_space_t *va_space, struct m
         }
     }
 
-    va_range_last = NULL;
+    managed_range_last = NULL;
 
-    uvm_for_each_managed_va_range_in_contig(va_range, va_space, base, last_address)
-        va_range_last = va_range;
+    uvm_for_each_va_range_managed_in_contig(managed_range, va_space, base, last_address)
+        managed_range_last = managed_range;
 
     // Check if passed interval overlaps with an unmanaged VA range, or a
-    // sub-interval not tracked by a VA range
-    if (!va_range_last || va_range_last->node.end < last_address)
+    // sub-interval not tracked by a managed range
+    if (!managed_range_last || managed_range_last->va_range.node.end < last_address)
         return UVM_API_RANGE_TYPE_INVALID;
 
-    // Passed interval is fully covered by managed VA ranges
+    // Passed interval is fully covered by managed ranges
     return UVM_API_RANGE_TYPE_MANAGED;
 }
 
@@ -100,6 +100,7 @@ static NV_STATUS split_as_needed(uvm_va_space_t *va_space,
                                  uvm_va_policy_is_split_needed_t split_needed_cb,
                                  void *data)
 {
+    uvm_va_range_managed_t *managed_range;
     uvm_va_range_t *va_range;
 
     UVM_ASSERT(PAGE_ALIGNED(addr));
@@ -113,12 +114,14 @@ static NV_STATUS split_as_needed(uvm_va_space_t *va_space,
     if (addr == va_range->node.start)
         return NV_OK;
 
+    managed_range = uvm_va_range_to_managed_or_null(va_range);
+
     // Only managed ranges can be split.
-    if (va_range->type != UVM_VA_RANGE_TYPE_MANAGED)
+    if (!managed_range)
         return NV_ERR_INVALID_ADDRESS;
 
-    if (split_needed_cb(uvm_va_range_get_policy(va_range), data))
-        return uvm_va_range_split(va_range, addr - 1, NULL);
+    if (split_needed_cb(&managed_range->policy, data))
+        return uvm_va_range_split(managed_range, addr - 1, NULL);
 
     return NV_OK;
 }
@@ -228,10 +231,10 @@ static NV_STATUS preferred_location_set(uvm_va_space_t *va_space,
                                         NvU64 length,
                                         uvm_processor_id_t preferred_location,
                                         int preferred_cpu_nid,
-                                        uvm_va_range_t **first_va_range_to_migrate,
+                                        uvm_va_range_managed_t **first_managed_range_to_migrate,
                                         uvm_tracker_t *out_tracker)
 {
-    uvm_va_range_t *va_range, *va_range_last;
+    uvm_va_range_managed_t *managed_range, *managed_range_last;
     const NvU64 last_address = base + length - 1;
     bool preferred_location_is_faultable_gpu = false;
     preferred_location_split_params_t split_params;
@@ -240,7 +243,7 @@ static NV_STATUS preferred_location_set(uvm_va_space_t *va_space,
     uvm_assert_rwsem_locked_write(&va_space->lock);
 
     if (UVM_ID_IS_VALID(preferred_location)) {
-        *first_va_range_to_migrate = NULL;
+        *first_managed_range_to_migrate = NULL;
         preferred_location_is_faultable_gpu = UVM_ID_IS_GPU(preferred_location) &&
                                               uvm_processor_mask_test(&va_space->faultable_processors,
                                                                       preferred_location);
@@ -256,19 +259,19 @@ static NV_STATUS preferred_location_set(uvm_va_space_t *va_space,
     if (status != NV_OK)
         return status;
 
-    va_range_last = NULL;
-    uvm_for_each_managed_va_range_in_contig(va_range, va_space, base, last_address) {
+    managed_range_last = NULL;
+    uvm_for_each_va_range_managed_in_contig(managed_range, va_space, base, last_address) {
         bool found_non_migratable_interval = false;
 
-        va_range_last = va_range;
+        managed_range_last = managed_range;
 
         // If we didn't split the ends, check that they match
-        if (va_range->node.start < base || va_range->node.end > last_address)
-            UVM_ASSERT(uvm_id_equal(uvm_va_range_get_policy(va_range)->preferred_location, preferred_location));
+        if (managed_range->va_range.node.start < base || managed_range->va_range.node.end > last_address)
+            UVM_ASSERT(uvm_id_equal(managed_range->policy.preferred_location, preferred_location));
 
         if (UVM_ID_IS_VALID(preferred_location)) {
-            const NvU64 start = max(base, va_range->node.start);
-            const NvU64 end = min(last_address, va_range->node.end);
+            const NvU64 start = max(base, managed_range->va_range.node.start);
+            const NvU64 end = min(last_address, managed_range->va_range.node.end);
 
             found_non_migratable_interval = !uvm_range_group_all_migratable(va_space, start, end);
 
@@ -276,18 +279,22 @@ static NV_STATUS preferred_location_set(uvm_va_space_t *va_space,
                 return NV_ERR_INVALID_DEVICE;
         }
 
-        status = uvm_va_range_set_preferred_location(va_range, preferred_location, preferred_cpu_nid, mm, out_tracker);
+        status = uvm_va_range_set_preferred_location(managed_range,
+                                                     preferred_location,
+                                                     preferred_cpu_nid,
+                                                     mm,
+                                                     out_tracker);
         if (status != NV_OK)
             return status;
 
-        // Return the first VA range that needs to be migrated so the caller
-        // function doesn't need to traverse the tree again
-        if (found_non_migratable_interval && (*first_va_range_to_migrate == NULL))
-            *first_va_range_to_migrate = va_range;
+        // Return the first managed range that needs to be migrated so the
+        // caller function doesn't need to traverse the tree again
+        if (found_non_migratable_interval && (*first_managed_range_to_migrate == NULL))
+            *first_managed_range_to_migrate = managed_range;
     }
 
-    if (va_range_last) {
-        UVM_ASSERT(va_range_last->node.end >= last_address);
+    if (managed_range_last) {
+        UVM_ASSERT(managed_range_last->va_range.node.end >= last_address);
         return NV_OK;
     }
 
@@ -308,8 +315,8 @@ NV_STATUS uvm_api_set_preferred_location(const UVM_SET_PREFERRED_LOCATION_PARAMS
     NV_STATUS tracker_status;
     uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
     uvm_va_space_t *va_space = uvm_va_space_get(filp);
-    uvm_va_range_t *va_range = NULL;
-    uvm_va_range_t *first_va_range_to_migrate = NULL;
+    uvm_va_range_managed_t *managed_range = NULL;
+    uvm_va_range_managed_t *first_managed_range_to_migrate = NULL;
     struct mm_struct *mm;
     uvm_processor_id_t preferred_location_id;
     int preferred_cpu_nid = NUMA_NO_NODE;
@@ -386,27 +393,30 @@ NV_STATUS uvm_api_set_preferred_location(const UVM_SET_PREFERRED_LOCATION_PARAMS
                                     length,
                                     preferred_location_id,
                                     preferred_cpu_nid,
-                                    &first_va_range_to_migrate,
+                                    &first_managed_range_to_migrate,
                                     &local_tracker);
     if (status != NV_OK)
         goto done;
 
-    // No VA range to migrate, early exit
-    if (!first_va_range_to_migrate)
+    // No managed range to migrate, early exit
+    if (!first_managed_range_to_migrate)
         goto done;
 
     uvm_va_space_downgrade_write(va_space);
     has_va_space_write_lock = false;
 
-    // No need to check for holes in the VA ranges span here, this was checked by preferred_location_set
-    for (va_range = first_va_range_to_migrate; va_range; va_range = uvm_va_space_iter_next(va_range, end)) {
+    // No need to check for holes in the managed ranges span here, this was
+    // checked by preferred_location_set
+    for (managed_range = first_managed_range_to_migrate;
+         managed_range;
+         managed_range = uvm_va_space_iter_managed_next(managed_range, end)) {
         uvm_range_group_range_iter_t iter;
-        NvU64 cur_start = max(start, va_range->node.start);
-        NvU64 cur_end = min(end, va_range->node.end);
+        NvU64 cur_start = max(start, managed_range->va_range.node.start);
+        NvU64 cur_end = min(end, managed_range->va_range.node.end);
 
         uvm_range_group_for_each_migratability_in(&iter, va_space, cur_start, cur_end) {
             if (!iter.migratable) {
-                status = uvm_range_group_va_range_migrate(va_range, iter.start, iter.end, &local_tracker);
+                status = uvm_range_group_va_range_migrate(managed_range, iter.start, iter.end, &local_tracker);
                 if (status != NV_OK)
                     goto done;
             }
@@ -504,7 +514,7 @@ NV_STATUS uvm_va_block_set_accessed_by(uvm_va_block_t *va_block,
     uvm_va_block_region_t region = uvm_va_block_region_from_block(va_block);
     NV_STATUS status;
     uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
-    uvm_va_policy_t *policy = uvm_va_range_get_policy(va_block->va_range);
+    uvm_va_policy_t *policy = &va_block->managed_range->policy;
 
     UVM_ASSERT(!uvm_va_block_is_hmm(va_block));
 
@@ -604,29 +614,29 @@ static NV_STATUS accessed_by_set(uvm_va_space_t *va_space,
         goto done;
 
     if (type == UVM_API_RANGE_TYPE_MANAGED) {
-        uvm_va_range_t *va_range;
-        uvm_va_range_t *va_range_last = NULL;
+        uvm_va_range_managed_t *managed_range;
+        uvm_va_range_managed_t *managed_range_last = NULL;
 
-        uvm_for_each_managed_va_range_in_contig(va_range, va_space, base, last_address) {
-            va_range_last = va_range;
+        uvm_for_each_va_range_managed_in_contig(managed_range, va_space, base, last_address) {
+            managed_range_last = managed_range;
 
             // If we didn't split the ends, check that they match
-            if (va_range->node.start < base || va_range->node.end > last_address)
-                UVM_ASSERT(uvm_processor_mask_test(&uvm_va_range_get_policy(va_range)->accessed_by,
+            if (managed_range->va_range.node.start < base || managed_range->va_range.node.end > last_address)
+                UVM_ASSERT(uvm_processor_mask_test(&managed_range->policy.accessed_by,
                                                    processor_id) == set_bit);
 
             if (set_bit) {
-                status = uvm_va_range_set_accessed_by(va_range, processor_id, mm, &local_tracker);
+                status = uvm_va_range_set_accessed_by(managed_range, processor_id, mm, &local_tracker);
                 if (status != NV_OK)
                     goto done;
             }
             else {
-                uvm_va_range_unset_accessed_by(va_range, processor_id, &local_tracker);
+                uvm_va_range_unset_accessed_by(managed_range, processor_id, &local_tracker);
             }
         }
 
-        UVM_ASSERT(va_range_last);
-        UVM_ASSERT(va_range_last->node.end >= last_address);
+        UVM_ASSERT(managed_range_last);
+        UVM_ASSERT(managed_range_last->va_range.node.end >= last_address);
     }
     else {
         // NULL mm case already filtered by uvm_api_range_type_check()
@@ -672,7 +682,7 @@ static NV_STATUS va_block_set_read_duplication_locked(uvm_va_block_t *va_block,
     uvm_assert_mutex_locked(&va_block->lock);
 
     // Force CPU page residency to be on the preferred NUMA node.
-    va_block_context->make_resident.dest_nid = uvm_va_range_get_policy(va_block->va_range)->preferred_nid;
+    va_block_context->make_resident.dest_nid = va_block->managed_range->policy.preferred_nid;
 
     for_each_id_in_mask(src_id, &va_block->resident) {
         NV_STATUS status;
@@ -721,7 +731,7 @@ static NV_STATUS va_block_unset_read_duplication_locked(uvm_va_block_t *va_block
     uvm_processor_id_t processor_id;
     uvm_va_block_region_t block_region = uvm_va_block_region_from_block(va_block);
     uvm_page_mask_t *break_read_duplication_pages = &va_block_context->caller_page_mask;
-    const uvm_va_policy_t *policy = uvm_va_range_get_policy(va_block->va_range);
+    const uvm_va_policy_t *policy = &va_block->managed_range->policy;
     uvm_processor_id_t preferred_location = policy->preferred_location;
 
     uvm_assert_mutex_locked(&va_block->lock);
@@ -863,15 +873,15 @@ static NV_STATUS read_duplication_set(uvm_va_space_t *va_space, NvU64 base, NvU6
         goto done;
 
     if (type == UVM_API_RANGE_TYPE_MANAGED) {
-        uvm_va_range_t *va_range;
-        uvm_va_range_t *va_range_last = NULL;
+        uvm_va_range_managed_t *managed_range;
+        uvm_va_range_managed_t *managed_range_last = NULL;
 
-        uvm_for_each_managed_va_range_in_contig(va_range, va_space, base, last_address) {
-            va_range_last = va_range;
+        uvm_for_each_va_range_managed_in_contig(managed_range, va_space, base, last_address) {
+            managed_range_last = managed_range;
 
             // If we didn't split the ends, check that they match
-            if (va_range->node.start < base || va_range->node.end > last_address)
-                UVM_ASSERT(uvm_va_range_get_policy(va_range)->read_duplication == new_policy);
+            if (managed_range->va_range.node.start < base || managed_range->va_range.node.end > last_address)
+                UVM_ASSERT(managed_range->policy.read_duplication == new_policy);
 
             // If the va_space cannot currently read duplicate, only change the user
             // state. All memory should already have read duplication unset.
@@ -879,22 +889,22 @@ static NV_STATUS read_duplication_set(uvm_va_space_t *va_space, NvU64 base, NvU6
 
                 // Handle SetAccessedBy mappings
                 if (new_policy == UVM_READ_DUPLICATION_ENABLED) {
-                    status = uvm_va_range_set_read_duplication(va_range, mm);
+                    status = uvm_va_range_set_read_duplication(managed_range, mm);
                     if (status != NV_OK)
                         goto done;
                 }
                 else {
                     // If unsetting read duplication fails, the return status is
                     // not propagated back to the caller
-                    (void)uvm_va_range_unset_read_duplication(va_range, mm);
+                    (void)uvm_va_range_unset_read_duplication(managed_range, mm);
                 }
             }
 
-            uvm_va_range_get_policy(va_range)->read_duplication = new_policy;
+            managed_range->policy.read_duplication = new_policy;
         }
 
-        UVM_ASSERT(va_range_last);
-        UVM_ASSERT(va_range_last->node.end >= last_address);
+        UVM_ASSERT(managed_range_last);
+        UVM_ASSERT(managed_range_last->va_range.node.end >= last_address);
     }
     else {
         UVM_ASSERT(type == UVM_API_RANGE_TYPE_HMM);
@@ -947,19 +957,16 @@ static NV_STATUS system_wide_atomics_set(uvm_va_space_t *va_space, const NvProce
 
     already_enabled = uvm_processor_mask_test(&va_space->system_wide_atomics_enabled_processors, gpu->id);
     if (enable && !already_enabled) {
-        uvm_va_range_t *va_range;
+        uvm_va_range_managed_t *managed_range;
         uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
         uvm_va_block_context_t *va_block_context = uvm_va_space_block_context(va_space, NULL);
         NV_STATUS tracker_status;
 
         // Revoke atomic mappings from the calling GPU
-        uvm_for_each_va_range(va_range, va_space) {
+        uvm_for_each_va_range_managed(managed_range, va_space) {
             uvm_va_block_t *va_block;
 
-            if (va_range->type != UVM_VA_RANGE_TYPE_MANAGED)
-                continue;
-
-            for_each_va_block_in_va_range(va_range, va_block) {
+            for_each_va_block_in_va_range(managed_range, va_block) {
                 uvm_page_mask_t *non_resident_pages = &va_block_context->caller_page_mask;
 
                 uvm_mutex_lock(&va_block->lock);

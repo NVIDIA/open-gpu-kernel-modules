@@ -45,7 +45,6 @@ void          nvswitch_exit        (void);
  */
 int           tegrashim_init          (void);
 void          tegrashim_exit          (void);
-NvlStatus     tegrashim_init_device   (struct pci_dev *);
 #endif
 
 #endif /* _NVLINK_PROTO_H_ */

@@ -36,4 +36,69 @@ typedef struct MemoryArea
     NvU64 numRanges;
 } MemoryArea;
 
+static inline NvU64 memareaSize(MemoryArea memArea)
+{
+    NvU64 size = 0;
+    NvU64 idx = 0;
+    for (idx = 0; idx < memArea.numRanges; idx++)
+    {
+        size += memArea.pRanges[idx].size;
+    }
+    return size;
+}
+
+static inline MemoryRange
+mrangeMake
+(
+    NvU64 start,
+    NvU64 size
+)
+{
+    MemoryRange range;
+    range.start = start;
+    range.size = size;
+    return range;
+}
+
+static inline NvU64
+mrangeLimit
+(
+    MemoryRange a
+)
+{
+    return a.start + a.size;
+}
+
+static inline NvBool
+mrangeIntersects
+(
+    MemoryRange a,
+    MemoryRange b
+)
+{
+    return ((a.start >= b.start) && (a.start < mrangeLimit(b))) ||
+        ((b.start >= a.start) && (b.start < mrangeLimit(a)));
+}
+
+static inline NvBool
+mrangeContains
+(
+    MemoryRange outer,
+    MemoryRange inner
+)
+{
+    return (inner.start >= outer.start) && (mrangeLimit(inner) <= mrangeLimit(outer));
+}
+
+static inline MemoryRange
+mrangeOffset
+(
+    MemoryRange range,
+    NvU64 amt
+)
+{
+    range.start += amt;
+    return range;
+}
+
 #endif /* NV_MEMORY_AREA_H */

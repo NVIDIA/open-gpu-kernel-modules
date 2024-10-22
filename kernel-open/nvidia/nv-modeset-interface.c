@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -143,4 +143,4 @@ NV_STATUS nvidia_get_rm_ops(nvidia_modeset_rm_ops_t *rm_ops)
     return NV_OK;
 }
 
-EXPORT_SYMBOL(nvidia_get_rm_ops);
+NV_EXPORT_SYMBOL(nvidia_get_rm_ops);

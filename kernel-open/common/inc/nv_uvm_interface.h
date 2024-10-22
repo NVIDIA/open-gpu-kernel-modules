@@ -1086,6 +1086,22 @@ NV_STATUS nvUvmInterfaceRegisterUvmCallbacks(struct UvmOpsUvmEvents *importedUvm
 void nvUvmInterfaceDeRegisterUvmOps(void);
 
 /*******************************************************************************
+    nvUvmInterfaceGetNvlinkInfo
+
+    Gets NVLINK information from RM.
+
+    Arguments:
+        device[IN]        - GPU device handle
+        nvlinkInfo [OUT]     - Pointer to NvlinkInfo structure
+
+    Error codes:
+      NV_ERROR
+      NV_ERR_INVALID_ARGUMENT
+*/
+NV_STATUS nvUvmInterfaceGetNvlinkInfo(uvmGpuDeviceHandle device,
+                                      UvmGpuNvlinkInfo *nvlinkInfo);
+
+/*******************************************************************************
     nvUvmInterfaceP2pObjectCreate
 
     This API creates an NV50_P2P object for the GPUs with the given device
@@ -1160,6 +1176,48 @@ NV_STATUS nvUvmInterfaceGetExternalAllocPtes(uvmGpuAddressSpaceHandle vaSpace,
                                              NvU64 offset,
                                              NvU64 size,
                                              UvmGpuExternalMappingInfo *gpuExternalMappingInfo);
+
+/*******************************************************************************
+    nvUvmInterfaceGetExternalAllocPhysAddrs
+
+    The interface builds the RM physical addrs using the provided input parameters.
+
+    Arguments:
+        vaSpace[IN]                     -  vaSpace handle.
+        hMemory[IN]                     -  Memory handle.
+        offset [IN]                     -  Offset from the beginning of the allocation
+                                           where PTE mappings should begin.
+                                           Should be aligned with mappingPagesize
+                                           in gpuExternalMappingInfo associated
+                                           with the allocation.
+        size [IN]                       -  Length of the allocation for which PhysAddrs
+                                           should be built.
+                                           Should be aligned with mappingPagesize
+                                           in gpuExternalMappingInfo associated
+                                           with the allocation.
+                                           size = 0 will be interpreted as the total size
+                                           of the allocation.
+        gpuExternalMappingInfo[IN/OUT]  -  See nv_uvm_types.h for more information.
+
+   Error codes:
+        NV_ERR_INVALID_ARGUMENT         - Invalid parameter/s is passed.
+        NV_ERR_INVALID_OBJECT_HANDLE    - Invalid memory handle is passed.
+        NV_ERR_NOT_SUPPORTED            - Functionality is not supported (see comments in nv_gpu_ops.c)
+        NV_ERR_INVALID_BASE             - offset is beyond the allocation size
+        NV_ERR_INVALID_LIMIT            - (offset + size) is beyond the allocation size.
+        NV_ERR_BUFFER_TOO_SMALL         - gpuExternalMappingInfo.physAddrBufferSize is insufficient to
+                                          store single physAddr.
+        NV_ERR_NOT_READY                - Returned when querying the physAddrs requires a deferred setup
+                                          which has not yet completed. It is expected that the caller
+                                          will reattempt the call until a different code is returned.
+                                          As an example, multi-node systems which require querying
+                                          physAddrs from the Fabric Manager may return this code.
+*/
+NV_STATUS nvUvmInterfaceGetExternalAllocPhysAddrs(uvmGpuAddressSpaceHandle vaSpace,
+                                                  NvHandle hMemory,
+                                                  NvU64 offset,
+                                                  NvU64 size,
+                                                  UvmGpuExternalPhysAddrInfo *gpuExternalPhysAddrsInfo);
 
 /*******************************************************************************
     nvUvmInterfaceRetainChannel
@@ -1461,6 +1519,16 @@ void nvUvmInterfacePagingChannelsUnmap(uvmGpuAddressSpaceHandle srcVaSpace,
 NV_STATUS nvUvmInterfacePagingChannelPushStream(UvmGpuPagingChannelHandle channel,
                                                 char *methodStream,
                                                 NvU32 methodStreamSize);
+
+/*******************************************************************************
+    nvUvmInterfaceReportFatalError
+
+    Reports a global fatal error so RM can inform the clients that a node reboot
+    is necessary to recover from this error. This function can be called from
+    any lock environment, bottom half or non-interrupt context.
+
+*/
+void nvUvmInterfaceReportFatalError(NV_STATUS error);
 
 /*******************************************************************************
     Cryptography Services Library (CSL) Interface

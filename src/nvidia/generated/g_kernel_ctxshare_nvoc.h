@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -226,10 +226,15 @@ void kctxshareDestruct_IMPL(struct KernelCtxShare *pKernelCtxShare);
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__KernelCtxShareApi;
+
+
 struct KernelCtxShareApi {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__KernelCtxShareApi *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct GpuResource __nvoc_base_GpuResource;
@@ -242,11 +247,22 @@ struct KernelCtxShareApi {
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct KernelCtxShareApi *__nvoc_pbase_KernelCtxShareApi;    // kctxshareapi
 
-    // Vtable with 28 per-object function pointers
-    NvBool (*__kctxshareapiCanCopy__)(struct KernelCtxShareApi * /*this*/);  // virtual override (res) base (gpures)
+    // Vtable with 3 per-object function pointers
     NV_STATUS (*__kctxshareapiCtrlCmdSetTpcPartitionTable__)(struct KernelCtxShareApi * /*this*/, NV9067_CTRL_TPC_PARTITION_TABLE_PARAMS *);  // exported (id=0x90670102)
     NV_STATUS (*__kctxshareapiCtrlCmdGetCwdWatermark__)(struct KernelCtxShareApi * /*this*/, NV9067_CTRL_CWD_WATERMARK_PARAMS *);  // exported (id=0x90670201)
     NV_STATUS (*__kctxshareapiCtrlCmdSetCwdWatermark__)(struct KernelCtxShareApi * /*this*/, NV9067_CTRL_CWD_WATERMARK_PARAMS *);  // exported (id=0x90670202)
+
+    // Data members
+    struct KernelCtxShare *pShareData;
+    NvHandle hVASpace;
+};
+
+
+// Metadata including vtable with 25 function pointers plus superclass metadata
+struct NVOC_VTABLE__KernelCtxShareApi {
+    const struct NVOC_VTABLE__GpuResource GpuResource;    // (gpures) 25 function pointers
+
+    NvBool (*__kctxshareapiCanCopy__)(struct KernelCtxShareApi * /*this*/);  // virtual override (res) base (gpures)
     NV_STATUS (*__kctxshareapiControl__)(struct KernelCtxShareApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__kctxshareapiMap__)(struct KernelCtxShareApi * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__kctxshareapiUnmap__)(struct KernelCtxShareApi * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
@@ -271,10 +287,6 @@ struct KernelCtxShareApi {
     NV_STATUS (*__kctxshareapiUnmapFrom__)(struct KernelCtxShareApi * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (gpures)
     NvU32 (*__kctxshareapiGetRefCount__)(struct KernelCtxShareApi * /*this*/);  // virtual inherited (res) base (gpures)
     void (*__kctxshareapiAddAdditionalDependants__)(struct RsClient *, struct KernelCtxShareApi * /*this*/, RsResourceRef *);  // virtual inherited (res) base (gpures)
-
-    // Data members
-    struct KernelCtxShare *pShareData;
-    NvHandle hVASpace;
 };
 
 #ifndef __NVOC_CLASS_KernelCtxShareApi_TYPEDEF__
@@ -307,7 +319,7 @@ NV_STATUS __nvoc_objCreate_KernelCtxShareApi(KernelCtxShareApi**, Dynamic*, NvU3
 
 
 // Wrapper macros
-#define kctxshareapiCanCopy_FNPTR(pKernelCtxShareApi) pKernelCtxShareApi->__kctxshareapiCanCopy__
+#define kctxshareapiCanCopy_FNPTR(pKernelCtxShareApi) pKernelCtxShareApi->__nvoc_vtable->__kctxshareapiCanCopy__
 #define kctxshareapiCanCopy(pKernelCtxShareApi) kctxshareapiCanCopy_DISPATCH(pKernelCtxShareApi)
 #define kctxshareapiCtrlCmdSetTpcPartitionTable_FNPTR(pKernelCtxShareApi) pKernelCtxShareApi->__kctxshareapiCtrlCmdSetTpcPartitionTable__
 #define kctxshareapiCtrlCmdSetTpcPartitionTable(pKernelCtxShareApi, pParams) kctxshareapiCtrlCmdSetTpcPartitionTable_DISPATCH(pKernelCtxShareApi, pParams)
@@ -315,58 +327,58 @@ NV_STATUS __nvoc_objCreate_KernelCtxShareApi(KernelCtxShareApi**, Dynamic*, NvU3
 #define kctxshareapiCtrlCmdGetCwdWatermark(pKernelCtxShareApi, pParams) kctxshareapiCtrlCmdGetCwdWatermark_DISPATCH(pKernelCtxShareApi, pParams)
 #define kctxshareapiCtrlCmdSetCwdWatermark_FNPTR(pKernelCtxShareApi) pKernelCtxShareApi->__kctxshareapiCtrlCmdSetCwdWatermark__
 #define kctxshareapiCtrlCmdSetCwdWatermark(pKernelCtxShareApi, pParams) kctxshareapiCtrlCmdSetCwdWatermark_DISPATCH(pKernelCtxShareApi, pParams)
-#define kctxshareapiControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresControl__
+#define kctxshareapiControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresControl__
 #define kctxshareapiControl(pGpuResource, pCallContext, pParams) kctxshareapiControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define kctxshareapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresMap__
+#define kctxshareapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresMap__
 #define kctxshareapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) kctxshareapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define kctxshareapiUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresUnmap__
+#define kctxshareapiUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresUnmap__
 #define kctxshareapiUnmap(pGpuResource, pCallContext, pCpuMapping) kctxshareapiUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define kctxshareapiShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresShareCallback__
+#define kctxshareapiShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresShareCallback__
 #define kctxshareapiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) kctxshareapiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define kctxshareapiGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetRegBaseOffsetAndSize__
+#define kctxshareapiGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetRegBaseOffsetAndSize__
 #define kctxshareapiGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) kctxshareapiGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
-#define kctxshareapiGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetMapAddrSpace__
+#define kctxshareapiGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetMapAddrSpace__
 #define kctxshareapiGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) kctxshareapiGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
-#define kctxshareapiInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresInternalControlForward__
+#define kctxshareapiInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresInternalControlForward__
 #define kctxshareapiInternalControlForward(pGpuResource, command, pParams, size) kctxshareapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
-#define kctxshareapiGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetInternalObjectHandle__
+#define kctxshareapiGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetInternalObjectHandle__
 #define kctxshareapiGetInternalObjectHandle(pGpuResource) kctxshareapiGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define kctxshareapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresAccessCallback__
+#define kctxshareapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
 #define kctxshareapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) kctxshareapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define kctxshareapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemInterMapParams__
+#define kctxshareapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
 #define kctxshareapiGetMemInterMapParams(pRmResource, pParams) kctxshareapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define kctxshareapiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresCheckMemInterUnmap__
+#define kctxshareapiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
 #define kctxshareapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) kctxshareapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define kctxshareapiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemoryMappingDescriptor__
+#define kctxshareapiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
 #define kctxshareapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) kctxshareapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define kctxshareapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControlSerialization_Prologue__
+#define kctxshareapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
 #define kctxshareapiControlSerialization_Prologue(pResource, pCallContext, pParams) kctxshareapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define kctxshareapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControlSerialization_Epilogue__
+#define kctxshareapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
 #define kctxshareapiControlSerialization_Epilogue(pResource, pCallContext, pParams) kctxshareapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define kctxshareapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControl_Prologue__
+#define kctxshareapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
 #define kctxshareapiControl_Prologue(pResource, pCallContext, pParams) kctxshareapiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define kctxshareapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControl_Epilogue__
+#define kctxshareapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
 #define kctxshareapiControl_Epilogue(pResource, pCallContext, pParams) kctxshareapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define kctxshareapiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsDuplicate__
+#define kctxshareapiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
 #define kctxshareapiIsDuplicate(pResource, hMemory, pDuplicate) kctxshareapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define kctxshareapiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resPreDestruct__
+#define kctxshareapiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
 #define kctxshareapiPreDestruct(pResource) kctxshareapiPreDestruct_DISPATCH(pResource)
-#define kctxshareapiControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resControlFilter__
+#define kctxshareapiControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
 #define kctxshareapiControlFilter(pResource, pCallContext, pParams) kctxshareapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define kctxshareapiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsPartialUnmapSupported__
+#define kctxshareapiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
 #define kctxshareapiIsPartialUnmapSupported(pResource) kctxshareapiIsPartialUnmapSupported_DISPATCH(pResource)
-#define kctxshareapiMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resMapTo__
+#define kctxshareapiMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
 #define kctxshareapiMapTo(pResource, pParams) kctxshareapiMapTo_DISPATCH(pResource, pParams)
-#define kctxshareapiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resUnmapFrom__
+#define kctxshareapiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
 #define kctxshareapiUnmapFrom(pResource, pParams) kctxshareapiUnmapFrom_DISPATCH(pResource, pParams)
-#define kctxshareapiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resGetRefCount__
+#define kctxshareapiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
 #define kctxshareapiGetRefCount(pResource) kctxshareapiGetRefCount_DISPATCH(pResource)
-#define kctxshareapiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resAddAdditionalDependants__
+#define kctxshareapiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
 #define kctxshareapiAddAdditionalDependants(pClient, pResource, pReference) kctxshareapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
 static inline NvBool kctxshareapiCanCopy_DISPATCH(struct KernelCtxShareApi *pKernelCtxShareApi) {
-    return pKernelCtxShareApi->__kctxshareapiCanCopy__(pKernelCtxShareApi);
+    return pKernelCtxShareApi->__nvoc_vtable->__kctxshareapiCanCopy__(pKernelCtxShareApi);
 }
 
 static inline NV_STATUS kctxshareapiCtrlCmdSetTpcPartitionTable_DISPATCH(struct KernelCtxShareApi *pKernelCtxShareApi, NV9067_CTRL_TPC_PARTITION_TABLE_PARAMS *pParams) {
@@ -382,99 +394,99 @@ static inline NV_STATUS kctxshareapiCtrlCmdSetCwdWatermark_DISPATCH(struct Kerne
 }
 
 static inline NV_STATUS kctxshareapiControl_DISPATCH(struct KernelCtxShareApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__kctxshareapiControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_vtable->__kctxshareapiControl__(pGpuResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS kctxshareapiMap_DISPATCH(struct KernelCtxShareApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__kctxshareapiMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_vtable->__kctxshareapiMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS kctxshareapiUnmap_DISPATCH(struct KernelCtxShareApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__kctxshareapiUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_vtable->__kctxshareapiUnmap__(pGpuResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool kctxshareapiShareCallback_DISPATCH(struct KernelCtxShareApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__kctxshareapiShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_vtable->__kctxshareapiShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS kctxshareapiGetRegBaseOffsetAndSize_DISPATCH(struct KernelCtxShareApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__kctxshareapiGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_vtable->__kctxshareapiGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS kctxshareapiGetMapAddrSpace_DISPATCH(struct KernelCtxShareApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__kctxshareapiGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_vtable->__kctxshareapiGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS kctxshareapiInternalControlForward_DISPATCH(struct KernelCtxShareApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__kctxshareapiInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_vtable->__kctxshareapiInternalControlForward__(pGpuResource, command, pParams, size);
 }
 
 static inline NvHandle kctxshareapiGetInternalObjectHandle_DISPATCH(struct KernelCtxShareApi *pGpuResource) {
-    return pGpuResource->__kctxshareapiGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_vtable->__kctxshareapiGetInternalObjectHandle__(pGpuResource);
 }
 
 static inline NvBool kctxshareapiAccessCallback_DISPATCH(struct KernelCtxShareApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__kctxshareapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_vtable->__kctxshareapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS kctxshareapiGetMemInterMapParams_DISPATCH(struct KernelCtxShareApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__kctxshareapiGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_vtable->__kctxshareapiGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS kctxshareapiCheckMemInterUnmap_DISPATCH(struct KernelCtxShareApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__kctxshareapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_vtable->__kctxshareapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS kctxshareapiGetMemoryMappingDescriptor_DISPATCH(struct KernelCtxShareApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__kctxshareapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_vtable->__kctxshareapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS kctxshareapiControlSerialization_Prologue_DISPATCH(struct KernelCtxShareApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__kctxshareapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__kctxshareapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void kctxshareapiControlSerialization_Epilogue_DISPATCH(struct KernelCtxShareApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__kctxshareapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__kctxshareapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS kctxshareapiControl_Prologue_DISPATCH(struct KernelCtxShareApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__kctxshareapiControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__kctxshareapiControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void kctxshareapiControl_Epilogue_DISPATCH(struct KernelCtxShareApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__kctxshareapiControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__kctxshareapiControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS kctxshareapiIsDuplicate_DISPATCH(struct KernelCtxShareApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__kctxshareapiIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_vtable->__kctxshareapiIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void kctxshareapiPreDestruct_DISPATCH(struct KernelCtxShareApi *pResource) {
-    pResource->__kctxshareapiPreDestruct__(pResource);
+    pResource->__nvoc_vtable->__kctxshareapiPreDestruct__(pResource);
 }
 
 static inline NV_STATUS kctxshareapiControlFilter_DISPATCH(struct KernelCtxShareApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__kctxshareapiControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__kctxshareapiControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool kctxshareapiIsPartialUnmapSupported_DISPATCH(struct KernelCtxShareApi *pResource) {
-    return pResource->__kctxshareapiIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_vtable->__kctxshareapiIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS kctxshareapiMapTo_DISPATCH(struct KernelCtxShareApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__kctxshareapiMapTo__(pResource, pParams);
+    return pResource->__nvoc_vtable->__kctxshareapiMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS kctxshareapiUnmapFrom_DISPATCH(struct KernelCtxShareApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__kctxshareapiUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_vtable->__kctxshareapiUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 kctxshareapiGetRefCount_DISPATCH(struct KernelCtxShareApi *pResource) {
-    return pResource->__kctxshareapiGetRefCount__(pResource);
+    return pResource->__nvoc_vtable->__kctxshareapiGetRefCount__(pResource);
 }
 
 static inline void kctxshareapiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct KernelCtxShareApi *pResource, RsResourceRef *pReference) {
-    pResource->__kctxshareapiAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_vtable->__kctxshareapiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NvBool kctxshareapiCanCopy_IMPL(struct KernelCtxShareApi *pKernelCtxShareApi);

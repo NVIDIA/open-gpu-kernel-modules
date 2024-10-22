@@ -45,6 +45,7 @@
 #include "gpu/bus/kern_bus.h"
 #include <nv_ref.h>               // NV_PMC_BOOT_1_VGPU
 #include "nvdevid.h"
+#include "ctrl/ctrl0000/ctrl0000vgpu.h"
 
 #include "g_vgpu_chip_flags.h"    // vGPU device names
 
@@ -264,7 +265,7 @@ exit:
 
 NV_STATUS NV_API_CALL nv_vgpu_delete(
     nvidia_stack_t *sp,
-    const NvU8 *pMdevUuid,
+    const NvU8 *pVgpuDevName,
     NvU16 vgpuId
 )
 {
@@ -278,7 +279,7 @@ NV_STATUS NV_API_CALL nv_vgpu_delete(
     // LOCK: acquire API lock
     if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_HYPERVISOR)) == NV_OK)
     {
-        rmStatus = kvgpumgrDeleteRequestVgpu(pMdevUuid, vgpuId);
+        rmStatus = kvgpumgrDeleteRequestVgpu(pVgpuDevName, vgpuId);
         // UNLOCK: release API lock
         rmapiLockRelease();
     }
@@ -324,7 +325,7 @@ NV_STATUS  NV_API_CALL nv_vgpu_process_vf_info(
 NV_STATUS  NV_API_CALL nv_vgpu_create_request(
     nvidia_stack_t *sp,
     nv_state_t *pNv,
-    const NvU8 *pMdevUuid,
+    const NvU8 *pVgpuDevName,
     NvU32 vgpuTypeId,
     NvU16 *vgpuId,
     NvU32 gpuPciBdf
@@ -340,7 +341,7 @@ NV_STATUS  NV_API_CALL nv_vgpu_create_request(
     // LOCK: acquire API lock
     if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_HYPERVISOR)) == NV_OK)
     {
-        rmStatus = kvgpumgrCreateRequestVgpu(pNv->gpu_id, pMdevUuid,
+        rmStatus = kvgpumgrCreateRequestVgpu(pNv->gpu_id, pVgpuDevName,
                                              vgpuTypeId, vgpuId, gpuPciBdf);
 
         // UNLOCK: release API lock
@@ -487,7 +488,7 @@ NV_STATUS NV_API_CALL nv_vgpu_get_bar_info
 (
     nvidia_stack_t *sp,
     nv_state_t *pNv,
-    const NvU8 *pMdevUuid,
+    const NvU8 *pVgpuDevName,
     NvU64 *barSizes,
     NvU64 *sparseOffsets,
     NvU64 *sparseSizes,
@@ -517,7 +518,7 @@ NV_STATUS NV_API_CALL nv_vgpu_get_bar_info
     }
 
     NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_SILENT,
-                        nv_vgpu_rm_get_bar_info(pGpu, pMdevUuid, barSizes,
+                        nv_vgpu_rm_get_bar_info(pGpu, pVgpuDevName, barSizes,
                                                 sparseOffsets, sparseSizes,
                                                 sparseCount, isBar064bit,
                                                 configParams),
@@ -536,7 +537,7 @@ exit:
 NV_STATUS NV_API_CALL nv_vgpu_get_hbm_info(
     nvidia_stack_t *sp,
     nv_state_t *pNv,
-    const NvU8 *pMdevUuid,
+    const NvU8 *pVgpuDevName,
     NvU64 *hbmAddr,
     NvU64 *size
 )
@@ -568,9 +569,9 @@ NV_STATUS NV_API_CALL nv_vgpu_get_hbm_info(
     }
 
     NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_SILENT,
-                        kvgpumgrGetHostVgpuDeviceFromMdevUuid(pNv->gpu_id,
-                                                              pMdevUuid,
-                                                              &pKernelHostVgpuDevice), release_lock);
+                        kvgpumgrGetHostVgpuDeviceFromVgpuDevName(pNv->gpu_id,
+                                                                 pVgpuDevName,
+                                                                 &pKernelHostVgpuDevice), release_lock);
     if (pKernelHostVgpuDevice->numValidHbmRegions > 1)
     {
         NV_PRINTF(LEVEL_NOTICE, "non contiguous HBM region is not supported\n");
@@ -710,7 +711,7 @@ static NV_STATUS _nv_vgpu_get_sparse_mmap(
 NV_STATUS nv_vgpu_rm_get_bar_info
 (
     OBJGPU     *pGpu,
-    const NvU8 *pMdevUuid,
+    const NvU8 *pVgpuDevName,
     NvU64      *barSizes,
     NvU64      *sparseOffsets,
     NvU64      *sparseSizes,
@@ -728,9 +729,9 @@ NV_STATUS nv_vgpu_rm_get_bar_info
                         exit);
 
     NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_SILENT,
-                        kvgpumgrGetHostVgpuDeviceFromMdevUuid(pGpu->gpuId,
-                                                              pMdevUuid,
-                                                              &pKernelHostVgpuDevice),
+                        kvgpumgrGetHostVgpuDeviceFromVgpuDevName(pGpu->gpuId,
+                                                                 pVgpuDevName,
+                                                                 &pKernelHostVgpuDevice),
                         exit);
 
     for (i = 0; i < NVA081_MAX_BAR_REGION_COUNT; i++)
@@ -845,9 +846,9 @@ void osWakeRemoveVgpu(NvU32 gpuId, NvU32 returnStatus)
     vgpu_vfio_info vgpu_info;
 
     vgpu_info.return_status = returnStatus;
-    vgpu_info.domain = gpuDecodeDomain(gpuId);
-    vgpu_info.bus = gpuDecodeBus(gpuId);
-    vgpu_info.device = gpuDecodeDevice(gpuId);
+    vgpu_info.domain = GPU_32_BIT_ID_DECODE_DOMAIN(gpuId);
+    vgpu_info.bus = GPU_32_BIT_ID_DECODE_BUS(gpuId);
+    vgpu_info.device = GPU_32_BIT_ID_DECODE_DEVICE(gpuId);
 
     os_call_vgpu_vfio((void *)&vgpu_info, CMD_VFIO_WAKE_REMOVE_GPU);
 }
@@ -923,3 +924,4 @@ NV_STATUS rm_is_vgpu_supported_device(
 
     return NV_ERR_NOT_SUPPORTED;
 }
+

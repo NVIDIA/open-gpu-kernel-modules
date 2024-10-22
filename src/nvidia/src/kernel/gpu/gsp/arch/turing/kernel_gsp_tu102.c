@@ -349,7 +349,7 @@ kgspProgramLibosBootArgsAddr_TU102
  *
  * @param[in]   pGpu            GPU object pointer
  * @param[in]   pKernelGsp      GSP object pointer
- * @param[in]   pGspFw          GSP_FIRMWARE image pointer
+ * @param[in]   bootMode        GSP boot mode
  *
  * @return NV_OK if GSP-RM RISCV boot was successful.
  *         Appropriate NV_ERR_xxx value otherwise.
@@ -357,9 +357,9 @@ kgspProgramLibosBootArgsAddr_TU102
 NV_STATUS
 kgspPrepareForBootstrap_TU102
 (
-    OBJGPU         *pGpu,
-    KernelGsp      *pKernelGsp,
-    GSP_FIRMWARE   *pGspFw
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp,
+    KernelGspBootMode bootMode
 )
 {
     NV_STATUS     status;
@@ -378,8 +378,12 @@ kgspPrepareForBootstrap_TU102
         return NV_ERR_NOT_SUPPORTED;
     }
 
+    //
     // Prepare to execute FWSEC to setup FRTS if we have a FRTS region
-    if (kgspGetFrtsSize_HAL(pGpu, pKernelGsp) > 0)
+    // Note: for resume and GC6 exit, FRTS is restored by Booter not FWSEC
+    //
+    if ((bootMode == KGSP_BOOT_MODE_NORMAL) &&
+        (kgspGetFrtsSize_HAL(pGpu, pKernelGsp) > 0))
     {
         pKernelGsp->pPreparedFwsecCmd = portMemAllocNonPaged(sizeof(KernelGspPreparedFwsecCmd));
         status = kgspPrepareForFwsecFrts_HAL(pGpu, pKernelGsp,
@@ -395,6 +399,34 @@ kgspPrepareForBootstrap_TU102
     }
 
     return NV_OK;
+}
+
+/*!
+ * Obtain sysmem addr or arguments to be consumed by Booter Load.
+ * Booter expects different arguments for normal boot, resume, and GC6 exit.
+ *
+ * @param[in]  bootMode  GSP boot mode
+ */
+static inline NvU64
+_kgspGetBooterLoadArgs
+(
+    KernelGsp *pKernelGsp,
+    KernelGspBootMode bootMode
+)
+{
+    switch (bootMode)
+    {
+        case KGSP_BOOT_MODE_NORMAL:
+            return memdescGetPhysAddr(pKernelGsp->pWprMetaDescriptor, AT_GPU, 0);
+        case KGSP_BOOT_MODE_SR_RESUME:
+            return memdescGetPhysAddr(pKernelGsp->pSRMetaDescriptor, AT_GPU, 0);
+        case KGSP_BOOT_MODE_GC6_EXIT:
+            return 0;
+    }
+
+    // unreachable
+    NV_ASSERT_FAILED("unexpected GSP boot mode");
+    return 0;
 }
 
 /*!
@@ -414,7 +446,7 @@ kgspPrepareForBootstrap_TU102
  *
  * @param[in]   pGpu            GPU object pointer
  * @param[in]   pKernelGsp      GSP object pointer
- * @param[in]   pGspFw          GSP_FIRMWARE image pointer
+ * @param[in]   bootMode        GSP boot mode
  *
  * @return NV_OK if GSP-RM RISCV boot was successful.
  *         Appropriate NV_ERR_xxx value otherwise.
@@ -422,42 +454,49 @@ kgspPrepareForBootstrap_TU102
 NV_STATUS
 kgspBootstrap_TU102
 (
-    OBJGPU         *pGpu,
-    KernelGsp      *pKernelGsp,
-    GSP_FIRMWARE   *pGspFw
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp,
+    KernelGspBootMode bootMode
 )
 {
-    NV_STATUS     status;
+    NV_STATUS status;
     KernelFalcon *pKernelFalcon = staticCast(pKernelGsp, KernelFalcon);
 
-    // Execute FWSEC to setup FRTS if we have a FRTS region
-    if (kgspGetFrtsSize_HAL(pGpu, pKernelGsp) > 0)
+    //
+    // For normal boot, additional setup is necessary.
+    // Note: for resume or GC6 exit, Booter and/or GSP-RM will restore these.
+    //
+    if (bootMode == KGSP_BOOT_MODE_NORMAL)
     {
-        NV_ASSERT_OR_RETURN(pKernelGsp->pPreparedFwsecCmd != NULL, NV_ERR_INVALID_STATE);
+        // Execute FWSEC to setup FRTS if we have a FRTS region.
+        if (kgspGetFrtsSize_HAL(pGpu, pKernelGsp) > 0)
+        {
+            NV_ASSERT_OR_RETURN(pKernelGsp->pPreparedFwsecCmd != NULL, NV_ERR_INVALID_STATE);
 
-        kflcnReset_HAL(pGpu, pKernelFalcon);
+            kflcnReset_HAL(pGpu, pKernelFalcon);
 
-        status = kgspExecuteFwsec_HAL(pGpu, pKernelGsp, pKernelGsp->pPreparedFwsecCmd);
-        portMemFree(pKernelGsp->pPreparedFwsecCmd);
-        pKernelGsp->pPreparedFwsecCmd = NULL;
+            status = kgspExecuteFwsec_HAL(pGpu, pKernelGsp, pKernelGsp->pPreparedFwsecCmd);
+            portMemFree(pKernelGsp->pPreparedFwsecCmd);
+            pKernelGsp->pPreparedFwsecCmd = NULL;
 
-        NV_ASSERT_OK_OR_RETURN(status);
-    }
+            NV_ASSERT_OK_OR_RETURN(status);
+        }
 
-    kflcnResetIntoRiscv_HAL(pGpu, pKernelFalcon);
+        kflcnResetIntoRiscv_HAL(pGpu, pKernelFalcon);
 
-    // Load init args into mailbox regs
-    kgspProgramLibosBootArgsAddr_HAL(pGpu, pKernelGsp);
+        // Load init args into mailbox regs
+        kgspProgramLibosBootArgsAddr_HAL(pGpu, pKernelGsp);
 
-    // Execute Scrubber if needed
-    if (pKernelGsp->pScrubberUcode != NULL)
-    {
-        NV_ASSERT_OK_OR_RETURN(kgspExecuteScrubberIfNeeded_HAL(pGpu, pKernelGsp));
+        // Execute Scrubber if needed
+        if (pKernelGsp->pScrubberUcode != NULL)
+        {
+            NV_ASSERT_OK_OR_RETURN(kgspExecuteScrubberIfNeeded_HAL(pGpu, pKernelGsp));
+        }
     }
 
     // Execute Booter Load
     status = kgspExecuteBooterLoad_HAL(pGpu, pKernelGsp,
-        memdescGetPhysAddr(pKernelGsp->pWprMetaDescriptor, AT_GPU, 0));
+                                       _kgspGetBooterLoadArgs(pKernelGsp, bootMode));
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "failed to execute Booter Load (ucode for initial boot): 0x%x\n", status);
@@ -482,14 +521,105 @@ kgspBootstrap_TU102
 
     NV_PRINTF(LEVEL_INFO, "Waiting for GSP fw RM to be ready...\n");
 
-    // Link the status queue.
-    NV_ASSERT_OK_OR_RETURN(GspStatusQueueInit(pGpu, &pKernelGsp->pRpc->pMessageQueueInfo));
+    //
+    // For normal boot, link the status queue.
+    // Note: for resume or GC6 exit, GSP-RM will restore queue state.
+    //
+    if (bootMode == KGSP_BOOT_MODE_NORMAL)
+    {
+        NV_ASSERT_OK_OR_RETURN(GspStatusQueueInit(pGpu, &pKernelGsp->pRpc->pMessageQueueInfo));
+    }
 
     NV_ASSERT_OK_OR_RETURN(kgspWaitForRmInitDone(pGpu, pKernelGsp));
 
     NV_PRINTF(LEVEL_INFO, "GSP FW RM ready.\n");
 
     return NV_OK;
+}
+
+/*!
+ * Obtain sysmem addr or arguments to be consumed by Booter Unload.
+ * Booter expects different arguments for normal unload, suspend, and GC6 enter.
+ *
+ * @param[in]  unloadMode  GSP unload mode
+ */
+static inline NvU64
+_kgspGetBooterUnloadArgs
+(
+    KernelGsp *pKernelGsp,
+    KernelGspUnloadMode unloadMode
+)
+{
+    switch (unloadMode)
+    {
+        case KGSP_UNLOAD_MODE_NORMAL:
+            return 0;
+        case KGSP_UNLOAD_MODE_SR_SUSPEND:
+            return memdescGetPhysAddr(pKernelGsp->pSRMetaDescriptor, AT_GPU, 0);
+        case KGSP_UNLOAD_MODE_GC6_ENTER:
+            return 0;
+    }
+
+    // unreachable
+    NV_ASSERT_FAILED("unexpected GSP unload mode");
+    return 0;
+}
+
+/*!
+ * Teardown remaining GSP state after GSP-RM unloads.
+ *
+ * For pre-Hopper, this involves running FWSEC-SB to put back pre-OS apps and
+ * Booter Unload to teardown WPR2.
+ *
+ * @param[in]   pGpu            GPU object pointer
+ * @param[in]   pKernelGsp      GSP object pointer
+ * @param[in]   unloadMode      GSP unload mode
+ */
+NV_STATUS
+kgspTeardown_TU102
+(
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp,
+    KernelGspUnloadMode unloadMode
+)
+{
+    NV_STATUS status;
+
+    //
+    // Avoid cascading timeouts when attempting to invoke the below ucodes if
+    // we are unloading due to a GSP-RM timeout.
+    //
+    threadStateResetTimeout(pGpu);
+
+    if (unloadMode != KGSP_UNLOAD_MODE_GC6_ENTER)
+    {
+        KernelGspPreparedFwsecCmd preparedCmd;
+
+        // Reset GSP so we can load FWSEC-SB
+        kflcnReset_HAL(pGpu, staticCast(pKernelGsp, KernelFalcon));
+
+        // Invoke FWSEC-SB to put back PreOsApps during driver unload
+        status = kgspPrepareForFwsecSb_HAL(pGpu, pKernelGsp, pKernelGsp->pFwsecUcode, &preparedCmd);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "failed to prepare for FWSEC-SB for PreOsApps during driver unload: 0x%x\n", status);
+            NV_ASSERT_FAILED("FWSEC-SB prep failed");
+        }
+        else
+        {
+            status = kgspExecuteFwsec_HAL(pGpu, pKernelGsp, &preparedCmd);
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "failed to execute FWSEC-SB for PreOsApps during driver unload: 0x%x\n", status);
+                NV_ASSERT_FAILED("FWSEC-SB failed");
+            }
+        }
+    }
+
+    // Execute Booter Unload
+    status = kgspExecuteBooterUnloadIfNeeded_HAL(pGpu, pKernelGsp,
+                                                 _kgspGetBooterUnloadArgs(pKernelGsp, unloadMode));
+    return status;
 }
 
 void
@@ -817,6 +947,22 @@ kgspResetHw_TU102
     return NV_OK;
 }
 
+static NvBool kgspCrashCatReportImpactsGspRm(CrashCatReport *pReport)
+{
+    NV_CRASHCAT_CONTAINMENT containment;
+
+    containment = crashcatReportSourceContainment_HAL(pReport);
+    switch (containment)
+    {
+       case NV_CRASHCAT_CONTAINMENT_RISCV_MODE_M:
+       case NV_CRASHCAT_CONTAINMENT_RISCV_HART:
+       case NV_CRASHCAT_CONTAINMENT_UNCONTAINED:
+           return NV_TRUE;
+       default:
+           return NV_FALSE;
+    }
+}
+
 NvBool
 kgspHealthCheck_TU102
 (
@@ -835,8 +981,8 @@ kgspHealthCheck_TU102
 
         while ((pReport = crashcatEngineGetNextCrashReport(pCrashCatEng)) != NULL)
         {
-
-            bHealthy = NV_FALSE;
+            if (kgspCrashCatReportImpactsGspRm(pReport))
+                bHealthy = NV_FALSE;
 
             NV_PRINTF(LEVEL_ERROR,
                 "****************************** GSP-CrashCat Report *******************************\n");
@@ -844,11 +990,8 @@ kgspHealthCheck_TU102
 
             objDelete(pReport);
         }
-
-        goto exit_health_check;
     }
 
-exit_health_check:
     if (!bHealthy)
     {
         NvBool bFirstFatal = !pKernelGsp->bFatalError;
@@ -862,7 +1005,8 @@ exit_health_check:
 
         if (bFirstFatal)
         {
-            kgspRcAndNotifyAllUserChannels(pGpu, pKernelGsp, GSP_ERROR);
+            kgspRcAndNotifyAllChannels(pGpu, pKernelGsp, GSP_ERROR, NV_TRUE);
+            gpuMarkDeviceForReset(pGpu);
         }
 
         gpuCheckEccCounts_HAL(pGpu);
@@ -889,8 +1033,8 @@ kgspService_TU102
     NvU32         intrStatus;
     KernelFalcon *pKernelFalcon = staticCast(pKernelGsp, KernelFalcon);
 
-    // Get the IRQ status and mask the sources not directed to host.
-    intrStatus = kflcnReadIntrStatus_HAL(pGpu, pKernelFalcon);
+    // Get the IRQ status for sources routed to host
+    intrStatus = kflcnGetPendingHostInterrupts(pGpu, pKernelFalcon);
 
     // Exit immediately if there is nothing to do
     if (intrStatus == 0)
@@ -941,11 +1085,23 @@ kgspService_TU102
         NV_CHECK_OR_RETURN(LEVEL_SILENT, !pKernelGsp->bInLockdown, 0);
     }
 
-    kflcnIntrRetrigger_HAL(pGpu, pKernelFalcon);
+    kgspServiceFatalHwError_HAL(pGpu, pKernelGsp, intrStatus);
 
-    intrStatus = kflcnReadIntrStatus_HAL(pGpu, pKernelFalcon);
+    if (intrStatus & kflcnGetEccInterruptMask_HAL(pGpu, pKernelFalcon))
+    {
+        kgspEccServiceEvent_HAL(pGpu, pKernelGsp);
+    }
 
-    return intrStatus;
+    //
+    // Don't retrigger for fatal errors since they can't be cleared without an
+    // engine reset, which results in an interrupt storm until reset
+    //
+    if (!pKernelGsp->bFatalError)
+    {
+        kflcnIntrRetrigger_HAL(pGpu, pKernelFalcon);
+    }
+
+    return kflcnGetPendingHostInterrupts(pGpu, pKernelFalcon);
 }
 
 static NvBool
@@ -1031,7 +1187,7 @@ kgspFreeSuspendResumeData_TU102
 }
 
 NV_STATUS
-kgspSavePowerMgmtState_TU102
+kgspPrepareSuspendResumeData_TU102
 (
     OBJGPU    *pGpu,
     KernelGsp *pKernelGsp
@@ -1094,37 +1250,9 @@ kgspSavePowerMgmtState_TU102
                  NV_TRUE, osGetCurrentProcess(),
                  pVa, pPriv);
 
-    NV_ASSERT_OK_OR_GOTO(nvStatus,
-                         kgspExecuteBooterUnloadIfNeeded_HAL(pGpu,
-                                                             pKernelGsp,
-                                                             memdescGetPhysAddr(pKernelGsp->pSRMetaDescriptor,AT_GPU, 0)),
-                         exit_fail_cleanup);
-
     return nvStatus;
 
 exit_fail_cleanup:
-    kgspFreeSuspendResumeData_HAL(pGpu, pKernelGsp);
-    return nvStatus;
-}
-
-NV_STATUS
-kgspRestorePowerMgmtState_TU102
-(
-    OBJGPU    *pGpu,
-    KernelGsp *pKernelGsp
-)
-{
-    NV_STATUS nvStatus = NV_OK;
-
-    NV_ASSERT_TRUE_OR_GOTO(nvStatus, pKernelGsp->pSRMetaDescriptor != NULL, NV_ERR_INVALID_STATE, exit_cleanup);
-
-    NV_ASSERT_OK_OR_GOTO(nvStatus,
-                         kgspExecuteBooterLoad_HAL(pGpu,
-                                                   pKernelGsp,
-                                                   memdescGetPhysAddr(pKernelGsp->pSRMetaDescriptor, AT_GPU,0)),
-                         exit_cleanup);
-
-exit_cleanup:
     kgspFreeSuspendResumeData_HAL(pGpu, pKernelGsp);
     return nvStatus;
 }

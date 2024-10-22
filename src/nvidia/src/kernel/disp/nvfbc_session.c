@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -75,7 +75,7 @@ nvfbcsessionConstruct_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    pClient = serverutilGetClientUnderLock(hClient);
+    pClient = dynamicCast(pRsClient, RmClient);
     if (pClient == NULL)
     {
         return NV_ERR_INVALID_CLIENT;

@@ -1022,15 +1022,18 @@ void gpumgrGetRmFirmwarePolicy
 
 static NvBool _gpumgrIsRmFirmwareCapableChip(NvU32 pmcBoot42)
 {
-    return (gpuGetArchitectureFromPmcBoot42(pmcBoot42) >= NV_PMC_BOOT_42_ARCHITECTURE_TU100);
+    return (decodePmcBoot42Architecture(pmcBoot42) >= NV_PMC_BOOT_42_ARCHITECTURE_TU100);
 }
 
 NvBool gpumgrIsVgxRmFirmwareCapableChip(NvU32 pmcBoot42)
 {
-    if (gpuGetArchitectureFromPmcBoot42(pmcBoot42) == NV_PMC_BOOT_42_ARCHITECTURE_GH100)
+    if (decodePmcBoot42Architecture(pmcBoot42) == NV_PMC_BOOT_42_ARCHITECTURE_GB100)
         return NV_TRUE;
 
-    if (gpuGetArchitectureFromPmcBoot42(pmcBoot42) == NV_PMC_BOOT_42_ARCHITECTURE_AD100)
+    if (decodePmcBoot42Architecture(pmcBoot42) == NV_PMC_BOOT_42_ARCHITECTURE_GH100)
+        return NV_TRUE;
+
+    if (decodePmcBoot42Architecture(pmcBoot42) == NV_PMC_BOOT_42_ARCHITECTURE_AD100)
         return NV_TRUE;
 
     return NV_FALSE;
@@ -1258,7 +1261,7 @@ _gpumgrCreateGpu(NvU32 gpuInstance, GPUATTACHARG *pAttachArg)
 
     // create OBJGPU with halspec factor initialization value
     status = objCreate(&pGpu, pSys, OBJGPU,
-                    /* ChipHal_arch = */ gpuGetArchitectureFromPmcBoot42(chipId1),
+                    /* ChipHal_arch = */ decodePmcBoot42Architecture(chipId1),
                     /* ChipHal_impl = */ DRF_VAL(_PMC, _BOOT_42, _IMPLEMENTATION, chipId1),
                   /* ChipHal_hidrev = */ hidrev,
           /* RmVariantHal_rmVariant = */ rmVariant,
@@ -1367,7 +1370,7 @@ gpumgrAttachGpu(NvU32 gpuInstance, GPUATTACHARG *pAttachArg)
     OBJGPU    *pGpu = NULL;
     NV_STATUS  status;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // create the new OBJGPU
     if ((status = _gpumgrCreateGpu(gpuInstance, pAttachArg)) != NV_OK)
@@ -1486,7 +1489,7 @@ gpumgrDetachGpu(NvU32 gpuInstance)
     OBJGPU *pGpu = gpumgrGetGpu(gpuInstance);
     NvBool bDelClientResourcesFromGpuMask = !pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_TIMEOUT_RECOVERY);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // Mark for deletion the stale clients related to the GPU mask
     if (bDelClientResourcesFromGpuMask)
@@ -2326,11 +2329,6 @@ gpumgrGetGpuIdInfoV2(NV0000_CTRL_GPU_GET_ID_INFO_V2_PARAMS *pGpuInfo)
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    if (pGpu->subdeviceInstanceOverrideMask != 0)
-    {
-        subDeviceInstance = BIT_IDX_32(pGpu->subdeviceInstanceOverrideMask);
-    }
-    else
     {
         subDeviceInstance = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
     }
@@ -2411,7 +2409,7 @@ gpumgrGetGpuIdInfoV2(NV0000_CTRL_GPU_GET_ID_INFO_V2_PARAMS *pGpuInfo)
     }
 
     // is this GPU part of an SOC
-    if (pGpu->bIsSOC)
+    if (pGpu->bIsSOC || pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_SOC_SDM))
     {
         pGpuInfo->gpuFlags |= DRF_DEF(0000, _CTRL_GPU_ID_INFO, _SOC, _TRUE);
     }
@@ -3381,6 +3379,33 @@ gpumgrUpdateSystemNvlinkTopo_IMPL
     }
 }
 
+NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *
+gpumgrGetNvlinkRecoveryInfo_IMPL
+(
+    NvU64 DomainBusDevice
+)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32 i;
+
+    for (i = 0; i < NV_MAX_DEVICES; i++)
+    {
+        //
+        // Choose the correct GPU by comparing PCI BusDomainDevice
+        // If no matching entry is found, pick the first invalid one.
+        //
+        if (!pGpuMgr->nvlinkUncontainedErrorRecoveryInfo[i].bValid || 
+            (pGpuMgr->nvlinkUncontainedErrorRecoveryInfo[i].DomainBusDevice == DomainBusDevice))
+        {
+            return &pGpuMgr->nvlinkUncontainedErrorRecoveryInfo[i];
+        }
+    }
+
+    // If no entries available, bail.
+    return NULL;
+}
+
 /*!
 * @brief Check if GPUs are indirect peers
 *
@@ -3523,6 +3548,20 @@ gpumgrGetGpuNvlinkBwMode_IMPL(void)
 }
 
 /*!
+ * @brief Get nvlink bandwidth mode scope
+ *
+ * @return bwModeScope     reduced bandwidth mode scope.
+ */
+NvU8
+gpumgrGetGpuNvlinkBwModeScope_IMPL(void)
+{
+    OBJSYS     *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR  *pGpuMgr = SYS_GET_GPUMGR(pSys);
+
+    return pGpuMgr->bwModeScope;
+}
+
+/*!
  * @brief Set nvlink bandwidth mode from Registry
  *
  * @param[in]  pGpu   reference of OBJGPU
@@ -3539,14 +3578,21 @@ gpumgrSetGpuNvlinkBwModeFromRegistry_IMPL
     const char *pStrChar;
     NvU32 strLength = 32;
     NvU8 pStr[32];
+    NvU32 linkCount;
 
     //
     // An RM client can set NVLink BW mode using
     // NV0000_CTRL_CMD_GPU_SET_NVLINK_BW_MODE control call.
     // If the value is not default i.e. `GPU_NVLINK_BW_MODE_FULL`, then skip.
+    // The scope would also be set to GPU_NVLINK_BW_MODE_SCOPE_UNSET if no
+    // PER_GPU setting has been made via NV2080_CTRL_CMD_GPU_SET_NVLINK_BW_MODE.
+    // Skip if it is not.
     //
-    if (pGpuMgr->nvlinkBwMode != GPU_NVLINK_BW_MODE_FULL)
+    if (pGpuMgr->nvlinkBwMode != GPU_NVLINK_BW_MODE_FULL ||
+        pGpuMgr->bwModeScope != GPU_NVLINK_BW_MODE_SCOPE_UNSET)
     {
+
+        NV_PRINTF(LEVEL_ERROR, "BW mode already set. Cannot override with regkey.\n");
         return;
     }
 
@@ -3555,26 +3601,46 @@ gpumgrSetGpuNvlinkBwModeFromRegistry_IMPL
 
     if (osReadRegistryString(pGpu, NV_REG_STR_RM_NVLINK_BW, pStr, &strLength) != NV_OK)
     {
-         goto out;
+        goto out;
     }
 
     pStrChar = (const char *)pStr;
     strLength = portStringLength(pStrChar);
     if (portStringCompare(pStrChar, "OFF", strLength) == 0)
     {
-        pGpuMgr->nvlinkBwMode = GPU_NVLINK_BW_MODE_OFF;
+        pGpuMgr->nvlinkBwMode = FLD_SET_DRF_NUM(_GPU, _NVLINK, _BW_MODE,
+                                                GPU_NVLINK_BW_MODE_OFF,
+                                                pGpuMgr->nvlinkBwMode);
     }
     else if (portStringCompare(pStrChar, "MIN", strLength) == 0)
     {
-        pGpuMgr->nvlinkBwMode = GPU_NVLINK_BW_MODE_MIN;
+        pGpuMgr->nvlinkBwMode = FLD_SET_DRF_NUM(_GPU, _NVLINK, _BW_MODE,
+                                                GPU_NVLINK_BW_MODE_MIN,
+                                                pGpuMgr->nvlinkBwMode);
     }
     else if (portStringCompare(pStrChar, "HALF", strLength) == 0)
     {
-        pGpuMgr->nvlinkBwMode = GPU_NVLINK_BW_MODE_HALF;
+        pGpuMgr->nvlinkBwMode = FLD_SET_DRF_NUM(_GPU, _NVLINK, _BW_MODE,
+                                                GPU_NVLINK_BW_MODE_HALF,
+                                                pGpuMgr->nvlinkBwMode);
     }
     else if (portStringCompare(pStrChar, "3QUARTER", strLength) == 0)
     {
-        pGpuMgr->nvlinkBwMode = GPU_NVLINK_BW_MODE_3QUARTER;
+        pGpuMgr->nvlinkBwMode = FLD_SET_DRF_NUM(_GPU, _NVLINK, _BW_MODE,
+                                                GPU_NVLINK_BW_MODE_3QUARTER,
+                                                pGpuMgr->nvlinkBwMode);
+    }
+    else if (portStringCompare(pStrChar, "LINKCOUNT", strLength) == 0)
+    {
+        if (osReadRegistryDword(pGpu, NV_REG_STR_RM_NVLINK_BW_LINK_COUNT, &linkCount) == NV_OK)
+        {
+            pGpuMgr->nvlinkBwMode = FLD_SET_DRF_NUM(_GPU, _NVLINK, _BW_MODE,
+                                                    GPU_NVLINK_BW_MODE_LINK_COUNT,
+                                                    pGpuMgr->nvlinkBwMode);
+            pGpuMgr->nvlinkBwMode = FLD_SET_DRF_NUM(_GPU, _NVLINK, _BW_MODE_LINK_COUNT,
+                                                    linkCount, pGpuMgr->nvlinkBwMode);
+            pGpuMgr->bwModeScope = GPU_NVLINK_BW_MODE_SCOPE_PER_NODE;
+        }
     }
 
 out:
@@ -3613,6 +3679,56 @@ _gpumgrIsP2PObjectPresent(void)
 }
 
 /*!
+ * @brief Set nvlink bandwidth mode for PER_GPU scope
+ * TODO: Move RBM code into it's own source file
+ *
+ * @param[in]  mode        nvlink bandwidth mode
+ *
+ * @return NV_OK on success, appropriate error on failure.
+ */
+NV_STATUS
+gpumgrSetGpuNvlinkBwModePerGpu_IMPL
+(
+    OBJGPU *pGpu,
+    NvU8 mode
+)
+{
+    OBJSYS     *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR  *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    if (pGpuMgr->bwModeScope == GPU_NVLINK_BW_MODE_SCOPE_PER_NODE)
+    {
+        // Scope is set to PER_NODE.
+        NV_PRINTF(LEVEL_ERROR, "Unable to override bw mode setting in current scope.\n");
+        return NV_ERR_IN_USE;
+    }
+
+    if (mode == pKernelNvlink->nvlinkBwMode)
+    {
+        // Current link count matches requested link count
+        NV_PRINTF(LEVEL_ERROR, "Requested RBM link count is already set.\n");
+        return NV_OK;
+    }
+
+    if (_gpumgrIsP2PObjectPresent())
+    {
+        return NV_ERR_IN_USE;
+    }
+
+    // Set requested rbm link count for gpu
+    NV_ASSERT_OK_OR_RETURN(gpuFabricProbeSetBwModePerGpu(pGpu, mode));
+
+    //
+    // TODO: Need to check if all GPU BW modes are _FULL when requested mode
+    // is _FULL and if so change bwModeScope to _UNSET
+    //
+    pGpuMgr->bwModeScope = GPU_NVLINK_BW_MODE_SCOPE_PER_GPU;
+
+    return NV_OK;
+}
+
+/*!
  * @brief Set nvlink bandwidth mode
  *
  * @param[in]  mode        nvlink bandwidth mode
@@ -3629,8 +3745,16 @@ gpumgrSetGpuNvlinkBwMode_IMPL
     OBJGPUMGR  *pGpuMgr = SYS_GET_GPUMGR(pSys);
     NV_STATUS  status;
 
+    if (pGpuMgr->bwModeScope == GPU_NVLINK_BW_MODE_SCOPE_PER_GPU)
+    {
+        // Scope is set to PER_GPU.
+        NV_PRINTF(LEVEL_ERROR, "Unable to override bw mode setting in current scope\n");
+        return NV_ERR_IN_USE;
+    }
+
     if (mode == pGpuMgr->nvlinkBwMode)
     {
+        NV_PRINTF(LEVEL_INFO, "Requested BW mode is already set.\n");
         return NV_OK;
     }
 
@@ -3639,7 +3763,7 @@ gpumgrSetGpuNvlinkBwMode_IMPL
         return NV_ERR_IN_USE;
     }
 
-    if (mode > GPU_NVLINK_BW_MODE_3QUARTER)
+    if (DRF_VAL(_GPU, _NVLINK, _BW_MODE, mode) > GPU_NVLINK_BW_MODE_3QUARTER)
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
@@ -3650,6 +3774,14 @@ gpumgrSetGpuNvlinkBwMode_IMPL
         return status;
     }
 
+    if (DRF_VAL(_GPU, _NVLINK, _BW_MODE, mode) == GPU_NVLINK_BW_MODE_FULL)
+    {
+        pGpuMgr->bwModeScope = GPU_NVLINK_BW_MODE_SCOPE_UNSET;
+        goto done;
+    }
+    pGpuMgr->bwModeScope = GPU_NVLINK_BW_MODE_SCOPE_PER_NODE;
+
+done:
     pGpuMgr->nvlinkBwMode = mode;
     return NV_OK;
 }
@@ -4498,7 +4630,7 @@ NvBool gpumgrIsDeviceMsixAllowed
         return NV_TRUE;
     }
 
-    chipArch = gpuGetArchitectureFromPmcBoot42(pmcBoot42);
+    chipArch = decodePmcBoot42Architecture(pmcBoot42);
     if ((chipArch != NV_PMC_BOOT_42_ARCHITECTURE_AD100) &&
         (chipArch != NV_PMC_BOOT_42_ARCHITECTURE_GA100))
     {

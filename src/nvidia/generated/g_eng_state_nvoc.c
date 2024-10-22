@@ -57,6 +57,10 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJENGSTATE =
     /*pExportInfo=*/        &__nvoc_export_info_OBJENGSTATE
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+
+// Up-thunk(s) to bridge methods to ancestors (if any)
+
 const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJENGSTATE = 
 {
     /*numEntries=*/     0,
@@ -91,55 +95,32 @@ __nvoc_ctor_OBJENGSTATE_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_OBJENGSTATE_1(OBJENGSTATE *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // engstateConstructEngine -- virtual
-    pThis->__engstateConstructEngine__ = &engstateConstructEngine_IMPL;
-
-    // engstateInitMissing -- virtual
-    pThis->__engstateInitMissing__ = &engstateInitMissing_IMPL;
-
-    // engstateStatePreInitLocked -- virtual
-    pThis->__engstateStatePreInitLocked__ = &engstateStatePreInitLocked_IMPL;
-
-    // engstateStatePreInitUnlocked -- virtual
-    pThis->__engstateStatePreInitUnlocked__ = &engstateStatePreInitUnlocked_IMPL;
-
-    // engstateStateInitLocked -- virtual
-    pThis->__engstateStateInitLocked__ = &engstateStateInitLocked_IMPL;
-
-    // engstateStateInitUnlocked -- virtual
-    pThis->__engstateStateInitUnlocked__ = &engstateStateInitUnlocked_IMPL;
-
-    // engstateStatePreLoad -- virtual
-    pThis->__engstateStatePreLoad__ = &engstateStatePreLoad_IMPL;
-
-    // engstateStateLoad -- virtual
-    pThis->__engstateStateLoad__ = &engstateStateLoad_IMPL;
-
-    // engstateStatePostLoad -- virtual
-    pThis->__engstateStatePostLoad__ = &engstateStatePostLoad_IMPL;
-
-    // engstateStatePreUnload -- virtual
-    pThis->__engstateStatePreUnload__ = &engstateStatePreUnload_IMPL;
-
-    // engstateStateUnload -- virtual
-    pThis->__engstateStateUnload__ = &engstateStateUnload_IMPL;
-
-    // engstateStatePostUnload -- virtual
-    pThis->__engstateStatePostUnload__ = &engstateStatePostUnload_IMPL;
-
-    // engstateStateDestroy -- virtual
-    pThis->__engstateStateDestroy__ = &engstateStateDestroy_IMPL;
-
-    // engstateIsPresent -- virtual
-    pThis->__engstateIsPresent__ = &engstateIsPresent_IMPL;
-} // End __nvoc_init_funcTable_OBJENGSTATE_1 with approximately 14 basic block(s).
+} // End __nvoc_init_funcTable_OBJENGSTATE_1
 
 
 // Initialize vtable(s) for 14 virtual method(s).
 void __nvoc_init_funcTable_OBJENGSTATE(OBJENGSTATE *pThis) {
 
-    // Initialize vtable(s) with 14 per-object function pointer(s).
+    // Per-class vtable definition
+    static const struct NVOC_VTABLE__OBJENGSTATE vtable = {
+        .__engstateConstructEngine__ = &engstateConstructEngine_IMPL,    // virtual
+        .__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
+        .__engstateStatePreInitLocked__ = &engstateStatePreInitLocked_IMPL,    // virtual
+        .__engstateStatePreInitUnlocked__ = &engstateStatePreInitUnlocked_IMPL,    // virtual
+        .__engstateStateInitLocked__ = &engstateStateInitLocked_IMPL,    // virtual
+        .__engstateStateInitUnlocked__ = &engstateStateInitUnlocked_IMPL,    // virtual
+        .__engstateStatePreLoad__ = &engstateStatePreLoad_IMPL,    // virtual
+        .__engstateStateLoad__ = &engstateStateLoad_IMPL,    // virtual
+        .__engstateStatePostLoad__ = &engstateStatePostLoad_IMPL,    // virtual
+        .__engstateStatePreUnload__ = &engstateStatePreUnload_IMPL,    // virtual
+        .__engstateStateUnload__ = &engstateStateUnload_IMPL,    // virtual
+        .__engstateStatePostUnload__ = &engstateStatePostUnload_IMPL,    // virtual
+        .__engstateStateDestroy__ = &engstateStateDestroy_IMPL,    // virtual
+        .__engstateIsPresent__ = &engstateIsPresent_IMPL,    // virtual
+    };
+
+    // Pointer(s) to per-class vtable(s)
+    pThis->__nvoc_vtable = &vtable;    // (engstate) this
     __nvoc_init_funcTable_OBJENGSTATE_1(pThis);
 }
 

@@ -36,6 +36,10 @@
 #include "linux/mm.h"
 #include "nv-mm.h"
 
+#if defined(NV_LINUX_PFN_T_H_PRESENT)
+#include "linux/pfn_t.h"
+#endif
+
 #if defined(NV_BSD)
 #include <vm/vm_pageout.h>
 #endif
@@ -103,6 +107,37 @@ static int __nv_drm_gem_user_memory_mmap(struct nv_drm_gem_object *nv_gem,
     return 0;
 }
 
+#if defined(NV_LINUX) && !defined(NV_VMF_INSERT_MIXED_PRESENT)
+static vm_fault_t __nv_vm_insert_mixed_helper(
+    struct vm_area_struct *vma,
+    unsigned long address,
+    unsigned long pfn)
+{
+    int ret;
+
+#if defined(NV_PFN_TO_PFN_T_PRESENT)
+    ret = vm_insert_mixed(vma, address, pfn_to_pfn_t(pfn));
+#else
+    ret = vm_insert_mixed(vma, address, pfn);
+#endif
+
+    switch (ret) {
+        case 0:
+        case -EBUSY:
+            /*
+             * EBUSY indicates that another thread already handled
+             * the faulted range.
+             */
+            return VM_FAULT_NOPAGE;
+        case -ENOMEM:
+            return VM_FAULT_OOM;
+        default:
+            WARN_ONCE(1, "Unhandled error in %s: %d\n", __FUNCTION__, ret);
+            return VM_FAULT_SIGBUS;
+    }
+}
+#endif
+
 static vm_fault_t __nv_drm_gem_user_memory_handle_vma_fault(
     struct nv_drm_gem_object *nv_gem,
     struct vm_area_struct *vma,
@@ -112,36 +147,19 @@ static vm_fault_t __nv_drm_gem_user_memory_handle_vma_fault(
     unsigned long address = nv_page_fault_va(vmf);
     struct drm_gem_object *gem = vma->vm_private_data;
     unsigned long page_offset;
-    vm_fault_t ret;
+    unsigned long pfn;
 
     page_offset = vmf->pgoff - drm_vma_node_start(&gem->vma_node);
-
     BUG_ON(page_offset >= nv_user_memory->pages_count);
+    pfn = page_to_pfn(nv_user_memory->pages[page_offset]);
 
 #if !defined(NV_LINUX)
-    ret = vmf_insert_pfn(vma, address, page_to_pfn(nv_user_memory->pages[page_offset]));
-#else /* !defined(NV_LINUX) */
-    ret = vm_insert_page(vma, address, nv_user_memory->pages[page_offset]);
-    switch (ret) {
-        case 0:
-        case -EBUSY:
-            /*
-             * EBUSY indicates that another thread already handled
-             * the faulted range.
-             */
-            ret = VM_FAULT_NOPAGE;
-            break;
-        case -ENOMEM:
-            ret = VM_FAULT_OOM;
-            break;
-        default:
-            WARN_ONCE(1, "Unhandled error in %s: %d\n", __FUNCTION__, ret);
-            ret = VM_FAULT_SIGBUS;
-            break;
-    }
-#endif /* !defined(NV_LINUX) */
-
-    return ret;
+    return vmf_insert_pfn(vma, address, pfn);
+#elif defined(NV_VMF_INSERT_MIXED_PRESENT)
+    return vmf_insert_mixed(vma, address, pfn_to_pfn_t(pfn));
+#else
+    return __nv_vm_insert_mixed_helper(vma, address, pfn);
+#endif
 }
 
 static int __nv_drm_gem_user_create_mmap_offset(

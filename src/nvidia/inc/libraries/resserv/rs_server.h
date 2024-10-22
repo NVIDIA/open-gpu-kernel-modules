@@ -55,7 +55,8 @@ struct CLIENT_ENTRY
     PORT_RWLOCK    *pLock;
     RsClient       *pClient;
     NvHandle        hClient;
-    NvU64           lockOwnerTid; ///< Thread id of the lock owner
+    NvU64           lockOwnerTid; ///< Thread id of the write lock owner
+    volatile NvU32  lockReadOwnerCnt;
     NvU32           refCount;
     NvBool          bPendingFree;
     ListNode        node;
@@ -804,7 +805,8 @@ extern NV_STATUS serverAllocResourceLookupLockFlags(RsServer *pServer,
 extern NV_STATUS serverFreeResourceLookupLockFlags(RsServer *pServer,
                                                    RS_LOCK_ENUM lock,
                                                    RS_RES_FREE_PARAMS_INTERNAL *pParams,
-                                                   LOCK_ACCESS_TYPE *pAccess);
+                                                   LOCK_ACCESS_TYPE *pAccess,
+                                                   NvBool *pbSupportForceROLock);
 
 /**
  * Lookup locking flags for a resource copy
@@ -1179,6 +1181,15 @@ NV_STATUS resservRestoreTlsCallContext(CALL_CONTEXT *pOldCallContext);
  * @param[in]   bSearchAncestors Search parents of the call context resource ref
  */
 RsResourceRef *resservGetContextRefByType(NvU32 internalClassId, NvBool bSearchAncestors);
+
+/**
+ * Test if a client handle is currently locked for LOCK_ACCESS_READ or not.
+ * The caller must hold the client lock in either mode to acquire an accurate
+ * result. Callers without the client list lock are subject to race conditions.
+ *
+ * @param[out]  pClientEntry Pointer to the CLIENT_ENTRY
+ */
+NvBool serverIsClientLockedForRead(CLIENT_ENTRY* pClientEntry);
 
 #ifdef __cplusplus
 }

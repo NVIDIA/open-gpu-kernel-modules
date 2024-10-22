@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -64,51 +64,33 @@ NV_STATUS krcReadVirtMem_IMPL
     cursize = RM_PAGE_SIZE - pageStartOffset;
     virtAddr &= ~RM_PAGE_MASK;
 
+    pMem = portMemAllocNonPaged(RM_PAGE_SIZE);
+    if (pMem == NULL)
+    {
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+    }
+
+    surf.pMemDesc = &memDesc;
+    surf.offset = 0;
+
     for (cur4kPage = start4kPage; cur4kPage <= end4kPage; ++cur4kPage)
     {
-        status = dmaXlateVAtoPAforChannel_HAL(pGpu, pDma,
-            pKernelChannel, virtAddr, &physaddr, &memtype);
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                "NV2080_CTRL_CMD_RC_READ_VIRTUAL_MEM: va translation failed\n");
-            return status;
-        }
-        if (memtype == ADDR_SYSMEM)
-        {
-            // XXX Fix me! NV_MEMORY_UNCACHED may not be the correct memory type.
-            pMem = (NvU8*) osMapKernelSpace(physaddr, RM_PAGE_SIZE,
-                                            NV_MEMORY_UNCACHED,
-                                            NV_PROTECT_READ_WRITE);
-            if (pMem == NULL)
-            {
-                return NV_ERR_INSUFFICIENT_RESOURCES;
-            }
-        }
-        else if (memtype == ADDR_FBMEM)
-        {
-            memdescCreateExisting(&memDesc,
-                                  pGpu,
-                                  RM_PAGE_SIZE,
-                                  ADDR_FBMEM,
-                                  NV_MEMORY_UNCACHED,
-                                  MEMDESC_FLAGS_NONE);
-            memdescDescribe(&memDesc, ADDR_FBMEM, physaddr, RM_PAGE_SIZE);
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+            dmaXlateVAtoPAforChannel_HAL(pGpu, pDma, pKernelChannel, virtAddr, &physaddr, &memtype),
+            cleanup);
 
-            surf.pMemDesc = &memDesc;
-            surf.offset = 0;
+        memdescCreateExisting(&memDesc,
+                              pGpu,
+                              RM_PAGE_SIZE,
+                              memtype,
+                              NV_MEMORY_UNCACHED,
+                              MEMDESC_FLAGS_NONE);
+        memdescDescribe(&memDesc, memtype, physaddr, RM_PAGE_SIZE);
 
-            pMem = portMemAllocNonPaged(RM_PAGE_SIZE);
-            if (pMem == NULL)
-            {
-                return NV_ERR_INSUFFICIENT_RESOURCES;
-            }
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+            memmgrMemRead(pMemoryManager, &surf, pMem, RM_PAGE_SIZE, TRANSFER_FLAGS_NONE),
+            cleanup);
 
-            NV_ASSERT_OK_OR_ELSE(status,
-                memmgrMemRead(pMemoryManager, &surf, pMem, RM_PAGE_SIZE,
-                              TRANSFER_FLAGS_NONE),
-                portMemFree(pMem); return status; );
-        }
         if (cursize > bufSize)
         {
             cursize = bufSize;
@@ -119,22 +101,17 @@ NV_STATUS krcReadVirtMem_IMPL
                     pMem + pageStartOffset,
                     cursize);
 
-        if (memtype == ADDR_SYSMEM)
-        {
-            osUnmapKernelSpace(pMem, RM_PAGE_SIZE);
-        }
-        else if (memtype == ADDR_FBMEM)
-        {
-            portMemFree(pMem);
-            memdescDestroy(&memDesc);
-        }
-        pMem = NULL;
+        memdescDestroy(&memDesc);
+
         pageStartOffset = 0;
         bufPtr = NvP64_PLUS_OFFSET(bufPtr,cursize);
         bufSize -= cursize;
         cursize = RM_PAGE_SIZE;
         virtAddr += RM_PAGE_SIZE;
     }
+
+cleanup:
+    portMemFree(pMem);
 
     return NV_OK;
 }

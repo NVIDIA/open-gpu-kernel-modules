@@ -68,6 +68,15 @@ void rmapiShutdown(void);
 #define RMAPI_LOCK_FLAGS_LOW_PRIORITY                     NVBIT(2)      // Deprioritize lock acquire
 
 /**
+ * Acquire API lock for READ, even if NV_REG_STR_RM_READONLY_API_LOCK_MODULE is
+ * not set for the module.
+ *
+ * This allows to opt-in into the RO-locking behavior for specific paths while
+ * global enablement is pending.
+ */
+#define RMAPI_LOCK_FLAGS_READ_FORCE                       NVBIT(3)
+
+/**
  * Acquire the RM API Lock
  *
  * The API lock is a sleeping mutex that is used to serialize access to RM APIs

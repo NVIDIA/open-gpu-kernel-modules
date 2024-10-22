@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -374,7 +374,7 @@ kbusCreateP2PMappingForNvlink_GP100
     {
         KernelNvlink *pKernelNvlink0 = GPU_GET_KERNEL_NVLINK(pGpu0);
         KernelNvlink *pKernelNvlink1 = GPU_GET_KERNEL_NVLINK(pGpu1);
-        NV2080_CTRL_NVLINK_ENABLE_NVLINK_PEER_PARAMS params;
+        NV2080_CTRL_INTERNAL_NVLINK_ENABLE_NVLINK_PEER_PARAMS params;
 
         if (pKernelNvlink0 == NULL || pKernelNvlink1 == NULL)
         {
@@ -387,7 +387,7 @@ kbusCreateP2PMappingForNvlink_GP100
 
         // Set the NVLink USE_NVLINK_PEER fields in the LTCS registers for GPU0
         status = knvlinkExecGspRmRpc(pGpu0, pKernelNvlink0,
-                                     NV2080_CTRL_CMD_NVLINK_ENABLE_NVLINK_PEER,
+                                     NV2080_CTRL_CMD_INTERNAL_NVLINK_ENABLE_NVLINK_PEER,
                                      (void *)&params, sizeof(params));
         if (status != NV_OK)
         {
@@ -404,7 +404,7 @@ kbusCreateP2PMappingForNvlink_GP100
 
         // Set the NVLink USE_NVLINK_PEER fields in the LTCS registers for GPU1
         status = knvlinkExecGspRmRpc(pGpu1, pKernelNvlink1,
-                                     NV2080_CTRL_CMD_NVLINK_ENABLE_NVLINK_PEER,
+                                     NV2080_CTRL_CMD_INTERNAL_NVLINK_ENABLE_NVLINK_PEER,
                                      (void *)&params, sizeof(params));
         if (status != NV_OK)
         {
@@ -540,7 +540,7 @@ _kbusRemoveNvlinkPeerMapping
         else
         {
             KernelNvlink *pKernelNvlink0 = GPU_GET_KERNEL_NVLINK(pGpu0);
-            NV2080_CTRL_NVLINK_ENABLE_NVLINK_PEER_PARAMS params;
+            NV2080_CTRL_INTERNAL_NVLINK_ENABLE_NVLINK_PEER_PARAMS params;
 
             NV_ASSERT_OR_RETURN(pKernelNvlink0 != NULL, NV_ERR_NOT_SUPPORTED);
 
@@ -550,7 +550,7 @@ _kbusRemoveNvlinkPeerMapping
 
             // Unset the NVLink USE_NVLINK_PEER fields in the LTCS registers for GPU0
             status = knvlinkExecGspRmRpc(pGpu0, pKernelNvlink0,
-                                         NV2080_CTRL_CMD_NVLINK_ENABLE_NVLINK_PEER,
+                                         NV2080_CTRL_CMD_INTERNAL_NVLINK_ENABLE_NVLINK_PEER,
                                          (void *)&params, sizeof(params));
             if (status != NV_OK)
             {

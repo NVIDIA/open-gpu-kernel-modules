@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2015,2020,2022,2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -59,20 +59,10 @@ mmuWalkSparsify
     pWalk->bUseStagingBuffer = bUseStagingBuffer;
 
     // Sparsify
-    if (pWalk->flags.bUseIterative)
-    {
-        status = mmuWalkProcessPdes(pWalk,
-                                    &g_opParamsSparsify,
-                                    &pWalk->root, pWalk->root.pInstances,
-                                    vaLo, vaHi);
-    }
-    else
-    {
-        status = g_opParamsSparsify.opFunc(pWalk,
-                                           &g_opParamsSparsify,
-                                           &pWalk->root, pWalk->root.pInstances,
-                                           vaLo, vaHi);
-    }
+    status = mmuWalkProcessPdes(pWalk,
+                                &g_opParamsSparsify,
+                                &pWalk->root, pWalk->root.pInstances,
+                                vaLo, vaHi);
 
     if (NV_OK != status)
     {

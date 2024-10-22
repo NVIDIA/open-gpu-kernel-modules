@@ -27,6 +27,10 @@
 
 #include "ctrl/ctrl2080/ctrl2080gpu.h"
 
+#if PORT_MEM_TRACK_USE_LIMIT
+ct_assert(PORT_MEM_LIMIT_MAX_GFID == VGPU_MAX_GFID);
+#endif
+
 // Get vGPU license product name from license info
 static char * getGridLicenseProductName(const char* licenseInfo)
 {

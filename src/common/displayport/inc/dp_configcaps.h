@@ -472,8 +472,8 @@ namespace DisplayPort
         virtual void             refreshLinkStatus() = 0;
         virtual bool             isLinkStatusValid(unsigned lanes) = 0;
 
-        virtual void getCustomTestPattern(NvU8 *testPattern) = 0;                         // DPCD offset 250 - 259
-
+        // DPCD offset 250 - 259
+        virtual void get80BitsCustomTestPattern(NvU8 *testPattern) = 0;
         //
         //  Message Boxes
         //
@@ -689,8 +689,9 @@ namespace DisplayPort
             bool      streamStatusChanged;                          // DPCD offset 2005
             bool      hdmiLinkStatusChanged;                        // DPCD offset 2005
             bool      dpTunnelingIrq;                               // DPCD offset 2005
-            NvU8      eightyBitCustomPat[10];                       // DPCD offset 250 - 259
 
+            // DPCD offset 250 - 259
+            NvU8      cstm80Bits[NV_DPCD_TEST_80BIT_CUSTOM_PATTERN__SIZE];
             struct
             {
                 struct
@@ -1002,7 +1003,7 @@ namespace DisplayPort
         virtual AuxRetry::status setMultistreamLink(bool enable);
         virtual AuxRetry::status setMultistreamHotplugMode(MultistreamHotplugMode notifyType);
 
-        bool parseTestRequestTraining(NvU8 * buffer /* 0x18-0x28 valid */);
+        virtual bool parseTestRequestTraining(NvU8 * buffer /* 0x18-0x28 valid */);
         void parseAutomatedTestRequest(bool testRequestPending);
 
         virtual bool parseTestRequestPhy();
@@ -1200,24 +1201,27 @@ namespace DisplayPort
             return interrupts.testPhyCompliance.testRequestPhyCompliance;
         }
 
-        virtual void getTestRequestTraining(LinkRate & rate, unsigned & lanes) // DPCD offset 219, 220
+        // DPCD offset 219, 220
+        virtual void getTestRequestTraining(LinkRate & rate, unsigned & lanes)
         {
             rate = interrupts.testTraining.testRequestLinkRate;
             lanes = interrupts.testTraining.testRequestLaneCount;
         }
 
-        virtual LinkQualityPatternType getPhyTestPattern()                            // DPCD offset 248
+        // DPCD offset 248
+        virtual LinkQualityPatternType getPhyTestPattern()
         {
             return interrupts.testPhyCompliance.phyTestPattern;
         }
 
-        virtual void getCustomTestPattern(NvU8 *testPattern)                         // DPCD offset 250 - 259
+        // DPCD offset 250 - 259
+        virtual void get80BitsCustomTestPattern(NvU8 *testPattern)
         {
             int i;
 
             for (i = 0; i < 10; i++)
             {
-                testPattern[i] = interrupts.eightyBitCustomPat[i];
+                testPattern[i] = interrupts.cstm80Bits[i];
             }
         }
 

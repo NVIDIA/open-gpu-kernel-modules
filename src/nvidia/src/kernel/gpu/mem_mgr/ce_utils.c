@@ -50,19 +50,15 @@
 
 static NV_STATUS _memUtilsGetCe
 (
-    OBJGPU *pGpu,
-    NvHandle hClient,
-    NvHandle hDevice,
-    NvU32 *pCeInstance
+    OBJGPU   *pGpu,
+    RsClient *pClient,
+    NvHandle  hDevice,
+    NvU32    *pCeInstance
 )
 {
     if (IS_MIG_IN_USE(pGpu))
     {
-        RsClient *pClient;
         Device *pDevice;
-
-        NV_ASSERT_OK_OR_RETURN(
-            serverGetClientUnderLock(&g_resServ, hClient, &pClient));
 
         NV_ASSERT_OK_OR_RETURN(
             deviceGetByHandle(pClient, hDevice, &pDevice));
@@ -117,7 +113,6 @@ ceutilsConstruct_IMPL
 
     // Allocate channel with RM internal client
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    RmClient *pClient;
 
     OBJCHANNEL *pChannel = (OBJCHANNEL *) portMemAllocNonPaged(sizeof(OBJCHANNEL));
     if (pChannel == NULL)
@@ -137,8 +132,6 @@ ceutilsConstruct_IMPL
     }
 
     pChannel->hClient = pCeUtils->hClient;
-    pClient = serverutilGetClientUnderLock(pChannel->hClient);
-    NV_ASSERT_OR_GOTO(pClient != NULL, free_client);
 
     status = serverGetClientUnderLock(&g_resServ, pChannel->hClient, &pChannel->pRsClient);
     NV_ASSERT_OR_GOTO(status == NV_OK, free_client);
@@ -147,7 +140,7 @@ ceutilsConstruct_IMPL
     {
         NV_ASSERT_OK_OR_GOTO(
             status,
-            clientSetHandleGenerator(staticCast(pClient, RsClient), RS_UNIQUE_HANDLE_BASE,
+            clientSetHandleGenerator(pChannel->pRsClient, RS_UNIQUE_HANDLE_BASE,
                                      RS_UNIQUE_HANDLE_RANGE/2 - VGPU_RESERVED_HANDLE_RANGE),
             free_client);
     }
@@ -155,7 +148,7 @@ ceutilsConstruct_IMPL
     {
         NV_ASSERT_OK_OR_GOTO(
             status,
-            clientSetHandleGenerator(staticCast(pClient, RsClient), 1U, ~0U - 1U),
+            clientSetHandleGenerator(pChannel->pRsClient, 1U, ~0U - 1U),
             free_client);
     }
 
@@ -214,7 +207,7 @@ ceutilsConstruct_IMPL
     else
     {
         NV_ASSERT_OK_OR_GOTO(status,
-            _memUtilsGetCe(pGpu, pChannel->hClient, pChannel->deviceId, &pChannel->ceId),
+            _memUtilsGetCe(pGpu, pChannel->pRsClient, pChannel->deviceId, &pChannel->ceId),
             free_client);
     }
 

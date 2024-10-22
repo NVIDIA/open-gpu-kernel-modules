@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,7 +32,7 @@
 #include "kernel/platform/chipset/chipset.h"
 #include "kernel/rmapi/client.h"
 
-
+#include "lib/base_utils.h"
 #include "libraries/utils/nvprintf.h"
 #include "nvrm_registry.h"
 #include "nverror.h"
@@ -41,7 +41,6 @@
 
 static void _krcInitRegistryOverrides(OBJGPU *pGpu, KernelRc *pKernelRc);
 static void _krcLogUuidOnce(OBJGPU *pGpu, KernelRc *pKernelRc);
-
 
 NV_STATUS
 krcConstructEngine_IMPL
@@ -538,4 +537,87 @@ krcGetChannelInError_FWCLIENT
 {
     NV_ASSERT_OR_RETURN(IS_GSP_CLIENT(ENG_GET_GPU(pKernelRc)), NULL);
     return pKernelRc->pPreviousChannelInError;
+}
+
+#if !(defined(DEBUG) || defined(DEVELOP))
+//
+// Skip dumping the NvLog for the next XIDs which gets triggered
+// within 1 sec.
+// This will prevent logs from getting flooded whenever there is any
+// XID storm due to some bad state.
+//
+static void
+_krcValidateAndDumpToKernelLog(NvU64 *lastXidTimestamp)
+{
+    NvU32 sec, usec;
+
+    if (((osGetCurrentTime(&sec, &usec) == NV_OK) &&
+       ((((sec * 1000000) + usec) - *lastXidTimestamp) > 1000000)))
+    {
+        nvlogDumpToKernelLog(NV_TRUE);
+        *lastXidTimestamp = ((NvU64)sec * 1000000) + usec;
+    }
+}
+#endif //!(DEBUG || DEVELOP)
+
+void krcDumpNvLog(OBJGPU *pGpu,
+                  NvU32 exceptType)
+{
+#if !(defined(DEBUG) || defined(DEVELOP))
+    NvU32 data32 = 0;
+    static NvU64 lastXidTimestamp;
+
+    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_DUMP_NVLOG, &data32) == NV_OK) &&
+        (data32 == NV_REG_STR_RM_DUMP_NVLOG_ENABLE))
+    {
+        NvU8 suppressXid[MAX_XID_SUPPRESS_KEY_LENGTH];
+        NvU32 size = sizeof(suppressXid);
+        NvBool xidDumpSuppressed = NV_FALSE;
+
+        if (osReadRegistryBinary(pGpu, NV_REG_SUPPRESS_XID_DUMP,
+            (NvU8 *)suppressXid, &size) == NV_OK)
+        {
+            NvU8 *pStr, *pEndStr;
+            NvU32 exceptionType = 0;
+            NvU32 numFound;
+
+            suppressXid[MAX_XID_SUPPRESS_KEY_LENGTH - 1] = '\0';
+            pStr = (NvU8 *)suppressXid;
+
+            while (pStr != NULL)
+            {
+                exceptionType = nvStrToL(pStr, &pEndStr, BASE10, ',', &numFound);
+                if (exceptionType == exceptType)
+                {
+                    xidDumpSuppressed = NV_TRUE;
+                    break;
+                }
+                pStr = pEndStr;
+            }
+
+
+            if (!xidDumpSuppressed)
+            {
+                _krcValidateAndDumpToKernelLog(&lastXidTimestamp);
+            }
+        }
+
+        //
+        // Dump logs after RC recovery for below Xids. Be careful while enabling
+        // this regkey since we are dumping buffers with GPU locks held (takes ~500 us).
+        //
+        else if (exceptType == ROBUST_CHANNEL_GR_EXCEPTION || // 13
+            exceptType == ROBUST_CHANNEL_FIFO_ERROR_MMU_ERR_FLT || // 31
+            exceptType == ROBUST_CHANNEL_PBDMA_ERROR || // 32
+            exceptType == ROBUST_CHANNEL_RESETCHANNEL_VERIF_ERROR || // 43
+            exceptType == PMU_BREAKPOINT || // 61
+            exceptType == PMU_HALT_ERROR || // 62
+            exceptType == ROBUST_CHANNEL_GPU_HAS_FALLEN_OFF_THE_BUS || // 79
+            exceptType == GSP_RPC_TIMEOUT || // 119
+            exceptType == GSP_ERROR) // 120
+        {
+            _krcValidateAndDumpToKernelLog(&lastXidTimestamp);
+        }
+    }
+#endif //!(DEBUG || DEVELOP)
 }

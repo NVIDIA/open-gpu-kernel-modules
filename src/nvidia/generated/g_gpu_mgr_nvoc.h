@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -154,11 +154,19 @@ typedef struct CONF_COMPUTE_CAPS
 //
 // GPU NVLINK reduced bandwidth mode
 //
-#define GPU_NVLINK_BW_MODE_FULL     (0x0)
-#define GPU_NVLINK_BW_MODE_OFF      (0x1)
-#define GPU_NVLINK_BW_MODE_MIN      (0x2)
-#define GPU_NVLINK_BW_MODE_HALF     (0x3)
-#define GPU_NVLINK_BW_MODE_3QUARTER (0x4)
+#define NV_GPU_NVLINK_BW_MODE_LINK_COUNT   7:3
+#define NV_GPU_NVLINK_BW_MODE              2:0 // Legacy bw mode
+#define GPU_NVLINK_BW_MODE_FULL          (0x0)
+#define GPU_NVLINK_BW_MODE_OFF           (0x1)
+#define GPU_NVLINK_BW_MODE_MIN           (0x2)
+#define GPU_NVLINK_BW_MODE_HALF          (0x3)
+#define GPU_NVLINK_BW_MODE_3QUARTER      (0x4)
+#define GPU_NVLINK_BW_MODE_LINK_COUNT    (0x5) // Indicates link count should be used instead of legacy bw modes
+
+// RBM settings
+#define GPU_NVLINK_BW_MODE_SCOPE_UNSET    (0x0)
+#define GPU_NVLINK_BW_MODE_SCOPE_PER_NODE (0x1) // Set per node with legacy bw modes
+#define GPU_NVLINK_BW_MODE_SCOPE_PER_GPU  (0x2) // Set per gpu with link count
 
 typedef struct NVLINK_TOPOLOGY_PARAMS
 {
@@ -185,6 +193,18 @@ typedef struct _def_gpu_nvlink_topology_info
     NvU64   DomainBusDevice;
     NVLINK_TOPOLOGY_PARAMS params;
 } NVLINK_TOPOLOGY_INFO, *PNVLINK_TOPOLOGY_INFO;
+
+typedef struct NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO
+{
+    NvBool bValid;
+    NvU64 DomainBusDevice;
+    NvU64 startTime;
+    volatile NvU32 active;
+    volatile NvU32 rcCompleted;
+    volatile NvU32 uvmIdle;
+    volatile NvU32 recoveryReady;
+    NvU8 uuid[RM_SHA1_GID_SIZE];
+} NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO;
 
 typedef struct
 {
@@ -315,6 +335,8 @@ struct OBJGPUMGR {
     NvU8 powerDisconnectedGpuBus[32];
     NVLINK_TOPOLOGY_INFO nvlinkTopologyInfo[32];
     NvU8 nvlinkBwMode;
+    NvU8 bwModeScope;
+    NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO nvlinkUncontainedErrorRecoveryInfo[32];
     GPUMGR_SAVE_MIG_INSTANCE_TOPOLOGY MIGTopologyInfo[32];
     void *cachedMIGInfoLock;
     GPUMGR_CACHED_MIG_STATE cachedMIGInfo[32];
@@ -403,6 +425,9 @@ NvBool gpumgrGetSystemNvlinkTopo_IMPL(NvU64 DomainBusDevice, struct NVLINK_TOPOL
 void gpumgrUpdateSystemNvlinkTopo_IMPL(NvU64 DomainBusDevice, struct NVLINK_TOPOLOGY_PARAMS *pTopoParams);
 
 #define gpumgrUpdateSystemNvlinkTopo(DomainBusDevice, pTopoParams) gpumgrUpdateSystemNvlinkTopo_IMPL(DomainBusDevice, pTopoParams)
+NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *gpumgrGetNvlinkRecoveryInfo_IMPL(NvU64 DomainBusDevice);
+
+#define gpumgrGetNvlinkRecoveryInfo(DomainBusDevice) gpumgrGetNvlinkRecoveryInfo_IMPL(DomainBusDevice)
 NV_STATUS gpumgrSetGpuInitDisabledNvlinks_IMPL(NvU32 gpuId, NvU32 mask, NvBool bSkipHwNvlinkDisable);
 
 #define gpumgrSetGpuInitDisabledNvlinks(gpuId, mask, bSkipHwNvlinkDisable) gpumgrSetGpuInitDisabledNvlinks_IMPL(gpuId, mask, bSkipHwNvlinkDisable)
@@ -412,12 +437,18 @@ NV_STATUS gpumgrGetGpuInitDisabledNvlinks_IMPL(NvU32 gpuId, NvU32 *pMask, NvBool
 NvU8 gpumgrGetGpuNvlinkBwMode_IMPL(void);
 
 #define gpumgrGetGpuNvlinkBwMode() gpumgrGetGpuNvlinkBwMode_IMPL()
+NvU8 gpumgrGetGpuNvlinkBwModeScope_IMPL(void);
+
+#define gpumgrGetGpuNvlinkBwModeScope() gpumgrGetGpuNvlinkBwModeScope_IMPL()
 void gpumgrSetGpuNvlinkBwModeFromRegistry_IMPL(struct OBJGPU *pGpu);
 
 #define gpumgrSetGpuNvlinkBwModeFromRegistry(pGpu) gpumgrSetGpuNvlinkBwModeFromRegistry_IMPL(pGpu)
 NV_STATUS gpumgrSetGpuNvlinkBwMode_IMPL(NvU8 mode);
 
 #define gpumgrSetGpuNvlinkBwMode(mode) gpumgrSetGpuNvlinkBwMode_IMPL(mode)
+NV_STATUS gpumgrSetGpuNvlinkBwModePerGpu_IMPL(struct OBJGPU *pGpu, NvU8 mode);
+
+#define gpumgrSetGpuNvlinkBwModePerGpu(pGpu, mode) gpumgrSetGpuNvlinkBwModePerGpu_IMPL(pGpu, mode)
 NvBool gpumgrCheckIndirectPeer_IMPL(struct OBJGPU *pGpu, struct OBJGPU *pRemoteGpu);
 
 #define gpumgrCheckIndirectPeer(pGpu, pRemoteGpu) gpumgrCheckIndirectPeer_IMPL(pGpu, pRemoteGpu)

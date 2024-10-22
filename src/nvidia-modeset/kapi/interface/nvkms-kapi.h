@@ -124,6 +124,14 @@ struct NvKmsKapiDisplayMode {
 #define NVKMS_KAPI_LAYER_INVALID_IDX           0xff
 #define NVKMS_KAPI_LAYER_PRIMARY_IDX              0
 
+struct NvKmsKapiLutCaps {
+    struct {
+        struct NvKmsLUTCaps ilut;
+        struct NvKmsLUTCaps tmo;
+    } layer[NVKMS_KAPI_LAYER_MAX];
+    struct NvKmsLUTCaps olut;
+};
+
 struct NvKmsKapiDeviceResourcesInfo {
 
     NvU32 numHeads;
@@ -169,6 +177,8 @@ struct NvKmsKapiDeviceResourcesInfo {
 
     NvU64 supportedSurfaceMemoryFormats[NVKMS_KAPI_LAYER_MAX];
     NvBool supportsICtCp[NVKMS_KAPI_LAYER_MAX];
+
+    struct NvKmsKapiLutCaps lutCaps;
 };
 
 #define NVKMS_KAPI_LAYER_MASK(layerType) (1 << (layerType))
@@ -262,21 +272,54 @@ struct NvKmsKapiLayerConfig {
     NvU16 dstWidth, dstHeight;
 
     enum NvKmsInputColorSpace inputColorSpace;
+
+    struct {
+        NvBool enabled;
+        struct NvKmsKapiSurface *lutSurface;
+        NvU64 offset;
+        NvU32 vssSegments;
+        NvU32 lutEntries;
+    } ilut;
+
+    struct {
+        NvBool enabled;
+        struct NvKmsKapiSurface *lutSurface;
+        NvU64 offset;
+        NvU32 vssSegments;
+        NvU32 lutEntries;
+    } tmo;
+
     struct NvKmsCscMatrix csc;
     NvBool cscUseMain;
+
+    struct {
+        struct NvKmsCscMatrix lmsCtm;
+        struct NvKmsCscMatrix lmsToItpCtm;
+        struct NvKmsCscMatrix itpToLmsCtm;
+        struct NvKmsCscMatrix blendCtm;
+        struct {
+            NvBool lmsCtm      : 1;
+            NvBool lmsToItpCtm : 1;
+            NvBool itpToLmsCtm : 1;
+            NvBool blendCtm    : 1;
+        } enabled;
+    } matrixOverrides;
 };
 
 struct NvKmsKapiLayerRequestedConfig {
     struct NvKmsKapiLayerConfig config;
     struct {
-        NvBool surfaceChanged     : 1;
-        NvBool srcXYChanged       : 1;
-        NvBool srcWHChanged       : 1;
-        NvBool dstXYChanged       : 1;
-        NvBool dstWHChanged       : 1;
-        NvBool cscChanged         : 1;
-        NvBool tfChanged          : 1;
-        NvBool hdrMetadataChanged : 1;
+        NvBool surfaceChanged          : 1;
+        NvBool srcXYChanged            : 1;
+        NvBool srcWHChanged            : 1;
+        NvBool dstXYChanged            : 1;
+        NvBool dstWHChanged            : 1;
+        NvBool cscChanged              : 1;
+        NvBool tfChanged               : 1;
+        NvBool hdrMetadataChanged      : 1;
+        NvBool matrixOverridesChanged  : 1;
+        NvBool ilutChanged             : 1;
+        NvBool tmoChanged              : 1;
     } flags;
 };
 
@@ -342,18 +385,30 @@ struct NvKmsKapiHeadModeSetConfig {
             struct NvKmsLutRamps *pRamps;
         } output;
     } lut;
+
+    struct {
+        NvBool enabled;
+        struct NvKmsKapiSurface *lutSurface;
+        NvU64 offset;
+        NvU32 vssSegments;
+        NvU32 lutEntries;
+    } olut;
+
+    NvU32 olutFpNormScale;
 };
 
 struct NvKmsKapiHeadRequestedConfig {
     struct NvKmsKapiHeadModeSetConfig modeSetConfig;
     struct {
-        NvBool activeChanged       : 1;
-        NvBool displaysChanged     : 1;
-        NvBool modeChanged         : 1;
-        NvBool hdrInfoFrameChanged : 1;
-        NvBool colorimetryChanged  : 1;
-        NvBool ilutChanged         : 1;
-        NvBool olutChanged         : 1;
+        NvBool activeChanged          : 1;
+        NvBool displaysChanged        : 1;
+        NvBool modeChanged            : 1;
+        NvBool hdrInfoFrameChanged    : 1;
+        NvBool colorimetryChanged     : 1;
+        NvBool legacyIlutChanged      : 1;
+        NvBool legacyOlutChanged      : 1;
+        NvBool olutChanged            : 1;
+        NvBool olutFpNormScaleChanged : 1;
     } flags;
 
     struct NvKmsKapiCursorRequestedConfig cursorRequestedConfig;
@@ -1172,21 +1227,6 @@ struct NvKmsKapiFunctionsTable {
         NvU64 *pPages
     );
 
-     /*!
-     * Check if this memory object can be scanned out for display.
-     *
-     * \param [in]  device  A device allocated using allocateDevice().
-     *
-     * \param [in]  memory  The memory object to check for display support.
-     *
-     * \return NV_TRUE if this memory can be displayed, NV_FALSE if not.
-     */
-    NvBool (*isMemoryValidForDisplay)
-    (
-        const struct NvKmsKapiDevice *device,
-        const struct NvKmsKapiMemory *memory
-    );
-
     /*
      * Import SGT as a memory handle.
      *
@@ -1504,6 +1544,16 @@ struct NvKmsKapiFunctionsTable {
         struct NvKmsKapiDevice *device,
         NvS32 index
     );
+
+    /*
+     * Notify NVKMS that the system's framebuffer console has been disabled and
+     * the reserved allocation for the old framebuffer console can be unmapped.
+     */
+    void
+    (*framebufferConsoleDisabled)
+    (
+        struct NvKmsKapiDevice *device
+    );
 };
 
 /** @} */
@@ -1517,6 +1567,20 @@ NvBool nvKmsKapiGetFunctionsTable
 (
     struct NvKmsKapiFunctionsTable *funcsTable
 );
+
+NvU32 nvKmsKapiF16ToF32(NvU16 a);
+
+NvU16 nvKmsKapiF32ToF16(NvU32 a);
+
+NvU32 nvKmsKapiF32Mul(NvU32 a, NvU32 b);
+
+NvU32 nvKmsKapiF32Div(NvU32 a, NvU32 b);
+
+NvU32 nvKmsKapiF32Add(NvU32 a, NvU32 b);
+
+NvU32 nvKmsKapiF32ToUI32RMinMag(NvU32 a, NvBool exact);
+
+NvU32 nvKmsKapiUI32ToF32(NvU32 a);
 
 /** @} */
 

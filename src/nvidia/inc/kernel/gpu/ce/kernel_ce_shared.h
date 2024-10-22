@@ -32,7 +32,6 @@
 
 NvBool ceIsCeGrce(OBJGPU *pGpu, RM_ENGINE_TYPE ceEngineType);
 NvBool ceIsPartneredWithGr(OBJGPU *pGpu, RM_ENGINE_TYPE ceEngineType, RM_ENGINE_TYPE grEngineType);
-NvU32 ceCountGrCe(OBJGPU *pGpu);
-NvBool ceIsDecompLce(OBJGPU *pGpu, NvU32 nv2080EngineId);
+NvU32  ceCountGrCe(OBJGPU *pGpu);
 
 #endif

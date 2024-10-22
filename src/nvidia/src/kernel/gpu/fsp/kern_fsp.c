@@ -40,6 +40,17 @@
 #endif
 
 #define ASYNC_FSP_POLL_PERIOD_MS 50
+//
+// FSP communication uses two headers: MCTP per packet and NVDM per message.
+// Packet size is based on the underlying transport mechanism which can be
+// queried with kfspGetMax[Send,Recv]PacketSize. If a message is larger than
+// can fit in a single packet, only the first packet contains the NVDM header
+// while all packets contain the MCTP header. Each of these headers is one
+// 32-bit DWORD and these indexes are used when placing the DWORD in the packet.
+//
+#define HEADER_DWORD_MCTP 0
+#define HEADER_DWORD_NVDM 1
+#define HEADER_DWORD_MAX  2
 
 /*!
 * Local object related functions
@@ -58,6 +69,7 @@ static NV_STATUS kfspScheduleAsyncResponseCheck(OBJGPU *pGpu, KernelFsp *pKernel
                                                 AsyncRpcCallback callback, void  *pCallbackArgs,
                                                 NvU8 *pBuffer, NvU32  bufferSize);
 static void kfspClearAsyncResponseState(KernelFsp *pKernelFsp);
+static void kfspReleaseProxyImage(OBJGPU *pGpu, KernelFsp *pKernelFsp);
 
 NV_STATUS
 kfspConstructEngine_IMPL(OBJGPU *pGpu, KernelFsp *pKernelFsp, ENGDESCRIPTOR engDesc)
@@ -145,26 +157,13 @@ kfspInitRegistryOverrides
     }
 }
 
-
-/*!
- * @brief Clean up objects used when sending GSP-FMC and FRTS info to FSP
- *
- * @param[in]  pGpu        GPU object pointer
- * @param[in]  pKernelFsp  FSP object pointer
- */
-void
-kfspCleanupBootState_IMPL
+static void
+kfspReleaseProxyImage
 (
     OBJGPU    *pGpu,
     KernelFsp *pKernelFsp
 )
 {
-    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
-    tmrEventDestroy(pTmr, pKernelFsp->pPollEvent);
-
-    portMemFree(pKernelFsp->pCotPayload);
-    pKernelFsp->pCotPayload = NULL;
-
     if (pKernelFsp->pSysmemFrtsMemdesc != NULL)
     {
         kfspFrtsSysmemLocationClear_HAL(pGpu, pKernelFsp);
@@ -189,6 +188,28 @@ kfspCleanupBootState_IMPL
         memdescDestroy(pKernelFsp->pGspBootArgsMemdesc);
         pKernelFsp->pGspBootArgsMemdesc = NULL;
     }
+}
+
+/*!
+ * @brief Clean up objects used when sending GSP-FMC and FRTS info to FSP
+ *
+ * @param[in]  pGpu        GPU object pointer
+ * @param[in]  pKernelFsp  FSP object pointer
+ */
+void
+kfspCleanupBootState_IMPL
+(
+    OBJGPU    *pGpu,
+    KernelFsp *pKernelFsp
+)
+{
+    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
+    tmrEventDestroy(pTmr, pKernelFsp->pPollEvent);
+
+    portMemFree(pKernelFsp->pCotPayload);
+    pKernelFsp->pCotPayload = NULL;
+
+    kfspReleaseProxyImage(pGpu, pKernelFsp);
 
     if (pKernelFsp->bClockBoostSupported)
     {
@@ -200,6 +221,25 @@ kfspCleanupBootState_IMPL
             NV_PRINTF(LEVEL_ERROR,"Clock boost disbalement via FSP failed with error 0x%x\n", status);
         }
     }
+}
+
+/*!
+ * @brief Unload FSP state
+ *
+ * @param[in]  pGpu        GPU object pointer
+ * @param[in]  pKernelFsp  FSP object pointer
+ * @param[in]  flags
+ */
+NV_STATUS
+kfspStateUnload_IMPL
+(
+    OBJGPU    *pGpu,
+    KernelFsp *pKernelFsp,
+    NvU32      flags
+)
+{
+    kfspReleaseProxyImage(pGpu, pKernelFsp);
+    return NV_OK;
 }
 
 /*!
@@ -226,30 +266,7 @@ kfspStateDestroy_IMPL
 }
 
 /*!
- * @brief Check if FSP RM command queue is empty
- *
- * @param[in] pGpu       OBJGPU pointer
- * @param[in] pKernelFsp KernelFsp pointer
- *
- * @return NV_TRUE if queue is empty, NV_FALSE otherwise
- */
-NvBool
-kfspIsQueueEmpty_IMPL
-(
-    OBJGPU    *pGpu,
-    KernelFsp *pKernelFsp
-)
-{
-    NvU32 cmdqHead, cmdqTail;
-
-    kfspGetQueueHeadTail_HAL(pGpu, pKernelFsp, &cmdqHead, &cmdqTail);
-
-    // FSP will set QUEUE_HEAD = TAIL after each packet is received
-    return (cmdqHead == cmdqTail);
-}
-
-/*!
- * @brief Wait for FSP RM command queue to be empty
+ * @brief Wait until RM can send to FSP
  *
  * @param[in] pGpu       OBJGPU pointer
  * @param[in] pKernelFsp KernelFsp pointer
@@ -257,7 +274,7 @@ kfspIsQueueEmpty_IMPL
  * @return NV_OK, or NV_ERR_TIMEOUT
  */
 NV_STATUS
-kfspPollForQueueEmpty_IMPL
+kfspPollForCanSend_IMPL
 (
     OBJGPU    *pGpu,
     KernelFsp *pKernelFsp
@@ -267,10 +284,9 @@ kfspPollForQueueEmpty_IMPL
     RMTIMEOUT timeout;
 
     gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout,
-        GPU_TIMEOUT_FLAGS_OSTIMER |
-        GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
+        GPU_TIMEOUT_FLAGS_OSTIMER);
 
-    while (!kfspIsQueueEmpty(pGpu, pKernelFsp))
+    while (!kfspCanSendPacket_HAL(pGpu, pKernelFsp))
     {
         //
         // For now we assume that any response from FSP before RM message
@@ -278,11 +294,11 @@ kfspPollForQueueEmpty_IMPL
         //
         // Ongoing dicussion on usefullness of this check. Bug to be filed.
         //
-        if (!kfspIsMsgQueueEmpty(pGpu, pKernelFsp))
+        if (kfspIsResponseAvailable_HAL(pGpu, pKernelFsp))
         {
             kfspReadMessage(pGpu, pKernelFsp, NULL, 0);
             NV_PRINTF(LEVEL_ERROR,
-                "Received error message from FSP while waiting for CMDQ to be empty.\n");
+                "Received error message from FSP while waiting to send.\n");
             status = NV_ERR_GENERIC;
             break;
         }
@@ -293,7 +309,7 @@ kfspPollForQueueEmpty_IMPL
         if (status != NV_OK)
         {
             if ((status == NV_ERR_TIMEOUT) &&
-                kfspIsQueueEmpty(pGpu, pKernelFsp))
+                kfspCanSendPacket_HAL(pGpu, pKernelFsp))
             {
                 status = NV_OK;
             }
@@ -310,28 +326,7 @@ kfspPollForQueueEmpty_IMPL
 }
 
 /*!
- * @brief Check if FSP RM message queue is empty
- *
- * @param[in] pGpu       OBJGPU pointer
- * @param[in] pKernelFsp KernelFsp pointer
- *
- * @return NV_TRUE if queue is empty, NV_FALSE otherwise
- */
-NvBool
-kfspIsMsgQueueEmpty_IMPL
-(
-    OBJGPU    *pGpu,
-    KernelFsp *pKernelFsp
-)
-{
-    NvU32 msgqHead, msgqTail;
-
-    kfspGetMsgQueueHeadTail_HAL(pGpu, pKernelFsp, &msgqHead, &msgqTail);
-    return (msgqHead == msgqTail);
-}
-
-/*!
- * @brief Poll for response from FSP via RM message queue
+ * @brief Poll for response from FSP
  *
  * @param[in] pGpu       OBJGPU pointer
  * @param[in] pKernelFsp KernelFsp pointer
@@ -367,7 +362,7 @@ kfspWaitForResponse
     NV_STATUS status = NV_OK;
 
     // Poll for message queue to wait for FSP's reply
-    while (kfspIsMsgQueueEmpty(pGpu, pKernelFsp))
+    while (!kfspIsResponseAvailable_HAL(pGpu, pKernelFsp))
     {
         osSpinLoop();
 
@@ -375,7 +370,7 @@ kfspWaitForResponse
         if (status != NV_OK)
         {
             if ((status == NV_ERR_TIMEOUT) &&
-                !kfspIsMsgQueueEmpty(pGpu, pKernelFsp))
+                kfspIsResponseAvailable_HAL(pGpu, pKernelFsp))
             {
                 status = NV_OK;
             }
@@ -404,7 +399,7 @@ kfspSetResponseTimeout
 )
 {
     gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &(pKernelFsp->rpcTimeout),
-                  GPU_TIMEOUT_FLAGS_OSTIMER | GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
+                  GPU_TIMEOUT_FLAGS_OSTIMER);
 }
 
 /*!
@@ -446,42 +441,42 @@ kfspSendMessage
     NvU32      nvdmType
 )
 {
-    NvU32 dataSent, dataRemaining;
+    NvU32 dataSent;
+    NvU32 dataRemaining;
     NvU32 packetPayloadCapacity;
     NvU32 curPayloadSize;
     NvU32 headerSize;
-    NvU32 fspEmemRmChannelSize;
+    NvU32 *pHeader;
+    NvU32 maxPacketSize;
     NvBool bSinglePacket;
     NV_STATUS status;
     NvU8 *pBuffer = NULL;
-    NvU8  seq = 0;
-    NvU8  seid = 0;
-
-    // Allocate buffer of same size as channel
-    fspEmemRmChannelSize = kfspGetRmChannelSize_HAL(pGpu, pKernelFsp);
-    pBuffer = portMemAllocNonPaged(fspEmemRmChannelSize);
-    NV_CHECK_OR_RETURN(LEVEL_ERROR, pBuffer != NULL, NV_ERR_NO_MEMORY);
-    portMemSet(pBuffer, 0, fspEmemRmChannelSize);
+    NvU8 seq = 0;
+    NvU8 seid = 0;
 
     //
     // Check if message will fit in single packet
     // We lose 2 DWORDS to MCTP and NVDM headers
     //
-    headerSize = 2 * sizeof(NvU32);
-    packetPayloadCapacity = fspEmemRmChannelSize - headerSize;
+    headerSize = sizeof(NvU32) * HEADER_DWORD_MAX;
+    maxPacketSize = kfspGetMaxSendPacketSize_HAL(pGpu, pKernelFsp);
+    packetPayloadCapacity = maxPacketSize - headerSize;
     bSinglePacket = (size <= packetPayloadCapacity);
-
+    // Allocate buffer to hold a full packet
+    pBuffer = portMemAllocNonPaged(maxPacketSize);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pBuffer != NULL, NV_ERR_NO_MEMORY);
+    portMemSet(pBuffer, 0, maxPacketSize);
+    pHeader = (NvU32*)pBuffer;
     // First packet
     seid = kfspNvdmToSeid_HAL(pGpu, pKernelFsp, nvdmType);
     // SOM=1,EOM=?,SEID,SEQ=0
-    ((NvU32 *)pBuffer)[0] = kfspCreateMctpHeader_HAL(pGpu, pKernelFsp, 1,
+    pHeader[HEADER_DWORD_MCTP] = kfspCreateMctpHeader_HAL(pGpu, pKernelFsp, 1,
                                                      (NvU8)bSinglePacket, seid, seq);
-    ((NvU32 *)pBuffer)[1] = kfspCreateNvdmHeader_HAL(pGpu, pKernelFsp, nvdmType);
+    pHeader[HEADER_DWORD_NVDM] = kfspCreateNvdmHeader_HAL(pGpu, pKernelFsp, nvdmType);
 
     curPayloadSize = NV_MIN(size, packetPayloadCapacity);
     portMemCopy(pBuffer + headerSize, packetPayloadCapacity, pPayload, curPayloadSize);
-
-    status = kfspSendPacket(pGpu, pKernelFsp, pBuffer, curPayloadSize + headerSize);
+    status = kfspSendPacket_HAL(pGpu, pKernelFsp, pBuffer, curPayloadSize + headerSize);
     if (status != NV_OK)
     {
         goto failed;
@@ -493,22 +488,20 @@ kfspSendMessage
         dataSent = curPayloadSize;
         dataRemaining = size - dataSent;
         headerSize = sizeof(NvU32); // No longer need NVDM header
-        packetPayloadCapacity = fspEmemRmChannelSize - headerSize;
+        packetPayloadCapacity = maxPacketSize - headerSize;
 
         while (dataRemaining > 0)
         {
             NvBool bLastPacket = (dataRemaining <= packetPayloadCapacity);
             curPayloadSize = (bLastPacket) ? dataRemaining : packetPayloadCapacity;
 
-            portMemSet(pBuffer, 0, fspEmemRmChannelSize);
-            ((NvU32 *)pBuffer)[0] = kfspCreateMctpHeader_HAL(pGpu, pKernelFsp, 0,
+            pHeader[HEADER_DWORD_MCTP] = kfspCreateMctpHeader_HAL(pGpu, pKernelFsp, 0,
                                                              (NvU8)bLastPacket, seid,
                                                              (++seq) % 4);
-
             portMemCopy(pBuffer + headerSize, packetPayloadCapacity,
                         pPayload + dataSent, curPayloadSize);
 
-            status = kfspSendPacket(pGpu, pKernelFsp, pBuffer, curPayloadSize + headerSize);
+            status = kfspSendPacket_HAL(pGpu, pKernelFsp, pBuffer, curPayloadSize + headerSize);
             if (status != NV_OK)
             {
                 goto failed;
@@ -517,7 +510,6 @@ kfspSendMessage
             dataSent += curPayloadSize;
             dataRemaining -= curPayloadSize;
         }
-
     }
 
 failed:
@@ -557,20 +549,21 @@ kfspReadMessage
     NvU8             *pPacketBuffer;
     NV_STATUS         status;
     NvU32             totalPayloadSize = 0;
+    NvU32             recvBufferSize;
     MCTP_PACKET_STATE packetState = MCTP_PACKET_STATE_START;
 
-    if (kfspIsMsgQueueEmpty(pGpu, pKernelFsp))
+    if (!kfspIsResponseAvailable_HAL(pGpu, pKernelFsp))
     {
-        NV_PRINTF(LEVEL_WARNING, "Tried to read FSP response but MSG queue is empty\n");
+        NV_PRINTF(LEVEL_WARNING, "Tried to read FSP response but none is available\n");
         return NV_OK;
     }
 
-    pPacketBuffer = portMemAllocNonPaged(kfspGetRmChannelSize_HAL(pGpu, pKernelFsp));
+    recvBufferSize = kfspGetMaxRecvPacketSize(pGpu, pKernelFsp);
+    pPacketBuffer = portMemAllocNonPaged(recvBufferSize);
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pPacketBuffer != NULL, NV_ERR_NO_MEMORY);
 
     while ((packetState != MCTP_PACKET_STATE_END) && (packetState != MCTP_PACKET_STATE_SINGLE_PACKET))
     {
-        NvU32 msgqHead, msgqTail;
         NvU32 packetSize;
         NvU32 curPayloadSize;
         NvU8  curHeaderSize;
@@ -583,20 +576,9 @@ kfspReadMessage
             goto done;
         }
 
-        kfspGetMsgQueueHeadTail_HAL(pGpu, pKernelFsp, &msgqHead, &msgqTail);
-
-        // Tail points to last DWORD in packet, not DWORD immediately following it
-        packetSize = (msgqTail - msgqHead) + sizeof(NvU32);
-
-        if ((packetSize < sizeof(NvU32)) ||
-            (packetSize > kfspGetRmChannelSize_HAL(pGpu, pKernelFsp)))
-        {
-            NV_PRINTF(LEVEL_ERROR, "FSP response packet is invalid size: size=0x%x bytes\n", packetSize);
-            status = NV_ERR_INVALID_DATA;
-            goto done;
-        }
-
-        kfspReadFromEmem_HAL(pGpu, pKernelFsp, pPacketBuffer, packetSize);
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                kfspReadPacket_HAL(pGpu, pKernelFsp, pPacketBuffer, recvBufferSize, &packetSize),
+                done);
 
         status = kfspGetPacketInfo_HAL(pGpu, pKernelFsp, pPacketBuffer, packetSize, &packetState, &tag);
         if (status != NV_OK)
@@ -632,13 +614,10 @@ kfspReadMessage
                 status = NV_ERR_INSUFFICIENT_RESOURCES;
                 goto done;
             }
-            portMemCopy(pPayloadBuffer + totalPayloadSize, payloadBufferSize - totalPayloadSize ,
+            portMemCopy(pPayloadBuffer + totalPayloadSize, payloadBufferSize - totalPayloadSize,
                         pPacketBuffer + curHeaderSize, curPayloadSize);
         }
         totalPayloadSize += curPayloadSize;
-
-        // Set TAIL = HEAD to indicate CPU received message
-        kfspUpdateMsgQueueHeadTail_HAL(pGpu, pKernelFsp, msgqHead, msgqHead);
     }
 
     NvU8 *pMessagePayload = (pPayloadBuffer == NULL) ? (pPacketBuffer + sizeof(MCTP_HEADER)) : pPayloadBuffer;
@@ -651,53 +630,7 @@ done:
 }
 
 /*!
- * @brief Send one MCTP packet to FSP via EMEM
- *
- * @param[in] pGpu          OBJGPU pointer
- * @param[in] pKernelFsp    KernelFsp pointer
- * @param[in] pPacket       MCTP packet
- * @param[in] packetSize    MCTP packet size in bytes
- *
- * @return NV_OK, or NV_ERR_INSUFFICIENT_RESOURCES
- */
-NV_STATUS
-kfspSendPacket_IMPL
-(
-    OBJGPU      *pGpu,
-    KernelFsp   *pKernelFsp,
-    NvU8        *pPacket,
-    NvU32        packetSize
-)
-{
-    NvU32 paddedSize;
-    NvU8 *pBuffer = NULL;
-    NV_STATUS status = NV_OK;
-
-    // Check that queue is ready to receive data
-    status = kfspPollForQueueEmpty(pGpu, pKernelFsp);
-    if (status != NV_OK)
-    {
-        return NV_ERR_INSUFFICIENT_RESOURCES;
-    }
-
-    // Pad to align size to 4-bytes boundary since EMEMC increments by DWORDS
-    paddedSize = NV_ALIGN_UP(packetSize, sizeof(NvU32));
-    pBuffer = portMemAllocNonPaged(paddedSize);
-    NV_CHECK_OR_RETURN(LEVEL_ERROR, pBuffer != NULL, NV_ERR_NO_MEMORY);
-    portMemSet(pBuffer, 0, paddedSize);
-    portMemCopy(pBuffer, paddedSize, pPacket, paddedSize);
-
-    kfspWriteToEmem_HAL(pGpu, pKernelFsp, pBuffer, paddedSize);
-
-    // Update HEAD and TAIL with new EMEM offset; RM always starts at offset 0.
-    kfspUpdateQueueHeadTail_HAL(pGpu, pKernelFsp, 0, paddedSize - sizeof(NvU32));
-
-    portMemFree(pBuffer);
-    return status;
-}
-
-/*!
- * @brief Send a MCTP message to FSP via EMEM, and read response
+ * @brief Send a MCTP message to FSP and read response
  *
  *
  * Response payload buffer is optional if response fits in a single packet.
@@ -840,7 +773,7 @@ kfspPollForAsyncResponse
 
     status = kfspCheckResponseTimeout(pGpu, pKernelFsp);
 
-    if (!kfspIsMsgQueueEmpty(pGpu, pKernelFsp))
+    if (kfspIsResponseAvailable_HAL(pGpu, pKernelFsp))
     {
         status = osQueueWorkItemWithFlags(pGpu, kfspProcessAsyncResponseCallback, NULL,
                                           OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |

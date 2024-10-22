@@ -114,7 +114,7 @@ typedef union
 
         // Only one of these two can be set. The other one must be NULL
         uvm_va_block_t *block;
-        uvm_va_range_t *range;
+        uvm_va_range_managed_t *range;
     } module_unload;
 
     struct
@@ -151,6 +151,8 @@ typedef union
             {
                 NvU64 fault_va;
 
+                NvU32 cpu_num;
+
                 bool is_write;
 
                 NvU64 pc;
@@ -181,8 +183,8 @@ typedef union
 
         // For CPU-to-CPU migrations, these two fields indicate the source
         // and destination NUMA node IDs.
-        NvU16 dst_nid;
-        NvU16 src_nid;
+        NvS16 dst_nid;
+        NvS16 src_nid;
 
         // Start address of the memory range being migrated
         NvU64 address;
@@ -336,8 +338,8 @@ static inline void uvm_perf_event_notify_migration_cpu(uvm_perf_va_space_events_
                     .block                 = va_block,
                     .dst                   = UVM_ID_CPU,
                     .src                   = UVM_ID_CPU,
-                    .src_nid               = (NvU16)src_nid,
-                    .dst_nid               = (NvU16)dst_nid,
+                    .src_nid               = (NvS16)src_nid,
+                    .dst_nid               = (NvS16)dst_nid,
                     .address               = address,
                     .bytes                 = bytes,
                     .transfer_mode         = transfer_mode,
@@ -384,6 +386,7 @@ static inline void uvm_perf_event_notify_cpu_fault(uvm_perf_va_space_events_t *v
                                                    uvm_processor_id_t preferred_location,
                                                    NvU64 fault_va,
                                                    bool is_write,
+                                                   NvU32 cpu_num,
                                                    NvU64 pc)
 {
     uvm_perf_event_data_t event_data =
@@ -397,9 +400,10 @@ static inline void uvm_perf_event_notify_cpu_fault(uvm_perf_va_space_events_t *v
                 }
         };
 
-     event_data.fault.cpu.fault_va = fault_va,
-     event_data.fault.cpu.is_write = is_write,
-     event_data.fault.cpu.pc       = pc,
+    event_data.fault.cpu.fault_va = fault_va;
+    event_data.fault.cpu.is_write = is_write;
+    event_data.fault.cpu.pc       = pc;
+    event_data.fault.cpu.cpu_num  = cpu_num;
 
     uvm_perf_event_notify(va_space_events, UVM_PERF_EVENT_FAULT, &event_data);
 }

@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -161,10 +161,15 @@ MAKE_INTRUSIVE_MAP(SEM_CHANNEL_BINDING,
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__SemaphoreSurface;
+
+
 struct SemaphoreSurface {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__SemaphoreSurface *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct GpuResource __nvoc_base_GpuResource;
@@ -177,14 +182,25 @@ struct SemaphoreSurface {
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct SemaphoreSurface *__nvoc_pbase_SemaphoreSurface;    // semsurf
 
-    // Vtable with 31 per-object function pointers
-    NvBool (*__semsurfCanCopy__)(struct SemaphoreSurface * /*this*/);  // inline virtual override (res) base (gpures) body
+    // Vtable with 6 per-object function pointers
     NV_STATUS (*__semsurfCtrlCmdRefMemory__)(struct SemaphoreSurface * /*this*/, NV_SEMAPHORE_SURFACE_CTRL_REF_MEMORY_PARAMS *);  // exported (id=0xda0001)
     NV_STATUS (*__semsurfCtrlCmdBindChannel__)(struct SemaphoreSurface * /*this*/, NV_SEMAPHORE_SURFACE_CTRL_BIND_CHANNEL_PARAMS *);  // exported (id=0xda0002)
     NV_STATUS (*__semsurfCtrlCmdUnbindChannel__)(struct SemaphoreSurface * /*this*/, NV_SEMAPHORE_SURFACE_CTRL_UNBIND_CHANNEL_PARAMS *);  // exported (id=0xda0006)
     NV_STATUS (*__semsurfCtrlCmdRegisterWaiter__)(struct SemaphoreSurface * /*this*/, NV_SEMAPHORE_SURFACE_CTRL_REGISTER_WAITER_PARAMS *);  // exported (id=0xda0003)
     NV_STATUS (*__semsurfCtrlCmdSetValue__)(struct SemaphoreSurface * /*this*/, NV_SEMAPHORE_SURFACE_CTRL_SET_VALUE_PARAMS *);  // exported (id=0xda0004)
     NV_STATUS (*__semsurfCtrlCmdUnregisterWaiter__)(struct SemaphoreSurface * /*this*/, NV_SEMAPHORE_SURFACE_CTRL_UNREGISTER_WAITER_PARAMS *);  // exported (id=0xda0005)
+
+    // Data members
+    SEM_SHARED_DATA *pShared;
+    SEM_CHANNEL_BINDING boundChannelMap;
+};
+
+
+// Metadata including vtable with 25 function pointers plus superclass metadata
+struct NVOC_VTABLE__SemaphoreSurface {
+    const struct NVOC_VTABLE__GpuResource GpuResource;    // (gpures) 25 function pointers
+
+    NvBool (*__semsurfCanCopy__)(struct SemaphoreSurface * /*this*/);  // inline virtual override (res) base (gpures) body
     NV_STATUS (*__semsurfControl__)(struct SemaphoreSurface * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__semsurfMap__)(struct SemaphoreSurface * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__semsurfUnmap__)(struct SemaphoreSurface * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
@@ -209,10 +225,6 @@ struct SemaphoreSurface {
     NV_STATUS (*__semsurfUnmapFrom__)(struct SemaphoreSurface * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (gpures)
     NvU32 (*__semsurfGetRefCount__)(struct SemaphoreSurface * /*this*/);  // virtual inherited (res) base (gpures)
     void (*__semsurfAddAdditionalDependants__)(struct RsClient *, struct SemaphoreSurface * /*this*/, RsResourceRef *);  // virtual inherited (res) base (gpures)
-
-    // Data members
-    SEM_SHARED_DATA *pShared;
-    SEM_CHANNEL_BINDING boundChannelMap;
 };
 
 #ifndef __NVOC_CLASS_SemaphoreSurface_TYPEDEF__
@@ -245,7 +257,7 @@ NV_STATUS __nvoc_objCreate_SemaphoreSurface(SemaphoreSurface**, Dynamic*, NvU32,
 
 
 // Wrapper macros
-#define semsurfCanCopy_FNPTR(pSemSurf) pSemSurf->__semsurfCanCopy__
+#define semsurfCanCopy_FNPTR(pSemSurf) pSemSurf->__nvoc_vtable->__semsurfCanCopy__
 #define semsurfCanCopy(pSemSurf) semsurfCanCopy_DISPATCH(pSemSurf)
 #define semsurfCtrlCmdRefMemory_FNPTR(pSemaphoreSurf) pSemaphoreSurf->__semsurfCtrlCmdRefMemory__
 #define semsurfCtrlCmdRefMemory(pSemaphoreSurf, pParams) semsurfCtrlCmdRefMemory_DISPATCH(pSemaphoreSurf, pParams)
@@ -259,58 +271,58 @@ NV_STATUS __nvoc_objCreate_SemaphoreSurface(SemaphoreSurface**, Dynamic*, NvU32,
 #define semsurfCtrlCmdSetValue(pSemaphoreSurf, pParams) semsurfCtrlCmdSetValue_DISPATCH(pSemaphoreSurf, pParams)
 #define semsurfCtrlCmdUnregisterWaiter_FNPTR(pSemaphoreSurf) pSemaphoreSurf->__semsurfCtrlCmdUnregisterWaiter__
 #define semsurfCtrlCmdUnregisterWaiter(pSemaphoreSurf, pParams) semsurfCtrlCmdUnregisterWaiter_DISPATCH(pSemaphoreSurf, pParams)
-#define semsurfControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresControl__
+#define semsurfControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresControl__
 #define semsurfControl(pGpuResource, pCallContext, pParams) semsurfControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define semsurfMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresMap__
+#define semsurfMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresMap__
 #define semsurfMap(pGpuResource, pCallContext, pParams, pCpuMapping) semsurfMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define semsurfUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresUnmap__
+#define semsurfUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresUnmap__
 #define semsurfUnmap(pGpuResource, pCallContext, pCpuMapping) semsurfUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define semsurfShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresShareCallback__
+#define semsurfShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresShareCallback__
 #define semsurfShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) semsurfShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define semsurfGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetRegBaseOffsetAndSize__
+#define semsurfGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetRegBaseOffsetAndSize__
 #define semsurfGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) semsurfGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
-#define semsurfGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetMapAddrSpace__
+#define semsurfGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetMapAddrSpace__
 #define semsurfGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) semsurfGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
-#define semsurfInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresInternalControlForward__
+#define semsurfInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresInternalControlForward__
 #define semsurfInternalControlForward(pGpuResource, command, pParams, size) semsurfInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
-#define semsurfGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetInternalObjectHandle__
+#define semsurfGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetInternalObjectHandle__
 #define semsurfGetInternalObjectHandle(pGpuResource) semsurfGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define semsurfAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresAccessCallback__
+#define semsurfAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
 #define semsurfAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) semsurfAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define semsurfGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemInterMapParams__
+#define semsurfGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
 #define semsurfGetMemInterMapParams(pRmResource, pParams) semsurfGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define semsurfCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresCheckMemInterUnmap__
+#define semsurfCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
 #define semsurfCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) semsurfCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define semsurfGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemoryMappingDescriptor__
+#define semsurfGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
 #define semsurfGetMemoryMappingDescriptor(pRmResource, ppMemDesc) semsurfGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define semsurfControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControlSerialization_Prologue__
+#define semsurfControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
 #define semsurfControlSerialization_Prologue(pResource, pCallContext, pParams) semsurfControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define semsurfControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControlSerialization_Epilogue__
+#define semsurfControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
 #define semsurfControlSerialization_Epilogue(pResource, pCallContext, pParams) semsurfControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define semsurfControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControl_Prologue__
+#define semsurfControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
 #define semsurfControl_Prologue(pResource, pCallContext, pParams) semsurfControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define semsurfControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControl_Epilogue__
+#define semsurfControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
 #define semsurfControl_Epilogue(pResource, pCallContext, pParams) semsurfControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define semsurfIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsDuplicate__
+#define semsurfIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
 #define semsurfIsDuplicate(pResource, hMemory, pDuplicate) semsurfIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define semsurfPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resPreDestruct__
+#define semsurfPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
 #define semsurfPreDestruct(pResource) semsurfPreDestruct_DISPATCH(pResource)
-#define semsurfControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resControlFilter__
+#define semsurfControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
 #define semsurfControlFilter(pResource, pCallContext, pParams) semsurfControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define semsurfIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsPartialUnmapSupported__
+#define semsurfIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
 #define semsurfIsPartialUnmapSupported(pResource) semsurfIsPartialUnmapSupported_DISPATCH(pResource)
-#define semsurfMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resMapTo__
+#define semsurfMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
 #define semsurfMapTo(pResource, pParams) semsurfMapTo_DISPATCH(pResource, pParams)
-#define semsurfUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resUnmapFrom__
+#define semsurfUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
 #define semsurfUnmapFrom(pResource, pParams) semsurfUnmapFrom_DISPATCH(pResource, pParams)
-#define semsurfGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resGetRefCount__
+#define semsurfGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
 #define semsurfGetRefCount(pResource) semsurfGetRefCount_DISPATCH(pResource)
-#define semsurfAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resAddAdditionalDependants__
+#define semsurfAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
 #define semsurfAddAdditionalDependants(pClient, pResource, pReference) semsurfAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
 static inline NvBool semsurfCanCopy_DISPATCH(struct SemaphoreSurface *pSemSurf) {
-    return pSemSurf->__semsurfCanCopy__(pSemSurf);
+    return pSemSurf->__nvoc_vtable->__semsurfCanCopy__(pSemSurf);
 }
 
 static inline NV_STATUS semsurfCtrlCmdRefMemory_DISPATCH(struct SemaphoreSurface *pSemaphoreSurf, NV_SEMAPHORE_SURFACE_CTRL_REF_MEMORY_PARAMS *pParams) {
@@ -338,103 +350,103 @@ static inline NV_STATUS semsurfCtrlCmdUnregisterWaiter_DISPATCH(struct Semaphore
 }
 
 static inline NV_STATUS semsurfControl_DISPATCH(struct SemaphoreSurface *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__semsurfControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_vtable->__semsurfControl__(pGpuResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS semsurfMap_DISPATCH(struct SemaphoreSurface *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__semsurfMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_vtable->__semsurfMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS semsurfUnmap_DISPATCH(struct SemaphoreSurface *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__semsurfUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_vtable->__semsurfUnmap__(pGpuResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool semsurfShareCallback_DISPATCH(struct SemaphoreSurface *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__semsurfShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_vtable->__semsurfShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS semsurfGetRegBaseOffsetAndSize_DISPATCH(struct SemaphoreSurface *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__semsurfGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_vtable->__semsurfGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS semsurfGetMapAddrSpace_DISPATCH(struct SemaphoreSurface *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__semsurfGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_vtable->__semsurfGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS semsurfInternalControlForward_DISPATCH(struct SemaphoreSurface *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__semsurfInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_vtable->__semsurfInternalControlForward__(pGpuResource, command, pParams, size);
 }
 
 static inline NvHandle semsurfGetInternalObjectHandle_DISPATCH(struct SemaphoreSurface *pGpuResource) {
-    return pGpuResource->__semsurfGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_vtable->__semsurfGetInternalObjectHandle__(pGpuResource);
 }
 
 static inline NvBool semsurfAccessCallback_DISPATCH(struct SemaphoreSurface *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__semsurfAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_vtable->__semsurfAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS semsurfGetMemInterMapParams_DISPATCH(struct SemaphoreSurface *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__semsurfGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_vtable->__semsurfGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS semsurfCheckMemInterUnmap_DISPATCH(struct SemaphoreSurface *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__semsurfCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_vtable->__semsurfCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS semsurfGetMemoryMappingDescriptor_DISPATCH(struct SemaphoreSurface *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__semsurfGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_vtable->__semsurfGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS semsurfControlSerialization_Prologue_DISPATCH(struct SemaphoreSurface *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__semsurfControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__semsurfControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void semsurfControlSerialization_Epilogue_DISPATCH(struct SemaphoreSurface *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__semsurfControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__semsurfControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS semsurfControl_Prologue_DISPATCH(struct SemaphoreSurface *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__semsurfControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__semsurfControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void semsurfControl_Epilogue_DISPATCH(struct SemaphoreSurface *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__semsurfControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__semsurfControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS semsurfIsDuplicate_DISPATCH(struct SemaphoreSurface *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__semsurfIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_vtable->__semsurfIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void semsurfPreDestruct_DISPATCH(struct SemaphoreSurface *pResource) {
-    pResource->__semsurfPreDestruct__(pResource);
+    pResource->__nvoc_vtable->__semsurfPreDestruct__(pResource);
 }
 
 static inline NV_STATUS semsurfControlFilter_DISPATCH(struct SemaphoreSurface *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__semsurfControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__semsurfControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool semsurfIsPartialUnmapSupported_DISPATCH(struct SemaphoreSurface *pResource) {
-    return pResource->__semsurfIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_vtable->__semsurfIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS semsurfMapTo_DISPATCH(struct SemaphoreSurface *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__semsurfMapTo__(pResource, pParams);
+    return pResource->__nvoc_vtable->__semsurfMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS semsurfUnmapFrom_DISPATCH(struct SemaphoreSurface *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__semsurfUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_vtable->__semsurfUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 semsurfGetRefCount_DISPATCH(struct SemaphoreSurface *pResource) {
-    return pResource->__semsurfGetRefCount__(pResource);
+    return pResource->__nvoc_vtable->__semsurfGetRefCount__(pResource);
 }
 
 static inline void semsurfAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct SemaphoreSurface *pResource, RsResourceRef *pReference) {
-    pResource->__semsurfAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_vtable->__semsurfAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-static inline NvBool semsurfCanCopy_0c883b(struct SemaphoreSurface *pSemSurf) {
-    return ((NvBool)(0 == 0));
+static inline NvBool semsurfCanCopy_e661f0(struct SemaphoreSurface *pSemSurf) {
+    return NV_TRUE;
 }
 
 NV_STATUS semsurfCtrlCmdRefMemory_IMPL(struct SemaphoreSurface *pSemaphoreSurf, NV_SEMAPHORE_SURFACE_CTRL_REF_MEMORY_PARAMS *pParams);

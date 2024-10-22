@@ -61,7 +61,7 @@ deviceCtrlCmdGpuGetClasslist_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     return gpuGetClassList(pGpu, &pClassListParams->numClasses,
                            NvP64_VALUE(pClassListParams->classList), ENG_INVALID);
@@ -83,7 +83,7 @@ deviceCtrlCmdGpuGetClasslistV2_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     pClassListParams->numClasses = NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE;
 
@@ -298,7 +298,7 @@ deviceCtrlCmdGpuGetSriovCaps_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     return gpuGetSriovCaps_HAL(pGpu, pParams);
 }
@@ -444,7 +444,7 @@ deviceCtrlCmdGpuGetSparseTextureComputeMode_IMPL
     NV_STATUS status;
     OBJGPU   *pGpu = GPU_RES_GET_GPU(pDevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     status = gpuGetSparseTextureComputeMode(pGpu,
                                            &pModeParams->defaultSetting,
@@ -480,7 +480,7 @@ deviceCtrlCmdGpuSetSparseTextureComputeMode_IMPL
     NV_STATUS status = NV_ERR_NOT_SUPPORTED;
     OBJGPU   *pGpu = GPU_RES_GET_GPU(pDevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     //
     // In SLI, both GPUs will have the same setting for sparse texture/compute

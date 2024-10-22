@@ -380,7 +380,7 @@ kctxshareInitCommon_IMPL
     NV_ASSERT(pVAS != NULL);
 
     // GPU lock must be held before calling this function
-    LOCK_ASSERT_AND_RETURN(rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+    NV_ASSERT_OR_RETURN(rmDeviceGpuLockIsOwner(pGpu->gpuInstance), NV_ERR_INVALID_LOCK_STATE);
 
     //
     // For external VAS, create subcontext only after SetPageDirectory() call is made.
@@ -523,7 +523,7 @@ kctxshareDestroyCommon_IMPL
     NV_ASSERT_OR_RETURN(refcnt == 1, NV_ERR_INVALID_STATE);
 
     // GPU lock must be held before calling this function
-    LOCK_ASSERT_AND_RETURN(rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+    NV_ASSERT_OR_RETURN(rmDeviceGpuLockIsOwner(pGpu->gpuInstance), NV_ERR_INVALID_LOCK_STATE);
 
     pKernelChannelGroup = pKernelCtxShare->pKernelChannelGroup;
     NV_ASSERT(pKernelChannelGroup == pKernelChannelGroupApi->pKernelChannelGroup);

@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,6 +41,7 @@ extern "C" {
 #ifndef _ENG_DESC_H_
 #define _ENG_DESC_H_
 
+
 #include "core/core.h"
 
 //
@@ -58,7 +59,7 @@ extern "C" {
 #define ENGDESC_FIELD(desc, field) (((desc) >> SF_SHIFT(ENGDESC ## field)) & \
                                     SF_MASK(ENGDESC ## field))
 
-typedef NvU32 ENGDESCRIPTOR, *PENGDESCRIPTOR;
+typedef NvU32 ENGDESCRIPTOR;
 
 
 //
@@ -948,7 +949,6 @@ typedef struct KernelPmu KernelPmu;
 #endif /* __nvoc_class_id_KernelPmu */
 
 
-
 struct Lpwr;
 
 #ifndef __NVOC_CLASS_Lpwr_TYPEDEF__
@@ -1505,175 +1505,282 @@ typedef struct KernelCcu KernelCcu;
 #endif /* __nvoc_class_id_KernelCcu */
 
 
+#define ENG_CLASS_INVALID              classId(OBJINVALID)
+#define ENG_CLASS_SW                   classId(OBJSWENG)
+#define ENG_CLASS_GPU                  classId(OBJGPU)
+#define ENG_CLASS_FLCN                 classId(Falcon)
+#define ENG_CLASS_MC                   classId(OBJMC)
+#define ENG_CLASS_KERNEL_MC            classId(KernelMc)
+#define ENG_CLASS_PRIV_RING            classId(PrivRing)
+#define ENG_CLASS_SW_INTR              classId(SwIntr)
+#define ENG_CLASS_MEMORY_SYSTEM        classId(MemorySystem)
+#define ENG_CLASS_KERNEL_MEMORY_SYSTEM classId(KernelMemorySystem)
+#define ENG_CLASS_MEMORY_MANAGER       classId(MemoryManager)
+#define ENG_CLASS_FBFLCN               classId(OBJFBFLCN)
+#define ENG_CLASS_TMR                  classId(OBJTMR)
+#define ENG_CLASS_DMA                  classId(VirtMemAllocator)
+#define ENG_CLASS_KERNEL_FIFO          classId(KernelFifo)
+#define ENG_CLASS_FIFO                 classId(OBJFIFO)
+#define ENG_CLASS_OS                   classId(OBJOS)
+#define ENG_CLASS_BUS                  classId(OBJBUS)
+#define ENG_CLASS_KERNEL_BUS           classId(KernelBus)
+#define ENG_CLASS_INFOROM              classId(OBJINFOROM)
+#define ENG_CLASS_PERF                 classId(Perf)
+#define ENG_CLASS_KERNEL_PERF          classId(KernelPerf)
+#define ENG_CLASS_PXUC                 classId(Pxuc)
+#define ENG_CLASS_BIF                  classId(OBJBIF)
+#define ENG_CLASS_KERNEL_BIF           classId(KernelBif)
+#define ENG_CLASS_HSHUBMANAGER         classId(OBJHSHUBMANAGER)
+#define ENG_CLASS_SF                   classId(OBJSF)
+#define ENG_CLASS_GPIO                 classId(OBJGPIO)
+#define ENG_CLASS_CLK                  classId(ClockManager)
+#define ENG_CLASS_KERNEL_DISPLAY       classId(KernelDisplay)
+#define ENG_CLASS_DISP                 classId(OBJDISP)
+#define ENG_CLASS_DPU                  classId(OBJDPU)
+#define ENG_CLASS_DIP                  classId(OBJDIP)
+#define ENG_CLASS_FAN                  classId(Fan)
+#define ENG_CLASS_INST                 classId(DisplayInstanceMemory)
+#define ENG_CLASS_KERNEL_HEAD          classId(KernelHead)
+#define ENG_CLASS_VOLT                 classId(OBJVOLT)
+#define ENG_CLASS_INTR                 classId(Intr)
+#define ENG_CLASS_HDA                  classId(OBJHDA)
+#define ENG_CLASS_I2C                  classId(I2c)
+#define ENG_CLASS_KERNEL_RC            classId(KernelRc)
+#define ENG_CLASS_RC                   classId(OBJRC)
+#define ENG_CLASS_SOR                  classId(OBJSOR)
+#define ENG_CLASS_DAC                  classId(OBJDAC)
+#define ENG_CLASS_PIOR                 classId(OBJPIOR)
+#define ENG_CLASS_HEAD                 classId(OBJHEAD)
+#define ENG_CLASS_VGA                  classId(OBJVGA)
+#define ENG_CLASS_STEREO               classId(Stereo)
+#define ENG_CLASS_OR                   classId(OBJOR)
+#define ENG_CLASS_BSP                  classId(OBJBSP)
+#define ENG_CLASS_CIPHER               classId(OBJCIPHER)
+#define ENG_CLASS_FUSE                 classId(OBJFUSE)
+#define ENG_CLASS_HDCP                 classId(OBJHDCP)
+#define ENG_CLASS_HDMI                 classId(OBJHDMI)
+#define ENG_CLASS_THERM                classId(Therm)
+#define ENG_CLASS_SEQ                  classId(OBJSEQ)
+#define ENG_CLASS_DPAUX                classId(OBJDPAUX)
+#define ENG_CLASS_PMU                  classId(Pmu)
+#define ENG_CLASS_KERNEL_PMU           classId(KernelPmu)
+#define ENG_CLASS_LPWR                 classId(Lpwr)
+#define ENG_CLASS_ISOHUB               classId(OBJISOHUB)
+#define ENG_CLASS_PMGR                 classId(Pmgr)
+#define ENG_CLASS_HDACODEC             classId(OBJHDACODEC)
+#define ENG_CLASS_SPI                  classId(Spi)
+#define ENG_CLASS_UVM                  classId(OBJUVM)
+#define ENG_CLASS_SEC2                 classId(OBJSEC2)
+#define ENG_CLASS_PMS                  classId(OBJPMS)
+#define ENG_CLASS_ENGSTATE             classId(OBJENGSTATE)
+#define ENG_CLASS_LSFM                 classId(OBJLSFM)
+#define ENG_CLASS_ACR                  classId(OBJACR)
+#define ENG_CLASS_GPULOG               classId(OBJGPULOG)
+#define ENG_CLASS_NVLINK               classId(Nvlink)
+#define ENG_CLASS_HWPM                 classId(OBJHWPM)
+#define ENG_CLASS_KERNEL_HWPM          classId(KernelHwpm)
+#define ENG_CLASS_GPUMON               classId(OBJGPUMON)
+#define ENG_CLASS_GRIDDISPLAYLESS      classId(OBJGRIDDISPLAYLESS)
+#define ENG_CLASS_VMMU                 classId(OBJVMMU)
+#define ENG_CLASS_NVJPG                classId(OBJNVJPG)
+#define ENG_CLASS_GSP                  classId(Gsp)
+#define ENG_CLASS_FSP                  classId(OBJFSP)
+#define ENG_CLASS_KERNEL_FSP           classId(KernelFsp)
+#define ENG_CLASS_KERNEL_GSP           classId(KernelGsp)
+#define ENG_CLASS_KERNEL_SEC2          classId(KernelSec2)
+#define ENG_CLASS_DISPMACRO            classId(OBJDISPMACRO)
+#define ENG_CLASS_NNE                  classId(OBJNNE)
+#define ENG_CLASS_SMBPBI               classId(Smbpbi)
+#define ENG_CLASS_DSI                  classId(OBJDSI)
+#define ENG_CLASS_DCECLIENTRM          classId(OBJDCECLIENTRM)
+#define ENG_CLASS_DCB                  classId(OBJDCB)
+#define ENG_CLASS_KERNEL_NVLINK        classId(KernelNvlink)
+#define ENG_CLASS_GMMU                 classId(OBJGMMU)
+#define ENG_CLASS_KERNEL_GMMU          classId(KernelGmmu)
+#define ENG_CLASS_CONF_COMPUTE         classId(ConfidentialCompute)
+#define ENG_CLASS_KERNEL_CCU           classId(KernelCcu)
+#define ENG_CLASS_CE                   classId(OBJCE)
+#define ENG_CLASS_MSENC                classId(OBJMSENC)
+#define ENG_CLASS_NVDEC                classId(OBJBSP)
+#define ENG_CLASS_GR                   classId(Graphics)
+#define ENG_CLASS_NVJPEG               classId(OBJNVJPG)
+#define ENG_CLASS_FECS                 classId(FECS)
+#define ENG_CLASS_GPCCS                classId(GPCCS)
+#define ENG_CLASS_IOCTRL               classId(Ioctrl)
+#define ENG_CLASS_HSHUB                classId(Hshub)
+#define ENG_CLASS_KERNEL_IOCTRL        classId(KernelIoctrl)
+#define ENG_CLASS_OFA                  classId(OBJOFA)
+
+
 //
 // Engine tags to be used by both RM/HAL to reference specific engines.
 //
 // These values are used in the engine descriptor table
 // as well as in the class descriptor table.
 //
-#define ENG_INVALID              MKENGDESC(classId(OBJINVALID),          0)
-#define ENG_SW                   MKENGDESC(classId(OBJSWENG),            0)
-#define ENG_GPU                  MKENGDESC(classId(OBJGPU),              0)
-#define ENG_FLCN                 MKENGDESC(classId(Falcon),              0)
-#define ENG_MC                   MKENGDESC(classId(OBJMC),               0)
-#define ENG_KERNEL_MC            MKENGDESC(classId(KernelMc),            0)
-#define ENG_PRIV_RING            MKENGDESC(classId(PrivRing),            0)
-#define ENG_SW_INTR              MKENGDESC(classId(SwIntr),              0)
-#define ENG_MEMORY_SYSTEM        MKENGDESC(classId(MemorySystem),        0)
-#define ENG_KERNEL_MEMORY_SYSTEM MKENGDESC(classId(KernelMemorySystem),  0)
-#define ENG_MEMORY_MANAGER       MKENGDESC(classId(MemoryManager),       0)
-#define ENG_FBFLCN               MKENGDESC(classId(OBJFBFLCN),           0)
-#define ENG_TMR                  MKENGDESC(classId(OBJTMR),              0)
-#define ENG_DMA                  MKENGDESC(classId(VirtMemAllocator),    0)
-#define ENG_KERNEL_FIFO          MKENGDESC(classId(KernelFifo),          0)
-#define ENG_FIFO                 MKENGDESC(classId(OBJFIFO),             0)
-#define ENG_OS                   MKENGDESC(classId(OBJOS),               0)
-#define ENG_BUS                  MKENGDESC(classId(OBJBUS),              0)
-#define ENG_KERNEL_BUS           MKENGDESC(classId(KernelBus),           0)
-#define ENG_INFOROM              MKENGDESC(classId(OBJINFOROM),          0)
-#define ENG_PERF                 MKENGDESC(classId(Perf),                0)
-#define ENG_KERNEL_PERF          MKENGDESC(classId(KernelPerf),          0)
-#define ENG_PXUC                 MKENGDESC(classId(Pxuc),                0)
-#define ENG_BIF                  MKENGDESC(classId(OBJBIF),              0)
-#define ENG_KERNEL_BIF           MKENGDESC(classId(KernelBif),           0)
-#define ENG_HSHUBMANAGER         MKENGDESC(classId(OBJHSHUBMANAGER),     0)
-#define ENG_SF                   MKENGDESC(classId(OBJSF),               0)
-#define ENG_GPIO                 MKENGDESC(classId(OBJGPIO),             0)
-#define ENG_CLK                  MKENGDESC(classId(ClockManager),        0)
-#define ENG_KERNEL_DISPLAY       MKENGDESC(classId(KernelDisplay),       0)
-#define ENG_DISP                 MKENGDESC(classId(OBJDISP),             0)
-#define ENG_DPU                  MKENGDESC(classId(OBJDPU),              0)
-#define ENG_DIP                  MKENGDESC(classId(OBJDIP),              0)
-#define ENG_FAN                  MKENGDESC(classId(Fan),                 0)
-#define ENG_INST                 MKENGDESC(classId(DisplayInstanceMemory), 0)
-#define ENG_KERNEL_HEAD          MKENGDESC(classId(KernelHead),          0)
-#define ENG_VOLT                 MKENGDESC(classId(OBJVOLT),             0)
-#define ENG_INTR                 MKENGDESC(classId(Intr),                0)
-#define ENG_HDA                  MKENGDESC(classId(OBJHDA),              0)
-#define ENG_I2C                  MKENGDESC(classId(I2c),                 0)
-#define ENG_KERNEL_RC            MKENGDESC(classId(KernelRc),            0)
-#define ENG_RC                   MKENGDESC(classId(OBJRC),               0)
-#define ENG_SOR                  MKENGDESC(classId(OBJSOR),              0)
-#define ENG_DAC                  MKENGDESC(classId(OBJDAC),              0)
-#define ENG_PIOR                 MKENGDESC(classId(OBJPIOR),             0)
-#define ENG_HEAD                 MKENGDESC(classId(OBJHEAD),             0)
-#define ENG_VGA                  MKENGDESC(classId(OBJVGA),              0)
-#define ENG_STEREO               MKENGDESC(classId(Stereo),           0)
-#define ENG_OR                   MKENGDESC(classId(OBJOR),               0)
-#define ENG_BSP                  MKENGDESC(classId(OBJBSP),              0)
-#define ENG_CIPHER               MKENGDESC(classId(OBJCIPHER),           0)
-#define ENG_FUSE                 MKENGDESC(classId(OBJFUSE),             0)
-#define ENG_HDCP                 MKENGDESC(classId(OBJHDCP),             0)
-#define ENG_HDMI                 MKENGDESC(classId(OBJHDMI),             0)
-#define ENG_THERM                MKENGDESC(classId(Therm),               0)
-#define ENG_SEQ                  MKENGDESC(classId(OBJSEQ),              0)
-#define ENG_DPAUX                MKENGDESC(classId(OBJDPAUX),            0)
-#define ENG_PMU                  MKENGDESC(classId(Pmu),                 0)
-#define ENG_KERNEL_PMU           MKENGDESC(classId(KernelPmu),           0)
-#define ENG_LPWR                 MKENGDESC(classId(Lpwr),                0)
-#define ENG_ISOHUB               MKENGDESC(classId(OBJISOHUB),           0)
-#define ENG_PMGR                 MKENGDESC(classId(Pmgr),                0)
-#define ENG_HDACODEC             MKENGDESC(classId(OBJHDACODEC),         0)
-#define ENG_SPI                  MKENGDESC(classId(Spi),                 0)
-#define ENG_UVM                  MKENGDESC(classId(OBJUVM),              0)
-#define ENG_SEC2                 MKENGDESC(classId(OBJSEC2),             0)
-#define ENG_PMS                  MKENGDESC(classId(OBJPMS),              0)
-#define ENG_ENGSTATE             MKENGDESC(classId(OBJENGSTATE),         0)
-#define ENG_LSFM                 MKENGDESC(classId(OBJLSFM),             0)
-#define ENG_ACR                  MKENGDESC(classId(OBJACR),              0)
-#define ENG_GPULOG               MKENGDESC(classId(OBJGPULOG),           0)
-#define ENG_NVLINK               MKENGDESC(classId(Nvlink),              0)
-#define ENG_HWPM                 MKENGDESC(classId(OBJHWPM),             0)
-#define ENG_KERNEL_HWPM          MKENGDESC(classId(KernelHwpm),          0)
-#define ENG_GPUMON               MKENGDESC(classId(OBJGPUMON),           0)
-#define ENG_GRIDDISPLAYLESS      MKENGDESC(classId(OBJGRIDDISPLAYLESS),  0)
-#define ENG_VMMU                 MKENGDESC(classId(OBJVMMU),             0)
-#define ENG_NVJPG                MKENGDESC(classId(OBJNVJPG),            0)
-#define ENG_GSP                  MKENGDESC(classId(Gsp),                 0)
-#define ENG_FSP                  MKENGDESC(classId(OBJFSP),              0)
-#define ENG_KERNEL_FSP           MKENGDESC(classId(KernelFsp),           0)
-#define ENG_KERNEL_GSP           MKENGDESC(classId(KernelGsp),           0)
-#define ENG_KERNEL_SEC2          MKENGDESC(classId(KernelSec2),          0)
-#define ENG_DISPMACRO            MKENGDESC(classId(OBJDISPMACRO),        0)
-#define ENG_NNE                  MKENGDESC(classId(OBJNNE),              0)
-#define ENG_SMBPBI               MKENGDESC(classId(Smbpbi),              0)
-#define ENG_DSI                  MKENGDESC(classId(OBJDSI),              0)
-#define ENG_DCECLIENTRM          MKENGDESC(classId(OBJDCECLIENTRM),      0)
-#define ENG_DCB                  MKENGDESC(classId(OBJDCB),              0)
-#define ENG_KERNEL_NVLINK        MKENGDESC(classId(KernelNvlink),        0)
-#define ENG_GMMU                 MKENGDESC(classId(OBJGMMU),             0)
-#define ENG_KERNEL_GMMU          MKENGDESC(classId(KernelGmmu),          0)
-#define ENG_CONF_COMPUTE         MKENGDESC(classId(ConfidentialCompute), 0)
-#define ENG_KERNEL_CCU           MKENGDESC(classId(KernelCcu),           0)
+#define ENG_INVALID              MKENGDESC(ENG_CLASS_INVALID,              0)
+#define ENG_SW                   MKENGDESC(ENG_CLASS_SW,                   0)
+#define ENG_GPU                  MKENGDESC(ENG_CLASS_GPU,                  0)
+#define ENG_FLCN                 MKENGDESC(ENG_CLASS_FLCN,                 0)
+#define ENG_MC                   MKENGDESC(ENG_CLASS_MC,                   0)
+#define ENG_KERNEL_MC            MKENGDESC(ENG_CLASS_KERNEL_MC,            0)
+#define ENG_PRIV_RING            MKENGDESC(ENG_CLASS_PRIV_RING,            0)
+#define ENG_SW_INTR              MKENGDESC(ENG_CLASS_SW_INTR,              0)
+#define ENG_MEMORY_SYSTEM        MKENGDESC(ENG_CLASS_MEMORY_SYSTEM,        0)
+#define ENG_KERNEL_MEMORY_SYSTEM MKENGDESC(ENG_CLASS_KERNEL_MEMORY_SYSTEM, 0)
+#define ENG_MEMORY_MANAGER       MKENGDESC(ENG_CLASS_MEMORY_MANAGER,       0)
+#define ENG_FBFLCN               MKENGDESC(ENG_CLASS_FBFLCN,               0)
+#define ENG_TMR                  MKENGDESC(ENG_CLASS_TMR,                  0)
+#define ENG_DMA                  MKENGDESC(ENG_CLASS_DMA,                  0)
+#define ENG_KERNEL_FIFO          MKENGDESC(ENG_CLASS_KERNEL_FIFO,          0)
+#define ENG_FIFO                 MKENGDESC(ENG_CLASS_FIFO,                 0)
+#define ENG_OS                   MKENGDESC(ENG_CLASS_OS,                   0)
+#define ENG_BUS                  MKENGDESC(ENG_CLASS_BUS,                  0)
+#define ENG_KERNEL_BUS           MKENGDESC(ENG_CLASS_KERNEL_BUS,           0)
+#define ENG_INFOROM              MKENGDESC(ENG_CLASS_INFOROM,              0)
+#define ENG_PERF                 MKENGDESC(ENG_CLASS_PERF,                 0)
+#define ENG_KERNEL_PERF          MKENGDESC(ENG_CLASS_KERNEL_PERF,          0)
+#define ENG_PXUC                 MKENGDESC(ENG_CLASS_PXUC,                 0)
+#define ENG_BIF                  MKENGDESC(ENG_CLASS_BIF,                  0)
+#define ENG_KERNEL_BIF           MKENGDESC(ENG_CLASS_KERNEL_BIF,           0)
+#define ENG_HSHUBMANAGER         MKENGDESC(ENG_CLASS_HSHUBMANAGER,         0)
+#define ENG_SF                   MKENGDESC(ENG_CLASS_SF,                   0)
+#define ENG_GPIO                 MKENGDESC(ENG_CLASS_GPIO,                 0)
+#define ENG_CLK                  MKENGDESC(ENG_CLASS_CLK,                  0)
+#define ENG_KERNEL_DISPLAY       MKENGDESC(ENG_CLASS_KERNEL_DISPLAY,       0)
+#define ENG_DISP                 MKENGDESC(ENG_CLASS_DISP,                 0)
+#define ENG_DPU                  MKENGDESC(ENG_CLASS_DPU,                  0)
+#define ENG_DIP                  MKENGDESC(ENG_CLASS_DIP,                  0)
+#define ENG_FAN                  MKENGDESC(ENG_CLASS_FAN,                  0)
+#define ENG_INST                 MKENGDESC(ENG_CLASS_INST,                 0)
+#define ENG_KERNEL_HEAD          MKENGDESC(ENG_CLASS_KERNEL_HEAD,          0)
+#define ENG_VOLT                 MKENGDESC(ENG_CLASS_VOLT,                 0)
+#define ENG_INTR                 MKENGDESC(ENG_CLASS_INTR,                 0)
+#define ENG_HDA                  MKENGDESC(ENG_CLASS_HDA,                  0)
+#define ENG_I2C                  MKENGDESC(ENG_CLASS_I2C,                  0)
+#define ENG_KERNEL_RC            MKENGDESC(ENG_CLASS_KERNEL_RC,            0)
+#define ENG_RC                   MKENGDESC(ENG_CLASS_RC,                   0)
+#define ENG_SOR                  MKENGDESC(ENG_CLASS_SOR,                  0)
+#define ENG_DAC                  MKENGDESC(ENG_CLASS_DAC,                  0)
+#define ENG_PIOR                 MKENGDESC(ENG_CLASS_PIOR,                 0)
+#define ENG_HEAD                 MKENGDESC(ENG_CLASS_HEAD,                 0)
+#define ENG_VGA                  MKENGDESC(ENG_CLASS_VGA,                  0)
+#define ENG_STEREO               MKENGDESC(ENG_CLASS_STEREO,               0)
+#define ENG_OR                   MKENGDESC(ENG_CLASS_OR,                   0)
+#define ENG_BSP                  MKENGDESC(ENG_CLASS_BSP,                  0)
+#define ENG_CIPHER               MKENGDESC(ENG_CLASS_CIPHER,               0)
+#define ENG_FUSE                 MKENGDESC(ENG_CLASS_FUSE,                 0)
+#define ENG_HDCP                 MKENGDESC(ENG_CLASS_HDCP,                 0)
+#define ENG_HDMI                 MKENGDESC(ENG_CLASS_HDMI,                 0)
+#define ENG_THERM                MKENGDESC(ENG_CLASS_THERM,                0)
+#define ENG_SEQ                  MKENGDESC(ENG_CLASS_SEQ,                  0)
+#define ENG_DPAUX                MKENGDESC(ENG_CLASS_DPAUX,                0)
+#define ENG_PMU                  MKENGDESC(ENG_CLASS_PMU,                  0)
+#define ENG_KERNEL_PMU           MKENGDESC(ENG_CLASS_KERNEL_PMU,           0)
+#define ENG_LPWR                 MKENGDESC(ENG_CLASS_LPWR,            0)
+#define ENG_ISOHUB               MKENGDESC(ENG_CLASS_ISOHUB,          0)
+#define ENG_PMGR                 MKENGDESC(ENG_CLASS_PMGR,            0)
+#define ENG_HDACODEC             MKENGDESC(ENG_CLASS_HDACODEC,        0)
+#define ENG_SPI                  MKENGDESC(ENG_CLASS_SPI,             0)
+#define ENG_UVM                  MKENGDESC(ENG_CLASS_UVM,             0)
+#define ENG_SEC2                 MKENGDESC(ENG_CLASS_SEC2,            0)
+#define ENG_PMS                  MKENGDESC(ENG_CLASS_PMS,             0)
+#define ENG_ENGSTATE             MKENGDESC(ENG_CLASS_ENGSTATE,        0)
+#define ENG_LSFM                 MKENGDESC(ENG_CLASS_LSFM,            0)
+#define ENG_ACR                  MKENGDESC(ENG_CLASS_ACR,             0)
+#define ENG_GPULOG               MKENGDESC(ENG_CLASS_GPULOG,          0)
+#define ENG_NVLINK               MKENGDESC(ENG_CLASS_NVLINK,          0)
+#define ENG_HWPM                 MKENGDESC(ENG_CLASS_HWPM,            0)
+#define ENG_KERNEL_HWPM          MKENGDESC(ENG_CLASS_KERNEL_HWPM,     0)
+#define ENG_GPUMON               MKENGDESC(ENG_CLASS_GPUMON,          0)
+#define ENG_GRIDDISPLAYLESS      MKENGDESC(ENG_CLASS_GRIDDISPLAYLESS, 0)
+#define ENG_VMMU                 MKENGDESC(ENG_CLASS_VMMU,            0)
+#define ENG_NVJPG                MKENGDESC(ENG_CLASS_NVJPG,           0)
+#define ENG_GSP                  MKENGDESC(ENG_CLASS_GSP,             0)
+#define ENG_FSP                  MKENGDESC(ENG_CLASS_FSP,             0)
+#define ENG_KERNEL_FSP           MKENGDESC(ENG_CLASS_KERNEL_FSP,      0)
+#define ENG_KERNEL_GSP           MKENGDESC(ENG_CLASS_KERNEL_GSP,      0)
+#define ENG_KERNEL_SEC2          MKENGDESC(ENG_CLASS_KERNEL_SEC2,     0)
+#define ENG_DISPMACRO            MKENGDESC(ENG_CLASS_DISPMACRO,       0)
+#define ENG_NNE                  MKENGDESC(ENG_CLASS_NNE,             0)
+#define ENG_SMBPBI               MKENGDESC(ENG_CLASS_SMBPBI,          0)
+#define ENG_DSI                  MKENGDESC(ENG_CLASS_DSI,             0)
+#define ENG_DCECLIENTRM          MKENGDESC(ENG_CLASS_DCECLIENTRM,     0)
+#define ENG_DCB                  MKENGDESC(ENG_CLASS_DCB,             0)
+#define ENG_KERNEL_NVLINK        MKENGDESC(ENG_CLASS_KERNEL_NVLINK,   0)
+#define ENG_GMMU                 MKENGDESC(ENG_CLASS_GMMU,            0)
+#define ENG_KERNEL_GMMU          MKENGDESC(ENG_CLASS_KERNEL_GMMU,     0)
+#define ENG_CONF_COMPUTE         MKENGDESC(ENG_CLASS_CONF_COMPUTE,    0)
+#define ENG_KERNEL_CCU           MKENGDESC(ENG_CLASS_KERNEL_CCU,      0)
 
 // Indexed GSPLITE Engine Tag Reference
 
 // Indexed CE engine tag reference
-#define ENG_CE(x)                MKENGDESC(classId(OBJCE),               x)
+#define ENG_CE(x)                MKENGDESC(ENG_CLASS_CE,              x)
 #define ENG_CE__SIZE_1           20
 #define IS_CE(engDesc)           (ENGDESC_FIELD(engDesc, _CLASS) == classId(OBJCE))
 #define GET_CE_IDX(engDesc)      ENGDESC_FIELD(engDesc, _INST)
 
 // Indexed MSENC Engine Tag Reference
-#define ENG_MSENC(x)             MKENGDESC(classId(OBJMSENC),            x)
+#define ENG_MSENC(x)             MKENGDESC(ENG_CLASS_MSENC,           x)
 #define ENG_MSENC__SIZE_1        3
 #define IS_MSENC(engDesc)        (ENGDESC_FIELD(engDesc, _CLASS) == classId(OBJMSENC))
 #define GET_MSENC_IDX(engDesc)   ENGDESC_FIELD(engDesc, _INST)
 
 // Indexed BSP/NVDEC Engine Tag Reference
-#define ENG_NVDEC(x)             MKENGDESC(classId(OBJBSP),              x)
+#define ENG_NVDEC(x)             MKENGDESC(ENG_CLASS_NVDEC,           x)
 #define ENG_NVDEC__SIZE_1        8
 #define IS_NVDEC(engDesc)        (ENGDESC_FIELD(engDesc, _CLASS) == classId(OBJBSP))
 #define GET_NVDEC_IDX(engDesc)   ENGDESC_FIELD(engDesc, _INST)
 
 // Indexed GR engine tag reference
-#define ENG_GR(x)                MKENGDESC(classId(Graphics),            x)
+#define ENG_GR(x)                MKENGDESC(ENG_CLASS_GR,              x)
 #define ENG_GR__SIZE_1           8
 #define IS_GR(engDesc)           (ENGDESC_FIELD(engDesc, _CLASS) == classId(Graphics))
 #define GET_GR_IDX(engDesc)      ENGDESC_FIELD(engDesc, _INST)
 
 // Indexed NVJPEG Engine Tag Reference
-#define ENG_NVJPEG(x)            MKENGDESC(classId(OBJNVJPG),              x)
+#define ENG_NVJPEG(x)            MKENGDESC(ENG_CLASS_NVJPEG,          x)
 #define ENG_NVJPEG__SIZE_1       8
 #define IS_NVJPEG(engDesc)       (ENGDESC_FIELD(engDesc, _CLASS) == classId(OBJNVJPG))
 #define GET_NVJPEG_IDX(engDesc)  ENGDESC_FIELD(engDesc, _INST)
 
 // Indexed FECS engine tag reference
-#define ENG_FECS(x)              MKENGDESC(classId(FECS),             x)
+#define ENG_FECS(x)              MKENGDESC(ENG_CLASS_FECS,            x)
 #define ENG_FECS__SIZE_1         8
 #define IS_FECS(engDesc)         (ENGDESC_FIELD(engDesc, _CLASS) == classId(FECS))
 #define GET_FECS_IDX(engDesc)    ENGDESC_FIELD(engDesc, _INST)
 
 // Indexed GPCCS engine tag reference
-#define ENG_GPCCS(x)             MKENGDESC(classId(GPCCS),            x)
+#define ENG_GPCCS(x)             MKENGDESC(ENG_CLASS_GPCCS,           x)
 #define ENG_GPCCS__SIZE_1        8
 #define IS_GPCCS(engDesc)        (ENGDESC_FIELD(engDesc, _CLASS) == classId(GPCCS))
 #define GET_GPCCS_IDX(engDesc)   ENGDESC_FIELD(engDesc, _INST)
 
 // Indexed IOCTRL engine tag reference
-#define ENG_IOCTRL(x)            MKENGDESC(classId(Ioctrl),           x)
+#define ENG_IOCTRL(x)            MKENGDESC(ENG_CLASS_IOCTRL,          x)
 #define ENG_IOCTRL__SIZE_1       3
 #define IS_IOCTRL(engDesc)       (ENGDESC_FIELD(engDesc, _CLASS) == classId(Ioctrl))
 #define GET_IOCTRL_IDX(engDesc)  ENGDESC_FIELD(engDesc, _INST)
 
 // Indexed HSHUB engine tag reference
-#define ENG_HSHUB(x)             MKENGDESC(classId(Hshub),            x)
-// Bug 3748354 - Use this new value for all chips once Blackwell is released
+#define ENG_HSHUB(x)             MKENGDESC(ENG_CLASS_HSHUB,           x)
 #define ENG_HSHUB__SIZE_1        12
 #define IS_HSHUB(engDesc)        (ENGDESC_FIELD(engDesc, _CLASS) == classId(Hshub))
 #define GET_HSHUB_IDX(engDesc)   ENGDESC_FIELD(engDesc, _INST)
 
 // Indexed IOCTRL engine tag reference
-#define ENG_KERNEL_IOCTRL(x)             MKENGDESC(classId(KernelIoctrl),        x)
+#define ENG_KERNEL_IOCTRL(x)     MKENGDESC(ENG_CLASS_KERNEL_IOCTRL,   x)
 #define ENG_KERNEL_IOCTRL__SIZE_1        3
 #define IS_KERNEL_IOCTRL(engDesc)        (ENGDESC_FIELD(engDesc, _CLASS) == classId(KernelIoctrl))
 #define GET_KERNEL_IOCTRL_IDX(engDesc)   ENGDESC_FIELD(engDesc, _INST)
 
 // Indexed OFA engine tag reference
-#define ENG_OFA(x)                  MKENGDESC(classId(OBJOFA),              x)
+#define ENG_OFA(x)               MKENGDESC(ENG_CLASS_OFA,             x)
 #define ENG_OFA__SIZE_1             2
 #define IS_OFA(engDesc)             (ENGDESC_FIELD(engDesc, _CLASS) == classId(OBJOFA))
 #define GET_OFA_IDX(engDesc)        ENGDESC_FIELD(engDesc, _INST)
+
 #endif // _ENG_DESC_H_
 
 #ifdef __cplusplus

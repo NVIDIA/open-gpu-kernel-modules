@@ -57,6 +57,10 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_Heap =
     /*pExportInfo=*/        &__nvoc_export_info_Heap
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+
+// Up-thunk(s) to bridge methods to ancestors (if any)
+
 const struct NVOC_EXPORT_INFO __nvoc_export_info_Heap = 
 {
     /*numEntries=*/     0,

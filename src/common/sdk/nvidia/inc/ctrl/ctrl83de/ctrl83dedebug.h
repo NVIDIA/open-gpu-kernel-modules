@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1142,6 +1142,20 @@ typedef struct NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_PARAMS {
     NV_DECLARE_ALIGNED(NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_ENTRY mmuFaultInfoList[NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_MAX_ENTRIES], 8);
     NvU32 count;
 } NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_PARAMS;
+
+/*
+ * NV83DE_CTRL_CMD_DEBUG_SET_DROP_DEFERRED_RC
+ *
+ *   bDropDeferredRc (OUT)
+ *     This indicates whether debugger wants a fault to eventually trigger RC on teardown or be dropped.
+ */
+#define NV83DE_CTRL_CMD_DEBUG_SET_DROP_DEFERRED_RC (0x83de0329) /* finn: Evaluated from "(FINN_GT200_DEBUGGER_DEBUG_INTERFACE_ID << 8) | NV83DE_CTRL_DEBUG_SET_DROP_DEFERRED_RC_PARAMS_MESSAGE_ID" */
+
+#define NV83DE_CTRL_DEBUG_SET_DROP_DEFERRED_RC_PARAMS_MESSAGE_ID (0x29U)
+
+typedef struct NV83DE_CTRL_DEBUG_SET_DROP_DEFERRED_RC_PARAMS {
+    NvBool bDropDeferredRc;
+} NV83DE_CTRL_DEBUG_SET_DROP_DEFERRED_RC_PARAMS;
 
 /* _ctrl83dedebug_h_ */
 

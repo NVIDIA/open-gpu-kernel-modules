@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -198,10 +198,15 @@ typedef struct TMR_EVENT_GENERAL_PARAMS {
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__OBJTMR;
+
+
 struct OBJTMR {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__OBJTMR *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -213,18 +218,9 @@ struct OBJTMR {
     struct IntrService *__nvoc_pbase_IntrService;    // intrserv super
     struct OBJTMR *__nvoc_pbase_OBJTMR;    // tmr
 
-    // Vtable with 27 per-object function pointers
+    // Vtable with 10 per-object function pointers
     NV_STATUS (*__tmrDelay__)(struct OBJTMR * /*this*/, NvU32);  // halified (2 hals)
-    void (*__tmrRegisterIntrService__)(OBJGPU *, struct OBJTMR * /*this*/, IntrServiceRecord *);  // virtual override (intrserv) base (intrserv)
-    NvBool (*__tmrClearInterrupt__)(OBJGPU *, struct OBJTMR * /*this*/, IntrServiceClearInterruptArguments *);  // virtual override (intrserv) base (intrserv)
     NvU32 (*__tmrServiceInterrupt__)(OBJGPU *, struct OBJTMR * /*this*/, IntrServiceServiceInterruptArguments *);  // virtual halified (3 hals) override (intrserv) base (intrserv) body
-    NV_STATUS (*__tmrConstructEngine__)(OBJGPU *, struct OBJTMR * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__tmrStatePreInitLocked__)(OBJGPU *, struct OBJTMR * /*this*/);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__tmrStateInitLocked__)(OBJGPU *, struct OBJTMR * /*this*/);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__tmrStateInitUnlocked__)(OBJGPU *, struct OBJTMR * /*this*/);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__tmrStateLoad__)(OBJGPU *, struct OBJTMR * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__tmrStateUnload__)(OBJGPU *, struct OBJTMR * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
-    void (*__tmrStateDestroy__)(OBJGPU *, struct OBJTMR * /*this*/);  // virtual override (engstate) base (engstate)
     NV_STATUS (*__tmrSetCurrentTime__)(OBJGPU *, struct OBJTMR * /*this*/);  // halified (3 hals) body
     NvU32 (*__tmrGetTimeLo__)(OBJGPU *, struct OBJTMR * /*this*/);  // halified (2 hals) body
     NvU64 (*__tmrGetTime__)(OBJGPU *, struct OBJTMR * /*this*/);  // halified (2 hals) body
@@ -233,14 +229,6 @@ struct OBJTMR {
     NV_STATUS (*__tmrSetCountdown__)(OBJGPU *, struct OBJTMR * /*this*/, NvU32, NvU32, struct THREAD_STATE_NODE *);  // halified (2 hals) body
     NV_STATUS (*__tmrGrTickFreqChange__)(OBJGPU *, struct OBJTMR * /*this*/, NvBool);  // halified (2 hals) body
     NV_STATUS (*__tmrGetGpuPtimerOffset__)(OBJGPU *, struct OBJTMR * /*this*/, NvU32 *, NvU32 *);  // halified (2 hals) body
-    void (*__tmrInitMissing__)(struct OBJGPU *, struct OBJTMR * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__tmrStatePreInitUnlocked__)(struct OBJGPU *, struct OBJTMR * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__tmrStatePreLoad__)(struct OBJGPU *, struct OBJTMR * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__tmrStatePostLoad__)(struct OBJGPU *, struct OBJTMR * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__tmrStatePreUnload__)(struct OBJGPU *, struct OBJTMR * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__tmrStatePostUnload__)(struct OBJGPU *, struct OBJTMR * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__tmrIsPresent__)(struct OBJGPU *, struct OBJTMR * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__tmrServiceNotificationInterrupt__)(OBJGPU *, struct OBJTMR * /*this*/, IntrServiceServiceNotificationInterruptArguments *);  // virtual inherited (intrserv) base (intrserv)
 
     // 7 PDB properties
     NvBool PDB_PROP_TMR_USE_COUNTDOWN_TIMER_FOR_RM_CALLBACKS;
@@ -269,6 +257,31 @@ struct OBJTMR {
     NvBool bAlarmIntrEnabled;
     struct OBJREFCNT *pGrTickFreqRefcnt;
     NvU64 sysTimerOffsetNs;
+};
+
+
+// Metadata including vtable with 17 function pointers plus superclass metadata
+struct NVOC_VTABLE__OBJTMR {
+    const struct NVOC_VTABLE__OBJENGSTATE OBJENGSTATE;    // (engstate) 14 function pointers
+    const struct NVOC_VTABLE__IntrService IntrService;    // (intrserv) 4 function pointers
+
+    void (*__tmrRegisterIntrService__)(OBJGPU *, struct OBJTMR * /*this*/, IntrServiceRecord *);  // virtual override (intrserv) base (intrserv)
+    NvBool (*__tmrClearInterrupt__)(OBJGPU *, struct OBJTMR * /*this*/, IntrServiceClearInterruptArguments *);  // virtual override (intrserv) base (intrserv)
+    NV_STATUS (*__tmrConstructEngine__)(OBJGPU *, struct OBJTMR * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__tmrStatePreInitLocked__)(OBJGPU *, struct OBJTMR * /*this*/);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__tmrStateInitLocked__)(OBJGPU *, struct OBJTMR * /*this*/);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__tmrStateInitUnlocked__)(OBJGPU *, struct OBJTMR * /*this*/);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__tmrStateLoad__)(OBJGPU *, struct OBJTMR * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__tmrStateUnload__)(OBJGPU *, struct OBJTMR * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
+    void (*__tmrStateDestroy__)(OBJGPU *, struct OBJTMR * /*this*/);  // virtual override (engstate) base (engstate)
+    void (*__tmrInitMissing__)(struct OBJGPU *, struct OBJTMR * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__tmrStatePreInitUnlocked__)(struct OBJGPU *, struct OBJTMR * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__tmrStatePreLoad__)(struct OBJGPU *, struct OBJTMR * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__tmrStatePostLoad__)(struct OBJGPU *, struct OBJTMR * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__tmrStatePreUnload__)(struct OBJGPU *, struct OBJTMR * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__tmrStatePostUnload__)(struct OBJGPU *, struct OBJTMR * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__tmrIsPresent__)(struct OBJGPU *, struct OBJTMR * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__tmrServiceNotificationInterrupt__)(OBJGPU *, struct OBJTMR * /*this*/, IntrServiceServiceNotificationInterruptArguments *);  // virtual inherited (intrserv) base (intrserv)
 };
 
 #ifndef __NVOC_CLASS_OBJTMR_TYPEDEF__
@@ -322,26 +335,26 @@ NV_STATUS __nvoc_objCreate_OBJTMR(OBJTMR**, Dynamic*, NvU32);
 #define tmrDelay_FNPTR(pTmr) pTmr->__tmrDelay__
 #define tmrDelay(pTmr, arg2) tmrDelay_DISPATCH(pTmr, arg2)
 #define tmrDelay_HAL(pTmr, arg2) tmrDelay_DISPATCH(pTmr, arg2)
-#define tmrRegisterIntrService_FNPTR(pTmr) pTmr->__tmrRegisterIntrService__
+#define tmrRegisterIntrService_FNPTR(pTmr) pTmr->__nvoc_vtable->__tmrRegisterIntrService__
 #define tmrRegisterIntrService(pGpu, pTmr, pRecords) tmrRegisterIntrService_DISPATCH(pGpu, pTmr, pRecords)
-#define tmrClearInterrupt_FNPTR(pTmr) pTmr->__tmrClearInterrupt__
+#define tmrClearInterrupt_FNPTR(pTmr) pTmr->__nvoc_vtable->__tmrClearInterrupt__
 #define tmrClearInterrupt(pGpu, pTmr, pParams) tmrClearInterrupt_DISPATCH(pGpu, pTmr, pParams)
 #define tmrServiceInterrupt_FNPTR(pTmr) pTmr->__tmrServiceInterrupt__
 #define tmrServiceInterrupt(pGpu, pTmr, pParams) tmrServiceInterrupt_DISPATCH(pGpu, pTmr, pParams)
 #define tmrServiceInterrupt_HAL(pGpu, pTmr, pParams) tmrServiceInterrupt_DISPATCH(pGpu, pTmr, pParams)
-#define tmrConstructEngine_FNPTR(pTmr) pTmr->__tmrConstructEngine__
+#define tmrConstructEngine_FNPTR(pTmr) pTmr->__nvoc_vtable->__tmrConstructEngine__
 #define tmrConstructEngine(pGpu, pTmr, arg3) tmrConstructEngine_DISPATCH(pGpu, pTmr, arg3)
-#define tmrStatePreInitLocked_FNPTR(pTmr) pTmr->__tmrStatePreInitLocked__
+#define tmrStatePreInitLocked_FNPTR(pTmr) pTmr->__nvoc_vtable->__tmrStatePreInitLocked__
 #define tmrStatePreInitLocked(pGpu, pTmr) tmrStatePreInitLocked_DISPATCH(pGpu, pTmr)
-#define tmrStateInitLocked_FNPTR(pTmr) pTmr->__tmrStateInitLocked__
+#define tmrStateInitLocked_FNPTR(pTmr) pTmr->__nvoc_vtable->__tmrStateInitLocked__
 #define tmrStateInitLocked(pGpu, pTmr) tmrStateInitLocked_DISPATCH(pGpu, pTmr)
-#define tmrStateInitUnlocked_FNPTR(pTmr) pTmr->__tmrStateInitUnlocked__
+#define tmrStateInitUnlocked_FNPTR(pTmr) pTmr->__nvoc_vtable->__tmrStateInitUnlocked__
 #define tmrStateInitUnlocked(pGpu, pTmr) tmrStateInitUnlocked_DISPATCH(pGpu, pTmr)
-#define tmrStateLoad_FNPTR(pTmr) pTmr->__tmrStateLoad__
+#define tmrStateLoad_FNPTR(pTmr) pTmr->__nvoc_vtable->__tmrStateLoad__
 #define tmrStateLoad(pGpu, pTmr, arg3) tmrStateLoad_DISPATCH(pGpu, pTmr, arg3)
-#define tmrStateUnload_FNPTR(pTmr) pTmr->__tmrStateUnload__
+#define tmrStateUnload_FNPTR(pTmr) pTmr->__nvoc_vtable->__tmrStateUnload__
 #define tmrStateUnload(pGpu, pTmr, arg3) tmrStateUnload_DISPATCH(pGpu, pTmr, arg3)
-#define tmrStateDestroy_FNPTR(pTmr) pTmr->__tmrStateDestroy__
+#define tmrStateDestroy_FNPTR(pTmr) pTmr->__nvoc_vtable->__tmrStateDestroy__
 #define tmrStateDestroy(pGpu, pTmr) tmrStateDestroy_DISPATCH(pGpu, pTmr)
 #define tmrSetCurrentTime_FNPTR(pTmr) pTmr->__tmrSetCurrentTime__
 #define tmrSetCurrentTime(pGpu, pTmr) tmrSetCurrentTime_DISPATCH(pGpu, pTmr)
@@ -367,21 +380,21 @@ NV_STATUS __nvoc_objCreate_OBJTMR(OBJTMR**, Dynamic*, NvU32);
 #define tmrGetGpuPtimerOffset_FNPTR(pTmr) pTmr->__tmrGetGpuPtimerOffset__
 #define tmrGetGpuPtimerOffset(pGpu, pTmr, arg3, arg4) tmrGetGpuPtimerOffset_DISPATCH(pGpu, pTmr, arg3, arg4)
 #define tmrGetGpuPtimerOffset_HAL(pGpu, pTmr, arg3, arg4) tmrGetGpuPtimerOffset_DISPATCH(pGpu, pTmr, arg3, arg4)
-#define tmrInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateInitMissing__
+#define tmrInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateInitMissing__
 #define tmrInitMissing(pGpu, pEngstate) tmrInitMissing_DISPATCH(pGpu, pEngstate)
-#define tmrStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreInitUnlocked__
+#define tmrStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreInitUnlocked__
 #define tmrStatePreInitUnlocked(pGpu, pEngstate) tmrStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define tmrStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreLoad__
+#define tmrStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreLoad__
 #define tmrStatePreLoad(pGpu, pEngstate, arg3) tmrStatePreLoad_DISPATCH(pGpu, pEngstate, arg3)
-#define tmrStatePostLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePostLoad__
+#define tmrStatePostLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePostLoad__
 #define tmrStatePostLoad(pGpu, pEngstate, arg3) tmrStatePostLoad_DISPATCH(pGpu, pEngstate, arg3)
-#define tmrStatePreUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreUnload__
+#define tmrStatePreUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreUnload__
 #define tmrStatePreUnload(pGpu, pEngstate, arg3) tmrStatePreUnload_DISPATCH(pGpu, pEngstate, arg3)
-#define tmrStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePostUnload__
+#define tmrStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePostUnload__
 #define tmrStatePostUnload(pGpu, pEngstate, arg3) tmrStatePostUnload_DISPATCH(pGpu, pEngstate, arg3)
-#define tmrIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateIsPresent__
+#define tmrIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateIsPresent__
 #define tmrIsPresent(pGpu, pEngstate) tmrIsPresent_DISPATCH(pGpu, pEngstate)
-#define tmrServiceNotificationInterrupt_FNPTR(pIntrService) pIntrService->__nvoc_base_IntrService.__intrservServiceNotificationInterrupt__
+#define tmrServiceNotificationInterrupt_FNPTR(pIntrService) pIntrService->__nvoc_base_IntrService.__nvoc_vtable->__intrservServiceNotificationInterrupt__
 #define tmrServiceNotificationInterrupt(pGpu, pIntrService, pParams) tmrServiceNotificationInterrupt_DISPATCH(pGpu, pIntrService, pParams)
 
 // Dispatch functions
@@ -390,11 +403,11 @@ static inline NV_STATUS tmrDelay_DISPATCH(struct OBJTMR *pTmr, NvU32 arg2) {
 }
 
 static inline void tmrRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceRecord pRecords[175]) {
-    pTmr->__tmrRegisterIntrService__(pGpu, pTmr, pRecords);
+    pTmr->__nvoc_vtable->__tmrRegisterIntrService__(pGpu, pTmr, pRecords);
 }
 
 static inline NvBool tmrClearInterrupt_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceClearInterruptArguments *pParams) {
-    return pTmr->__tmrClearInterrupt__(pGpu, pTmr, pParams);
+    return pTmr->__nvoc_vtable->__tmrClearInterrupt__(pGpu, pTmr, pParams);
 }
 
 static inline NvU32 tmrServiceInterrupt_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceServiceInterruptArguments *pParams) {
@@ -402,31 +415,31 @@ static inline NvU32 tmrServiceInterrupt_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pT
 }
 
 static inline NV_STATUS tmrConstructEngine_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr, ENGDESCRIPTOR arg3) {
-    return pTmr->__tmrConstructEngine__(pGpu, pTmr, arg3);
+    return pTmr->__nvoc_vtable->__tmrConstructEngine__(pGpu, pTmr, arg3);
 }
 
 static inline NV_STATUS tmrStatePreInitLocked_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return pTmr->__tmrStatePreInitLocked__(pGpu, pTmr);
+    return pTmr->__nvoc_vtable->__tmrStatePreInitLocked__(pGpu, pTmr);
 }
 
 static inline NV_STATUS tmrStateInitLocked_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return pTmr->__tmrStateInitLocked__(pGpu, pTmr);
+    return pTmr->__nvoc_vtable->__tmrStateInitLocked__(pGpu, pTmr);
 }
 
 static inline NV_STATUS tmrStateInitUnlocked_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return pTmr->__tmrStateInitUnlocked__(pGpu, pTmr);
+    return pTmr->__nvoc_vtable->__tmrStateInitUnlocked__(pGpu, pTmr);
 }
 
 static inline NV_STATUS tmrStateLoad_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 arg3) {
-    return pTmr->__tmrStateLoad__(pGpu, pTmr, arg3);
+    return pTmr->__nvoc_vtable->__tmrStateLoad__(pGpu, pTmr, arg3);
 }
 
 static inline NV_STATUS tmrStateUnload_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 arg3) {
-    return pTmr->__tmrStateUnload__(pGpu, pTmr, arg3);
+    return pTmr->__nvoc_vtable->__tmrStateUnload__(pGpu, pTmr, arg3);
 }
 
 static inline void tmrStateDestroy_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    pTmr->__tmrStateDestroy__(pGpu, pTmr);
+    pTmr->__nvoc_vtable->__tmrStateDestroy__(pGpu, pTmr);
 }
 
 static inline NV_STATUS tmrSetCurrentTime_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr) {
@@ -462,35 +475,35 @@ static inline NV_STATUS tmrGetGpuPtimerOffset_DISPATCH(OBJGPU *pGpu, struct OBJT
 }
 
 static inline void tmrInitMissing_DISPATCH(struct OBJGPU *pGpu, struct OBJTMR *pEngstate) {
-    pEngstate->__tmrInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_vtable->__tmrInitMissing__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS tmrStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct OBJTMR *pEngstate) {
-    return pEngstate->__tmrStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_vtable->__tmrStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS tmrStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJTMR *pEngstate, NvU32 arg3) {
-    return pEngstate->__tmrStatePreLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_vtable->__tmrStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS tmrStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJTMR *pEngstate, NvU32 arg3) {
-    return pEngstate->__tmrStatePostLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_vtable->__tmrStatePostLoad__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS tmrStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJTMR *pEngstate, NvU32 arg3) {
-    return pEngstate->__tmrStatePreUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_vtable->__tmrStatePreUnload__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS tmrStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJTMR *pEngstate, NvU32 arg3) {
-    return pEngstate->__tmrStatePostUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_vtable->__tmrStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
 static inline NvBool tmrIsPresent_DISPATCH(struct OBJGPU *pGpu, struct OBJTMR *pEngstate) {
-    return pEngstate->__tmrIsPresent__(pGpu, pEngstate);
+    return pEngstate->__nvoc_vtable->__tmrIsPresent__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS tmrServiceNotificationInterrupt_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pIntrService, IntrServiceServiceNotificationInterruptArguments *pParams) {
-    return pIntrService->__tmrServiceNotificationInterrupt__(pGpu, pIntrService, pParams);
+    return pIntrService->__nvoc_vtable->__tmrServiceNotificationInterrupt__(pGpu, pIntrService, pParams);
 }
 
 NV_STATUS tmrGetCurrentTime_IMPL(struct OBJTMR *pTmr, NvU64 *pTime);
@@ -664,8 +677,8 @@ static inline NV_STATUS tmrSetAlarm(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU64 ala
 
 #define tmrSetAlarm_HAL(pGpu, pTmr, alarm, pThreadState) tmrSetAlarm(pGpu, pTmr, alarm, pThreadState)
 
-static inline NvBool tmrGetAlarmPending_491d52(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3) {
-    return ((NvBool)(0 != 0));
+static inline NvBool tmrGetAlarmPending_3dd2c9(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3) {
+    return NV_FALSE;
 }
 
 NvBool tmrGetAlarmPending_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3);
@@ -679,7 +692,7 @@ static inline NvBool tmrGetAlarmPending(OBJGPU *pGpu, struct OBJTMR *pTmr, struc
     return NV_FALSE;
 }
 #else //__nvoc_objtmr_h_disabled
-#define tmrGetAlarmPending(pGpu, pTmr, arg3) tmrGetAlarmPending_491d52(pGpu, pTmr, arg3)
+#define tmrGetAlarmPending(pGpu, pTmr, arg3) tmrGetAlarmPending_3dd2c9(pGpu, pTmr, arg3)
 #endif //__nvoc_objtmr_h_disabled
 
 #define tmrGetAlarmPending_HAL(pGpu, pTmr, arg3) tmrGetAlarmPending(pGpu, pTmr, arg3)
@@ -712,8 +725,8 @@ static inline NV_STATUS tmrSetCountdownIntrReset(OBJGPU *pGpu, struct OBJTMR *pT
 
 #define tmrSetCountdownIntrReset_HAL(pGpu, pTmr, arg3) tmrSetCountdownIntrReset(pGpu, pTmr, arg3)
 
-static inline NvBool tmrGetCountdownPending_491d52(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3) {
-    return ((NvBool)(0 != 0));
+static inline NvBool tmrGetCountdownPending_3dd2c9(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3) {
+    return NV_FALSE;
 }
 
 
@@ -723,7 +736,7 @@ static inline NvBool tmrGetCountdownPending(OBJGPU *pGpu, struct OBJTMR *pTmr, s
     return NV_FALSE;
 }
 #else //__nvoc_objtmr_h_disabled
-#define tmrGetCountdownPending(pGpu, pTmr, arg3) tmrGetCountdownPending_491d52(pGpu, pTmr, arg3)
+#define tmrGetCountdownPending(pGpu, pTmr, arg3) tmrGetCountdownPending_3dd2c9(pGpu, pTmr, arg3)
 #endif //__nvoc_objtmr_h_disabled
 
 #define tmrGetCountdownPending_HAL(pGpu, pTmr, arg3) tmrGetCountdownPending(pGpu, pTmr, arg3)
@@ -938,11 +951,11 @@ NV_STATUS tmrGetGpuPtimerOffset_TU102(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 *
 NV_STATUS tmrGetGpuPtimerOffset_GA100(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 *arg3, NvU32 *arg4);
 
 static inline NvBool tmrServiceSwrlCallbacksPmcTree(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3) {
-    return ((NvBool)(0 != 0));
+    return NV_FALSE;
 }
 
 static inline NvBool tmrClearSwrlCallbacksSemaphore(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3) {
-    return ((NvBool)(0 != 0));
+    return NV_FALSE;
 }
 
 static inline void tmrServiceSwrlCallbacks(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3) {
@@ -950,7 +963,7 @@ static inline void tmrServiceSwrlCallbacks(OBJGPU *pGpu, struct OBJTMR *pTmr, st
 }
 
 static inline NvBool tmrServiceSwrlWrapper(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3) {
-    return ((NvBool)(0 != 0));
+    return NV_FALSE;
 }
 
 void tmrDestruct_IMPL(struct OBJTMR *pTmr);

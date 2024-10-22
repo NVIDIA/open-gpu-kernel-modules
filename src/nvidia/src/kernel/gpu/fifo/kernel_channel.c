@@ -176,6 +176,7 @@ kchannelConstruct_IMPL
     NvBool                  bAddedToGroup    = NV_FALSE;
     NvU32                   callingContextGfid;
     Device                 *pDevice;
+    NvBool                  bUvmOwnedFlag;
 
     if (rmapiLockIsOwner())
     {
@@ -209,6 +210,9 @@ kchannelConstruct_IMPL
     NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &callingContextGfid));
 
     pDevice = dynamicCast(pDeviceRef->pResource, Device);
+
+    // Save the UVM owned flag.
+    bUvmOwnedFlag = FLD_TEST_DRF(_KERNELCHANNEL, _ALLOC_INTERNALFLAGS, _UVM_OWNED, _YES, pChannelGpfifoParams->internalFlags);
 
     // Internal fields must be cleared when RMAPI call is from client
     if (!hypervisorIsVgxHyper() || IS_GSP_CLIENT(pGpu))
@@ -288,6 +292,15 @@ kchannelConstruct_IMPL
 
         pKernelChannel->ProcessID = pRmClient->ProcID;
         pKernelChannel->SubProcessID = pRmClient->SubProcessID;
+    }
+
+    //
+    // Mark the channel as UVM owned only if the channel is kernel privileged
+    // and flagged as UVM owned.
+    //
+    if (pKernelChannel->privilegeLevel == NV_KERNELCHANNEL_ALLOC_INTERNALFLAGS_PRIVILEGE_KERNEL)
+    {
+        pKernelChannel->bUvmOwned = bUvmOwnedFlag;
     }
 
     // Context share and vaspace handles can't be active at the same time.
@@ -1812,6 +1825,9 @@ void kchannelNotifyEvent_IMPL
     // validate notifyIndex
     NV_CHECK_OR_RETURN_VOID(LEVEL_INFO, notifyIndex < classInfo.notifiersMaxCount);
 
+    // Check if we have allocated the channel notifier action table
+    NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR, pKernelChannel->pNotifyActions != NULL);
+
     // handle notification if client wants it
     if (pKernelChannel->pNotifyActions[notifyIndex] != classInfo.eventActionDisable)
     {
@@ -2818,6 +2834,12 @@ _kchannelSendChannelAllocRpc
             pRpcParams->internalFlags =
                 FLD_SET_DRF_NUM(_KERNELCHANNEL, _ALLOC_INTERNALFLAGS, _PRIVILEGE,
                     pKernelChannel->privilegeLevel, pRpcParams->internalFlags);
+            if (pKernelChannel->bUvmOwned)
+            {
+                pRpcParams->internalFlags =
+                    FLD_SET_DRF(_KERNELCHANNEL, _ALLOC_INTERNALFLAGS, _UVM_OWNED,
+                        _YES, pRpcParams->internalFlags);
+            }
             pRpcParams->ProcessID = pKernelChannel->ProcessID;
             pRpcParams->SubProcessID= pKernelChannel->SubProcessID;
         }
@@ -3389,6 +3411,9 @@ kchannelCtrlCmdGpfifoGetWorkSubmitToken_IMPL
                                   !(IS_VIRTUAL_WITH_SRIOV(pGpu) && !bIsMIGEnabled &&
                                     kfifoIsPerRunlistChramEnabled(pKernelFifo)))) &&
                                     (!pKernelFifo->bGuestGenenratesWorkSubmitToken);
+
+    NvBool bGenerateWorkSubmitToken = !bIsModsVgpu || pKernelFifo->bGuestGenenratesWorkSubmitToken;
+
     //
     // vGPU:
     // If required call into the host to get the worksubmit token.
@@ -3418,13 +3443,16 @@ kchannelCtrlCmdGpfifoGetWorkSubmitToken_IMPL
         }
     }
 
-    if (!bIsModsVgpu || pKernelFifo->bGuestGenenratesWorkSubmitToken)
+    if (bGenerateWorkSubmitToken)
     {
         NV_ASSERT_OR_RETURN(pKernelChannel->pKernelChannelGroupApi != NULL, NV_ERR_INVALID_STATE);
-        NV_ASSERT_OR_RETURN(pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup != NULL, NV_ERR_INVALID_STATE);
-        rmStatus = kfifoGenerateWorkSubmitToken_HAL(pGpu, pKernelFifo, pKernelChannel,
-                                                    &pTokenParams->workSubmitToken,
-                                                    pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->bIsCallingContextVgpuPlugin);
+
+        KernelChannelGroup *pKernelChannelGroup = pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup;
+        NV_ASSERT_OR_RETURN(pKernelChannelGroup != NULL, NV_ERR_INVALID_STATE);
+
+        rmStatus = kfifoGenerateWorkSubmitToken(pGpu, pKernelFifo, pKernelChannel,
+                                                &pTokenParams->workSubmitToken,
+                                                pKernelChannelGroup->bIsCallingContextVgpuPlugin);
         NV_CHECK_OR_RETURN(LEVEL_INFO, rmStatus == NV_OK, rmStatus);
     }
 

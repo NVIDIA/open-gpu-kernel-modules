@@ -537,6 +537,12 @@
 #define NV_REG_STR_RM_DUMP_NVLOG_DISABLE            (0x00000000)
 #define NV_REG_STR_RM_DUMP_NVLOG_ENABLE             (0x00000001)
 
+// Type: Binary
+// Comma separated list of XID values to suppress from the kernel log
+// example:
+// RmSuppressXidDump="43,31"
+#define NV_REG_SUPPRESS_XID_DUMP                              "RmSuppressXidDump"
+#define MAX_XID_SUPPRESS_KEY_LENGTH                           64
 
 //
 // Type DWORD
@@ -975,6 +981,10 @@
 //  0 - Do not allow P2P writes
 //  1 - Allow P2P writes
 //  2 - Do not override chipset-selected config (default)
+// P2P atomics:
+//  0 - Do not allow P2P atomics
+//  1 - Allow P2P atomics
+//  2 - Do not override chipset-selected config (default)
 //
 #define NV_REG_STR_CL_FORCE_P2P                              "ForceP2P"
 #define NV_REG_STR_CL_FORCE_P2P_READ                         1:0
@@ -985,6 +995,10 @@
 #define NV_REG_STR_CL_FORCE_P2P_WRITE_DISABLE                0x00000000
 #define NV_REG_STR_CL_FORCE_P2P_WRITE_ENABLE                 0x00000001
 #define NV_REG_STR_CL_FORCE_P2P_WRITE_DEFAULT                0x00000002
+#define NV_REG_STR_CL_FORCE_P2P_ATOMICS                      9:8
+#define NV_REG_STR_CL_FORCE_P2P_ATOMICS_DISABLE              0x00000000
+#define NV_REG_STR_CL_FORCE_P2P_ATOMICS_ENABLE               0x00000001
+#define NV_REG_STR_CL_FORCE_P2P_ATOMICS_DEFAULT              0x00000002
 
 //
 // Type DWORD
@@ -1072,6 +1086,25 @@
 // Overrides the size of the BAR1 aperture. Used to shrink BAR1. It cannot be
 // greater than the physical size of BAR1.
 
+// Type DWORD
+// Encoding Numeric Value
+// Forces the entire BAR1 to be statically allocated.
+//
+// DISABLE will force disable static BAR1
+// ENABLE will force the amount of video memory to be limited to the amount of BAR1 because
+//        further video memory cannot be mapped
+// AUTO will only map static BAR1 if static BAR1 size is >1.8x the size of FB to allow for both
+//      static as well as dynamic BAR1 mappings
+// ONLY_GPU will only map static BAR1 for existing GPU BAR1P2P use cases only
+//
+#define NV_REG_STR_RM_FORCE_STATIC_BAR1                          "RMForceStaticBar1"
+#define NV_REG_STR_RM_FORCE_STATIC_BAR1_DISABLE                   0x00000000
+#define NV_REG_STR_RM_FORCE_STATIC_BAR1_ENABLE                    0x00000001
+#define NV_REG_STR_RM_FORCE_STATIC_BAR1_AUTO                      0x00000002
+#define NV_REG_STR_RM_FORCE_STATIC_BAR1_ONLY_GPU                  0x00000003
+#define NV_REG_STR_RM_FORCE_STATIC_BAR1_MAX                       0x00000004
+#define NV_REG_STR_RM_FORCE_STATIC_BAR1_DEFAULT                   NV_REG_STR_RM_FORCE_STATIC_BAR1_ONLY_GPU
+
 #define NV_REG_STR_RM_BAR2_APERTURE_SIZE_MB                  "RMBar2ApertureSizeMB"
 // Type DWORD
 // Encoding Numeric Value
@@ -1117,6 +1150,17 @@
 #define NV_REG_STR_RM_SPLIT_VAS_MGMT_SERVER_CLIENT_RM              "RMSplitVasMgmtServerClientRm"
 #define NV_REG_STR_RM_SPLIT_VAS_MGMT_SERVER_CLIENT_RM_DISABLED                         0x00000000
 #define NV_REG_STR_RM_SPLIT_VAS_MGMT_SERVER_CLIENT_RM_ENABLED                          0x00000001
+
+//
+// Type: Dword
+// Encoding:
+// 0 - Disable PE FIRO Buffer
+// 1 - Enable PE FIRO Buffer
+// Default: disabled (0x0)
+//
+#define NV_REG_STR_RM_ENABLE_PE_FIRO_BUFFER                      "RMEnablePeFiroBuffer"
+#define NV_REG_STR_RM_ENABLE_PE_FIRO_BUFFER_DISABLED                         0x00000000
+#define NV_REG_STR_RM_ENABLE_PE_FIRO_BUFFER_ENABLED                          0x00000001
 
 //
 // Restrict the VA range to be <= @ref VASPACE_SIZE_FERMI.
@@ -1846,6 +1890,13 @@
 //
 // This option is only for Hopper+ GPU with NVLINK version 4.0.
 
+#define NV_REG_STR_RM_NVLINK_BW_LINK_COUNT                     "RmNvlinkBandwidthLinkCount"
+// Type: DWORD
+//
+// Link count RBM (Reduced Bandwidth Mode) requested.
+//
+// This option is only for Blackwell+ GPU with NVLINK version 5.0.
+
 //
 // Type DWORD (Boolean)
 // 1 - Measure API and GPU lock hold/wait times which can be retrieved with the
@@ -1958,7 +2009,6 @@
 
 //
 // Enable/disable key rotation in Confidential Compute.
-// If this is defined then NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION is ignored.
 //
 // 0 - Feature disabled
 // 1 - Feature enabled
@@ -2010,55 +2060,9 @@
 #define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_INTERNAL_KEYS_NO   0x00000000
 #define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_INTERNAL_KEYS_YES  0x00000001
 
-//
-// Enable/disable dummy key rotation in Confidential Compute.
-// This is a temp reg key that will be removed once all RM clients
-// support key rotation by default.
-//
-// 0 - Feature disabled
-// 1 - Feature enabled
-//
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION                    "RmConfComputeDummyKeyRotation"
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_ENABLED            0:0
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_ENABLED_NO         0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_ENABLED_YES        0x00000001
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_SEC2_KEYS          1:1
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_SEC2_KEYS_NO       0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_SEC2_KEYS_YES      0x00000001
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE2_KEYS          2:2
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE2_KEYS_NO       0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE2_KEYS_YES      0x00000001
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE3_KEYS          3:3
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE3_KEYS_NO       0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE3_KEYS_YES      0x00000001
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE4_KEYS          4:4
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE4_KEYS_NO       0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE4_KEYS_YES      0x00000001
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE5_KEYS          5:5
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE5_KEYS_NO       0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE5_KEYS_YES      0x00000001
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE6_KEYS          6:6
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE6_KEYS_NO       0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE6_KEYS_YES      0x00000001
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE7_KEYS          7:7
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE7_KEYS_NO       0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE7_KEYS_YES      0x00000001
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE8_KEYS          8:8
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE8_KEYS_NO       0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE8_KEYS_YES      0x00000001
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE9_KEYS          9:9
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE9_KEYS_NO       0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE9_KEYS_YES      0x00000001
-
-// if all kernel keys should be considered for key rotation
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_KERNEL_KEYS        10:10
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_KERNEL_KEYS_NO     0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_KERNEL_KEYS_YES    0x00000001
-
-// if all user keys should be considered for key rotation
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_USER_KEYS          11:11
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_USER_KEYS_NO       0x00000000
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_USER_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_ENABLED_ALL        12:0
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_ENABLED_ALL_NO     0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_ENABLED_ALL_YES    0x00001fff
 
 //
 // Set period for "keep-alive" heartbeat message sent between SPDM Requester and Responder.
@@ -2117,40 +2121,6 @@
 // This value cannot be changed at runtime, only via this registry key at boot time.
 //
 #define NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_INTERNAL_THRESHOLD "RmKeyRotationInternalThreshold"
-
-//
-// Set lower threshold for dummy key rotation.
-// This is a temp reg key that will be removed once all RM clients
-// support prod key rotation.
-// Value is in seconds.
-//
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LOWER_THRESHOLD     "RmDummyKeyRotationLowerThreshold"
-
-//
-// Set upper threshold for dummy key rotation.
-// This is a temp reg key that will be removed once all RM clients
-// support prod key rotation.
-// Value is in seconds.
-//
-#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_UPPER_THRESHOLD     "RmDummyKeyRotationUpperThreshold"
-
-// TYPE Dword
-// Encoding boolean
-// Regkey based solution to serialize VBlank Aggressive Handling in Top Half using spinlock
-// 2 - Enable serialization of aggressive vblank callbacks when HMD is active
-//
-//
-// 1 - Enable serialization of aggressive vblank callbacks in all scenarios
-// (even when a HMD is not active)
-//
-// 0 - (default) Disable WAR
-// This regkey settings are enabled when Aggressive Vblanks are enabled,
-// if RmDisableAggressiveVblank is set to disable then these regkeys do not have any affect
-#define NV_REG_STR_RM_BUG_2089053_WAR                               "RmBug2089053War"
-#define NV_REG_STR_RM_BUG_2089053_WAR_ENABLE_ON_HMD_ACTIVE_ONLY     0x00000002
-#define NV_REG_STR_RM_BUG_2089053_WAR_ENABLE_ALWAYS                 0x00000001
-#define NV_REG_STR_RM_BUG_2089053_WAR_DISABLE                       0x00000000
-#define NV_REG_STR_RM_BUG_2089053_WAR_DEFAULT                       (NV_REG_STR_RM_BUG_2089053_WAR_ENABLE_ALWAYS)
 
 //
 // Controls whether GSP-RM profiling is enabled.
@@ -2222,17 +2192,6 @@
 #define NV_REG_STR_RM_NVLINK_FORCED_LOOPBACK_ON_SWITCH_MODE             0:0
 #define NV_REG_STR_RM_NVLINK_FORCED_LOOPBACK_ON_SWITCH_MODE_DEFAULT     (0x00000000)
 #define NV_REG_STR_RM_NVLINK_FORCED_LOOPBACK_ON_SWITCH_MODE_ENABLED     (0x00000001)
-
-//
-// Type: Dword
-// Encoding:
-// 0 - Iterative MMU Walker is not enabled. Normal recursive implementation is used. (default)
-// 1 - Iterative MMU Walker is used
-//
-#define NV_REG_STR_RM_ITERATIVE_MMU_WALKER           "RMUseIterativeMMUWalker"
-#define NV_REG_STR_RM_ITERATIVE_MMU_WALKER_DISABLED   0x00000000
-#define NV_REG_STR_RM_ITERATIVE_MMU_WALKER_ENABLED    0x00000001
-#define NV_REG_STR_RM_ITERATIVE_MMU_WALKER_DEFAULT    NV_REG_STR_RM_ITERATIVE_MMU_WALKER_DISABLED
 
 //
 // Type DWORD
@@ -2312,6 +2271,18 @@
 #define NV_REG_STR_RM_GPU_LOCK_MIDPATH                "RMGpuLockMidpath"
 #define NV_REG_STR_RM_GPU_LOCK_MIDPATH_DISABLED       0x00000000
 #define NV_REG_STR_RM_GPU_LOCK_MIDPATH_ENABLED        0x00000001
+
+//
+// Type: DWORD (Boolean)
+//
+// If the forced shared (read) lock feature is enabled.
+//
+// 0 - The forced shared (read) lock is not enabled.
+// 1 (default) - The forced shared (read) lock is enabled.
+//
+#define NV_REG_STR_RM_ENABLE_FORCE_SHARED_LOCK        "RMEnableForceSharedLock"
+#define NV_REG_STR_RM_ENABLE_FORCE_SHARED_LOCK_NO     0x00000000
+#define NV_REG_STR_RM_ENABLE_FORCE_SHARED_LOCK_YES    0x00000001
 
 //
 // This regkey controls the GPU load failure test.
@@ -2431,6 +2402,14 @@
 #define NV_REG_RM_GSP_WPR_END_MARGIN_APPLY                  31:31
 #define NV_REG_RM_GSP_WPR_END_MARGIN_APPLY_ON_RETRY         0x00000000
 #define NV_REG_RM_GSP_WPR_END_MARGIN_APPLY_ALWAYS           0x00000001
+
+//
+// Type DWORD
+// Regkey to set the number of retry attempts at GSP bootstrap
+//
+#define NV_REG_STR_RM_GSP_BOOT_RETRY_ATTEMPTS             "RmGspBootRetryAttempts"
+#define NV_REG_STR_RM_GSP_BOOT_RETRY_ATTEMPTS_DEFAULT     4
+
 //
 // Type: Dword
 // This regkey toggles whether to release API lock during initialization to
@@ -2501,12 +2480,49 @@
 #define NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL_DISABLE     0x00000000
 #define NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL_ENABLE      0x00000001
 
+//
+// Type: Dword
+//
+// This regkey controls the per-runlist channel ID feature, which is only
+// supported on Ampere+ HW
+//
+// On platforms or chips where this feature is supported in HW but not enabled
+// by default, this regkey can override the default to enable it. It also
+// allows turning off the feature on platforms or chips where it is already
+// enabled by default.
+//
+// 0 - Force disable per-runlist channel IDs
+// 1 - Force enable per-runlist channel IDs
+//
+#define NV_REG_STR_RM_DEBUG_OVERRIDE_PER_RUNLIST_CHANNEL_RAM         "RMDebugOverridePerRunlistChannelRam"
+#define NV_REG_STR_RM_DEBUG_OVERRIDE_PER_RUNLIST_CHANNEL_RAM_DISABLE 0
+#define NV_REG_STR_RM_DEBUG_OVERRIDE_PER_RUNLIST_CHANNEL_RAM_ENABLE  1
+
+//
+// Type: Dword
+//
+// This regkey controls RM User Shared Data polling for testing and debugging.
+// supported on Ampere+ HW
+//
+// By default, RUSD polling is controlled through the allocation of the 00DE class
+// with specified poll masks for specific data.
+// Setting this key will force RUSD to poll all data, or no data.
+//
+// 0 - Default behavior
+// 1 - Force disable all RUSD polling
+// 2 - Force enable all RUSD polling
+//
+#define NV_REG_STR_RM_DEBUG_RUSD_POLLING                  "RMDebugRusdPolling"
+#define NV_REG_STR_RM_DEBUG_RUSD_POLLING_DEFAULT          0
+#define NV_REG_STR_RM_DEBUG_RUSD_POLLING_FORCE_DISABLE    1
+#define NV_REG_STR_RM_DEBUG_RUSD_POLLING_FORCE_ENABLE     2
+
+// Type DWORD (Boolean)
+// Disable the check for FSP's fuse error detection status during boot.
+// By default, the check would be enabled and we would bail out during boot on error.
 #define NV_REG_STR_RM_DISABLE_FSP_FUSE_ERROR_CHECK           "RmDisableFspFuseErrorCheck"
 #define NV_REG_STR_RM_DISABLE_FSP_FUSE_ERROR_CHECK_YES       (0x00000001)
 #define NV_REG_STR_RM_DISABLE_FSP_FUSE_ERROR_CHECK_NO        (0x00000000)
 #define NV_REG_STR_RM_DISABLE_FSP_FUSE_ERROR_CHECK_DEFAULT   (0x00000000)
-// Type DWORD (Boolean)
-// Disable the check for FSP's fuse error detection status during boot.
-// By default, the check would be enabled and we would bail out during boot on error.
 
 #endif // NVRM_REGISTRY_H

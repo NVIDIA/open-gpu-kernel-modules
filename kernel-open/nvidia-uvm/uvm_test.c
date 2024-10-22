@@ -67,9 +67,8 @@ static NV_STATUS uvm_test_peer_ref_count(UVM_TEST_PEER_REF_COUNT_PARAMS *params,
     gpu0 = uvm_gpu_get_by_uuid(&params->gpu_uuid_1);
     gpu1 = uvm_gpu_get_by_uuid(&params->gpu_uuid_2);
 
-    if (gpu0 != NULL && gpu1 != NULL) {
-        uvm_gpu_peer_t *peer_caps = uvm_gpu_peer_caps(gpu0, gpu1);
-        registered_ref_count = peer_caps->ref_count;
+    if (gpu0 && gpu1 && !uvm_gpus_are_smc_peers(gpu0, gpu1)) {
+        registered_ref_count = uvm_gpu_peer_ref_count(gpu0, gpu1);
     }
     else {
         status = NV_ERR_INVALID_DEVICE;
@@ -309,6 +308,7 @@ long uvm_test_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_VA_SPACE_ALLOW_MOVABLE_ALLOCATIONS,
                                        uvm_test_va_space_allow_movable_allocations);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_SKIP_MIGRATE_VMA, uvm_test_skip_migrate_vma);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_INJECT_TOOLS_EVENT_V2,        uvm_test_inject_tools_event_v2);
     }
 
     return -EINVAL;

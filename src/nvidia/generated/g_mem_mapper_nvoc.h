@@ -7,14 +7,14 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -140,10 +140,15 @@ typedef struct
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__MemoryMapper;
+
+
 struct MemoryMapper {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__MemoryMapper *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct GpuResource __nvoc_base_GpuResource;
@@ -156,9 +161,32 @@ struct MemoryMapper {
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct MemoryMapper *__nvoc_pbase_MemoryMapper;    // memmapper
 
-    // Vtable with 27 per-object function pointers
+    // Vtable with 2 per-object function pointers
     NV_STATUS (*__memmapperCtrlCmdSubmitOperations__)(struct MemoryMapper * /*this*/, NV00FE_CTRL_SUBMIT_OPERATIONS_PARAMS *);  // exported (id=0xfe0101)
     NV_STATUS (*__memmapperCtrlCmdResizeQueue__)(struct MemoryMapper * /*this*/, NV00FE_CTRL_RESIZE_QUEUE_PARAMS *);  // exported (id=0xfe0102)
+
+    // Data members
+    API_SECURITY_INFO secInfo;
+    struct Subdevice *pSubdevice;
+    struct Memory *pNotificationMemory;
+    TRANSFER_SURFACE notificationSurface;
+    NV_MEMORY_MAPPER_NOTIFICATION *pNotification;
+    NV00FE_CTRL_OPERATION *pOperationQueue;
+    NvU32 operationQueuePut;
+    NvU32 operationQueueGet;
+    NvU32 operationQueueLen;
+    NvHandle hInternalSemaphoreSurface;
+    NVOS10_EVENT_KERNEL_CALLBACK_EX semaphoreCallback;
+    MemoryMapperWorkerParams *pWorkerParams;
+    struct SemaphoreSurface *pSemSurf;
+    NvBool bError;
+};
+
+
+// Metadata including vtable with 25 function pointers plus superclass metadata
+struct NVOC_VTABLE__MemoryMapper {
+    const struct NVOC_VTABLE__GpuResource GpuResource;    // (gpures) 25 function pointers
+
     NV_STATUS (*__memmapperControl__)(struct MemoryMapper * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__memmapperMap__)(struct MemoryMapper * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__memmapperUnmap__)(struct MemoryMapper * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
@@ -184,22 +212,6 @@ struct MemoryMapper {
     NV_STATUS (*__memmapperUnmapFrom__)(struct MemoryMapper * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (gpures)
     NvU32 (*__memmapperGetRefCount__)(struct MemoryMapper * /*this*/);  // virtual inherited (res) base (gpures)
     void (*__memmapperAddAdditionalDependants__)(struct RsClient *, struct MemoryMapper * /*this*/, RsResourceRef *);  // virtual inherited (res) base (gpures)
-
-    // Data members
-    API_SECURITY_INFO secInfo;
-    struct Subdevice *pSubdevice;
-    struct Memory *pNotificationMemory;
-    TRANSFER_SURFACE notificationSurface;
-    NV_MEMORY_MAPPER_NOTIFICATION *pNotification;
-    NV00FE_CTRL_OPERATION *pOperationQueue;
-    NvU32 operationQueuePut;
-    NvU32 operationQueueGet;
-    NvU32 operationQueueLen;
-    NvHandle hInternalSemaphoreSurface;
-    NVOS10_EVENT_KERNEL_CALLBACK_EX semaphoreCallback;
-    MemoryMapperWorkerParams *pWorkerParams;
-    struct SemaphoreSurface *pSemSurf;
-    NvBool bError;
 };
 
 #ifndef __NVOC_CLASS_MemoryMapper_TYPEDEF__
@@ -236,55 +248,55 @@ NV_STATUS __nvoc_objCreate_MemoryMapper(MemoryMapper**, Dynamic*, NvU32, struct 
 #define memmapperCtrlCmdSubmitOperations(pMemoryMapper, pParams) memmapperCtrlCmdSubmitOperations_DISPATCH(pMemoryMapper, pParams)
 #define memmapperCtrlCmdResizeQueue_FNPTR(pMemoryMapper) pMemoryMapper->__memmapperCtrlCmdResizeQueue__
 #define memmapperCtrlCmdResizeQueue(pMemoryMapper, pParams) memmapperCtrlCmdResizeQueue_DISPATCH(pMemoryMapper, pParams)
-#define memmapperControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresControl__
+#define memmapperControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresControl__
 #define memmapperControl(pGpuResource, pCallContext, pParams) memmapperControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define memmapperMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresMap__
+#define memmapperMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresMap__
 #define memmapperMap(pGpuResource, pCallContext, pParams, pCpuMapping) memmapperMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define memmapperUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresUnmap__
+#define memmapperUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresUnmap__
 #define memmapperUnmap(pGpuResource, pCallContext, pCpuMapping) memmapperUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define memmapperShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresShareCallback__
+#define memmapperShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresShareCallback__
 #define memmapperShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) memmapperShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define memmapperGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetRegBaseOffsetAndSize__
+#define memmapperGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetRegBaseOffsetAndSize__
 #define memmapperGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) memmapperGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
-#define memmapperGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetMapAddrSpace__
+#define memmapperGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetMapAddrSpace__
 #define memmapperGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) memmapperGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
-#define memmapperInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresInternalControlForward__
+#define memmapperInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresInternalControlForward__
 #define memmapperInternalControlForward(pGpuResource, command, pParams, size) memmapperInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
-#define memmapperGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetInternalObjectHandle__
+#define memmapperGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetInternalObjectHandle__
 #define memmapperGetInternalObjectHandle(pGpuResource) memmapperGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define memmapperAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresAccessCallback__
+#define memmapperAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
 #define memmapperAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) memmapperAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define memmapperGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemInterMapParams__
+#define memmapperGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
 #define memmapperGetMemInterMapParams(pRmResource, pParams) memmapperGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define memmapperCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresCheckMemInterUnmap__
+#define memmapperCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
 #define memmapperCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) memmapperCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define memmapperGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemoryMappingDescriptor__
+#define memmapperGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
 #define memmapperGetMemoryMappingDescriptor(pRmResource, ppMemDesc) memmapperGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define memmapperControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControlSerialization_Prologue__
+#define memmapperControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
 #define memmapperControlSerialization_Prologue(pResource, pCallContext, pParams) memmapperControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define memmapperControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControlSerialization_Epilogue__
+#define memmapperControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
 #define memmapperControlSerialization_Epilogue(pResource, pCallContext, pParams) memmapperControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define memmapperControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControl_Prologue__
+#define memmapperControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
 #define memmapperControl_Prologue(pResource, pCallContext, pParams) memmapperControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define memmapperControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControl_Epilogue__
+#define memmapperControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
 #define memmapperControl_Epilogue(pResource, pCallContext, pParams) memmapperControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define memmapperCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__
+#define memmapperCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
 #define memmapperCanCopy(pResource) memmapperCanCopy_DISPATCH(pResource)
-#define memmapperIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsDuplicate__
+#define memmapperIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
 #define memmapperIsDuplicate(pResource, hMemory, pDuplicate) memmapperIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define memmapperPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resPreDestruct__
+#define memmapperPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
 #define memmapperPreDestruct(pResource) memmapperPreDestruct_DISPATCH(pResource)
-#define memmapperControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resControlFilter__
+#define memmapperControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
 #define memmapperControlFilter(pResource, pCallContext, pParams) memmapperControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define memmapperIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsPartialUnmapSupported__
+#define memmapperIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
 #define memmapperIsPartialUnmapSupported(pResource) memmapperIsPartialUnmapSupported_DISPATCH(pResource)
-#define memmapperMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resMapTo__
+#define memmapperMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
 #define memmapperMapTo(pResource, pParams) memmapperMapTo_DISPATCH(pResource, pParams)
-#define memmapperUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resUnmapFrom__
+#define memmapperUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
 #define memmapperUnmapFrom(pResource, pParams) memmapperUnmapFrom_DISPATCH(pResource, pParams)
-#define memmapperGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resGetRefCount__
+#define memmapperGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
 #define memmapperGetRefCount(pResource) memmapperGetRefCount_DISPATCH(pResource)
-#define memmapperAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resAddAdditionalDependants__
+#define memmapperAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
 #define memmapperAddAdditionalDependants(pClient, pResource, pReference) memmapperAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
@@ -297,103 +309,103 @@ static inline NV_STATUS memmapperCtrlCmdResizeQueue_DISPATCH(struct MemoryMapper
 }
 
 static inline NV_STATUS memmapperControl_DISPATCH(struct MemoryMapper *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__memmapperControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_vtable->__memmapperControl__(pGpuResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS memmapperMap_DISPATCH(struct MemoryMapper *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__memmapperMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_vtable->__memmapperMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS memmapperUnmap_DISPATCH(struct MemoryMapper *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__memmapperUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_vtable->__memmapperUnmap__(pGpuResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool memmapperShareCallback_DISPATCH(struct MemoryMapper *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__memmapperShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_vtable->__memmapperShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS memmapperGetRegBaseOffsetAndSize_DISPATCH(struct MemoryMapper *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__memmapperGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_vtable->__memmapperGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS memmapperGetMapAddrSpace_DISPATCH(struct MemoryMapper *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__memmapperGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_vtable->__memmapperGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS memmapperInternalControlForward_DISPATCH(struct MemoryMapper *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__memmapperInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_vtable->__memmapperInternalControlForward__(pGpuResource, command, pParams, size);
 }
 
 static inline NvHandle memmapperGetInternalObjectHandle_DISPATCH(struct MemoryMapper *pGpuResource) {
-    return pGpuResource->__memmapperGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_vtable->__memmapperGetInternalObjectHandle__(pGpuResource);
 }
 
 static inline NvBool memmapperAccessCallback_DISPATCH(struct MemoryMapper *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__memmapperAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_vtable->__memmapperAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS memmapperGetMemInterMapParams_DISPATCH(struct MemoryMapper *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__memmapperGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_vtable->__memmapperGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS memmapperCheckMemInterUnmap_DISPATCH(struct MemoryMapper *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__memmapperCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_vtable->__memmapperCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS memmapperGetMemoryMappingDescriptor_DISPATCH(struct MemoryMapper *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__memmapperGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_vtable->__memmapperGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS memmapperControlSerialization_Prologue_DISPATCH(struct MemoryMapper *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__memmapperControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__memmapperControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void memmapperControlSerialization_Epilogue_DISPATCH(struct MemoryMapper *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__memmapperControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__memmapperControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS memmapperControl_Prologue_DISPATCH(struct MemoryMapper *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__memmapperControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__memmapperControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void memmapperControl_Epilogue_DISPATCH(struct MemoryMapper *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__memmapperControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__memmapperControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool memmapperCanCopy_DISPATCH(struct MemoryMapper *pResource) {
-    return pResource->__memmapperCanCopy__(pResource);
+    return pResource->__nvoc_vtable->__memmapperCanCopy__(pResource);
 }
 
 static inline NV_STATUS memmapperIsDuplicate_DISPATCH(struct MemoryMapper *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__memmapperIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_vtable->__memmapperIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void memmapperPreDestruct_DISPATCH(struct MemoryMapper *pResource) {
-    pResource->__memmapperPreDestruct__(pResource);
+    pResource->__nvoc_vtable->__memmapperPreDestruct__(pResource);
 }
 
 static inline NV_STATUS memmapperControlFilter_DISPATCH(struct MemoryMapper *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__memmapperControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__memmapperControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool memmapperIsPartialUnmapSupported_DISPATCH(struct MemoryMapper *pResource) {
-    return pResource->__memmapperIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_vtable->__memmapperIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS memmapperMapTo_DISPATCH(struct MemoryMapper *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__memmapperMapTo__(pResource, pParams);
+    return pResource->__nvoc_vtable->__memmapperMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS memmapperUnmapFrom_DISPATCH(struct MemoryMapper *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__memmapperUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_vtable->__memmapperUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 memmapperGetRefCount_DISPATCH(struct MemoryMapper *pResource) {
-    return pResource->__memmapperGetRefCount__(pResource);
+    return pResource->__nvoc_vtable->__memmapperGetRefCount__(pResource);
 }
 
 static inline void memmapperAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct MemoryMapper *pResource, RsResourceRef *pReference) {
-    pResource->__memmapperAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_vtable->__memmapperAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NV_STATUS memmapperCtrlCmdSubmitOperations_IMPL(struct MemoryMapper *pMemoryMapper, NV00FE_CTRL_SUBMIT_OPERATIONS_PARAMS *pParams);
@@ -406,6 +418,16 @@ NV_STATUS memmapperConstruct_IMPL(struct MemoryMapper *arg_pMemoryMapper, struct
 void memmapperDestruct_IMPL(struct MemoryMapper *pMemoryMapper);
 
 #define __nvoc_memmapperDestruct(pMemoryMapper) memmapperDestruct_IMPL(pMemoryMapper)
+void memmapperQueueWork_IMPL(struct MemoryMapper *pMemoryMapper);
+
+#ifdef __nvoc_mem_mapper_h_disabled
+static inline void memmapperQueueWork(struct MemoryMapper *pMemoryMapper) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryMapper was disabled!");
+}
+#else //__nvoc_mem_mapper_h_disabled
+#define memmapperQueueWork(pMemoryMapper) memmapperQueueWork_IMPL(pMemoryMapper)
+#endif //__nvoc_mem_mapper_h_disabled
+
 #undef PRIVATE_FIELD
 
 

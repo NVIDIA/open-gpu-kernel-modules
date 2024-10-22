@@ -198,7 +198,7 @@ engstateInitMissing_IMPL
 NV_STATUS
 engstateStatePreInit_IMPL(OBJGPU *pGpu, OBJENGSTATE *pEngstate)
 {
-    LOCK_ASSERT_AND_RETURN(rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     /* Check if we overrode the unlocked variant */
     if ((engstateStatePreInitUnlocked_FNPTR(pEngstate)      !=
@@ -246,7 +246,7 @@ engstateStatePreInitUnlocked_IMPL(OBJGPU *pGpu, OBJENGSTATE *pEngstate)
 NV_STATUS
 engstateStateInit_IMPL(OBJGPU *pGpu, OBJENGSTATE *pEngstate)
 {
-    LOCK_ASSERT_AND_RETURN(rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     /* Check if we overrode the unlocked variant */
     if (engstateStateInitUnlocked_FNPTR(pEngstate) != engstateStateInitUnlocked_IMPL)

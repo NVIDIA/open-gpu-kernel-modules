@@ -347,11 +347,11 @@ exit:
     if (bAcquired)
     {
         // Out of conflicting thread
-        threadStateFreeISRAndDeferredIntHandler(&threadState,
-            pGpu, THREAD_STATE_FLAGS_IS_DEFERRED_INT_HANDLER);
         osReleaseRmSema(pSys->pSema, NULL);
         // UNLOCK: release GPU lock
         rmGpuGroupLockRelease(lockedGpus, GPUS_LOCK_FLAGS_NONE);
+        threadStateFreeISRAndDeferredIntHandler(&threadState,
+            pGpu, THREAD_STATE_FLAGS_IS_DEFERRED_INT_HANDLER);
     }
     else
     {

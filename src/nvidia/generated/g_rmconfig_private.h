@@ -451,6 +451,10 @@
 #define IsdPASCALorBetter(pGpu)        (1 || (pGpu))
 
 
+// Any COMPUTE chip?
+#define IsCOMPUTE(pGpu)                rmcfg_IsCOMPUTE(pGpu)
+
+
 // Any PASCAL chip?
 #define IsPASCAL(pGpu)                 (IsPASCAL_CLASSIC_GPUS(pGpu) || IsPASCAL_TEGRA_BIG_GPUS(pGpu))
 #define IsPASCALorBetter(pGpu)         (IsPASCAL_CLASSIC_GPUSorBetter(pGpu) || IsPASCAL_TEGRA_BIG_GPUSorBetter(pGpu))

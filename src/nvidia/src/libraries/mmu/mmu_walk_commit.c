@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2015,2020,2022,2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -64,16 +64,8 @@ mmuWalkCommitPDEs
     opParams.bCommit                  = NV_TRUE;
 
     // Start reserving from root (only one instance).
-    if (pWalk->flags.bUseIterative)
-    {
-        status = mmuWalkProcessPdes(pWalk, &opParams, &pWalk->root, pWalk->root.pInstances,
-                                    vaLo, vaHi);
-    }
-    else
-    {
-        status = _mmuWalkCommitPDEs(pWalk, &opParams, &pWalk->root, pWalk->root.pInstances,
-                                    vaLo, vaHi);
-    }
+    status = mmuWalkProcessPdes(pWalk, &opParams, &pWalk->root, pWalk->root.pInstances,
+                                vaLo, vaHi);
 
     return status;
 }
@@ -98,20 +90,7 @@ _mmuWalkCommitPDEs
     {
         NV_ASSERT_OR_RETURN(0 != pLevel->pFmt->numSubLevels, NV_ERR_INVALID_ARGUMENT);
 
-        if (pWalk->flags.bUseIterative)
-        {
-            return NV_ERR_MORE_PROCESSING_REQUIRED;
-        }
-        else
-        {
-            // Process all the page level entries falling within [vaLo, vaHi]
-            NV_ASSERT_OK_OR_RETURN(mmuWalkProcessPdes(pWalk,
-                                   pOpParams,
-                                   pLevel,
-                                   pLevelInst,
-                                   vaLo,
-                                   vaHi));
-        }
+        return NV_ERR_MORE_PROCESSING_REQUIRED;
     }
     //
     // We don't care about the PTEs here.

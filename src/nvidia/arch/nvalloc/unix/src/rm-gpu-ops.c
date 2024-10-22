@@ -656,6 +656,18 @@ NV_STATUS  NV_API_CALL  rm_gpu_ops_disable_access_cntr(nvidia_stack_t *sp,
     return rmStatus;
 }
 
+NV_STATUS  NV_API_CALL  rm_gpu_ops_get_nvlink_info (nvidia_stack_t *sp,
+                                                    gpuDeviceHandle device,
+                                                    gpuNvlinkInfo *nvlinkInfo)
+{
+    NV_STATUS rmStatus;
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rmStatus = nvGpuOpsGetNvlinkInfo(device, nvlinkInfo);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return rmStatus;
+}
+
 NV_STATUS NV_API_CALL
 rm_gpu_ops_p2p_object_create(nvidia_stack_t *sp,
                              gpuDeviceHandle device1,
@@ -694,6 +706,23 @@ rm_gpu_ops_get_external_alloc_ptes(nvidia_stack_t* sp,
     NV_ENTER_RM_RUNTIME(sp, fp);
     rmStatus = nvGpuOpsGetExternalAllocPtes(vaSpace, hDupedMemory, offset, size,
                                             gpuExternalMappingInfo);
+    NV_EXIT_RM_RUNTIME(sp, fp);
+    return rmStatus;
+}
+
+NV_STATUS  NV_API_CALL
+rm_gpu_ops_get_external_alloc_phys_addrs(nvidia_stack_t* sp,
+                                         nvgpuAddressSpaceHandle_t vaSpace,
+                                         NvHandle hDupedMemory,
+                                         NvU64 offset,
+                                         NvU64 size,
+                                         nvgpuExternalPhysAddrInfo_t gpuExternalPhysAddrsInfo)
+{
+    NV_STATUS rmStatus;
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp, fp);
+    rmStatus = nvGpuOpsGetExternalAllocPhysAddrs(vaSpace, hDupedMemory, offset, size,
+                                                 gpuExternalPhysAddrsInfo);
     NV_EXIT_RM_RUNTIME(sp, fp);
     return rmStatus;
 }
@@ -846,6 +875,16 @@ rm_gpu_ops_paging_channel_push_stream(nvidia_stack_t *sp,
     rmStatus = nvGpuOpsPagingChannelPushStream(channel, methodStream, methodStreamSize);
     NV_EXIT_RM_RUNTIME(sp,fp);
     return rmStatus;
+}
+
+void NV_API_CALL
+rm_gpu_ops_report_fatal_error(nvidia_stack_t *sp,
+                              NV_STATUS error)
+{
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    nvGpuOpsReportFatalError(error);
+    NV_EXIT_RM_RUNTIME(sp,fp);
 }
 
 NV_STATUS NV_API_CALL rm_gpu_ops_ccsl_context_init(nvidia_stack_t *sp,

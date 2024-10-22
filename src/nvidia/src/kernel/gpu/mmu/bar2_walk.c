@@ -529,7 +529,14 @@ _bar2WalkCBLevelAlloc
                                       !pMemorySystemConfig->bL2PreFill;
     NV_STATUS         status = NV_OK;
 
-    NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid));
+    if (vgpuGetCallingContextDevice(pGpu) != NULL)
+    {
+        NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid));
+    }
+    else
+    {
+        gfid = GPU_GFID_PF;
+    }
 
     // Abort early if level is not targeted or already allocated.
     if (!bTarget || (NULL != *ppMemDesc))

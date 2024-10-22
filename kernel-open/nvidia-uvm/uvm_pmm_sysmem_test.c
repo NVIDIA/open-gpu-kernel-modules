@@ -771,7 +771,7 @@ static NV_STATUS test_cpu_chunk_mig(uvm_gpu_t *gpu0, uvm_gpu_t *gpu1)
     uvm_cpu_physical_chunk_t *phys_chunk;
     NvU64 dma_addr_gpu0;
 
-    UVM_ASSERT(gpu0->parent == gpu1->parent);
+    UVM_ASSERT(uvm_gpus_are_smc_peers(gpu0, gpu1));
 
     TEST_NV_CHECK_RET(test_cpu_chunk_alloc(PAGE_SIZE, UVM_CPU_CHUNK_ALLOC_FLAGS_NONE, NUMA_NO_NODE, &chunk));
     phys_chunk = uvm_cpu_chunk_to_physical(chunk);
@@ -1379,7 +1379,7 @@ static void find_shared_gpu_pair(const uvm_processor_mask_t *test_gpus,
     uvm_gpu_t *gpu1 = uvm_processor_mask_find_next_va_space_gpu(test_gpus, va_space, gpu0);
 
     while (gpu1) {
-        if (gpu0->parent == gpu1->parent) {
+        if (uvm_gpus_are_smc_peers(gpu0, gpu1)) {
             *out_gpu0 = gpu0;
             *out_gpu1 = gpu1;
             return;

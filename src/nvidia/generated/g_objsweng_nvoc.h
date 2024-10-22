@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,10 +64,15 @@ extern "C" {
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__OBJSWENG;
+
+
 struct OBJSWENG {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__OBJSWENG *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -76,8 +81,13 @@ struct OBJSWENG {
     struct Object *__nvoc_pbase_Object;    // obj super^2
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct OBJSWENG *__nvoc_pbase_OBJSWENG;    // sweng
+};
 
-    // Vtable with 14 per-object function pointers
+
+// Metadata including vtable with 14 function pointers plus superclass metadata
+struct NVOC_VTABLE__OBJSWENG {
+    const struct NVOC_VTABLE__OBJENGSTATE OBJENGSTATE;    // (engstate) 14 function pointers
+
     NV_STATUS (*__swengConstructEngine__)(struct OBJGPU *, struct OBJSWENG * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
     void (*__swengInitMissing__)(struct OBJGPU *, struct OBJSWENG * /*this*/);  // virtual inherited (engstate) base (engstate)
     NV_STATUS (*__swengStatePreInitLocked__)(struct OBJGPU *, struct OBJSWENG * /*this*/);  // virtual inherited (engstate) base (engstate)
@@ -128,90 +138,90 @@ NV_STATUS __nvoc_objCreate_OBJSWENG(OBJSWENG**, Dynamic*, NvU32);
 
 
 // Wrapper macros
-#define swengConstructEngine_FNPTR(pSweng) pSweng->__swengConstructEngine__
+#define swengConstructEngine_FNPTR(pSweng) pSweng->__nvoc_vtable->__swengConstructEngine__
 #define swengConstructEngine(pGpu, pSweng, arg3) swengConstructEngine_DISPATCH(pGpu, pSweng, arg3)
-#define swengInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateInitMissing__
+#define swengInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateInitMissing__
 #define swengInitMissing(pGpu, pEngstate) swengInitMissing_DISPATCH(pGpu, pEngstate)
-#define swengStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreInitLocked__
+#define swengStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreInitLocked__
 #define swengStatePreInitLocked(pGpu, pEngstate) swengStatePreInitLocked_DISPATCH(pGpu, pEngstate)
-#define swengStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreInitUnlocked__
+#define swengStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreInitUnlocked__
 #define swengStatePreInitUnlocked(pGpu, pEngstate) swengStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define swengStateInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__
+#define swengStateInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStateInitLocked__
 #define swengStateInitLocked(pGpu, pEngstate) swengStateInitLocked_DISPATCH(pGpu, pEngstate)
-#define swengStateInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStateInitUnlocked__
+#define swengStateInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStateInitUnlocked__
 #define swengStateInitUnlocked(pGpu, pEngstate) swengStateInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define swengStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreLoad__
+#define swengStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreLoad__
 #define swengStatePreLoad(pGpu, pEngstate, arg3) swengStatePreLoad_DISPATCH(pGpu, pEngstate, arg3)
-#define swengStateLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStateLoad__
+#define swengStateLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStateLoad__
 #define swengStateLoad(pGpu, pEngstate, arg3) swengStateLoad_DISPATCH(pGpu, pEngstate, arg3)
-#define swengStatePostLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePostLoad__
+#define swengStatePostLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePostLoad__
 #define swengStatePostLoad(pGpu, pEngstate, arg3) swengStatePostLoad_DISPATCH(pGpu, pEngstate, arg3)
-#define swengStatePreUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreUnload__
+#define swengStatePreUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreUnload__
 #define swengStatePreUnload(pGpu, pEngstate, arg3) swengStatePreUnload_DISPATCH(pGpu, pEngstate, arg3)
-#define swengStateUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStateUnload__
+#define swengStateUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStateUnload__
 #define swengStateUnload(pGpu, pEngstate, arg3) swengStateUnload_DISPATCH(pGpu, pEngstate, arg3)
-#define swengStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePostUnload__
+#define swengStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePostUnload__
 #define swengStatePostUnload(pGpu, pEngstate, arg3) swengStatePostUnload_DISPATCH(pGpu, pEngstate, arg3)
-#define swengStateDestroy_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStateDestroy__
+#define swengStateDestroy_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStateDestroy__
 #define swengStateDestroy(pGpu, pEngstate) swengStateDestroy_DISPATCH(pGpu, pEngstate)
-#define swengIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateIsPresent__
+#define swengIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateIsPresent__
 #define swengIsPresent(pGpu, pEngstate) swengIsPresent_DISPATCH(pGpu, pEngstate)
 
 // Dispatch functions
 static inline NV_STATUS swengConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pSweng, ENGDESCRIPTOR arg3) {
-    return pSweng->__swengConstructEngine__(pGpu, pSweng, arg3);
+    return pSweng->__nvoc_vtable->__swengConstructEngine__(pGpu, pSweng, arg3);
 }
 
 static inline void swengInitMissing_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate) {
-    pEngstate->__swengInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_vtable->__swengInitMissing__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS swengStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate) {
-    return pEngstate->__swengStatePreInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_vtable->__swengStatePreInitLocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS swengStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate) {
-    return pEngstate->__swengStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_vtable->__swengStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS swengStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate) {
-    return pEngstate->__swengStateInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_vtable->__swengStateInitLocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS swengStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate) {
-    return pEngstate->__swengStateInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_vtable->__swengStateInitUnlocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS swengStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
-    return pEngstate->__swengStatePreLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_vtable->__swengStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS swengStateLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
-    return pEngstate->__swengStateLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_vtable->__swengStateLoad__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS swengStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
-    return pEngstate->__swengStatePostLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_vtable->__swengStatePostLoad__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS swengStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
-    return pEngstate->__swengStatePreUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_vtable->__swengStatePreUnload__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS swengStateUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
-    return pEngstate->__swengStateUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_vtable->__swengStateUnload__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS swengStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate, NvU32 arg3) {
-    return pEngstate->__swengStatePostUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_vtable->__swengStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
 static inline void swengStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate) {
-    pEngstate->__swengStateDestroy__(pGpu, pEngstate);
+    pEngstate->__nvoc_vtable->__swengStateDestroy__(pGpu, pEngstate);
 }
 
 static inline NvBool swengIsPresent_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pEngstate) {
-    return pEngstate->__swengIsPresent__(pGpu, pEngstate);
+    return pEngstate->__nvoc_vtable->__swengIsPresent__(pGpu, pEngstate);
 }
 
 NV_STATUS swengConstructEngine_IMPL(struct OBJGPU *pGpu, struct OBJSWENG *pSweng, ENGDESCRIPTOR arg3);

@@ -1385,7 +1385,7 @@ gpuRegRd08_dumpinfo(const char *func, const char *addrStr, const char *vreg, OBJ
     static NvU8  prev_val  = 0;
     if (addr != prev_addr || val != prev_val)
     {
-        // filter out bar0 windows registers (NV_PRAMIN – range 0x007FFFFF:0x00700000 )
+        // filter out bar0 windows registers (NV_PRAMIN -- range 0x007FFFFF:0x00700000 )
         if ((addr & 0xFFF00000) != 0x00700000)
         {
             NV_PRINTF(LEVEL_NOTICE,
@@ -1407,7 +1407,7 @@ gpuRegRd16_dumpinfo(const char *func, const char *addrStr, const char *vreg, OBJ
     static NvU16 prev_val  = 0;
     if (addr != prev_addr || val != prev_val)
     {
-        // filter out bar0 windows registers (NV_PRAMIN – range 0x007FFFFF:0x00700000 )
+        // filter out bar0 windows registers (NV_PRAMIN -- range 0x007FFFFF:0x00700000 )
         if ((addr & 0xFFF00000) != 0x00700000)
         {
             NV_PRINTF(LEVEL_NOTICE,
@@ -1429,7 +1429,7 @@ gpuRegRd32_dumpinfo(const char *func, const char *addrStr, const char *vreg, OBJ
     static NvU32 prev_val  = 0;
     if (addr != prev_addr || val != prev_val)
     {
-        // filter out bar0 windows registers (NV_PRAMIN – range 0x007FFFFF:0x00700000 )
+        // filter out bar0 windows registers (NV_PRAMIN -- range 0x007FFFFF:0x00700000 )
         if ((addr & 0xFFF00000) != 0x00700000)
         {
             NV_PRINTF(LEVEL_NOTICE,
@@ -1445,7 +1445,7 @@ gpuRegRd32_dumpinfo(const char *func, const char *addrStr, const char *vreg, OBJ
 void
 gpuRegWr08_dumpinfo(const char *func, const char *addrStr, const char *vreg, OBJGPU *pGpu, NvU32 addr, NvV8 val)
 {
-    // filter out bar0 windows registers (NV_PRAMIN – range 0x007FFFFF:0x00700000 )
+    // filter out bar0 windows registers (NV_PRAMIN -- range 0x007FFFFF:0x00700000 )
     if ((addr & 0xFFF00000) != 0x00700000)
     {
         NV_PRINTF(LEVEL_NOTICE,
@@ -1458,7 +1458,7 @@ gpuRegWr08_dumpinfo(const char *func, const char *addrStr, const char *vreg, OBJ
 void
 gpuRegWr16_dumpinfo(const char *func, const char *addrStr, const char *vreg, OBJGPU *pGpu, NvU32 addr, NvV16 val)
 {
-    // filter out bar0 windows registers (NV_PRAMIN – range 0x007FFFFF:0x00700000 )
+    // filter out bar0 windows registers (NV_PRAMIN -- range 0x007FFFFF:0x00700000 )
     if ((addr & 0xFFF00000) != 0x00700000)
     {
         NV_PRINTF(LEVEL_NOTICE,
@@ -1471,7 +1471,7 @@ gpuRegWr16_dumpinfo(const char *func, const char *addrStr, const char *vreg, OBJ
 void
 gpuRegWr32_dumpinfo(const char *func, const char *addrStr, const char *vreg, OBJGPU *pGpu, NvU32 addr, NvV32 val)
 {
-    // filter out bar0 windows registers (NV_PRAMIN – range 0x007FFFFF:0x00700000 )
+    // filter out bar0 windows registers (NV_PRAMIN -- range 0x007FFFFF:0x00700000 )
     if ((addr & 0xFFF00000) != 0x00700000)
     {
         NV_PRINTF(LEVEL_NOTICE,
@@ -1484,7 +1484,7 @@ gpuRegWr32_dumpinfo(const char *func, const char *addrStr, const char *vreg, OBJ
 void
 gpuRegWr32Uc_dumpinfo(const char *func, const char *addrStr, const char *vreg, OBJGPU *pGpu, NvU32 addr, NvV32 val)
 {
-    // filter out bar0 windows registers (NV_PRAMIN – range 0x007FFFFF:0x00700000 )
+    // filter out bar0 windows registers (NV_PRAMIN -- range 0x007FFFFF:0x00700000 )
     if ((addr & 0xFFF00000) != 0x00700000)
     {
         NV_PRINTF(LEVEL_NOTICE,

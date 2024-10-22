@@ -661,23 +661,6 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_PCI_GET_DOMAIN_BUS_AND_SLOT_PRESENT" "" "functions"
         ;;
 
-        pci_bus_address)
-            #
-            # Determine if the pci_bus_address() function is
-            # present.
-            #
-            # Added by commit 06cf56e497c8 ("PCI: Add pci_bus_address() to
-            # get bus address of a BAR") in v3.14
-            #
-            CODE="
-            #include <linux/pci.h>
-            void conftest_pci_bus_address(void) {
-                pci_bus_address();
-            }"
-
-            compile_check_conftest "$CODE" "NV_PCI_BUS_ADDRESS_PRESENT" "" "functions"
-        ;;
-
         hash__remap_4k_pfn)
             #
             # Determine if the hash__remap_4k_pfn() function is
@@ -1538,23 +1521,6 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_GET_NUM_PHYSPAGES_PRESENT" "" "functions"
         ;;
 
-        backing_dev_info)
-            #
-            # Determine if the 'address_space' structure has
-            # a 'backing_dev_info' field.
-            #
-            # Removed by commit b83ae6d42143 ("fs: remove
-            # mapping->backing_dev_info") in v4.0
-            #
-            CODE="
-            #include <linux/fs.h>
-            int conftest_backing_dev_info(void) {
-                return offsetof(struct address_space, backing_dev_info);
-            }"
-
-            compile_check_conftest "$CODE" "NV_ADDRESS_SPACE_HAS_BACKING_DEV_INFO" "" "types"
-        ;;
-
         xen_ioemu_inject_msi)
             # Determine if the xen_ioemu_inject_msi() function is present.
             CODE="
@@ -2409,45 +2375,6 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_ATOMIC_HELPER_LEGACY_GAMMA_SET_PRESENT" "" "functions"
         ;;
 
-        wait_on_bit_lock_argument_count)
-            #
-            # Determine how many arguments wait_on_bit_lock takes.
-            #
-            # Changed by commit 743162013d40 ("sched: Remove proliferation
-            # of wait_on_bit() action functions") in v3.17 (2014-07-07)
-            #
-            echo "$CONFTEST_PREAMBLE
-            #include <linux/wait.h>
-            void conftest_wait_on_bit_lock(void) {
-                wait_on_bit_lock(NULL, 0, 0);
-            }" > conftest$$.c
-
-            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
-            rm -f conftest$$.c
-
-            if [ -f conftest$$.o ]; then
-                rm -f conftest$$.o
-                echo "#define NV_WAIT_ON_BIT_LOCK_ARGUMENT_COUNT 3" | append_conftest "functions"
-                return
-            fi
-
-            echo "$CONFTEST_PREAMBLE
-            #include <linux/wait.h>
-            void conftest_wait_on_bit_lock(void) {
-                wait_on_bit_lock(NULL, 0, NULL, 0);
-            }" > conftest$$.c
-
-            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
-            rm -f conftest$$.c
-
-            if [ -f conftest$$.o ]; then
-                rm -f conftest$$.o
-                echo "#define NV_WAIT_ON_BIT_LOCK_ARGUMENT_COUNT 4" | append_conftest "functions"
-                return
-            fi
-            echo "#error wait_on_bit_lock() conftest failed!" | append_conftest "functions"
-        ;;
-
         pci_stop_and_remove_bus_device)
             #
             # Determine if the pci_stop_and_remove_bus_device() function is present.
@@ -2520,31 +2447,6 @@ compile_test() {
                 else
                     echo "#undef NV_DRM_HELPER_MODE_FILL_FB_STRUCT_HAS_CONST_MODE_CMD_ARG" | append_conftest "function"
                 fi
-            fi
-        ;;
-
-        mm_context_t)
-            #
-            # Determine if the 'mm_context_t' data type is present
-            # and if it has an 'id' member.
-            # It does not exist on all architectures.
-            #
-            echo "$CONFTEST_PREAMBLE
-            #include <linux/mm.h>
-            int conftest_mm_context_t(void) {
-                return offsetof(mm_context_t, id);
-            }" > conftest$$.c
-
-            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
-            rm -f conftest$$.c
-
-            if [ -f conftest$$.o ]; then
-                echo "#define NV_MM_CONTEXT_T_HAS_ID" | append_conftest "types"
-                rm -f conftest$$.o
-                return
-            else
-                echo "#undef NV_MM_CONTEXT_T_HAS_ID" | append_conftest "types"
-                return
             fi
         ;;
 
@@ -5102,6 +5004,42 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_CC_PLATFORM_PRESENT" "" "functions"
         ;;
 
+        cc_attr_guest_sev_snp)
+            #
+            # Determine if 'CC_ATTR_GUEST_SEV_SNP' is present.
+            #
+            # Added by commit aa5a461171f9 ("x86/mm: Extend cc_attr to
+            # include AMD SEV-SNP") in v5.19.
+            #
+            CODE="
+            #if defined(NV_LINUX_CC_PLATFORM_H_PRESENT)
+            #include <linux/cc_platform.h>
+            #endif
+
+            enum cc_attr cc_attributes = CC_ATTR_GUEST_SEV_SNP;
+            "
+
+            compile_check_conftest "$CODE" "NV_CC_ATTR_SEV_SNP" "" "types"
+        ;;
+
+        hv_get_isolation_type)
+            #
+            # Determine if 'hv_get_isolation_type()' is present.
+            # Added by commit faff44069ff5 ("x86/hyperv: Add Write/Read MSR
+            # registers via ghcb page") in v5.16.
+            #
+            CODE="
+            #if defined(NV_ASM_MSHYPERV_H_PRESENT)
+            #include <asm/mshyperv.h>
+            #endif
+            void conftest_hv_get_isolation_type(void) {
+                int i;
+                hv_get_isolation_type(i);
+            }"
+
+            compile_check_conftest "$CODE" "NV_HV_GET_ISOLATION_TYPE" "" "functions"
+        ;;
+
         drm_prime_pages_to_sg_has_drm_device_arg)
             #
             # Determine if drm_prime_pages_to_sg() has 'dev' argument.
@@ -6596,7 +6534,9 @@ compile_test() {
             # Determine whether drm_fbdev_generic_setup is present.
             #
             # Added by commit 9060d7f49376 ("drm/fb-helper: Finish the
-            # generic fbdev emulation") in v4.19.
+            # generic fbdev emulation") in v4.19. Removed by commit
+            # aae4682e5d66 ("drm/fbdev-generic: Convert to fbdev-ttm")
+            # in v6.11.
             #
             CODE="
             #include <drm/drm_fb_helper.h>
@@ -6608,6 +6548,48 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_DRM_FBDEV_GENERIC_SETUP_PRESENT" "" "functions"
+            ;;
+
+        drm_fbdev_ttm_setup)
+            #
+            # Determine whether drm_fbdev_ttm_setup is present.
+            #
+            # Added by commit aae4682e5d66 ("drm/fbdev-generic:
+            # Convert to fbdev-ttm") in v6.11.
+            #
+            CODE="
+            #include <drm/drm_fb_helper.h>
+            #if defined(NV_DRM_DRM_FBDEV_TTM_H_PRESENT)
+            #include <drm/drm_fbdev_ttm.h>
+            #endif
+            void conftest_drm_fbdev_ttm_setup(void) {
+                drm_fbdev_ttm_setup();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_FBDEV_TTM_SETUP_PRESENT" "" "functions"
+        ;;
+
+        drm_output_poll_changed)
+            #
+            # Determine whether drm_mode_config_funcs.output_poll_changed
+            # callback is present
+            #
+            # Removed by commit 446d0f4849b1 ("drm: Remove struct
+            # drm_mode_config_funcs.output_poll_changed") in v6.12. Hotplug
+            # event support is handled through the fbdev emulation interface
+            # going forward.
+            #
+            CODE="
+            #if defined(NV_DRM_DRM_MODE_CONFIG_H_PRESENT)
+            #include <drm/drm_mode_config.h>
+            #else
+            #include <drm/drm_crtc.h>
+            #endif
+            int conftest_drm_output_poll_changed_available(void) {
+                return offsetof(struct drm_mode_config_funcs, output_poll_changed);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_OUTPUT_POLL_CHANGED_PRESENT" "" "types"
         ;;
 
         drm_aperture_remove_conflicting_pci_framebuffers)
@@ -6988,6 +6970,192 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_DRM_PROPERTY_BLOB_PUT_PRESENT" "" "functions"
+        ;;
+
+        drm_driver_has_gem_prime_mmap)
+            #
+            # Determine if the 'drm_driver' structure has a 'gem_prime_mmap'
+            # function pointer.
+            #
+            # Removed by commit 0adec22702d4 ("drm: Remove struct
+            # drm_driver.gem_prime_mmap") in v6.6.
+            #
+            CODE="
+            #if defined(NV_DRM_DRMP_H_PRESENT)
+            #include <drm/drmP.h>
+            #endif
+
+            #if defined(NV_DRM_DRM_DRV_H_PRESENT)
+            #include <drm/drm_drv.h>
+            #endif
+
+            int conftest_drm_driver_has_gem_prime_mmap(void) {
+                return offsetof(struct drm_driver, gem_prime_mmap);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_DRIVER_HAS_GEM_PRIME_MMAP" "" "types"
+        ;;
+
+        drm_gem_prime_mmap)
+            #
+            # Determine if the function drm_gem_prime_mmap() is present.
+            #
+            # Added by commit 7698799f95 ("drm/prime: Add drm_gem_prime_mmap()
+            # in v5.0
+            #
+            CODE="
+            #if defined(NV_DRM_DRMP_H_PRESENT)
+            #include <drm/drmP.h>
+            #endif
+            #if defined(NV_DRM_DRM_PRIME_H_PRESENT)
+            #include <drm/drm_prime.h>
+            #endif
+            void conftest_drm_gem_prime_mmap(void) {
+                drm_gem_prime_mmap();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_GEM_PRIME_MMAP_PRESENT" "" "functions"
+        ;;
+
+        vmf_insert_mixed)
+            #
+            # Determine if the function vmf_insert_mixed() is present.
+            #
+            # Added by commit 1c8f422059ae ("mm: change return type to
+            # vm_fault_t") in v4.17.
+            #
+            CODE="
+            #include <linux/mm.h>
+            void conftest_vmf_insert_mixed() {
+                vmf_insert_mixed();
+            }"
+
+            compile_check_conftest "$CODE" "NV_VMF_INSERT_MIXED_PRESENT" "" "functions"
+        ;;
+
+        pfn_to_pfn_t)
+            #
+            # Determine if the function pfn_to_pfn_t() is present.
+            #
+            # Added by commit 34c0fd540e79 ("mm, dax, pmem: introduce pfn_t") in
+            # v4.5.
+            #
+            CODE="
+            #if defined(NV_LINUX_PFN_T_H_PRESENT)
+            #include <linux/pfn_t.h>
+            #endif
+            void conftest_pfn_to_pfn_t() {
+                pfn_to_pfn_t();
+            }"
+
+            compile_check_conftest "$CODE" "NV_PFN_TO_PFN_T_PRESENT" "" "functions"
+        ;;
+
+        drm_gem_dmabuf_mmap)
+            #
+            # Determine if the drm_gem_dmabuf_mmap() function is present.
+            #
+            # drm_gem_dmabuf_mmap() was exported by commit c308279f8798 ("drm:
+            # export gem dmabuf_ops for drivers to reuse") in v4.17.
+            #
+            CODE="
+            #if defined(NV_DRM_DRM_PRIME_H_PRESENT)
+            #include <drm/drm_prime.h>
+            #endif
+            void conftest_drm_gem_dmabuf_mmap(void) {
+                drm_gem_dmabuf_mmap();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_GEM_DMABUF_MMAP_PRESENT" "" "functions"
+        ;;
+
+        drm_gem_prime_export_has_dev_arg)
+            #
+            # Determine if drm_gem_prime_export() function has a 'dev' argument.
+            #
+            # This argument was removed by commit e4fa8457b219 ("drm/prime:
+            # Align gem_prime_export with obj_funcs.export") in v5.4.
+            #
+            CODE="
+            #if defined(NV_DRM_DRMP_H_PRESENT)
+            #include <drm/drmP.h>
+            #endif
+            #if defined(NV_DRM_DRM_PRIME_H_PRESENT)
+            #include <drm/drm_prime.h>
+            #endif
+
+            void conftest_drm_gem_prime_export_has_dev_arg(
+                    struct drm_device *dev,
+                    struct drm_gem_object *obj) {
+                (void) drm_gem_prime_export(dev, obj, 0);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_GEM_PRIME_EXPORT_HAS_DEV_ARG" "" "types"
+        ;;
+
+        dma_buf_ops_has_cache_sgt_mapping)
+            #
+            # Determine if dma_buf_ops structure has a 'cache_sgt_mapping'
+            # member.
+            #
+            # dma_buf_ops::cache_sgt_mapping was added by commit f13e143e7444
+            # ("dma-buf: start caching of sg_table objects v2") in v5.3.
+            #
+            CODE="
+            #include <linux/dma-buf.h>
+            int conftest_dma_ops_has_cache_sgt_mapping(void) {
+                return offsetof(struct dma_buf_ops, cache_sgt_mapping);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DMA_BUF_OPS_HAS_CACHE_SGT_MAPPING" "" "types"
+        ;;
+
+        drm_gem_object_funcs)
+            #
+            # Determine if the 'struct drm_gem_object_funcs' type is present.
+            #
+            # Added by commit b39b5394fabc ("drm/gem: Add drm_gem_object_funcs")
+            # in v5.0.
+            #
+            CODE="
+            #if defined(NV_DRM_DRM_GEM_H_PRESENT)
+            #include <drm/drm_gem.h>
+            #endif
+            struct drm_gem_object_funcs funcs;"
+
+            compile_check_conftest "$CODE" "NV_DRM_GEM_OBJECT_FUNCS_PRESENT" "" "types"
+        ;;
+
+        struct_page_has_zone_device_data)
+            #
+            # Determine if struct page has a 'zone_device_data' field.
+            #
+            # Added by commit 8a164fef9c4c ("mm: simplify ZONE_DEVICE page
+            # private data") in v5.3.
+            #
+            CODE="
+            #include <linux/mm_types.h>
+            int conftest_struct_page_has_zone_device_data(void) {
+                return offsetof(struct page, zone_device_data);
+            }"
+
+            compile_check_conftest "$CODE" "NV_STRUCT_PAGE_HAS_ZONE_DEVICE_DATA" "" "types"
+        ;;
+
+    folio_test_swapcache)
+            #
+            # Determine if the folio_test_swapcache() function is present.
+            #
+            # folio_test_swapcache() was exported by commit d389a4a811551 ("mm:
+            # Add folio flag manipulation functions") in v5.16.
+            #
+            CODE="
+            #include <linux/page-flags.h>
+            void conftest_folio_test_swapcache(void) {
+                folio_test_swapcache();
+            }"
+
+            compile_check_conftest "$CODE" "NV_FOLIO_TEST_SWAPCACHE_PRESENT" "" "functions"
         ;;
 
         # When adding a new conftest entry, please use the correct format for

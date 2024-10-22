@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -192,9 +192,8 @@ static NvU32 RmRunSLISupportCheck
     NvU32      numXWayValidConfigs;
     NvU32      nWay                 = 0;
 
-    // RMCONFIG: is SLI enabled in this build?
-
     OBJSYS    *pSys                 = SYS_GET_INSTANCE();
+
 
     if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
     {

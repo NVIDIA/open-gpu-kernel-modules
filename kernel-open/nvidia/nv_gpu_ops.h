@@ -45,6 +45,11 @@ typedef struct gpuObject        *gpuObjectHandle;
 
 typedef struct gpuRetainedChannel_struct gpuRetainedChannel;
 
+
+NV_STATUS calculatePCIELinkRateMBps(NvU32 lanes,
+                                    NvU32 pciLinkMaxSpeed,
+                                    NvU32 *pcieLinkRate);
+
 NV_STATUS nvGpuOpsCreateSession(struct gpuSession **session);
 
 NV_STATUS nvGpuOpsDestroySession(struct gpuSession *session);
@@ -180,6 +185,8 @@ NV_STATUS nvGpuOpsGetFbInfo(struct gpuDevice *device, gpuFbInfo * fbInfo);
 
 NV_STATUS nvGpuOpsGetEccInfo(struct gpuDevice *device, gpuEccInfo * eccInfo);
 
+NV_STATUS nvGpuOpsGetNvlinkInfo(struct gpuDevice *device, gpuNvlinkInfo * nvlinkInfo);
+
 NV_STATUS nvGpuOpsInitFaultInfo(struct gpuDevice *device, gpuFaultInfo *pFaultInfo);
 
 NV_STATUS nvGpuOpsDestroyFaultInfo(struct gpuDevice *device,
@@ -226,6 +233,12 @@ NV_STATUS nvGpuOpsGetExternalAllocPtes(struct gpuAddressSpace *vaSpace,
                                        NvU64 offset,
                                        NvU64 size,
                                        gpuExternalMappingInfo *pGpuExternalMappingInfo);
+
+NV_STATUS nvGpuOpsGetExternalAllocPhysAddrs(struct gpuAddressSpace *vaSpace,
+                                            NvHandle hDupedMemory,
+                                            NvU64 offset,
+                                            NvU64 size,
+                                            gpuExternalPhysAddrInfo *pGpuExternalPhysAddrInfo);
 
 NV_STATUS nvGpuOpsRetainChannel(struct gpuAddressSpace *vaSpace,
                                 NvHandle hClient,
@@ -284,6 +297,8 @@ NV_STATUS nvGpuOpsFlushReplayableFaultBuffer(gpuFaultInfo *pFaultInfo,
 
 NV_STATUS nvGpuOpsTogglePrefetchFaults(gpuFaultInfo *pFaultInfo,
                                        NvBool bEnable);
+
+void nvGpuOpsReportFatalError(NV_STATUS error);
 
 // Interface used for CCSL
 NV_STATUS nvGpuOpsCcslContextInit(struct ccslContext_t **ctx,

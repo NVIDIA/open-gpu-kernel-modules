@@ -26,25 +26,6 @@
 #include "os-interface.h"
 #include "nv-linux.h"
 
-void* NV_API_CALL os_map_user_space(
-    NvU64   start,
-    NvU64   size_bytes,
-    NvU32   mode,
-    NvU32   protect,
-    void  **priv_data
-)
-{
-    return (void *)(NvUPtr)start;
-}
-
-void NV_API_CALL os_unmap_user_space(
-    void  *address,
-    NvU64  size,
-    void  *priv_data
-)
-{
-}
-
 NV_STATUS NV_API_CALL os_match_mmap_offset(
     void  *pAllocPrivate,
     NvU64  offset,

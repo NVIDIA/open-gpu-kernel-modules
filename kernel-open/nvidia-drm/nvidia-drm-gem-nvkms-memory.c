@@ -71,9 +71,20 @@ static void __nv_drm_gem_nvkms_memory_free(struct nv_drm_gem_object *nv_gem)
     nv_drm_free(nv_nvkms_memory);
 }
 
+static int __nv_drm_gem_nvkms_map(
+    struct nv_drm_gem_nvkms_memory *nv_nvkms_memory);
+
 static int __nv_drm_gem_nvkms_mmap(struct nv_drm_gem_object *nv_gem,
                                    struct vm_area_struct *vma)
 {
+    struct nv_drm_gem_nvkms_memory *nv_nvkms_memory =
+        to_nv_nvkms_memory(nv_gem);
+
+    int ret = __nv_drm_gem_nvkms_map(nv_nvkms_memory);
+    if (ret) {
+       return ret;
+    }
+
     return drm_gem_mmap_obj(&nv_gem->base,
                 drm_vma_node_size(&nv_gem->base.vma_node) << PAGE_SHIFT, vma);
 }
@@ -146,11 +157,18 @@ static struct drm_gem_object *__nv_drm_gem_nvkms_prime_dup(
 static int __nv_drm_gem_nvkms_map(
     struct nv_drm_gem_nvkms_memory *nv_nvkms_memory)
 {
+    int ret = 0;
     struct nv_drm_device *nv_dev = nv_nvkms_memory->base.nv_dev;
     struct NvKmsKapiMemory *pMemory = nv_nvkms_memory->base.pMemory;
 
+    mutex_lock(&nv_nvkms_memory->map_lock);
+
+    if (nv_nvkms_memory->physically_mapped) {
+        goto done;
+    }
+
     if (!nv_dev->hasVideoMemory) {
-        return 0;
+        goto done;
     }
 
     if (!nvKms->mapMemory(nv_dev->pDevice,
@@ -161,7 +179,8 @@ static int __nv_drm_gem_nvkms_map(
             nv_dev,
             "Failed to map NvKmsKapiMemory 0x%p",
             pMemory);
-        return -ENOMEM;
+        ret = -ENOMEM;
+        goto done;
     }
 
     nv_nvkms_memory->pWriteCombinedIORemapAddress = ioremap_wc(
@@ -177,7 +196,9 @@ static int __nv_drm_gem_nvkms_map(
 
     nv_nvkms_memory->physically_mapped = true;
 
-    return 0;
+done:
+    mutex_unlock(&nv_nvkms_memory->map_lock);
+    return ret;
 }
 
 static void *__nv_drm_gem_nvkms_prime_vmap(
@@ -186,14 +207,38 @@ static void *__nv_drm_gem_nvkms_prime_vmap(
     struct nv_drm_gem_nvkms_memory *nv_nvkms_memory =
         to_nv_nvkms_memory(nv_gem);
 
-    if (!nv_nvkms_memory->physically_mapped) {
-        int ret = __nv_drm_gem_nvkms_map(nv_nvkms_memory);
-        if (ret) {
-           return ERR_PTR(ret);
-        }
+    int ret = __nv_drm_gem_nvkms_map(nv_nvkms_memory);
+    if (ret) {
+       return ERR_PTR(ret);
     }
 
-    return nv_nvkms_memory->pWriteCombinedIORemapAddress;
+    if (nv_nvkms_memory->physically_mapped) {
+        return nv_nvkms_memory->pWriteCombinedIORemapAddress;
+    }
+
+    /*
+     * If this buffer isn't physically mapped, it might be backed by struct
+     * pages. Use vmap in that case.
+     */
+    if (nv_nvkms_memory->pages_count > 0) {
+         return nv_drm_vmap(nv_nvkms_memory->pages,
+                            nv_nvkms_memory->pages_count);
+    }
+
+    return ERR_PTR(-ENOMEM);
+}
+
+static void __nv_drm_gem_nvkms_prime_vunmap(
+    struct nv_drm_gem_object *nv_gem,
+    void *address)
+{
+    struct nv_drm_gem_nvkms_memory *nv_nvkms_memory =
+        to_nv_nvkms_memory(nv_gem);
+
+    if (!nv_nvkms_memory->physically_mapped &&
+        nv_nvkms_memory->pages_count > 0) {
+        nv_drm_vunmap(address);
+    }
 }
 
 static int __nv_drm_gem_map_nvkms_memory_offset(
@@ -201,17 +246,7 @@ static int __nv_drm_gem_map_nvkms_memory_offset(
     struct nv_drm_gem_object *nv_gem,
     uint64_t *offset)
 {
-    struct nv_drm_gem_nvkms_memory *nv_nvkms_memory =
-        to_nv_nvkms_memory(nv_gem);
-
-    if (!nv_nvkms_memory->physically_mapped) {
-        int ret = __nv_drm_gem_nvkms_map(nv_nvkms_memory);
-        if (ret) {
-           return ret;
-        }
-    }
-
-    return nv_drm_gem_create_mmap_offset(&nv_nvkms_memory->base, offset);
+    return nv_drm_gem_create_mmap_offset(nv_gem, offset);
 }
 
 static struct sg_table *__nv_drm_gem_nvkms_memory_prime_get_sg_table(
@@ -223,7 +258,7 @@ static struct sg_table *__nv_drm_gem_nvkms_memory_prime_get_sg_table(
     struct sg_table *sg_table;
 
     if (nv_nvkms_memory->pages_count == 0) {
-        NV_DRM_DEV_LOG_ERR(
+        NV_DRM_DEV_DEBUG_DRIVER(
                 nv_dev,
                 "Cannot create sg_table for NvKmsKapiMemory 0x%p",
                 nv_gem->pMemory);
@@ -241,6 +276,7 @@ const struct nv_drm_gem_object_funcs nv_gem_nvkms_memory_ops = {
     .free = __nv_drm_gem_nvkms_memory_free,
     .prime_dup = __nv_drm_gem_nvkms_prime_dup,
     .prime_vmap = __nv_drm_gem_nvkms_prime_vmap,
+    .prime_vunmap = __nv_drm_gem_nvkms_prime_vunmap,
     .mmap = __nv_drm_gem_nvkms_mmap,
     .handle_vma_fault = __nv_drm_gem_nvkms_handle_vma_fault,
     .create_mmap_offset = __nv_drm_gem_map_nvkms_memory_offset,
@@ -265,6 +301,7 @@ static int __nv_drm_nvkms_gem_obj_init(
         return -EINVAL;
     }
 
+    mutex_init(&nv_nvkms_memory->map_lock);
     nv_nvkms_memory->pPhysicalAddress = NULL;
     nv_nvkms_memory->pWriteCombinedIORemapAddress = NULL;
     nv_nvkms_memory->physically_mapped = false;

@@ -396,6 +396,8 @@ kgraphicsCreateBug4208224Channel_TU102
             case NV_REG_STR_RM_INST_LOC_USERD_DEFAULT:
                 memAllocParams.attr = DRF_DEF(OS32, _ATTR, _LOCATION, _VIDMEM) |
                                       DRF_DEF(OS32, _ATTR, _ALLOCATE_FROM_RESERVED_HEAP, _YES);
+                memAllocParams.attr2 = DRF_DEF(OS32, _ATTR2, _INTERNAL, _YES);
+                memAllocParams.flags = NVOS32_ALLOC_FLAGS_FORCE_MEM_GROWS_DOWN;
                 break;
         }
 

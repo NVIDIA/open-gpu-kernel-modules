@@ -576,7 +576,8 @@ InitProposedModeSetHwState(const NVDevEvoRec *pDevEvo,
                     nvInitFlipEvoHwState(pDevEvo, sd, head,
                                          &pProposed->sd[sd].head[head].flip);
 
-                    pProposedHead->tilePosition = pHeadState->tilePosition;
+                    pProposedHead->mergeHeadSection =
+                        pHeadState->mergeHeadSection;
                     pProposedHead->timings = pHeadState->timings;
                     pProposedHead->pConnectorEvo = pHeadState->pConnectorEvo;
                     pProposedHead->hdmiFrlConfig = pHeadState->hdmiFrlConfig;
@@ -621,6 +622,7 @@ AssignProposedModeSetNVFlipEvoHwState(
 
         pFlip->dirty.tf = TRUE;
         pFlip->dirty.hdrStaticMetadata = TRUE;
+        pFlip->dirty.olut = TRUE;
 
         for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
             pFlip->dirty.layer[layer] = TRUE;
@@ -647,7 +649,7 @@ AssignProposedModeSetNVFlipEvoHwState(
                                 head,
                                 &pRequestHead->flip,
                                 &pProposedHead->timings,
-                                pProposedHead->tilePosition,
+                                pProposedHead->mergeHeadSection,
                                 pFlip,
                                 FALSE /* allowVrr */)) {
         return FALSE;
@@ -1279,11 +1281,12 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
                 &pProposedDisp->apiHead[apiHead];
             const NvU32 primaryHead =
                 nvGetPrimaryHwHeadFromMask(pProposedApiHead->hwHeadsMask);
-            const NvU32 numTiles = nvPopCount32(pProposedApiHead->hwHeadsMask);
+            const NvU32 numMergeHeadSections =
+                nvPopCount32(pProposedApiHead->hwHeadsMask);
             const NVDpyEvoRec *pDpyEvo =
                 nvGetOneArbitraryDpyEvo(pProposedApiHead->dpyIdList, pDispEvo);
             NVProposedModeSetHwStateOneHead *pProposedPrimaryHead;
-            NvU32 secondaryHeadTilePosition = 1;
+            NvU32 secondaryMergeHeadSection = 1;
             NvU32 head;
 
             nvAssert((pProposedApiHead->hwHeadsMask != 0x0) ||
@@ -1307,12 +1310,13 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
                 NVProposedModeSetHwStateOneHead *pProposedHead =
                     &pProposedDisp->head[head];
 
-                pProposedHead->tilePosition =
-                    (head == primaryHead) ? 0 : (secondaryHeadTilePosition++);
+                pProposedHead->mergeHeadSection =
+                    (head == primaryHead) ? 0 : (secondaryMergeHeadSection++);
 
-                if (!nvEvoGetSingleTileHwModeTimings(&pProposedApiHead->timings,
-                                                     numTiles,
-                                                     &pProposedHead->timings)) {
+                if (!nvEvoGetSingleMergeHeadSectionHwModeTimings(
+                        &pProposedApiHead->timings,
+                        numMergeHeadSections,
+                        &pProposedHead->timings)) {
                     status = NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_MODE;
                     break;
                 }
@@ -1443,6 +1447,10 @@ ValidateProposedModeSetHwStateOneDispImp(NVDispEvoPtr pDispEvo,
 
         NvU32 head;
 
+        if (pProposedApiHead->hwHeadsMask == 0x0) {
+            continue;
+        }
+
         /*
          * Don't try to downgrade heads which are not marked as changed.
          * This could lead to unchanged/not-requested heads hogging all
@@ -1560,7 +1568,7 @@ static NvBool DowngradeColorSpaceAndBpcOneHead(
     const NvKmsDpyOutputColorFormatInfo supportedColorFormats =
         nvDpyGetOutputColorFormatInfo(pDpyEvo);
 
-    if (!nvDowngradeColorSpaceAndBpc(&supportedColorFormats, &dpyColor)) {
+    if (!nvDowngradeColorSpaceAndBpc(pDpyEvo, &supportedColorFormats, &dpyColor)) {
         return FALSE;
     }
 
@@ -1829,8 +1837,18 @@ done:
     return dpIsModePossible;
 }
 
+static NvBool VblankCallbackListsAreEmpty(
+    const NVDispApiHeadStateEvoRec *pApiHeadState)
+{
+    ct_assert(ARRAY_LEN(pApiHeadState->vblankCallbackList) == 2);
+
+    return (nvListIsEmpty(&pApiHeadState->vblankCallbackList[0]) &&
+            nvListIsEmpty(&pApiHeadState->vblankCallbackList[1]));
+}
+
 static void VBlankCallbackDeferredWork(void *dataPtr, NvU32 data32)
 {
+    NVDispApiHeadStateEvoRec *pApiHeadState = NULL;
     NVVBlankCallbackPtr pVBlankCallbackTmp = NULL;
     NVVBlankCallbackPtr pVBlankCallback = NULL;
     NVDispEvoPtr pDispEvo = dataPtr;
@@ -1840,11 +1858,22 @@ static void VBlankCallbackDeferredWork(void *dataPtr, NvU32 data32)
         return;
     }
 
-    nvListForEachEntry_safe(pVBlankCallback,
-                            pVBlankCallbackTmp,
-                            &pDispEvo->apiHeadState[apiHead].vblankCallbackList,
-                            vblankCallbackListEntry) {
-        pVBlankCallback->pCallback(pDispEvo, pVBlankCallback);
+    pApiHeadState = &pDispEvo->apiHeadState[apiHead];
+
+    /*
+     * Increment the vblankCount here, so that any callbacks in the list can
+     * rely on the same value.
+     */
+    pApiHeadState->vblankCount++;
+
+    for (NvU32 i = 0; i < ARRAY_LEN(pApiHeadState->vblankCallbackList); i++) {
+
+        nvListForEachEntry_safe(pVBlankCallback,
+                                pVBlankCallbackTmp,
+                                &pApiHeadState->vblankCallbackList[i],
+                                vblankCallbackListEntry) {
+            pVBlankCallback->pCallback(pDispEvo, pVBlankCallback);
+        }
     }
 }
 
@@ -1857,6 +1886,64 @@ static void VBlankCallback(void *pParam1, void *pParam2)
                pParam1, /* ref_ptr to pDispEvo */
                apiHead,    /* dataU32 */
                0);      /* timeout: schedule the work immediately */
+}
+
+
+static void DisableVBlankCallbacks(const NVDevEvoRec *pDevEvo)
+{
+    NvU32 dispIndex;
+    NVDispEvoPtr pDispEvo;
+
+    FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
+
+        NvU32 apiHead;
+
+        for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+
+            NVDispApiHeadStateEvoRec *pApiHeadState =
+                &pDispEvo->apiHeadState[apiHead];
+
+            if (pApiHeadState->rmVBlankCallbackHandle != 0) {
+                nvRmRemoveVBlankCallback(pDispEvo,
+                                         pApiHeadState->rmVBlankCallbackHandle);
+                pApiHeadState->rmVBlankCallbackHandle = 0;
+            }
+        }
+    }
+}
+
+static void EnableVBlankCallbacks(const NVDevEvoRec *pDevEvo)
+{
+    NvU32 dispIndex;
+    NVDispEvoPtr pDispEvo;
+
+    FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
+
+        NvU32 apiHead;
+
+        for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+
+            NVDispApiHeadStateEvoRec *pApiHeadState =
+                &pDispEvo->apiHeadState[apiHead];
+
+            nvAssert(pApiHeadState->rmVBlankCallbackHandle == 0);
+
+            if (VblankCallbackListsAreEmpty(pApiHeadState)) {
+                continue;
+            }
+
+            const NvU32 hwHead =
+                nvGetPrimaryHwHeadFromMask(pApiHeadState->hwHeadsMask);
+
+            if (hwHead == NV_INVALID_HEAD) {
+                continue;
+            }
+
+            pApiHeadState->rmVBlankCallbackHandle =
+                nvRmAddVBlankCallback(pDispEvo, hwHead,
+                                      VBlankCallback, (void *)(NvUPtr)apiHead);
+        }
+    }
 }
 
 /*!
@@ -2399,7 +2486,7 @@ ApplyProposedModeSetHwStateOneHeadShutDown(
     pHeadState->pConnectorEvo = NULL;
 
     pHeadState->bypassComposition = FALSE;
-    pHeadState->tilePosition = 0;
+    pHeadState->mergeHeadSection = 0;
     nvkms_memset(&pHeadState->timings, 0, sizeof(pHeadState->timings));
     pHeadState->activeRmId = 0;
 
@@ -2506,12 +2593,6 @@ ApplyProposedModeSetStateOneApiHeadShutDown(
      */
     DisableActiveCoreRGSyncObjects(pDispEvo, apiHead,
                                    &pWorkArea->modesetUpdateState.updateState);
-
-    if (pApiHeadState->rmVBlankCallbackHandle != 0) {
-        nvRmRemoveVBlankCallback(pDispEvo,
-                                 pApiHeadState->rmVBlankCallbackHandle);
-        pApiHeadState->rmVBlankCallbackHandle = 0;
-    }
 
     nvDisable3DVisionAegis(pDpyEvo);
 
@@ -2632,16 +2713,13 @@ ApplyProposedModeSetHwStateOneHeadPreUpdate(
     pHeadState->bypassComposition = bypassComposition;
     pHeadState->activeRmId = pProposedApiHead->activeRmId;
     pHeadState->pConnectorEvo = pProposedHead->pConnectorEvo;
-    pHeadState->tilePosition = pProposedHead->tilePosition;
+    pHeadState->mergeHeadSection = pProposedHead->mergeHeadSection;
     pHeadState->timings = pProposedHead->timings;
     pHeadState->dscInfo = pProposedApiHead->dscInfo;
     pHeadState->hdmiFrlConfig = pProposedHead->hdmiFrlConfig;
     pHeadState->pixelDepth =
         nvEvoDpyColorToPixelDepth(&pProposedApiHead->attributes.color);
     pHeadState->audio = pProposedHead->audio;
-
-    /* Update current LUT to hardware */
-    nvEvoSetLUTContextDma(pDispEvo, head, updateState);
 
     nvEvoSetTimings(pDispEvo, head, updateState);
 
@@ -2650,7 +2728,10 @@ ApplyProposedModeSetHwStateOneHeadPreUpdate(
                       &pProposedApiHead->attributes.dithering,
                       updateState);
 
-    nvEvoHeadSetControlOR(pDispEvo, head, updateState);
+    nvEvoHeadSetControlOR(pDispEvo,
+                          head,
+                          &pProposedApiHead->attributes.color,
+                          updateState);
 
     /* Update hardware's current colorSpace and colorRange */
     nvUpdateCurrentHardwareColorSpaceAndRangeEvo(pDispEvo,
@@ -2815,13 +2896,6 @@ ApplyProposedModeSetStateOneApiHeadPreUpdate(
      * the new timings.
      */
     ReEnableActiveCoreRGSyncObjects(pDispEvo, apiHead, updateState);
-
-    nvAssert(pApiHeadState->rmVBlankCallbackHandle == 0);
-    if (!nvListIsEmpty(&pApiHeadState->vblankCallbackList)) {
-        pApiHeadState->rmVBlankCallbackHandle =
-            nvRmAddVBlankCallback(pDispEvo, proposedPrimaryHead,
-                VBlankCallback, (void *)(NvUPtr)apiHead);
-    }
 
     pApiHeadState->attributes = pProposedApiHead->attributes;
     pApiHeadState->tf = pProposedApiHead->tf;
@@ -3857,6 +3931,8 @@ NvBool nvSetDispModeEvo(NVDevEvoPtr pDevEvo,
 
     BeginEndModeset(pDevEvo, pProposed, BEGIN_MODESET);
 
+    DisableVBlankCallbacks(pDevEvo);
+
     nvEvoLockStatePreModeset(pDevEvo);
 
     nvEvoRemoveOverlappingFlipLockRequestGroupsForModeset(pDevEvo, pRequest);
@@ -3884,6 +3960,8 @@ NvBool nvSetDispModeEvo(NVDevEvoPtr pDevEvo,
     pDevEvo->allowHeadSurfaceInNvKms = pProposed->allowHeadSurfaceInNvKms;
 
     nvEvoLockStatePostModeset(pDevEvo, doRasterLock);
+
+    EnableVBlankCallbacks(pDevEvo);
 
     /*
      * The modeset was successful: if headSurface was used as part of this
@@ -3953,6 +4031,7 @@ done:
  * \param[in]      pCallback The function to call when vblank is reached on the
  *                           provided pDispEvo+head combination.
  * \param[in]      pUserData A pointer to caller-provided custom data.
+ * \param[in]      listIndex Which vblankCallbackList[] array to add this callback into.
  *
  * \return         Returns a pointer to a NVVBlankCallbackRec structure if the
  *                 registration was successful.  Otherwise, return NULL.
@@ -3961,7 +4040,8 @@ NVVBlankCallbackPtr
 nvApiHeadRegisterVBlankCallback(NVDispEvoPtr pDispEvo,
                                 const NvU32 apiHead,
                                 NVVBlankCallbackProc pCallback,
-                                void *pUserData)
+                                void *pUserData,
+                                NvU8 listIndex)
 {
     /*
      * All the hardware heads mapped on the input api head should be
@@ -3982,8 +4062,9 @@ nvApiHeadRegisterVBlankCallback(NVDispEvoPtr pDispEvo,
     pVBlankCallback->pUserData = pUserData;
     pVBlankCallback->apiHead = apiHead;
 
+    /* append to the tail of the list */
     nvListAppend(&pVBlankCallback->vblankCallbackListEntry,
-                 &pApiHeadState->vblankCallbackList);
+                 &pApiHeadState->vblankCallbackList[listIndex]);
 
     nvAssert((head != NV_INVALID_HEAD) ||
                 (pApiHeadState->rmVBlankCallbackHandle == 0));
@@ -4020,7 +4101,7 @@ void nvApiHeadUnregisterVBlankCallback(NVDispEvoPtr pDispEvo,
                 (pApiHeadState->rmVBlankCallbackHandle == 0));
 
     // If there are no more callbacks, disable the RM-level callback
-    if (nvListIsEmpty(&pApiHeadState->vblankCallbackList) &&
+    if (VblankCallbackListsAreEmpty(pApiHeadState) &&
             (head != NV_INVALID_HEAD) &&
             (pApiHeadState->rmVBlankCallbackHandle != 0)) {
         nvRmRemoveVBlankCallback(pDispEvo,

@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -88,10 +88,15 @@ typedef struct
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__EventBuffer;
+
+
 struct EventBuffer {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__EventBuffer *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct RmResource __nvoc_base_RmResource;
@@ -103,32 +108,11 @@ struct EventBuffer {
     struct RmResource *__nvoc_pbase_RmResource;    // rmres super
     struct EventBuffer *__nvoc_pbase_EventBuffer;    // eventbuffer
 
-    // Vtable with 25 per-object function pointers
+    // Vtable with 4 per-object function pointers
     NV_STATUS (*__eventbuffertBufferCtrlCmdEnableEvent__)(struct EventBuffer * /*this*/, NV_EVENT_BUFFER_CTRL_CMD_ENABLE_EVENTS_PARAMS *);  // exported (id=0x90cd0101)
     NV_STATUS (*__eventbuffertBufferCtrlCmdUpdateGet__)(struct EventBuffer * /*this*/, NV_EVENT_BUFFER_CTRL_CMD_UPDATE_GET_PARAMS *);  // exported (id=0x90cd0102)
     NV_STATUS (*__eventbuffertBufferCtrlCmdFlush__)(struct EventBuffer * /*this*/);  // exported (id=0x90cd0104)
     NV_STATUS (*__eventbuffertBufferCtrlCmdPostTelemetryEvent__)(struct EventBuffer * /*this*/, NV_EVENT_BUFFER_CTRL_CMD_POST_TELEMETRY_EVENT_PARAMS *);  // exported (id=0x90cd0105)
-    NvBool (*__eventbufferAccessCallback__)(struct EventBuffer * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (rmres)
-    NvBool (*__eventbufferShareCallback__)(struct EventBuffer * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__eventbufferGetMemInterMapParams__)(struct EventBuffer * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__eventbufferCheckMemInterUnmap__)(struct EventBuffer * /*this*/, NvBool);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__eventbufferGetMemoryMappingDescriptor__)(struct EventBuffer * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__eventbufferControlSerialization_Prologue__)(struct EventBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    void (*__eventbufferControlSerialization_Epilogue__)(struct EventBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__eventbufferControl_Prologue__)(struct EventBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    void (*__eventbufferControl_Epilogue__)(struct EventBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    NvBool (*__eventbufferCanCopy__)(struct EventBuffer * /*this*/);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__eventbufferIsDuplicate__)(struct EventBuffer * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (rmres)
-    void (*__eventbufferPreDestruct__)(struct EventBuffer * /*this*/);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__eventbufferControl__)(struct EventBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__eventbufferControlFilter__)(struct EventBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__eventbufferMap__)(struct EventBuffer * /*this*/, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__eventbufferUnmap__)(struct EventBuffer * /*this*/, struct CALL_CONTEXT *, RsCpuMapping *);  // virtual inherited (res) base (rmres)
-    NvBool (*__eventbufferIsPartialUnmapSupported__)(struct EventBuffer * /*this*/);  // inline virtual inherited (res) base (rmres) body
-    NV_STATUS (*__eventbufferMapTo__)(struct EventBuffer * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__eventbufferUnmapFrom__)(struct EventBuffer * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (rmres)
-    NvU32 (*__eventbufferGetRefCount__)(struct EventBuffer * /*this*/);  // virtual inherited (res) base (rmres)
-    void (*__eventbufferAddAdditionalDependants__)(struct RsClient *, struct EventBuffer * /*this*/, RsResourceRef *);  // virtual inherited (res) base (rmres)
 
     // Data members
     struct MEMORY_DESCRIPTOR *pHeaderDesc;
@@ -151,6 +135,34 @@ struct EventBuffer {
     NvHandle hInternalSubdevice;
     NvHandle hInternalHeader;
     NvHandle hInternalBuffer;
+};
+
+
+// Metadata including vtable with 21 function pointers plus superclass metadata
+struct NVOC_VTABLE__EventBuffer {
+    const struct NVOC_VTABLE__RmResource RmResource;    // (rmres) 21 function pointers
+
+    NvBool (*__eventbufferAccessCallback__)(struct EventBuffer * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (rmres)
+    NvBool (*__eventbufferShareCallback__)(struct EventBuffer * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (rmres)
+    NV_STATUS (*__eventbufferGetMemInterMapParams__)(struct EventBuffer * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (rmres)
+    NV_STATUS (*__eventbufferCheckMemInterUnmap__)(struct EventBuffer * /*this*/, NvBool);  // virtual inherited (rmres) base (rmres)
+    NV_STATUS (*__eventbufferGetMemoryMappingDescriptor__)(struct EventBuffer * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual inherited (rmres) base (rmres)
+    NV_STATUS (*__eventbufferControlSerialization_Prologue__)(struct EventBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
+    void (*__eventbufferControlSerialization_Epilogue__)(struct EventBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
+    NV_STATUS (*__eventbufferControl_Prologue__)(struct EventBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
+    void (*__eventbufferControl_Epilogue__)(struct EventBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
+    NvBool (*__eventbufferCanCopy__)(struct EventBuffer * /*this*/);  // virtual inherited (res) base (rmres)
+    NV_STATUS (*__eventbufferIsDuplicate__)(struct EventBuffer * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (rmres)
+    void (*__eventbufferPreDestruct__)(struct EventBuffer * /*this*/);  // virtual inherited (res) base (rmres)
+    NV_STATUS (*__eventbufferControl__)(struct EventBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (rmres)
+    NV_STATUS (*__eventbufferControlFilter__)(struct EventBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (rmres)
+    NV_STATUS (*__eventbufferMap__)(struct EventBuffer * /*this*/, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);  // virtual inherited (res) base (rmres)
+    NV_STATUS (*__eventbufferUnmap__)(struct EventBuffer * /*this*/, struct CALL_CONTEXT *, RsCpuMapping *);  // virtual inherited (res) base (rmres)
+    NvBool (*__eventbufferIsPartialUnmapSupported__)(struct EventBuffer * /*this*/);  // inline virtual inherited (res) base (rmres) body
+    NV_STATUS (*__eventbufferMapTo__)(struct EventBuffer * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (rmres)
+    NV_STATUS (*__eventbufferUnmapFrom__)(struct EventBuffer * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (rmres)
+    NvU32 (*__eventbufferGetRefCount__)(struct EventBuffer * /*this*/);  // virtual inherited (res) base (rmres)
+    void (*__eventbufferAddAdditionalDependants__)(struct RsClient *, struct EventBuffer * /*this*/, RsResourceRef *);  // virtual inherited (res) base (rmres)
 };
 
 #ifndef __NVOC_CLASS_EventBuffer_TYPEDEF__
@@ -191,47 +203,47 @@ NV_STATUS __nvoc_objCreate_EventBuffer(EventBuffer**, Dynamic*, NvU32, struct CA
 #define eventbuffertBufferCtrlCmdFlush(pEventBuffer) eventbuffertBufferCtrlCmdFlush_DISPATCH(pEventBuffer)
 #define eventbuffertBufferCtrlCmdPostTelemetryEvent_FNPTR(pEventBuffer) pEventBuffer->__eventbuffertBufferCtrlCmdPostTelemetryEvent__
 #define eventbuffertBufferCtrlCmdPostTelemetryEvent(pEventBuffer, pPostTelemetryEvent) eventbuffertBufferCtrlCmdPostTelemetryEvent_DISPATCH(pEventBuffer, pPostTelemetryEvent)
-#define eventbufferAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresAccessCallback__
+#define eventbufferAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
 #define eventbufferAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) eventbufferAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define eventbufferShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresShareCallback__
+#define eventbufferShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresShareCallback__
 #define eventbufferShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) eventbufferShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
-#define eventbufferGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__rmresGetMemInterMapParams__
+#define eventbufferGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
 #define eventbufferGetMemInterMapParams(pRmResource, pParams) eventbufferGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define eventbufferCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__rmresCheckMemInterUnmap__
+#define eventbufferCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
 #define eventbufferCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) eventbufferCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define eventbufferGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__rmresGetMemoryMappingDescriptor__
+#define eventbufferGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
 #define eventbufferGetMemoryMappingDescriptor(pRmResource, ppMemDesc) eventbufferGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define eventbufferControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresControlSerialization_Prologue__
+#define eventbufferControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
 #define eventbufferControlSerialization_Prologue(pResource, pCallContext, pParams) eventbufferControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define eventbufferControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresControlSerialization_Epilogue__
+#define eventbufferControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
 #define eventbufferControlSerialization_Epilogue(pResource, pCallContext, pParams) eventbufferControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define eventbufferControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresControl_Prologue__
+#define eventbufferControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
 #define eventbufferControl_Prologue(pResource, pCallContext, pParams) eventbufferControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define eventbufferControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresControl_Epilogue__
+#define eventbufferControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
 #define eventbufferControl_Epilogue(pResource, pCallContext, pParams) eventbufferControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define eventbufferCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__
+#define eventbufferCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
 #define eventbufferCanCopy(pResource) eventbufferCanCopy_DISPATCH(pResource)
-#define eventbufferIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsDuplicate__
+#define eventbufferIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
 #define eventbufferIsDuplicate(pResource, hMemory, pDuplicate) eventbufferIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define eventbufferPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resPreDestruct__
+#define eventbufferPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
 #define eventbufferPreDestruct(pResource) eventbufferPreDestruct_DISPATCH(pResource)
-#define eventbufferControl_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resControl__
+#define eventbufferControl_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControl__
 #define eventbufferControl(pResource, pCallContext, pParams) eventbufferControl_DISPATCH(pResource, pCallContext, pParams)
-#define eventbufferControlFilter_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resControlFilter__
+#define eventbufferControlFilter_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
 #define eventbufferControlFilter(pResource, pCallContext, pParams) eventbufferControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define eventbufferMap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resMap__
+#define eventbufferMap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMap__
 #define eventbufferMap(pResource, pCallContext, pParams, pCpuMapping) eventbufferMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
-#define eventbufferUnmap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resUnmap__
+#define eventbufferUnmap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmap__
 #define eventbufferUnmap(pResource, pCallContext, pCpuMapping) eventbufferUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
-#define eventbufferIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsPartialUnmapSupported__
+#define eventbufferIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
 #define eventbufferIsPartialUnmapSupported(pResource) eventbufferIsPartialUnmapSupported_DISPATCH(pResource)
-#define eventbufferMapTo_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resMapTo__
+#define eventbufferMapTo_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
 #define eventbufferMapTo(pResource, pParams) eventbufferMapTo_DISPATCH(pResource, pParams)
-#define eventbufferUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resUnmapFrom__
+#define eventbufferUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
 #define eventbufferUnmapFrom(pResource, pParams) eventbufferUnmapFrom_DISPATCH(pResource, pParams)
-#define eventbufferGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resGetRefCount__
+#define eventbufferGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
 #define eventbufferGetRefCount(pResource) eventbufferGetRefCount_DISPATCH(pResource)
-#define eventbufferAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resAddAdditionalDependants__
+#define eventbufferAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
 #define eventbufferAddAdditionalDependants(pClient, pResource, pReference) eventbufferAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
@@ -252,87 +264,87 @@ static inline NV_STATUS eventbuffertBufferCtrlCmdPostTelemetryEvent_DISPATCH(str
 }
 
 static inline NvBool eventbufferAccessCallback_DISPATCH(struct EventBuffer *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__eventbufferAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_vtable->__eventbufferAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool eventbufferShareCallback_DISPATCH(struct EventBuffer *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__eventbufferShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_vtable->__eventbufferShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS eventbufferGetMemInterMapParams_DISPATCH(struct EventBuffer *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__eventbufferGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_vtable->__eventbufferGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS eventbufferCheckMemInterUnmap_DISPATCH(struct EventBuffer *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__eventbufferCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_vtable->__eventbufferCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS eventbufferGetMemoryMappingDescriptor_DISPATCH(struct EventBuffer *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__eventbufferGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_vtable->__eventbufferGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS eventbufferControlSerialization_Prologue_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__eventbufferControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__eventbufferControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void eventbufferControlSerialization_Epilogue_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__eventbufferControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__eventbufferControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS eventbufferControl_Prologue_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__eventbufferControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__eventbufferControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void eventbufferControl_Epilogue_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__eventbufferControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__eventbufferControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool eventbufferCanCopy_DISPATCH(struct EventBuffer *pResource) {
-    return pResource->__eventbufferCanCopy__(pResource);
+    return pResource->__nvoc_vtable->__eventbufferCanCopy__(pResource);
 }
 
 static inline NV_STATUS eventbufferIsDuplicate_DISPATCH(struct EventBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__eventbufferIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_vtable->__eventbufferIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void eventbufferPreDestruct_DISPATCH(struct EventBuffer *pResource) {
-    pResource->__eventbufferPreDestruct__(pResource);
+    pResource->__nvoc_vtable->__eventbufferPreDestruct__(pResource);
 }
 
 static inline NV_STATUS eventbufferControl_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__eventbufferControl__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__eventbufferControl__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS eventbufferControlFilter_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__eventbufferControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__eventbufferControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS eventbufferMap_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pResource->__eventbufferMap__(pResource, pCallContext, pParams, pCpuMapping);
+    return pResource->__nvoc_vtable->__eventbufferMap__(pResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS eventbufferUnmap_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__eventbufferUnmap__(pResource, pCallContext, pCpuMapping);
+    return pResource->__nvoc_vtable->__eventbufferUnmap__(pResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool eventbufferIsPartialUnmapSupported_DISPATCH(struct EventBuffer *pResource) {
-    return pResource->__eventbufferIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_vtable->__eventbufferIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS eventbufferMapTo_DISPATCH(struct EventBuffer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__eventbufferMapTo__(pResource, pParams);
+    return pResource->__nvoc_vtable->__eventbufferMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS eventbufferUnmapFrom_DISPATCH(struct EventBuffer *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__eventbufferUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_vtable->__eventbufferUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 eventbufferGetRefCount_DISPATCH(struct EventBuffer *pResource) {
-    return pResource->__eventbufferGetRefCount__(pResource);
+    return pResource->__nvoc_vtable->__eventbufferGetRefCount__(pResource);
 }
 
 static inline void eventbufferAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct EventBuffer *pResource, RsResourceRef *pReference) {
-    pResource->__eventbufferAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_vtable->__eventbufferAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NV_STATUS eventbuffertBufferCtrlCmdEnableEvent_IMPL(struct EventBuffer *pEventBuffer, NV_EVENT_BUFFER_CTRL_CMD_ENABLE_EVENTS_PARAMS *pEnableParams);

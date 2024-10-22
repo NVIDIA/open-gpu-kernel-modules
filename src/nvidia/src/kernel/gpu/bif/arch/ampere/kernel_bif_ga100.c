@@ -550,6 +550,26 @@ kbifGetValidDeviceEnginesToReset_GA100
     return regVal;
 }
 
+/*!
+ *  @brief Get the migration bandwidth
+ *
+ *  @param[out]     pBandwidth  Migration bandwidth
+ *
+ *  @returns        NV_STATUS
+ */
+NV_STATUS
+kbifGetMigrationBandwidth_GA100
+(
+    OBJGPU        *pGpu,
+    KernelBif     *pKernelBif,
+    NvU32         *pBandwidth
+)
+{
+    // Migration bandwidth in MegaBytes/second
+    *pBandwidth = 500;
+
+    return NV_OK;
+}
 
 /*!
  * @brief  Reset the chip.

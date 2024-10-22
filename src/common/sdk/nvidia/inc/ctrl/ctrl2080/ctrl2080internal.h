@@ -750,8 +750,9 @@ typedef struct NV2080_CTRL_INTERNAL_DEVICE_INFO {
     NvU32 groupId;
     NvU32 ginTargetId;
     NvU32 deviceBroadcastPriBase;
+    NvU32 groupLocalInstanceId;
 } NV2080_CTRL_INTERNAL_DEVICE_INFO;
-#define NV2080_CTRL_CMD_INTERNAL_DEVICE_INFO_MAX_ENTRIES 256
+#define NV2080_CTRL_CMD_INTERNAL_DEVICE_INFO_MAX_ENTRIES 512
 
 #define NV2080_CTRL_CMD_INTERNAL_GET_DEVICE_INFO_TABLE   (0x20800a40) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_MESSAGE_ID" */
 
@@ -1351,6 +1352,12 @@ typedef struct NV2080_CTRL_INTERNAL_VMMU_GET_SPA_FOR_GPA_ENTRIES_PARAMS {
  *   pbTargetAperture [IN]
  *     Indicates the PushBuffer Target Aperture type (IOVA, PCI, PCI_COHERENT or NVM)
  *
+ *   channelPBSize [IN]
+ *     Indicates the PushBuffer size requested by client
+ *
+ *   subDeviceId [IN]
+ *     One-hot encoded subDeviceId (i.e. SDM) that will be used to address the channel 
+ *     in the pushbuffer stream (via SSDM method)
  */
 #define NV2080_CTRL_CMD_INTERNAL_DISPLAY_CHANNEL_PUSHBUFFER (0x20800a58) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_DISPLAY_CHANNEL_PUSHBUFFER_PARAMS_MESSAGE_ID" */
 
@@ -1365,6 +1372,8 @@ typedef struct NV2080_CTRL_INTERNAL_DISPLAY_CHANNEL_PUSHBUFFER_PARAMS {
     NvU32  channelInstance;
     NvBool valid;
     NvU32  pbTargetAperture;
+    NvU32  channelPBSize;
+    NvU32  subDeviceId;
 } NV2080_CTRL_INTERNAL_DISPLAY_CHANNEL_PUSHBUFFER_PARAMS;
 
 /*!
@@ -4024,36 +4033,46 @@ typedef struct NV2080_CTRL_INTERNAL_USER_SHARED_DATA_SET_DATA_POLL_PARAMS {
 #define NV2080_CTRL_CMD_INTERNAL_USER_SHARED_DATA_SET_DATA_POLL (0x20800aff) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_USER_SHARED_DATA_SET_DATA_POLL_PARAMS_MESSAGE_ID" */
 
 /*!
- * NV2080_CTRL_CMD_INTERNAL_GSP_START_TRACE_INFO_PARAMS
+ * NV2080_CTRL_CMD_INTERNAL_CONTROL_GSP_TRACE_PARAMS
  *
  * This structure provides the params for starting GPU Fabric Probe
  *
  *  tracepointMask[IN]
  *      - tracepoint selection filter
+ *  bufferAddr[IN]
+ *      - physical address of tracing buffer for VGPU
  *  bufferSize[IN]
  *      - size of gsp side logging buffer
  *  bufferWatermark[IN]
  *      - entry threshold for GSP to issue RPC of logged entries to kernel RM
- *  bStart[IN]
- *      - if true, start tracing. if false, stop tracing.
+ *  flag[IN]
+ *      - indicates which operation to perform
  */
-#define NV2080_CTRL_CMD_INTERNAL_GSP_START_TRACE_INFO_PARAMS_MESSAGE_ID (0xE3U)
+#define NV2080_CTRL_CMD_INTERNAL_CONTROL_GSP_TRACE_PARAMS_MESSAGE_ID (0xE3U)
 
-typedef struct NV2080_CTRL_CMD_INTERNAL_GSP_START_TRACE_INFO_PARAMS {
+typedef struct NV2080_CTRL_CMD_INTERNAL_CONTROL_GSP_TRACE_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 tracepointMask, 8);
-    NvU32  bufferSize;
-    NvU32  bufferWatermark;
-    NvBool bStart;
-} NV2080_CTRL_CMD_INTERNAL_GSP_START_TRACE_INFO_PARAMS;
+    NV_DECLARE_ALIGNED(NvU64 bufferAddr, 8);
+    NvU32 bufferSize;
+    NvU32 bufferWatermark;
+    NvU8  flag;
+} NV2080_CTRL_CMD_INTERNAL_CONTROL_GSP_TRACE_PARAMS;
+
+/*!
+ * Macros for INTERNAL_CONTROL_GSP_TRACE flags for specific operation.
+ */
+#define NV2080_CTRL_CMD_INTERNAL_CONTROL_GSP_TRACE_FLAG_START_KEEP_OLDEST 0x00U
+#define NV2080_CTRL_CMD_INTERNAL_CONTROL_GSP_TRACE_FLAG_START_KEEP_NEWEST 0x01U
+#define NV2080_CTRL_CMD_INTERNAL_CONTROL_GSP_TRACE_FLAG_STOP              0x02U
 
 /*
- * NV2080_CTRL_CMD_INTERNAL_GSP_START_TRACE
+ * NV2080_CTRL_CMD_INTERNAL_CONTROL_GSP_TRACE
  *
  * This command is used to start GSP-RM trace tool.
- * This command accepts NV2080_CTRL_CMD_INTERNAL_GSP_START_TRACE_INFO_PARAMS
+ * This command accepts NV2080_CTRL_CMD_INTERNAL_CONTROL_GSP_TRACE_PARAMS
  *
  */
-#define NV2080_CTRL_CMD_INTERNAL_GSP_START_TRACE (0x208001e3) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_CMD_INTERNAL_GSP_START_TRACE_INFO_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_INTERNAL_CONTROL_GSP_TRACE                        (0x208001e3) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_CMD_INTERNAL_CONTROL_GSP_TRACE_PARAMS_MESSAGE_ID" */
 
 /*
  * NV2080_CTRL_CMD_INTERNAL_GET_ENABLED_SEC2_CLASSES
@@ -4143,7 +4162,26 @@ typedef struct NV2080_CTRL_INTERNAL_GPU_SET_ILLUM_PARAMS {
     NvU32 attribute;
     NvU32 value;
 } NV2080_CTRL_INTERNAL_GPU_SET_ILLUM_PARAMS;
-#define NV2080_CTRL_CMD_INTERNAL_GPU_SET_ILLUM                 (0x20800aecU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_GPU_SET_ILLUM_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_INTERNAL_GPU_SET_ILLUM (0x20800aecU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_GPU_SET_ILLUM_PARAMS_MESSAGE_ID" */
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_GSYNC_APPLY_STEREO_PIN_ALWAYS_HI_WAR
+ *
+ * @brief NVIDIA RTX 5000 (GP180 SKU500) Windows-specific war
+ * to pull gpio19 (stereo pin) low for bug3362661.
+ *
+ *   [in] bApplyStereoPinAlwaysHiWar
+ *     If need to driver stereo pin(GPIO19) low(_IO_INPUT)
+ *
+ * @return NV_OK on success
+ * @return NV_ERR_ otherwise
+ */
+#define NV2080_CTRL_INTERNAL_GSYNC_APPLY_STEREO_PIN_ALWAYS_HI_WAR_PARAMS_MESSAGE_ID (0xEDU)
+
+typedef struct NV2080_CTRL_INTERNAL_GSYNC_APPLY_STEREO_PIN_ALWAYS_HI_WAR_PARAMS {
+    NvBool bApplyStereoPinAlwaysHiWar;
+} NV2080_CTRL_INTERNAL_GSYNC_APPLY_STEREO_PIN_ALWAYS_HI_WAR_PARAMS;
+#define NV2080_CTRL_CMD_INTERNAL_GSYNC_APPLY_STEREO_PIN_ALWAYS_HI_WAR (0x20800aed) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_GSYNC_APPLY_STEREO_PIN_ALWAYS_HI_WAR_PARAMS_MESSAGE_ID" */
+
 /*!
  * NV2080_CTRL_CMD_INTERNAL_HSHUB_GET_MAX_HSHUBS_PER_SHIM
  * 
@@ -4154,12 +4192,498 @@ typedef struct NV2080_CTRL_INTERNAL_GPU_SET_ILLUM_PARAMS {
  *
  *  @return NV_OK
  */
-#define NV2080_CTRL_CMD_INTERNAL_HSHUB_GET_MAX_HSHUBS_PER_SHIM (0x20800a79) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_HSHUB_GET_MAX_HSHUBS_PER_SHIM_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_INTERNAL_HSHUB_GET_MAX_HSHUBS_PER_SHIM        (0x20800a79) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_HSHUB_GET_MAX_HSHUBS_PER_SHIM_PARAMS_MESSAGE_ID" */
 
 #define NV2080_CTRL_INTERNAL_HSHUB_GET_MAX_HSHUBS_PER_SHIM_PARAMS_MESSAGE_ID (0x79U)
 
 typedef struct NV2080_CTRL_INTERNAL_HSHUB_GET_MAX_HSHUBS_PER_SHIM_PARAMS {
     NvU32 maxHshubs;
 } NV2080_CTRL_INTERNAL_HSHUB_GET_MAX_HSHUBS_PER_SHIM_PARAMS;
+
+
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_GSYNC_GET_RASTER_MODE
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_NOT_SUPPORTED
+ */
+
+#define NV2080_CTRL_INTERNAL_GSYNC_GET_RASTER_SYNC_DECODE_MODE_PARAMS_MESSAGE_ID (0x14U)
+
+typedef struct NV2080_CTRL_INTERNAL_GSYNC_GET_RASTER_SYNC_DECODE_MODE_PARAMS {
+    NvU32 rasterSyncDecodeMode;
+} NV2080_CTRL_INTERNAL_GSYNC_GET_RASTER_SYNC_DECODE_MODE_PARAMS;
+
+#define NV2080_CTRL_CMD_INTERNAL_GSYNC_GET_RASTER_SYNC_DECODE_MODE (0x20800a14) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_GSYNC_GET_RASTER_SYNC_DECODE_MODE_PARAMS_MESSAGE_ID" */
+
+/*
+ * NV2080_CTRL_INTERNAL_GPU_GET_PF_BAR1_SPA_PARAMS
+ *
+ * This is an internal command sent from kernel-RM to physical-RM to retrieve GPU PF BAR1 SPA
+ * BAR1 SPA is required for BAR1 mapping in Direct NIC case for DMA(Direct Memory Access) of FB.
+ *
+ *  spaValue[OUT]
+ *      - BAR1 SPA of GPU PF
+ */
+#define NV2080_CTRL_INTERNAL_GPU_GET_PF_BAR1_SPA_PARAMS_MESSAGE_ID (0xEEU)
+
+typedef struct NV2080_CTRL_INTERNAL_GPU_GET_PF_BAR1_SPA_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 spaValue, 8);
+} NV2080_CTRL_INTERNAL_GPU_GET_PF_BAR1_SPA_PARAMS;
+#define NV2080_CTRL_CMD_INTERNAL_GPU_GET_PF_BAR1_SPA       (0x20800aee) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_GPU_GET_PF_BAR1_SPA_PARAMS_MESSAGE_ID" */
+
+/*
+ * NV2080_CTRL_CMD_INTERNAL_NVLINK_ENABLE_NVLINK_PEER
+ *
+ * This command is used to enable RM NVLink enabled peer state.
+ * Note: This just updates the RM state. To reflect the state in the registers,
+ *       use NV2080_CTRL_CMD_NVLINK_SET_NVLINK_PEER
+ *
+ * [in] peerMask
+ *     Mask of Peer IDs for which USE_NVLINK_PEER needs to be enabled
+ * [in] bEnable
+ *     Whether the bit needs to be set or unset
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *     If the USE_NVLINK_PEER bit was enabled successfully
+ *   NV_ERR_NOT_SUPPORTED
+ *     If NVLINK is not supported on the chip, or
+ *     If unsetting USE_NVLINK_PEER bit is not supported
+ *
+ */
+#define NV2080_CTRL_CMD_INTERNAL_NVLINK_ENABLE_NVLINK_PEER (0x20800a21U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_NVLINK_ENABLE_NVLINK_PEER_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_INTERNAL_NVLINK_ENABLE_NVLINK_PEER_PARAMS_MESSAGE_ID (0x21U)
+
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_ENABLE_NVLINK_PEER_PARAMS {
+    NvU32  peerMask;
+    NvBool bEnable;
+} NV2080_CTRL_INTERNAL_NVLINK_ENABLE_NVLINK_PEER_PARAMS;
+
+/*
+ * NVLINK Link states
+ * These should ALWAYS match the nvlink core library defines in nvlink.h
+ */
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_OFF                      0x00U
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_HS                       0x01U
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_SAFE                     0x02U
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_FAULT                    0x03U
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_RECOVERY                 0x04U
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_FAIL                     0x05U
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_DETECT                   0x06U
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_RESET                    0x07U
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_ENABLE_PM                0x08U
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_DISABLE_PM               0x09U
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_SLEEP                    0x0AU
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_SAVE_STATE               0x0BU
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_RESTORE_STATE            0x0CU
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_PRE_HS                   0x0EU
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_DISABLE_ERR_DETECT       0x0FU
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_LANE_DISABLE             0x10U
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_LANE_SHUTDOWN            0x11U
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_TRAFFIC_SETUP            0x12U
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_INITPHASE1               0x13U
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_INITNEGOTIATE            0x14U
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_POST_INITNEGOTIATE       0x15U
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_INITOPTIMIZE             0x16U
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_POST_INITOPTIMIZE        0x17U
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_DISABLE_HEARTBEAT        0x18U
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_CONTAIN                  0x19U
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_INITTL                   0x1AU
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_INITPHASE5               0x1BU
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_ALI                      0x1CU
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_ACTIVE_PENDING           0x1DU
+#define NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_INVALID                  0xFFU
+
+/*
+ * NVLINK TX Sublink states
+ * These should ALWAYS match the nvlink core library defines in nvlink.h
+ */
+#define NV2080_NVLINK_CORE_SUBLINK_STATE_TX_HS                          0x00U
+#define NV2080_NVLINK_CORE_SUBLINK_STATE_TX_SINGLE_LANE                 0x04U
+#define NV2080_NVLINK_CORE_SUBLINK_STATE_TX_LOW_POWER                   0x04U
+#define NV2080_NVLINK_CORE_SUBLINK_STATE_TX_TRAIN                       0x05U
+#define NV2080_NVLINK_CORE_SUBLINK_STATE_TX_SAFE                        0x06U
+#define NV2080_NVLINK_CORE_SUBLINK_STATE_TX_OFF                         0x07U
+#define NV2080_NVLINK_CORE_SUBLINK_STATE_TX_COMMON_MODE                 0x08U
+#define NV2080_NVLINK_CORE_SUBLINK_STATE_TX_COMMON_MODE_DISABLE         0x09U
+#define NV2080_NVLINK_CORE_SUBLINK_STATE_TX_DATA_READY                  0x0AU
+#define NV2080_NVLINK_CORE_SUBLINK_STATE_TX_EQ                          0x0BU
+#define NV2080_NVLINK_CORE_SUBLINK_STATE_TX_PRBS_EN                     0x0CU
+#define NV2080_NVLINK_CORE_SUBLINK_STATE_TX_POST_HS                     0x0DU
+
+/*
+ * NVLINK RX Sublink states
+ * These should ALWAYS match the nvlink core library defines in nvlink.h
+ */
+#define NV2080_NVLINK_CORE_SUBLINK_STATE_RX_HS                          0x00U
+#define NV2080_NVLINK_CORE_SUBLINK_STATE_RX_SINGLE_LANE                 0x04U
+#define NV2080_NVLINK_CORE_SUBLINK_STATE_RX_LOW_POWER                   0x04U
+#define NV2080_NVLINK_CORE_SUBLINK_STATE_RX_TRAIN                       0x05U
+#define NV2080_NVLINK_CORE_SUBLINK_STATE_RX_SAFE                        0x06U
+#define NV2080_NVLINK_CORE_SUBLINK_STATE_RX_OFF                         0x07U
+#define NV2080_NVLINK_CORE_SUBLINK_STATE_RX_RXCAL                       0x08U
+#define NV2080_NVLINK_CORE_SUBLINK_STATE_RX_INIT_TERM                   0x09U
+
+/*
+ * Link training seed values
+ * These should ALWAYS match the values defined in nvlink.h
+ */
+#define NV2080_CTRL_INTERNAL_NVLINK_MAX_SEED_NUM                        6U
+#define NV2080_CTRL_INTERNAL_NVLINK_MAX_SEED_BUFFER_SIZE                (0x7U) /* finn: Evaluated from "NV2080_CTRL_INTERNAL_NVLINK_MAX_SEED_NUM + 1" */
+
+// NVLINK callback types
+#define NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_TYPE_GET_DL_LINK_MODE      0x00U
+#define NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_TYPE_SET_DL_LINK_MODE      0x01U
+#define NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_TYPE_GET_TL_LINK_MODE      0x02U
+#define NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_TYPE_SET_TL_LINK_MODE      0x03U
+#define NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_TYPE_GET_TX_SUBLINK_MODE   0x04U
+#define NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_TYPE_SET_TX_SUBLINK_MODE   0x05U
+#define NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_TYPE_GET_RX_SUBLINK_MODE   0x06U
+#define NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_TYPE_SET_RX_SUBLINK_MODE   0x07U
+#define NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_TYPE_GET_RX_SUBLINK_DETECT 0x08U
+#define NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_TYPE_SET_RX_SUBLINK_DETECT 0x09U
+#define NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_TYPE_WRITE_DISCOVERY_TOKEN 0x0AU
+#define NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_TYPE_READ_DISCOVERY_TOKEN  0x0BU
+#define NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_TYPE_TRAINING_COMPLETE     0x0CU
+#define NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_TYPE_GET_UPHY_LOAD         0x0DU
+
+/*
+ * Structure to store the GET_DL_MODE callback params.
+ * mode
+ *     The current Nvlink DL mode
+ */
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_GET_DL_LINK_MODE_PARAMS {
+    NvU32 mode;
+} NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_GET_DL_LINK_MODE_PARAMS;
+
+/*
+ * Structure to store the SET_DL_LINK_MODE callback OFF params
+ * seedData
+ *     The output seed data
+ */
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_SET_DL_LINK_MODE_OFF_PARAMS {
+    NvU32 seedData[NV2080_CTRL_INTERNAL_NVLINK_MAX_SEED_BUFFER_SIZE];
+} NV2080_CTRL_INTERNAL_NVLINK_SET_DL_LINK_MODE_OFF_PARAMS;
+
+/*
+ * Structure to store the SET_DL_LINK_MODE callback PRE_HS params
+ * remoteDeviceType
+ *     The input remote Device Type
+ * ipVerDlPl
+ *     The input DLPL version
+ */
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_SET_DL_LINK_MODE_PRE_HS_PARAMS {
+    NvU32 remoteDeviceType;
+    NvU32 ipVerDlPl;
+} NV2080_CTRL_INTERNAL_NVLINK_SET_DL_LINK_MODE_PRE_HS_PARAMS;
+
+/*
+ * Structure to store SET_DL_LINK_MODE callback INIT_PHASE1 params
+ * seedData[]
+ *     The input seed data
+ */
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_SET_DL_LINK_MODE_INIT_PHASE1_PARAMS {
+    NvU32 seedData[NV2080_CTRL_INTERNAL_NVLINK_MAX_SEED_BUFFER_SIZE];
+} NV2080_CTRL_INTERNAL_NVLINK_SET_DL_LINK_MODE_INIT_PHASE1_PARAMS;
+
+/*
+ * Structure to store the Nvlink Remote and Local SID info
+ * remoteSid
+ *     The output remote SID
+ * remoteDeviceType
+ *     The output remote Device Type
+ * remoteLinkId
+ *     The output remote link ID
+ * localSid
+ *     The output local SID
+ */
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_REMOTE_LOCAL_SID_INFO {
+    NV_DECLARE_ALIGNED(NvU64 remoteSid, 8);
+    NvU32 remoteDeviceType;
+    NvU32 remoteLinkId;
+    NV_DECLARE_ALIGNED(NvU64 localSid, 8);
+} NV2080_CTRL_INTERNAL_NVLINK_REMOTE_LOCAL_SID_INFO;
+
+/*
+ * Structure to store the SET_DL_LINK_MODE callback POST_INITNEGOTIATE params
+ * bInitnegotiateConfigGood
+ *     The output bool if the config is good
+ * remoteLocalSidInfo
+ *     The output structure containing the Nvlink Remote/Local SID info
+ */
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_SET_DL_LINK_MODE_POST_INITNEGOTIATE_PARAMS {
+    NvBool bInitnegotiateConfigGood;
+    NV_DECLARE_ALIGNED(NV2080_CTRL_INTERNAL_NVLINK_REMOTE_LOCAL_SID_INFO remoteLocalSidInfo, 8);
+} NV2080_CTRL_INTERNAL_NVLINK_SET_DL_LINK_MODE_POST_INITNEGOTIATE_PARAMS;
+
+/*
+ * Structure to store the SET_DL_LINK_MODE callback POST_INITOPTIMIZE params
+ * bPollDone
+ *     The output bool if the polling has finished
+ */
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_SET_DL_LINK_MODE_POST_INITOPTIMIZE_PARAMS {
+    NvBool bPollDone;
+} NV2080_CTRL_INTERNAL_NVLINK_SET_DL_LINK_MODE_POST_INITOPTIMIZE_PARAMS;
+
+/*
+ * Structure to store the SET_DL_LINK_MODE callback params
+ * mode
+ *     The input nvlink state to set
+ * bSync
+ *     The input sync boolean
+ * linkMode
+ *     The input link mode to be set for the callback
+ */
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_SET_DL_LINK_MODE_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 mode, 8);
+    NvBool bSync;
+    NvU32  linkMode;
+    union {
+        NV2080_CTRL_INTERNAL_NVLINK_SET_DL_LINK_MODE_OFF_PARAMS               linkModeOffParams;
+        NV2080_CTRL_INTERNAL_NVLINK_SET_DL_LINK_MODE_PRE_HS_PARAMS            linkModePreHsParams;
+        NV2080_CTRL_INTERNAL_NVLINK_SET_DL_LINK_MODE_INIT_PHASE1_PARAMS       linkModeInitPhase1Params;
+        NV_DECLARE_ALIGNED(NV2080_CTRL_INTERNAL_NVLINK_SET_DL_LINK_MODE_POST_INITNEGOTIATE_PARAMS linkModePostInitNegotiateParams, 8);
+        NV2080_CTRL_INTERNAL_NVLINK_SET_DL_LINK_MODE_POST_INITOPTIMIZE_PARAMS linkModePostInitOptimizeParams;
+    } linkModeParams;
+} NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_SET_DL_LINK_MODE_PARAMS;
+
+/*
+ * Structure to store the GET_TL_MODE callback params.
+ * mode
+ *     The current Nvlink TL mode
+ */
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_GET_TL_LINK_MODE_PARAMS {
+    NvU32 mode;
+} NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_GET_TL_LINK_MODE_PARAMS;
+
+/*
+ * Structure to store the SET_TL_LINK_MODE callback params
+ * mode
+ *     The input nvlink mode to set
+ * bSync
+ *     The input sync boolean
+ */
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_SET_TL_LINK_MODE_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 mode, 8);
+    NvBool bSync;
+} NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_SET_TL_LINK_MODE_PARAMS;
+
+/*
+ * Structure to store the GET_RX/TX_SUBLINK_MODE callback params
+ * sublinkMode
+ *     The current Sublink mode
+ * sublinkSubMode
+ *     The current Sublink sub mode
+ */
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_GET_SUBLINK_MODE_PARAMS {
+    NvU32 sublinkMode;
+    NvU32 sublinkSubMode;
+} NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_GET_SUBLINK_MODE_PARAMS;
+
+/*
+ * Structure to store the SET_TL_LINK_MODE callback params
+ * mode
+ *     The input nvlink mode to set
+ * bSync
+ *     The input sync boolean
+ */
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_SET_TX_SUBLINK_MODE_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 mode, 8);
+    NvBool bSync;
+} NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_SET_TX_SUBLINK_MODE_PARAMS;
+
+/*
+ * Structure to store the SET_RX_SUBLINK_MODE callback params
+ * mode
+ *     The input nvlink mode to set
+ * bSync
+ *     The input sync boolean
+ */
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_SET_RX_SUBLINK_MODE_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 mode, 8);
+    NvBool bSync;
+} NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_SET_RX_SUBLINK_MODE_PARAMS;
+
+/*
+ * Structure to store the GET_RX_SUBLINK_DETECT callback params
+ * laneRxdetStatusMask
+ *     The output RXDET per-lane status mask 
+ */
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_GET_RX_DETECT_PARAMS {
+    NvU32 laneRxdetStatusMask;
+} NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_GET_RX_DETECT_PARAMS;
+
+/*
+ * Structure to store the SET_RX_DETECT callback params
+ * bSync
+ *     The input bSync boolean
+ */
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_SET_RX_DETECT_PARAMS {
+    NvBool bSync;
+} NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_SET_RX_DETECT_PARAMS;
+
+/*
+ * Structure to store the RD_WR_DISCOVERY_TOKEN callback params
+ * ipVerDlPl
+ *     The input DLPL version
+ * token
+ *     The output token
+ */
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_RD_WR_DISCOVERY_TOKEN_PARAMS {
+    NvU32 ipVerDlPl;
+    NV_DECLARE_ALIGNED(NvU64 token, 8);
+} NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_RD_WR_DISCOVERY_TOKEN_PARAMS;
+
+/*
+ * Structure to store the GET_UPHY_LOAD callback params
+ * bUnlocked
+ *     The output unlocked boolean
+ */
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_GET_UPHY_LOAD_PARAMS {
+    NvBool bUnlocked;
+} NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_GET_UPHY_LOAD_PARAMS;
+
+/*
+ * Structure to store the Union of Callback params
+ * type
+ *     The input type of callback to be executed
+ */
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_TYPE {
+    NvU8 type;
+    union {
+        NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_GET_DL_LINK_MODE_PARAMS getDlLinkMode;
+        NV_DECLARE_ALIGNED(NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_SET_DL_LINK_MODE_PARAMS setDlLinkMode, 8);
+        NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_GET_TL_LINK_MODE_PARAMS getTlLinkMode;
+        NV_DECLARE_ALIGNED(NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_SET_TL_LINK_MODE_PARAMS setTlLinkMode, 8);
+        NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_GET_SUBLINK_MODE_PARAMS getTxSublinkMode;
+        NV_DECLARE_ALIGNED(NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_SET_TX_SUBLINK_MODE_PARAMS setTxSublinkMode, 8);
+        NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_GET_SUBLINK_MODE_PARAMS getRxSublinkMode;
+        NV_DECLARE_ALIGNED(NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_SET_RX_SUBLINK_MODE_PARAMS setRxSublinkMode, 8);
+        NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_GET_RX_DETECT_PARAMS    getRxSublinkDetect;
+        NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_SET_RX_DETECT_PARAMS    setRxSublinkDetect;
+        NV_DECLARE_ALIGNED(NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_RD_WR_DISCOVERY_TOKEN_PARAMS writeDiscoveryToken, 8);
+        NV_DECLARE_ALIGNED(NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_RD_WR_DISCOVERY_TOKEN_PARAMS readDiscoveryToken, 8);
+        NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_GET_UPHY_LOAD_PARAMS    getUphyLoad;
+    } callbackParams;
+} NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_TYPE;
+
+/*
+ * NV2080_CTRL_CMD_INTERNAL_NVLINK_CORE_CALLBACK
+ *
+ * Generic NvLink callback RPC to route commands to GSP
+ *
+ * [In] linkdId
+ *     ID of the link to be used
+ * [In/Out] callBackType
+ *     Callback params
+ */
+#define NV2080_CTRL_INTERNAL_NVLINK_CORE_CALLBACK_PARAMS_MESSAGE_ID (0x24U)
+
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_CORE_CALLBACK_PARAMS {
+    NvU32 linkId;
+    NV_DECLARE_ALIGNED(NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_TYPE callbackType, 8);
+} NV2080_CTRL_INTERNAL_NVLINK_CORE_CALLBACK_PARAMS;
+
+#define NV2080_CTRL_CMD_INTERNAL_NVLINK_CORE_CALLBACK (0x20800a24U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_NVLINK_CORE_CALLBACK_PARAMS_MESSAGE_ID" */
+
+/*
+ * NV2080_CTRL_CMD_INTERNAL_NVLINK_UPDATE_REMOTE_LOCAL_SID
+ *
+ * Update Remote and Local Sid info via GSP
+ *
+ * [In] linkId
+ *     ID of the link to be used
+ * [Out] remoteLocalSidInfo
+ *     The output structure containing the Nvlink Remote/Local SID info
+ */
+#define NV2080_CTRL_INTERNAL_NVLINK_UPDATE_REMOTE_LOCAL_SID_PARAMS_MESSAGE_ID (0x25U)
+
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_UPDATE_REMOTE_LOCAL_SID_PARAMS {
+    NvU32 linkId;
+    NV_DECLARE_ALIGNED(NV2080_CTRL_INTERNAL_NVLINK_REMOTE_LOCAL_SID_INFO remoteLocalSidInfo, 8);
+} NV2080_CTRL_INTERNAL_NVLINK_UPDATE_REMOTE_LOCAL_SID_PARAMS;
+
+#define NV2080_CTRL_CMD_INTERNAL_NVLINK_UPDATE_REMOTE_LOCAL_SID (0x20800a25U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_NVLINK_UPDATE_REMOTE_LOCAL_SID_PARAMS_MESSAGE_ID" */
+
+/*
+ * NV2080_CTRL_CMD_INTERNAL_NVLINK_GET_ALI_ENABLED
+ *
+ * Returns if ALI is enabled
+ *
+ * [Out] bEnableAli
+ *     Output boolean for ALI enablement
+ */
+#define NV2080_CTRL_INTERNAL_NVLINK_GET_ALI_ENABLED_PARAMS_MESSAGE_ID (0x29U)
+
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_GET_ALI_ENABLED_PARAMS {
+    NvBool bEnableAli;
+} NV2080_CTRL_INTERNAL_NVLINK_GET_ALI_ENABLED_PARAMS;
+
+#define NV2080_CTRL_CMD_INTERNAL_NVLINK_GET_ALI_ENABLED           (0x20800a29U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_NVLINK_GET_ALI_ENABLED_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_INTERNAL_NVLINK_UPDATE_HSHUB_MUX_TYPE_PROGRAM 0x0U
+#define NV2080_CTRL_INTERNAL_NVLINK_UPDATE_HSHUB_MUX_TYPE_RESET   0x1U
+
+/*
+ * NV2080_CTRL_CMD_INTERNAL_NVLINK_UPDATE_HSHUB_MUX
+ *
+ * Generic Hshub Mux Update RPC to route commands to GSP
+ *
+ * [In] updateType
+ *     HSHUB Mux update type to program or reset Mux
+ * [In] bSysMem
+ *     Boolean to differentiate between sysmen and peer mem
+ * [In] peerMask
+ *     Mask of peer IDs. Only parsed when bSysMem is false
+ */
+#define NV2080_CTRL_INTERNAL_NVLINK_UPDATE_HSHUB_MUX_PARAMS_MESSAGE_ID (0x42U)
+
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_UPDATE_HSHUB_MUX_PARAMS {
+    NvBool updateType;
+    NvBool bSysMem;
+    NvU32  peerMask;
+} NV2080_CTRL_INTERNAL_NVLINK_UPDATE_HSHUB_MUX_PARAMS;
+
+#define NV2080_CTRL_CMD_INTERNAL_NVLINK_UPDATE_HSHUB_MUX (0x20800a42U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_NVLINK_UPDATE_HSHUB_MUX_PARAMS_MESSAGE_ID" */
+
+/*
+ * NV2080_CTRL_CMD_INTERNAL_NVLINK_PRE_SETUP_NVLINK_PEER
+ *
+ * Performs all the necessary actions required before setting a peer on NVLink
+ *
+ * [In] peerId
+ *     Peer ID which will be set on NVLink
+ * [In] peerLinkMask
+ *     Mask of links that connects the given peer
+ * [In] bNvswitchConn
+ *     Is the GPU connected to NVSwitch
+ */
+#define NV2080_CTRL_INTERNAL_NVLINK_PRE_SETUP_NVLINK_PEER_PARAMS_MESSAGE_ID (0x4EU)
+
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_PRE_SETUP_NVLINK_PEER_PARAMS {
+    NvU32  peerId;
+    NvU32  peerLinkMask;
+    NvBool bEgmPeer;
+    NvBool bNvswitchConn;
+} NV2080_CTRL_INTERNAL_NVLINK_PRE_SETUP_NVLINK_PEER_PARAMS;
+#define NV2080_CTRL_CMD_INTERNAL_NVLINK_PRE_SETUP_NVLINK_PEER (0x20800a4eU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_NVLINK_PRE_SETUP_NVLINK_PEER_PARAMS_MESSAGE_ID" */
+
+/*
+ * NV2080_CTRL_CMD_INTERNAL_NVLINK_POST_SETUP_NVLINK_PEER
+ *
+ * Performs all the necessary actions required after setting a peer on NVLink
+ *
+ * [In] peerMask
+ *     Mask of Peer IDs which has been set on NVLink
+ */
+#define NV2080_CTRL_INTERNAL_NVLINK_POST_SETUP_NVLINK_PEER_PARAMS_MESSAGE_ID (0x50U)
+
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_POST_SETUP_NVLINK_PEER_PARAMS {
+    NvU32 peerMask;
+} NV2080_CTRL_INTERNAL_NVLINK_POST_SETUP_NVLINK_PEER_PARAMS;
+#define NV2080_CTRL_CMD_INTERNAL_NVLINK_POST_SETUP_NVLINK_PEER (0x20800a50U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_NVLINK_POST_SETUP_NVLINK_PEER_PARAMS_MESSAGE_ID" */
 
 /* ctrl2080internal_h */

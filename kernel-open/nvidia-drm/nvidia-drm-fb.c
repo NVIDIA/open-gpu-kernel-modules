@@ -36,12 +36,15 @@
 
 static void __nv_drm_framebuffer_free(struct nv_drm_framebuffer *nv_fb)
 {
+    struct drm_framebuffer *fb = &nv_fb->base;
     uint32_t i;
 
     /* Unreference gem object */
-    for (i = 0; i < ARRAY_SIZE(nv_fb->nv_gem); i++) {
-        if (nv_fb->nv_gem[i] != NULL) {
-            nv_drm_gem_object_unreference_unlocked(nv_fb->nv_gem[i]);
+    for (i = 0; i < NVKMS_MAX_PLANES_PER_SURFACE; i++) {
+        struct drm_gem_object *gem = nv_fb_get_gem_obj(fb, i);
+        if (gem != NULL) {
+            struct nv_drm_gem_object *nv_gem = to_nv_gem_object(gem);
+            nv_drm_gem_object_unreference_unlocked(nv_gem);
         }
     }
 
@@ -69,10 +72,8 @@ static int
 nv_drm_framebuffer_create_handle(struct drm_framebuffer *fb,
                                  struct drm_file *file, unsigned int *handle)
 {
-    struct nv_drm_framebuffer *nv_fb = to_nv_framebuffer(fb);
-
     return nv_drm_gem_handle_create(file,
-                                    nv_fb->nv_gem[0],
+                                    to_nv_gem_object(nv_fb_get_gem_obj(fb, 0)),
                                     handle);
 }
 
@@ -88,6 +89,7 @@ static struct nv_drm_framebuffer *nv_drm_framebuffer_alloc(
 {
     struct nv_drm_device *nv_dev = to_nv_device(dev);
     struct nv_drm_framebuffer *nv_fb;
+    struct nv_drm_gem_object *nv_gem;
     const int num_planes = nv_drm_format_num_planes(cmd->pixel_format);
     uint32_t i;
 
@@ -101,21 +103,22 @@ static struct nv_drm_framebuffer *nv_drm_framebuffer_alloc(
         return ERR_PTR(-ENOMEM);
     }
 
-    if (num_planes > ARRAY_SIZE(nv_fb->nv_gem)) {
+    if (num_planes > NVKMS_MAX_PLANES_PER_SURFACE) {
         NV_DRM_DEV_DEBUG_DRIVER(nv_dev, "Unsupported number of planes");
         goto failed;
     }
 
     for (i = 0; i < num_planes; i++) {
-        if ((nv_fb->nv_gem[i] = nv_drm_gem_object_lookup(
-                        dev,
-                        file,
-                        cmd->handles[i])) == NULL) {
+        nv_gem = nv_drm_gem_object_lookup(dev, file, cmd->handles[i]);
+
+        if (nv_gem == NULL) {
             NV_DRM_DEV_DEBUG_DRIVER(
                 nv_dev,
                 "Failed to find gem object of type nvkms memory");
             goto failed;
         }
+
+        nv_fb_set_gem_obj(&nv_fb->base, i, &nv_gem->base);
     }
 
      return nv_fb;
@@ -135,12 +138,14 @@ static int nv_drm_framebuffer_init(struct drm_device *dev,
 {
     struct nv_drm_device *nv_dev = to_nv_device(dev);
     struct NvKmsKapiCreateSurfaceParams params = { };
+    struct nv_drm_gem_object *nv_gem;
+    struct drm_framebuffer *fb = &nv_fb->base;
     uint32_t i;
     int ret;
 
     /* Initialize the base framebuffer object and add it to drm subsystem */
 
-    ret = drm_framebuffer_init(dev, &nv_fb->base, &nv_framebuffer_funcs);
+    ret = drm_framebuffer_init(dev, fb, &nv_framebuffer_funcs);
     if (ret != 0) {
         NV_DRM_DEV_DEBUG_DRIVER(
             nv_dev,
@@ -148,23 +153,18 @@ static int nv_drm_framebuffer_init(struct drm_device *dev,
         return ret;
     }
 
-    for (i = 0; i < ARRAY_SIZE(nv_fb->nv_gem); i++) {
-        if (nv_fb->nv_gem[i] != NULL) {
-            if (!nvKms->isMemoryValidForDisplay(nv_dev->pDevice,
-                                                nv_fb->nv_gem[i]->pMemory)) {
-                NV_DRM_DEV_LOG_INFO(
-                        nv_dev,
-                        "Framebuffer memory not appropriate for scanout");
-                goto fail;
-            }
+    for (i = 0; i < NVKMS_MAX_PLANES_PER_SURFACE; i++) {
+        struct drm_gem_object *gem = nv_fb_get_gem_obj(fb, i);
+        if (gem != NULL) {
+            nv_gem = to_nv_gem_object(gem);
 
-            params.planes[i].memory = nv_fb->nv_gem[i]->pMemory;
-            params.planes[i].offset = nv_fb->base.offsets[i];
-            params.planes[i].pitch = nv_fb->base.pitches[i];
+            params.planes[i].memory = nv_gem->pMemory;
+            params.planes[i].offset = fb->offsets[i];
+            params.planes[i].pitch = fb->pitches[i];
         }
     }
-    params.height = nv_fb->base.height;
-    params.width = nv_fb->base.width;
+    params.height = fb->height;
+    params.width = fb->width;
     params.format = format;
 
     if (have_modifier) {
@@ -199,7 +199,7 @@ static int nv_drm_framebuffer_init(struct drm_device *dev,
     return 0;
 
 fail:
-    drm_framebuffer_cleanup(&nv_fb->base);
+    drm_framebuffer_cleanup(fb);
     return -EINVAL;
 }
 

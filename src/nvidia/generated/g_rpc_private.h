@@ -159,6 +159,7 @@ RpcCtrlVaspaceCopyServerReservedPdes   rpcCtrlVaspaceCopyServerReservedPdes_STUB
 
                                                // RPC:CTRL_GR_CTXSW_PREEMPTION_BIND
 RpcCtrlGrCtxswPreemptionBind       rpcCtrlGrCtxswPreemptionBind_v1A_0E;
+RpcCtrlGrCtxswPreemptionBind       rpcCtrlGrCtxswPreemptionBind_v28_07;
 RpcCtrlGrCtxswPreemptionBind       rpcCtrlGrCtxswPreemptionBind_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102
 
                                                // RPC:CTRL_ALLOC_PMA_STREAM
@@ -326,6 +327,10 @@ RpcCtrlGrGetTpcPartitionMode       rpcCtrlGrGetTpcPartitionMode_STUB;  // TU10X,
                                                // RPC:CTRL_STOP_CHANNEL
 RpcCtrlStopChannel                 rpcCtrlStopChannel_v1A_1E;
 RpcCtrlStopChannel                 rpcCtrlStopChannel_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102
+
+                                               // RPC:CTRL_CMD_INTERNAL_CONTROL_GSP_TRACE
+RpcCtrlCmdInternalControlGspTrace   rpcCtrlCmdInternalControlGspTrace_v28_00;
+RpcCtrlCmdInternalControlGspTrace   rpcCtrlCmdInternalControlGspTrace_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102
 
                                                // RPC:SET_SURFACE_PROPERTIES
 RpcSetSurfaceProperties            rpcSetSurfaceProperties_v07_07;
@@ -2316,6 +2321,40 @@ static void rpc_iGrp_ipVersions_Install_v27_06(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 #endif // 
 }
 
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v28_00(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v28_07(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
 
 
 
@@ -2404,8 +2443,10 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
        pRpcHal->rpcCtrlSetZbcStencilClear = rpcCtrlSetZbcStencilClear_v27_06;
     if (IsIPVersionInRange(pRpc, 0x1E040000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlVaspaceCopyServerReservedPdes = rpcCtrlVaspaceCopyServerReservedPdes_v1E_04;
-    if (IsIPVersionInRange(pRpc, 0x1A0E0000, 0xFFFFFFFF))
+    if (IsIPVersionInRange(pRpc, 0x1A0E0000, 0x2806FFFF))
        pRpcHal->rpcCtrlGrCtxswPreemptionBind = rpcCtrlGrCtxswPreemptionBind_v1A_0E;
+    if (IsIPVersionInRange(pRpc, 0x28070000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGrCtxswPreemptionBind = rpcCtrlGrCtxswPreemptionBind_v28_07;
     if (IsIPVersionInRange(pRpc, 0x1A140000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlAllocPmaStream = rpcCtrlAllocPmaStream_v1A_14;
     if (IsIPVersionInRange(pRpc, 0x1A0F0000, 0xFFFFFFFF))
@@ -2488,6 +2529,8 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
        pRpcHal->rpcCtrlGrGetTpcPartitionMode = rpcCtrlGrGetTpcPartitionMode_v1C_04;
     if (IsIPVersionInRange(pRpc, 0x1A1E0000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlStopChannel = rpcCtrlStopChannel_v1A_1E;
+    if (IsIPVersionInRange(pRpc, 0x28000000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlCmdInternalControlGspTrace = rpcCtrlCmdInternalControlGspTrace_v28_00;
     if (IsIPVersionInRange(pRpc, 0x07070000, 0xFFFFFFFF))
        pRpcHal->rpcSetSurfaceProperties = rpcSetSurfaceProperties_v07_07;
     if (IsIPVersionInRange(pRpc, 0x1F0A0000, 0xFFFFFFFF))
@@ -2707,6 +2750,7 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcGetStaticData);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGrGetTpcPartitionMode);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlStopChannel);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlCmdInternalControlGspTrace);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcSetSurfaceProperties);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlTimerSetGrTickFreq);
@@ -3077,6 +3121,12 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v27_06[] = {
         { 0x27060000, 0xFFFFFFFF, },          // 
     };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v28_00[] = {
+        { 0x28000000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v28_07[] = {
+        { 0x28070000, 0xFFFFFFFF, },          // 
+    };
 
 #define _RPC_HAL_IGRP_ENTRY_INIT(v) \
     { RPC_IGRP_IP_VERSIONS_RANGES_##v, NV_ARRAY_ELEMENTS(RPC_IGRP_IP_VERSIONS_RANGES_##v), rpc_iGrp_ipVersions_Install_##v, }
@@ -3184,6 +3234,8 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
         _RPC_HAL_IGRP_ENTRY_INIT(v27_01),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v27_03),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v27_06),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v28_00),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v28_07),               // 
     };
 
 #undef _RPC_HAL_IGRP_ENTRY_INIT
@@ -3286,6 +3338,7 @@ static void rpcHalIfacesSetup_TU102(RPC_HAL_IFACES *pRpcHal)
         rpcGetStaticData_STUB,                   // rpcGetStaticData
         rpcCtrlGrGetTpcPartitionMode_STUB,       // rpcCtrlGrGetTpcPartitionMode
         rpcCtrlStopChannel_STUB,                 // rpcCtrlStopChannel
+        rpcCtrlCmdInternalControlGspTrace_STUB,   // rpcCtrlCmdInternalControlGspTrace
         rpcSetSurfaceProperties_STUB,            // rpcSetSurfaceProperties
         rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex_STUB,   // rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex
         rpcCtrlTimerSetGrTickFreq_STUB,          // rpcCtrlTimerSetGrTickFreq
@@ -3473,6 +3526,7 @@ static void rpcHalIfacesSetup_GA100(RPC_HAL_IFACES *pRpcHal)
         rpcGetStaticData_STUB,                   // rpcGetStaticData
         rpcCtrlGrGetTpcPartitionMode_STUB,       // rpcCtrlGrGetTpcPartitionMode
         rpcCtrlStopChannel_STUB,                 // rpcCtrlStopChannel
+        rpcCtrlCmdInternalControlGspTrace_STUB,   // rpcCtrlCmdInternalControlGspTrace
         rpcSetSurfaceProperties_STUB,            // rpcSetSurfaceProperties
         rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex_STUB,   // rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex
         rpcCtrlTimerSetGrTickFreq_STUB,          // rpcCtrlTimerSetGrTickFreq
@@ -3672,6 +3726,7 @@ static void rpcHalIfacesSetup_AD102(RPC_HAL_IFACES *pRpcHal)
         rpcGetStaticData_STUB,                   // rpcGetStaticData
         rpcCtrlGrGetTpcPartitionMode_STUB,       // rpcCtrlGrGetTpcPartitionMode
         rpcCtrlStopChannel_STUB,                 // rpcCtrlStopChannel
+        rpcCtrlCmdInternalControlGspTrace_STUB,   // rpcCtrlCmdInternalControlGspTrace
         rpcSetSurfaceProperties_STUB,            // rpcSetSurfaceProperties
         rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex_STUB,   // rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex
         rpcCtrlTimerSetGrTickFreq_STUB,          // rpcCtrlTimerSetGrTickFreq
@@ -3859,6 +3914,7 @@ static void rpcHalIfacesSetup_GH100(RPC_HAL_IFACES *pRpcHal)
         rpcGetStaticData_STUB,                   // rpcGetStaticData
         rpcCtrlGrGetTpcPartitionMode_STUB,       // rpcCtrlGrGetTpcPartitionMode
         rpcCtrlStopChannel_STUB,                 // rpcCtrlStopChannel
+        rpcCtrlCmdInternalControlGspTrace_STUB,   // rpcCtrlCmdInternalControlGspTrace
         rpcSetSurfaceProperties_STUB,            // rpcSetSurfaceProperties
         rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex_STUB,   // rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex
         rpcCtrlTimerSetGrTickFreq_STUB,          // rpcCtrlTimerSetGrTickFreq
@@ -4010,6 +4066,7 @@ static void rpcHalIfacesSetup_GB100(RPC_HAL_IFACES *pRpcHal)
         rpcGetStaticData_STUB,                   // rpcGetStaticData
         rpcCtrlGrGetTpcPartitionMode_STUB,       // rpcCtrlGrGetTpcPartitionMode
         rpcCtrlStopChannel_STUB,                 // rpcCtrlStopChannel
+        rpcCtrlCmdInternalControlGspTrace_STUB,   // rpcCtrlCmdInternalControlGspTrace
         rpcSetSurfaceProperties_STUB,            // rpcSetSurfaceProperties
         rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex_STUB,   // rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex
         rpcCtrlTimerSetGrTickFreq_STUB,          // rpcCtrlTimerSetGrTickFreq

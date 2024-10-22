@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,6 +32,6 @@ typedef struct GPU_RESOURCE_DESC
 } GPU_RESOURCE_DESC;
 
 // CLASSDESCRIPTOR is deprecated, please use GPU_RESOURCE_DESC
-typedef struct GPU_RESOURCE_DESC CLASSDESCRIPTOR, *PCLASSDESCRIPTOR;
+typedef struct GPU_RESOURCE_DESC CLASSDESCRIPTOR;
 
 #endif // _GPU_RESOURCE_DESC_H_

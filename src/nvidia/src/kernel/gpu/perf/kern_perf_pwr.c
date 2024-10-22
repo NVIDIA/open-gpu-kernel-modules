@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -76,7 +76,7 @@ subdeviceCtrlCmdPerfRatedTdpSetControl_KERNEL
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
     }
 
-    if ((!rmclientIsAdminByHandle(hClient, pCallContext->secInfo.privLevel)) &&
+    if ((!(rmclientIsAdminByHandle(hClient, pCallContext->secInfo.privLevel) || osCheckAccess(RS_ACCESS_PERFMON))) &&
         (gpuIsRmProfilingPrivileged(pGpu) && (pControlParams->vPstateType == NV2080_CTRL_PERF_VPSTATE_TURBO_BOOST)))
     {
         NV_PRINTF(LEVEL_ERROR,

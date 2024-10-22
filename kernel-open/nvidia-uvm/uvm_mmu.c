@@ -50,18 +50,18 @@
 // because that type is normally associated with the LCE mapped to the most
 // PCEs. The higher bandwidth is beneficial when doing bulk operations such as
 // clearing PTEs, or initializing a page directory/table.
-#define page_tree_begin_acquire(tree, tracker, push, format, ...) ({                                                        \
-    NV_STATUS status;                                                                                                       \
-    uvm_channel_manager_t *manager = (tree)->gpu->channel_manager;                                                          \
-                                                                                                                            \
-    if (manager == NULL)                                                                                                    \
-        status = uvm_push_begin_fake((tree)->gpu, (push));                                                                  \
-    else if (uvm_parent_gpu_is_virt_mode_sriov_heavy((tree)->gpu->parent))                                                  \
-        status = uvm_push_begin_acquire(manager, UVM_CHANNEL_TYPE_MEMOPS, (tracker), (push), (format), ##__VA_ARGS__);      \
-    else                                                                                                                    \
-        status = uvm_push_begin_acquire(manager, UVM_CHANNEL_TYPE_GPU_INTERNAL, (tracker), (push), (format), ##__VA_ARGS__);\
-                                                                                                                            \
-    status;                                                                                                                 \
+#define page_tree_begin_acquire(tree, tracker, push, format, ...) ({                                                            \
+    NV_STATUS __status;                                                                                                         \
+    uvm_channel_manager_t *__manager = (tree)->gpu->channel_manager;                                                            \
+                                                                                                                                \
+    if (__manager == NULL)                                                                                                      \
+        __status = uvm_push_begin_fake((tree)->gpu, (push));                                                                    \
+    else if (uvm_parent_gpu_is_virt_mode_sriov_heavy((tree)->gpu->parent))                                                      \
+        __status = uvm_push_begin_acquire(__manager, UVM_CHANNEL_TYPE_MEMOPS, (tracker), (push), (format), ##__VA_ARGS__);      \
+    else                                                                                                                        \
+        __status = uvm_push_begin_acquire(__manager, UVM_CHANNEL_TYPE_GPU_INTERNAL, (tracker), (push), (format), ##__VA_ARGS__);\
+                                                                                                                                \
+    __status;                                                                                                                   \
 })
 
 // Default location of page table allocations
@@ -2368,7 +2368,7 @@ NV_STATUS uvm_mmu_create_peer_identity_mappings(uvm_gpu_t *gpu, uvm_gpu_t *peer)
     peer_mapping = uvm_gpu_get_peer_mapping(gpu, peer->id);
     phys_offset = 0ULL;
 
-    if (uvm_gpus_are_nvswitch_connected(gpu, peer)) {
+    if (uvm_parent_gpus_are_nvswitch_connected(gpu->parent, peer->parent)) {
         // Add the 47-bit physical address routing bits for this peer to the
         // generated PTEs
         phys_offset = peer->parent->nvswitch_info.fabric_memory_window_start;
@@ -2658,7 +2658,7 @@ NV_STATUS uvm_mmu_chunk_map(uvm_gpu_chunk_t *chunk)
     // mappings are reference counted as multiples of PAGE_SIZE. User chunk
     // sizes are guaranteed to be a multiple of that page size, but kernel chunk
     // sizes can be smaller.
-    UVM_ASSERT(uvm_pmm_gpu_memory_type_is_user(chunk->type));
+    UVM_ASSERT(uvm_gpu_chunk_is_user(chunk));
 
     UVM_ASSERT(PAGE_ALIGNED(chunk_size));
 
@@ -2705,7 +2705,7 @@ void uvm_mmu_chunk_unmap(uvm_gpu_chunk_t *chunk, uvm_tracker_t *tracker)
     chunk_size = uvm_gpu_chunk_get_size(chunk);
     num_unmapped_pages = chunk_size / PAGE_SIZE;
 
-    UVM_ASSERT(uvm_pmm_gpu_memory_type_is_user(chunk->type));
+    UVM_ASSERT(uvm_gpu_chunk_is_user(chunk));
     UVM_ASSERT(PAGE_ALIGNED(chunk_size));
 
     root_chunk_mapping = root_chunk_mapping_from_chunk(gpu, chunk);

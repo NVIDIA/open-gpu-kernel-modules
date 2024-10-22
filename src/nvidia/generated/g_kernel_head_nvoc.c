@@ -57,6 +57,10 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelHead =
     /*pExportInfo=*/        &__nvoc_export_info_KernelHead
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+
+// Up-thunk(s) to bridge methods to ancestors (if any)
+
 const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelHead = 
 {
     /*numEntries=*/     0,
@@ -132,7 +136,7 @@ static void __nvoc_init_funcTable_KernelHead_1(KernelHead *pThis, RmHalspecOwner
     // default
     else
     {
-        pThis->__kheadReadVblankIntrEnable__ = &kheadReadVblankIntrEnable_108313;
+        pThis->__kheadReadVblankIntrEnable__ = &kheadReadVblankIntrEnable_86b752;
     }
 
     // kheadGetDisplayInitialized -- halified (2 hals) body
@@ -145,7 +149,7 @@ static void __nvoc_init_funcTable_KernelHead_1(KernelHead *pThis, RmHalspecOwner
     // default
     else
     {
-        pThis->__kheadGetDisplayInitialized__ = &kheadGetDisplayInitialized_108313;
+        pThis->__kheadGetDisplayInitialized__ = &kheadGetDisplayInitialized_86b752;
     }
 
     // kheadWriteVblankIntrEnable -- halified (2 hals) body
@@ -188,9 +192,9 @@ static void __nvoc_init_funcTable_KernelHead_1(KernelHead *pThis, RmHalspecOwner
     }
 
     // kheadReadPendingVblank -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00040000UL) )) /* DispIpHal: DISPv0000 */ 
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ 
     {
-        pThis->__kheadReadPendingVblank__ = &kheadReadPendingVblank_ceaee8;
+        pThis->__kheadReadPendingVblank__ = &kheadReadPendingVblank_72a2e1;
     }
     else
     {
@@ -198,7 +202,7 @@ static void __nvoc_init_funcTable_KernelHead_1(KernelHead *pThis, RmHalspecOwner
     }
 
     // kheadGetLoadVCounter -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00040000UL) )) /* DispIpHal: DISPv0000 */ 
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ 
     {
         pThis->__kheadGetLoadVCounter__ = &kheadGetLoadVCounter_4a4dee;
     }
@@ -208,7 +212,7 @@ static void __nvoc_init_funcTable_KernelHead_1(KernelHead *pThis, RmHalspecOwner
     }
 
     // kheadReadPendingRgLineIntr -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00040000UL) )) /* DispIpHal: DISPv0000 */ 
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ 
     {
         pThis->__kheadReadPendingRgLineIntr__ = &kheadReadPendingRgLineIntr_4a4dee;
     }
@@ -218,7 +222,7 @@ static void __nvoc_init_funcTable_KernelHead_1(KernelHead *pThis, RmHalspecOwner
     }
 
     // kheadResetRgLineIntrMask -- halified (2 hals) body
-    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00040000UL) )) /* DispIpHal: DISPv0000 */ 
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00080000UL) )) /* DispIpHal: DISPv0000 */ 
     {
         pThis->__kheadResetRgLineIntrMask__ = &kheadResetRgLineIntrMask_b3696a;
     }

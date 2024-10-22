@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -90,10 +90,15 @@ typedef struct KernelChannelGroup KernelChannelGroup;
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__KernelChannelGroupApi;
+
+
 struct KernelChannelGroupApi {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__KernelChannelGroupApi *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct GpuResource __nvoc_base_GpuResource;
@@ -106,9 +111,7 @@ struct KernelChannelGroupApi {
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct KernelChannelGroupApi *__nvoc_pbase_KernelChannelGroupApi;    // kchangrpapi
 
-    // Vtable with 41 per-object function pointers
-    NvBool (*__kchangrpapiCanCopy__)(struct KernelChannelGroupApi * /*this*/);  // virtual override (res) base (gpures)
-    NV_STATUS (*__kchangrpapiControl__)(struct KernelChannelGroupApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (gpures)
+    // Vtable with 16 per-object function pointers
     NV_STATUS (*__kchangrpapiCtrlCmdGpFifoSchedule__)(struct KernelChannelGroupApi * /*this*/, NVA06C_CTRL_GPFIFO_SCHEDULE_PARAMS *);  // exported (id=0xa06c0101)
     NV_STATUS (*__kchangrpapiCtrlCmdBind__)(struct KernelChannelGroupApi * /*this*/, NVA06C_CTRL_BIND_PARAMS *);  // exported (id=0xa06c0102)
     NV_STATUS (*__kchangrpapiCtrlCmdSetTimeslice__)(struct KernelChannelGroupApi * /*this*/, NVA06C_CTRL_TIMESLICE_PARAMS *);  // exported (id=0xa06c0103)
@@ -125,6 +128,24 @@ struct KernelChannelGroupApi {
     NV_STATUS (*__kchangrpapiCtrlSetTpcPartitionMode__)(struct KernelChannelGroupApi * /*this*/, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *);  // inline exported (id=0x900101) body
     NV_STATUS (*__kchangrpapiCtrlGetMMUDebugMode__)(struct KernelChannelGroupApi * /*this*/, NV0090_CTRL_GET_MMU_DEBUG_MODE_PARAMS *);  // inline exported (id=0x900105) body
     NV_STATUS (*__kchangrpapiCtrlProgramVidmemPromote__)(struct KernelChannelGroupApi * /*this*/, NV0090_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS *);  // inline exported (id=0x900107) body
+
+    // Data members
+    struct KernelChannelGroup *pKernelChannelGroup;
+    NvHandle hErrorContext;
+    NvHandle hEccErrorContext;
+    NvHandle hKernelGraphicsContext;
+    NvHandle hLegacykCtxShareSync;
+    NvHandle hLegacykCtxShareAsync;
+    NvHandle hVASpace;
+};
+
+
+// Metadata including vtable with 25 function pointers plus superclass metadata
+struct NVOC_VTABLE__KernelChannelGroupApi {
+    const struct NVOC_VTABLE__GpuResource GpuResource;    // (gpures) 25 function pointers
+
+    NvBool (*__kchangrpapiCanCopy__)(struct KernelChannelGroupApi * /*this*/);  // virtual override (res) base (gpures)
+    NV_STATUS (*__kchangrpapiControl__)(struct KernelChannelGroupApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (gpures)
     NV_STATUS (*__kchangrpapiMap__)(struct KernelChannelGroupApi * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__kchangrpapiUnmap__)(struct KernelChannelGroupApi * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
     NvBool (*__kchangrpapiShareCallback__)(struct KernelChannelGroupApi * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (gpures) base (gpures)
@@ -148,15 +169,6 @@ struct KernelChannelGroupApi {
     NV_STATUS (*__kchangrpapiUnmapFrom__)(struct KernelChannelGroupApi * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (gpures)
     NvU32 (*__kchangrpapiGetRefCount__)(struct KernelChannelGroupApi * /*this*/);  // virtual inherited (res) base (gpures)
     void (*__kchangrpapiAddAdditionalDependants__)(struct RsClient *, struct KernelChannelGroupApi * /*this*/, RsResourceRef *);  // virtual inherited (res) base (gpures)
-
-    // Data members
-    struct KernelChannelGroup *pKernelChannelGroup;
-    NvHandle hErrorContext;
-    NvHandle hEccErrorContext;
-    NvHandle hKernelGraphicsContext;
-    NvHandle hLegacykCtxShareSync;
-    NvHandle hLegacykCtxShareAsync;
-    NvHandle hVASpace;
 };
 
 #ifndef __NVOC_CLASS_KernelChannelGroupApi_TYPEDEF__
@@ -189,9 +201,9 @@ NV_STATUS __nvoc_objCreate_KernelChannelGroupApi(KernelChannelGroupApi**, Dynami
 
 
 // Wrapper macros
-#define kchangrpapiCanCopy_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiCanCopy__
+#define kchangrpapiCanCopy_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__nvoc_vtable->__kchangrpapiCanCopy__
 #define kchangrpapiCanCopy(pKernelChannelGroupApi) kchangrpapiCanCopy_DISPATCH(pKernelChannelGroupApi)
-#define kchangrpapiControl_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiControl__
+#define kchangrpapiControl_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__nvoc_vtable->__kchangrpapiControl__
 #define kchangrpapiControl(pKernelChannelGroupApi, pCallContext, pParams) kchangrpapiControl_DISPATCH(pKernelChannelGroupApi, pCallContext, pParams)
 #define kchangrpapiCtrlCmdGpFifoSchedule_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiCtrlCmdGpFifoSchedule__
 #define kchangrpapiCtrlCmdGpFifoSchedule(pKernelChannelGroupApi, pSchedParams) kchangrpapiCtrlCmdGpFifoSchedule_DISPATCH(pKernelChannelGroupApi, pSchedParams)
@@ -225,60 +237,60 @@ NV_STATUS __nvoc_objCreate_KernelChannelGroupApi(KernelChannelGroupApi**, Dynami
 #define kchangrpapiCtrlGetMMUDebugMode(pKernelChannelGroupApi, pParams) kchangrpapiCtrlGetMMUDebugMode_DISPATCH(pKernelChannelGroupApi, pParams)
 #define kchangrpapiCtrlProgramVidmemPromote_FNPTR(pKernelChannelGroupApi) pKernelChannelGroupApi->__kchangrpapiCtrlProgramVidmemPromote__
 #define kchangrpapiCtrlProgramVidmemPromote(pKernelChannelGroupApi, pParams) kchangrpapiCtrlProgramVidmemPromote_DISPATCH(pKernelChannelGroupApi, pParams)
-#define kchangrpapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresMap__
+#define kchangrpapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresMap__
 #define kchangrpapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) kchangrpapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define kchangrpapiUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresUnmap__
+#define kchangrpapiUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresUnmap__
 #define kchangrpapiUnmap(pGpuResource, pCallContext, pCpuMapping) kchangrpapiUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define kchangrpapiShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresShareCallback__
+#define kchangrpapiShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresShareCallback__
 #define kchangrpapiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) kchangrpapiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define kchangrpapiGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetRegBaseOffsetAndSize__
+#define kchangrpapiGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetRegBaseOffsetAndSize__
 #define kchangrpapiGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) kchangrpapiGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
-#define kchangrpapiGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetMapAddrSpace__
+#define kchangrpapiGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetMapAddrSpace__
 #define kchangrpapiGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) kchangrpapiGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
-#define kchangrpapiInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresInternalControlForward__
+#define kchangrpapiInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresInternalControlForward__
 #define kchangrpapiInternalControlForward(pGpuResource, command, pParams, size) kchangrpapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
-#define kchangrpapiGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetInternalObjectHandle__
+#define kchangrpapiGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetInternalObjectHandle__
 #define kchangrpapiGetInternalObjectHandle(pGpuResource) kchangrpapiGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define kchangrpapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresAccessCallback__
+#define kchangrpapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
 #define kchangrpapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) kchangrpapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define kchangrpapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemInterMapParams__
+#define kchangrpapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
 #define kchangrpapiGetMemInterMapParams(pRmResource, pParams) kchangrpapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define kchangrpapiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresCheckMemInterUnmap__
+#define kchangrpapiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
 #define kchangrpapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) kchangrpapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define kchangrpapiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemoryMappingDescriptor__
+#define kchangrpapiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
 #define kchangrpapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) kchangrpapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define kchangrpapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControlSerialization_Prologue__
+#define kchangrpapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
 #define kchangrpapiControlSerialization_Prologue(pResource, pCallContext, pParams) kchangrpapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define kchangrpapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControlSerialization_Epilogue__
+#define kchangrpapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
 #define kchangrpapiControlSerialization_Epilogue(pResource, pCallContext, pParams) kchangrpapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define kchangrpapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControl_Prologue__
+#define kchangrpapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
 #define kchangrpapiControl_Prologue(pResource, pCallContext, pParams) kchangrpapiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define kchangrpapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControl_Epilogue__
+#define kchangrpapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
 #define kchangrpapiControl_Epilogue(pResource, pCallContext, pParams) kchangrpapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define kchangrpapiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsDuplicate__
+#define kchangrpapiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
 #define kchangrpapiIsDuplicate(pResource, hMemory, pDuplicate) kchangrpapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define kchangrpapiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resPreDestruct__
+#define kchangrpapiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
 #define kchangrpapiPreDestruct(pResource) kchangrpapiPreDestruct_DISPATCH(pResource)
-#define kchangrpapiControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resControlFilter__
+#define kchangrpapiControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
 #define kchangrpapiControlFilter(pResource, pCallContext, pParams) kchangrpapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define kchangrpapiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsPartialUnmapSupported__
+#define kchangrpapiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
 #define kchangrpapiIsPartialUnmapSupported(pResource) kchangrpapiIsPartialUnmapSupported_DISPATCH(pResource)
-#define kchangrpapiMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resMapTo__
+#define kchangrpapiMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
 #define kchangrpapiMapTo(pResource, pParams) kchangrpapiMapTo_DISPATCH(pResource, pParams)
-#define kchangrpapiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resUnmapFrom__
+#define kchangrpapiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
 #define kchangrpapiUnmapFrom(pResource, pParams) kchangrpapiUnmapFrom_DISPATCH(pResource, pParams)
-#define kchangrpapiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resGetRefCount__
+#define kchangrpapiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
 #define kchangrpapiGetRefCount(pResource) kchangrpapiGetRefCount_DISPATCH(pResource)
-#define kchangrpapiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resAddAdditionalDependants__
+#define kchangrpapiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
 #define kchangrpapiAddAdditionalDependants(pClient, pResource, pReference) kchangrpapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
 static inline NvBool kchangrpapiCanCopy_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi) {
-    return pKernelChannelGroupApi->__kchangrpapiCanCopy__(pKernelChannelGroupApi);
+    return pKernelChannelGroupApi->__nvoc_vtable->__kchangrpapiCanCopy__(pKernelChannelGroupApi);
 }
 
 static inline NV_STATUS kchangrpapiControl_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pKernelChannelGroupApi->__kchangrpapiControl__(pKernelChannelGroupApi, pCallContext, pParams);
+    return pKernelChannelGroupApi->__nvoc_vtable->__kchangrpapiControl__(pKernelChannelGroupApi, pCallContext, pParams);
 }
 
 static inline NV_STATUS kchangrpapiCtrlCmdGpFifoSchedule_DISPATCH(struct KernelChannelGroupApi *pKernelChannelGroupApi, NVA06C_CTRL_GPFIFO_SCHEDULE_PARAMS *pSchedParams) {
@@ -346,95 +358,95 @@ static inline NV_STATUS kchangrpapiCtrlProgramVidmemPromote_DISPATCH(struct Kern
 }
 
 static inline NV_STATUS kchangrpapiMap_DISPATCH(struct KernelChannelGroupApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__kchangrpapiMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_vtable->__kchangrpapiMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS kchangrpapiUnmap_DISPATCH(struct KernelChannelGroupApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__kchangrpapiUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_vtable->__kchangrpapiUnmap__(pGpuResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool kchangrpapiShareCallback_DISPATCH(struct KernelChannelGroupApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__kchangrpapiShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_vtable->__kchangrpapiShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS kchangrpapiGetRegBaseOffsetAndSize_DISPATCH(struct KernelChannelGroupApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__kchangrpapiGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_vtable->__kchangrpapiGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS kchangrpapiGetMapAddrSpace_DISPATCH(struct KernelChannelGroupApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__kchangrpapiGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_vtable->__kchangrpapiGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS kchangrpapiInternalControlForward_DISPATCH(struct KernelChannelGroupApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__kchangrpapiInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_vtable->__kchangrpapiInternalControlForward__(pGpuResource, command, pParams, size);
 }
 
 static inline NvHandle kchangrpapiGetInternalObjectHandle_DISPATCH(struct KernelChannelGroupApi *pGpuResource) {
-    return pGpuResource->__kchangrpapiGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_vtable->__kchangrpapiGetInternalObjectHandle__(pGpuResource);
 }
 
 static inline NvBool kchangrpapiAccessCallback_DISPATCH(struct KernelChannelGroupApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__kchangrpapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_vtable->__kchangrpapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS kchangrpapiGetMemInterMapParams_DISPATCH(struct KernelChannelGroupApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__kchangrpapiGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_vtable->__kchangrpapiGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS kchangrpapiCheckMemInterUnmap_DISPATCH(struct KernelChannelGroupApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__kchangrpapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_vtable->__kchangrpapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS kchangrpapiGetMemoryMappingDescriptor_DISPATCH(struct KernelChannelGroupApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__kchangrpapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_vtable->__kchangrpapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS kchangrpapiControlSerialization_Prologue_DISPATCH(struct KernelChannelGroupApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__kchangrpapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__kchangrpapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void kchangrpapiControlSerialization_Epilogue_DISPATCH(struct KernelChannelGroupApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__kchangrpapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__kchangrpapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS kchangrpapiControl_Prologue_DISPATCH(struct KernelChannelGroupApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__kchangrpapiControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__kchangrpapiControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void kchangrpapiControl_Epilogue_DISPATCH(struct KernelChannelGroupApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__kchangrpapiControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__kchangrpapiControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS kchangrpapiIsDuplicate_DISPATCH(struct KernelChannelGroupApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__kchangrpapiIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_vtable->__kchangrpapiIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void kchangrpapiPreDestruct_DISPATCH(struct KernelChannelGroupApi *pResource) {
-    pResource->__kchangrpapiPreDestruct__(pResource);
+    pResource->__nvoc_vtable->__kchangrpapiPreDestruct__(pResource);
 }
 
 static inline NV_STATUS kchangrpapiControlFilter_DISPATCH(struct KernelChannelGroupApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__kchangrpapiControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__kchangrpapiControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool kchangrpapiIsPartialUnmapSupported_DISPATCH(struct KernelChannelGroupApi *pResource) {
-    return pResource->__kchangrpapiIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_vtable->__kchangrpapiIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS kchangrpapiMapTo_DISPATCH(struct KernelChannelGroupApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__kchangrpapiMapTo__(pResource, pParams);
+    return pResource->__nvoc_vtable->__kchangrpapiMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS kchangrpapiUnmapFrom_DISPATCH(struct KernelChannelGroupApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__kchangrpapiUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_vtable->__kchangrpapiUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 kchangrpapiGetRefCount_DISPATCH(struct KernelChannelGroupApi *pResource) {
-    return pResource->__kchangrpapiGetRefCount__(pResource);
+    return pResource->__nvoc_vtable->__kchangrpapiGetRefCount__(pResource);
 }
 
 static inline void kchangrpapiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct KernelChannelGroupApi *pResource, RsResourceRef *pReference) {
-    pResource->__kchangrpapiAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_vtable->__kchangrpapiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NvBool kchangrpapiCanCopy_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi);

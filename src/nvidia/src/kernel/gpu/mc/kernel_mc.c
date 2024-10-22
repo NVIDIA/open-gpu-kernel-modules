@@ -85,28 +85,6 @@ subdeviceCtrlCmdMcGetManufacturer_IMPL
 }
 
 NV_STATUS
-subdeviceCtrlCmdMcQueryHostclkSlowdownStatus_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_MC_QUERY_HOSTCLK_SLOWDOWN_STATUS_PARAMS *pGetStatusParams
-)
-{
-    pGetStatusParams->bDisabled = NV_FALSE;
-
-    return NV_OK;
-}
-
-NV_STATUS
-subdeviceCtrlCmdMcSetHostclkSlowdownStatus_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_MC_SET_HOSTCLK_SLOWDOWN_STATUS_PARAMS *pParams
-)
-{
-    return NV_OK;
-}
-
-NV_STATUS
 subdeviceCtrlCmdMcChangeReplayableFaultOwnership_IMPL
 (
     Subdevice *pSubdevice,

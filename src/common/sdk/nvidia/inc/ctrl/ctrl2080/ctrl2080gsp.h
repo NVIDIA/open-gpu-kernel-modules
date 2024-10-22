@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -87,6 +87,10 @@ typedef struct NV2080_CTRL_GSP_GET_FEATURES_PARAMS {
  *
  * This command reports the current GSP-RM heap usage statistics.
  *
+ *  gfid
+ *    The gfid that's under query: When gfid = 0, it will report the stats of PF.
+ *    Otherwise, it will report stats for RM task's memory consumption associated
+ *    with a given gfid.
  *  managedSize
  *    The total size in bytes of the underlying heap. Note that not all memory
  *    will be allocatable, due to fragmentation and memory allocator/tracking
@@ -125,6 +129,7 @@ typedef struct NV2080_CTRL_GSP_RM_HEAP_STATS_SNAPSHOT {
 #define NV2080_CTRL_GSP_GET_RM_HEAP_STATS_PARAMS_MESSAGE_ID (0x2U)
 
 typedef struct NV2080_CTRL_GSP_GET_RM_HEAP_STATS_PARAMS {
+    NvU32 gfid;
     NV_DECLARE_ALIGNED(NvU64 managedSize, 8);
     NV_DECLARE_ALIGNED(NV2080_CTRL_GSP_RM_HEAP_STATS_SNAPSHOT current, 8);
     NV_DECLARE_ALIGNED(NV2080_CTRL_GSP_RM_HEAP_STATS_SNAPSHOT peak, 8);

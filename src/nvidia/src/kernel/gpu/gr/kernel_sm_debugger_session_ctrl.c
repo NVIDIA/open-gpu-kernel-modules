@@ -157,7 +157,7 @@ _nv8deCtrlCmdReadWriteSurface
     NvU32 i;
     NV_STATUS status = NV_OK;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (count > MAX_ACCESS_OPS)
         return NV_ERR_INVALID_ARGUMENT;
@@ -329,7 +329,7 @@ ksmdbgssnCtrlCmdGetMappings_IMPL
     MMU_TRACE_ARG traceArg = {0};
     MMU_TRACE_PARAM mmuParams = {0};
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // Attempt to retrieve the VAS pointer
     NV_ASSERT_OK_OR_RETURN(
@@ -863,7 +863,7 @@ ksmdbgssnCtrlCmdDebugReadAllSmErrorStates_IMPL
     NV_STATUS rmStatus = NV_OK;
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelSMDebuggerSession);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (IS_VIRTUAL(pGpu))
     {
@@ -909,7 +909,7 @@ ksmdbgssnCtrlCmdDebugClearAllSmErrorStates_IMPL
     NV_STATUS rmStatus = NV_OK;
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelSMDebuggerSession);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (IS_VIRTUAL(pGpu))
     {
@@ -951,7 +951,7 @@ ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelSMDebuggerSession);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (IS_GSP_CLIENT(pGpu))
     {

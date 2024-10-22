@@ -184,7 +184,7 @@ kfifoUpdateUsermodeDoorbell_GA100
  *
  */
 NV_STATUS
-kfifoGenerateWorkSubmitToken_GA100
+kfifoGenerateWorkSubmitTokenHal_GA100
 (
     OBJGPU        *pGpu,
     KernelFifo    *pKernelFifo,
@@ -393,35 +393,6 @@ kfifoGetNumPBDMAs_GA100
     return pEngineInfo->maxNumPbdmas;
 }
 
-/**
-* @brief Convert PBDMA ID to string
-* @param[in] pGpu
-* @param[in] pKernelFifo
-* @param[in] pbdmaId
-*
-* @return cont string
-*/
-const char*
-kfifoPrintPbdmaId_GA100
-(
-    OBJGPU     *pGpu,
-    KernelFifo *pKernelFifo,
-    NvU32       pbdmaId
-)
-{
-    NV_ASSERT_OR_RETURN(pbdmaId < kfifoGetNumPBDMAs_HAL(pGpu, pKernelFifo), "UNKNOWN");
-    static const char* pbdmaIdString[64] = { "HOST0" , "HOST1" , "HOST2" , "HOST3" , "HOST4" , "HOST5" , "HOST6" , "HOST7" ,
-                                             "HOST8" , "HOST9" , "HOST10", "HOST11", "HOST12", "HOST13", "HOST14", "HOST15",
-                                             "HOST16", "HOST17", "HOST18", "HOST19", "HOST20", "HOST21", "HOST22", "HOST23",
-                                             "HOST24", "HOST25", "HOST26", "HOST27", "HOST28", "HOST29", "HOST30", "HOST31",
-                                             "HOST32", "HOST33", "HOST34", "HOST35", "HOST36", "HOST37", "HOST38", "HOST39",
-                                             "HOST40", "HOST41", "HOST42", "HOST43", "HOST44", "HOST45", "HOST46", "HOST47",
-                                             "HOST48", "HOST49", "HOST50", "HOST51", "HOST52", "HOST53", "HOST54", "HOST55",
-                                             "HOST56", "HOST57", "HOST58", "HOST59", "HOST60", "HOST61", "HOST62", "HOST63"};
-
-    return pbdmaIdString[pbdmaId];
-}
-
 /*!
  * @brief Converts a mmu engine id (NV_PFAULT_MMU_ENG_ID_*) into a string.
  *
@@ -441,13 +412,11 @@ kfifoPrintInternalEngine_GA100
 {
     NV_STATUS   status = NV_OK;
     KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
-    NvU32       pbdmaId;
     NvU32       engTag;
 
     if (kfifoIsMmuFaultEngineIdPbdma(pGpu, pKernelFifo, engineID))
     {
-        NV_ASSERT_OR_RETURN(kfifoGetPbdmaIdFromMmuFaultId(pGpu, pKernelFifo, engineID, &pbdmaId) == NV_OK, "UNKNOWN");
-        return kfifoPrintPbdmaId_HAL(pGpu, pKernelFifo, pbdmaId);
+        return kfifoPrintFaultingPbdmaEngineName(pGpu, pKernelFifo, engineID);
     }
 
     if (kgmmuIsFaultEngineBar1_HAL(pKernelGmmu, engineID))

@@ -322,6 +322,15 @@
 //      Operations not allowed while holding this lock
 //      - GPU memory allocation which can evict
 //
+// - Channel pool key rotation lock
+//      Order: UVM_LOCK_ORDER_KEY_ROTATION
+//      Condition: Confidential Computing is enabled
+//      Mutex per channel pool
+//
+//      The lock ensures mutual exclusion during key rotation affecting all the
+//      channels in the associated pool. Key rotation in WLC pools is handled
+//      using a separate lock order, see UVM_LOCK_ORDER_KEY_ROTATION_WLC below.
+//
 // - CE channel CSL channel pool semaphore
 //      Order: UVM_LOCK_ORDER_CSL_PUSH
 //      Condition: The Confidential Computing feature is enabled
@@ -337,6 +346,15 @@
 //
 //      Operations allowed while holding this lock
 //      - Pushing work to CE channels (except for WLC channels)
+//
+// - WLC channel pool key rotation lock
+//      Order: UVM_LOCK_ORDER_KEY_ROTATION_WLC
+//      Condition: Confidential Computing is enabled
+//      Mutex of WLC channel pool
+//
+//      The lock has the same purpose as the regular channel pool key rotation
+//      lock. Using a different order lock for WLC channels allows key rotation
+//      on those channels during indirect work submission.
 //
 // - WLC CSL channel pool semaphore
 //      Order: UVM_LOCK_ORDER_CSL_WLC_PUSH
@@ -484,7 +502,9 @@ typedef enum
     UVM_LOCK_ORDER_CONF_COMPUTING_DMA_BUFFER_POOL,
     UVM_LOCK_ORDER_CHUNK_MAPPING,
     UVM_LOCK_ORDER_PAGE_TREE,
+    UVM_LOCK_ORDER_KEY_ROTATION,
     UVM_LOCK_ORDER_CSL_PUSH,
+    UVM_LOCK_ORDER_KEY_ROTATION_WLC,
     UVM_LOCK_ORDER_CSL_WLC_PUSH,
     UVM_LOCK_ORDER_CSL_SEC2_PUSH,
     UVM_LOCK_ORDER_PUSH,
@@ -1208,7 +1228,7 @@ static void __uvm_bit_lock(uvm_bit_locks_t *bit_locks, unsigned long bit)
 {
     int res;
 
-    res = UVM_WAIT_ON_BIT_LOCK(bit_locks->bits, bit, TASK_UNINTERRUPTIBLE);
+    res = wait_on_bit_lock(bit_locks->bits, bit, TASK_UNINTERRUPTIBLE);
     UVM_ASSERT_MSG(res == 0, "Uninterruptible task interrupted: %d\n", res);
     uvm_assert_bit_locked(bit_locks, bit);
 }

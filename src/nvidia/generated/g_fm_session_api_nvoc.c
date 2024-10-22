@@ -123,110 +123,153 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_FmSessio
 
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super
+NvBool __nvoc_down_thunk_RmResource_resShareCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super
+NV_STATUS __nvoc_down_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+void __nvoc_down_thunk_RmResource_resControlSerialization_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_down_thunk_RmResource_resControl_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+void __nvoc_down_thunk_RmResource_resControl_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+
+// Up-thunk(s) to bridge methods to ancestors (if any)
+NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super
+void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_rmresControl(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_rmresControlFilter(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_rmresMap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // super
+NvBool __nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported(struct RmResource *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_rmresMapTo(struct RmResource *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmapFrom(struct RmResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super
+NvU32 __nvoc_up_thunk_RsResource_rmresGetRefCount(struct RmResource *pResource);    // super
+void __nvoc_up_thunk_RsResource_rmresAddAdditionalDependants(struct RsClient *pClient, struct RmResource *pResource, RsResourceRef *pReference);    // super
+NvBool __nvoc_up_thunk_RmResource_fmsessionapiAccessCallback(struct FmSessionApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // this
+NvBool __nvoc_up_thunk_RmResource_fmsessionapiShareCallback(struct FmSessionApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_fmsessionapiGetMemInterMapParams(struct FmSessionApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_fmsessionapiCheckMemInterUnmap(struct FmSessionApi *pRmResource, NvBool bSubdeviceHandleProvided);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_fmsessionapiGetMemoryMappingDescriptor(struct FmSessionApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_fmsessionapiControlSerialization_Prologue(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+void __nvoc_up_thunk_RmResource_fmsessionapiControlSerialization_Epilogue(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_fmsessionapiControl_Prologue(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+void __nvoc_up_thunk_RmResource_fmsessionapiControl_Epilogue(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NvBool __nvoc_up_thunk_RsResource_fmsessionapiCanCopy(struct FmSessionApi *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_fmsessionapiIsDuplicate(struct FmSessionApi *pResource, NvHandle hMemory, NvBool *pDuplicate);    // this
+void __nvoc_up_thunk_RsResource_fmsessionapiPreDestruct(struct FmSessionApi *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_fmsessionapiControl(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_fmsessionapiControlFilter(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_fmsessionapiMap(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_fmsessionapiUnmap(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // this
+NvBool __nvoc_up_thunk_RsResource_fmsessionapiIsPartialUnmapSupported(struct FmSessionApi *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_fmsessionapiMapTo(struct FmSessionApi *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_fmsessionapiUnmapFrom(struct FmSessionApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
+NvU32 __nvoc_up_thunk_RsResource_fmsessionapiGetRefCount(struct FmSessionApi *pResource);    // this
+void __nvoc_up_thunk_RsResource_fmsessionapiAddAdditionalDependants(struct RsClient *pClient, struct FmSessionApi *pResource, RsResourceRef *pReference);    // this
+
 // 21 up-thunk(s) defined to bridge methods in FmSessionApi to superclasses
 
 // fmsessionapiAccessCallback: virtual inherited (rmres) base (rmres)
-static NvBool __nvoc_up_thunk_RmResource_fmsessionapiAccessCallback(struct FmSessionApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+NvBool __nvoc_up_thunk_RmResource_fmsessionapiAccessCallback(struct FmSessionApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_FmSessionApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
 // fmsessionapiShareCallback: virtual inherited (rmres) base (rmres)
-static NvBool __nvoc_up_thunk_RmResource_fmsessionapiShareCallback(struct FmSessionApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+NvBool __nvoc_up_thunk_RmResource_fmsessionapiShareCallback(struct FmSessionApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_FmSessionApi_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 // fmsessionapiGetMemInterMapParams: virtual inherited (rmres) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RmResource_fmsessionapiGetMemInterMapParams(struct FmSessionApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_fmsessionapiGetMemInterMapParams(struct FmSessionApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
     return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_FmSessionApi_RmResource.offset), pParams);
 }
 
 // fmsessionapiCheckMemInterUnmap: virtual inherited (rmres) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RmResource_fmsessionapiCheckMemInterUnmap(struct FmSessionApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+NV_STATUS __nvoc_up_thunk_RmResource_fmsessionapiCheckMemInterUnmap(struct FmSessionApi *pRmResource, NvBool bSubdeviceHandleProvided) {
     return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_FmSessionApi_RmResource.offset), bSubdeviceHandleProvided);
 }
 
 // fmsessionapiGetMemoryMappingDescriptor: virtual inherited (rmres) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RmResource_fmsessionapiGetMemoryMappingDescriptor(struct FmSessionApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+NV_STATUS __nvoc_up_thunk_RmResource_fmsessionapiGetMemoryMappingDescriptor(struct FmSessionApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
     return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_FmSessionApi_RmResource.offset), ppMemDesc);
 }
 
 // fmsessionapiControlSerialization_Prologue: virtual inherited (rmres) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RmResource_fmsessionapiControlSerialization_Prologue(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_fmsessionapiControlSerialization_Prologue(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_FmSessionApi_RmResource.offset), pCallContext, pParams);
 }
 
 // fmsessionapiControlSerialization_Epilogue: virtual inherited (rmres) base (rmres)
-static void __nvoc_up_thunk_RmResource_fmsessionapiControlSerialization_Epilogue(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+void __nvoc_up_thunk_RmResource_fmsessionapiControlSerialization_Epilogue(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_FmSessionApi_RmResource.offset), pCallContext, pParams);
 }
 
 // fmsessionapiControl_Prologue: virtual inherited (rmres) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RmResource_fmsessionapiControl_Prologue(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_fmsessionapiControl_Prologue(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_FmSessionApi_RmResource.offset), pCallContext, pParams);
 }
 
 // fmsessionapiControl_Epilogue: virtual inherited (rmres) base (rmres)
-static void __nvoc_up_thunk_RmResource_fmsessionapiControl_Epilogue(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+void __nvoc_up_thunk_RmResource_fmsessionapiControl_Epilogue(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_FmSessionApi_RmResource.offset), pCallContext, pParams);
 }
 
 // fmsessionapiCanCopy: virtual inherited (res) base (rmres)
-static NvBool __nvoc_up_thunk_RsResource_fmsessionapiCanCopy(struct FmSessionApi *pResource) {
+NvBool __nvoc_up_thunk_RsResource_fmsessionapiCanCopy(struct FmSessionApi *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_FmSessionApi_RsResource.offset));
 }
 
 // fmsessionapiIsDuplicate: virtual inherited (res) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RsResource_fmsessionapiIsDuplicate(struct FmSessionApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+NV_STATUS __nvoc_up_thunk_RsResource_fmsessionapiIsDuplicate(struct FmSessionApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_FmSessionApi_RsResource.offset), hMemory, pDuplicate);
 }
 
 // fmsessionapiPreDestruct: virtual inherited (res) base (rmres)
-static void __nvoc_up_thunk_RsResource_fmsessionapiPreDestruct(struct FmSessionApi *pResource) {
+void __nvoc_up_thunk_RsResource_fmsessionapiPreDestruct(struct FmSessionApi *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_FmSessionApi_RsResource.offset));
 }
 
 // fmsessionapiControl: virtual inherited (res) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RsResource_fmsessionapiControl(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_fmsessionapiControl(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControl((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_FmSessionApi_RsResource.offset), pCallContext, pParams);
 }
 
 // fmsessionapiControlFilter: virtual inherited (res) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RsResource_fmsessionapiControlFilter(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_fmsessionapiControlFilter(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_FmSessionApi_RsResource.offset), pCallContext, pParams);
 }
 
 // fmsessionapiMap: virtual inherited (res) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RsResource_fmsessionapiMap(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+NV_STATUS __nvoc_up_thunk_RsResource_fmsessionapiMap(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
     return resMap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_FmSessionApi_RsResource.offset), pCallContext, pParams, pCpuMapping);
 }
 
 // fmsessionapiUnmap: virtual inherited (res) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RsResource_fmsessionapiUnmap(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+NV_STATUS __nvoc_up_thunk_RsResource_fmsessionapiUnmap(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
     return resUnmap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_FmSessionApi_RsResource.offset), pCallContext, pCpuMapping);
 }
 
 // fmsessionapiIsPartialUnmapSupported: inline virtual inherited (res) base (rmres) body
-static NvBool __nvoc_up_thunk_RsResource_fmsessionapiIsPartialUnmapSupported(struct FmSessionApi *pResource) {
+NvBool __nvoc_up_thunk_RsResource_fmsessionapiIsPartialUnmapSupported(struct FmSessionApi *pResource) {
     return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_FmSessionApi_RsResource.offset));
 }
 
 // fmsessionapiMapTo: virtual inherited (res) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RsResource_fmsessionapiMapTo(struct FmSessionApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_fmsessionapiMapTo(struct FmSessionApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
     return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_FmSessionApi_RsResource.offset), pParams);
 }
 
 // fmsessionapiUnmapFrom: virtual inherited (res) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RsResource_fmsessionapiUnmapFrom(struct FmSessionApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_fmsessionapiUnmapFrom(struct FmSessionApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
     return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_FmSessionApi_RsResource.offset), pParams);
 }
 
 // fmsessionapiGetRefCount: virtual inherited (res) base (rmres)
-static NvU32 __nvoc_up_thunk_RsResource_fmsessionapiGetRefCount(struct FmSessionApi *pResource) {
+NvU32 __nvoc_up_thunk_RsResource_fmsessionapiGetRefCount(struct FmSessionApi *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_FmSessionApi_RsResource.offset));
 }
 
 // fmsessionapiAddAdditionalDependants: virtual inherited (res) base (rmres)
-static void __nvoc_up_thunk_RsResource_fmsessionapiAddAdditionalDependants(struct RsClient *pClient, struct FmSessionApi *pResource, RsResourceRef *pReference) {
+void __nvoc_up_thunk_RsResource_fmsessionapiAddAdditionalDependants(struct RsClient *pClient, struct FmSessionApi *pResource, RsResourceRef *pReference) {
     resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_FmSessionApi_RsResource.offset), pReference);
 }
 
@@ -280,76 +323,86 @@ static void __nvoc_init_funcTable_FmSessionApi_1(FmSessionApi *pThis) {
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__fmsessionapiCtrlCmdClearFmState__ = &fmsessionapiCtrlCmdClearFmState_IMPL;
 #endif
-
-    // fmsessionapiAccessCallback -- virtual inherited (rmres) base (rmres)
-    pThis->__fmsessionapiAccessCallback__ = &__nvoc_up_thunk_RmResource_fmsessionapiAccessCallback;
-
-    // fmsessionapiShareCallback -- virtual inherited (rmres) base (rmres)
-    pThis->__fmsessionapiShareCallback__ = &__nvoc_up_thunk_RmResource_fmsessionapiShareCallback;
-
-    // fmsessionapiGetMemInterMapParams -- virtual inherited (rmres) base (rmres)
-    pThis->__fmsessionapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_fmsessionapiGetMemInterMapParams;
-
-    // fmsessionapiCheckMemInterUnmap -- virtual inherited (rmres) base (rmres)
-    pThis->__fmsessionapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_fmsessionapiCheckMemInterUnmap;
-
-    // fmsessionapiGetMemoryMappingDescriptor -- virtual inherited (rmres) base (rmres)
-    pThis->__fmsessionapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_fmsessionapiGetMemoryMappingDescriptor;
-
-    // fmsessionapiControlSerialization_Prologue -- virtual inherited (rmres) base (rmres)
-    pThis->__fmsessionapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_fmsessionapiControlSerialization_Prologue;
-
-    // fmsessionapiControlSerialization_Epilogue -- virtual inherited (rmres) base (rmres)
-    pThis->__fmsessionapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_fmsessionapiControlSerialization_Epilogue;
-
-    // fmsessionapiControl_Prologue -- virtual inherited (rmres) base (rmres)
-    pThis->__fmsessionapiControl_Prologue__ = &__nvoc_up_thunk_RmResource_fmsessionapiControl_Prologue;
-
-    // fmsessionapiControl_Epilogue -- virtual inherited (rmres) base (rmres)
-    pThis->__fmsessionapiControl_Epilogue__ = &__nvoc_up_thunk_RmResource_fmsessionapiControl_Epilogue;
-
-    // fmsessionapiCanCopy -- virtual inherited (res) base (rmres)
-    pThis->__fmsessionapiCanCopy__ = &__nvoc_up_thunk_RsResource_fmsessionapiCanCopy;
-
-    // fmsessionapiIsDuplicate -- virtual inherited (res) base (rmres)
-    pThis->__fmsessionapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_fmsessionapiIsDuplicate;
-
-    // fmsessionapiPreDestruct -- virtual inherited (res) base (rmres)
-    pThis->__fmsessionapiPreDestruct__ = &__nvoc_up_thunk_RsResource_fmsessionapiPreDestruct;
-
-    // fmsessionapiControl -- virtual inherited (res) base (rmres)
-    pThis->__fmsessionapiControl__ = &__nvoc_up_thunk_RsResource_fmsessionapiControl;
-
-    // fmsessionapiControlFilter -- virtual inherited (res) base (rmres)
-    pThis->__fmsessionapiControlFilter__ = &__nvoc_up_thunk_RsResource_fmsessionapiControlFilter;
-
-    // fmsessionapiMap -- virtual inherited (res) base (rmres)
-    pThis->__fmsessionapiMap__ = &__nvoc_up_thunk_RsResource_fmsessionapiMap;
-
-    // fmsessionapiUnmap -- virtual inherited (res) base (rmres)
-    pThis->__fmsessionapiUnmap__ = &__nvoc_up_thunk_RsResource_fmsessionapiUnmap;
-
-    // fmsessionapiIsPartialUnmapSupported -- inline virtual inherited (res) base (rmres) body
-    pThis->__fmsessionapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_fmsessionapiIsPartialUnmapSupported;
-
-    // fmsessionapiMapTo -- virtual inherited (res) base (rmres)
-    pThis->__fmsessionapiMapTo__ = &__nvoc_up_thunk_RsResource_fmsessionapiMapTo;
-
-    // fmsessionapiUnmapFrom -- virtual inherited (res) base (rmres)
-    pThis->__fmsessionapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_fmsessionapiUnmapFrom;
-
-    // fmsessionapiGetRefCount -- virtual inherited (res) base (rmres)
-    pThis->__fmsessionapiGetRefCount__ = &__nvoc_up_thunk_RsResource_fmsessionapiGetRefCount;
-
-    // fmsessionapiAddAdditionalDependants -- virtual inherited (res) base (rmres)
-    pThis->__fmsessionapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_fmsessionapiAddAdditionalDependants;
-} // End __nvoc_init_funcTable_FmSessionApi_1 with approximately 23 basic block(s).
+} // End __nvoc_init_funcTable_FmSessionApi_1 with approximately 2 basic block(s).
 
 
 // Initialize vtable(s) for 23 virtual method(s).
 void __nvoc_init_funcTable_FmSessionApi(FmSessionApi *pThis) {
 
-    // Initialize vtable(s) with 23 per-object function pointer(s).
+    // Per-class vtable definition
+    static const struct NVOC_VTABLE__FmSessionApi vtable = {
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+        .__fmsessionapiAccessCallback__ = &__nvoc_up_thunk_RmResource_fmsessionapiAccessCallback,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+        .RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+        .__fmsessionapiShareCallback__ = &__nvoc_up_thunk_RmResource_fmsessionapiShareCallback,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresShareCallback__ = &rmresShareCallback_IMPL,    // virtual override (res) base (res)
+        .RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+        .__fmsessionapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_fmsessionapiGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
+        .__fmsessionapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_fmsessionapiCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
+        .__fmsessionapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_fmsessionapiGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
+        .__fmsessionapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_fmsessionapiControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+        .RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+        .__fmsessionapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_fmsessionapiControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+        .RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+        .__fmsessionapiControl_Prologue__ = &__nvoc_up_thunk_RmResource_fmsessionapiControl_Prologue,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
+        .RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+        .__fmsessionapiControl_Epilogue__ = &__nvoc_up_thunk_RmResource_fmsessionapiControl_Epilogue,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
+        .RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+        .__fmsessionapiCanCopy__ = &__nvoc_up_thunk_RsResource_fmsessionapiCanCopy,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+        .__fmsessionapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_fmsessionapiIsDuplicate,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+        .__fmsessionapiPreDestruct__ = &__nvoc_up_thunk_RsResource_fmsessionapiPreDestruct,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+        .__fmsessionapiControl__ = &__nvoc_up_thunk_RsResource_fmsessionapiControl,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resControl__ = &resControl_IMPL,    // virtual
+        .__fmsessionapiControlFilter__ = &__nvoc_up_thunk_RsResource_fmsessionapiControlFilter,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+        .__fmsessionapiMap__ = &__nvoc_up_thunk_RsResource_fmsessionapiMap,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resMap__ = &resMap_IMPL,    // virtual
+        .__fmsessionapiUnmap__ = &__nvoc_up_thunk_RsResource_fmsessionapiUnmap,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resUnmap__ = &resUnmap_IMPL,    // virtual
+        .__fmsessionapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_fmsessionapiIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+        .RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+        .RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+        .__fmsessionapiMapTo__ = &__nvoc_up_thunk_RsResource_fmsessionapiMapTo,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
+        .__fmsessionapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_fmsessionapiUnmapFrom,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+        .__fmsessionapiGetRefCount__ = &__nvoc_up_thunk_RsResource_fmsessionapiGetRefCount,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+        .__fmsessionapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_fmsessionapiAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+    };
+
+    // Pointer(s) to per-class vtable(s)
+    pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.RmResource.RsResource;    // (res) super^2
+    pThis->__nvoc_base_RmResource.__nvoc_vtable = &vtable.RmResource;    // (rmres) super
+    pThis->__nvoc_vtable = &vtable;    // (fmsessionapi) this
+
+    // Initialize vtable(s) with 2 per-object function pointer(s).
     __nvoc_init_funcTable_FmSessionApi_1(pThis);
 }
 

@@ -1051,8 +1051,6 @@ static NV_STATUS mem_map_gpu(uvm_mem_t *mem,
     // (uvm_conf_computing_dma_buffer_pool_t). Because we would typically
     // already hold the DMA_BUFFER_POOL lock at this time, we cannot hold
     // the block lock. Allocate PTEs without eviction in this context.
-    //
-    // See uvm_pmm_gpu_alloc()
     if (uvm_mem_is_sysmem_dma(mem))
         pmm_flags = UVM_PMM_ALLOC_FLAGS_NONE;
 

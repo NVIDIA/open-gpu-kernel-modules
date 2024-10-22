@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2011-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2011-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -175,8 +175,6 @@ thirdpartyp2pCtrlCmdRegisterPid_IMPL
     NV503C_CTRL_REGISTER_PID_PARAMS *pRegisterPidParams
 )
 {
-    NvHandle  hClient = RES_GET_CLIENT_HANDLE(pThirdPartyP2P);
-    NvHandle  hObject = RES_GET_HANDLE(pThirdPartyP2P);
     RmClient *pClient;
     NvU32     pid;
     NV_STATUS status;
@@ -186,8 +184,7 @@ thirdpartyp2pCtrlCmdRegisterPid_IMPL
 
     pid = pClient->ProcID;
 
-    status = CliAddThirdPartyP2PClientPid(hClient,
-                                          hObject,
+    status = CliAddThirdPartyP2PClientPid(pThirdPartyP2P,
                                           pid,
                                           pRegisterPidParams->hClient);
     return status;

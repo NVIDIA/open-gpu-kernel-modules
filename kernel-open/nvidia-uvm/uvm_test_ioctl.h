@@ -145,6 +145,7 @@ typedef enum
     UVM_TEST_VA_RANGE_TYPE_CHANNEL,
     UVM_TEST_VA_RANGE_TYPE_SKED_REFLECTED,
     UVM_TEST_VA_RANGE_TYPE_SEMAPHORE_POOL,
+    UVM_TEST_VA_RANGE_TYPE_DEVICE_P2P,
     UVM_TEST_VA_RANGE_TYPE_MAX
 } UVM_TEST_VA_RANGE_TYPE;
 
@@ -347,20 +348,30 @@ typedef enum
     UVM_TEST_CHANNEL_STRESS_MODE_NOOP_PUSH = 0,
     UVM_TEST_CHANNEL_STRESS_MODE_UPDATE_CHANNELS,
     UVM_TEST_CHANNEL_STRESS_MODE_STREAM,
+    UVM_TEST_CHANNEL_STRESS_MODE_KEY_ROTATION,
 } UVM_TEST_CHANNEL_STRESS_MODE;
+
+typedef enum
+{
+    UVM_TEST_CHANNEL_STRESS_KEY_ROTATION_OPERATION_CPU_TO_GPU,
+    UVM_TEST_CHANNEL_STRESS_KEY_ROTATION_OPERATION_GPU_TO_CPU,
+    UVM_TEST_CHANNEL_STRESS_KEY_ROTATION_OPERATION_ROTATE,
+} UVM_TEST_CHANNEL_STRESS_KEY_ROTATION_OPERATION;
 
 #define UVM_TEST_CHANNEL_STRESS                          UVM_TEST_IOCTL_BASE(15)
 typedef struct
 {
-    NvU32     mode;                   // In
+    NvU32     mode;                   // In, one of UVM_TEST_CHANNEL_STRESS_MODE
 
     // Number of iterations:
     //   mode == NOOP_PUSH: number of noop pushes
     //   mode == UPDATE_CHANNELS: number of updates
     //   mode == STREAM: number of iterations per stream
+    //   mode == ROTATION: number of operations
     NvU32     iterations;
 
-    NvU32     num_streams;            // In, used only for mode == UVM_TEST_CHANNEL_STRESS_MODE_STREAM
+    NvU32     num_streams;            // In, used only if mode == STREAM
+    NvU32     key_rotation_operation; // In, used only if mode == ROTATION
     NvU32     seed;                   // In
     NvU32     verbose;                // In
     NV_STATUS rmStatus;               // Out
@@ -504,12 +515,7 @@ typedef struct
 typedef struct
 {
     // In params
-    union
-    {
-        UvmEventEntry_V1 entry_v1; // contains only NvUxx types
-        UvmEventEntry_V2 entry_v2; // contains only NvUxx types
-    };
-    NvU32 version;
+    UvmEventEntry    entry;    // contains only NvUxx types
     NvU32 count;
 
     // Out param
@@ -1461,6 +1467,17 @@ typedef struct
     NvBool skip;                                         // In
     NV_STATUS rmStatus;                                  // Out
 } UVM_TEST_SKIP_MIGRATE_VMA_PARAMS;
+
+#define UVM_TEST_INJECT_TOOLS_EVENT_V2                   UVM_TEST_IOCTL_BASE(104)
+typedef struct
+{
+    // In params
+    UvmEventEntry_V2    entry_v2;    // contains only NvUxx types
+    NvU32 count;
+
+    // Out param
+    NV_STATUS rmStatus;
+} UVM_TEST_INJECT_TOOLS_EVENT_V2_PARAMS;
 
 #ifdef __cplusplus
 }

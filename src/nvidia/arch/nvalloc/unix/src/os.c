@@ -29,6 +29,7 @@
 #include <osapi.h>
 #include <ctrl/ctrl0000/ctrl0000gpu.h>
 #include <ctrl/ctrl0000/ctrl0000unix.h>
+#include <nvdevid.h>
 
 #include <nverror.h>
 #include <gpu/device/device.h>
@@ -609,9 +610,9 @@ NvBool osIsAdministrator(void)
     return os_is_administrator();
 }
 
-NvBool osAllowPriorityOverride(void)
+NvBool osCheckAccess(RsAccessRight accessRight)
 {
-    return os_allow_priority_override();
+    return os_check_access(accessRight);
 }
 
 NvU32 osGetCurrentProcess(void)
@@ -751,6 +752,9 @@ NV_STATUS osQueueWorkItemWithFlags(
     if (flags & OS_QUEUE_WORKITEM_FLAGS_FULL_GPU_SANITY)
         pWi->flags |= OS_QUEUE_WORKITEM_FLAGS_FULL_GPU_SANITY;
 
+    if (flags & OS_QUEUE_WORKITEM_FLAGS_DROP_ON_UNLOAD_QUEUE_FLUSH)
+        pWi->flags |= OS_QUEUE_WORKITEM_FLAGS_DROP_ON_UNLOAD_QUEUE_FLUSH;
+
     pWi->gpuInstance = gpuGetInstance(pGpu);
     pWi->func.pGpuFunction = pFunction;
     pWi->pData = pParams;
@@ -802,6 +806,16 @@ void osQueueMMUFaultHandler(OBJGPU *pGpu)
     nv_schedule_uvm_isr(nv);
 }
 
+NV_STATUS osQueueDrainP2PHandler(NvU8 *pUuid)
+{
+    return nv_schedule_uvm_drain_p2p(pUuid);
+}
+
+void osQueueResumeP2PHandler(NvU8 *pUuid)
+{
+    nv_schedule_uvm_resume_p2p(pUuid);
+}
+
 static inline nv_dma_device_t* osGetDmaDeviceForMemDesc(
     OS_GPU_INFO *pOsGpuInfo,
     MEMORY_DESCRIPTOR *pMemDesc
@@ -846,7 +860,12 @@ NV_STATUS osAllocPagesInternal(
 
     NV_ASSERT_OR_RETURN(pMemDesc->PageCount > 0, NV_ERR_INVALID_ARGUMENT);
 
-    if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_GUEST_ALLOCATED))
+    //
+    // For carveout, the memory is already reserved so we don't have
+    // to allocate memory.
+    //
+    if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT) ||
+        memdescGetFlag(pMemDesc, MEMDESC_FLAGS_GUEST_ALLOCATED))
     {
         if (NV_RM_PAGE_SIZE < os_page_size &&
             !memdescGetContiguity(pMemDesc, AT_CPU))
@@ -863,6 +882,7 @@ NV_STATUS osAllocPagesInternal(
             memdescGetCpuCacheAttrib(pMemDesc),
             memdescGetGuestId(pMemDesc),
             memdescGetPteArray(pMemDesc, AT_CPU),
+            memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT),
             &pMemData);
     }
     else
@@ -991,6 +1011,84 @@ NV_STATUS osUnlockMem(
     return NV_ERR_NOT_SUPPORTED;
 }
 
+NV_STATUS osMapPciMemoryAreaUser
+(
+    OS_GPU_INFO *pOsGpuInfo,
+    MemoryArea memArea,
+    NvU32 protect,
+    NvU32 mode,
+    NvP64 *pVirtualAddress,
+    NvP64 *pPriv
+)
+{
+    NV_STATUS status = NV_OK;
+    NvU64 origStart;
+    NvU64 origSize;
+    NvU64 diffStart;
+
+    if (memArea.numRanges == 0)
+    {
+        *pVirtualAddress = (NvP64) NULL;
+        *pPriv = NULL;
+        return NV_OK;
+    }
+
+    // Fix alignment insofar as we can (middle blocks can't be force-aligned this way)
+    origStart = memArea.pRanges[0].start;
+    memArea.pRanges[0].start = NV_ALIGN_DOWN64(origStart, os_page_size);
+    diffStart = origStart - memArea.pRanges[0].start;
+    memArea.pRanges[0].size += diffStart;
+    origSize = memArea.pRanges[memArea.numRanges - 1llu].size;
+    memArea.pRanges[memArea.numRanges - 1llu].size = NV_ALIGN_UP64(origSize, os_page_size);
+
+    {
+        nv_usermap_access_params_t **ppNvuap, tNvuap;
+        NvU64 totalRangeSize = sizeof(MemoryRange) * memArea.numRanges;
+
+        portMemSet(&tNvuap, 0, sizeof(nv_usermap_access_params_t));
+
+        tNvuap.memArea = memArea;
+        // access_size is only for caching, we can use os_page_size for now until linux has been properly plumbed
+        tNvuap.access_start = memArea.pRanges[0].start;
+        tNvuap.access_size = os_page_size;
+
+        tNvuap.caching = mode;
+        tNvuap.remap_prot_extra = 0;
+        tNvuap.contig = NV_TRUE;
+
+        NV_ASSERT_OK_OR_RETURN(nv_get_usermap_access_params(pOsGpuInfo, &tNvuap));
+
+        ppNvuap = (nv_usermap_access_params_t **) tlsEntryAcquire(TLS_ENTRY_ID_MAPPING_CONTEXT);
+        NV_ASSERT_OR_RETURN(ppNvuap != NULL, NV_ERR_INVALID_STATE);
+
+        NV_ASSERT_OK_OR_GOTO(status,
+            os_alloc_mem((void**) ppNvuap, sizeof(nv_alloc_mapping_context_t)),
+            free_tls);
+
+        portMemCopy(*ppNvuap, sizeof(nv_usermap_access_params_t),
+            &tNvuap, sizeof(nv_usermap_access_params_t));
+
+        NV_ASSERT_OK_OR_GOTO(status, 
+            os_alloc_mem((void**) &((*ppNvuap)->memArea.pRanges), totalRangeSize),
+            free_nvuap);
+
+        portMemCopy((*ppNvuap)->memArea.pRanges, totalRangeSize, memArea.pRanges, totalRangeSize);
+
+        *pVirtualAddress = (NvP64) (memArea.pRanges[0].start + diffStart);
+        goto unalign_and_return;
+
+free_nvuap:
+        os_free_mem(*ppNvuap);
+free_tls:
+        tlsEntryRelease(TLS_ENTRY_ID_MAPPING_CONTEXT);
+    }
+unalign_and_return:
+    memArea.pRanges[memArea.numRanges - 1llu].size =  origSize;
+    memArea.pRanges[0].size -= diffStart;
+    memArea.pRanges[0].start = origStart;
+    return status;
+}
+
 NV_STATUS osMapPciMemoryUser(
     OS_GPU_INFO *pOsGpuInfo,
     RmPhysAddr   busAddress,
@@ -1001,22 +1099,16 @@ NV_STATUS osMapPciMemoryUser(
     NvU32        modeFlag
 )
 {
-    void *addr;
-    NvU64 offset = 0;
+    MemoryArea memArea;
+    MemoryRange memRange;
 
-    NV_ASSERT_OR_RETURN(length != 0, NV_ERR_INVALID_ARGUMENT);
+    memArea.numRanges = 1;
+    memArea.pRanges = &memRange;
 
-    offset = busAddress & (os_page_size - 1llu);
-    busAddress = NV_ALIGN_DOWN64(busAddress, os_page_size);
-    length = NV_ALIGN_UP64(busAddress + offset + length, os_page_size) - busAddress;
+    memRange.start = busAddress;
+    memRange.size = length;
 
-    addr = os_map_user_space(busAddress, length, modeFlag, Protect, (void **) pPriv);
-
-    NV_ASSERT_OR_RETURN(addr != NULL, NV_ERR_INVALID_ADDRESS);
-
-    *pVirtualAddress = (NvP64)(((NvU64) addr) + offset);
-
-    return NV_OK;
+    return osMapPciMemoryAreaUser(pOsGpuInfo, memArea, Protect, modeFlag, pVirtualAddress, pPriv);
 }
 
 void osUnmapPciMemoryUser(
@@ -1026,17 +1118,6 @@ void osUnmapPciMemoryUser(
     NvP64        pPriv
 )
 {
-    NvU64 addr;
-    void *priv;
-
-    addr = (NvU64)(virtualAddress);
-    priv = (void*)(pPriv);
-
-    length = NV_ALIGN_UP64(addr + length, os_page_size);
-    addr = NV_ALIGN_DOWN64(addr, os_page_size);
-    length -= addr;
-
-    os_unmap_user_space((void *)addr, length, priv);
 }
 
 NV_STATUS osMapPciMemoryKernelOld
@@ -2706,6 +2787,8 @@ void osInitSystemStaticConfig(SYS_STATIC_CONFIG *pConfig)
 {
     pConfig->bIsNotebook = rm_is_system_notebook();
     pConfig->bOsCCEnabled = os_cc_enabled;
+    pConfig->bOsCCSevSnpEnabled = os_cc_sev_snp_enabled;
+    pConfig->bOsCCSnpVtomEnabled = os_cc_snp_vtom_enabled;
     pConfig->bOsCCTdxEnabled = os_cc_tdx_enabled;
 }
 
@@ -3081,6 +3164,15 @@ NvBool osTestPcieExtendedConfigAccess(void *handle, NvU32 offset)
     return configAccess;
 }
 
+static NvBool skipIovaMappingForTegra
+(
+    PIOVAMAPPING pIovaMapping,
+    nv_state_t *nv
+)
+{
+    return NV_FALSE;
+}
+
 /*!
  * @brief Map memory into an IOVA space according to the given mapping info.
  *
@@ -3139,7 +3231,12 @@ osIovaMap
     // since the physical address is already the DMA address to be used by the
     // GPU.
     //
-    if (memdescGetFlag(pIovaMapping->pPhysMemDesc, MEMDESC_FLAGS_GUEST_ALLOCATED))
+    // For carveout memory, we setup identity mapping, so physical
+    // address is same as the DMA address.
+    //
+    //
+    if (memdescGetFlag(pIovaMapping->pPhysMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT) ||
+        memdescGetFlag(pIovaMapping->pPhysMemDesc, MEMDESC_FLAGS_GUEST_ALLOCATED))
     {
         return NV_OK;
     }
@@ -3246,6 +3343,11 @@ osIovaMap
         }
     }
 
+    if (skipIovaMappingForTegra(pIovaMapping, nv))
+    {
+        return NV_OK;
+    }
+
     if (!bIsBar0 && (!bIsFbOffset || bIsIndirectPeerMapping))
     {
         status = nv_dma_map_alloc(
@@ -3332,15 +3434,21 @@ osIovaUnmap
     }
 
     //
-    // For guest-allocated memory, we never actually remapped the memory, so we
-    // shouldn't try to unmap it here.
+    // For guest-allocated or carveout memory, we never actually remapped the
+    // memory, so we shouldn't try to unmap it here.
     //
-    if (memdescGetFlag(pIovaMapping->pPhysMemDesc, MEMDESC_FLAGS_GUEST_ALLOCATED))
+    if (memdescGetFlag(pIovaMapping->pPhysMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT) ||
+        memdescGetFlag(pIovaMapping->pPhysMemDesc, MEMDESC_FLAGS_GUEST_ALLOCATED))
     {
         return;
     }
 
     nv = NV_GET_NV_STATE(pGpu);
+
+    if (skipIovaMappingForTegra(pIovaMapping, nv))
+    {
+        return;
+    }
 
     if (memdescGetFlag(pIovaMapping->pPhysMemDesc, MEMDESC_FLAGS_PEER_IO_MEM))
     {

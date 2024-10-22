@@ -579,8 +579,9 @@ static NV_STATUS service_non_managed_fault(uvm_gpu_va_space_t *gpu_va_space,
         uvm_fault_access_type_t fault_access_type = fault_entry->fault_access_type;
         uvm_ats_fault_context_t *ats_context = &non_replayable_faults->ats_context;
 
-        uvm_page_mask_zero(&ats_context->read_fault_mask);
-        uvm_page_mask_zero(&ats_context->write_fault_mask);
+        uvm_page_mask_zero(&ats_context->faults.read_fault_mask);
+        uvm_page_mask_zero(&ats_context->faults.write_fault_mask);
+        uvm_page_mask_zero(&ats_context->faults.accessed_mask);
 
         ats_context->client_type = UVM_FAULT_CLIENT_TYPE_HUB;
 
@@ -597,13 +598,16 @@ static NV_STATUS service_non_managed_fault(uvm_gpu_va_space_t *gpu_va_space,
         }
         else {
             NvU64 base = UVM_VA_BLOCK_ALIGN_DOWN(fault_address);
-            uvm_page_mask_t *faults_serviced_mask = &ats_context->faults_serviced_mask;
+            uvm_page_mask_t *faults_serviced_mask = &ats_context->faults.faults_serviced_mask;
+            uvm_page_mask_t *accessed_mask = &ats_context->faults.accessed_mask;
             uvm_page_index_t page_index = (fault_address - base) / PAGE_SIZE;
             uvm_page_mask_t *fault_mask = (fault_access_type >= UVM_FAULT_ACCESS_TYPE_WRITE) ?
-                                                                                       &ats_context->write_fault_mask :
-                                                                                       &ats_context->read_fault_mask;
+                                                                                &ats_context->faults.write_fault_mask :
+                                                                                &ats_context->faults.read_fault_mask;
 
             uvm_page_mask_set(fault_mask, page_index);
+
+            uvm_page_mask_set(accessed_mask, page_index);
 
             status = uvm_ats_service_faults(gpu_va_space, vma, base, ats_context);
             if (status == NV_OK) {

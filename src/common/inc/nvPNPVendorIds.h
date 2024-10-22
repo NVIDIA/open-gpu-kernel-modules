@@ -253,6 +253,7 @@ static const PNPVendorId PNPVendorIds[] =
     { "HEC",    _VENDOR_NAME_ENTRY("Hisense")   },
     { "HEI",    _VENDOR_NAME_ENTRY("Hyundai")                           },
     { "HIT",    _VENDOR_NAME_ENTRY("Hitachi/HINT")                      },
+    { "HKC",    _VENDOR_NAME_ENTRY("HKC Overseas Ltd.")                 },
     { "HMX",    _VENDOR_NAME_ENTRY("HUMAX Co., Ltd.")                   },
     { "HPN",    _VENDOR_NAME_ENTRY("HP Inc.")                           },
     { "HSD",    _VENDOR_NAME_ENTRY("HannStar Display Corp")             },

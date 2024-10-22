@@ -440,15 +440,6 @@ typedef struct
      *             4K PTE) in MMU walker
      */
     NvBool bAtsEnabled : 1;
-    /**
-     * @brief      Indicates if the iterative implementation should be used
-     * @details    In certain situations like running the MMU Tracer or running
-     *             on platforms like PPC, the recursive implementation of the
-     *             MMU Walker consumes too much stack space. Enabling this option
-     *             changes the MMU Walker to use iteration instead of recursion to
-     *             reduce stack usage.
-     */
-    NvBool bUseIterative : 1;
 } MMU_WALK_FLAGS;
 
 /*!

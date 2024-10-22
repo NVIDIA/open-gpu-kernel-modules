@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -37,7 +37,7 @@
  * @param[in]    int
  *   Length of error string.
  */
-typedef void (*nv_report_error_cb_t)(struct pci_dev *, uint32_t, char *, int);
+typedef void (*nv_report_error_cb_t)(struct pci_dev *, uint32_t, char *, size_t);
 
 /*
  * @brief
@@ -51,7 +51,7 @@ typedef void (*nv_report_error_cb_t)(struct pci_dev *, uint32_t, char *, int);
  *   -EINVAL     callback handle is NULL.
  *   -EBUSY      callback handle is already registered.
  */
-int nv_register_error_cb(nv_report_error_cb_t report_error_cb);
+int nvidia_register_error_cb(nv_report_error_cb_t report_error_cb);
 
 /*
  * @brief
@@ -61,6 +61,6 @@ int nv_register_error_cb(nv_report_error_cb_t report_error_cb);
  *   0           upon successful completion.
  *   -EPERM      unregister not permitted on NULL callback handle.
  */
-int nv_unregister_error_cb(void);
+int nvidia_unregister_error_cb(void);
 
 #endif /* _NV_REPORT_ERR_H_ */

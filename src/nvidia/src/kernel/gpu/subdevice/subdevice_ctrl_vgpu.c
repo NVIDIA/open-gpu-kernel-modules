@@ -213,3 +213,27 @@ subdeviceCtrlCmdGpuQueryIllumSupport_VF
 
     return NV_OK;
 }
+
+NV_STATUS subdeviceCtrlCmdBiosGetInfoV2_VF
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_BIOS_GET_INFO_V2_PARAMS *pBiosInfoParams
+)
+{
+    NV2080_CTRL_BIOS_INFO *pBiosInfos = pBiosInfoParams->biosInfoList;
+    NvU32 i;
+
+    if ((pBiosInfoParams->biosInfoListSize == 0) ||
+        (pBiosInfoParams->biosInfoListSize > NV2080_CTRL_BIOS_INFO_MAX_SIZE))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    for (i = 0; i < pBiosInfoParams->biosInfoListSize; i++)
+    {
+        pBiosInfos[i].data = 0;
+    }
+
+    return NV_OK;
+}
+

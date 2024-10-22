@@ -15,6 +15,7 @@ NV_HEADER_PRESENCE_TESTS = \
   drm/drm_atomic_uapi.h \
   drm/drm_drv.h \
   drm/drm_fbdev_generic.h \
+  drm/drm_fbdev_ttm.h \
   drm/drm_framebuffer.h \
   drm/drm_connector.h \
   drm/drm_probe_helper.h \
@@ -99,5 +100,7 @@ NV_HEADER_PRESENCE_TESTS = \
   linux/sync_file.h \
   linux/cc_platform.h \
   asm/cpufeature.h \
-  linux/mpi.h
+  linux/mpi.h \
+  asm/mshyperv.h \
+  linux/pfn_t.h
 

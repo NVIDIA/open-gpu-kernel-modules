@@ -553,10 +553,10 @@ channelFillGpFifo
         }
 
         NV_ASSERT_OK_OR_RETURN(
-            kfifoGenerateWorkSubmitToken_HAL(pGpu,
-                                             pKernelFifo,
-                                             pKernelChannel,
-                                             &workSubmitToken, NV_TRUE));
+            kfifoGenerateWorkSubmitToken(pGpu,
+                                         pKernelFifo,
+                                         pKernelChannel,
+                                         &workSubmitToken, NV_TRUE));
 
         kfifoUpdateUsermodeDoorbell_HAL(pGpu, pKernelFifo, workSubmitToken, kchannelGetRunlistId(pKernelChannel));
     }

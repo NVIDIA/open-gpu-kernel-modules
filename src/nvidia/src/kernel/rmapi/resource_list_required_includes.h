@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -47,11 +47,6 @@
 
 #include "alloc/alloc_channel.h"
 
-#include "alloc/alloc_channel.h"
-
-#include "class/clb0b5sw.h"
-
-// Bug 3748354
 #include "class/clb0b5sw.h"
 
 #include "alloc/alloc_access_counter_buffer.h"

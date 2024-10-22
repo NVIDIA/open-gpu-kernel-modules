@@ -32,7 +32,6 @@
 #include "ctrl/ctrlxxxx.h"
 #include "ctrl/ctrl0080/ctrl0080dma.h"  /* NV0080_CTRL_DMA_FILL_PTE_MEM_PARAMS */
 #include "ctrl/ctrl2080/ctrl2080dma.h"  /* NV2080_CTRL_DMA_* */
-#include "ctrl/ctrl2080/ctrl2080fb.h"   /* NV2080_CTRL_FB_* */
 #include "ctrl/ctrl2080/ctrl2080fifo.h" /* NV2080_CTRL_FIFO_* */
 #include "ctrl/ctrl2080/ctrl2080gpu.h"  /* NV2080_CTRL_GPU_* */
 #include "ctrl/ctrl2080/ctrl2080gr.h"   /* NV2080_CTRL_GR_* */
@@ -101,19 +100,15 @@ typedef struct NV5080_CTRL_DEFERRED_API_PARAMS {
 
         NV_DECLARE_ALIGNED(NV2080_CTRL_GPU_PROMOTE_CTX_PARAMS PromoteCtx, 8);
 
-        NV2080_CTRL_GPU_EVICT_CTX_PARAMS                 EvictCtx;
+        NV2080_CTRL_GPU_EVICT_CTX_PARAMS      EvictCtx;
 
-        NV2080_CTRL_DMA_INVALIDATE_TLB_PARAMS            InvalidateTlb;
+        NV2080_CTRL_DMA_INVALIDATE_TLB_PARAMS InvalidateTlb;
 
         NV_DECLARE_ALIGNED(NV0080_CTRL_DMA_FILL_PTE_MEM_PARAMS FillPteMem, 8);
-
-        NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_PARAMS     CacheAllocPolicy;
 
         NV_DECLARE_ALIGNED(NV2080_CTRL_GR_CTXSW_ZCULL_BIND_PARAMS ZcullCtxsw, 8);
 
         NV_DECLARE_ALIGNED(NV2080_CTRL_GR_CTXSW_PM_BIND_PARAMS PmCtxsw, 8);
-
-        NV2080_CTRL_FB_GPU_CACHE_PROMOTION_POLICY_PARAMS CachePromotePolicy;
 
         NV_DECLARE_ALIGNED(NV2080_CTRL_GR_CTXSW_PREEMPTION_BIND_PARAMS PreemptionCtxsw, 8);
     } api_bundle;
@@ -166,19 +161,15 @@ typedef struct NV5080_CTRL_DEFERRED_API_V2_PARAMS {
 
         NV_DECLARE_ALIGNED(NV2080_CTRL_GPU_PROMOTE_CTX_PARAMS PromoteCtx, 8);
 
-        NV2080_CTRL_GPU_EVICT_CTX_PARAMS                 EvictCtx;
+        NV2080_CTRL_GPU_EVICT_CTX_PARAMS      EvictCtx;
 
-        NV2080_CTRL_DMA_INVALIDATE_TLB_PARAMS            InvalidateTlb;
+        NV2080_CTRL_DMA_INVALIDATE_TLB_PARAMS InvalidateTlb;
 
         NV_DECLARE_ALIGNED(NV0080_CTRL_DMA_FILL_PTE_MEM_PARAMS FillPteMem, 8);
-
-        NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_PARAMS  CacheAllocPolicy;
 
         NV_DECLARE_ALIGNED(NV2080_CTRL_GR_CTXSW_ZCULL_BIND_PARAMS ZcullCtxsw, 8);
 
         NV_DECLARE_ALIGNED(NV2080_CTRL_GR_CTXSW_PM_BIND_PARAMS PmCtxsw, 8);
-
-        NV2080_CTRL_FB_GPU_CACHE_PROMOTION_POLICY_PARAMS CachePromotePolicy;
 
         NV_DECLARE_ALIGNED(NV2080_CTRL_FIFO_DISABLE_CHANNELS_PARAMS DisableChannels, 8);
 

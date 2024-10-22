@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -100,15 +100,29 @@ MAKE_INTRUSIVE_MAP(CrashCatMappedBufferMap, CrashCatBufferDescriptor, mappedBuff
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__CrashCatEngine;
+
+
 struct CrashCatEngine {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__CrashCatEngine *__nvoc_vtable;
 
     // Ancestor object pointers for `staticCast` feature
     struct CrashCatEngine *__nvoc_pbase_CrashCatEngine;    // crashcatEngine
 
-    // Vtable with 10 per-object function pointers
+    // Data members
+    NvBool PRIVATE_FIELD(bEnabled);
+    struct CrashCatWayfinder *PRIVATE_FIELD(pWayfinder);
+    CrashCatRegisteredBufferMap PRIVATE_FIELD(registeredCrashBuffers);
+    CrashCatMappedBufferMap PRIVATE_FIELD(mappedCrashBuffers);
+};
+
+
+// Metadata including vtable with 10 function pointers
+struct NVOC_VTABLE__CrashCatEngine {
     void (*__crashcatEngineUnload__)(struct CrashCatEngine * /*this*/);  // virtual
     NvBool (*__crashcatEngineConfigured__)(struct CrashCatEngine * /*this*/);  // pure virtual
     void (*__crashcatEngineVprintf__)(struct CrashCatEngine * /*this*/, NvBool, const char *, va_list);  // pure virtual
@@ -119,12 +133,6 @@ struct CrashCatEngine {
     void (*__crashcatEngineSyncBufferDescriptor__)(struct CrashCatEngine * /*this*/, CrashCatBufferDescriptor *, NvU32, NvU32);  // pure virtual
     const NvU32 * (*__crashcatEngineGetScratchOffsets__)(struct CrashCatEngine * /*this*/, NV_CRASHCAT_SCRATCH_GROUP_ID);  // pure virtual
     NvU32 (*__crashcatEngineGetWFL0Offset__)(struct CrashCatEngine * /*this*/);  // pure virtual
-
-    // Data members
-    NvBool PRIVATE_FIELD(bEnabled);
-    struct CrashCatWayfinder *PRIVATE_FIELD(pWayfinder);
-    CrashCatRegisteredBufferMap PRIVATE_FIELD(registeredCrashBuffers);
-    CrashCatMappedBufferMap PRIVATE_FIELD(mappedCrashBuffers);
 };
 
 #ifndef __NVOC_CLASS_CrashCatEngine_TYPEDEF__
@@ -157,66 +165,66 @@ NV_STATUS __nvoc_objCreate_CrashCatEngine(CrashCatEngine**, Dynamic*, NvU32);
 
 
 // Wrapper macros
-#define crashcatEngineUnload_FNPTR(arg_this) arg_this->__crashcatEngineUnload__
+#define crashcatEngineUnload_FNPTR(arg_this) arg_this->__nvoc_vtable->__crashcatEngineUnload__
 #define crashcatEngineUnload(arg_this) crashcatEngineUnload_DISPATCH(arg_this)
-#define crashcatEngineConfigured_FNPTR(arg_this) arg_this->__crashcatEngineConfigured__
+#define crashcatEngineConfigured_FNPTR(arg_this) arg_this->__nvoc_vtable->__crashcatEngineConfigured__
 #define crashcatEngineConfigured(arg_this) crashcatEngineConfigured_DISPATCH(arg_this)
-#define crashcatEngineVprintf_FNPTR(arg_this) arg_this->__crashcatEngineVprintf__
+#define crashcatEngineVprintf_FNPTR(arg_this) arg_this->__nvoc_vtable->__crashcatEngineVprintf__
 #define crashcatEngineVprintf(arg_this, bReportStart, fmt, args) crashcatEngineVprintf_DISPATCH(arg_this, bReportStart, fmt, args)
-#define crashcatEnginePriRead_FNPTR(arg_this) arg_this->__crashcatEnginePriRead__
+#define crashcatEnginePriRead_FNPTR(arg_this) arg_this->__nvoc_vtable->__crashcatEnginePriRead__
 #define crashcatEnginePriRead(arg_this, offset) crashcatEnginePriRead_DISPATCH(arg_this, offset)
-#define crashcatEnginePriWrite_FNPTR(arg_this) arg_this->__crashcatEnginePriWrite__
+#define crashcatEnginePriWrite_FNPTR(arg_this) arg_this->__nvoc_vtable->__crashcatEnginePriWrite__
 #define crashcatEnginePriWrite(arg_this, offset, data) crashcatEnginePriWrite_DISPATCH(arg_this, offset, data)
-#define crashcatEngineMapBufferDescriptor_FNPTR(arg_this) arg_this->__crashcatEngineMapBufferDescriptor__
+#define crashcatEngineMapBufferDescriptor_FNPTR(arg_this) arg_this->__nvoc_vtable->__crashcatEngineMapBufferDescriptor__
 #define crashcatEngineMapBufferDescriptor(arg_this, pBufDesc) crashcatEngineMapBufferDescriptor_DISPATCH(arg_this, pBufDesc)
-#define crashcatEngineUnmapBufferDescriptor_FNPTR(arg_this) arg_this->__crashcatEngineUnmapBufferDescriptor__
+#define crashcatEngineUnmapBufferDescriptor_FNPTR(arg_this) arg_this->__nvoc_vtable->__crashcatEngineUnmapBufferDescriptor__
 #define crashcatEngineUnmapBufferDescriptor(arg_this, pBufDesc) crashcatEngineUnmapBufferDescriptor_DISPATCH(arg_this, pBufDesc)
-#define crashcatEngineSyncBufferDescriptor_FNPTR(arg_this) arg_this->__crashcatEngineSyncBufferDescriptor__
+#define crashcatEngineSyncBufferDescriptor_FNPTR(arg_this) arg_this->__nvoc_vtable->__crashcatEngineSyncBufferDescriptor__
 #define crashcatEngineSyncBufferDescriptor(arg_this, pBufDesc, offset, size) crashcatEngineSyncBufferDescriptor_DISPATCH(arg_this, pBufDesc, offset, size)
-#define crashcatEngineGetScratchOffsets_FNPTR(arg_this) arg_this->__crashcatEngineGetScratchOffsets__
+#define crashcatEngineGetScratchOffsets_FNPTR(arg_this) arg_this->__nvoc_vtable->__crashcatEngineGetScratchOffsets__
 #define crashcatEngineGetScratchOffsets(arg_this, scratchId) crashcatEngineGetScratchOffsets_DISPATCH(arg_this, scratchId)
-#define crashcatEngineGetWFL0Offset_FNPTR(arg_this) arg_this->__crashcatEngineGetWFL0Offset__
+#define crashcatEngineGetWFL0Offset_FNPTR(arg_this) arg_this->__nvoc_vtable->__crashcatEngineGetWFL0Offset__
 #define crashcatEngineGetWFL0Offset(arg_this) crashcatEngineGetWFL0Offset_DISPATCH(arg_this)
 
 // Dispatch functions
 static inline void crashcatEngineUnload_DISPATCH(struct CrashCatEngine *arg_this) {
-    arg_this->__crashcatEngineUnload__(arg_this);
+    arg_this->__nvoc_vtable->__crashcatEngineUnload__(arg_this);
 }
 
 static inline NvBool crashcatEngineConfigured_DISPATCH(struct CrashCatEngine *arg_this) {
-    return arg_this->__crashcatEngineConfigured__(arg_this);
+    return arg_this->__nvoc_vtable->__crashcatEngineConfigured__(arg_this);
 }
 
 static inline void crashcatEngineVprintf_DISPATCH(struct CrashCatEngine *arg_this, NvBool bReportStart, const char *fmt, va_list args) {
-    arg_this->__crashcatEngineVprintf__(arg_this, bReportStart, fmt, args);
+    arg_this->__nvoc_vtable->__crashcatEngineVprintf__(arg_this, bReportStart, fmt, args);
 }
 
 static inline NvU32 crashcatEnginePriRead_DISPATCH(struct CrashCatEngine *arg_this, NvU32 offset) {
-    return arg_this->__crashcatEnginePriRead__(arg_this, offset);
+    return arg_this->__nvoc_vtable->__crashcatEnginePriRead__(arg_this, offset);
 }
 
 static inline void crashcatEnginePriWrite_DISPATCH(struct CrashCatEngine *arg_this, NvU32 offset, NvU32 data) {
-    arg_this->__crashcatEnginePriWrite__(arg_this, offset, data);
+    arg_this->__nvoc_vtable->__crashcatEnginePriWrite__(arg_this, offset, data);
 }
 
 static inline void * crashcatEngineMapBufferDescriptor_DISPATCH(struct CrashCatEngine *arg_this, CrashCatBufferDescriptor *pBufDesc) {
-    return arg_this->__crashcatEngineMapBufferDescriptor__(arg_this, pBufDesc);
+    return arg_this->__nvoc_vtable->__crashcatEngineMapBufferDescriptor__(arg_this, pBufDesc);
 }
 
 static inline void crashcatEngineUnmapBufferDescriptor_DISPATCH(struct CrashCatEngine *arg_this, CrashCatBufferDescriptor *pBufDesc) {
-    arg_this->__crashcatEngineUnmapBufferDescriptor__(arg_this, pBufDesc);
+    arg_this->__nvoc_vtable->__crashcatEngineUnmapBufferDescriptor__(arg_this, pBufDesc);
 }
 
 static inline void crashcatEngineSyncBufferDescriptor_DISPATCH(struct CrashCatEngine *arg_this, CrashCatBufferDescriptor *pBufDesc, NvU32 offset, NvU32 size) {
-    arg_this->__crashcatEngineSyncBufferDescriptor__(arg_this, pBufDesc, offset, size);
+    arg_this->__nvoc_vtable->__crashcatEngineSyncBufferDescriptor__(arg_this, pBufDesc, offset, size);
 }
 
 static inline const NvU32 * crashcatEngineGetScratchOffsets_DISPATCH(struct CrashCatEngine *arg_this, NV_CRASHCAT_SCRATCH_GROUP_ID scratchId) {
-    return arg_this->__crashcatEngineGetScratchOffsets__(arg_this, scratchId);
+    return arg_this->__nvoc_vtable->__crashcatEngineGetScratchOffsets__(arg_this, scratchId);
 }
 
 static inline NvU32 crashcatEngineGetWFL0Offset_DISPATCH(struct CrashCatEngine *arg_this) {
-    return arg_this->__crashcatEngineGetWFL0Offset__(arg_this);
+    return arg_this->__nvoc_vtable->__crashcatEngineGetWFL0Offset__(arg_this);
 }
 
 void crashcatEngineUnload_IMPL(struct CrashCatEngine *arg1);

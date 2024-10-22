@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -866,15 +866,14 @@ static NV_STATUS _thirdpartyp2pDelMappingInfoByKey
                                                RES_GET_PARENT_HANDLE(pSubdevice),
                                                pVidmemInfo->hMemory,
                                                0,
-                                               pExtentInfo->fbApertureOffset, status);
+                                               pExtentInfo->memArea.pRanges[0].start, status);
                     }
                     else
                     {
-                        status = kbusUnmapFbApertureSingle(pGpu, pKernelBus,
-                                                           pExtentInfo->pMemDesc,
-                                                           pExtentInfo->fbApertureOffset,
-                                                           pExtentInfo->length,
-                                                           BUS_MAP_FB_FLAGS_MAP_UNICAST);
+                        status = kbusUnmapFbAperture_HAL(pGpu, pKernelBus,
+                                                         pExtentInfo->pMemDesc,
+                                                         pExtentInfo->memArea,
+                                                         BUS_MAP_FB_FLAGS_MAP_UNICAST);
                     }
                     NV_ASSERT(status == NV_OK);
 
@@ -953,33 +952,20 @@ NV_STATUS thirdpartyp2pDelPersistentMappingInfoByKey_IMPL
 NV_STATUS
 CliAddThirdPartyP2PClientPid
 (
-    NvHandle hClient,
-    NvHandle hThirdPartyP2P,
-    NvU32    pid,
-    NvU32    client
+    ThirdPartyP2P* pThirdPartyP2P,
+    NvU32          pid,
+    NvHandle       hRegisterClient
 )
 {
-    RsResourceRef *pThirdPartyP2PRef;
-    ThirdPartyP2P *pThirdPartyP2P;
-    NvU32          pidIndex;
-    RsClient      *pClient;
+    NvU32    pidIndex;
 
-    NV_ASSERT_OK_OR_RETURN(
-        serverGetClientUnderLock(&g_resServ, hClient, &pClient));
-
-    NV_ASSERT_OK_OR_RETURN(
-        clientGetResourceRef(pClient,
-                                  hThirdPartyP2P,
-                                  &pThirdPartyP2PRef));
-
-    pThirdPartyP2P = dynamicCast(pThirdPartyP2PRef->pResource, ThirdPartyP2P);
     if (pThirdPartyP2P == NULL)
     {
         return NV_ERR_INVALID_OBJECT;
     }
 
     // Do not register another client if one already exists for this PID
-    if (thirdpartyp2pIsValidClientPid(pThirdPartyP2P, pid, client))
+    if (thirdpartyp2pIsValidClientPid(pThirdPartyP2P, pid, hRegisterClient))
     {
         return NV_OK;
     }
@@ -991,7 +977,7 @@ CliAddThirdPartyP2PClientPid
         if (0 == pThirdPartyP2P->pidClientList[pidIndex].pid)
         {
             pThirdPartyP2P->pidClientList[pidIndex].pid = pid;
-            pThirdPartyP2P->pidClientList[pidIndex].hClient = client;
+            pThirdPartyP2P->pidClientList[pidIndex].hClient = hRegisterClient;
             return NV_OK;
         }
     }

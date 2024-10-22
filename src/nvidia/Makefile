@@ -208,6 +208,8 @@ all: $(NV_KERNEL_O)
 
 LINKER_SCRIPT = nv-kernel.ld
 
+NV_KERNEL_O_LDFLAGS += $(LDFLAGS)
+
 $(NV_KERNEL_O): $(OBJS) $(EXPORTS_LINK_COMMAND) $(LINKER_SCRIPT)
 	$(call quiet_cmd,LD) \
 	  $(NV_KERNEL_O_LDFLAGS) \

@@ -65,7 +65,8 @@ NVVBlankCallbackPtr
 nvApiHeadRegisterVBlankCallback(NVDispEvoPtr pDispEvo,
                                 const NvU32 apiHead,
                                 NVVBlankCallbackProc pCallback,
-                                void *pUserData);
+                                void *pUserData,
+                                NvU8 listIndex);
 
 void nvApiHeadUnregisterVBlankCallback(NVDispEvoPtr pDispEvo,
                                        NVVBlankCallbackPtr pCallback);

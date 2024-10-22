@@ -103,7 +103,7 @@ kchangrpapiConstruct_IMPL
     if (rmDeviceGpuLockIsOwner(pGpu->gpuInstance))
     {
         NV_PRINTF(LEVEL_ERROR, "TSG alloc should be called without acquiring GPU lock\n");
-        LOCK_ASSERT_AND_RETURN(0);
+        NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_LOCK_STATE);
     }
 
     bufInfoList = portMemAllocNonPaged(NV_ENUM_SIZE(GR_CTX_BUFFER) * sizeof(*bufInfoList));
@@ -235,7 +235,9 @@ kchangrpapiConstruct_IMPL
 
     // vGpu plugin context flag should only be set on host if context is plugin
     if (gpuIsSriovEnabled(pGpu))
+    {
         pKernelChannelGroup->bIsCallingContextVgpuPlugin = pAllocParams->bIsCallingContextVgpuPlugin;
+    }
 
     if (pKernelChannelGroup->bIsCallingContextVgpuPlugin)
         gfid = GPU_GFID_PF;
@@ -1381,7 +1383,7 @@ kchangrpapiCtrlCmdSetInterleaveLevel_IMPL
     RsResourceRef   *pResourceRef = RES_GET_REF(pKernelChannelGroupApi);
     KernelChannelGroup *pKernelChannelGroup =
         pKernelChannelGroupApi->pKernelChannelGroup;
-    PCLASSDESCRIPTOR pClass       = NULL;
+    CLASSDESCRIPTOR *pClass       = NULL;
     NV_STATUS        status       = NV_OK;
 
     if (gpuGetClassByClassId(pGpu, pResourceRef->externalClassId, &pClass) != NV_OK)

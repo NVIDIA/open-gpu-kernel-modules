@@ -8301,6 +8301,24 @@ nvswitch_tnvl_get_status_lr10
     return -NVL_ERR_NOT_SUPPORTED;
 }
 
+NvlStatus
+nvswitch_send_tnvl_prelock_cmd_lr10
+(
+    nvswitch_device *device
+)
+{
+   return -NVL_ERR_NOT_SUPPORTED;
+}
+
+void
+nvswitch_tnvl_disable_interrupts_lr10
+(
+    nvswitch_device *device
+)
+{
+    return;
+}
+
 //
 // This function auto creates the lr10 HAL connectivity from the NVSWITCH_INIT_HAL
 // macro in haldef_nvswitch.h

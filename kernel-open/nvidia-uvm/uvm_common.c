@@ -281,29 +281,6 @@ NV_STATUS uvm_spin_loop(uvm_spin_loop_t *spin)
     return NV_OK;
 }
 
-// This formats a GPU UUID, in a UVM-friendly way. That is, nearly the same as
-// what nvidia-smi reports.  It will always prefix the UUID with UVM-GPU so
-// that we know that we have a real, binary formatted UUID that will work in
-// the UVM APIs.
-//
-// It comes out like this:
-//
-//     UVM-GPU-d802726c-df8d-a3c3-ec53-48bdec201c27
-//
-//  This routine will always null-terminate the string for you. This is true
-//  even if the buffer was too small!
-//
-//  Return value is the number of non-null characters written.
-//
-// Note that if you were to let the NV2080_CTRL_CMD_GPU_GET_GID_INFO command
-// return it's default format, which is ascii, not binary, then you would get
-// this back:
-//
-//     GPU-d802726c-df8d-a3c3-ec53-48bdec201c27
-//
-//  ...which is actually a character string, and won't work for UVM API calls.
-//  So it's very important to be able to see the difference.
-//
 static char uvm_digit_to_hex(unsigned value)
 {
     if (value >= 10)
@@ -312,27 +289,19 @@ static char uvm_digit_to_hex(unsigned value)
         return value + '0';
 }
 
-int format_uuid_to_buffer(char *buffer, unsigned bufferLength, const NvProcessorUuid *pUuidStruct)
+void uvm_uuid_string(char *buffer, const NvProcessorUuid *pUuidStruct)
 {
-    char *str = buffer+8;
+    char *str = buffer;
     unsigned i;
     unsigned dashMask = 1 << 4 | 1 << 6 | 1 << 8 | 1 << 10;
-
-    if (bufferLength < (8 /*prefix*/+ 16 * 2 /*digits*/ + 4 * 1 /*dashes*/ + 1 /*null*/))
-        return *buffer = 0;
-
-    memcpy(buffer, "UVM-GPU-", 8);
 
     for (i = 0; i < 16; i++) {
         *str++ = uvm_digit_to_hex(pUuidStruct->uuid[i] >> 4);
         *str++ = uvm_digit_to_hex(pUuidStruct->uuid[i] & 0xF);
 
-        if (dashMask & (1 << (i+1)))
+        if (dashMask & (1 << (i + 1)))
             *str++ = '-';
     }
 
     *str = 0;
-
-    return (int)(str-buffer);
 }
-

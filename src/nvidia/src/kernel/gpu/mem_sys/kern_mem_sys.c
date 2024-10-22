@@ -29,10 +29,10 @@
 #include "gpu/rpc/objrpc.h"
 #include "gpu/bif/kernel_bif.h"
 #include "gpu/bus/kern_bus.h"
-#include "os/os.h"
 #include "platform/sli/sli.h"
 #include "nvrm_registry.h"
 #include "gpu/gsp/gsp_static_config.h"
+#include "ctrl/ctrl2080/ctrl2080pmgr.h" // NV2080_CTRL_PMGR_MODULE_INFO_NVSWITCH_SUPPORTED
 
 static void
 kmemsysInitRegistryOverrides
@@ -270,8 +270,12 @@ kmemsysStatePostLoad_IMPL
                             NV_ERR_INVALID_STATE);
     }
 
+    //
+    // VBIOS programs the peer ATS range register in Nvswitch case
+    //
     if (IS_SILICON(pGpu) &&
-        pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED))
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED) &&
+        !GPU_IS_NVSWITCH_DETECTED(pGpu))
     {
         NV_STATUS status = kmemsysSetupAllAtsPeers_HAL(pGpu, pKernelMemorySystem);
         if (status != NV_OK)
@@ -405,6 +409,7 @@ kmemsysAllocComprResources_KERNEL
     if (!memmgrIsScrubOnFreeEnabled(pMemoryManager))
     {
         if (!(IS_SIMULATION(pGpu) || IsDFPGA(pGpu) || (IS_EMULATION(pGpu) && RMCFG_FEATURE_PLATFORM_MODS)
+            ||(pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB))
             ||(RMCFG_FEATURE_PLATFORM_WINDOWS && !pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_TCC_MODE))
             ||hypervisorIsVgxHyper()
             ||IS_GFID_VF(gfid)

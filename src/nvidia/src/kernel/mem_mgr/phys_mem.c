@@ -217,7 +217,7 @@ physmemConstruct_IMPL
     {
         NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
                             kbusUpdateStaticBar1VAMapping_HAL(pGpu, pKernelBus,
-                                pMemDesc, 0, memdescGetSize(pMemDesc), NV_FALSE),
+                                pMemDesc, NV_FALSE),
                             cleanup_rpc);
 
         memdescSetFlag(pMemDesc,

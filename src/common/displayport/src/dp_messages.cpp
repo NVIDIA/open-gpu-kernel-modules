@@ -71,6 +71,7 @@ bool MessageManager::send(MessageManager::Message * message, NakData & nakData)
 
     NvU64 startTime, elapsedTime;
     message->bBusyWaiting = true;
+    message->setMessagePriority(NV_DP_SBMSG_PRIORITY_LEVEL_1);
     post(message, &completion);
     startTime = timer->getTimeUs();
     do

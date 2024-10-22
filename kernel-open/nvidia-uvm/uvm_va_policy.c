@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2022 NVIDIA Corporation
+    Copyright (c) 2022-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -51,7 +51,7 @@ const uvm_va_policy_t *uvm_va_policy_get(uvm_va_block_t *va_block, NvU64 addr)
         return node ? &node->policy : &uvm_va_policy_default;
     }
     else {
-        return uvm_va_range_get_policy(va_block->va_range);
+        return &va_block->managed_range->policy;
     }
 }
 
@@ -97,7 +97,7 @@ const uvm_va_policy_t *uvm_va_policy_get_region(uvm_va_block_t *va_block, uvm_va
         return policy;
     }
     else {
-        return uvm_va_range_get_policy(va_block->va_range);
+        return &va_block->managed_range->policy;
     }
 }
 

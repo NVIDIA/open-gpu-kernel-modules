@@ -90,6 +90,10 @@ NvU32 nvDpyGetPossibleApiHeadsMask(const NVDpyEvoRec *pDpyEvo);
 
 NvBool nvDpyIsHDRCapable(const NVDpyEvoRec *pDpyEvo);
 
+void nvConstructDpVscSdp(const NVDispHeadInfoFrameStateEvoRec *pInfoFrame,
+                         const NVDpyAttributeColor *pDpyColor,
+                         DPSDP_DP_VSC_SDP_DESCRIPTOR *sdp);
+
 #ifdef __cplusplus
 };
 #endif

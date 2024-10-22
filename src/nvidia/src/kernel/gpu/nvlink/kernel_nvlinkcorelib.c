@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -325,9 +325,12 @@ knvlinkCoreUpdateDeviceUUID_IMPL
 
         status = nvlink_lib_update_uuid_and_device_name(&devInfo, pGidString, pKernelNvlink->deviceName);
 
-        // Freeing pGidString here as it is malloc'd as part of gpuGetGidInfo_IMPL
-        if (pGidString != NULL)
-            portMemFree(pGidString);
+        //
+        // pGidString is malloc'd as part of gpuGetGidInfo_IMPL
+        // Store pGidString within pKernelNvlink so we can free it during
+        // knvlinkStatePostUnload to maintain alloc/free symmetry
+        //
+        pKernelNvlink->pGidString = pGidString;
     }
 
 #endif

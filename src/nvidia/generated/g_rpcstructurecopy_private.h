@@ -48,6 +48,7 @@ Deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_GLOBAL_SM_ORDER_PARAMS   deserial
                                                // RPCSTRUCTURECOPY:NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS
 Deserialize_NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS   deserialize_NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_v25_05;
 Deserialize_NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS   deserialize_NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_v27_05;
+Deserialize_NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS   deserialize_NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_v28_04;
 Deserialize_NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS   deserialize_NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102
 
                                                // RPCSTRUCTURECOPY:NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS
@@ -143,6 +144,7 @@ Deserialize_NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS   deserial
 
                                                // RPCSTRUCTURECOPY:GPU_PARTITION_INFO
 Deserialize_GPU_PARTITION_INFO     deserialize_GPU_PARTITION_INFO_v24_05;
+Deserialize_GPU_PARTITION_INFO     deserialize_GPU_PARTITION_INFO_v28_02;
 Deserialize_GPU_PARTITION_INFO     deserialize_GPU_PARTITION_INFO_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102
 
                                                // RPCSTRUCTURECOPY:NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS
@@ -198,6 +200,8 @@ Deserialize_NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS   deserialize_NV208
 Deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS   deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v24_06;
 Deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS   deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v26_02;
 Deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS   deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v27_04;
+Deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS   deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v28_01;
+Deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS   deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v28_08;
 Deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS   deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102
 
                                                // RPCSTRUCTURECOPY:VGPU_CE_GET_CAPS_V2
@@ -995,6 +999,74 @@ static void rpcstructurecopy_iGrp_ipVersions_Install_v27_05(IGRP_IP_VERSIONS_TAB
 #endif // 
 }
 
+// No enabled chips use this variant provider
+static void rpcstructurecopy_iGrp_ipVersions_Install_v28_01(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPCSTRUCTURECOPY *pRpcstructurecopy = (OBJRPCSTRUCTURECOPY *) pInfo->pDynamic;
+    RPCSTRUCTURECOPY_HAL_IFACES *pRpcstructurecopyHal = &pRpcstructurecopy->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcstructurecopyHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpcstructurecopy_iGrp_ipVersions_Install_v28_02(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPCSTRUCTURECOPY *pRpcstructurecopy = (OBJRPCSTRUCTURECOPY *) pInfo->pDynamic;
+    RPCSTRUCTURECOPY_HAL_IFACES *pRpcstructurecopyHal = &pRpcstructurecopy->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcstructurecopyHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpcstructurecopy_iGrp_ipVersions_Install_v28_04(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPCSTRUCTURECOPY *pRpcstructurecopy = (OBJRPCSTRUCTURECOPY *) pInfo->pDynamic;
+    RPCSTRUCTURECOPY_HAL_IFACES *pRpcstructurecopyHal = &pRpcstructurecopy->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcstructurecopyHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpcstructurecopy_iGrp_ipVersions_Install_v28_08(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPCSTRUCTURECOPY *pRpcstructurecopy = (OBJRPCSTRUCTURECOPY *) pInfo->pDynamic;
+    RPCSTRUCTURECOPY_HAL_IFACES *pRpcstructurecopyHal = &pRpcstructurecopy->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcstructurecopyHal += 0;
+
+
+#endif // 
+}
+
 
 
 
@@ -1029,8 +1101,10 @@ static NV_STATUS rpcstructurecopy_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_
        pRpcstructurecopyHal->deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_GLOBAL_SM_ORDER_PARAMS = deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_GLOBAL_SM_ORDER_PARAMS_v1F_01;
     if (IsIPVersionInRange(pRpcstructurecopy, 0x25050000, 0x2704FFFF))
        pRpcstructurecopyHal->deserialize_NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS = deserialize_NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_v25_05;
-    if (IsIPVersionInRange(pRpcstructurecopy, 0x27050000, 0xFFFFFFFF))
+    if (IsIPVersionInRange(pRpcstructurecopy, 0x27050000, 0x2803FFFF))
        pRpcstructurecopyHal->deserialize_NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS = deserialize_NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_v27_05;
+    if (IsIPVersionInRange(pRpcstructurecopy, 0x28040000, 0xFFFFFFFF))
+       pRpcstructurecopyHal->deserialize_NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS = deserialize_NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_v28_04;
     if (IsIPVersionInRange(pRpcstructurecopy, 0x250E0000, 0xFFFFFFFF))
        pRpcstructurecopyHal->deserialize_NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS = deserialize_NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS_v25_0E;
     if (IsIPVersionInRange(pRpcstructurecopy, 0x03000000, 0xFFFFFFFF))
@@ -1081,8 +1155,10 @@ static NV_STATUS rpcstructurecopy_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_
        pRpcstructurecopyHal->deserialize_VGPU_BSP_GET_CAPS = deserialize_VGPU_BSP_GET_CAPS_v25_00;
     if (IsIPVersionInRange(pRpcstructurecopy, 0x1F080000, 0xFFFFFFFF))
        pRpcstructurecopyHal->deserialize_NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS = deserialize_NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS_v1F_08;
-    if (IsIPVersionInRange(pRpcstructurecopy, 0x24050000, 0xFFFFFFFF))
+    if (IsIPVersionInRange(pRpcstructurecopy, 0x24050000, 0x2801FFFF))
        pRpcstructurecopyHal->deserialize_GPU_PARTITION_INFO = deserialize_GPU_PARTITION_INFO_v24_05;
+    if (IsIPVersionInRange(pRpcstructurecopy, 0x28020000, 0xFFFFFFFF))
+       pRpcstructurecopyHal->deserialize_GPU_PARTITION_INFO = deserialize_GPU_PARTITION_INFO_v28_02;
     if (IsIPVersionInRange(pRpcstructurecopy, 0x1E090000, 0xFFFFFFFF))
        pRpcstructurecopyHal->deserialize_NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS = deserialize_NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS_v1E_09;
     if (IsIPVersionInRange(pRpcstructurecopy, 0x16000000, 0xFFFFFFFF))
@@ -1113,8 +1189,12 @@ static NV_STATUS rpcstructurecopy_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_
        pRpcstructurecopyHal->deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS = deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v24_06;
     if (IsIPVersionInRange(pRpcstructurecopy, 0x26020000, 0x2703FFFF))
        pRpcstructurecopyHal->deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS = deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v26_02;
-    if (IsIPVersionInRange(pRpcstructurecopy, 0x27040000, 0xFFFFFFFF))
+    if (IsIPVersionInRange(pRpcstructurecopy, 0x27040000, 0x2800FFFF))
        pRpcstructurecopyHal->deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS = deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v27_04;
+    if (IsIPVersionInRange(pRpcstructurecopy, 0x28010000, 0x2807FFFF))
+       pRpcstructurecopyHal->deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS = deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v28_01;
+    if (IsIPVersionInRange(pRpcstructurecopy, 0x28080000, 0xFFFFFFFF))
+       pRpcstructurecopyHal->deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS = deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v28_08;
     if (IsIPVersionInRange(pRpcstructurecopy, 0x24090000, 0xFFFFFFFF))
        pRpcstructurecopyHal->deserialize_VGPU_CE_GET_CAPS_V2 = deserialize_VGPU_CE_GET_CAPS_V2_v24_09;
     if (IsIPVersionInRange(pRpcstructurecopy, 0x1C090000, 0x2701FFFF))
@@ -1321,6 +1401,18 @@ static NV_STATUS rpcstructurecopy_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE
     static const IGRP_IP_VERSION_RANGE  RPCSTRUCTURECOPY_IGRP_IP_VERSIONS_RANGES_v27_05[] = {
         { 0x27050000, 0xFFFFFFFF, },          // 
     };
+    static const IGRP_IP_VERSION_RANGE  RPCSTRUCTURECOPY_IGRP_IP_VERSIONS_RANGES_v28_01[] = {
+        { 0x28010000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPCSTRUCTURECOPY_IGRP_IP_VERSIONS_RANGES_v28_02[] = {
+        { 0x28020000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPCSTRUCTURECOPY_IGRP_IP_VERSIONS_RANGES_v28_04[] = {
+        { 0x28040000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPCSTRUCTURECOPY_IGRP_IP_VERSIONS_RANGES_v28_08[] = {
+        { 0x28080000, 0xFFFFFFFF, },          // 
+    };
 
 #define _RPCSTRUCTURECOPY_HAL_IGRP_ENTRY_INIT(v) \
     { RPCSTRUCTURECOPY_IGRP_IP_VERSIONS_RANGES_##v, NV_ARRAY_ELEMENTS(RPCSTRUCTURECOPY_IGRP_IP_VERSIONS_RANGES_##v), rpcstructurecopy_iGrp_ipVersions_Install_##v, }
@@ -1371,6 +1463,10 @@ static NV_STATUS rpcstructurecopy_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE
         _RPCSTRUCTURECOPY_HAL_IGRP_ENTRY_INIT(v27_02),    // 
         _RPCSTRUCTURECOPY_HAL_IGRP_ENTRY_INIT(v27_04),    // 
         _RPCSTRUCTURECOPY_HAL_IGRP_ENTRY_INIT(v27_05),    // 
+        _RPCSTRUCTURECOPY_HAL_IGRP_ENTRY_INIT(v28_01),    // 
+        _RPCSTRUCTURECOPY_HAL_IGRP_ENTRY_INIT(v28_02),    // 
+        _RPCSTRUCTURECOPY_HAL_IGRP_ENTRY_INIT(v28_04),    // 
+        _RPCSTRUCTURECOPY_HAL_IGRP_ENTRY_INIT(v28_08),    // 
     };
 
 #undef _RPCSTRUCTURECOPY_HAL_IGRP_ENTRY_INIT

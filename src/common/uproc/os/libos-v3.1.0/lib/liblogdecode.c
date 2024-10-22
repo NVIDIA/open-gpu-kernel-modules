@@ -1358,8 +1358,10 @@ static NvBool libosCopyLogToNvlog_nowrap(LIBOS_LOG_DECODE_LOG *pLog)
     // If RM was not unloaded, we will reuse a preserved nowrap nvlog buffer with the fresh
     // physical log buffer. In this case, we fix up all the offsets into the nvlog buffer to be
     // relative to its preserved position rather than the start.
+    // nvlogPos here is the old putOffset, where putOffset should include size of putPointer
+    // as well, so need to add sizeof(NvU64) after taking differents between pos and preserved
     //
-    NvU64 nvlogPos                     = pNvLogBuffer->pos - pLog->preservedNoWrapPos;
+    NvU64 nvlogPos                     = pNvLogBuffer->pos - pLog->preservedNoWrapPos + sizeof(NvU64);
 
     if (putOffset < nvlogPos)
     {
@@ -1373,27 +1375,75 @@ static NvBool libosCopyLogToNvlog_nowrap(LIBOS_LOG_DECODE_LOG *pLog)
         return NV_TRUE;
     }
 
-    if (putOffset + pLog->preservedNoWrapPos >
-        pNvLogBuffer->size - NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data) - sizeof(NvU64))
+    NvU64 len  = putOffset - nvlogPos;
+
+    if (pNvLogBuffer->pos + len >= pNvLogBuffer->size )
     {
-        // Are we done filling nowrap?
+        // we are done filling nowrap
         return NV_FALSE;
     }
 
-    NvU64 len  = putOffset - nvlogPos;
+
     NvU8 *pSrc = ((NvU8 *)pLog->physicLogBuffer) + nvlogPos;
-    NvU8 *pDst = pNoWrapBuf->data + pNvLogBuffer->pos;
+    NvU8 *pDst = pNoWrapBuf->data + pNvLogBuffer->pos - NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data);
 
     pLog->bDidPush = NV_TRUE;
 
     portMemCopy(pDst, len, pSrc, len);
-    pNvLogBuffer->pos            = putOffset + pLog->preservedNoWrapPos; // TODO: usage of NVLOG_BUFFER::pos is sus here, reconsider?
-    *(NvU64 *)(pNoWrapBuf->data) = putCopy + pLog->preservedNoWrapPos / sizeof(NvU64);
+
+    // preservedNoWrapPos already accounted for both LIBOS buffer header and put pointer
+    pNvLogBuffer->pos            = putOffset + pLog->preservedNoWrapPos - sizeof(NvU64);
+    *(NvU64 *)(pNoWrapBuf->data) = putCopy + (pLog->preservedNoWrapPos-NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data)-sizeof(NvU64)) / sizeof(NvU64);
 
     return NV_TRUE;
 }
 
 static NvBool libosCopyLogToNvlog_wrap(LIBOS_LOG_DECODE_LOG *pLog)
+{
+    NVLOG_BUFFER *pNvLogBuffer = NvLogLogger.pBuffers[pLog->hNvLogWrap];
+    NV_ASSERT_OR_RETURN((pLog->hNvLogWrap != 0) && (pNvLogBuffer != NULL), NV_FALSE);
+
+    LIBOS_LOG_NVLOG_BUFFER *pWrapBuf = (LIBOS_LOG_NVLOG_BUFFER *)pNvLogBuffer->data;
+    NvU64 logEntries                 = pLog->logBufferSize / sizeof(NvU64) - 1 /* -1 for PUT pointer */;
+    NvU64 putCopy                    = pLog->physicLogBuffer[0];
+    NvU64 putOffset                  = putCopy * sizeof(NvU64) + sizeof(NvU64);
+
+    NvU64 prevPutOffset              = pNvLogBuffer->pos - NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data);
+    NvU64 nvlogPos                   = (prevPutOffset - sizeof(NvU64)) % (logEntries * sizeof(NvU64)) + sizeof(NvU64);
+    NvU64 putOffsetWrapped           = (putCopy % logEntries) * sizeof(NvU64) + sizeof(NvU64);
+
+    if (putOffsetWrapped == nvlogPos)
+    {
+        // No new data
+        return NV_TRUE;
+    }
+
+    if (putOffsetWrapped < nvlogPos)
+    {
+        // ring buffer wrapped around since last dump
+        // copy from pNvLogBuffer->pos to end of buffer, update nvlogPos to 0
+        NvU64 len  = pNvLogBuffer->size - NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data) - nvlogPos;
+        NvU8 *pSrc = ((NvU8 *)pLog->physicLogBuffer) + nvlogPos;
+        NvU8 *pDst = pWrapBuf->data + nvlogPos;
+        portMemCopy(pDst, len, pSrc, len);
+        nvlogPos = sizeof(NvU64);
+    }
+
+    if (putOffsetWrapped > nvlogPos)
+    {
+        NvU64 len  = putOffsetWrapped - nvlogPos;
+        NvU8 *pSrc = ((NvU8 *)pLog->physicLogBuffer) + nvlogPos;
+        NvU8 *pDst = pWrapBuf->data + nvlogPos;
+        portMemCopy(pDst, len, pSrc, len);
+    }
+
+    pNvLogBuffer->pos = NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data) + putOffset;
+    *(NvU64 *)(pWrapBuf->data) = putCopy;
+
+    return NV_TRUE;
+}
+
+static NvBool libosSyncNvlog(LIBOS_LOG_DECODE_LOG *pLog)
 {
     NVLOG_BUFFER *pNvLogBuffer = NvLogLogger.pBuffers[pLog->hNvLogWrap];
     NV_ASSERT_OR_RETURN((pLog->hNvLogWrap != 0) && (pNvLogBuffer != NULL), NV_FALSE);
@@ -1419,9 +1469,14 @@ static void libosExtractLogs_nvlog(LIBOS_LOG_DECODE *logDecode, NvBool bSyncNvLo
             pLog->bNvLogNoWrap = libosCopyLogToNvlog_nowrap(pLog);
         }
 
-        if (bSyncNvLog)
+        if (!pLog->bNvLogNoWrap)
         {
             libosCopyLogToNvlog_wrap(pLog);
+        }
+
+        if (bSyncNvLog)
+        {
+            libosSyncNvlog(pLog);
         }
     }
 }
@@ -1444,6 +1499,34 @@ void libosPreserveLogs(LIBOS_LOG_DECODE *pLogDecode)
             pNvLogBuffer->flags |= DRF_DEF(LOG, _BUFFER_FLAGS, _PRESERVE, _YES);
         }
     }
+}
+
+NvBool isLibosPreserveLogBufferFull(LIBOS_LOG_DECODE *pLogDecode, NvU32 gpuInstance)
+{
+    NvU64 i = (NvU32)(pLogDecode->numLogBuffers);
+    NvU32 tag = LIBOS_LOG_NVLOG_BUFFER_TAG(pLogDecode->sourceName, i * 2);
+    NVLOG_BUFFER_HANDLE handle = 0;
+    NV_STATUS status = nvlogGetBufferHandleFromTag(tag, &handle);
+
+    if (status != NV_OK)
+    {
+        return NV_FALSE;
+    }
+
+    NVLOG_BUFFER *pNvLogBuffer = NvLogLogger.pBuffers[handle];
+    if (pNvLogBuffer == NULL)
+    {
+        return NV_FALSE;
+    }
+
+    if (FLD_TEST_DRF(LOG_BUFFER, _FLAGS, _PRESERVE, _YES, pNvLogBuffer->flags) &&
+        DRF_VAL(LOG, _BUFFER_FLAGS, _GPU_INSTANCE, pNvLogBuffer->flags) == gpuInstance &&
+        (pNvLogBuffer->pos >= pNvLogBuffer->size - NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data) - sizeof(NvU64)))
+    {
+        return NV_TRUE;
+    }
+
+    return NV_FALSE;
 }
 
 static NvBool findPreservedNvlogBuffer(NvU32 tag, NvU32 gpuInstance, NVLOG_BUFFER_HANDLE *pHandle)
@@ -1576,7 +1659,7 @@ void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSiz
     pLog->bNvLogNoWrap = NV_FALSE;
 
     pLog->bDidPush             = NV_FALSE;
-    pLog->preservedNoWrapPos   = 0;
+    pLog->preservedNoWrapPos   = NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data) + sizeof(NvU64); // offset to account for LIBOS buffer header and put pointer
 
     LIBOS_LOG_NVLOG_BUFFER *pNoWrapBuf;
     NvU32 tag = LIBOS_LOG_NVLOG_BUFFER_TAG(logDecode->sourceName, i * 2);
@@ -1601,7 +1684,7 @@ void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSiz
             pNoWrapBuf->gpuArch = gpuArch;
             pNoWrapBuf->gpuImpl = gpuImpl;
 
-            NvLogLogger.pBuffers[pLog->hNvLogNoWrap]->pos = sizeof(NvU64); // offset to account for put pointer
+            NvLogLogger.pBuffers[pLog->hNvLogNoWrap]->pos = NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data) + sizeof(NvU64); // offset to account for LIBOS buffer header and put pointer
             pLog->bNvLogNoWrap                            = NV_TRUE;
 
         }
@@ -1614,14 +1697,6 @@ void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSiz
     {
         pLog->bNvLogNoWrap = NV_TRUE;
         pLog->preservedNoWrapPos = NvLogLogger.pBuffers[pLog->hNvLogNoWrap]->pos;
-
-        //
-        // The 0th NvU64 is the last value of put pointer from the physical log buffer, which is
-        // the number of NvU64 log buffer elements in it plus one.
-        // Subtract one NvU64 from it to avoid off-by-one error.
-        //
-        if (pLog->preservedNoWrapPos >= sizeof(NvU64))
-            pLog->preservedNoWrapPos -= sizeof(NvU64);
     }
 
     LIBOS_LOG_NVLOG_BUFFER *pWrapBuf;
@@ -1642,6 +1717,8 @@ void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSiz
 
         pWrapBuf->gpuArch = gpuArch;
         pWrapBuf->gpuImpl = gpuImpl;
+
+        NvLogLogger.pBuffers[pLog->hNvLogWrap]->pos = NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data) + sizeof(NvU64); // offset to account for LIBOS buffer header and put pointer
     }
     else
     {

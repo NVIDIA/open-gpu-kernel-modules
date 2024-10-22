@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,6 +40,7 @@
 #include "os/os.h"
 #include "rmapi/control.h"
 #include "gpu/external_device/gsync_api.h"
+#include "gpu/external_device/dev_p2061.h"
 
 #include "gpu/external_device/dac_p2060.h"
 #include "gpu/external_device/dac_p2061.h"
@@ -279,6 +280,12 @@ gsyncP2061StartupProvider(OBJGSYNC *pGsync)
         p2060->syncSkewResolutionInNs      = NV_P2061_V204_SYNC_SKEW_RESOLUTION;
         p2060->syncSkewMax                 = NV_P2061_V204_SYNC_SKEW_MAX_UNITS;
         p2060->lastUserSkewSent            = NV_P2061_V204_SYNC_SKEW_INVALID;
+    }
+
+    // Control5 sync mode settings are available for FW V3.00+
+    if (P2061_FW_REV(pGsync->pExtDev) >= 0x300)
+    {
+        pGsync->gsyncHal.gsyncSetRasterSyncDecodeMode  = gsyncSetRasterSyncDecodeMode_P2061_V300;
     }
 
     return status;
@@ -1178,7 +1185,7 @@ gsyncIsAnyHeadFramelocked(OBJGSYNC *pGsync)
                 }
                 // Check if assigned master displays are there.
                 if ((NV_OK == pGsync->gsyncHal.gsyncRefMaster(pGpu,
-                     pGsync->pExtDev, refRead, &assigned, &refresh, NV_FALSE, NV_FALSE)) &&
+                     pGsync, refRead, &assigned, &refresh, NV_FALSE, NV_FALSE)) &&
                     (assigned != 0))
                 {
                     return NV_TRUE;
@@ -1457,7 +1464,7 @@ gsyncGetControlSync(OBJGSYNC *pGsync,
         // This is the case where we want to query what is current.
         if ( pParams->master )
         {
-            status |= pGsync->gsyncHal.gsyncRefMaster(pGpu, pGsync->pExtDev, refFetchGet,
+            status |= pGsync->gsyncHal.gsyncRefMaster(pGpu, pGsync, refFetchGet,
                 &pParams->displays, &pParams->refresh, NV_FALSE, NV_FALSE);
         }
         else
@@ -1530,10 +1537,10 @@ gsyncSetControlSync(OBJGSYNC *pGsync,
         NvBool skipSwapBarrierWar = !!(pParams->configFlags &
             NV30F1_CTRL_GSYNC_GET_CONTROL_SYNC_CONFIG_FLAGS_KEEP_MASTER_SWAPBARRIER_DISABLED);
 
-        status |= pGsync->gsyncHal.gsyncRefMaster(pGpu, pGsync->pExtDev,
+        status |= pGsync->gsyncHal.gsyncRefMaster(pGpu, pGsync,
             refRead, &assigned, &refresh, NV_FALSE, NV_FALSE);
         pParams->displays |= assigned;
-        status |= pGsync->gsyncHal.gsyncRefMaster(pGpu, pGsync->pExtDev,
+        status |= pGsync->gsyncHal.gsyncRefMaster(pGpu, pGsync,
             refSetCommit, &pParams->displays, &pParams->refresh, NV_FALSE, skipSwapBarrierWar);
     }
     else
@@ -1584,10 +1591,10 @@ gsyncSetControlUnsync(OBJGSYNC *pGsync,
 
     if (pParams->master)
     {
-        status |= pGsync->gsyncHal.gsyncRefMaster(pGpu, pGsync->pExtDev,
+        status |= pGsync->gsyncHal.gsyncRefMaster(pGpu, pGsync,
             refRead, &assigned, &refresh, NV_FALSE, NV_FALSE);
         pParams->displays = assigned & ~pParams->displays;
-        status |= pGsync->gsyncHal.gsyncRefMaster(pGpu, pGsync->pExtDev,
+        status |= pGsync->gsyncHal.gsyncRefMaster(pGpu, pGsync,
             refSetCommit, &pParams->displays, &refresh, !!pParams->retainMaster, NV_FALSE);
     }
     else
@@ -2363,7 +2370,7 @@ static NV_STATUS
 gsyncNullRefMaster
 (
  OBJGPU       *pGpu,
- PDACEXTERNALDEVICE pExtDev,
+ OBJGSYNC *pGsync,
  REFTYPE rType,
  NvU32 *pDisplayMask,
  NvU32 *pRefresh,
@@ -2488,6 +2495,34 @@ gsyncNullSetMulDiv
 }
 
 static NV_STATUS
+gsyncNullSetRasterSyncDecodeMode
+(
+    OBJGPU            *pGpu,
+    DACEXTERNALDEVICE *pExtDev
+)
+{
+    //
+    // Performs no action on the Gsync board except for P2061 FW 3.00+
+    // But, this detects when the raster sync mode is not supported by earlier FWs
+    //
+    NV2080_CTRL_INTERNAL_GSYNC_GET_RASTER_SYNC_DECODE_MODE_PARAMS
+            rasterSyncDecodeModeParams;
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+    // Pre-3.00 FW can only use NV2080_CTRL_CMD_INTERNAL_GSYNC_GET_RASTER_SYNC_DECODE_MODE
+    NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi, pGpu->hInternalClient,
+        pGpu->hInternalSubdevice, NV2080_CTRL_CMD_INTERNAL_GSYNC_GET_RASTER_SYNC_DECODE_MODE,
+        &rasterSyncDecodeModeParams, sizeof(rasterSyncDecodeModeParams)));
+
+    NV_CHECK_OR_RETURN(LEVEL_WARNING,
+        rasterSyncDecodeModeParams.rasterSyncDecodeMode ==
+        NV_P2061_CONTROL5_RASTER_SYNC_DECODE_MODE_VSYNC_SHORT_PULSE,
+        NV_ERR_INVALID_OPERATION);
+
+    return NV_OK;
+}
+
+static NV_STATUS
 gsyncSetupNullProvider(OBJGSYNCMGR *pGsyncMgr, NvU32 gsyncInst)
 {
     OBJGSYNC *pGsync;
@@ -2533,6 +2568,7 @@ gsyncSetupNullProvider(OBJGSYNCMGR *pGsyncMgr, NvU32 gsyncInst)
     pGsync->gsyncHal.gsyncSetHouseSyncMode     = gsyncNullSetHouseSyncMode;
     pGsync->gsyncHal.gsyncGetMulDiv            = gsyncNullGetMulDiv;
     pGsync->gsyncHal.gsyncSetMulDiv            = gsyncNullSetMulDiv;
+    pGsync->gsyncHal.gsyncSetRasterSyncDecodeMode = gsyncNullSetRasterSyncDecodeMode;
 
     return status;
 }

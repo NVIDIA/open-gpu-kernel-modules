@@ -28,7 +28,7 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
 #include "gpu/mem_mgr/heap.h"
-#include "kernel/gpu/fifo/kernel_sched_mgr.h"
+#include "gpu/bif/kernel_bif.h"
 #include "virtualization/kernel_vgpu_mgr.h"
 #include "virtualization/hypervisor/hypervisor.h"
 #include "rmapi/control.h"
@@ -294,15 +294,19 @@ vgpuconfigapiCtrlCmdVgpuConfigEnumerateVgpuPerPgpu_IMPL
         pVgpuGuest = &pParams->vgpuGuest[i];
 
         portMemSet(pVgpuGuest->guestVmInfo.vmName, 0, NVA081_VM_NAME_SIZE);
-        portMemSet(pVgpuGuest->vgpuDevice.mdevUuid, 0, VGPU_UUID_SIZE);
+        portMemSet(pVgpuGuest->vgpuDevice.vgpuDevName, 0, VGPU_UUID_SIZE);
 
-        if (osIsVgpuVfioPresent() == NV_OK)
+        if ((osIsVgpuVfioPresent() == NV_OK)
+           )
         {
             portMemCopy(pVgpuGuest->guestVmInfo.vmName,
                         NVA081_VM_NAME_SIZE,
                         pVgpuGuestTmp->guestVmInfo.vmName,
                         NVA081_VM_NAME_SIZE);
+        }
 
+        if (osIsVgpuVfioPresent() == NV_OK)
+        {
             if (pKernelHostVgpuDevice->pRequestVgpuInfoNode == NULL)
             {
                 rmStatus = NV_ERR_INVALID_POINTER;
@@ -316,7 +320,7 @@ vgpuconfigapiCtrlCmdVgpuConfigEnumerateVgpuPerPgpu_IMPL
             if (!osIsVfioPciCorePresent() || !gpuIsSriovEnabled(pGpu))
             {
                 for (j = 0; j < VGPU_UUID_SIZE; j++)
-                    pVgpuGuest->vgpuDevice.mdevUuid[j] = pKernelHostVgpuDevice->pRequestVgpuInfoNode->mdevUuid[index[j]];
+                    pVgpuGuest->vgpuDevice.vgpuDevName[j] = pKernelHostVgpuDevice->pRequestVgpuInfoNode->vgpuDevName[index[j]];
             }
         }
 
@@ -424,6 +428,8 @@ vgpuconfigapiCtrlCmdVgpuConfigGetVgpuTypeInfo_IMPL
     NvU32                 i;
     NvU32                 pgpuIndex;
     KERNEL_PHYS_GPU_INFO *pPgpuInfo;
+    RM_API                  *pRmApi        = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NV2080_CTRL_VGPU_MGR_GET_FRAME_RATE_LIMITER_STATUS_PARAMS frlStatus;
 
     NV_PRINTF(LEVEL_INFO, "%s\n", __FUNCTION__);
 
@@ -472,15 +478,14 @@ vgpuconfigapiCtrlCmdVgpuConfigGetVgpuTypeInfo_IMPL
      */
     pParams->vgpuTypeInfo.exclusiveSize      = !pPgpuInfo->heterogeneousTimesliceSizesSupported;
 
-    // Disable FRL if we are using sched_sw (PVMRL) in timesliced mode
-    if (IsPASCALorBetter(pGpu))
+    NV_ASSERT_OK_OR_RETURN(
+            pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
+                            NV2080_CTRL_CMD_VGPU_MGR_INTERNAL_GET_FRAME_RATE_LIMITER_STATUS,
+                            &frlStatus, sizeof(frlStatus)));
+
+    if (frlStatus.bFlrDisabled)
     {
-        KernelSchedMgr *pKernelSchedMgr = GPU_GET_KERNEL_SCHEDMGR(pGpu);
-        if (pKernelSchedMgr &&
-            kschedmgrIsPvmrlEnabled(pKernelSchedMgr))
-        {
-            pParams->vgpuTypeInfo.frlEnable = 0;
-        }
+        pParams->vgpuTypeInfo.frlEnable = 0;
     }
 
     portStringCopy((char *) pParams->vgpuTypeInfo.vgpuName, sizeof(pParams->vgpuTypeInfo.vgpuName), (char *) vgpuTypeInfo->vgpuName, VGPU_STRING_BUFFER_SIZE);
@@ -823,15 +828,44 @@ vgpuconfigapiCtrlCmdVgpuConfigGetCapability_IMPL
              * and hence we are turning true always without checking for input device.
              * If we decided not to support any GPU, this needs to be modified.
              */
-            pGetCapabilityParams->state = NV_TRUE;
-            if (IS_MIG_ENABLED(pGpu))
-            {
-                pGetCapabilityParams->state = NV_FALSE;
-            }
+            pGetCapabilityParams->state = IS_MIG_ENABLED(pGpu) ? NV_FALSE : NV_TRUE;
+            break;
+        }
+        case NVA081_CTRL_VGPU_CAPABILITY_DEVICE_STREAMING:
+        {
+            pGetCapabilityParams->state = gpuIsSriovEnabled(pGpu);
+            break;
+        }
+        case NVA081_CTRL_VGPU_CAPABILITY_READ_DEVICE_BUFFER_BW:
+        case NVA081_CTRL_VGPU_CAPABILITY_WRITE_DEVICE_BUFFER_BW:
+        {
+            KernelBif *pKernelBif  = GPU_GET_KERNEL_BIF(pGpu);
+
+            NV_ASSERT_OK_OR_RETURN(
+                kbifGetMigrationBandwidth_HAL(pGpu, pKernelBif, &pGetCapabilityParams->state));
+            break;
+        }
+        case NVA081_CTRL_VGPU_CAPABILITY_HETEROGENEOUS_TIMESLICE_SIZES:
+        {
+            pGetCapabilityParams->state = pPhysGpuInfo->heterogeneousTimesliceSizesSupported;
+            break;
+        }
+        case NVA081_CTRL_VGPU_CAPABILITY_HETEROGENEOUS_TIMESLICE_PROFILES:
+        {
+            /* We are not currently limiting the feature based on the pgpu.
+             * Return the system level value here.
+             */
+            pGetCapabilityParams->state = kvgpumgrIsHeterogeneousVgpuSupported();
+            break;
+        }
+        case NVA081_CTRL_VGPU_CAPABILITY_FRACTIONAL_MULTI_VGPU:
+        {
+            pGetCapabilityParams->state = pPhysGpuInfo->fractionalMultiVgpu;
             break;
         }
         default:
         {
+            NV_PRINTF(LEVEL_ERROR, "Failed to find vGPU device capability\n");
             rmStatus = NV_ERR_INVALID_ARGUMENT;
             break;
         }
@@ -1249,7 +1283,8 @@ vgpuconfigapiCtrlCmdVgpuConfigUpdateHeterogeneousInfo_IMPL
                                                &pParams->placementId,
                                                &pParams->guestFbLength,
                                                &pParams->guestFbOffset,
-                                               &pParams->gspHeapOffset);
+                                               &pParams->gspHeapOffset,
+                                               &pParams->guestBar1PFOffset);
     if (rmStatus != NV_OK)
         return rmStatus;
 
@@ -1267,9 +1302,22 @@ vgpuconfigapiCtrlCmdVgpuSetVmName_IMPL
     KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice = NULL;
     NV_STATUS status;
 
-    status = kvgpumgrGetHostVgpuDeviceFromMdevUuid(pGpu->gpuId,
-                                                  pParams->vgpuName,
-                                                  &pKernelHostVgpuDevice);
+    if (pParams->vmIdType == VM_ID_DOMAIN_ID)
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+    else if (pParams->vmIdType == VM_ID_UUID)
+    {
+        /* KVM uses VM type ID == VM_ID_UUID */
+        status = kvgpumgrGetHostVgpuDeviceFromVgpuDevName(pGpu->gpuId,
+                                                       pParams->guestVmId.vmUuid,
+                                                       &pKernelHostVgpuDevice);
+    }
+    else
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
     if (status != NV_OK)
         return status;
 
@@ -1279,3 +1327,27 @@ vgpuconfigapiCtrlCmdVgpuSetVmName_IMPL
     return NV_OK;
 }
 
+NV_STATUS
+vgpuconfigapiCtrlCmdVgpuConfigGetMigrationBandwidth_IMPL
+(
+    VgpuConfigApi *pVgpuConfigApi,
+    NVA081_CTRL_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pVgpuConfigApi);
+    KernelBif *pKernelBif  = GPU_GET_KERNEL_BIF(pGpu);
+    NV_STATUS rmStatus = NV_OK;
+
+    if (IS_VIRTUAL(pGpu))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    rmStatus = kbifGetMigrationBandwidth_HAL(pGpu, pKernelBif, &pParams->migrationBandwidth);
+    if (rmStatus != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to get Migration Bandwidth rmStatus 0x%x\n",rmStatus);
+    }
+
+    return rmStatus;
+}

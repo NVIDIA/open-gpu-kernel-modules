@@ -70,8 +70,8 @@ void crashcatReportLogSource_V1_LIBOS3(CrashCatReport *pReport)
     NvCrashCatReport_V1 *pReportV1 = &pReport->v1.report;
 
     NvU8 taskId = crashcatReportV1SourceLibos3TaskId(pReportV1);
-    NvCrashCatNvriscvPartition sourcePartition = crashcatReportV1ReporterPartition(pReportV1);
-    NvCrashCatNvriscvUcodeId sourceUcodeId = crashcatReportV1ReporterUcodeId(pReportV1);    
+    NvCrashCatNvriscvPartition sourcePartition = crashcatReportV1SourcePartition(pReportV1);
+    NvCrashCatNvriscvUcodeId sourceUcodeId = crashcatReportV1SourceUcodeId(pReportV1);    
 
 #define CRASHCAT_LOG_LIBOS3_SOURCE(fmt, ...)                                                     \
     if (taskId == NV_CRASHCAT_REPORT_V1_SOURCE_ID_LIBOS3_TASK_ID_UNSPECIFIED)                    \

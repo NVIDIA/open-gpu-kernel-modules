@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -43,6 +43,8 @@ struct nv_kthread_q
     atomic_t main_loop_should_exit;
 
     struct task_struct *q_kthread;
+
+    bool is_unload_flush_ongoing;
 };
 
 struct nv_kthread_q_item

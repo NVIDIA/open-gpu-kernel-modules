@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2022 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2003-2024 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,7 @@
 #define NV_PRISCV_RISCV_CPUCTL                                                                         0x00000388     /* RWI4R */
 #define NV_PRISCV_RISCV_CPUCTL_ACTIVE_STAT                                                             7:7            /* R-IVF */
 #define NV_PRISCV_RISCV_CPUCTL_ACTIVE_STAT_ACTIVE                                                      0x00000001     /* R---V */
+#define NV_PRISCV_RISCV_CPUCTL_HALTED                                                                  4:4            /* R-IVF */
 #define NV_PRISCV_RISCV_BCR_CTRL                                                                       0x00000668     /* RWI4R */
 #define NV_PRISCV_RISCV_BCR_CTRL_VALID                                                                 0:0            /* R-IVF */
 #define NV_PRISCV_RISCV_BCR_CTRL_VALID_TRUE                                                            0x00000001     /* R---V */

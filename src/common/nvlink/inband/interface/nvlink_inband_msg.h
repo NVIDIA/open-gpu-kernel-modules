@@ -101,7 +101,9 @@ typedef struct
 
     NvU32  gpuCapMask;           /* GPU capabilities, one of NVLINK_INBAND_GPU_PROBE_CAPS */
     NvU8   bwMode;               /* NVLink bandwidth mode, one of NVLINK_INBAND_BW_MODE */
-    NvU8   reserved[31];         /* For future use. Must be initialized to zero */
+    NvU8   rbmRequested;         /* Flag to request a specific RBM Mode */
+    NvU8   rbmLinkCount;         /* Number of links to be used for Reduced Bandwidth mode */
+    NvU8   reserved[29];         /* For future use. Must be initialized to zero */
 } nvlink_inband_gpu_probe_req_t;
 
 typedef struct
@@ -139,7 +141,8 @@ typedef struct
     NvU32  cliqueId;              /* Fabric Clique Id */
     NvU32  fabricHealthMask;      /* Mask containing bits indicating various fabric health parameters */
     NvU32  gpaAddressEGMHi;       /* GPA Address for EGM. Don't use if EGM support is not present in GFM */
-    NvU8   reserved[16];          /* For future use. Must be initialized to zero */
+    NvU8   maxRbmLinks;           /* Max RBM mode supported */
+    NvU8   reserved[15];          /* For future use. Must be initialized to zero */
 } nvlink_inband_gpu_probe_rsp_t;
 
 typedef struct

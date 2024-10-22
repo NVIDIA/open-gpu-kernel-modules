@@ -919,39 +919,6 @@ kgmmuIsReplayableShadowFaultBufferFull_GH100
             ((shadowBufPutIndex + 1) % maxBufferEntries)) ? NV_TRUE : NV_FALSE;
 }
 
-/*!
- * @brief Get the engine ID associated with the min CE
- *
- * @param[in] pKenrelGmmu  KernelGmmu object
- *
- * return engine ID of the min CE
- */
-NvU32
-kgmmuGetMinCeEngineId_GH100
-(
-    KernelGmmu *pKernelGmmu
-)
-{
-    return NV_PFAULT_MMU_ENG_ID_CE0;
-}
-
-/*!
- * @brief Get the engine ID associated with the max CE
- *
- * @param[in] pGpu         OBJGPU object
- * @param[in] pKenrelGmmu  KernelGmmu object
- *
- * return engine ID of the max CE
- */
-NvU32
-kgmmuGetMaxCeEngineId_GH100
-(
-    OBJGPU     *pGpu,
-    KernelGmmu *pKernelGmmu
-)
-{
-    return NV_PFAULT_MMU_ENG_ID_CE9;
-}
 
 /**
   * @brief  Sign extend a fault address to a supported width as per UVM requirements

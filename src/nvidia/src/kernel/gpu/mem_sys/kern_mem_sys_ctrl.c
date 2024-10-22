@@ -163,7 +163,10 @@ _kmemsysGetFbInfos
 
     if (bIsMIGInUse)
     {
-        bIsClientMIGMonitor = !RMCFG_FEATURE_PLATFORM_GSP && rmclientIsCapableByHandle(pClient->hClient, NV_RM_CAP_SYS_SMC_MONITOR);
+        RmClient *pRmClient = dynamicCast(pClient, RmClient);
+        NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
+
+        bIsClientMIGMonitor = !RMCFG_FEATURE_PLATFORM_GSP && rmclientIsCapable(pRmClient, NV_RM_CAP_SYS_SMC_MONITOR);
         bIsClientMIGProfiler = kmigmgrIsDeviceUsingDeviceProfiling(pGpu, pKernelMIGManager, pDevice);
     }
 
@@ -945,7 +948,8 @@ subdeviceCtrlCmdFbGetInfoV2_IMPL
     NvHandle hObject = RES_GET_HANDLE(pSubdevice);
     Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance),
+        NV_ERR_INVALID_LOCK_STATE);
 
     if ((pFbInfoParams->fbInfoListSize > NV2080_CTRL_FB_INFO_MAX_LIST_SIZE) ||
         (pFbInfoParams->fbInfoListSize == 0))
@@ -954,117 +958,6 @@ subdeviceCtrlCmdFbGetInfoV2_IMPL
     }
 
     return _kmemsysGetFbInfos(pGpu, pClient, pDevice, hObject, pFbInfoParams);
-}
-
-//
-// subdeviceCtrlCmdFbGetCarveoutAddressInfo
-//
-// Lock Requirements:
-//      Assert that API and GPUs lock held on entry
-//
-NV_STATUS
-subdeviceCtrlCmdFbGetCarveoutAddressInfo_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_FB_GET_SYSTEM_CARVEOUT_ADDRESS_SPACE_INFO *pParams
-)
-{
-
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
-
-    pParams->StartAddr = 0x0;
-    pParams->SpaceSize = 0x0;
-
-    return NV_ERR_GENERIC;
-}
-
-//
-// subdeviceCtrlCmdFbSetGpuCacheAllocPolicy
-//
-// Lock Requirements:
-//      Assert that GPUs lock held on entry
-//      Called from SW method w/o API lock
-//
-NV_STATUS
-subdeviceCtrlCmdFbSetGpuCacheAllocPolicy_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_PARAMS *pParams
-)
-{
-    LOCK_ASSERT_AND_RETURN(rmGpuLockIsOwner());
-
-    // Map engine to FBBA client
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-//
-// subdeviceCtrlCmdFbGetGpuCacheAllocPolicy
-//
-// Lock Requirements:
-//      Assert that API and GPUs lock held on entry
-//
-NV_STATUS
-subdeviceCtrlCmdFbGetGpuCacheAllocPolicy_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_PARAMS *pGpuCacheAllocPolicyParams
-)
-{
-
-    NV_STATUS status = NV_ERR_NOT_SUPPORTED;
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
-
-    pGpuCacheAllocPolicyParams->allocPolicy = 0;
-
-    NV_PRINTF(LEVEL_ERROR, "Failed to read Client reads ALLOC policy\n");
-    return status;
-}
-
-//
-// subdeviceCtrlCmdFbSetGpuCacheAllocPolicyV2
-//
-// Lock Requirements:
-//      Assert that GPUs lock held on entry
-//      Called from SW method w/o API lock
-//
-NV_STATUS
-subdeviceCtrlCmdFbSetGpuCacheAllocPolicyV2_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_PARAMS *pParams
-)
-{
-    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
-    RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
-    NV_STATUS status = NV_ERR_NOT_SUPPORTED;
-
-    // Bug 724186 -- Skip this check for deferred API
-    LOCK_ASSERT_AND_RETURN(pRmCtrlParams->bDeferredApi || rmGpuLockIsOwner());
-
-    NV_PRINTF(LEVEL_ERROR, "Failed to set alloc policy\n");
-    return status;
-}
-
-//
-// subdeviceCtrlCmdFbGetGpuCacheAllocPolicyV2
-//
-// Lock Requirements:
-//      Assert that API and GPUs lock held on entry
-//
-NV_STATUS
-subdeviceCtrlCmdFbGetGpuCacheAllocPolicyV2_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_PARAMS *pParams
-)
-{
-    NV_STATUS status = NV_ERR_NOT_SUPPORTED;
-
-    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
-
-    NV_PRINTF(LEVEL_ERROR, "Failed to get alloc policy.\n");
-    return status;
 }
 
 //
@@ -1093,7 +986,7 @@ subdeviceCtrlCmdFbGetCliManagedOfflinedPages_IMPL
     NvU64               pageSize;
     NvU32               numChunks           = 0;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
     if (!IsSLIEnabled(pGpu))
     {
         if (memmgrIsPmaInitialized(pMemoryManager))
@@ -1160,7 +1053,7 @@ subdeviceCtrlCmdFbUpdateNumaStatus_IMPL
     if (!RMCFG_FEATURE_PMA)
         return NV_ERR_NOT_SUPPORTED;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (pParams->bOnline)
     {
@@ -1206,7 +1099,8 @@ subdeviceCtrlCmdFbGetNumaInfo_IMPL
     NvU64                numaMemOffset = 0;
     NvU64                numaMemSize = 0;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(),
+        NV_ERR_INVALID_LOCK_STATE);
 
     if (pParams->numaOfflineAddressesCount >
         NV_ARRAY_ELEMENTS(pParams->numaOfflineAddresses))
@@ -1305,6 +1199,49 @@ subdeviceCtrlCmdFbGetNumaInfo_IMPL
     return status;
 }
 
+/*!
+ * @brief This call can be used to get static Bar1 related information.
+ *
+ * Lock Requirements:
+ *      Assert that API and GPUs lock held on entry
+ *
+ * @param[in] pSubdevice Subdevice
+ * @param[in] pParams    pointer to control parameters
+ *
+ * @return NV_OK When successful
+ *         NV_ERR_INVALID_STATE Otherwise
+ */
+NV_STATUS
+subdeviceCtrlCmdFbGetStaticBar1Info_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_FB_GET_STATIC_BAR1_INFO_PARAMS *pParams
+)
+{
+    OBJGPU             *pGpu        = GPU_RES_GET_GPU(pSubdevice);
+    KernelBus          *pKernelBus  = GPU_GET_KERNEL_BUS(pGpu);
+    NV_STATUS           status      = NV_OK;
+    NvU32               gfid;
+
+    NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid));
+
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance),
+        NV_ERR_INVALID_LOCK_STATE);
+
+    pParams->bStaticBar1Enabled = pKernelBus->bar1[gfid].bStaticBar1Enabled;
+
+    if (pParams->bStaticBar1Enabled)
+    {
+        pParams->staticBar1Size = pKernelBus->bar1[gfid].staticBar1.size;
+    }
+    else
+    {
+        pParams->staticBar1Size = 0;
+    }
+
+    return status;
+}
+
 NV_STATUS
 subdeviceCtrlCmdFbSetZbcReferenced_IMPL
 (
@@ -1377,7 +1314,8 @@ subdeviceCtrlCmdFbFlushGpuCache_IMPL
     NvBool              bWriteback = NV_FALSE;
     NvBool              bInvalidate = NV_FALSE;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance),
+        NV_ERR_INVALID_LOCK_STATE);
 
     // Either WriteBack or Invalidate are required for Cache Ops
     if (FLD_TEST_DRF(2080, _CTRL_FB_FLUSH_GPU_CACHE_FLAGS, _WRITE_BACK,
@@ -1495,7 +1433,7 @@ subdeviceCtrlCmdFbGetGpuCacheInfo_IMPL
     FB_CACHE_WRITE_MODE writeMode = pKernelMemorySystem->l2WriteMode;
     FB_CACHE_BYPASS_MODE bypassMode = FB_CACHE_BYPASS_MODE_DISABLED;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     switch (writeMode)
     {

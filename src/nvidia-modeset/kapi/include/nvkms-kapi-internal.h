@@ -124,6 +124,8 @@ struct NvKmsKapiDevice {
     NvU64 supportedSurfaceMemoryFormats[NVKMS_KAPI_LAYER_MAX];
     NvBool supportsICtCp[NVKMS_KAPI_LAYER_MAX];
 
+    struct NvKmsKapiLutCaps lutCaps;
+
     NvU32 numHeads;
     NvU32 numLayers[NVKMS_KAPI_MAX_HEADS];
 

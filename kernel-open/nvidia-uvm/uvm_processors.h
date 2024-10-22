@@ -176,6 +176,13 @@ static void prefix_fn_mask##_copy(mask_t *dst, const mask_t *src)               
     bitmap_copy(dst->bitmap, src->bitmap, (maxval));                                                         \
 }                                                                                                            \
                                                                                                              \
+static void prefix_fn_mask##_range_fill(mask_t *mask, proc_id_t start, NvU32 nbits)                          \
+{                                                                                                            \
+    UVM_ASSERT_MSG(start.val + nbits <= (maxval), "start %u nbits %u\n", start.val, nbits);                  \
+                                                                                                             \
+    bitmap_set(mask->bitmap, start.val, nbits);                                                              \
+}                                                                                                            \
+                                                                                                             \
 static bool prefix_fn_mask##_and(mask_t *dst, const mask_t *src1, const mask_t *src2)                        \
 {                                                                                                            \
     return bitmap_and(dst->bitmap, src1->bitmap, src2->bitmap, (maxval)) != 0;                               \
@@ -276,6 +283,12 @@ typedef uvm_processor_id_t uvm_gpu_id_t;
 // Maximum number of GPUs/processors that can be represented with the id types
 #define UVM_PARENT_ID_MAX_GPUS       NV_MAX_DEVICES
 #define UVM_PARENT_ID_MAX_PROCESSORS (UVM_PARENT_ID_MAX_GPUS + 1)
+#define UVM_MAX_UNIQUE_PARENT_GPU_PAIRS SUM_FROM_0_TO_N(UVM_PARENT_ID_MAX_GPUS - 1)
+
+// Note that this is the number of MIG instance pairs between two different
+// parent GPUs so parent A sub-processor ID 0 to parent B sub-processor ID 0
+// is valid.
+#define UVM_MAX_UNIQUE_SUB_PROCESSOR_PAIRS SUM_FROM_0_TO_N(UVM_PARENT_ID_MAX_SUB_PROCESSORS)
 
 #define UVM_ID_MAX_GPUS       (UVM_PARENT_ID_MAX_GPUS * UVM_PARENT_ID_MAX_SUB_PROCESSORS)
 #define UVM_ID_MAX_PROCESSORS (UVM_ID_MAX_GPUS + 1)
@@ -710,5 +723,17 @@ NV_STATUS uvm_processor_mask_cache_init(void);
 void uvm_processor_mask_cache_exit(void);
 uvm_processor_mask_t *uvm_processor_mask_cache_alloc(void);
 void uvm_processor_mask_cache_free(uvm_processor_mask_t *mask);
+
+// Return the name of the given processor ID.
+// Locking: This should only be called when the ID is the CPU or the GPU is
+// retained (such as the va_space lock being held).
+const char *uvm_processor_get_name(uvm_processor_id_t id);
+
+// Return the UUID in 'out_uuid' for the given processor ID 'id'.
+// Locking: This should only be called when the ID is the CPU or the GPU is
+// retained (such as the va_space lock being held).
+void uvm_processor_get_uuid(uvm_processor_id_t id, NvProcessorUuid *out_uuid);
+
+bool uvm_processor_has_memory(uvm_processor_id_t id);
 
 #endif

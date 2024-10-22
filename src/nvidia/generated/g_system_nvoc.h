@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -321,6 +321,12 @@ typedef struct SYS_STATIC_CONFIG
     /*! Indicates confidentail compute OS support is enabled or not */
     NvBool bOsCCEnabled;
 
+    /*! Indicates SEV-SNP confidential compute OS support is enabled or not */
+    NvBool bOsCCSevSnpEnabled;
+
+    /*! Indicates SEV-SNP vTOM confidential compute OS support is enabled or not */
+    NvBool bOsCCSnpVtomEnabled;
+
     /*! Indicates Intel TDX confidentail compute OS support is enabled or not */
     NvBool bOsCCTdxEnabled;
 } SYS_STATIC_CONFIG;
@@ -375,10 +381,15 @@ MAKE_MULTIMAP(SYS_MEM_EXPORT_CACHE, SysMemExportCacheEntry);
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__OBJSYS;
+
+
 struct OBJSYS {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__OBJSYS *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct Object __nvoc_base_Object;
@@ -389,10 +400,7 @@ struct OBJSYS {
     struct OBJTRACEABLE *__nvoc_pbase_OBJTRACEABLE;    // traceable super
     struct OBJSYS *__nvoc_pbase_OBJSYS;    // sys
 
-    // Vtable with 1 per-object function pointer
-    NV_STATUS (*__sysCaptureState__)(struct OBJSYS * /*this*/);  // virtual
-
-    // 32 PDB properties
+    // 34 PDB properties
     NvBool PDB_PROP_SYS_SBIOS_NVIF_POWERMIZER_LIMIT;
     NvBool PDB_PROP_SYS_MXM_THERMAL_CONTROL_PRESENT;
     NvBool PDB_PROP_SYS_POWER_BATTERY;
@@ -424,7 +432,9 @@ struct OBJSYS {
     NvBool PDB_PROP_SYS_ROUTE_TO_PHYSICAL_LOCK_BYPASS;
     NvBool PDB_PROP_SYS_IS_QSYNC_FW_REVISION_CHECK_DISABLED;
     NvBool PDB_PROP_SYS_GPU_LOCK_MIDPATH_ENABLED;
+    NvBool PDB_PROP_SYS_ENABLE_FORCE_SHARED_LOCK;
     NvBool PDB_PROP_SYS_DESTRUCTING;
+    NvBool PDB_PROP_SYS_RECOVERY_REBOOT_REQUIRED;
 
     // Data members
     NvU32 apiLockMask;
@@ -440,7 +450,6 @@ struct OBJSYS {
     NvU32 gridSwPkg;
     void *pSema;
     NvU32 binMask;
-    PNODE pMemFilterList;
     NvU64 rmInstanceId;
     NvU32 currentCid;
     NvBool bUseDeferredClientListFree;
@@ -469,6 +478,13 @@ struct OBJSYS {
     struct Fabric *pFabric;
     struct GpuDb *pGpuDb;
     NvBool bIsGridBuild;
+};
+
+
+// Metadata including vtable with 1 function pointer plus superclass metadata
+struct NVOC_VTABLE__OBJSYS {
+
+    NV_STATUS (*__sysCaptureState__)(struct OBJSYS * /*this*/);  // virtual
 };
 
 #ifndef __NVOC_CLASS_OBJSYS_TYPEDEF__
@@ -548,10 +564,14 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJSYS;
 #define PDB_PROP_SYS_VALIDATE_CLIENT_HANDLE_BASE_NAME PDB_PROP_SYS_VALIDATE_CLIENT_HANDLE
 #define PDB_PROP_SYS_FABRIC_IS_EXTERNALLY_MANAGED_BASE_CAST
 #define PDB_PROP_SYS_FABRIC_IS_EXTERNALLY_MANAGED_BASE_NAME PDB_PROP_SYS_FABRIC_IS_EXTERNALLY_MANAGED
+#define PDB_PROP_SYS_ENABLE_FORCE_SHARED_LOCK_BASE_CAST
+#define PDB_PROP_SYS_ENABLE_FORCE_SHARED_LOCK_BASE_NAME PDB_PROP_SYS_ENABLE_FORCE_SHARED_LOCK
 #define PDB_PROP_SYS_IS_AGGRESSIVE_GC6_ENABLED_BASE_CAST
 #define PDB_PROP_SYS_IS_AGGRESSIVE_GC6_ENABLED_BASE_NAME PDB_PROP_SYS_IS_AGGRESSIVE_GC6_ENABLED
 #define PDB_PROP_SYS_HASWELL_CPU_C0_STEPPING_BASE_CAST
 #define PDB_PROP_SYS_HASWELL_CPU_C0_STEPPING_BASE_NAME PDB_PROP_SYS_HASWELL_CPU_C0_STEPPING
+#define PDB_PROP_SYS_RECOVERY_REBOOT_REQUIRED_BASE_CAST
+#define PDB_PROP_SYS_RECOVERY_REBOOT_REQUIRED_BASE_NAME PDB_PROP_SYS_RECOVERY_REBOOT_REQUIRED
 #define PDB_PROP_SYS_RM_LOCK_TIME_COLLECT_BASE_CAST
 #define PDB_PROP_SYS_RM_LOCK_TIME_COLLECT_BASE_NAME PDB_PROP_SYS_RM_LOCK_TIME_COLLECT
 #define PDB_PROP_SYS_DEBUGGER_DISABLED_BASE_CAST
@@ -567,12 +587,12 @@ NV_STATUS __nvoc_objCreate_OBJSYS(OBJSYS**, Dynamic*, NvU32);
 
 
 // Wrapper macros
-#define sysCaptureState_FNPTR(arg_this) arg_this->__sysCaptureState__
+#define sysCaptureState_FNPTR(arg_this) arg_this->__nvoc_vtable->__sysCaptureState__
 #define sysCaptureState(arg_this) sysCaptureState_DISPATCH(arg_this)
 
 // Dispatch functions
 static inline NV_STATUS sysCaptureState_DISPATCH(struct OBJSYS *arg_this) {
-    return arg_this->__sysCaptureState__(arg_this);
+    return arg_this->__nvoc_vtable->__sysCaptureState__(arg_this);
 }
 
 NV_STATUS sysCaptureState_IMPL(struct OBJSYS *arg1);
@@ -651,6 +671,16 @@ static inline NV_STATUS sysSyncExternalFabricMgmtWAR(struct OBJSYS *arg1, OBJGPU
 }
 #else //__nvoc_system_h_disabled
 #define sysSyncExternalFabricMgmtWAR(arg1, arg2) sysSyncExternalFabricMgmtWAR_IMPL(arg1, arg2)
+#endif //__nvoc_system_h_disabled
+
+void sysSetRecoveryRebootRequired_IMPL(struct OBJSYS *pSys, NvBool bRebootRequired);
+
+#ifdef __nvoc_system_h_disabled
+static inline void sysSetRecoveryRebootRequired(struct OBJSYS *pSys, NvBool bRebootRequired) {
+    NV_ASSERT_FAILED_PRECOMP("OBJSYS was disabled!");
+}
+#else //__nvoc_system_h_disabled
+#define sysSetRecoveryRebootRequired(pSys, bRebootRequired) sysSetRecoveryRebootRequired_IMPL(pSys, bRebootRequired)
 #endif //__nvoc_system_h_disabled
 
 #undef PRIVATE_FIELD

@@ -40,21 +40,23 @@
  * @brief SPDM Command Types
  *
  */
-#define RM_GSP_SPDM_CMD_ID_CC_INIT           (0x1)
-#define RM_GSP_SPDM_CMD_ID_CC_DEINIT         (0x2)
-#define RM_GSP_SPDM_CMD_ID_CC_CTRL           (0x3)
-#define RM_GSP_SPDM_CMD_ID_CC_INIT_RM_DATA   (0x4)
-#define RM_GSP_SPDM_CMD_ID_CC_HEARTBEAT_CTRL (0x5)
-#define RM_GSP_SPDM_CMD_ID_FIPS_SELFTEST     (0x6)
+#define RM_GSP_SPDM_CMD_ID_CC_INIT                        (0x1)
+#define RM_GSP_SPDM_CMD_ID_CC_DEINIT                      (0x2)
+#define RM_GSP_SPDM_CMD_ID_CC_CTRL                        (0x3)
+#define RM_GSP_SPDM_CMD_ID_CC_INIT_RM_DATA                (0x4)
+#define RM_GSP_SPDM_CMD_ID_CC_HEARTBEAT_CTRL              (0x5)
+#define RM_GSP_SPDM_CMD_ID_FIPS_SELFTEST                  (0x6)
 
 
-#define RM_GSP_SPDM_CMD_ID_INVALID_COMMAND   (0xFF)
+#define RM_GSP_SPDM_CMD_ID_INVALID_COMMAND                (0xFF)
+
+#define SPDM_SESSION_ESTABLISHMENT_TRANSCRIPT_BUFFER_SIZE 0x2400
 
 
 
-#define RSVD7_SIZE                           16
+#define RSVD7_SIZE                                        16
 
-#define RSVD8_SIZE                           2
+#define RSVD8_SIZE                                        2
 
 /*!
  * Guest RM provides INIT context
@@ -226,6 +228,21 @@ typedef struct NV2080_CTRL_INTERNAL_SPDM_PARTITION_PARAMS {
     RM_GSP_SPDM_CMD cmd;
     RM_GSP_SPDM_MSG msg;
 } NV2080_CTRL_INTERNAL_SPDM_PARTITION_PARAMS;
+
+/*
+ * NV2080_CTRL_INTERNAL_SPDM_RETRIEVE_TRANSCRIPT
+ *
+ * This command retrieves the transcript of SPDM session establishment messages.
+ *
+ */
+#define NV2080_CTRL_INTERNAL_SPDM_RETRIEVE_TRANSCRIPT (0x20800ada) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_SPDM_RETRIEVE_TRANSCRIPT_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_INTERNAL_SPDM_RETRIEVE_TRANSCRIPT_PARAMS_MESSAGE_ID (0xDAU)
+
+typedef struct NV2080_CTRL_INTERNAL_SPDM_RETRIEVE_TRANSCRIPT_PARAMS {
+    NvU8  transcript[SPDM_SESSION_ESTABLISHMENT_TRANSCRIPT_BUFFER_SIZE];
+    NvU32 transcriptSize;
+} NV2080_CTRL_INTERNAL_SPDM_RETRIEVE_TRANSCRIPT_PARAMS;
 
 
 

@@ -45,6 +45,7 @@ CXX_ONLY_CFLAGS       ?=
 LDFLAGS               ?=
 BIN_LDFLAGS           ?=
 EXTRA_CFLAGS          ?=
+EXTRA_LDFLAGS         ?=
 
 STACK_USAGE_WARNING   ?=
 CFLAGS                += $(if $(STACK_USAGE_WARNING),-Wstack-usage=$(STACK_USAGE_WARNING))
@@ -89,6 +90,7 @@ ifeq ($(DEVELOP),1)
 endif
 
 CFLAGS                += $(EXTRA_CFLAGS)
+LDFLAGS               += $(EXTRA_LDFLAGS)
 
 STRIP_CMD             ?= strip
 DO_STRIP              ?= 1

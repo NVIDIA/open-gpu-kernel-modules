@@ -57,6 +57,10 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_RsResource =
     /*pExportInfo=*/        &__nvoc_export_info_RsResource
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+
+// Up-thunk(s) to bridge methods to ancestors (if any)
+
 const struct NVOC_EXPORT_INFO __nvoc_export_info_RsResource = 
 {
     /*numEntries=*/     0,
@@ -96,67 +100,36 @@ __nvoc_ctor_RsResource_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_RsResource_1(RsResource *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // resCanCopy -- virtual
-    pThis->__resCanCopy__ = &resCanCopy_IMPL;
-
-    // resIsDuplicate -- virtual
-    pThis->__resIsDuplicate__ = &resIsDuplicate_IMPL;
-
-    // resPreDestruct -- virtual
-    pThis->__resPreDestruct__ = &resPreDestruct_IMPL;
-
-    // resControl -- virtual
-    pThis->__resControl__ = &resControl_IMPL;
-
-    // resControlFilter -- virtual
-    pThis->__resControlFilter__ = &resControlFilter_IMPL;
-
-    // resControlSerialization_Prologue -- virtual
-    pThis->__resControlSerialization_Prologue__ = &resControlSerialization_Prologue_IMPL;
-
-    // resControlSerialization_Epilogue -- virtual
-    pThis->__resControlSerialization_Epilogue__ = &resControlSerialization_Epilogue_IMPL;
-
-    // resControl_Prologue -- virtual
-    pThis->__resControl_Prologue__ = &resControl_Prologue_IMPL;
-
-    // resControl_Epilogue -- virtual
-    pThis->__resControl_Epilogue__ = &resControl_Epilogue_IMPL;
-
-    // resMap -- virtual
-    pThis->__resMap__ = &resMap_IMPL;
-
-    // resUnmap -- virtual
-    pThis->__resUnmap__ = &resUnmap_IMPL;
-
-    // resIsPartialUnmapSupported -- inline virtual body
-    pThis->__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_bf6dfa;
-
-    // resMapTo -- virtual
-    pThis->__resMapTo__ = &resMapTo_IMPL;
-
-    // resUnmapFrom -- virtual
-    pThis->__resUnmapFrom__ = &resUnmapFrom_IMPL;
-
-    // resGetRefCount -- virtual
-    pThis->__resGetRefCount__ = &resGetRefCount_IMPL;
-
-    // resAccessCallback -- virtual
-    pThis->__resAccessCallback__ = &resAccessCallback_IMPL;
-
-    // resShareCallback -- virtual
-    pThis->__resShareCallback__ = &resShareCallback_IMPL;
-
-    // resAddAdditionalDependants -- virtual
-    pThis->__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL;
-} // End __nvoc_init_funcTable_RsResource_1 with approximately 18 basic block(s).
+} // End __nvoc_init_funcTable_RsResource_1
 
 
 // Initialize vtable(s) for 18 virtual method(s).
 void __nvoc_init_funcTable_RsResource(RsResource *pThis) {
 
-    // Initialize vtable(s) with 18 per-object function pointer(s).
+    // Per-class vtable definition
+    static const struct NVOC_VTABLE__RsResource vtable = {
+        .__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+        .__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+        .__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+        .__resControl__ = &resControl_IMPL,    // virtual
+        .__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+        .__resControlSerialization_Prologue__ = &resControlSerialization_Prologue_IMPL,    // virtual
+        .__resControlSerialization_Epilogue__ = &resControlSerialization_Epilogue_IMPL,    // virtual
+        .__resControl_Prologue__ = &resControl_Prologue_IMPL,    // virtual
+        .__resControl_Epilogue__ = &resControl_Epilogue_IMPL,    // virtual
+        .__resMap__ = &resMap_IMPL,    // virtual
+        .__resUnmap__ = &resUnmap_IMPL,    // virtual
+        .__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+        .__resMapTo__ = &resMapTo_IMPL,    // virtual
+        .__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+        .__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+        .__resAccessCallback__ = &resAccessCallback_IMPL,    // virtual
+        .__resShareCallback__ = &resShareCallback_IMPL,    // virtual
+        .__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+    };
+
+    // Pointer(s) to per-class vtable(s)
+    pThis->__nvoc_vtable = &vtable;    // (res) this
     __nvoc_init_funcTable_RsResource_1(pThis);
 }
 

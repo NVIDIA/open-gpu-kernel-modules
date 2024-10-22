@@ -39,4 +39,28 @@ typedef struct NV_RATS_GSP_TRACE_RECORD_V1
 
 typedef NV_RATS_GSP_TRACE_RECORD_V1 NV_RATS_GSP_TRACE_RECORD;
 
+#define VGPU_TRACING_BUFFER_KEEP_OLDEST 0
+#define VGPU_TRACING_BUFFER_KEEP_NEWEST 1
+
+typedef struct NV_RATS_VGPU_GSP_TRACING_BUFFER_V1{
+    NvU8 policy;
+
+    NvBool bGuestNotifInProgress;
+
+    NvU16 seqNo;
+    NvU32 bufferSize;
+    NvU32 bufferWatermark;
+    NvU32 recordCount;
+
+    NvU64 tracepointMask;
+    NvU32 read;
+    NvU32 write;
+
+    NvU64 lastReadTimestamp;
+
+    NV_RATS_GSP_TRACE_RECORD *buffer;
+} NV_RATS_VGPU_GSP_TRACING_BUFFER_V1;
+
+typedef NV_RATS_VGPU_GSP_TRACING_BUFFER_V1 NV_RATS_VGPU_GSP_TRACING_BUFFER;
+
 #endif

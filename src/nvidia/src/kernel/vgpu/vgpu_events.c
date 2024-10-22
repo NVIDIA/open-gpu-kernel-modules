@@ -45,6 +45,7 @@
 #include "gpu/device/device.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
 #include "gpu/timer/objtmr.h"
+#include "kernel/gpu/gsp/gsp_trace_rats_macro.h"
 
 #include "Nvcm.h"
 #include "gpu/mem_mgr/mem_desc.h"
@@ -225,7 +226,7 @@ void vgpuServiceEventRC(OBJGPU *pGpu, OBJVGPU *pVGpu, VGPU_EVENT_BUF_ENTRY *pEve
     NvU32 exceptType = pEventEntry->info32;
     NvU32 nv2080EngineID = pEventEntry->info16 & DRF_SHIFTMASK(NV_VGPU_EV_NOTIFIER_INFO16_VALUE);
     NvU32 chID       = pEventEntry->rcChid;
-    RM_ENGINE_TYPE rmEngineType = gpuGetRmEngineType(nv2080EngineID); 
+    RM_ENGINE_TYPE rmEngineType = gpuGetRmEngineType(nv2080EngineID);
 
     NV_PRINTF(LEVEL_ERROR,
               "ROBUST_CHANNEL error occurred (hClient = 0x%x hFifo = 0x%x chID = %d exceptType = %d engineID = 0x%x (0x%x)) ...\n",
@@ -398,6 +399,13 @@ cleanup:
         portMemFree(pData);
 }
 
+void vgpuServiceEventTracing(OBJGPU *pGpu, OBJVGPU *pVGpu)
+{
+#if KERNEL_GSP_TRACING_RATS_ENABLED
+    gspTraceServiceVgpuEventTracing(pGpu);
+#endif
+}
+
 void vgpuServiceEvents(OBJGPU *pGpu, OBJVGPU *pVGpu)
 {
     VGPU_EVENT_BUF_ENTRY *pEventEntry;
@@ -444,6 +452,10 @@ void vgpuServiceEvents(OBJGPU *pGpu, OBJVGPU *pVGpu)
 
                 case NV_VGPU_EV_FLAGS_TYPE_INBAND_RESPONSE:
                     vgpuServiceEventInbandResponse(pGpu, pVGpu);
+                    break;
+
+                case NV_VGPU_EV_FLAGS_TYPE_TRACING:
+                    vgpuServiceEventTracing(pGpu,pVGpu);
                     break;
 
                 default:

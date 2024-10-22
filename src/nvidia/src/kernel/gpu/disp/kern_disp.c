@@ -125,6 +125,10 @@ kdispConstructEngine_IMPL(OBJGPU        *pGpu,
     // We defer checking whether DISP has been disabled some other way until
     // StateInit, when we can do a control call.
 
+    NV_ASSERT_OR_RETURN(pKernelDisplay->pVblankSpinLock == NULL, NV_ERR_INVALID_STATE);
+    pKernelDisplay->pVblankSpinLock = (PORT_SPINLOCK *) portSyncSpinlockCreate(portMemAllocatorGetGlobalNonPaged());
+    NV_ASSERT_OR_RETURN((pKernelDisplay->pVblankSpinLock != NULL), NV_ERR_INSUFFICIENT_RESOURCES);
+
     return status;
 }
 
@@ -134,6 +138,12 @@ kdispDestruct_IMPL
     KernelDisplay *pKernelDisplay
 )
 {
+    if (pKernelDisplay->pVblankSpinLock != NULL)
+    {
+        portSyncSpinlockDestroy(pKernelDisplay->pVblankSpinLock);
+        pKernelDisplay->pVblankSpinLock = NULL;
+    }
+
     // Destroy children
     kdispDestructInstMem_HAL(pKernelDisplay);
     kdispDestructKhead(pKernelDisplay);
@@ -295,8 +305,6 @@ kdispStatePreInitLocked_IMPL(OBJGPU        *pGpu,
 
     kdispUpdatePdbAfterIpHalInit(pKernelDisplay);
 
-    kdispInitRegistryOverrides_HAL(pGpu, pKernelDisplay);
-
     kdispAllocateCommonHandle(pGpu, pKernelDisplay);
 
     return status;
@@ -377,37 +385,6 @@ kdispSetupAcpiEdid_IMPL
     portMemFree(pEdidParams);
 
     return status;
-}
-
-void
-kdispInitRegistryOverrides_IMPL(OBJGPU        *pGpu,
-                                KernelDisplay *pKernelDisplay)
-{
-    NvU32 data32 = 0;
-
-    if (pKernelDisplay == NULL)
-    {
-        return;
-    }
-
-    if (NV_OK == osReadRegistryDword(pGpu, NV_REG_STR_RM_BUG_2089053_WAR, &data32))
-    {
-        if (data32 == NV_REG_STR_RM_BUG_2089053_WAR_DISABLE)
-        {
-            pKernelDisplay->setProperty(pKernelDisplay, PDB_PROP_KDISP_BUG_2089053_SERIALIZE_AGGRESSIVE_VBLANK_ALWAYS, NV_FALSE);
-            pKernelDisplay->setProperty(pKernelDisplay, PDB_PROP_KDISP_BUG_2089053_SERIALIZE_AGGRESSIVE_VBLANKS_ONLY_ON_HMD_ACTIVE, NV_FALSE);
-        }
-        else if (data32 == NV_REG_STR_RM_BUG_2089053_WAR_ENABLE_ALWAYS)
-        {
-            pKernelDisplay->setProperty(pKernelDisplay, PDB_PROP_KDISP_BUG_2089053_SERIALIZE_AGGRESSIVE_VBLANK_ALWAYS, NV_TRUE);
-            pKernelDisplay->setProperty(pKernelDisplay, PDB_PROP_KDISP_BUG_2089053_SERIALIZE_AGGRESSIVE_VBLANKS_ONLY_ON_HMD_ACTIVE, NV_FALSE);
-        }
-        else if (data32 == NV_REG_STR_RM_BUG_2089053_WAR_ENABLE_ON_HMD_ACTIVE_ONLY)
-        {
-            pKernelDisplay->setProperty(pKernelDisplay, PDB_PROP_KDISP_BUG_2089053_SERIALIZE_AGGRESSIVE_VBLANKS_ONLY_ON_HMD_ACTIVE, NV_TRUE);
-            pKernelDisplay->setProperty(pKernelDisplay, PDB_PROP_KDISP_BUG_2089053_SERIALIZE_AGGRESSIVE_VBLANK_ALWAYS, NV_FALSE);
-        }
-    }
 }
 
 NV_STATUS
@@ -658,6 +635,7 @@ kdispImportImpData_IMPL(KernelDisplay *pKernelDisplay)
     NvU32   hSubdevice = pGpu->hInternalSubdevice;
     NV2080_CTRL_INTERNAL_DISPLAY_SET_IMP_INIT_INFO_PARAMS params;
     NvU32   simulationMode;
+    NV_STATUS nvStatus;
 
     //
     // FPGA has different latency characteristics, and the current code latency
@@ -671,8 +649,27 @@ kdispImportImpData_IMPL(KernelDisplay *pKernelDisplay)
         return NV_OK;
     }
 
-    NV_ASSERT_OK_OR_RETURN(osTegraSocGetImpImportData(&params.tegraImpImportData));
+    //
+    // osTegraSocGetImpImportData was originally called to collect memory and
+    // clock data for IMP from BPMP and kernel drivers.  Now, since this
+    // functionality is supported only on Linux, and we also need support on
+    // Windows, most of the information is collected in physical RM itself,
+    // rather than using a Linux OS layer function.  (The function is expected
+    // to fail on other OSes besides Linux.)
+    //
+    nvStatus = osTegraSocGetImpImportData(&params.tegraImpImportData);
+    (void) nvStatus;    // shut up compiler warning re: unused variable
+    NV_PRINTF(LEVEL_INFO,
+              "osTegraSocGetImpImportData returned nvStatus = 0x%08X\n",
+              nvStatus);
 
+    //
+    // The following RmCtrl call was originally called to communicate
+    // information collected from the osTegraSocGetImpImportData call to
+    // physcial RM.  Now, only a small amount of information is communicated,
+    // but the RmCtrl call still invokes RM boot-time code to collect and
+    // process information on its own.
+    //
     NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi, hClient, hSubdevice,
                            NV2080_CTRL_CMD_INTERNAL_DISPLAY_SET_IMP_INIT_INFO,
                            &params, sizeof(params)));
@@ -1067,6 +1064,7 @@ kdispServiceVblank_KERNEL
     NvU32      i, skippedcallbacks;
     NvU32      maskCallbacksStillPending = 0;
     KernelHead    *pKernelHead = NULL;
+    NvU32 head, headIntrMask;
 
 #if HOTPLUG_PROFILE
     OBJTMR    *pTmr;
@@ -1087,6 +1085,32 @@ kdispServiceVblank_KERNEL
         timeStampDeltaISR[timeStampIndexISR].time64 = temp64;
     }
 #endif
+
+    // handle RG line interrupt, if it is forwared from GSP.
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        for (head = 0; head < kdispGetNumHeads(pKernelDisplay); ++head)
+        {
+            KernelHead *pKernelHead = KDISP_GET_HEAD(pKernelDisplay, head);
+
+            headIntrMask = kheadReadPendingRgLineIntr_HAL(pGpu, pKernelHead, pThreadState);
+            if (headIntrMask != 0)
+            {
+                NvU32 clearIntrMask = 0;
+
+                kheadProcessRgLineCallbacks_HAL(pGpu,
+                                                pKernelHead,
+                                                head,
+                                                &headIntrMask,
+                                                &clearIntrMask,
+                                                osIsISR());
+                if (clearIntrMask != 0)
+                {
+                    kheadResetRgLineIntrMask_HAL(pGpu, pKernelHead, clearIntrMask, pThreadState);
+                }
+            }
+        }
+    }
 
 
     // If the caller failed to spec which queue, figure they wanted all of them

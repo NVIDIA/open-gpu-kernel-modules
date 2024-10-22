@@ -147,7 +147,11 @@ NV_STATUS rpcWriteCommonHeader(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 func, NvU32 par
         if (pDevice != NULL)
         {
             if (pDevice->pKernelHostVgpuDevice != NULL)
+            {
+                NV_ASSERT_OR_RETURN(pDevice->pKernelHostVgpuDevice->bGspPluginTaskInitialized,
+                                    NV_ERR_INVALID_STATE);
                 vgpu_rpc_message_header_v->u.cpuRmGfid = pDevice->pKernelHostVgpuDevice->gfid;
+            }
         }
     }
     else

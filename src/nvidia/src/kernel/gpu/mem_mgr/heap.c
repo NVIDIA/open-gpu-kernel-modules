@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -2244,7 +2244,7 @@ _heapFindBlockByOffset
     NV_STATUS status;
 
     // IRQL TEST: must be running at equivalent of passive-level
-    IRQL_ASSERT_AND_RETURN(!osIsRaisedIRQL());
+    NV_ASSERT_OR_RETURN(!osIsRaisedIRQL(), NV_ERR_INVALID_IRQ_LEVEL);
 
     *ppBlock = _heapFindAlignedBlockWithOwner(pGpu, pHeap, owner,
                                               offset);
@@ -2605,6 +2605,47 @@ NV_STATUS heapInfo_IMPL
     HEAP_VALIDATE(pHeap);
 
     return status;
+}
+
+void
+heapGetClientAddrSpaceSize_IMPL
+(
+    OBJGPU *pGpu,
+    Heap   *pHeap,
+    NvU64  *pSize
+)
+{
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    FB_REGION_DESCRIPTOR   *pFbRegion;
+    NvU64 highestAddr = 0;
+
+    //
+    // Iterate the regions that are allocatable to the client -
+    // non-reserved and non RM-internal - same logic as
+    // heapInitInternal_IMPL used to remove memory
+    //
+    for (NvU32 i = 0; i < pMemoryManager->Ram.numFBRegions; i++)
+    {
+        pFbRegion = &pMemoryManager->Ram.fbRegion[i];
+
+        // If the region is reserved or internal, ignore it here
+        if (!(pFbRegion->bRsvdRegion || pFbRegion->bInternalHeap))
+        {
+            // Skip regions which are outside the heap boundaries
+            if (pFbRegion->base < pHeap->base && pFbRegion->limit < pHeap->base)
+            {
+                continue;
+            }
+
+            highestAddr = NV_MAX(highestAddr, pFbRegion->limit);
+        }
+    }
+
+    // should end in 0xFFFF as a limit
+    NV_ASSERT((highestAddr & RM_PAGE_SIZE ) != 0);
+    HEAP_VALIDATE(pHeap);
+
+    *pSize = highestAddr + 1;
 }
 
 NV_STATUS heapInfoTypeAllocBlocks_IMPL

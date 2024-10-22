@@ -933,13 +933,15 @@ memoryfabricCtrlCmdDescribe_IMPL
     NvU64   pageSize;
     NvU32   i;
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
-    NvHandle hClient = pCallContext->pClient->hClient;
     FABRIC_MEMDESC_DATA *pMemdescData;
     OBJGPU *pGpu;
 
+    RmClient *pRmClient = dynamicCast(pCallContext->pClient, RmClient);
+    NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
+
     if (
-        !rmclientIsCapableByHandle(hClient, NV_RM_CAP_SYS_FABRIC_IMEX_MGMT) &&
-        !rmclientIsAdminByHandle(hClient, pCallContext->secInfo.privLevel))
+        !rmclientIsCapableOrAdmin(pRmClient, NV_RM_CAP_SYS_FABRIC_IMEX_MGMT, pCallContext->secInfo.privLevel)
+    )
     {
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
     }

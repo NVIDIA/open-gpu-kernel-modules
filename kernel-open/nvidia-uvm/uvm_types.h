@@ -233,6 +233,19 @@ typedef union
     } rm_linux;
 } UvmAllocationPlatformParams;
 
+// Platform specific parameters for UvmAllocDeviceP2P
+typedef union
+{
+    struct {
+        // File descriptor for RM's control file
+        int ctrlFd;
+        // RM client handle
+        NvHandle hClient;
+        // RM allocation handle
+        NvHandle hMemory;
+    } rm_linux;
+} UvmDeviceP2PPlatformParams;
+
 //------------------------------------------------------------------------------
 //    Tools API types
 //------------------------------------------------------------------------------
@@ -416,7 +429,7 @@ typedef struct
     // or malign-double will have no effect on the field offsets.
     //
     NvU16 padding16Bits;
-    NvU32 padding32Bits;
+    NvU32 cpuId;              // CPU number of the faulting thread
     NvU64 address;            // faulting address
     NvU64 timeStamp;          // cpu time when the fault occurred
     NvU32 pid;                // process id causing the fault
@@ -580,7 +593,7 @@ typedef struct
                                    // on the gpu
     NvU64 endTimeStampGpu;         // time stamp when the migration finished
                                    // on the gpu
-} UvmEventMigrationInfo_V1;
+} UvmEventMigrationInfo;
 
 typedef struct
 {
@@ -688,7 +701,7 @@ typedef struct
     //
     NvU8 padding8Bits;
     NvU16 padding16Bits;
-} UvmEventGpuFaultInfo_V1;
+} UvmEventGpuFaultInfo;
 
 typedef struct
 {
@@ -771,7 +784,7 @@ typedef struct
                             // accesses is queued on the gpu
     NvU64 timeStampGpu;     // gpu time stamp when the replay operation finished
                             // executing on the gpu
-} UvmEventGpuFaultReplayInfo_V1;
+} UvmEventGpuFaultReplayInfo;
 
 typedef struct
 {
@@ -812,7 +825,7 @@ typedef struct
     NvU16 padding16bits;
     NvU64 address;        // virtual address at which the processor faulted
     NvU64 timeStamp;      // CPU time when the fault is detected to be fatal
-} UvmEventFatalFaultInfo_V1;
+} UvmEventFatalFaultInfo;
 
 typedef struct
 {
@@ -860,7 +873,7 @@ typedef struct
                             // participate in read-duplicate this is time stamp
                             // when all the operations have been pushed to all
                             // the processors.
-} UvmEventReadDuplicateInfo_V1;
+} UvmEventReadDuplicateInfo;
 
 typedef struct
 {
@@ -919,7 +932,7 @@ typedef struct
                             // participate in read-duplicate this is time stamp
                             // when all the operations have been pushed to all
                             // the processors.
-} UvmEventReadDuplicateInvalidateInfo_V1;
+} UvmEventReadDuplicateInvalidateInfo;
 
 typedef struct
 {
@@ -969,7 +982,7 @@ typedef struct
                             // changed
     NvU64 timeStamp;        // cpu time stamp when the new page size is
                             // queued on the gpu
-} UvmEventPageSizeChangeInfo_V1;
+} UvmEventPageSizeChangeInfo;
 
 typedef struct
 {
@@ -1016,7 +1029,7 @@ typedef struct
                             // thrashing
     NvU64 size;             // size of the memory region that is thrashing
     NvU64 timeStamp;        // cpu time stamp when thrashing is detected
-} UvmEventThrashingDetectedInfo_V1;
+} UvmEventThrashingDetectedInfo;
 
 typedef struct
 {
@@ -1063,7 +1076,7 @@ typedef struct
     NvU64 address;          // address of the page whose servicing is being
                             // throttled
     NvU64 timeStamp;        // cpu start time stamp for the throttling operation
-} UvmEventThrottlingStartInfo_V1;
+} UvmEventThrottlingStartInfo;
 
 typedef struct
 {
@@ -1105,7 +1118,7 @@ typedef struct
     NvU64 address;          // address of the page whose servicing is being
                             // throttled
     NvU64 timeStamp;        // cpu end time stamp for the throttling operation
-} UvmEventThrottlingEndInfo_V1;
+} UvmEventThrottlingEndInfo;
 
 typedef struct
 {
@@ -1182,7 +1195,7 @@ typedef struct
     NvU64 timeStampGpu;     // time stamp when the new mapping is effective in
                             // the processor specified by srcIndex. If srcIndex
                             // is a cpu, this field will be zero.
-} UvmEventMapRemoteInfo_V1;
+} UvmEventMapRemoteInfo;
 
 typedef struct
 {
@@ -1237,7 +1250,7 @@ typedef struct
     NvU64 addressIn;        // virtual address that caused the eviction
     NvU64 size;             // size of the memory region that being evicted
     NvU64 timeStamp;        // cpu time stamp when eviction starts on the cpu
-} UvmEventEvictionInfo_V1;
+} UvmEventEvictionInfo;
 
 typedef struct
 {
@@ -1323,7 +1336,7 @@ typedef struct
     NvU32 bank;
     NvU64 address;
     NvU64 instancePtr;
-} UvmEventTestAccessCounterInfo_V1;
+} UvmEventTestAccessCounterInfo;
 
 typedef struct
 {
@@ -1381,29 +1394,29 @@ typedef struct
             UvmEventMigrationInfo_Lite migration_Lite;
 
             UvmEventCpuFaultInfo cpuFault;
-            UvmEventMigrationInfo_V1 migration;
-            UvmEventGpuFaultInfo_V1 gpuFault;
-            UvmEventGpuFaultReplayInfo_V1 gpuFaultReplay;
-            UvmEventFatalFaultInfo_V1 fatalFault;
-            UvmEventReadDuplicateInfo_V1 readDuplicate;
-            UvmEventReadDuplicateInvalidateInfo_V1 readDuplicateInvalidate;
-            UvmEventPageSizeChangeInfo_V1 pageSizeChange;
-            UvmEventThrashingDetectedInfo_V1 thrashing;
-            UvmEventThrottlingStartInfo_V1 throttlingStart;
-            UvmEventThrottlingEndInfo_V1 throttlingEnd;
-            UvmEventMapRemoteInfo_V1 mapRemote;
-            UvmEventEvictionInfo_V1 eviction;
+            UvmEventMigrationInfo migration;
+            UvmEventGpuFaultInfo gpuFault;
+            UvmEventGpuFaultReplayInfo gpuFaultReplay;
+            UvmEventFatalFaultInfo fatalFault;
+            UvmEventReadDuplicateInfo readDuplicate;
+            UvmEventReadDuplicateInvalidateInfo readDuplicateInvalidate;
+            UvmEventPageSizeChangeInfo pageSizeChange;
+            UvmEventThrashingDetectedInfo thrashing;
+            UvmEventThrottlingStartInfo throttlingStart;
+            UvmEventThrottlingEndInfo throttlingEnd;
+            UvmEventMapRemoteInfo mapRemote;
+            UvmEventEvictionInfo eviction;
         } eventData;
 
         union
         {
             NvU8 eventType;
 
-            UvmEventTestAccessCounterInfo_V1 accessCounter;
+            UvmEventTestAccessCounterInfo accessCounter;
             UvmEventTestSplitInvalidateInfo splitInvalidate;
         } testEventData;
     };
-} UvmEventEntry_V1;
+} UvmEventEntry;
 
 typedef struct
 {
@@ -1476,11 +1489,6 @@ typedef enum
     UvmDebugAccessTypeWrite = 1,
 } UvmDebugAccessType;
 
-typedef enum {
-    UvmToolsEventQueueVersion_V1 = 1,
-    UvmToolsEventQueueVersion_V2 = 2,
-} UvmToolsEventQueueVersion;
-
 typedef struct UvmEventControlData_tag {
     // entries between get_ahead and get_behind are currently being read
     volatile NvU32 get_ahead;
@@ -1493,9 +1501,6 @@ typedef struct UvmEventControlData_tag {
     // counter of dropped events
     NvU64 dropped[UvmEventNumTypesAll];
 } UvmToolsEventControlData;
-
-// TODO: Bug 4465348: remove this after replacing old references.
-typedef UvmToolsEventControlData UvmToolsEventControlData_V1;
 
 //------------------------------------------------------------------------------
 // UVM Tools forward types (handles) definitions

@@ -286,6 +286,11 @@ NvBool rmcfg_IsDISPLAYLESS_CLASSIC_GPUSorBetter(POBJGPU pGpu)
     return IsGF117(pGpu) || IsGK20A(pGpu) || IsGM108(pGpu) || IsGV11B(pGpu) || IsGA100(pGpu) || IsGA10B(pGpu) || IsGH100(pGpu) || IsGB100(pGpu) || IsGB102orBetter(pGpu);
 }
 
+NvBool rmcfg_IsCOMPUTE(POBJGPU pGpu)
+{
+    return IsGA100(pGpu) || IsGH100(pGpu) || IsGB100(pGpu) || IsGB102(pGpu);
+}
+
 NvBool rmcfg_IsdTURING(POBJGPU pGpu)
 {
     return IsTU102(pGpu) || IsTU104(pGpu) || IsTU106(pGpu) || IsTU116(pGpu) || IsTU117(pGpu);

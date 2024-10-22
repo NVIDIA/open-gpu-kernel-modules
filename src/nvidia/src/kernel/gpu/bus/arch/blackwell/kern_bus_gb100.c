@@ -180,3 +180,34 @@ kbusRestoreBAR1ResizeSize_WAR_BUG_3249028_GB100
 
     return NV_OK;
 }
+
+/*
+ * @brief Get GPU PF BAR1 SPA from physical RM
+ *
+ * BAR1 SPA is required inside passthrough VM to provide
+ * BAR1 mapping of FB for DirectNIC DMA.
+ *
+ * @param[in]  pGpu       OBJGPU pointer
+ * @param[in]  pKernelBus KernelBus pointer
+ * @param[out] pSpaValue  SPA of GPU PF BAR1
+ *
+ * @returns   NV_OK on success.
+ */
+NV_STATUS
+kbusGetPFBar1Spa_GB100
+(
+    OBJGPU      *pGpu,
+    KernelBus   *pKernelBus,
+    NvU64       *pSpaValue
+)
+{
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NV2080_CTRL_INTERNAL_GPU_GET_PF_BAR1_SPA_PARAMS params = {0};
+
+    NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
+                           NV2080_CTRL_CMD_INTERNAL_GPU_GET_PF_BAR1_SPA, &params, sizeof(params)));
+
+    *pSpaValue = params.spaValue;
+
+    return NV_OK;
+}

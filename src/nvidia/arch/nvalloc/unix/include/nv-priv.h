@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -338,6 +338,9 @@ typedef struct
 
     NvU32 pmc_boot_1;
     NvU32 pmc_boot_42;
+
+    /* This flag is set if _PR3 ACPI method is available to support RTD3. */
+    NvBool pr3_acpi_method_present;
 } nv_priv_t;
 
 #define NV_SET_NV_PRIV(nv,p) ((nv)->priv = (p))

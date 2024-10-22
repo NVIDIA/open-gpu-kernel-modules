@@ -118,7 +118,9 @@ void nvEnableMidFrameAndDWCFWatermark(NVDevEvoPtr pDevEvo,
                                       NVEvoUpdateState *pUpdateState);
 
 void nvEvoHeadSetControlOR(NVDispEvoPtr pDispEvo,
-                           const NvU32 head, NVEvoUpdateState *pUpdateState);
+                           const NvU32 head,
+                           const NVDpyAttributeColor *pDpyColor,
+                           NVEvoUpdateState *pUpdateState);
 
 void nvChooseDitheringEvo(
     const NVConnectorEvoRec *pConnectorEvo,
@@ -185,6 +187,7 @@ NvBool nvDowngradeColorBpc(
     NVDpyAttributeColor *pDpyColor);
 
 NvBool nvDowngradeColorSpaceAndBpc(
+    const NVDpyEvoRec *pDpyEvo,
     const NvKmsDpyOutputColorFormatInfo *pSupportedColorFormats,
     NVDpyAttributeColor *pDpyColor);
 
@@ -250,7 +253,6 @@ NvBool nvValidateSetLutCommonParams(
     const struct NvKmsSetLutCommonParams *pParams);
 
 NvBool nvChooseColorRangeEvo(
-    enum NvKmsOutputColorimetry colorimetry,
     const enum NvKmsDpyAttributeColorRangeValue requestedColorRange,
     const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
     const enum NvKmsDpyAttributeColorBpcValue colorBpc,
@@ -393,9 +395,10 @@ void nvEvoDisableHwYUV420Packer(const NVDispEvoRec *pDispEvo,
                                 const NvU32 head,
                                 NVEvoUpdateState *pUpdateState);
 
-NvBool nvEvoGetSingleTileHwModeTimings(const NVHwModeTimingsEvo *pSrc,
-                                       const NvU32 numTiles,
-                                       NVHwModeTimingsEvo *pDst);
+NvBool nvEvoGetSingleMergeHeadSectionHwModeTimings(
+    const NVHwModeTimingsEvo *pSrc,
+    const NvU32 numSections,
+    NVHwModeTimingsEvo *pDst);
 
 NvBool nvEvoUse2Heads1OR(const NVDpyEvoRec *pDpyEvo,
                          const NVHwModeTimingsEvo *pTimings,

@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -135,7 +135,6 @@ typedef struct KERNEL_HOST_VGPU_DEVICE
     NvU32                            chidOffset[RM_ENGINE_TYPE_LAST];
     NvU32                            channelCount[RM_ENGINE_TYPE_LAST]; /*Number of channels available to the VF*/
     NvU8                             vgpuUuid[RM_SHA1_GID_SIZE];
-    void                            *pVgpuVfioRef;
     struct REQUEST_VGPU_INFO_NODE   *pRequestVgpuInfoNode;
     struct PhysMemSubAlloc                 *pPhysMemSubAlloc;
     struct HOST_VGPU_DEVICE         *pHostVgpuDevice;
@@ -152,6 +151,8 @@ typedef struct KERNEL_HOST_VGPU_DEVICE
     MEMORY_DESCRIPTOR                *pGspPluginHeapMemDesc;
     NvBool                            bDisableDefaultSmcExecPartRestore;
     struct GPUMGR_SAVE_COMPUTE_INSTANCE savedExecPartitions[NVC637_CTRL_MAX_EXEC_PARTITIONS];
+    NvBool                            bGpupLiveMigrationEnabled; /* GPUP Live Migration Enabled status */
+    NvBool                            bGspPluginTaskInitialized;
 } KERNEL_HOST_VGPU_DEVICE;
 
 MAKE_LIST(KERNEL_HOST_VGPU_DEVICE_LIST, KERNEL_HOST_VGPU_DEVICE);
@@ -209,7 +210,7 @@ typedef struct
 /* vGPU info received from mdev kernel module for KVM */
 typedef struct REQUEST_VGPU_INFO_NODE
 {
-    NvU8                     mdevUuid[VGPU_UUID_SIZE];
+    NvU8                     vgpuDevName[VGPU_UUID_SIZE];
     NvU32                    gpuPciId;
     NvU32                    gpuPciBdf;
     NvU32                    swizzId;
@@ -306,7 +307,7 @@ kvgpumgrSetSupportedPlacementIds(struct OBJGPU *pGpu);
 NV_STATUS
 kvgpumgrUpdateHeterogeneousInfo(struct OBJGPU *pGpu, NvU32 vgpuTypeId, NvU16 *placementId,
                                 NvU64 *guestFbLength, NvU64 *guestFbOffset,
-                                NvU64 *gspHeapOffset);
+                                NvU64 *gspHeapOffset, NvU64 *guestBar1PFOffset);
 
 NV_STATUS
 kvgpumgrPgpuAddVgpuType(struct OBJGPU *pGpu, NvBool discardVgpuTypes, NVA081_CTRL_VGPU_INFO *pVgpuInfo);
@@ -376,18 +377,18 @@ NV_STATUS
 kvgpumgrSetVgpuEncoderCapacity(struct OBJGPU *pGpu, NvU8 *vgpuUuid, NvU32 encoderCapacity);
 
 NV_STATUS
-kvgpumgrCreateRequestVgpu(NvU32 gpuPciId, const NvU8 *pMdevUuid,
+kvgpumgrCreateRequestVgpu(NvU32 gpuPciId, const NvU8 *pVgpuDevName,
                          NvU32 vgpuTypeId, NvU16 *vgpuId, NvU32 gpuPciBdf);
 
 NV_STATUS
-kvgpumgrDeleteRequestVgpu(const NvU8 *pMdevUuid, NvU16 vgpuId);
+kvgpumgrDeleteRequestVgpu(const NvU8 *pVgpuDevName, NvU16 vgpuId);
 
 NV_STATUS
 kvgpumgrGetAvailableInstances(NvU32 *avail_instances, struct OBJGPU *pGpu, VGPU_TYPE *vgpuTypeInfo,
                               NvU32 pgpuIndex, NvU8 devfn);
 
 NV_STATUS
-kvgpumgrGetHostVgpuDeviceFromMdevUuid(NvU32 gpuPciId, const NvU8 *pMdevUuid,
+kvgpumgrGetHostVgpuDeviceFromVgpuDevName(NvU32 gpuPciId, const NvU8 *pVgpuDevName,
                                       KERNEL_HOST_VGPU_DEVICE **ppKernelHostVgpuDevice);
 
 NV_STATUS

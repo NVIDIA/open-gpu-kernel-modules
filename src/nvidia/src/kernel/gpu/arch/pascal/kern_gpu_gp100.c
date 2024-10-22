@@ -28,6 +28,7 @@
 #include "gpu/gpu_child_class_defs.h"
 #include "gpu/nvlink/kernel_nvlink.h"
 #include "gpu_mgr/gpu_mgr_sli.h"
+#include "pascal/gp100/dev_bus_addendum.h"
 
 /*!
  * @brief   checks for NvLink connections between the GPUs specified in the gpuMaskArg,
@@ -133,4 +134,55 @@ gpuDetectNvlinkLinkFromGpus_GP100
         } // while (pGpuChild)
         pGpuLoop = gpumgrGetNextGpu(gpuMask, &gpuIndex);
     } // while (pGpu)
+}
+
+/*!
+ * @brief A bit is reserved in scratch 30 to indicate GPU Reset is pending.
+ * This is useful for CSPs monitoring whether a GPU needs to be reset through out of band.
+ * This function sets the bit to the requested value, indicating that a reset is pending or clearing the status.
+ *
+ * @param[in] pGpu              OBJGPU pointer
+ * @param[in] bResetRequired    The value to set
+ *
+ * @returns NV_OK if successful
+ */
+NV_STATUS
+gpuSetResetScratchBit_GP100
+(
+    OBJGPU *pGpu,
+    NvBool  bResetRequired
+)
+{
+    NvU32 scratchRegVal = gpuReadPBusScratch_HAL(pGpu, NV_PBUS_SW_RESET_BITS_SCRATCH_REG);
+
+    scratchRegVal = bResetRequired ?
+                    FLD_SET_DRF(_PBUS, _SW_SCRATCH30, _GPU_RESET_REQUIRED, _ON, scratchRegVal) :
+                    FLD_SET_DRF(_PBUS, _SW_SCRATCH30, _GPU_RESET_REQUIRED, _OFF, scratchRegVal);
+
+    gpuWritePBusScratch_HAL(pGpu, NV_PBUS_SW_RESET_BITS_SCRATCH_REG, scratchRegVal);
+
+    return NV_OK;
+}
+
+/*!
+ * @brief A bit is reserved in scratch 30 to indicate GPU Reset is pending.
+ * This is useful for CSPs monitoring whether a GPU needs to be reset through out of band.
+ * This function reads the value of the bit.
+ *
+ * @param[in]  pGpu             OBJGPU pointer
+ * @param[out] pbResetRequired  The value of the scratch bit
+ *
+ * @returns NV_OK if successful
+ */
+NV_STATUS
+gpuGetResetScratchBit_GP100
+(
+    OBJGPU *pGpu,
+    NvBool *pbResetRequired
+)
+{
+    NvU32 scratchRegVal = gpuReadPBusScratch_HAL(pGpu, NV_PBUS_SW_RESET_BITS_SCRATCH_REG);
+
+    *pbResetRequired = FLD_TEST_DRF(_PBUS, _SW_SCRATCH30, _GPU_RESET_REQUIRED, _ON, scratchRegVal);
+    return NV_OK;
 }

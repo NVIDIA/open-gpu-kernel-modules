@@ -108,9 +108,11 @@
 --undefined=rm_gpu_ops_set_page_directory
 --undefined=rm_gpu_ops_unset_page_directory
 --undefined=rm_gpu_ops_stop_channel
+--undefined=rm_gpu_ops_get_nvlink_info
 --undefined=rm_gpu_ops_p2p_object_create
 --undefined=rm_gpu_ops_p2p_object_destroy
 --undefined=rm_gpu_ops_get_external_alloc_ptes
+--undefined=rm_gpu_ops_get_external_alloc_phys_addrs
 --undefined=rm_gpu_ops_retain_channel
 --undefined=rm_gpu_ops_bind_channel_resources
 --undefined=rm_gpu_ops_release_channel
@@ -123,6 +125,7 @@
 --undefined=rm_gpu_ops_paging_channel_push_stream
 --undefined=rm_gpu_ops_device_create
 --undefined=rm_gpu_ops_device_destroy
+--undefined=rm_gpu_ops_report_fatal_error
 --undefined=rm_gpu_ops_ccsl_sign
 --undefined=rm_gpu_ops_ccsl_encrypt
 --undefined=rm_gpu_ops_ccsl_encrypt_with_iv

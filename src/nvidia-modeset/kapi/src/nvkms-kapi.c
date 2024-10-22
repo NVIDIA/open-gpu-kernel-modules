@@ -30,6 +30,9 @@
 #include "nvkms-rmapi.h"
 #include "nvkms-vrr.h"
 
+#include "nvkms-softfloat.h"
+#include "nv-float.h"
+
 #include "nvkms-kapi.h"
 #include "nvkms-kapi-private.h"
 #include "nvkms-kapi-internal.h"
@@ -401,7 +404,13 @@ static NvBool KmsAllocateDevice(struct NvKmsKapiDevice *device)
         device->supportedSurfaceMemoryFormats[layer] =
             paramsAlloc->reply.layerCaps[layer].supportedSurfaceMemoryFormats;
         device->supportsICtCp[layer] = paramsAlloc->reply.layerCaps[layer].supportsICtCp;
+
+        device->lutCaps.layer[layer].ilut =
+            paramsAlloc->reply.layerCaps[layer].ilut;
+        device->lutCaps.layer[layer].tmo =
+            paramsAlloc->reply.layerCaps[layer].tmo;
     }
+    device->lutCaps.olut = paramsAlloc->reply.olutCaps;
 
     if (paramsAlloc->reply.validNIsoFormatMask &
         (1 << NVKMS_NISO_FORMAT_FOUR_WORD_NVDISPLAY)) {
@@ -1120,6 +1129,9 @@ static NvBool GetDeviceResourcesInfo
     nvkms_memcpy(info->supportsICtCp,
                  device->supportsICtCp,
                  sizeof(device->supportsICtCp));
+
+    info->lutCaps = device->lutCaps;
+
 done:
 
     return status;
@@ -1909,57 +1921,6 @@ static NvBool GetMemoryPages
     return NV_TRUE;
 }
 
-/*
- * Check if the memory we are creating this framebuffer with is valid. We
- * cannot scan out sysmem or compressed buffers.
- *
- * If we cannot use this memory for display it may be resident in sysmem
- * or may belong to another GPU.
- */
-static NvBool IsMemoryValidForDisplay
-(
-    const struct NvKmsKapiDevice *device,
-    const struct NvKmsKapiMemory *memory
-)
-{
-    NV_STATUS status;
-    NV0041_CTRL_SURFACE_INFO surfaceInfo = {};
-    NV0041_CTRL_GET_SURFACE_INFO_PARAMS surfaceInfoParams = {};
-
-    if (device == NULL || memory == NULL) {
-        return NV_FALSE;
-    }
-
-    /*
-     * Don't do these checks on tegra. Tegra has different capabilities.
-     * Here we always say display is possible so we never fail framebuffer
-     * creation.
-     */
-    if (device->isSOC) {
-        return NV_TRUE;
-    }
-
-    /* Get the type of address space this memory is in, i.e. vidmem or sysmem */
-    surfaceInfo.index = NV0041_CTRL_SURFACE_INFO_INDEX_ADDR_SPACE_TYPE;
-
-    surfaceInfoParams.surfaceInfoListSize = 1;
-    surfaceInfoParams.surfaceInfoList = (NvP64)&surfaceInfo;
-
-    status = nvRmApiControl(device->hRmClient,
-                            memory->hRmHandle,
-                            NV0041_CTRL_CMD_GET_SURFACE_INFO,
-                            &surfaceInfoParams,
-                            sizeof(surfaceInfoParams));
-    if (status != NV_OK) {
-        nvKmsKapiLogDeviceDebug(device,
-                "Failed to get memory location of RM memory object 0x%x",
-                memory->hRmHandle);
-        return NV_FALSE;
-    }
-
-    return surfaceInfo.data == NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_VIDMEM;
-}
-
 static void FreeMemoryPages
 (
     NvU64 *pPages
@@ -2557,6 +2518,53 @@ static void AssignHDRMetadataConfig(
     }
 }
 
+static void AssignLayerLutConfig(
+    const struct NvKmsKapiDevice *device,
+    const struct NvKmsKapiLayerConfig *layerConfig,
+    const struct NvKmsKapiLayerRequestedConfig *layerRequestedConfig,
+    const NvU32 layer,
+    struct NvKmsFlipCommonParams *params,
+    NvBool bFromKmsSetMode)
+{
+    if ((device->lutCaps.layer[layer].ilut.supported) &&
+        (layerRequestedConfig->flags.ilutChanged || bFromKmsSetMode)) {
+
+        params->layer[layer].ilut.specified = TRUE;
+        params->layer[layer].ilut.enabled = layerConfig->ilut.enabled;
+
+        if (layerConfig->ilut.lutSurface != NULL) {
+            params->layer[layer].ilut.lut.surfaceHandle =
+                layerConfig->ilut.lutSurface->hKmsHandle;
+        } else {
+            params->layer[layer].ilut.lut.surfaceHandle = 0;
+        }
+        params->layer[layer].ilut.lut.offset = layerConfig->ilut.offset;
+        params->layer[layer].ilut.lut.vssSegments =
+            layerConfig->ilut.vssSegments;
+        params->layer[layer].ilut.lut.lutEntries =
+            layerConfig->ilut.lutEntries;
+    }
+
+    if ((device->lutCaps.layer[layer].tmo.supported) &&
+        (layerRequestedConfig->flags.tmoChanged || bFromKmsSetMode)) {
+
+        params->layer[layer].tmo.specified = TRUE;
+        params->layer[layer].tmo.enabled = layerConfig->tmo.enabled;
+
+        if (layerConfig->tmo.lutSurface != NULL) {
+            params->layer[layer].tmo.lut.surfaceHandle =
+                layerConfig->tmo.lutSurface->hKmsHandle;
+        } else {
+            params->layer[layer].tmo.lut.surfaceHandle = 0;
+        }
+        params->layer[layer].tmo.lut.offset = layerConfig->tmo.offset;
+        params->layer[layer].tmo.lut.vssSegments =
+            layerConfig->tmo.vssSegments;
+        params->layer[layer].tmo.lut.lutEntries =
+            layerConfig->tmo.lutEntries;
+    }
+}
+
 static void NvKmsKapiCursorConfigToKms(
     const struct NvKmsKapiCursorRequestedConfig *requestedConfig,
     struct NvKmsFlipCommonParams *params,
@@ -2626,11 +2634,20 @@ static NvBool NvKmsKapiOverlayLayerConfigToKms(
         params->layer[layer].colorSpace.specified = TRUE;
     }
 
-    if (layerRequestedConfig->flags.cscChanged || bFromKmsSetMode) {
+    if (layerRequestedConfig->flags.cscChanged ||
+        layerRequestedConfig->flags.matrixOverridesChanged ||
+        bFromKmsSetMode) {
         params->layer[layer].csc.specified = NV_TRUE;
         params->layer[layer].csc.useMain = layerConfig->cscUseMain;
         if (!layerConfig->cscUseMain) {
             params->layer[layer].csc.matrix = layerConfig->csc;
+        }
+
+        // 'blendCtm' overrides 'csc', but provides a 3x4 matrix.
+        if (layerConfig->matrixOverrides.enabled.blendCtm) {
+            params->layer[layer].csc.useMain = FALSE;
+            params->layer[layer].csc.matrix =
+                layerConfig->matrixOverrides.blendCtm;
         }
     }
 
@@ -2655,6 +2672,51 @@ static NvBool NvKmsKapiOverlayLayerConfigToKms(
 
     AssignHDRMetadataConfig(layerConfig, layerRequestedConfig, layer,
                             params, bFromKmsSetMode);
+
+    if (layerRequestedConfig->flags.matrixOverridesChanged || bFromKmsSetMode) {
+        // 'lmsCtm' explicitly provides a matrix to program CSC00.
+        if (layerConfig->matrixOverrides.enabled.lmsCtm) {
+            params->layer[layer].csc00Override.matrix =
+                layerConfig->matrixOverrides.lmsCtm;
+            params->layer[layer].csc00Override.enabled = TRUE;
+        } else {
+            params->layer[layer].csc00Override.enabled = FALSE;
+        }
+        params->layer[layer].csc00Override.specified = TRUE;
+
+        // 'lmsToItpCtm' explicitly provides a matrix to program CSC01.
+        if (layerConfig->matrixOverrides.enabled.lmsToItpCtm) {
+            params->layer[layer].csc01Override.matrix =
+                layerConfig->matrixOverrides.lmsToItpCtm;
+            params->layer[layer].csc01Override.enabled = TRUE;
+        } else {
+            params->layer[layer].csc01Override.enabled = FALSE;
+        }
+        params->layer[layer].csc01Override.specified = TRUE;
+
+        // 'itpToLmsCtm' explicitly provides a matrix to program CSC10.
+        if (layerConfig->matrixOverrides.enabled.itpToLmsCtm) {
+            params->layer[layer].csc10Override.matrix =
+                layerConfig->matrixOverrides.itpToLmsCtm;
+            params->layer[layer].csc10Override.enabled = TRUE;
+        } else {
+            params->layer[layer].csc10Override.enabled = FALSE;
+        }
+        params->layer[layer].csc10Override.specified = TRUE;
+
+        // 'blendCtm' explicitly provides a matrix to program CSC11.
+        if (layerConfig->matrixOverrides.enabled.blendCtm) {
+            params->layer[layer].csc11Override.matrix =
+                layerConfig->matrixOverrides.blendCtm;
+            params->layer[layer].csc11Override.enabled = TRUE;
+        } else {
+            params->layer[layer].csc11Override.enabled = FALSE;
+        }
+        params->layer[layer].csc11Override.specified = TRUE;
+    }
+
+    AssignLayerLutConfig(device, layerConfig, layerRequestedConfig, layer,
+                         params, bFromKmsSetMode);
 
     if (commit) {
         NvU32 nextIndex = NVKMS_KAPI_INC_NOTIFIER_INDEX(
@@ -2754,18 +2816,73 @@ static NvBool NvKmsKapiPrimaryLayerConfigToKms(
         changed = TRUE;
     }
 
-    if (layerRequestedConfig->flags.cscChanged || bFromKmsSetMode) {
+    if (layerRequestedConfig->flags.cscChanged ||
+        layerRequestedConfig->flags.matrixOverridesChanged ||
+        bFromKmsSetMode) {
         nvAssert(!layerConfig->cscUseMain);
 
         params->layer[NVKMS_MAIN_LAYER].csc.specified = NV_TRUE;
         params->layer[NVKMS_MAIN_LAYER].csc.useMain = FALSE;
         params->layer[NVKMS_MAIN_LAYER].csc.matrix = layerConfig->csc;
 
+        // 'blendCtm' overrides 'csc', but provides a 3x4 matrix.
+        if (layerConfig->matrixOverrides.enabled.blendCtm) {
+            params->layer[NVKMS_MAIN_LAYER].csc.matrix =
+                layerConfig->matrixOverrides.blendCtm;
+        }
+
         changed = TRUE;
     }
 
     AssignHDRMetadataConfig(layerConfig, layerRequestedConfig, NVKMS_MAIN_LAYER,
                             params, bFromKmsSetMode);
+
+    if (layerRequestedConfig->flags.matrixOverridesChanged || bFromKmsSetMode) {
+        // 'lmsCtm' explicitly provides a matrix to program CSC00.
+        if (layerConfig->matrixOverrides.enabled.lmsCtm) {
+            params->layer[NVKMS_MAIN_LAYER].csc00Override.matrix =
+                layerConfig->matrixOverrides.lmsCtm;
+            params->layer[NVKMS_MAIN_LAYER].csc00Override.enabled = TRUE;
+        } else {
+            params->layer[NVKMS_MAIN_LAYER].csc00Override.enabled = FALSE;
+        }
+        params->layer[NVKMS_MAIN_LAYER].csc00Override.specified = TRUE;
+
+        // 'lmsToItpCtm' explicitly provides a matrix to program CSC01.
+        if (layerConfig->matrixOverrides.enabled.lmsToItpCtm) {
+            params->layer[NVKMS_MAIN_LAYER].csc01Override.matrix =
+                layerConfig->matrixOverrides.lmsToItpCtm;
+            params->layer[NVKMS_MAIN_LAYER].csc01Override.enabled = TRUE;
+        } else {
+            params->layer[NVKMS_MAIN_LAYER].csc01Override.enabled = FALSE;
+        }
+        params->layer[NVKMS_MAIN_LAYER].csc01Override.specified = TRUE;
+
+        // 'itpToLmsCtm' explicitly provides a matrix to program CSC10.
+        if (layerConfig->matrixOverrides.enabled.itpToLmsCtm) {
+            params->layer[NVKMS_MAIN_LAYER].csc10Override.matrix =
+                layerConfig->matrixOverrides.itpToLmsCtm;
+            params->layer[NVKMS_MAIN_LAYER].csc10Override.enabled = TRUE;
+        } else {
+            params->layer[NVKMS_MAIN_LAYER].csc10Override.enabled = FALSE;
+        }
+        params->layer[NVKMS_MAIN_LAYER].csc10Override.specified = TRUE;
+
+        // 'blendCtm' explicitly provides a matrix to program CSC11.
+        if (layerConfig->matrixOverrides.enabled.blendCtm) {
+            params->layer[NVKMS_MAIN_LAYER].csc11Override.matrix =
+                layerConfig->matrixOverrides.blendCtm;
+            params->layer[NVKMS_MAIN_LAYER].csc11Override.enabled = TRUE;
+        } else {
+            params->layer[NVKMS_MAIN_LAYER].csc11Override.enabled = FALSE;
+        }
+        params->layer[NVKMS_MAIN_LAYER].csc11Override.specified = TRUE;
+
+        changed = TRUE;
+    }
+
+    AssignLayerLutConfig(device, layerConfig, layerRequestedConfig, NVKMS_MAIN_LAYER,
+                         params, bFromKmsSetMode);
 
     if (commit && changed) {
         NvU32 nextIndex = NVKMS_KAPI_INC_NOTIFIER_INDEX(
@@ -2850,7 +2967,7 @@ static void NvKmsKapiHeadLutConfigToKms(
     struct NvKmsSetOutputLutParams *output = &lutParams->output;
 
     /* input LUT */
-    if (headRequestedConfig->flags.ilutChanged || bFromKmsSetMode) {
+    if (headRequestedConfig->flags.legacyIlutChanged || bFromKmsSetMode) {
         input->specified = NV_TRUE;
         input->depth     = modeSetConfig->lut.input.depth;
         input->start     = modeSetConfig->lut.input.start;
@@ -2860,7 +2977,7 @@ static void NvKmsKapiHeadLutConfigToKms(
     }
 
     /* output LUT */
-    if (headRequestedConfig->flags.olutChanged || bFromKmsSetMode) {
+    if (headRequestedConfig->flags.legacyOlutChanged || bFromKmsSetMode) {
         output->specified = NV_TRUE;
         output->enabled   = modeSetConfig->lut.output.enabled;
 
@@ -2980,6 +3097,27 @@ static NvBool NvKmsKapiRequestedModeSetConfigToKms(
         NvKmsKapiHeadLutConfigToKms(headRequestedConfig,
                                     &paramsHead->flip.lut,
                                     NV_TRUE /* bFromKmsSetMode */);
+
+        if (device->lutCaps.olut.supported) {
+            paramsHead->flip.olut.specified = TRUE;
+            paramsHead->flip.olut.enabled = headModeSetConfig->olut.enabled;
+
+            if (headModeSetConfig->olut.lutSurface != NULL) {
+                paramsHead->flip.olut.lut.surfaceHandle =
+                    headModeSetConfig->olut.lutSurface->hKmsHandle;
+            } else {
+                paramsHead->flip.olut.lut.surfaceHandle = 0;
+            }
+            paramsHead->flip.olut.lut.offset = headModeSetConfig->olut.offset;
+            paramsHead->flip.olut.lut.vssSegments =
+                headModeSetConfig->olut.vssSegments;
+            paramsHead->flip.olut.lut.lutEntries =
+                headModeSetConfig->olut.lutEntries;
+
+            paramsHead->flip.olutFpNormScale.specified = TRUE;
+            paramsHead->flip.olutFpNormScale.val =
+                headModeSetConfig->olutFpNormScale;
+        }
 
         NvKmsKapiCursorConfigToKms(&headRequestedConfig->cursorRequestedConfig,
                                    &paramsHead->flip,
@@ -3240,6 +3378,30 @@ static NvBool KmsFlip(
         NvKmsKapiHeadLutConfigToKms(headRequestedConfig,
                                     &flipParams->lut,
                                     NV_FALSE /* bFromKmsSetMode */);
+
+        if (device->lutCaps.olut.supported && headRequestedConfig->flags.olutChanged) {
+            flipParams->olut.specified = TRUE;
+            flipParams->olut.enabled = headModeSetConfig->olut.enabled;
+
+            if (headModeSetConfig->olut.lutSurface != NULL) {
+                flipParams->olut.lut.surfaceHandle =
+                    headModeSetConfig->olut.lutSurface->hKmsHandle;
+            } else {
+                flipParams->olut.lut.surfaceHandle = 0;
+            }
+            flipParams->olut.lut.offset = headModeSetConfig->olut.offset;
+            flipParams->olut.lut.vssSegments =
+                headModeSetConfig->olut.vssSegments;
+            flipParams->olut.lut.lutEntries =
+                headModeSetConfig->olut.lutEntries;
+        }
+
+        if (device->lutCaps.olut.supported &&
+            headRequestedConfig->flags.olutFpNormScaleChanged) {
+
+            flipParams->olutFpNormScale.specified = TRUE;
+            flipParams->olutFpNormScale.val = headModeSetConfig->olutFpNormScale;
+        }
     }
 
     if (params->request.numFlipHeads == 0) {
@@ -3337,9 +3499,11 @@ static NvBool ApplyModeSetConfig(
         }
 
         bRequiredModeset =
-            headRequestedConfig->flags.activeChanged   ||
-            headRequestedConfig->flags.displaysChanged ||
-            headRequestedConfig->flags.modeChanged;
+            headRequestedConfig->flags.activeChanged       ||
+            headRequestedConfig->flags.displaysChanged     ||
+            headRequestedConfig->flags.modeChanged         ||
+            headRequestedConfig->flags.hdrInfoFrameChanged ||
+            headRequestedConfig->flags.colorimetryChanged;
 
         /*
          * NVKMS flip ioctl could not validate flip configuration for an
@@ -3527,6 +3691,28 @@ static NvBool SignalVrrSemaphore
     return status;
 }
 
+static void FramebufferConsoleDisabled
+(
+    struct NvKmsKapiDevice *device
+)
+{
+    struct NvKmsFramebufferConsoleDisabledParams params = { };
+    NvBool status;
+
+    if (device->hKmsDevice == 0x0) {
+        return;
+    }
+
+    params.request.deviceHandle = device->hKmsDevice;
+
+    status = nvkms_ioctl_from_kapi(device->pKmsOpen,
+                                   NVKMS_IOCTL_FRAMEBUFFER_CONSOLE_DISABLED,
+                                   &params, sizeof(params));
+    if (!status) {
+        nvKmsKapiLogDeviceDebug(device, "NVKMS FramebufferConsoleDisabled failed");
+    }
+}
+
 NvBool nvKmsKapiGetFunctionsTableInternal
 (
     struct NvKmsKapiFunctionsTable *funcsTable
@@ -3595,8 +3781,6 @@ NvBool nvKmsKapiGetFunctionsTableInternal
     funcsTable->getMemoryPages = GetMemoryPages;
     funcsTable->freeMemoryPages = FreeMemoryPages;
 
-    funcsTable->isMemoryValidForDisplay = IsMemoryValidForDisplay;
-
     funcsTable->importSemaphoreSurface = nvKmsKapiImportSemaphoreSurface;
     funcsTable->freeSemaphoreSurface = nvKmsKapiFreeSemaphoreSurface;
     funcsTable->registerSemaphoreSurfaceCallback =
@@ -3606,6 +3790,7 @@ NvBool nvKmsKapiGetFunctionsTableInternal
     funcsTable->setSemaphoreSurfaceValue =
         nvKmsKapiSetSemaphoreSurfaceValue;
     funcsTable->setSuspendResumeCallback = nvKmsKapiSetSuspendResumeCallback;
+    funcsTable->framebufferConsoleDisabled = FramebufferConsoleDisabled;
 
     funcsTable->tryInitDisplaySemaphore = nvKmsKapiTryInitDisplaySemaphore;
     funcsTable->signalDisplaySemaphore = nvKmsKapiSignalDisplaySemaphore;
@@ -3613,4 +3798,48 @@ NvBool nvKmsKapiGetFunctionsTableInternal
     funcsTable->signalVrrSemaphore = SignalVrrSemaphore;
 
     return NV_TRUE;
+}
+
+NvU32 nvKmsKapiF16ToF32Internal(NvU16 a)
+{
+    float16_t fa = { .v = a };
+    return f16_to_f32(fa).v;
+}
+
+NvU16 nvKmsKapiF32ToF16Internal(NvU32 a)
+{
+    float32_t fa = { .v = a };
+    return f32_to_f16(fa).v;
+}
+
+NvU32 nvKmsKapiF32MulInternal(NvU32 a, NvU32 b)
+{
+    float32_t fa = { .v = a };
+    float32_t fb = { .v = b };
+    return f32_mul(fa, fb).v;
+}
+
+NvU32 nvKmsKapiF32DivInternal(NvU32 a, NvU32 b)
+{
+    float32_t fa = { .v = a };
+    float32_t fb = { .v = b };
+    return f32_div(fa, fb).v;
+}
+
+NvU32 nvKmsKapiF32AddInternal(NvU32 a, NvU32 b)
+{
+    float32_t fa = { .v = a };
+    float32_t fb = { .v = b };
+    return f32_add(fa, fb).v;
+}
+
+NvU32 nvKmsKapiF32ToUI32RMinMagInternal(NvU32 a, NvBool exact)
+{
+    float32_t fa = { .v = a };
+    return f32_to_ui32_r_minMag(fa, exact);
+}
+
+NvU32 nvKmsKapiUI32ToF32Internal(NvU32 a)
+{
+    return ui32_to_f32(a).v;
 }

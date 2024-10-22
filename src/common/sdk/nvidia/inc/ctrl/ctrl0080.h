@@ -33,7 +33,6 @@
 
 #include "ctrl0080/ctrl0080bif.h"
 #include "ctrl0080/ctrl0080gpu.h"
-#include "ctrl0080/ctrl0080clk.h"
 #include "ctrl0080/ctrl0080dma.h"
 #include "ctrl0080/ctrl0080gr.h"
 #include "ctrl0080/ctrl0080cipher.h"

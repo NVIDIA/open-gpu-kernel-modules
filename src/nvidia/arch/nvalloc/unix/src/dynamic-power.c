@@ -732,7 +732,7 @@ rmReadAndParseDynamicPowerRegkey
         return NV_OK;
     }
 
-    chipId = gpuGetChipIdFromPmcBoot42(pNvp->pmc_boot_42);
+    chipId = decodePmcBoot42ChipId(pNvp->pmc_boot_42);
 
     // From GA102+, we enable RTD3 only if system is found to be Notebook
     if ((chipId >= NV_PMC_BOOT_42_CHIP_ID_GA102) &&
@@ -794,6 +794,7 @@ void NV_API_CALL rm_init_dynamic_power_management(
         nvp->dynamic_power.dynamic_power_regkey = regkeyValue;
     }
 
+    nvp->pr3_acpi_method_present = bPr3AcpiMethodPresent;
     if (!nv_dynamic_power_available(nv) || !bPr3AcpiMethodPresent ||
         (status != NV_OK))
     {
@@ -1907,6 +1908,12 @@ static NvBool RmCheckRtd3GcxSupport(
         return NV_FALSE;
     }
 
+    if (!nvp->pr3_acpi_method_present)
+    {
+        NV_PRINTF(LEVEL_NOTICE, "RTD3 ACPI support is not available.\n");
+        return NV_FALSE;
+    }
+
     return NV_TRUE;
 }
 
@@ -2029,7 +2036,7 @@ RmUpdateFixedFbsrModes(OBJGPU *pGpu)
 }
 
 static NV_STATUS
-RmPowerManagementInternal(
+RmPowerManagement(
     OBJGPU *pGpu,
     nv_pm_action_t pmAction
 )
@@ -2115,19 +2122,6 @@ RmPowerManagementInternal(
         }
         pMemoryManager->fixedFbsrModesMask = 0;
     }
-
-    return rmStatus;
-}
-
-static NV_STATUS
-RmPowerManagement(
-    OBJGPU *pGpu,
-    nv_pm_action_t pmAction
-)
-{
-    NV_STATUS   rmStatus;
-
-    rmStatus = RmPowerManagementInternal(pGpu, pmAction);
 
     return rmStatus;
 }
@@ -2324,11 +2318,12 @@ NV_STATUS NV_API_CALL rm_power_management(
     NV_STATUS rmStatus = NV_OK;
     void *fp;
     NvBool bTryAgain = NV_FALSE;
+    NvBool bConsoleDisabled = NV_FALSE;
 
     NV_ENTER_RM_RUNTIME(sp,fp);
-    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
+    threadStateInit(&threadState, THREAD_STATE_FLAGS_DEVICE_INIT);
 
-    NV_ASSERT_OK(os_flush_work_queue(pNv->queue));
+    NV_ASSERT_OK(os_flush_work_queue(pNv->queue, pmAction != NV_PM_ACTION_RESUME));
 
     // LOCK: acquire API lock
     if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DYN_POWER)) == NV_OK)
@@ -2342,6 +2337,16 @@ NV_STATUS NV_API_CALL rm_power_management(
                 // LOCK: acquire GPUs lock
                 if ((rmStatus = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DYN_POWER)) == NV_OK)
                 {
+                    //
+                    // For GPU driving console, disable console access here, to ensure no console
+                    // writes through BAR1 can interfere with physical RM's setup of BAR1
+                    //
+                    if (rm_get_uefi_console_status(pNv))
+                    {
+                        os_disable_console_access();
+                        bConsoleDisabled = NV_TRUE;
+                    }
+
                     nv_priv_t *nvp = NV_GET_NV_PRIV(pNv);
 
                     //
@@ -2376,6 +2381,11 @@ NV_STATUS NV_API_CALL rm_power_management(
                         rmStatus = RmPowerManagement(pGpu, pmAction);
                     }
 
+                    if (bConsoleDisabled)
+                    {
+                        os_enable_console_access();
+                    }
+
                     // UNLOCK: release GPUs lock
                     rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
                 }
@@ -2386,7 +2396,7 @@ NV_STATUS NV_API_CALL rm_power_management(
         rmapiLockRelease();
     }
 
-    NV_ASSERT_OK(os_flush_work_queue(pNv->queue));
+    NV_ASSERT_OK(os_flush_work_queue(pNv->queue, pmAction != NV_PM_ACTION_RESUME));
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
     NV_EXIT_RM_RUNTIME(sp,fp);

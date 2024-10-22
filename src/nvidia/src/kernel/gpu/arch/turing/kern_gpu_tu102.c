@@ -32,6 +32,7 @@
 #include "gpu/gsp/kernel_gsp.h"
 
 #include "published/turing/tu102/dev_vm.h"
+#include "published/turing/tu102/dev_bus.h"
 #include "published/turing/tu102/hwproject.h"
 #include "published/turing/tu102/dev_nv_xve.h"
 #include "published/turing/tu102/dev_nv_xve3g_vf.h"
@@ -133,7 +134,6 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU102[] =
     GPU_CHILD_PRESENT(KernelRc, 1),
     GPU_CHILD_PRESENT(Intr, 1),
     GPU_CHILD_PRESENT(NvDebugDump, 1),
-    GPU_CHILD_PRESENT(OBJGPUMON, 1),
     GPU_CHILD_PRESENT(OBJSWENG, 1),
     GPU_CHILD_PRESENT(OBJUVM, 1),
     GPU_CHILD_PRESENT(KernelBif, 1),
@@ -164,7 +164,6 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU104[] =
     GPU_CHILD_PRESENT(KernelRc, 1),
     GPU_CHILD_PRESENT(Intr, 1),
     GPU_CHILD_PRESENT(NvDebugDump, 1),
-    GPU_CHILD_PRESENT(OBJGPUMON, 1),
     GPU_CHILD_PRESENT(OBJSWENG, 1),
     GPU_CHILD_PRESENT(OBJUVM, 1),
     GPU_CHILD_PRESENT(KernelBif, 1),
@@ -195,7 +194,6 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU106[] =
     GPU_CHILD_PRESENT(KernelRc, 1),
     GPU_CHILD_PRESENT(Intr, 1),
     GPU_CHILD_PRESENT(NvDebugDump, 1),
-    GPU_CHILD_PRESENT(OBJGPUMON, 1),
     GPU_CHILD_PRESENT(OBJSWENG, 1),
     GPU_CHILD_PRESENT(OBJUVM, 1),
     GPU_CHILD_PRESENT(KernelBif, 1),
@@ -557,4 +555,33 @@ NvBool gpuIsMsixAllowed_TU102
     osUnmapKernelSpace(vAddr, 4);
 
     return FLD_TEST_DRF(_XVE, _PRIV_MISC_1, _CYA_HIDE_MSIX_CAP, _FALSE, regVal);
+}
+
+/*!
+ * @brief    Reads Pbus SW Scratch register
+ *
+ * @param[in]  pGpu      OBJGPU pointer
+ * @param[in]  idx       Index of Vbios Scratch Register
+ *
+ * @return NvU32    Value stored in Register
+ */
+NvU32
+gpuReadPBusScratch_TU102(OBJGPU *pGpu, NvU8 idx)
+{
+    return GPU_REG_RD32(pGpu, NV_PBUS_SW_SCRATCH(idx));
+}
+
+/*!
+ * @brief    Writes Pbus SW Scratch register
+ *
+ * @param[in]  pGpu      OBJGPU pointer
+ * @param[in]  idx       Index of Vbios Scratch Register
+ * @param[in]  data      Value to write in Register
+ *
+ * @return Void
+ */
+void
+gpuWritePBusScratch_TU102(OBJGPU *pGpu, NvU8 idx, NvU32 data)
+{
+    GPU_REG_WR32(pGpu, NV_PBUS_SW_SCRATCH(idx), data);
 }

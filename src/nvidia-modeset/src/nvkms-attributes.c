@@ -611,6 +611,8 @@ static void DpyPostColorSpaceOrRangeSetEvo(NVDpyEvoPtr pDpyEvo)
     NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
     NVDispApiHeadStateEvoRec *pApiHeadState;
     NvU32 head;
+    NvBool colorSpaceChanged = FALSE;
+    NvBool colorBpcChanged = FALSE;
 
     if (pDpyEvo->apiHead == NV_INVALID_HEAD) {
         return;
@@ -637,10 +639,12 @@ static void DpyPostColorSpaceOrRangeSetEvo(NVDpyEvoPtr pDpyEvo)
         return;
     }
 
+    colorSpaceChanged = (pApiHeadState->attributes.color.format != colorSpace);
+    colorBpcChanged = (pApiHeadState->attributes.color.bpc != colorBpc);
+
     /* For DP, neither color space nor bpc can be changed without a modeset */
     if (nvConnectorUsesDPLib(pDpyEvo->pConnectorEvo) &&
-            ((pApiHeadState->attributes.color.format != colorSpace) ||
-             (pApiHeadState->attributes.color.bpc != colorBpc))) {
+        (colorSpaceChanged || colorBpcChanged)) {
         return;
     }
 
@@ -677,7 +681,8 @@ static void DpyPostColorSpaceOrRangeSetEvo(NVDpyEvoPtr pDpyEvo)
                                                    &tmpDpyColor) >
                        pDpyEvo->maxSingleLinkPixelClockKHz) {
 
-                if(!nvDowngradeColorSpaceAndBpc(&colorFormatsInfo,
+                if(!nvDowngradeColorSpaceAndBpc(pDpyEvo,
+                                                &colorFormatsInfo,
                                                 &tmpDpyColor)) {
                     return;
                 }
@@ -703,9 +708,13 @@ static void DpyPostColorSpaceOrRangeSetEvo(NVDpyEvoPtr pDpyEvo)
                                                      &pApiHeadState->attributes.color,
                                                      &updateState);
 
-        if (newPixelDepth != pDispEvo->headState[head].pixelDepth) {
+        if ((newPixelDepth != pDispEvo->headState[head].pixelDepth) ||
+            colorSpaceChanged) {
             pDispEvo->headState[head].pixelDepth = newPixelDepth;
-            nvEvoHeadSetControlOR(pDispEvo, head, &updateState);
+            nvEvoHeadSetControlOR(pDispEvo,
+                                  head,
+                                  &pApiHeadState->attributes.color,
+                                  &updateState);
         }
     }
 

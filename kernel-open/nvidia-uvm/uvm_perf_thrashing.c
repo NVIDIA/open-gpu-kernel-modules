@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2023 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -223,9 +223,9 @@ typedef struct
 // uvm_procfs_is_debug_enabled() returns true.
 static processor_thrashing_stats_t g_cpu_thrashing_stats;
 
-#define PROCESSOR_THRASHING_STATS_INC(va_space, proc, field)                                         \
+#define PROCESSOR_THRASHING_STATS_INC(proc, field)                                                   \
     do {                                                                                             \
-        processor_thrashing_stats_t *_processor_stats = thrashing_stats_get_or_null(va_space, proc); \
+        processor_thrashing_stats_t *_processor_stats = thrashing_stats_get_or_null(proc);           \
         if (_processor_stats)                                                                        \
             atomic64_inc(&_processor_stats->field);                                                  \
     } while (0)
@@ -474,7 +474,7 @@ static processor_thrashing_stats_t *gpu_thrashing_stats_get_or_null(uvm_gpu_t *g
     return uvm_perf_module_type_data(gpu->perf_modules_data, UVM_PERF_MODULE_TYPE_THRASHING);
 }
 
-static processor_thrashing_stats_t *thrashing_stats_get_or_null(uvm_va_space_t *va_space, uvm_processor_id_t id)
+static processor_thrashing_stats_t *thrashing_stats_get_or_null(uvm_processor_id_t id)
 {
     if (UVM_ID_IS_CPU(id)) {
         if (g_cpu_thrashing_stats.procfs_file)
@@ -483,7 +483,7 @@ static processor_thrashing_stats_t *thrashing_stats_get_or_null(uvm_va_space_t *
         return NULL;
     }
 
-    return gpu_thrashing_stats_get_or_null(uvm_va_space_get_gpu(va_space, id));
+    return gpu_thrashing_stats_get_or_null(uvm_gpu_get(id));
 }
 
 // Create the thrashing stats struct for the given GPU
@@ -1034,7 +1034,7 @@ static void thrashing_detected(uvm_va_block_t *va_block,
     if (!uvm_page_mask_test_and_set(&block_thrashing->thrashing_pages, page_index))
         ++block_thrashing->num_thrashing_pages;
 
-    PROCESSOR_THRASHING_STATS_INC(va_space, processor_id, num_thrashing);
+    PROCESSOR_THRASHING_STATS_INC(processor_id, num_thrashing);
 
     UVM_ASSERT(thrashing_state_checks(va_block, block_thrashing, page_thrashing, page_index));
 }
@@ -1269,7 +1269,7 @@ void thrashing_event_cb(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_
         // read duplication is supported.
         read_duplication = uvm_va_block_is_hmm(va_block) ?
                            UVM_READ_DUPLICATION_UNSET :
-                           uvm_va_range_get_policy(va_block->va_range)->read_duplication;
+                           va_block->managed_range->policy.read_duplication;
 
         // We only care about migrations due to replayable faults, access
         // counters and page prefetching. For non-replayable faults, UVM will
@@ -1405,7 +1405,16 @@ static bool thrashing_processors_have_fast_access_to(uvm_va_space_t *va_space,
     uvm_processor_mask_and(fast_to,
                            &va_space->has_nvlink[uvm_id_value(to)],
                            &va_space->has_native_atomics[uvm_id_value(to)]);
-    uvm_processor_mask_set(fast_to, to);
+    if (UVM_ID_IS_CPU(to)) {
+        uvm_processor_mask_set(fast_to, to);
+    }
+    else {
+        // Include registered SMC peers and the processor 'to'.
+        uvm_processor_mask_range_fill(fast_to,
+                                      uvm_gpu_id_from_sub_processor(uvm_parent_gpu_id_from_gpu_id(to), 0),
+                                      UVM_PARENT_ID_MAX_SUB_PROCESSORS);
+        uvm_processor_mask_and(fast_to, fast_to, &va_space->registered_gpu_va_spaces);
+    }
 
     return uvm_processor_mask_subset(&page_thrashing->processors, fast_to);
 }
@@ -1491,10 +1500,10 @@ static uvm_perf_thrashing_hint_t get_hint_for_migration_thrashing(va_space_thras
     else if (!preferred_location_is_thrashing(preferred_location, page_thrashing) &&
              thrashing_processors_have_fast_access_to(va_space, va_block_context, page_thrashing, closest_resident_id)){
         // This is a fast path for those scenarios in which all thrashing
-        // processors have fast (NVLINK + native atomics) access to the current
-        // residency. This is skipped if the preferred location is thrashing and
-        // not accessible by the rest of thrashing processors. Otherwise, we
-        // would be in the condition above.
+        // processors have fast access (NVLINK + native atomics or SMC peers)
+        // to the current residency. This is skipped if the preferred location
+        // is thrashing and not accessible by the rest of thrashing processors.
+        // Otherwise, we would be in the condition above.
         if (UVM_ID_IS_CPU(closest_resident_id)) {
             // On P9 systems, we prefer the CPU to map vidmem (since it can
             // cache it), so don't map the GPU to sysmem.
@@ -1577,8 +1586,7 @@ static uvm_perf_thrashing_hint_t get_hint_for_migration_thrashing(va_space_thras
         hint.pin.residency = requester;
     }
 
-    if (hint.type == UVM_PERF_THRASHING_HINT_TYPE_PIN &&
-        !uvm_va_space_processor_has_memory(va_space, hint.pin.residency))
+    if (hint.type == UVM_PERF_THRASHING_HINT_TYPE_PIN && !uvm_processor_has_memory(hint.pin.residency))
         hint.pin.residency = UVM_ID_CPU;
 
     return hint;
@@ -1741,9 +1749,9 @@ done:
         }
         else {
             if (uvm_id_equal(hint.pin.residency, requester))
-                PROCESSOR_THRASHING_STATS_INC(va_space, requester, num_pin_local);
+                PROCESSOR_THRASHING_STATS_INC(requester, num_pin_local);
             else
-                PROCESSOR_THRASHING_STATS_INC(va_space, requester, num_pin_remote);
+                PROCESSOR_THRASHING_STATS_INC(requester, num_pin_remote);
 
             uvm_processor_mask_copy(&hint.pin.processors, &page_thrashing->processors);
         }
@@ -1756,7 +1764,7 @@ done:
                                      page_index,
                                      requester);
 
-        PROCESSOR_THRASHING_STATS_INC(va_space, requester, num_throttle);
+        PROCESSOR_THRASHING_STATS_INC(requester, num_throttle);
 
         hint.throttle.end_time_stamp = page_thrashing_get_throttling_end_time_stamp(page_thrashing);
     }
@@ -2102,15 +2110,12 @@ NV_STATUS uvm_test_set_page_thrashing_policy(UVM_TEST_SET_PAGE_THRASHING_POLICY_
     // When disabling thrashing detection, destroy the thrashing tracking
     // information for all VA blocks and unpin pages
     if (!va_space_thrashing->params.enable) {
-        uvm_va_range_t *va_range;
+        uvm_va_range_managed_t *managed_range;
 
-        uvm_for_each_va_range(va_range, va_space) {
+        uvm_for_each_va_range_managed(managed_range, va_space) {
             uvm_va_block_t *va_block;
 
-            if (va_range->type != UVM_VA_RANGE_TYPE_MANAGED)
-                continue;
-
-            for_each_va_block_in_va_range(va_range, va_block) {
+            for_each_va_block_in_va_range(managed_range, va_block) {
                 uvm_va_block_region_t va_block_region = uvm_va_block_region_from_block(va_block);
                 uvm_va_block_context_t *block_context = uvm_va_space_block_context(va_space, NULL);
 

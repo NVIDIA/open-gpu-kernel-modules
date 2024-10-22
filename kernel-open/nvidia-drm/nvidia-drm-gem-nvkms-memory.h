@@ -32,8 +32,15 @@
 struct nv_drm_gem_nvkms_memory {
     struct nv_drm_gem_object base;
 
+    /*
+     * Lock to protect concurrent writes to physically_mapped, pPhysicalAddress,
+     * and pWriteCombinedIORemapAddress.
+     *
+     * __nv_drm_gem_nvkms_map(), the sole writer, is structured such that
+     * readers are not required to hold the lock.
+     */
+    struct mutex map_lock;
     bool physically_mapped;
-
     void *pPhysicalAddress;
     void *pWriteCombinedIORemapAddress;
 

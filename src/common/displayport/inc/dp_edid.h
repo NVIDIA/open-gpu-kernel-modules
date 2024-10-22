@@ -165,7 +165,6 @@ namespace DisplayPort
             bool delayAfterD3;
             bool keepLinkAlive;
             bool useLegacyAddress;
-            bool reassessMaxLink;
             bool bIgnoreDscCap;           // Ignore DSC even if sink reports DSC capability
         }_WARFlags;
 

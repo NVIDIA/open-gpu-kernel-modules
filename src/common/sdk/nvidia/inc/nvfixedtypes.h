@@ -315,6 +315,7 @@ typedef NvUFXP64                                                    NvUFXP60_4;
 #define NV_TYPES_SINGLE_SIGN_NEGATIVE                                 0x00000001
 #define NV_TYPES_SINGLE_EXPONENT                                           30:23
 #define NV_TYPES_SINGLE_EXPONENT_ZERO                                 0x00000000
+#define NV_TYPES_SINGLE_EXPONENT_MAX                                  0x000000FE
 #define NV_TYPES_SINGLE_EXPONENT_BIAS                                 0x0000007F
 #define NV_TYPES_SINGLE_MANTISSA                                            22:0
 
@@ -345,6 +346,19 @@ typedef NvUFXP64                                                    NvUFXP60_4;
 #define NV_TYPES_SINGLE_EXPONENT_BIASED(single)                                \
     ((NvS32)(DRF_VAL(_TYPES, _SINGLE, _EXPONENT, single) -                     \
         NV_TYPES_SINGLE_EXPONENT_BIAS))
+
+/*!
+ * Helper macro to convert an NvS8 unbiased exponent value to an IEEE 754
+ * single-precision value's exponent, by adding the bias.
+ * Input exponent can range from -127 to 127 which is stored in the range
+ * [0, 254]
+ *
+ * @param[in] single   IEEE 754 single-precision value to manipulate.
+ *
+ * @return Biased exponent value for IEEE 754 single-precision.
+ */
+#define NV_TYPES_NvS32_TO_SINGLE_EXPONENT_BIASED(exponent)                      \
+    ((NvU32)((exponent) + NV_TYPES_SINGLE_EXPONENT_BIAS))
 
 /*!
  * NvTemp - temperature data type introduced to avoid bugs in conversion between

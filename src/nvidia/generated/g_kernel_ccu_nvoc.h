@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -119,10 +119,15 @@ typedef struct
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__KernelCcu;
+
+
 struct KernelCcu {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__KernelCcu *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -132,23 +137,9 @@ struct KernelCcu {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct KernelCcu *__nvoc_pbase_KernelCcu;    // kccu
 
-    // Vtable with 16 per-object function pointers
-    NV_STATUS (*__kccuConstructEngine__)(OBJGPU *, struct KernelCcu * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__kccuStateLoad__)(OBJGPU *, struct KernelCcu * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__kccuStateUnload__)(OBJGPU *, struct KernelCcu * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
+    // Vtable with 2 per-object function pointers
     NV_STATUS (*__kccuMigShrBufHandler__)(OBJGPU *, struct KernelCcu * /*this*/, NvBool);  // halified (2 hals)
     NV_STATUS (*__kccuGetBufSize__)(OBJGPU *, struct KernelCcu * /*this*/);  // halified (3 hals)
-    void (*__kccuInitMissing__)(struct OBJGPU *, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kccuStatePreInitLocked__)(struct OBJGPU *, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kccuStatePreInitUnlocked__)(struct OBJGPU *, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kccuStateInitLocked__)(struct OBJGPU *, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kccuStateInitUnlocked__)(struct OBJGPU *, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kccuStatePreLoad__)(struct OBJGPU *, struct KernelCcu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kccuStatePostLoad__)(struct OBJGPU *, struct KernelCcu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kccuStatePreUnload__)(struct OBJGPU *, struct KernelCcu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kccuStatePostUnload__)(struct OBJGPU *, struct KernelCcu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    void (*__kccuStateDestroy__)(struct OBJGPU *, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__kccuIsPresent__)(struct OBJGPU *, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
 
     // 1 PDB property
 
@@ -161,6 +152,27 @@ struct KernelCcu {
     NvU32 devSharedBufSize;
     NvU32 migBufSize;
     NvU32 migSharedBufSize;
+};
+
+
+// Metadata including vtable with 14 function pointers plus superclass metadata
+struct NVOC_VTABLE__KernelCcu {
+    const struct NVOC_VTABLE__OBJENGSTATE OBJENGSTATE;    // (engstate) 14 function pointers
+
+    NV_STATUS (*__kccuConstructEngine__)(OBJGPU *, struct KernelCcu * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__kccuStateLoad__)(OBJGPU *, struct KernelCcu * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__kccuStateUnload__)(OBJGPU *, struct KernelCcu * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
+    void (*__kccuInitMissing__)(struct OBJGPU *, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kccuStatePreInitLocked__)(struct OBJGPU *, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kccuStatePreInitUnlocked__)(struct OBJGPU *, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kccuStateInitLocked__)(struct OBJGPU *, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kccuStateInitUnlocked__)(struct OBJGPU *, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kccuStatePreLoad__)(struct OBJGPU *, struct KernelCcu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kccuStatePostLoad__)(struct OBJGPU *, struct KernelCcu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kccuStatePreUnload__)(struct OBJGPU *, struct KernelCcu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kccuStatePostUnload__)(struct OBJGPU *, struct KernelCcu * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    void (*__kccuStateDestroy__)(struct OBJGPU *, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__kccuIsPresent__)(struct OBJGPU *, struct KernelCcu * /*this*/);  // virtual inherited (engstate) base (engstate)
 };
 
 #ifndef __NVOC_CLASS_KernelCcu_TYPEDEF__
@@ -197,11 +209,11 @@ NV_STATUS __nvoc_objCreate_KernelCcu(KernelCcu**, Dynamic*, NvU32);
 
 
 // Wrapper macros
-#define kccuConstructEngine_FNPTR(pKernelCcu) pKernelCcu->__kccuConstructEngine__
+#define kccuConstructEngine_FNPTR(pKernelCcu) pKernelCcu->__nvoc_vtable->__kccuConstructEngine__
 #define kccuConstructEngine(pGpu, pKernelCcu, engDesc) kccuConstructEngine_DISPATCH(pGpu, pKernelCcu, engDesc)
-#define kccuStateLoad_FNPTR(arg_this) arg_this->__kccuStateLoad__
+#define kccuStateLoad_FNPTR(arg_this) arg_this->__nvoc_vtable->__kccuStateLoad__
 #define kccuStateLoad(arg1, arg_this, flags) kccuStateLoad_DISPATCH(arg1, arg_this, flags)
-#define kccuStateUnload_FNPTR(arg_this) arg_this->__kccuStateUnload__
+#define kccuStateUnload_FNPTR(arg_this) arg_this->__nvoc_vtable->__kccuStateUnload__
 #define kccuStateUnload(arg1, arg_this, flags) kccuStateUnload_DISPATCH(arg1, arg_this, flags)
 #define kccuMigShrBufHandler_FNPTR(arg_this) arg_this->__kccuMigShrBufHandler__
 #define kccuMigShrBufHandler(arg1, arg_this, bMigEnabled) kccuMigShrBufHandler_DISPATCH(arg1, arg_this, bMigEnabled)
@@ -209,40 +221,40 @@ NV_STATUS __nvoc_objCreate_KernelCcu(KernelCcu**, Dynamic*, NvU32);
 #define kccuGetBufSize_FNPTR(arg_this) arg_this->__kccuGetBufSize__
 #define kccuGetBufSize(arg1, arg_this) kccuGetBufSize_DISPATCH(arg1, arg_this)
 #define kccuGetBufSize_HAL(arg1, arg_this) kccuGetBufSize_DISPATCH(arg1, arg_this)
-#define kccuInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateInitMissing__
+#define kccuInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateInitMissing__
 #define kccuInitMissing(pGpu, pEngstate) kccuInitMissing_DISPATCH(pGpu, pEngstate)
-#define kccuStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreInitLocked__
+#define kccuStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreInitLocked__
 #define kccuStatePreInitLocked(pGpu, pEngstate) kccuStatePreInitLocked_DISPATCH(pGpu, pEngstate)
-#define kccuStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreInitUnlocked__
+#define kccuStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreInitUnlocked__
 #define kccuStatePreInitUnlocked(pGpu, pEngstate) kccuStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define kccuStateInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__
+#define kccuStateInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStateInitLocked__
 #define kccuStateInitLocked(pGpu, pEngstate) kccuStateInitLocked_DISPATCH(pGpu, pEngstate)
-#define kccuStateInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStateInitUnlocked__
+#define kccuStateInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStateInitUnlocked__
 #define kccuStateInitUnlocked(pGpu, pEngstate) kccuStateInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define kccuStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreLoad__
+#define kccuStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreLoad__
 #define kccuStatePreLoad(pGpu, pEngstate, arg3) kccuStatePreLoad_DISPATCH(pGpu, pEngstate, arg3)
-#define kccuStatePostLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePostLoad__
+#define kccuStatePostLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePostLoad__
 #define kccuStatePostLoad(pGpu, pEngstate, arg3) kccuStatePostLoad_DISPATCH(pGpu, pEngstate, arg3)
-#define kccuStatePreUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreUnload__
+#define kccuStatePreUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreUnload__
 #define kccuStatePreUnload(pGpu, pEngstate, arg3) kccuStatePreUnload_DISPATCH(pGpu, pEngstate, arg3)
-#define kccuStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePostUnload__
+#define kccuStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePostUnload__
 #define kccuStatePostUnload(pGpu, pEngstate, arg3) kccuStatePostUnload_DISPATCH(pGpu, pEngstate, arg3)
-#define kccuStateDestroy_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStateDestroy__
+#define kccuStateDestroy_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStateDestroy__
 #define kccuStateDestroy(pGpu, pEngstate) kccuStateDestroy_DISPATCH(pGpu, pEngstate)
-#define kccuIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateIsPresent__
+#define kccuIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateIsPresent__
 #define kccuIsPresent(pGpu, pEngstate) kccuIsPresent_DISPATCH(pGpu, pEngstate)
 
 // Dispatch functions
 static inline NV_STATUS kccuConstructEngine_DISPATCH(OBJGPU *pGpu, struct KernelCcu *pKernelCcu, ENGDESCRIPTOR engDesc) {
-    return pKernelCcu->__kccuConstructEngine__(pGpu, pKernelCcu, engDesc);
+    return pKernelCcu->__nvoc_vtable->__kccuConstructEngine__(pGpu, pKernelCcu, engDesc);
 }
 
 static inline NV_STATUS kccuStateLoad_DISPATCH(OBJGPU *arg1, struct KernelCcu *arg_this, NvU32 flags) {
-    return arg_this->__kccuStateLoad__(arg1, arg_this, flags);
+    return arg_this->__nvoc_vtable->__kccuStateLoad__(arg1, arg_this, flags);
 }
 
 static inline NV_STATUS kccuStateUnload_DISPATCH(OBJGPU *arg1, struct KernelCcu *arg_this, NvU32 flags) {
-    return arg_this->__kccuStateUnload__(arg1, arg_this, flags);
+    return arg_this->__nvoc_vtable->__kccuStateUnload__(arg1, arg_this, flags);
 }
 
 static inline NV_STATUS kccuMigShrBufHandler_DISPATCH(OBJGPU *arg1, struct KernelCcu *arg_this, NvBool bMigEnabled) {
@@ -254,47 +266,47 @@ static inline NV_STATUS kccuGetBufSize_DISPATCH(OBJGPU *arg1, struct KernelCcu *
 }
 
 static inline void kccuInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelCcu *pEngstate) {
-    pEngstate->__kccuInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_vtable->__kccuInitMissing__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kccuStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelCcu *pEngstate) {
-    return pEngstate->__kccuStatePreInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_vtable->__kccuStatePreInitLocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kccuStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelCcu *pEngstate) {
-    return pEngstate->__kccuStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_vtable->__kccuStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kccuStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelCcu *pEngstate) {
-    return pEngstate->__kccuStateInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_vtable->__kccuStateInitLocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kccuStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelCcu *pEngstate) {
-    return pEngstate->__kccuStateInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_vtable->__kccuStateInitUnlocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kccuStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelCcu *pEngstate, NvU32 arg3) {
-    return pEngstate->__kccuStatePreLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_vtable->__kccuStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS kccuStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelCcu *pEngstate, NvU32 arg3) {
-    return pEngstate->__kccuStatePostLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_vtable->__kccuStatePostLoad__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS kccuStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelCcu *pEngstate, NvU32 arg3) {
-    return pEngstate->__kccuStatePreUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_vtable->__kccuStatePreUnload__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS kccuStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelCcu *pEngstate, NvU32 arg3) {
-    return pEngstate->__kccuStatePostUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_vtable->__kccuStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
 static inline void kccuStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct KernelCcu *pEngstate) {
-    pEngstate->__kccuStateDestroy__(pGpu, pEngstate);
+    pEngstate->__nvoc_vtable->__kccuStateDestroy__(pGpu, pEngstate);
 }
 
 static inline NvBool kccuIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelCcu *pEngstate) {
-    return pEngstate->__kccuIsPresent__(pGpu, pEngstate);
+    return pEngstate->__nvoc_vtable->__kccuIsPresent__(pGpu, pEngstate);
 }
 
 NV_STATUS kccuConstructEngine_IMPL(OBJGPU *pGpu, struct KernelCcu *pKernelCcu, ENGDESCRIPTOR engDesc);

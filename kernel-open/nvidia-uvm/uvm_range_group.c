@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -172,7 +172,7 @@ void uvm_range_group_radix_tree_destroy(uvm_va_space_t *va_space)
     }
 }
 
-static NV_STATUS uvm_range_group_va_range_migrate_block_locked(uvm_va_range_t *va_range,
+static NV_STATUS uvm_range_group_va_range_migrate_block_locked(uvm_va_range_managed_t *managed_range,
                                                                uvm_va_block_t *va_block,
                                                                uvm_va_block_retry_t *va_block_retry,
                                                                uvm_va_block_context_t *va_block_context,
@@ -183,8 +183,7 @@ static NV_STATUS uvm_range_group_va_range_migrate_block_locked(uvm_va_range_t *v
     NV_STATUS tracker_status;
     uvm_gpu_id_t gpu_id;
     uvm_processor_mask_t *map_mask = &va_block_context->caller_processor_mask;
-    uvm_va_policy_t *policy = uvm_va_range_get_policy(va_range);
-
+    uvm_va_policy_t *policy = &managed_range->policy;
     // Set the migration CPU NUMA node from the policy.
     va_block_context->make_resident.dest_nid = policy->preferred_nid;
 
@@ -192,7 +191,7 @@ static NV_STATUS uvm_range_group_va_range_migrate_block_locked(uvm_va_range_t *v
     status = uvm_va_block_unmap(va_block, va_block_context, UVM_ID_CPU, region, NULL, NULL);
     UVM_ASSERT(status == NV_OK);
 
-    if (uvm_va_policy_is_read_duplicate(uvm_va_range_get_policy(va_range), va_range->va_space)) {
+    if (uvm_va_policy_is_read_duplicate(&managed_range->policy, managed_range->va_range.va_space)) {
         status = uvm_va_block_make_resident_read_duplicate(va_block,
                                                            va_block_retry,
                                                            va_block_context,
@@ -220,7 +219,7 @@ static NV_STATUS uvm_range_group_va_range_migrate_block_locked(uvm_va_range_t *v
     // RWA permission
     status = uvm_va_block_map_mask(va_block,
                                    va_block_context,
-                                   &va_range->uvm_lite_gpus,
+                                   &managed_range->va_range.uvm_lite_gpus,
                                    region,
                                    NULL,
                                    UVM_PROT_READ_WRITE_ATOMIC,
@@ -230,9 +229,9 @@ static NV_STATUS uvm_range_group_va_range_migrate_block_locked(uvm_va_range_t *v
 
     // 2- Map faultable SetAccessedBy GPUs.
     uvm_processor_mask_and(map_mask,
-                           &uvm_va_range_get_policy(va_range)->accessed_by,
-                           &va_range->va_space->can_access[uvm_id_value(policy->preferred_location)]);
-    uvm_processor_mask_andnot(map_mask, map_mask, &va_range->uvm_lite_gpus);
+                           &managed_range->policy.accessed_by,
+                           &managed_range->va_range.va_space->can_access[uvm_id_value(policy->preferred_location)]);
+    uvm_processor_mask_andnot(map_mask, map_mask, &managed_range->va_range.uvm_lite_gpus);
 
     for_each_gpu_id_in_mask(gpu_id, map_mask) {
         status = uvm_va_block_add_mappings(va_block,
@@ -251,7 +250,7 @@ out:
     return status == NV_OK ? tracker_status : status;
 }
 
-NV_STATUS uvm_range_group_va_range_migrate(uvm_va_range_t *va_range,
+NV_STATUS uvm_range_group_va_range_migrate(uvm_va_range_managed_t *managed_range,
                                            NvU64 start,
                                            NvU64 end,
                                            uvm_tracker_t *out_tracker)
@@ -268,12 +267,12 @@ NV_STATUS uvm_range_group_va_range_migrate(uvm_va_range_t *va_range,
     if (!va_block_context)
         return NV_ERR_NO_MEMORY;
 
-    uvm_assert_rwsem_locked(&va_range->va_space->lock);
+    uvm_assert_rwsem_locked(&managed_range->va_range.va_space->lock);
 
     // Iterate over blocks, populating them if necessary
-    for (i = uvm_va_range_block_index(va_range, start); i <= uvm_va_range_block_index(va_range, end); ++i) {
+    for (i = uvm_va_range_block_index(managed_range, start); i <= uvm_va_range_block_index(managed_range, end); ++i) {
         uvm_va_block_region_t region;
-        status = uvm_va_range_block_create(va_range, i, &va_block);
+        status = uvm_va_range_block_create(managed_range, i, &va_block);
         if (status != NV_OK)
             break;
 
@@ -282,7 +281,7 @@ NV_STATUS uvm_range_group_va_range_migrate(uvm_va_range_t *va_range,
                                                     min(end, va_block->end));
 
         status = UVM_VA_BLOCK_LOCK_RETRY(va_block, &va_block_retry,
-                uvm_range_group_va_range_migrate_block_locked(va_range,
+                uvm_range_group_va_range_migrate_block_locked(managed_range,
                                                               va_block,
                                                               &va_block_retry,
                                                               va_block_context,
@@ -301,7 +300,7 @@ NV_STATUS uvm_api_set_range_group(UVM_SET_RANGE_GROUP_PARAMS *params, struct fil
 {
     uvm_va_space_t *va_space = uvm_va_space_get(filp);
     uvm_range_group_t *range_group = NULL;
-    uvm_va_range_t *va_range, *va_range_last;
+    uvm_va_range_managed_t *managed_range, *managed_range_last;
     unsigned long long last_address = params->requestedBase + params->length - 1;
     uvm_tracker_t local_tracker;
     NV_STATUS tracker_status;
@@ -327,20 +326,20 @@ NV_STATUS uvm_api_set_range_group(UVM_SET_RANGE_GROUP_PARAMS *params, struct fil
         goto done;
     }
 
-    // If the desired range group is not migratable, any overlapping va_ranges
-    // must have a preferred location
+    // If the desired range group is not migratable, any overlapping managed
+    // ranges must have a preferred location
     migratable = uvm_range_group_migratable(range_group);
-    va_range_last = NULL;
-    uvm_for_each_managed_va_range_in_contig(va_range, va_space, params->requestedBase, last_address) {
-        va_range_last = va_range;
-        if (!migratable && UVM_ID_IS_INVALID(uvm_va_range_get_policy(va_range)->preferred_location)) {
+    managed_range_last = NULL;
+    uvm_for_each_va_range_managed_in_contig(managed_range, va_space, params->requestedBase, last_address) {
+        managed_range_last = managed_range;
+        if (!migratable && UVM_ID_IS_INVALID(managed_range->policy.preferred_location)) {
             status = NV_ERR_INVALID_ADDRESS;
             goto done;
         }
     }
 
     // Check that we were able to iterate over the entire range without any gaps
-    if (!va_range_last || va_range_last->node.end < last_address) {
+    if (!managed_range_last || managed_range_last->va_range.node.end < last_address) {
         status = NV_ERR_INVALID_ADDRESS;
         goto done;
     }
@@ -357,10 +356,10 @@ NV_STATUS uvm_api_set_range_group(UVM_SET_RANGE_GROUP_PARAMS *params, struct fil
     has_va_space_write_lock = false;
 
     // Already checked for gaps above
-    uvm_for_each_va_range_in(va_range, va_space, params->requestedBase, last_address) {
-        status = uvm_range_group_va_range_migrate(va_range,
-                                                  max(va_range->node.start, params->requestedBase),
-                                                  min(va_range->node.end, last_address),
+    uvm_for_each_va_range_managed_in(managed_range, va_space, params->requestedBase, last_address) {
+        status = uvm_range_group_va_range_migrate(managed_range,
+                                                  max(managed_range->va_range.node.start, params->requestedBase),
+                                                  min(managed_range->va_range.node.end, last_address),
                                                   &local_tracker);
         if (status != NV_OK)
             goto done;
@@ -381,7 +380,7 @@ static NV_STATUS uvm_range_group_prevent_migration(uvm_range_group_t *range_grou
                                                    uvm_va_space_t *va_space)
 {
     uvm_range_group_range_t *rgr = NULL;
-    uvm_va_range_t *va_range;
+    uvm_va_range_managed_t *managed_range;
     uvm_processor_id_t preferred_location;
     uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
     NV_STATUS tracker_status;
@@ -413,10 +412,10 @@ static NV_STATUS uvm_range_group_prevent_migration(uvm_range_group_t *range_grou
         if (!rgr)
             break;
 
-        uvm_for_each_va_range_in(va_range, va_space, rgr->node.start, rgr->node.end) {
-            // VA ranges need to have a preferred location set in order for their
-            // range group to be set to non-migratable.
-            preferred_location = uvm_va_range_get_policy(va_range)->preferred_location;
+        uvm_for_each_va_range_managed_in(managed_range, va_space, rgr->node.start, rgr->node.end) {
+            // Managed ranges need to have a preferred location set in order for
+            // their range group to be set to non-migratable.
+            preferred_location = managed_range->policy.preferred_location;
             if (UVM_ID_IS_INVALID(preferred_location)) {
                 status = NV_ERR_INVALID_ARGUMENT;
                 goto done;
@@ -432,16 +431,16 @@ static NV_STATUS uvm_range_group_prevent_migration(uvm_range_group_t *range_grou
 
             // Check that all UVM-Lite GPUs are able to access the
             // preferred location
-            if (!uvm_processor_mask_subset(&va_range->uvm_lite_gpus,
+            if (!uvm_processor_mask_subset(&managed_range->va_range.uvm_lite_gpus,
                                            &va_space->accessible_from[uvm_id_value(preferred_location)])) {
                 status = NV_ERR_INVALID_DEVICE;
                 goto done;
             }
 
-            // Perform the migration of the VA range.
-            status = uvm_range_group_va_range_migrate(va_range,
-                                                      max(va_range->node.start, rgr->node.start),
-                                                      min(va_range->node.end, rgr->node.end),
+            // Perform the migration of the managed range.
+            status = uvm_range_group_va_range_migrate(managed_range,
+                                                      max(managed_range->va_range.node.start, rgr->node.start),
+                                                      min(managed_range->va_range.node.end, rgr->node.end),
                                                       &local_tracker);
             if (status != NV_OK)
                 goto done;

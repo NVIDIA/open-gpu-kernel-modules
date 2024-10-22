@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -86,13 +86,12 @@ kperfStateLoad_IMPL(OBJGPU *pGpu, KernelPerf *pKernelPerf, NvU32 flags)
 
     {
         OBJSYS                  *pSys                    = SYS_GET_INSTANCE();
-        OBJCL                   *pCl                     = SYS_GET_CL(pSys);
         PlatformRequestHandler  *pPlatformRequestHandler = SYS_GET_PFM_REQ_HNDLR(pSys);
 
 
         // Load PFM_REQ_HNDLR module which is a child of OBJSYS
         // Skip pfmreqhndlrStateLoad on eGPU
-        if (!(pCl->getProperty(pCl, PDB_PROP_CL_IS_EXTERNAL_GPU)) &&
+        if (!(pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_EXTERNAL_GPU)) &&
              (pPlatformRequestHandler != NULL))
         {
             pfmreqhndlrStateLoad(pPlatformRequestHandler);

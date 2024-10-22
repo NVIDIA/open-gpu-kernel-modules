@@ -120,165 +120,275 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_NvjpgContext =
     /*pExportInfo=*/        &__nvoc_export_info_NvjpgContext
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^3
+NvBool __nvoc_down_thunk_RmResource_resShareCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super^3
+NV_STATUS __nvoc_down_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^3
+void __nvoc_down_thunk_RmResource_resControlSerialization_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^3
+NV_STATUS __nvoc_down_thunk_RmResource_resControl_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^3
+void __nvoc_down_thunk_RmResource_resControl_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^3
+NV_STATUS __nvoc_down_thunk_GpuResource_resControl(struct RsResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_down_thunk_GpuResource_resMap(struct RsResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping);    // super^2
+NV_STATUS __nvoc_down_thunk_GpuResource_resUnmap(struct RsResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping);    // super^2
+NvBool __nvoc_down_thunk_GpuResource_rmresShareCallback(struct RmResource *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super^2
+PEVENTNOTIFICATION * __nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr(struct INotifier *pNotifier);    // super^2
+struct NotifShare * __nvoc_down_thunk_Notifier_inotifyGetNotificationShare(struct INotifier *pNotifier);    // super^2
+void __nvoc_down_thunk_Notifier_inotifySetNotificationShare(struct INotifier *pNotifier, struct NotifShare *pNotifShare);    // super^2
+NV_STATUS __nvoc_down_thunk_Notifier_inotifyUnregisterEvent(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // super^2
+NV_STATUS __nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // super^2
+NV_STATUS __nvoc_down_thunk_ChannelDescendant_rmresCheckMemInterUnmap(struct RmResource *pChannelDescendant, NvBool bSubdeviceHandleProvided);    // super
+
+// Up-thunk(s) to bridge methods to ancestors (if any)
+NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super^3
+NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super^3
+void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource);    // super^3
+NV_STATUS __nvoc_up_thunk_RsResource_rmresControl(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^3
+NV_STATUS __nvoc_up_thunk_RsResource_rmresControlFilter(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^3
+NV_STATUS __nvoc_up_thunk_RsResource_rmresMap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // super^3
+NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // super^3
+NvBool __nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported(struct RmResource *pResource);    // super^3
+NV_STATUS __nvoc_up_thunk_RsResource_rmresMapTo(struct RmResource *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super^3
+NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmapFrom(struct RmResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super^3
+NvU32 __nvoc_up_thunk_RsResource_rmresGetRefCount(struct RmResource *pResource);    // super^3
+void __nvoc_up_thunk_RsResource_rmresAddAdditionalDependants(struct RsClient *pClient, struct RmResource *pResource, RsResourceRef *pReference);    // super^3
+NvBool __nvoc_up_thunk_RmResource_gpuresAccessCallback(struct GpuResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^2
+NV_STATUS __nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams(struct GpuResource *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap(struct GpuResource *pRmResource, NvBool bSubdeviceHandleProvided);    // super^2
+NV_STATUS __nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor(struct GpuResource *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // super^2
+NV_STATUS __nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+void __nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RmResource_gpuresControl_Prologue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+void __nvoc_up_thunk_RmResource_gpuresControl_Epilogue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NvBool __nvoc_up_thunk_RsResource_gpuresCanCopy(struct GpuResource *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_gpuresIsDuplicate(struct GpuResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super^2
+void __nvoc_up_thunk_RsResource_gpuresPreDestruct(struct GpuResource *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_gpuresControlFilter(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NvBool __nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported(struct GpuResource *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_gpuresMapTo(struct GpuResource *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_gpuresUnmapFrom(struct GpuResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super^2
+NvU32 __nvoc_up_thunk_RsResource_gpuresGetRefCount(struct GpuResource *pResource);    // super^2
+void __nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants(struct RsClient *pClient, struct GpuResource *pResource, RsResourceRef *pReference);    // super^2
+NV_STATUS __nvoc_up_thunk_GpuResource_chandesControl(struct ChannelDescendant *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_up_thunk_GpuResource_chandesMap(struct ChannelDescendant *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping);    // super
+NV_STATUS __nvoc_up_thunk_GpuResource_chandesUnmap(struct ChannelDescendant *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping);    // super
+NvBool __nvoc_up_thunk_GpuResource_chandesShareCallback(struct ChannelDescendant *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super
+NV_STATUS __nvoc_up_thunk_GpuResource_chandesGetRegBaseOffsetAndSize(struct ChannelDescendant *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize);    // super
+NV_STATUS __nvoc_up_thunk_GpuResource_chandesGetMapAddrSpace(struct ChannelDescendant *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace);    // super
+NV_STATUS __nvoc_up_thunk_GpuResource_chandesInternalControlForward(struct ChannelDescendant *pGpuResource, NvU32 command, void *pParams, NvU32 size);    // super
+NvHandle __nvoc_up_thunk_GpuResource_chandesGetInternalObjectHandle(struct ChannelDescendant *pGpuResource);    // super
+NvBool __nvoc_up_thunk_RmResource_chandesAccessCallback(struct ChannelDescendant *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_chandesGetMemInterMapParams(struct ChannelDescendant *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_chandesGetMemoryMappingDescriptor(struct ChannelDescendant *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_chandesControlSerialization_Prologue(struct ChannelDescendant *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+void __nvoc_up_thunk_RmResource_chandesControlSerialization_Epilogue(struct ChannelDescendant *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_chandesControl_Prologue(struct ChannelDescendant *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+void __nvoc_up_thunk_RmResource_chandesControl_Epilogue(struct ChannelDescendant *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NvBool __nvoc_up_thunk_RsResource_chandesCanCopy(struct ChannelDescendant *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_chandesIsDuplicate(struct ChannelDescendant *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super
+void __nvoc_up_thunk_RsResource_chandesPreDestruct(struct ChannelDescendant *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_chandesControlFilter(struct ChannelDescendant *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NvBool __nvoc_up_thunk_RsResource_chandesIsPartialUnmapSupported(struct ChannelDescendant *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_chandesMapTo(struct ChannelDescendant *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_chandesUnmapFrom(struct ChannelDescendant *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super
+NvU32 __nvoc_up_thunk_RsResource_chandesGetRefCount(struct ChannelDescendant *pResource);    // super
+void __nvoc_up_thunk_RsResource_chandesAddAdditionalDependants(struct RsClient *pClient, struct ChannelDescendant *pResource, RsResourceRef *pReference);    // super
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_chandesGetNotificationListPtr(struct ChannelDescendant *pNotifier);    // super
+struct NotifShare * __nvoc_up_thunk_Notifier_chandesGetNotificationShare(struct ChannelDescendant *pNotifier);    // super
+void __nvoc_up_thunk_Notifier_chandesSetNotificationShare(struct ChannelDescendant *pNotifier, struct NotifShare *pNotifShare);    // super
+NV_STATUS __nvoc_up_thunk_Notifier_chandesUnregisterEvent(struct ChannelDescendant *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // super
+NV_STATUS __nvoc_up_thunk_Notifier_chandesGetOrAllocNotifShare(struct ChannelDescendant *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // super
+NV_STATUS __nvoc_up_thunk_ChannelDescendant_nvjpgctxGetSwMethods(struct NvjpgContext *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods);    // this
+NvBool __nvoc_up_thunk_ChannelDescendant_nvjpgctxIsSwMethodStalling(struct NvjpgContext *pChannelDescendant, NvU32 hHandle);    // this
+NV_STATUS __nvoc_up_thunk_ChannelDescendant_nvjpgctxCheckMemInterUnmap(struct NvjpgContext *pChannelDescendant, NvBool bSubdeviceHandleProvided);    // this
+NV_STATUS __nvoc_up_thunk_GpuResource_nvjpgctxControl(struct NvjpgContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_GpuResource_nvjpgctxMap(struct NvjpgContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping);    // this
+NV_STATUS __nvoc_up_thunk_GpuResource_nvjpgctxUnmap(struct NvjpgContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping);    // this
+NvBool __nvoc_up_thunk_GpuResource_nvjpgctxShareCallback(struct NvjpgContext *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // this
+NV_STATUS __nvoc_up_thunk_GpuResource_nvjpgctxGetRegBaseOffsetAndSize(struct NvjpgContext *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize);    // this
+NV_STATUS __nvoc_up_thunk_GpuResource_nvjpgctxGetMapAddrSpace(struct NvjpgContext *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace);    // this
+NV_STATUS __nvoc_up_thunk_GpuResource_nvjpgctxInternalControlForward(struct NvjpgContext *pGpuResource, NvU32 command, void *pParams, NvU32 size);    // this
+NvHandle __nvoc_up_thunk_GpuResource_nvjpgctxGetInternalObjectHandle(struct NvjpgContext *pGpuResource);    // this
+NvBool __nvoc_up_thunk_RmResource_nvjpgctxAccessCallback(struct NvjpgContext *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_nvjpgctxGetMemInterMapParams(struct NvjpgContext *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_nvjpgctxGetMemoryMappingDescriptor(struct NvjpgContext *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_nvjpgctxControlSerialization_Prologue(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+void __nvoc_up_thunk_RmResource_nvjpgctxControlSerialization_Epilogue(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_nvjpgctxControl_Prologue(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+void __nvoc_up_thunk_RmResource_nvjpgctxControl_Epilogue(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NvBool __nvoc_up_thunk_RsResource_nvjpgctxCanCopy(struct NvjpgContext *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_nvjpgctxIsDuplicate(struct NvjpgContext *pResource, NvHandle hMemory, NvBool *pDuplicate);    // this
+void __nvoc_up_thunk_RsResource_nvjpgctxPreDestruct(struct NvjpgContext *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_nvjpgctxControlFilter(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NvBool __nvoc_up_thunk_RsResource_nvjpgctxIsPartialUnmapSupported(struct NvjpgContext *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_nvjpgctxMapTo(struct NvjpgContext *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_nvjpgctxUnmapFrom(struct NvjpgContext *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
+NvU32 __nvoc_up_thunk_RsResource_nvjpgctxGetRefCount(struct NvjpgContext *pResource);    // this
+void __nvoc_up_thunk_RsResource_nvjpgctxAddAdditionalDependants(struct RsClient *pClient, struct NvjpgContext *pResource, RsResourceRef *pReference);    // this
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_nvjpgctxGetNotificationListPtr(struct NvjpgContext *pNotifier);    // this
+struct NotifShare * __nvoc_up_thunk_Notifier_nvjpgctxGetNotificationShare(struct NvjpgContext *pNotifier);    // this
+void __nvoc_up_thunk_Notifier_nvjpgctxSetNotificationShare(struct NvjpgContext *pNotifier, struct NotifShare *pNotifShare);    // this
+NV_STATUS __nvoc_up_thunk_Notifier_nvjpgctxUnregisterEvent(struct NvjpgContext *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // this
+NV_STATUS __nvoc_up_thunk_Notifier_nvjpgctxGetOrAllocNotifShare(struct NvjpgContext *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // this
+
 // 32 up-thunk(s) defined to bridge methods in NvjpgContext to superclasses
 
 // nvjpgctxGetSwMethods: virtual inherited (chandes) base (chandes)
-static NV_STATUS __nvoc_up_thunk_ChannelDescendant_nvjpgctxGetSwMethods(struct NvjpgContext *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
+NV_STATUS __nvoc_up_thunk_ChannelDescendant_nvjpgctxGetSwMethods(struct NvjpgContext *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return chandesGetSwMethods((struct ChannelDescendant *)(((unsigned char *) pChannelDescendant) + __nvoc_rtti_NvjpgContext_ChannelDescendant.offset), ppMethods, pNumMethods);
 }
 
 // nvjpgctxIsSwMethodStalling: virtual inherited (chandes) base (chandes)
-static NvBool __nvoc_up_thunk_ChannelDescendant_nvjpgctxIsSwMethodStalling(struct NvjpgContext *pChannelDescendant, NvU32 hHandle) {
+NvBool __nvoc_up_thunk_ChannelDescendant_nvjpgctxIsSwMethodStalling(struct NvjpgContext *pChannelDescendant, NvU32 hHandle) {
     return chandesIsSwMethodStalling((struct ChannelDescendant *)(((unsigned char *) pChannelDescendant) + __nvoc_rtti_NvjpgContext_ChannelDescendant.offset), hHandle);
 }
 
 // nvjpgctxCheckMemInterUnmap: virtual inherited (chandes) base (chandes)
-static NV_STATUS __nvoc_up_thunk_ChannelDescendant_nvjpgctxCheckMemInterUnmap(struct NvjpgContext *pChannelDescendant, NvBool bSubdeviceHandleProvided) {
+NV_STATUS __nvoc_up_thunk_ChannelDescendant_nvjpgctxCheckMemInterUnmap(struct NvjpgContext *pChannelDescendant, NvBool bSubdeviceHandleProvided) {
     return chandesCheckMemInterUnmap((struct ChannelDescendant *)(((unsigned char *) pChannelDescendant) + __nvoc_rtti_NvjpgContext_ChannelDescendant.offset), bSubdeviceHandleProvided);
 }
 
 // nvjpgctxControl: virtual inherited (gpures) base (chandes)
-static NV_STATUS __nvoc_up_thunk_GpuResource_nvjpgctxControl(struct NvjpgContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_GpuResource_nvjpgctxControl(struct NvjpgContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvjpgContext_GpuResource.offset), pCallContext, pParams);
 }
 
 // nvjpgctxMap: virtual inherited (gpures) base (chandes)
-static NV_STATUS __nvoc_up_thunk_GpuResource_nvjpgctxMap(struct NvjpgContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+NV_STATUS __nvoc_up_thunk_GpuResource_nvjpgctxMap(struct NvjpgContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
     return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvjpgContext_GpuResource.offset), pCallContext, pParams, pCpuMapping);
 }
 
 // nvjpgctxUnmap: virtual inherited (gpures) base (chandes)
-static NV_STATUS __nvoc_up_thunk_GpuResource_nvjpgctxUnmap(struct NvjpgContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+NV_STATUS __nvoc_up_thunk_GpuResource_nvjpgctxUnmap(struct NvjpgContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
     return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvjpgContext_GpuResource.offset), pCallContext, pCpuMapping);
 }
 
 // nvjpgctxShareCallback: virtual inherited (gpures) base (chandes)
-static NvBool __nvoc_up_thunk_GpuResource_nvjpgctxShareCallback(struct NvjpgContext *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+NvBool __nvoc_up_thunk_GpuResource_nvjpgctxShareCallback(struct NvjpgContext *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvjpgContext_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 // nvjpgctxGetRegBaseOffsetAndSize: virtual inherited (gpures) base (chandes)
-static NV_STATUS __nvoc_up_thunk_GpuResource_nvjpgctxGetRegBaseOffsetAndSize(struct NvjpgContext *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+NV_STATUS __nvoc_up_thunk_GpuResource_nvjpgctxGetRegBaseOffsetAndSize(struct NvjpgContext *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
     return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvjpgContext_GpuResource.offset), pGpu, pOffset, pSize);
 }
 
 // nvjpgctxGetMapAddrSpace: virtual inherited (gpures) base (chandes)
-static NV_STATUS __nvoc_up_thunk_GpuResource_nvjpgctxGetMapAddrSpace(struct NvjpgContext *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+NV_STATUS __nvoc_up_thunk_GpuResource_nvjpgctxGetMapAddrSpace(struct NvjpgContext *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvjpgContext_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
 // nvjpgctxInternalControlForward: virtual inherited (gpures) base (chandes)
-static NV_STATUS __nvoc_up_thunk_GpuResource_nvjpgctxInternalControlForward(struct NvjpgContext *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+NV_STATUS __nvoc_up_thunk_GpuResource_nvjpgctxInternalControlForward(struct NvjpgContext *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
     return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvjpgContext_GpuResource.offset), command, pParams, size);
 }
 
 // nvjpgctxGetInternalObjectHandle: virtual inherited (gpures) base (chandes)
-static NvHandle __nvoc_up_thunk_GpuResource_nvjpgctxGetInternalObjectHandle(struct NvjpgContext *pGpuResource) {
+NvHandle __nvoc_up_thunk_GpuResource_nvjpgctxGetInternalObjectHandle(struct NvjpgContext *pGpuResource) {
     return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_NvjpgContext_GpuResource.offset));
 }
 
 // nvjpgctxAccessCallback: virtual inherited (rmres) base (chandes)
-static NvBool __nvoc_up_thunk_RmResource_nvjpgctxAccessCallback(struct NvjpgContext *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+NvBool __nvoc_up_thunk_RmResource_nvjpgctxAccessCallback(struct NvjpgContext *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvjpgContext_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
 // nvjpgctxGetMemInterMapParams: virtual inherited (rmres) base (chandes)
-static NV_STATUS __nvoc_up_thunk_RmResource_nvjpgctxGetMemInterMapParams(struct NvjpgContext *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_nvjpgctxGetMemInterMapParams(struct NvjpgContext *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
     return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_NvjpgContext_RmResource.offset), pParams);
 }
 
 // nvjpgctxGetMemoryMappingDescriptor: virtual inherited (rmres) base (chandes)
-static NV_STATUS __nvoc_up_thunk_RmResource_nvjpgctxGetMemoryMappingDescriptor(struct NvjpgContext *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+NV_STATUS __nvoc_up_thunk_RmResource_nvjpgctxGetMemoryMappingDescriptor(struct NvjpgContext *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
     return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_NvjpgContext_RmResource.offset), ppMemDesc);
 }
 
 // nvjpgctxControlSerialization_Prologue: virtual inherited (rmres) base (chandes)
-static NV_STATUS __nvoc_up_thunk_RmResource_nvjpgctxControlSerialization_Prologue(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_nvjpgctxControlSerialization_Prologue(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvjpgContext_RmResource.offset), pCallContext, pParams);
 }
 
 // nvjpgctxControlSerialization_Epilogue: virtual inherited (rmres) base (chandes)
-static void __nvoc_up_thunk_RmResource_nvjpgctxControlSerialization_Epilogue(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+void __nvoc_up_thunk_RmResource_nvjpgctxControlSerialization_Epilogue(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvjpgContext_RmResource.offset), pCallContext, pParams);
 }
 
 // nvjpgctxControl_Prologue: virtual inherited (rmres) base (chandes)
-static NV_STATUS __nvoc_up_thunk_RmResource_nvjpgctxControl_Prologue(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_nvjpgctxControl_Prologue(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvjpgContext_RmResource.offset), pCallContext, pParams);
 }
 
 // nvjpgctxControl_Epilogue: virtual inherited (rmres) base (chandes)
-static void __nvoc_up_thunk_RmResource_nvjpgctxControl_Epilogue(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+void __nvoc_up_thunk_RmResource_nvjpgctxControl_Epilogue(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvjpgContext_RmResource.offset), pCallContext, pParams);
 }
 
 // nvjpgctxCanCopy: virtual inherited (res) base (chandes)
-static NvBool __nvoc_up_thunk_RsResource_nvjpgctxCanCopy(struct NvjpgContext *pResource) {
+NvBool __nvoc_up_thunk_RsResource_nvjpgctxCanCopy(struct NvjpgContext *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvjpgContext_RsResource.offset));
 }
 
 // nvjpgctxIsDuplicate: virtual inherited (res) base (chandes)
-static NV_STATUS __nvoc_up_thunk_RsResource_nvjpgctxIsDuplicate(struct NvjpgContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+NV_STATUS __nvoc_up_thunk_RsResource_nvjpgctxIsDuplicate(struct NvjpgContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvjpgContext_RsResource.offset), hMemory, pDuplicate);
 }
 
 // nvjpgctxPreDestruct: virtual inherited (res) base (chandes)
-static void __nvoc_up_thunk_RsResource_nvjpgctxPreDestruct(struct NvjpgContext *pResource) {
+void __nvoc_up_thunk_RsResource_nvjpgctxPreDestruct(struct NvjpgContext *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvjpgContext_RsResource.offset));
 }
 
 // nvjpgctxControlFilter: virtual inherited (res) base (chandes)
-static NV_STATUS __nvoc_up_thunk_RsResource_nvjpgctxControlFilter(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_nvjpgctxControlFilter(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvjpgContext_RsResource.offset), pCallContext, pParams);
 }
 
 // nvjpgctxIsPartialUnmapSupported: inline virtual inherited (res) base (chandes) body
-static NvBool __nvoc_up_thunk_RsResource_nvjpgctxIsPartialUnmapSupported(struct NvjpgContext *pResource) {
+NvBool __nvoc_up_thunk_RsResource_nvjpgctxIsPartialUnmapSupported(struct NvjpgContext *pResource) {
     return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvjpgContext_RsResource.offset));
 }
 
 // nvjpgctxMapTo: virtual inherited (res) base (chandes)
-static NV_STATUS __nvoc_up_thunk_RsResource_nvjpgctxMapTo(struct NvjpgContext *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_nvjpgctxMapTo(struct NvjpgContext *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
     return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvjpgContext_RsResource.offset), pParams);
 }
 
 // nvjpgctxUnmapFrom: virtual inherited (res) base (chandes)
-static NV_STATUS __nvoc_up_thunk_RsResource_nvjpgctxUnmapFrom(struct NvjpgContext *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_nvjpgctxUnmapFrom(struct NvjpgContext *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
     return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvjpgContext_RsResource.offset), pParams);
 }
 
 // nvjpgctxGetRefCount: virtual inherited (res) base (chandes)
-static NvU32 __nvoc_up_thunk_RsResource_nvjpgctxGetRefCount(struct NvjpgContext *pResource) {
+NvU32 __nvoc_up_thunk_RsResource_nvjpgctxGetRefCount(struct NvjpgContext *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvjpgContext_RsResource.offset));
 }
 
 // nvjpgctxAddAdditionalDependants: virtual inherited (res) base (chandes)
-static void __nvoc_up_thunk_RsResource_nvjpgctxAddAdditionalDependants(struct RsClient *pClient, struct NvjpgContext *pResource, RsResourceRef *pReference) {
+void __nvoc_up_thunk_RsResource_nvjpgctxAddAdditionalDependants(struct RsClient *pClient, struct NvjpgContext *pResource, RsResourceRef *pReference) {
     resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvjpgContext_RsResource.offset), pReference);
 }
 
 // nvjpgctxGetNotificationListPtr: virtual inherited (notify) base (chandes)
-static PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_nvjpgctxGetNotificationListPtr(struct NvjpgContext *pNotifier) {
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_nvjpgctxGetNotificationListPtr(struct NvjpgContext *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_NvjpgContext_Notifier.offset));
 }
 
 // nvjpgctxGetNotificationShare: virtual inherited (notify) base (chandes)
-static struct NotifShare * __nvoc_up_thunk_Notifier_nvjpgctxGetNotificationShare(struct NvjpgContext *pNotifier) {
+struct NotifShare * __nvoc_up_thunk_Notifier_nvjpgctxGetNotificationShare(struct NvjpgContext *pNotifier) {
     return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_NvjpgContext_Notifier.offset));
 }
 
 // nvjpgctxSetNotificationShare: virtual inherited (notify) base (chandes)
-static void __nvoc_up_thunk_Notifier_nvjpgctxSetNotificationShare(struct NvjpgContext *pNotifier, struct NotifShare *pNotifShare) {
+void __nvoc_up_thunk_Notifier_nvjpgctxSetNotificationShare(struct NvjpgContext *pNotifier, struct NotifShare *pNotifShare) {
     notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_NvjpgContext_Notifier.offset), pNotifShare);
 }
 
 // nvjpgctxUnregisterEvent: virtual inherited (notify) base (chandes)
-static NV_STATUS __nvoc_up_thunk_Notifier_nvjpgctxUnregisterEvent(struct NvjpgContext *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
+NV_STATUS __nvoc_up_thunk_Notifier_nvjpgctxUnregisterEvent(struct NvjpgContext *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_NvjpgContext_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 // nvjpgctxGetOrAllocNotifShare: virtual inherited (notify) base (chandes)
-static NV_STATUS __nvoc_up_thunk_Notifier_nvjpgctxGetOrAllocNotifShare(struct NvjpgContext *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
+NV_STATUS __nvoc_up_thunk_Notifier_nvjpgctxGetOrAllocNotifShare(struct NvjpgContext *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_NvjpgContext_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
@@ -332,109 +442,162 @@ static void __nvoc_init_funcTable_NvjpgContext_1(NvjpgContext *pThis, RmHalspecO
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
-
-    // nvjpgctxGetSwMethods -- virtual inherited (chandes) base (chandes)
-    pThis->__nvjpgctxGetSwMethods__ = &__nvoc_up_thunk_ChannelDescendant_nvjpgctxGetSwMethods;
-
-    // nvjpgctxIsSwMethodStalling -- virtual inherited (chandes) base (chandes)
-    pThis->__nvjpgctxIsSwMethodStalling__ = &__nvoc_up_thunk_ChannelDescendant_nvjpgctxIsSwMethodStalling;
-
-    // nvjpgctxCheckMemInterUnmap -- virtual inherited (chandes) base (chandes)
-    pThis->__nvjpgctxCheckMemInterUnmap__ = &__nvoc_up_thunk_ChannelDescendant_nvjpgctxCheckMemInterUnmap;
-
-    // nvjpgctxControl -- virtual inherited (gpures) base (chandes)
-    pThis->__nvjpgctxControl__ = &__nvoc_up_thunk_GpuResource_nvjpgctxControl;
-
-    // nvjpgctxMap -- virtual inherited (gpures) base (chandes)
-    pThis->__nvjpgctxMap__ = &__nvoc_up_thunk_GpuResource_nvjpgctxMap;
-
-    // nvjpgctxUnmap -- virtual inherited (gpures) base (chandes)
-    pThis->__nvjpgctxUnmap__ = &__nvoc_up_thunk_GpuResource_nvjpgctxUnmap;
-
-    // nvjpgctxShareCallback -- virtual inherited (gpures) base (chandes)
-    pThis->__nvjpgctxShareCallback__ = &__nvoc_up_thunk_GpuResource_nvjpgctxShareCallback;
-
-    // nvjpgctxGetRegBaseOffsetAndSize -- virtual inherited (gpures) base (chandes)
-    pThis->__nvjpgctxGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_nvjpgctxGetRegBaseOffsetAndSize;
-
-    // nvjpgctxGetMapAddrSpace -- virtual inherited (gpures) base (chandes)
-    pThis->__nvjpgctxGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_nvjpgctxGetMapAddrSpace;
-
-    // nvjpgctxInternalControlForward -- virtual inherited (gpures) base (chandes)
-    pThis->__nvjpgctxInternalControlForward__ = &__nvoc_up_thunk_GpuResource_nvjpgctxInternalControlForward;
-
-    // nvjpgctxGetInternalObjectHandle -- virtual inherited (gpures) base (chandes)
-    pThis->__nvjpgctxGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_nvjpgctxGetInternalObjectHandle;
-
-    // nvjpgctxAccessCallback -- virtual inherited (rmres) base (chandes)
-    pThis->__nvjpgctxAccessCallback__ = &__nvoc_up_thunk_RmResource_nvjpgctxAccessCallback;
-
-    // nvjpgctxGetMemInterMapParams -- virtual inherited (rmres) base (chandes)
-    pThis->__nvjpgctxGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_nvjpgctxGetMemInterMapParams;
-
-    // nvjpgctxGetMemoryMappingDescriptor -- virtual inherited (rmres) base (chandes)
-    pThis->__nvjpgctxGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_nvjpgctxGetMemoryMappingDescriptor;
-
-    // nvjpgctxControlSerialization_Prologue -- virtual inherited (rmres) base (chandes)
-    pThis->__nvjpgctxControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_nvjpgctxControlSerialization_Prologue;
-
-    // nvjpgctxControlSerialization_Epilogue -- virtual inherited (rmres) base (chandes)
-    pThis->__nvjpgctxControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_nvjpgctxControlSerialization_Epilogue;
-
-    // nvjpgctxControl_Prologue -- virtual inherited (rmres) base (chandes)
-    pThis->__nvjpgctxControl_Prologue__ = &__nvoc_up_thunk_RmResource_nvjpgctxControl_Prologue;
-
-    // nvjpgctxControl_Epilogue -- virtual inherited (rmres) base (chandes)
-    pThis->__nvjpgctxControl_Epilogue__ = &__nvoc_up_thunk_RmResource_nvjpgctxControl_Epilogue;
-
-    // nvjpgctxCanCopy -- virtual inherited (res) base (chandes)
-    pThis->__nvjpgctxCanCopy__ = &__nvoc_up_thunk_RsResource_nvjpgctxCanCopy;
-
-    // nvjpgctxIsDuplicate -- virtual inherited (res) base (chandes)
-    pThis->__nvjpgctxIsDuplicate__ = &__nvoc_up_thunk_RsResource_nvjpgctxIsDuplicate;
-
-    // nvjpgctxPreDestruct -- virtual inherited (res) base (chandes)
-    pThis->__nvjpgctxPreDestruct__ = &__nvoc_up_thunk_RsResource_nvjpgctxPreDestruct;
-
-    // nvjpgctxControlFilter -- virtual inherited (res) base (chandes)
-    pThis->__nvjpgctxControlFilter__ = &__nvoc_up_thunk_RsResource_nvjpgctxControlFilter;
-
-    // nvjpgctxIsPartialUnmapSupported -- inline virtual inherited (res) base (chandes) body
-    pThis->__nvjpgctxIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_nvjpgctxIsPartialUnmapSupported;
-
-    // nvjpgctxMapTo -- virtual inherited (res) base (chandes)
-    pThis->__nvjpgctxMapTo__ = &__nvoc_up_thunk_RsResource_nvjpgctxMapTo;
-
-    // nvjpgctxUnmapFrom -- virtual inherited (res) base (chandes)
-    pThis->__nvjpgctxUnmapFrom__ = &__nvoc_up_thunk_RsResource_nvjpgctxUnmapFrom;
-
-    // nvjpgctxGetRefCount -- virtual inherited (res) base (chandes)
-    pThis->__nvjpgctxGetRefCount__ = &__nvoc_up_thunk_RsResource_nvjpgctxGetRefCount;
-
-    // nvjpgctxAddAdditionalDependants -- virtual inherited (res) base (chandes)
-    pThis->__nvjpgctxAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_nvjpgctxAddAdditionalDependants;
-
-    // nvjpgctxGetNotificationListPtr -- virtual inherited (notify) base (chandes)
-    pThis->__nvjpgctxGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_nvjpgctxGetNotificationListPtr;
-
-    // nvjpgctxGetNotificationShare -- virtual inherited (notify) base (chandes)
-    pThis->__nvjpgctxGetNotificationShare__ = &__nvoc_up_thunk_Notifier_nvjpgctxGetNotificationShare;
-
-    // nvjpgctxSetNotificationShare -- virtual inherited (notify) base (chandes)
-    pThis->__nvjpgctxSetNotificationShare__ = &__nvoc_up_thunk_Notifier_nvjpgctxSetNotificationShare;
-
-    // nvjpgctxUnregisterEvent -- virtual inherited (notify) base (chandes)
-    pThis->__nvjpgctxUnregisterEvent__ = &__nvoc_up_thunk_Notifier_nvjpgctxUnregisterEvent;
-
-    // nvjpgctxGetOrAllocNotifShare -- virtual inherited (notify) base (chandes)
-    pThis->__nvjpgctxGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_nvjpgctxGetOrAllocNotifShare;
-} // End __nvoc_init_funcTable_NvjpgContext_1 with approximately 32 basic block(s).
+} // End __nvoc_init_funcTable_NvjpgContext_1
 
 
 // Initialize vtable(s) for 32 virtual method(s).
 void __nvoc_init_funcTable_NvjpgContext(NvjpgContext *pThis, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 32 per-object function pointer(s).
+    // Per-class vtable definition
+    static const struct NVOC_VTABLE__NvjpgContext vtable = {
+        .__nvjpgctxGetSwMethods__ = &__nvoc_up_thunk_ChannelDescendant_nvjpgctxGetSwMethods,    // virtual inherited (chandes) base (chandes)
+        .ChannelDescendant.__chandesGetSwMethods__ = &chandesGetSwMethods_IMPL,    // virtual
+        .__nvjpgctxIsSwMethodStalling__ = &__nvoc_up_thunk_ChannelDescendant_nvjpgctxIsSwMethodStalling,    // virtual inherited (chandes) base (chandes)
+        .ChannelDescendant.__chandesIsSwMethodStalling__ = &chandesIsSwMethodStalling_IMPL,    // virtual
+        .__nvjpgctxCheckMemInterUnmap__ = &__nvoc_up_thunk_ChannelDescendant_nvjpgctxCheckMemInterUnmap,    // virtual inherited (chandes) base (chandes)
+        .ChannelDescendant.__chandesCheckMemInterUnmap__ = &chandesCheckMemInterUnmap_IMPL,    // virtual override (rmres) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
+        .ChannelDescendant.GpuResource.RmResource.__rmresCheckMemInterUnmap__ = &__nvoc_down_thunk_ChannelDescendant_rmresCheckMemInterUnmap,    // virtual
+        .__nvjpgctxControl__ = &__nvoc_up_thunk_GpuResource_nvjpgctxControl,    // virtual inherited (gpures) base (chandes)
+        .ChannelDescendant.__chandesControl__ = &__nvoc_up_thunk_GpuResource_chandesControl,    // virtual inherited (gpures) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresControl__ = &gpuresControl_IMPL,    // virtual override (res) base (rmres)
+        .ChannelDescendant.GpuResource.RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+        .ChannelDescendant.GpuResource.RmResource.RsResource.__resControl__ = &__nvoc_down_thunk_GpuResource_resControl,    // virtual
+        .__nvjpgctxMap__ = &__nvoc_up_thunk_GpuResource_nvjpgctxMap,    // virtual inherited (gpures) base (chandes)
+        .ChannelDescendant.__chandesMap__ = &__nvoc_up_thunk_GpuResource_chandesMap,    // virtual inherited (gpures) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresMap__ = &gpuresMap_IMPL,    // virtual override (res) base (rmres)
+        .ChannelDescendant.GpuResource.RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+        .ChannelDescendant.GpuResource.RmResource.RsResource.__resMap__ = &__nvoc_down_thunk_GpuResource_resMap,    // virtual
+        .__nvjpgctxUnmap__ = &__nvoc_up_thunk_GpuResource_nvjpgctxUnmap,    // virtual inherited (gpures) base (chandes)
+        .ChannelDescendant.__chandesUnmap__ = &__nvoc_up_thunk_GpuResource_chandesUnmap,    // virtual inherited (gpures) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresUnmap__ = &gpuresUnmap_IMPL,    // virtual override (res) base (rmres)
+        .ChannelDescendant.GpuResource.RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+        .ChannelDescendant.GpuResource.RmResource.RsResource.__resUnmap__ = &__nvoc_down_thunk_GpuResource_resUnmap,    // virtual
+        .__nvjpgctxShareCallback__ = &__nvoc_up_thunk_GpuResource_nvjpgctxShareCallback,    // virtual inherited (gpures) base (chandes)
+        .ChannelDescendant.__chandesShareCallback__ = &__nvoc_up_thunk_GpuResource_chandesShareCallback,    // virtual inherited (gpures) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresShareCallback__ = &gpuresShareCallback_IMPL,    // virtual override (res) base (rmres)
+        .ChannelDescendant.GpuResource.RmResource.__rmresShareCallback__ = &__nvoc_down_thunk_GpuResource_rmresShareCallback,    // virtual override (res) base (res)
+        .ChannelDescendant.GpuResource.RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+        .__nvjpgctxGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_nvjpgctxGetRegBaseOffsetAndSize,    // virtual inherited (gpures) base (chandes)
+        .ChannelDescendant.__chandesGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_chandesGetRegBaseOffsetAndSize,    // virtual inherited (gpures) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresGetRegBaseOffsetAndSize__ = &gpuresGetRegBaseOffsetAndSize_IMPL,    // virtual
+        .__nvjpgctxGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_nvjpgctxGetMapAddrSpace,    // virtual inherited (gpures) base (chandes)
+        .ChannelDescendant.__chandesGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_chandesGetMapAddrSpace,    // virtual inherited (gpures) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresGetMapAddrSpace__ = &gpuresGetMapAddrSpace_IMPL,    // virtual
+        .__nvjpgctxInternalControlForward__ = &__nvoc_up_thunk_GpuResource_nvjpgctxInternalControlForward,    // virtual inherited (gpures) base (chandes)
+        .ChannelDescendant.__chandesInternalControlForward__ = &__nvoc_up_thunk_GpuResource_chandesInternalControlForward,    // virtual inherited (gpures) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresInternalControlForward__ = &gpuresInternalControlForward_IMPL,    // virtual
+        .__nvjpgctxGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_nvjpgctxGetInternalObjectHandle,    // virtual inherited (gpures) base (chandes)
+        .ChannelDescendant.__chandesGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_chandesGetInternalObjectHandle,    // virtual inherited (gpures) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresGetInternalObjectHandle__ = &gpuresGetInternalObjectHandle_IMPL,    // virtual
+        .__nvjpgctxAccessCallback__ = &__nvoc_up_thunk_RmResource_nvjpgctxAccessCallback,    // virtual inherited (rmres) base (chandes)
+        .ChannelDescendant.__chandesAccessCallback__ = &__nvoc_up_thunk_RmResource_chandesAccessCallback,    // virtual inherited (rmres) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresAccessCallback__ = &__nvoc_up_thunk_RmResource_gpuresAccessCallback,    // virtual inherited (rmres) base (rmres)
+        .ChannelDescendant.GpuResource.RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+        .ChannelDescendant.GpuResource.RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+        .__nvjpgctxGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_nvjpgctxGetMemInterMapParams,    // virtual inherited (rmres) base (chandes)
+        .ChannelDescendant.__chandesGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_chandesGetMemInterMapParams,    // virtual inherited (rmres) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
+        .ChannelDescendant.GpuResource.RmResource.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
+        .__nvjpgctxGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_nvjpgctxGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (chandes)
+        .ChannelDescendant.__chandesGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_chandesGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
+        .ChannelDescendant.GpuResource.RmResource.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
+        .__nvjpgctxControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_nvjpgctxControlSerialization_Prologue,    // virtual inherited (rmres) base (chandes)
+        .ChannelDescendant.__chandesControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_chandesControlSerialization_Prologue,    // virtual inherited (rmres) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+        .ChannelDescendant.GpuResource.RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+        .ChannelDescendant.GpuResource.RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+        .__nvjpgctxControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_nvjpgctxControlSerialization_Epilogue,    // virtual inherited (rmres) base (chandes)
+        .ChannelDescendant.__chandesControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_chandesControlSerialization_Epilogue,    // virtual inherited (rmres) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+        .ChannelDescendant.GpuResource.RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+        .ChannelDescendant.GpuResource.RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+        .__nvjpgctxControl_Prologue__ = &__nvoc_up_thunk_RmResource_nvjpgctxControl_Prologue,    // virtual inherited (rmres) base (chandes)
+        .ChannelDescendant.__chandesControl_Prologue__ = &__nvoc_up_thunk_RmResource_chandesControl_Prologue,    // virtual inherited (rmres) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
+        .ChannelDescendant.GpuResource.RmResource.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
+        .ChannelDescendant.GpuResource.RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+        .__nvjpgctxControl_Epilogue__ = &__nvoc_up_thunk_RmResource_nvjpgctxControl_Epilogue,    // virtual inherited (rmres) base (chandes)
+        .ChannelDescendant.__chandesControl_Epilogue__ = &__nvoc_up_thunk_RmResource_chandesControl_Epilogue,    // virtual inherited (rmres) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Epilogue,    // virtual inherited (rmres) base (rmres)
+        .ChannelDescendant.GpuResource.RmResource.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
+        .ChannelDescendant.GpuResource.RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+        .__nvjpgctxCanCopy__ = &__nvoc_up_thunk_RsResource_nvjpgctxCanCopy,    // virtual inherited (res) base (chandes)
+        .ChannelDescendant.__chandesCanCopy__ = &__nvoc_up_thunk_RsResource_chandesCanCopy,    // virtual inherited (res) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresCanCopy__ = &__nvoc_up_thunk_RsResource_gpuresCanCopy,    // virtual inherited (res) base (rmres)
+        .ChannelDescendant.GpuResource.RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+        .ChannelDescendant.GpuResource.RmResource.RsResource.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+        .__nvjpgctxIsDuplicate__ = &__nvoc_up_thunk_RsResource_nvjpgctxIsDuplicate,    // virtual inherited (res) base (chandes)
+        .ChannelDescendant.__chandesIsDuplicate__ = &__nvoc_up_thunk_RsResource_chandesIsDuplicate,    // virtual inherited (res) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpuresIsDuplicate,    // virtual inherited (res) base (rmres)
+        .ChannelDescendant.GpuResource.RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+        .ChannelDescendant.GpuResource.RmResource.RsResource.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+        .__nvjpgctxPreDestruct__ = &__nvoc_up_thunk_RsResource_nvjpgctxPreDestruct,    // virtual inherited (res) base (chandes)
+        .ChannelDescendant.__chandesPreDestruct__ = &__nvoc_up_thunk_RsResource_chandesPreDestruct,    // virtual inherited (res) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresPreDestruct__ = &__nvoc_up_thunk_RsResource_gpuresPreDestruct,    // virtual inherited (res) base (rmres)
+        .ChannelDescendant.GpuResource.RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+        .ChannelDescendant.GpuResource.RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+        .__nvjpgctxControlFilter__ = &__nvoc_up_thunk_RsResource_nvjpgctxControlFilter,    // virtual inherited (res) base (chandes)
+        .ChannelDescendant.__chandesControlFilter__ = &__nvoc_up_thunk_RsResource_chandesControlFilter,    // virtual inherited (res) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresControlFilter__ = &__nvoc_up_thunk_RsResource_gpuresControlFilter,    // virtual inherited (res) base (rmres)
+        .ChannelDescendant.GpuResource.RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+        .ChannelDescendant.GpuResource.RmResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+        .__nvjpgctxIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_nvjpgctxIsPartialUnmapSupported,    // inline virtual inherited (res) base (chandes) body
+        .ChannelDescendant.__chandesIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_chandesIsPartialUnmapSupported,    // inline virtual inherited (res) base (gpures) body
+        .ChannelDescendant.GpuResource.__gpuresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+        .ChannelDescendant.GpuResource.RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+        .ChannelDescendant.GpuResource.RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+        .__nvjpgctxMapTo__ = &__nvoc_up_thunk_RsResource_nvjpgctxMapTo,    // virtual inherited (res) base (chandes)
+        .ChannelDescendant.__chandesMapTo__ = &__nvoc_up_thunk_RsResource_chandesMapTo,    // virtual inherited (res) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresMapTo__ = &__nvoc_up_thunk_RsResource_gpuresMapTo,    // virtual inherited (res) base (rmres)
+        .ChannelDescendant.GpuResource.RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+        .ChannelDescendant.GpuResource.RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
+        .__nvjpgctxUnmapFrom__ = &__nvoc_up_thunk_RsResource_nvjpgctxUnmapFrom,    // virtual inherited (res) base (chandes)
+        .ChannelDescendant.__chandesUnmapFrom__ = &__nvoc_up_thunk_RsResource_chandesUnmapFrom,    // virtual inherited (res) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpuresUnmapFrom,    // virtual inherited (res) base (rmres)
+        .ChannelDescendant.GpuResource.RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+        .ChannelDescendant.GpuResource.RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+        .__nvjpgctxGetRefCount__ = &__nvoc_up_thunk_RsResource_nvjpgctxGetRefCount,    // virtual inherited (res) base (chandes)
+        .ChannelDescendant.__chandesGetRefCount__ = &__nvoc_up_thunk_RsResource_chandesGetRefCount,    // virtual inherited (res) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresGetRefCount__ = &__nvoc_up_thunk_RsResource_gpuresGetRefCount,    // virtual inherited (res) base (rmres)
+        .ChannelDescendant.GpuResource.RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+        .ChannelDescendant.GpuResource.RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+        .__nvjpgctxAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_nvjpgctxAddAdditionalDependants,    // virtual inherited (res) base (chandes)
+        .ChannelDescendant.__chandesAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_chandesAddAdditionalDependants,    // virtual inherited (res) base (gpures)
+        .ChannelDescendant.GpuResource.__gpuresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+        .ChannelDescendant.GpuResource.RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+        .ChannelDescendant.GpuResource.RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+        .__nvjpgctxGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_nvjpgctxGetNotificationListPtr,    // virtual inherited (notify) base (chandes)
+        .ChannelDescendant.__chandesGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_chandesGetNotificationListPtr,    // virtual inherited (notify) base (notify)
+        .ChannelDescendant.Notifier.__notifyGetNotificationListPtr__ = &notifyGetNotificationListPtr_IMPL,    // virtual override (inotify) base (inotify)
+        .ChannelDescendant.Notifier.INotifier.__inotifyGetNotificationListPtr__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr,    // pure virtual
+        .__nvjpgctxGetNotificationShare__ = &__nvoc_up_thunk_Notifier_nvjpgctxGetNotificationShare,    // virtual inherited (notify) base (chandes)
+        .ChannelDescendant.__chandesGetNotificationShare__ = &__nvoc_up_thunk_Notifier_chandesGetNotificationShare,    // virtual inherited (notify) base (notify)
+        .ChannelDescendant.Notifier.__notifyGetNotificationShare__ = &notifyGetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+        .ChannelDescendant.Notifier.INotifier.__inotifyGetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationShare,    // pure virtual
+        .__nvjpgctxSetNotificationShare__ = &__nvoc_up_thunk_Notifier_nvjpgctxSetNotificationShare,    // virtual inherited (notify) base (chandes)
+        .ChannelDescendant.__chandesSetNotificationShare__ = &__nvoc_up_thunk_Notifier_chandesSetNotificationShare,    // virtual inherited (notify) base (notify)
+        .ChannelDescendant.Notifier.__notifySetNotificationShare__ = &notifySetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+        .ChannelDescendant.Notifier.INotifier.__inotifySetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifySetNotificationShare,    // pure virtual
+        .__nvjpgctxUnregisterEvent__ = &__nvoc_up_thunk_Notifier_nvjpgctxUnregisterEvent,    // virtual inherited (notify) base (chandes)
+        .ChannelDescendant.__chandesUnregisterEvent__ = &__nvoc_up_thunk_Notifier_chandesUnregisterEvent,    // virtual inherited (notify) base (notify)
+        .ChannelDescendant.Notifier.__notifyUnregisterEvent__ = &notifyUnregisterEvent_IMPL,    // virtual override (inotify) base (inotify)
+        .ChannelDescendant.Notifier.INotifier.__inotifyUnregisterEvent__ = &__nvoc_down_thunk_Notifier_inotifyUnregisterEvent,    // pure virtual
+        .__nvjpgctxGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_nvjpgctxGetOrAllocNotifShare,    // virtual inherited (notify) base (chandes)
+        .ChannelDescendant.__chandesGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_chandesGetOrAllocNotifShare,    // virtual inherited (notify) base (notify)
+        .ChannelDescendant.Notifier.__notifyGetOrAllocNotifShare__ = &notifyGetOrAllocNotifShare_IMPL,    // virtual override (inotify) base (inotify)
+        .ChannelDescendant.Notifier.INotifier.__inotifyGetOrAllocNotifShare__ = &__nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare,    // pure virtual
+    };
+
+    // Pointer(s) to per-class vtable(s)
+    pThis->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.ChannelDescendant.GpuResource.RmResource.RsResource;    // (res) super^4
+    pThis->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable = &vtable.ChannelDescendant.GpuResource.RmResource;    // (rmres) super^3
+    pThis->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_vtable = &vtable.ChannelDescendant.GpuResource;    // (gpures) super^2
+    pThis->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_vtable = &vtable.ChannelDescendant.Notifier.INotifier;    // (inotify) super^3
+    pThis->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_vtable = &vtable.ChannelDescendant.Notifier;    // (notify) super^2
+    pThis->__nvoc_base_ChannelDescendant.__nvoc_vtable = &vtable.ChannelDescendant;    // (chandes) super
+    pThis->__nvoc_vtable = &vtable;    // (nvjpgctx) this
     __nvoc_init_funcTable_NvjpgContext_1(pThis, pRmhalspecowner);
 }
 

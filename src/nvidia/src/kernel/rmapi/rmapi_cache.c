@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -594,6 +594,18 @@ static NvBool _isBusGetInfoIndexCacheable(NvU32 index)
     }
 }
 
+static NvBool _isVbiosGetInfoIndexCacheable(NvU32 index)
+{
+    switch (index)
+    {
+        case NV2080_CTRL_BIOS_INFO_INDEX_REVISION:
+        case NV2080_CTRL_BIOS_INFO_INDEX_OEM_REVISION:
+            return NV_TRUE;
+        default:
+            return NV_FALSE;
+    }
+}
+
 static NvBool _isGetInfoIndexCacheable(NvU32 cmd, NvU32 index, NvU32 cacheGpuFlags)
 {
     switch (cmd)
@@ -604,6 +616,8 @@ static NvBool _isGetInfoIndexCacheable(NvU32 cmd, NvU32 index, NvU32 cacheGpuFla
             return _isFifoGetInfoIndexCacheable(index);
         case NV2080_CTRL_CMD_BUS_GET_INFO_V2:
             return _isBusGetInfoIndexCacheable(index);
+        case NV2080_CTRL_CMD_BIOS_GET_INFO_V2:
+            return _isVbiosGetInfoIndexCacheable(index);
     }
 
     return NV_FALSE;
@@ -937,6 +951,13 @@ NV_STATUS _rmapiControlCacheGetByInput
                                         NV2080_CTRL_BUS_INFO_MAX_LIST_SIZE,
                                         NV_FALSE);
 
+        case NV2080_CTRL_CMD_BIOS_GET_INFO_V2:
+            return _getInfoCacheHandler(hClient, hObject, cmd,
+                                        ((NV2080_CTRL_BIOS_GET_INFO_V2_PARAMS*)params)->biosInfoList,
+                                        ((NV2080_CTRL_BIOS_GET_INFO_V2_PARAMS*)params)->biosInfoListSize,
+                                        NV2080_CTRL_BIOS_INFO_MAX_SIZE,
+                                        NV_FALSE);
+
         case NV2080_CTRL_CMD_GPU_GET_NAME_STRING:
             return _gpuNameStringGet(hClient, hObject, params);
         default:
@@ -975,6 +996,13 @@ NV_STATUS _rmapiControlCacheSetByInput
                                         ((NV2080_CTRL_BUS_GET_INFO_V2_PARAMS*)params)->busInfoList,
                                         ((NV2080_CTRL_BUS_GET_INFO_V2_PARAMS*)params)->busInfoListSize,
                                         NV2080_CTRL_BUS_INFO_MAX_LIST_SIZE,
+                                        NV_TRUE);
+
+        case NV2080_CTRL_CMD_BIOS_GET_INFO_V2:
+            return _getInfoCacheHandler(hClient, hObject, cmd,
+                                        ((NV2080_CTRL_BIOS_GET_INFO_V2_PARAMS*)params)->biosInfoList,
+                                        ((NV2080_CTRL_BIOS_GET_INFO_V2_PARAMS*)params)->biosInfoListSize,
+                                        NV2080_CTRL_BIOS_INFO_MAX_SIZE,
                                         NV_TRUE);
 
         case NV2080_CTRL_CMD_GPU_GET_NAME_STRING:

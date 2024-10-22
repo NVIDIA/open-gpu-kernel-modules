@@ -270,7 +270,7 @@ deviceCtrlCmdDmaGetPteInfo_IMPL
     CALL_CONTEXT   *pCallContext = resservGetTlsCallContext();
     RmCtrlParams   *pRmCtrlParams = pCallContext->pControlParams->pLegacyParams;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     NV_CHECK_OK_OR_RETURN(LEVEL_WARNING,
                           vaspaceGetByHandleOrDeviceDefault(RES_GET_CLIENT(pDevice), pRmCtrlParams->hObject,
@@ -304,7 +304,7 @@ deviceCtrlCmdDmaUpdatePde2_IMPL
     NvBool       bBcState   = NV_TRUE;
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (pCallContext->secInfo.privLevel < RS_PRIV_LEVEL_KERNEL)
     {
@@ -372,7 +372,7 @@ deviceCtrlCmdDmaSetVASpaceSize_IMPL
     OBJGPU          *pGpu    = GPU_RES_GET_GPU(pDevice);
     OBJVASPACE      *pVAS    = NULL;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     NV_CHECK_OK_OR_RETURN(LEVEL_WARNING,
                           vaspaceGetByHandleOrDeviceDefault(RES_GET_CLIENT(pDevice), RES_GET_HANDLE(pDevice),
@@ -431,7 +431,7 @@ deviceCtrlCmdDmaSetPageDirectory_IMPL
     NV_STATUS       status      = NV_OK;
     NvBool          bBcState    = NV_FALSE;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
     {
@@ -529,7 +529,7 @@ deviceCtrlCmdDmaUnsetPageDirectory_IMPL
     NvBool          bBcState      = NV_FALSE;
     NV_STATUS       status        = NV_OK;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
     {
@@ -614,7 +614,7 @@ deviceCtrlCmdDmaSetPteInfo_IMPL
     OBJVASPACE *pVAS    = NULL;
     NV_STATUS   status  = NV_OK;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     NV_CHECK_OK_OR_RETURN(LEVEL_WARNING,
                           vaspaceGetByHandleOrDeviceDefault(RES_GET_CLIENT(pDevice), RES_GET_HANDLE(pDevice),
@@ -649,7 +649,7 @@ deviceCtrlCmdDmaFlush_IMPL
     FB_CACHE_OP         cacheOp     = FB_CACHE_OP_UNDEFINED;
     NV_STATUS           status      = NV_OK;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     NV_PRINTF(LEVEL_INFO, "Flush op invoked with target Unit 0x%x\n",
               flushParams->targetUnit);
@@ -721,11 +721,20 @@ deviceCtrlCmdDmaAdvSchedGetVaCaps_IMPL
     const MEMORY_SYSTEM_STATIC_CONFIG *pMemorySystemConfig =
         kmemsysGetStaticConfig(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_WARNING,
-        vaspaceGetByHandleOrDeviceDefault(RES_GET_CLIENT(pDevice), RES_GET_HANDLE(pDevice),
-                                          pParams->hVASpace, &pVAS));
+    if (IS_GSP_CLIENT(pGpu) && pParams->hVASpace == NV01_NULL_OBJECT && pDevice->pVASpace == NULL)
+    {
+        // Optimization: get global VA space instead of allocating Device default VA space
+        OBJGPUGRP *pGpuGrp = gpumgrGetGpuGrpFromGpu(pGpu);
+        NV_CHECK_OK_OR_RETURN(LEVEL_WARNING, gpugrpGetGlobalVASpace(pGpuGrp, &pVAS));
+    }
+    else
+    {
+        NV_CHECK_OK_OR_RETURN(LEVEL_WARNING,
+            vaspaceGetByHandleOrDeviceDefault(RES_GET_CLIENT(pDevice), RES_GET_HANDLE(pDevice),
+                                            pParams->hVASpace, &pVAS));
+    }
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         vaspaceGetVasInfo(pVAS, pParams));
@@ -755,7 +764,7 @@ deviceCtrlCmdDmaGetPdeInfo_IMPL
     CALL_CONTEXT   *pCallContext    = resservGetTlsCallContext();
     RmCtrlParams   *pRmCtrlParams   = pCallContext->pControlParams->pLegacyParams;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     //
     // vGPU:
@@ -800,7 +809,7 @@ deviceCtrlCmdDmaSetDefaultVASpace_IMPL
     OBJGPU   *pGpu   = GPU_RES_GET_GPU(pDevice);
     NV_STATUS status = NV_OK;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     NV_ASSERT_OK_OR_RETURN(
         deviceSetDefaultVASpace(
@@ -841,7 +850,7 @@ subdeviceCtrlCmdDmaInvalidateTLB_IMPL
     OBJGPU     *pGpu    = GPU_RES_GET_GPU(pSubdevice);
     OBJVASPACE *pVAS    = NULL;
 
-    LOCK_ASSERT_AND_RETURN(rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     NV_CHECK_OK_OR_RETURN(LEVEL_WARNING,
                           vaspaceGetByHandleOrDeviceDefault(RES_GET_CLIENT(pSubdevice), RES_GET_PARENT_HANDLE(pSubdevice),
@@ -890,7 +899,7 @@ subdeviceCtrlCmdDmaGetInfo_IMPL
     NvU32       i;
     NvU32       data;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // error checck
     if (pDmaInfoParams->dmaInfoTblSize > NV2080_CTRL_DMA_GET_INFO_MAX_ENTRIES)
@@ -940,7 +949,7 @@ deviceCtrlCmdDmaInvalidateTLB_IMPL
     OBJGPU      *pGpu    = GPU_RES_GET_GPU(pDevice);
     OBJVASPACE  *pVAS    = NULL;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     //
     // vGPU:
@@ -1002,7 +1011,7 @@ deviceCtrlCmdDmaGetCaps_IMPL
     OBJGPU     *pGpu = GPU_RES_GET_GPU(pDevice);
     VirtMemAllocator *pDma = GPU_GET_DMA(pGpu);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // sanity check array size
     if (pDmaCapsParams->capsTblSize != NV0080_CTRL_DMA_CAPS_TBL_SIZE)
@@ -1015,17 +1024,17 @@ deviceCtrlCmdDmaGetCaps_IMPL
     portMemSet(pDmaCapsParams->capsTbl, 0, NV0080_CTRL_DMA_CAPS_TBL_SIZE);
 
     // Fill in caps
-    if (pDma->getProperty(pDma, PDB_PROP_DMA_ENFORCE_32BIT_POINTER))
+    if (pDma->bDmaEnforce32BitPointer)
         RMCTRL_SET_CAP(pDmaCapsParams->capsTbl, NV0080_CTRL_DMA_CAPS, _32BIT_POINTER_ENFORCED);
 
-    if (pDma->getProperty(pDma, PDB_PROP_DMA_SHADER_ACCESS_SUPPORTED))
+    if (pDma->bDmaShaderAccessSupported)
         RMCTRL_SET_CAP(pDmaCapsParams->capsTbl, NV0080_CTRL_DMA_CAPS, _SHADER_ACCESS_SUPPORTED);
 
-    if (pDma->getProperty(pDma, PDB_PROP_DMA_IS_SUPPORTED_SPARSE_VIRTUAL))
+    if (pDma->bDmaIsSupportedSparseVirtual)
         RMCTRL_SET_CAP(pDmaCapsParams->capsTbl, NV0080_CTRL_DMA_CAPS, _SPARSE_VIRTUAL_SUPPORTED);
 
     // Supported on all platforms except the Maxwell amodel simulator
-    if (pDma->getProperty(pDma, PDB_PROP_DMA_MULTIPLE_VASPACES_SUPPORTED))
+    if (pDma->bDmaMultipleVaspaceSupported)
         RMCTRL_SET_CAP(pDmaCapsParams->capsTbl, NV0080_CTRL_DMA_CAPS, _MULTIPLE_VA_SPACES_SUPPORTED);
 
     return status;
@@ -1048,7 +1057,7 @@ deviceCtrlCmdDmaEnablePrivilegedRange_IMPL
     NV0080_CTRL_DMA_ENABLE_PRIVILEGED_RANGE_PARAMS *pParams
 )
 {
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (pParams->hVASpace != NV01_NULL_OBJECT)
     {
@@ -1075,7 +1084,7 @@ diagapiCtrlCmdDmaIsSupportedSparseVirtual_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pDiagApi);
     VirtMemAllocator *pDma = GPU_GET_DMA(pGpu);
 
-    pParams->bIsSupported = pDma->getProperty(pDma, PDB_PROP_DMA_IS_SUPPORTED_SPARSE_VIRTUAL);
+    pParams->bIsSupported = pDma->bDmaIsSupportedSparseVirtual;
     return NV_OK;
 }
 

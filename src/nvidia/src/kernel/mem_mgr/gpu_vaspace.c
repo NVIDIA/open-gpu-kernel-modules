@@ -749,7 +749,7 @@ gvaspaceConstruct__IMPL
         VirtMemAllocator *pDma = GPU_GET_DMA(pGpu);
         // Handle 32-bit restricted pointer ranges.
         if (((pdeAlignedVasLimit + 1) > NVBIT64(32)) &&
-            (pDma->getProperty(pDma, PDB_PROP_DMA_ENFORCE_32BIT_POINTER)))
+            (pDma->bDmaEnforce32BitPointer))
         {
             // Top of 32-bit range.
             _gvaspaceAddPartialPtRange(pGVAS,
@@ -1224,7 +1224,6 @@ _gvaspaceGpuStateConstruct
     // e.g. NV4K state for 64K PTEs
     //
     walkFlags.bAtsEnabled = gvaspaceIsAtsEnabled(pGVAS);
-    walkFlags.bUseIterative = gpuIsIterativeMmuWalkerEnabled(pGpu);
     NV_ASSERT_OK_OR_RETURN(
         mmuWalkCreate(pFmt->pRoot, NULL,
                       &g_gmmuWalkCallbacks,
@@ -4244,7 +4243,8 @@ vaspaceapiCtrlCmdVaspaceGetPageLevelInfo_IMPL
                                              RES_GET_PARENT_HANDLE(pVaspaceApi),
                                              (NvP64)pPageLevelInfoParams->virtAddress);
         offset = pPageLevelInfoParams->virtAddress - (NvU64)pCpuMapping->pLinearAddress;
-        pPageLevelInfoParams->virtAddress = pCpuMapping->pPrivate->gpuAddress + offset;
+        NV_ASSERT_OR_RETURN(pCpuMapping->pPrivate->memArea.numRanges == 1, NV_ERR_INVALID_ARGUMENT);
+        pPageLevelInfoParams->virtAddress = pCpuMapping->pPrivate->memArea.pRanges[0].start + offset;
     }
 
     return gvaspaceGetPageLevelInfo(pGVAS, pGpu, pPageLevelInfoParams);
@@ -4380,6 +4380,14 @@ vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes_IMPL
         _gvaspaceControl_Prolog(pVaspaceApi, pCopyServerReservedPdesParams->hSubDevice,
                                 pCopyServerReservedPdesParams->subDeviceId, &pGVAS, &pGpu));
 
+    if (((IsHOPPERorBetter(pGpu) && !RMCFG_FEATURE_PLATFORM_GSP && !IS_GSP_CLIENT(pGpu) && !RMCFG_FEATURE_PLATFORM_MODS &&
+        !(IS_VIRTUAL(pGpu) && IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu)))) ||
+        pGVAS->vaLimitServerRMOwned == 0)
+    {
+        // BUG 4580145 WAR: make sure only GSP's context is updated
+        return NV_OK;
+    }
+
     return gvaspaceCopyServerReservedPdes(pGVAS, pGpu, pCopyServerReservedPdesParams);
 }
 
@@ -4412,7 +4420,7 @@ gvaspaceCopyServerReservedPdes_IMPL
 
     NV_ASSERT_OR_RETURN(ONEBITSET(pCopyServerReservedPdesParams->pageSize), NV_ERR_INVALID_ARGUMENT);
 
-    if (IS_VIRTUAL(pGpu))
+    if (IS_GSP_CLIENT(pGpu) || IS_VIRTUAL(pGpu))
     {
         CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
         RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams->pLegacyParams;
@@ -4430,11 +4438,14 @@ gvaspaceCopyServerReservedPdes_IMPL
     pGpuState = gvaspaceGetGpuState(pGVAS, pGpu);
     NV_ASSERT_OR_RETURN(NULL != pGpuState, NV_ERR_INVALID_STATE);
 
-    // Alloc and bind page level instances.
-    status = gvaspaceReservePageTableEntries(pGVAS, pGpu, pCopyServerReservedPdesParams->virtAddrLo,
-                                             pCopyServerReservedPdesParams->virtAddrHi,
-                                             pCopyServerReservedPdesParams->pageSize);
-    NV_ASSERT_OR_RETURN(NV_OK == status, status);
+    if (pCopyServerReservedPdesParams->virtAddrHi >= pCopyServerReservedPdesParams->virtAddrLo)
+    {
+        // Alloc and bind page level instances.
+        status = gvaspaceReservePageTableEntries(pGVAS, pGpu, pCopyServerReservedPdesParams->virtAddrLo,
+                                                 pCopyServerReservedPdesParams->virtAddrHi,
+                                                 pCopyServerReservedPdesParams->pageSize);
+        NV_ASSERT_OR_RETURN(NV_OK == status, status);
+    }
 
     // Kick out any stale TLB entries.
     gvaspaceInvalidateTlb(pGVAS, pGpu, PTE_DOWNGRADE);

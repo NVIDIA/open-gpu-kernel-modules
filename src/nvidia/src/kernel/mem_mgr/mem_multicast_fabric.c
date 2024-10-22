@@ -2013,12 +2013,13 @@ _memorymulticastfabricCtrlSetFailure
 )
 {
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
-    NvHandle hClient = pCallContext->pClient->hClient;
+    RmClient *pRmClient = dynamicCast(pCallContext->pClient, RmClient);
+    NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
+
     MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc =
                                 pMemoryMulticastFabric->pMulticastFabricDesc;
 
-    if (!rmclientIsCapableByHandle(hClient, NV_RM_CAP_SYS_FABRIC_IMEX_MGMT) &&
-        !rmclientIsAdminByHandle(hClient, pCallContext->secInfo.privLevel))
+    if (!rmclientIsCapableOrAdmin(pRmClient, NV_RM_CAP_SYS_FABRIC_IMEX_MGMT, pCallContext->secInfo.privLevel))
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
 
     if (!_memMulticastFabricIsPrime(pMulticastFabricDesc->allocFlags))
@@ -2082,12 +2083,13 @@ _memorymulticastfabricCtrlAttachRemoteGpu
     MEM_MULTICAST_FABRIC_GPU_INFO *pIter;
     MemMulticastFabricRemoteGpuInfoMapSubmap *pSubmap = NULL;
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
-    NvHandle hClient = pCallContext->pClient->hClient;
+    RmClient *pRmClient = dynamicCast(pCallContext->pClient, RmClient);
+    NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
+
     NV00FD_CTRL_SET_FAILURE_PARAMS params;
     NV_STATUS status;
 
-    if (!rmclientIsCapableByHandle(hClient, NV_RM_CAP_SYS_FABRIC_IMEX_MGMT) &&
-        !rmclientIsAdminByHandle(hClient, pCallContext->secInfo.privLevel))
+    if (!rmclientIsCapableOrAdmin(pRmClient, NV_RM_CAP_SYS_FABRIC_IMEX_MGMT, pCallContext->secInfo.privLevel))
     {
         // Don't set failure as non-priv client can hit this failure too.
         return NV_ERR_INSUFFICIENT_PERMISSIONS;

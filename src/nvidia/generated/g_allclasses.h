@@ -120,6 +120,7 @@
 #include <class/cl9010.h>               // NV9010_VBLANK_CALLBACK
 #include <class/cl90cc.h>               // GF100_PROFILER
 #include <class/clb0cc.h>               // MAXWELL_PROFILER
+#include <class/clb1cc.h>               // MAXWELL_PROFILER_CONTEXT
 #include <class/clb2cc.h>               // MAXWELL_PROFILER_DEVICE
 #include <class/cl90e6.h>               // GF100_SUBDEVICE_MASTER
 #include <class/cl90e7.h>               // GF100_SUBDEVICE_INFOROM
@@ -616,6 +617,10 @@
 
 #ifndef MAXWELL_PROFILER
 #define MAXWELL_PROFILER                         (0x0000b0cc)
+#endif
+
+#ifndef MAXWELL_PROFILER_CONTEXT
+#define MAXWELL_PROFILER_CONTEXT                 (0x0000b1cc)
 #endif
 
 #ifndef MAXWELL_PROFILER_DEVICE

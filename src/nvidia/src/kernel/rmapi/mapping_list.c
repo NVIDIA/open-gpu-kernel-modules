@@ -82,7 +82,7 @@ CliFindMappingInClient
             RsCpuMapping *pMapping = mapIt.pValue;
             if ((pMapping->pPrivate->bKernel == bKernel) &&
                 (bKernel || (pMapping->processId == processId)) &&
-                (pMapping->pPrivate->gpuAddress != ((NvU64) ~0x0)) &&
+                (pMapping->pPrivate->memArea.numRanges != 0) &&
                 (pMapping->pLinearAddress <= cpuAddress) &&
                 ((NvU64)cpuAddress < ((NvU64)pMapping->pLinearAddress + pMapping->length)))
             {

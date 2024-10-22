@@ -2601,7 +2601,8 @@ clStoreBusTopologyCache_IMPL
                 pBusTopologyInfo->busInfo.revisionID  = osPciReadByte(handle, PCI_HEADER_TYPE0_REVISION_ID);
 
                 if ((pciSubBaseClass == PCI_COMMON_CLASS_SUBBASECLASS_P2P) ||
-                    (pciSubBaseClass == PCI_COMMON_CLASS_SUBBASECLASS_HOST))
+                    (pciSubBaseClass == PCI_COMMON_CLASS_SUBBASECLASS_HOST) ||
+                    (pciSubBaseClass == PCI_COMMON_CLASS_SUBBASECLASS_3DCTRL))
                 {
                     pBusTopologyInfo->secBus = (NvU8)osPciReadByte(handle, PCI_TYPE_1_SECONDARY_BUS_NUMBER);
                     pBusTopologyInfo->bVgaAdapter = NV_FALSE;
@@ -4514,18 +4515,7 @@ clPcieGetDownstreamPortLinkCap2_IMPL
 
     PCIECapPtr = pGpu->gpuClData.upstreamPort.PCIECapPtr;
 
-    //
-    // CL_PCIE_END is a misnomer, we actually want to use CL_PCIE_LINK_CAP_2.
-    // But it is not present in chipset.h and the offset of what-would-be
-    // CL_PCIE_LINK_CAP_2 (0x2c) is overlapping with CL_PCIE_END.
-    // Before replacing CL_PCIE_END with CL_PCIE_LINK_CAP_2, we would need to
-    // first understand why CL_PCIE_END was restricted to 0x2c and then
-    // changing it to CL_PCIE_LINK_CAP_2 would require discussion and time.
-    // Todo by anaikwade: Correct this issue. Bug 200659585.
-    //                    Also investigate more correct way if there is any to
-    //                    check pcie 4.0 spec support
-    //
-    *pLinkCaps2 = osPciReadDword(pHandle, CL_PCIE_END - CL_PCIE_BEGIN + PCIECapPtr);
+    *pLinkCaps2 = osPciReadDword(pHandle, CL_PCIE_LINK_CAP_2 - CL_PCIE_BEGIN + PCIECapPtr);
 
     return NV_OK;
 }

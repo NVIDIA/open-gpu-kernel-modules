@@ -23,7 +23,6 @@
 
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "kernel/gpu/fifo/kernel_channel_group.h"
-#include "kernel/gpu/fifo/kernel_sched_mgr.h"
 #include "kernel/gpu/rc/kernel_rc.h"
 
 #include "vgpu/rpc.h"
@@ -77,37 +76,22 @@ kfifoStateLoad_IMPL
     NvU32 flags
 )
 {
-    if (IS_VIRTUAL_WITH_FULL_SRIOV(pGpu) && (flags & GPU_STATE_FLAGS_PRESERVING))
+    NV_STATUS status = NV_OK;
+    if (
+        (IS_VIRTUAL_WITH_FULL_SRIOV(pGpu) && (flags & GPU_STATE_FLAGS_PRESERVING)) ||
+        (IS_GSP_CLIENT(pGpu) && (flags & GPU_STATE_FLAGS_PM_TRANSITION)))
     {
-        NV_STATUS rmStatus = NV_OK;
-
-        NV_RM_RPC_DISABLE_CHANNELS(pGpu, NV_FALSE, rmStatus);
-        if (rmStatus != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                      "RPC to enable all channels failed, status 0x%x\n", rmStatus);
-            DBG_BREAKPOINT();
-            return rmStatus;
-        }
-    }
-
-    // Send RPC to GSP-RM to resume scheduling
-    if (IS_GSP_CLIENT(pGpu) && (flags & GPU_STATE_FLAGS_PM_TRANSITION))
-    {
-        RM_API    *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
         NV2080_CTRL_CMD_INTERNAL_FIFO_TOGGLE_ACTIVE_CHANNEL_SCHEDULING_PARAMS  fifoToggleActiveChannelSchedulingParam;
         fifoToggleActiveChannelSchedulingParam.bDisableActiveChannels = NV_FALSE;
 
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                            pRmApi->Control(pRmApi,
-                                            pGpu->hInternalClient,
-                                            pGpu->hInternalSubdevice,
-                                            NV2080_CTRL_CMD_INTERNAL_FIFO_TOGGLE_ACTIVE_CHANNEL_SCHEDULING,
-                                            &fifoToggleActiveChannelSchedulingParam,
-                                            sizeof(fifoToggleActiveChannelSchedulingParam)));
+        NV_RM_RPC_CONTROL(pGpu, pGpu->hInternalClient, pGpu->hInternalSubdevice,
+                         NV2080_CTRL_CMD_INTERNAL_FIFO_TOGGLE_ACTIVE_CHANNEL_SCHEDULING,
+                         &fifoToggleActiveChannelSchedulingParam,
+                         sizeof(fifoToggleActiveChannelSchedulingParam), status);
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
     }
 
-    return NV_OK;
+    return status;
 }
 
 NV_STATUS
@@ -118,37 +102,22 @@ kfifoStateUnload_IMPL
     NvU32 flags
 )
 {
-    if (IS_VIRTUAL_WITH_FULL_SRIOV(pGpu) && (flags & GPU_STATE_FLAGS_PRESERVING))
+    NV_STATUS status = NV_OK;
+    if (
+        (IS_VIRTUAL_WITH_FULL_SRIOV(pGpu) && (flags & GPU_STATE_FLAGS_PRESERVING)) ||
+        (IS_GSP_CLIENT(pGpu) && (flags & GPU_STATE_FLAGS_PM_TRANSITION)))
     {
-        NV_STATUS rmStatus = NV_OK;
-
-        NV_RM_RPC_DISABLE_CHANNELS(pGpu, NV_TRUE, rmStatus);
-        if (rmStatus != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                      "RPC to disable all channels failed, status 0x%x\n", rmStatus);
-            DBG_BREAKPOINT();
-            return rmStatus;
-        }
-    }
-
-    // Send RPC to GSP-RM to disable active channels
-    if (IS_GSP_CLIENT(pGpu) && (flags & GPU_STATE_FLAGS_PM_TRANSITION))
-    {
-        RM_API    *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
         NV2080_CTRL_CMD_INTERNAL_FIFO_TOGGLE_ACTIVE_CHANNEL_SCHEDULING_PARAMS  fifoToggleActiveChannelSchedulingParam;
         fifoToggleActiveChannelSchedulingParam.bDisableActiveChannels = NV_TRUE;
 
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                            pRmApi->Control(pRmApi,
-                                            pGpu->hInternalClient,
-                                            pGpu->hInternalSubdevice,
-                                            NV2080_CTRL_CMD_INTERNAL_FIFO_TOGGLE_ACTIVE_CHANNEL_SCHEDULING,
-                                            &fifoToggleActiveChannelSchedulingParam,
-                                            sizeof(fifoToggleActiveChannelSchedulingParam)));
+        NV_RM_RPC_CONTROL(pGpu, pGpu->hInternalClient, pGpu->hInternalSubdevice,
+                         NV2080_CTRL_CMD_INTERNAL_FIFO_TOGGLE_ACTIVE_CHANNEL_SCHEDULING,
+                         &fifoToggleActiveChannelSchedulingParam,
+                         sizeof(fifoToggleActiveChannelSchedulingParam), status);
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
     }
 
-    return NV_OK;
+    return status;
 }
 
 static void
@@ -168,6 +137,19 @@ _kfifoPreConstructRegistryOverrides
     }
 
     pKernelFifo->bPerRunlistChramOverride = NV_FALSE;
+
+    if (kfifoIsPerRunlistChramSupportedInHw(pKernelFifo))
+    {
+        if ((osReadRegistryDword(pGpu,
+                 NV_REG_STR_RM_DEBUG_OVERRIDE_PER_RUNLIST_CHANNEL_RAM,
+                 &data32) == NV_OK))
+        {
+            NV_PRINTF(LEVEL_INFO, "%s per runlist channel RAM\n",
+                                   !!data32 ? "Enabling" : "Disabling");
+            pKernelFifo->bUsePerRunlistChram = !!data32;
+            pKernelFifo->bPerRunlistChramOverride = NV_TRUE;
+        }
+    }
 
     if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_SUPPORT_USERD_MAP_DMA,
                             &data32) == NV_OK) && data32)
@@ -191,9 +173,6 @@ kfifoDestruct_IMPL
     // Free all outstanding callback entries
     listDestroy(&pKernelFifo->postSchedulingEnableHandlerList);
     listDestroy(&pKernelFifo->preSchedulingDisableHandlerList);
-
-    objDelete(pKernelFifo->pKernelSchedMgr);
-    pKernelFifo->pKernelSchedMgr = NULL;
 
     portMemFree(pEngineInfo->engineInfoList);
     pEngineInfo->engineInfoList = NULL;
@@ -235,6 +214,13 @@ kfifoStateInitLocked_IMPL
             }
         }
     }
+
+    //
+    // If bUsePerRunlistChram is set, RM cannot feasibly pre-allocate USERD for
+    // such a large number of channels. We expect clients to have already
+    // migrated to using client allocated USERD.
+    //
+    pKernelFifo->bDisablePreAllocatedUserD = pKernelFifo->bUsePerRunlistChram;
 
     NV_ASSERT_OK_OR_RETURN(kfifoConstructUsermodeMemdescs_HAL(pGpu, pKernelFifo));
 

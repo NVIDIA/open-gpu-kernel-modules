@@ -482,33 +482,6 @@ typedef struct NV2080_CTRL_FB_GET_BAR1_OFFSET_PARAMS {
 } NV2080_CTRL_FB_GET_BAR1_OFFSET_PARAMS;
 
 /*
- * Note: Returns Zeros if no System carveout address info
- *
- * NV2080_CTRL_CMD_FB_GET_CARVEOUT_ADDRESS_INFO
- *
- * This command returns FB carveout address space information
- *
- *   StartAddr
- *     Returns the system memory address of the start of carveout space.
- *   SpaceSize
- *     Returns the size of carveout space.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_INVALID_PARAM_STRUCT
- *   NV_ERR_NOT_SUPPORTED
- */
-
-#define NV2080_CTRL_CMD_FB_GET_CARVEOUT_ADDRESS_INFO (0x2080130bU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_GET_SYSTEM_CARVEOUT_ADDRESS_SPACE_INFO_MESSAGE_ID" */
-
-#define NV2080_CTRL_FB_GET_SYSTEM_CARVEOUT_ADDRESS_SPACE_INFO_MESSAGE_ID (0xBU)
-
-typedef struct NV2080_CTRL_FB_GET_SYSTEM_CARVEOUT_ADDRESS_SPACE_INFO {
-    NV_DECLARE_ALIGNED(NvU64 StartAddr, 8);
-    NV_DECLARE_ALIGNED(NvU64 SpaceSize, 8);
-} NV2080_CTRL_FB_GET_SYSTEM_CARVEOUT_ADDRESS_SPACE_INFO;
-
-/*
  * NV2080_CTRL_FB_CMD_GET_CALIBRATION_LOCK_FAILED
  *
  * This command returns the failure counts for calibration.
@@ -681,161 +654,6 @@ typedef struct NV2080_CTRL_FB_FLUSH_GPU_CACHE_PARAMS {
 #define NV2080_CTRL_FB_FLUSH_GPU_CACHE_FLAGS_FB_FLUSH_YES             (0x00000001U)
 
 /*
- * NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY (deprecated; use NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2 instead)
- *
- * These commands access the cache allocation policy on a specific
- * engine, if supported.
- *
- *   engine
- *     Specifies the target engine.  Possible values are defined in
- *     NV2080_ENGINE_TYPE.
- *   allocPolicy
- *     Specifies the read/write allocation policy of the cache on the specified
- *     engine. Possible values are defined in
- *     NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_READS and
- *     NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_WRITES.
- *
- */
-typedef struct NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_PARAMS {
-    NvU32 engine;
-    NvU32 allocPolicy;
-} NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_PARAMS;
-
-/* valid values for allocPolicy */
-#define NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_READS                0:0
-#define NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_READS_NO   (0x00000000U)
-#define NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_READS_YES  (0x00000001U)
-#define NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_WRITES               1:1
-#define NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_WRITES_NO  (0x00000000U)
-#define NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_WRITES_YES (0x00000001U)
-
-
-/*
- * NV2080_CTRL_CMD_FB_SET_GPU_CACHE_ALLOC_POLICY
- *
- * This command is deprecated.
- * Use NV2080_CTRL_CMD_FB_SET_GPU_CACHE_ALLOC_POLICY_V2 instead.
- *
- * This command sets the state of the cache allocation policy on a specific
- * engine, if supported.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_NOT_SUPPORTED
- *   NV_ERR_INVALID_ARGUMENT
- */
-#define NV2080_CTRL_CMD_FB_SET_GPU_CACHE_ALLOC_POLICY    (0x2080130fU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_SET_GPU_CACHE_ALLOC_POLICY_PARAMS_MESSAGE_ID" */
-
-#define NV2080_CTRL_FB_SET_GPU_CACHE_ALLOC_POLICY_PARAMS_MESSAGE_ID (0xFU)
-
-typedef NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_PARAMS NV2080_CTRL_FB_SET_GPU_CACHE_ALLOC_POLICY_PARAMS;
-
-/*
- * NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_PARAM
- *
- * These commands access the cache allocation policy on a specific
- * client, if supported.
- *
- *   count
- *     Specifies the number of entries in entry.
- *   entry
- *     Specifies an array of allocation policy entries.
- *
- * NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_ENTRY
- *
- *   clients
- *     Specifies the target client.  Possible values are defined in
- *     NV2080_CLIENT_TYPE_*.
- *   allocPolicy
- *     Specifies the read/write allocation policy of the cache on the specified
- *     engine. Possible values are defined in
- *     NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_READS and
- *     NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_WRITES.
- *
- * NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_ENTRY_SIZE
- *
- *     Specifies the maximum number of allocation policy entries allowed
- */
-#define NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_ENTRY_SIZE 11U
-
-typedef struct NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_ENTRY {
-    NvU32 client;
-    NvU32 allocPolicy;
-} NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_ENTRY;
-
-typedef struct NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_PARAMS {
-    NvU32                                          count;
-    NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_ENTRY entry[NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_ENTRY_SIZE];
-} NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_PARAMS;
-
-/* valid values for allocPolicy */
-#define NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_READS             0:0
-#define NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_READS_DISABLE    (0x00000000U)
-#define NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_READS_ENABLE     (0x00000001U)
-#define NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_READS_ALLOW       1:1
-#define NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_READS_ALLOW_NO   (0x00000000U)
-#define NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_READS_ALLOW_YES  (0x00000001U)
-#define NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_WRITES            2:2
-#define NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_WRITES_DISABLE   (0x00000000U)
-#define NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_WRITES_ENABLE    (0x00000001U)
-#define NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_WRITES_ALLOW      3:3
-#define NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_WRITES_ALLOW_NO  (0x00000000U)
-#define NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_WRITES_ALLOW_YES (0x00000001U)
-
-
-/*
- * NV2080_CTRL_CMD_FB_SET_GPU_CACHE_ALLOC_POLICY_V2
- *
- * This command sets the state of the cache allocation policy on a specific
- * engine, if supported.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_NOT_SUPPORTED
- *   NV_ERR_INVALID_ARGUMENT
- */
-#define NV2080_CTRL_CMD_FB_SET_GPU_CACHE_ALLOC_POLICY_V2          (0x20801318U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_SET_GPU_CACHE_ALLOC_POLICY_V2_PARAMS_MESSAGE_ID" */
-
-#define NV2080_CTRL_FB_SET_GPU_CACHE_ALLOC_POLICY_V2_PARAMS_MESSAGE_ID (0x18U)
-
-typedef NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_PARAMS NV2080_CTRL_FB_SET_GPU_CACHE_ALLOC_POLICY_V2_PARAMS;
-
-/*
- * NV2080_CTRL_CMD_FB_GET_GPU_CACHE_ALLOC_POLICY (deprecated; use NV2080_CTRL_CMD_FB_GET_GPU_CACHE_ALLOC_POLICY_V2 instead)
- *
- * This command gets the state of the cache allocation policy on a specific
- * engine, if supported.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_NOT_SUPPORTED
- *   NV_ERR_INVALID_ARGUMENT
- */
-#define NV2080_CTRL_CMD_FB_GET_GPU_CACHE_ALLOC_POLICY (0x20801312U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_GET_GPU_CACHE_ALLOC_POLICY_PARAMS_MESSAGE_ID" */
-
-#define NV2080_CTRL_FB_GET_GPU_CACHE_ALLOC_POLICY_PARAMS_MESSAGE_ID (0x12U)
-
-typedef NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_PARAMS NV2080_CTRL_FB_GET_GPU_CACHE_ALLOC_POLICY_PARAMS;
-
-/*
- * NV2080_CTRL_CMD_FB_GET_GPU_CACHE_ALLOC_POLICY_V2
- *
- * This command gets the state of the cache allocation policy on a specific
- * engine, if supported.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_NOT_SUPPORTED
- *   NV_ERR_INVALID_ARGUMENT
- */
-#define NV2080_CTRL_CMD_FB_GET_GPU_CACHE_ALLOC_POLICY_V2 (0x20801319U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_GET_GPU_CACHE_ALLOC_POLICY_V2_PARAMS_MESSAGE_ID" */
-
-#define NV2080_CTRL_FB_GET_GPU_CACHE_ALLOC_POLICY_V2_PARAMS_MESSAGE_ID (0x19U)
-
-typedef NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_PARAMS NV2080_CTRL_FB_GET_GPU_CACHE_ALLOC_POLICY_V2_PARAMS;
-
-
-/*
  * NV2080_CTRL_CMD_FB_IS_KIND
  *
  * This command is used to perform various operations like 'IS_KIND_VALID',
@@ -908,7 +726,7 @@ typedef NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_PARAMS NV2080_CTRL_FB_GET_GPU_C
  *   NV_OK
  *   NV_ERR_INVALID_ARGUMENT
  */
-#define NV2080_CTRL_CMD_FB_IS_KIND (0x20801313U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_IS_KIND_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_FB_IS_KIND                                    (0x20801313U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_IS_KIND_PARAMS_MESSAGE_ID" */
 
 #define NV2080_CTRL_FB_IS_KIND_PARAMS_MESSAGE_ID (0x13U)
 
@@ -986,65 +804,6 @@ typedef struct NV2080_CTRL_FB_GET_GPU_CACHE_INFO_PARAMS {
 #define NV2080_CTRL_FB_GET_GPU_CACHE_INFO_RCM_STATE_ZERO_CACHE    (0x00000003U)
 
 /*
- * NV2080_CTRL_FB_GPU_CACHE_PROMOTION_POLICY
- *
- * These commands access the cache promotion policy on a specific
- * engine, if supported by the hardware.
- *
- * Cache promotion refers to the GPU promoting a memory read to a larger
- * size to preemptively fill the cache so future reads to nearby memory
- * addresses will hit in the cache.
- *
- *   engine
- *     Specifies the target engine.  Possible values are defined in
- *     NV2080_ENGINE_TYPE.
- *   promotionPolicy
- *     Specifies the promotion policy of the cache on the specified
- *     engine. Possible values are defined by
- *     NV2080_CTRL_FB_GPU_CACHE_PROMOTION_POLICY_*.  These values are in terms
- *     of the hardware cache line size.
- *
- */
-typedef struct NV2080_CTRL_FB_GPU_CACHE_PROMOTION_POLICY_PARAMS {
-    NvU32 engine;
-    NvU32 promotionPolicy;
-} NV2080_CTRL_FB_GPU_CACHE_PROMOTION_POLICY_PARAMS;
-
-/* valid values for promotionPolicy */
-#define NV2080_CTRL_FB_GPU_CACHE_PROMOTION_POLICY_NONE    (0x00000000U)
-#define NV2080_CTRL_FB_GPU_CACHE_PROMOTION_POLICY_QUARTER (0x00000001U)
-#define NV2080_CTRL_FB_GPU_CACHE_PROMOTION_POLICY_HALF    (0x00000002U)
-#define NV2080_CTRL_FB_GPU_CACHE_PROMOTION_POLICY_FULL    (0x00000003U)
-
-
-/*
- * NV2080_CTRL_CMD_FB_SET_GPU_CACHE_PROMOTION_POLICY
- *
- * This command sets the cache promotion policy on a specific engine, if
- * supported by the hardware.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_NOT_SUPPORTED
- *   NV_ERR_INVALID_ARGUMENT
- */
-#define NV2080_CTRL_CMD_FB_SET_GPU_CACHE_PROMOTION_POLICY (0x20801316U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | 0x16" */ // Deprecated, removed form RM
-
-
-/*
- * NV2080_CTRL_CMD_FB_GET_GPU_CACHE_PROMOTION_POLICY
- *
- * This command gets the cache promotion policy on a specific engine, if
- * supported by the hardware.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_NOT_SUPPORTED
- *   NV_ERR_INVALID_ARGUMENT
- */
-#define NV2080_CTRL_CMD_FB_GET_GPU_CACHE_PROMOTION_POLICY (0x20801317U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | 0x17" */ // Deprecated, removed form RM
-
-/*
  * NV2080_CTRL_FB_CMD_GET_FB_REGION_INFO
  *
  * This command returns the FB memory region characteristics.
@@ -1086,9 +845,9 @@ typedef struct NV2080_CTRL_FB_GPU_CACHE_PROMOTION_POLICY_PARAMS {
  *     NV_OK
  *     NV_ERR_NOT_SUPPORTED
  */
-#define NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO             (0x20801320U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO                     (0x20801320U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_PARAMS_MESSAGE_ID" */
 
-#define NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_MEM_TYPES   17U
+#define NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_MEM_TYPES           17U
 
 typedef NvBool NV2080_CTRL_CMD_FB_GET_FB_REGION_SURFACE_MEM_TYPE_FLAG[NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_MEM_TYPES];
 
@@ -2392,6 +2151,21 @@ typedef struct NV2080_CTRL_SYSL2_FS_INFO_SYSLTC_MASK_PARAMS {
 } NV2080_CTRL_SYSL2_FS_INFO_SYSLTC_MASK_PARAMS;
 
 /*!
+ * Structure holding the in/out params for NV2080_CTRL_SYSL2_FS_INFO_SYSLTS_MASK.
+ */
+typedef struct NV2080_CTRL_SYSL2_FS_INFO_SYSLTS_MASK_PARAMS {
+   /*!
+    * [IN]: physical/local SYS index.
+    */
+    NvU32 sysIdx;
+   /*!
+    * [OUT]: physical/local lts mask.
+    * Note: this lts mask should be flattened out within a sys chiplet
+    */
+    NV_DECLARE_ALIGNED(NvU64 sysl2LtsEnMask, 8);
+} NV2080_CTRL_SYSL2_FS_INFO_SYSLTS_MASK_PARAMS;
+
+/*!
  * Structure holding the in/out params for NV2080_CTRL_FB_FS_INFO_PAC_MASK.
  */
 typedef struct NV2080_CTRL_FB_FS_INFO_PAC_MASK_PARAMS {
@@ -2456,6 +2230,7 @@ typedef struct NV2080_CTRL_FB_FS_INFO_PROFILER_MON_LOGICAL_LTC_MASK_PARAMS {
 #define NV2080_CTRL_FB_FS_INFO_PAC_MASK                      0xEU
 #define NV2080_CTRL_FB_FS_INFO_LOGICAL_LTC_MASK              0xFU
 #define NV2080_CTRL_FB_FS_INFO_PROFILER_MON_LOGICAL_LTC_MASK 0x10U
+#define NV2080_CTRL_SYSL2_FS_INFO_SYSLTS_MASK                0x11U
 
 typedef struct NV2080_CTRL_FB_FS_INFO_QUERY {
     NvU16 queryType;
@@ -2479,6 +2254,7 @@ typedef struct NV2080_CTRL_FB_FS_INFO_QUERY {
         NV2080_CTRL_FB_FS_INFO_PAC_MASK_PARAMS               pac;
         NV_DECLARE_ALIGNED(NV2080_CTRL_FB_FS_INFO_LOGICAL_LTC_MASK_PARAMS logicalLtc, 8);
         NV_DECLARE_ALIGNED(NV2080_CTRL_FB_FS_INFO_PROFILER_MON_LOGICAL_LTC_MASK_PARAMS dmLogicalLtc, 8);
+        NV_DECLARE_ALIGNED(NV2080_CTRL_SYSL2_FS_INFO_SYSLTS_MASK_PARAMS sysl2Lts, 8);
     } queryParams;
 } NV2080_CTRL_FB_FS_INFO_QUERY;
 
@@ -2883,5 +2659,32 @@ typedef struct NV2080_CTRL_CMD_FB_STATS_GET_PARAMS {
     //! Level 2 owner info table
     NV_DECLARE_ALIGNED(NV2080_CTRL_CMD_FB_STATS_OWNER_INFO fbBlockInfo[NV2080_CTRL_CMD_FB_STATS_MAX_OWNER], 8);
 } NV2080_CTRL_CMD_FB_STATS_GET_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_FB_GET_STATIC_BAR1_INFO
+ *
+ * This command returns the GPU static BAR1 Info
+ * This is for general P2P DMA. NV50_P2P is for GPU P2P.
+ *
+ * @params [OUT] NvBool bStaticBar1Enabled:
+ *      This field indicates the static BAR1 mode is enabled. All the following fields are valid
+ *      only if static BAR1 mode is enabled.
+ * @params [OUT] NvU64 staticBar1Size:
+ *      This field indicates the size of the static BAR1.
+ *
+ * Possible status values returned are
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_NOT_SUPPORTED
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+#define NV2080_CTRL_CMD_FB_GET_STATIC_BAR1_INFO (0x20801354U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_GET_STATIC_BAR1_INFO_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_FB_GET_STATIC_BAR1_INFO_PARAMS_MESSAGE_ID (0x54U)
+
+typedef struct NV2080_CTRL_FB_GET_STATIC_BAR1_INFO_PARAMS {
+    NvBool bStaticBar1Enabled;
+    NV_DECLARE_ALIGNED(NvU64 staticBar1Size, 8);
+} NV2080_CTRL_FB_GET_STATIC_BAR1_INFO_PARAMS;
 
 /* _ctrl2080fb_h_ */

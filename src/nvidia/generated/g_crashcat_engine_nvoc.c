@@ -59,6 +59,10 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_CrashCatEngine =
     /*pExportInfo=*/        &__nvoc_export_info_CrashCatEngine
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+
+// Up-thunk(s) to bridge methods to ancestors (if any)
+
 const struct NVOC_EXPORT_INFO __nvoc_export_info_CrashCatEngine = 
 {
     /*numEntries=*/     0,
@@ -91,43 +95,28 @@ __nvoc_ctor_CrashCatEngine_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_CrashCatEngine_1(CrashCatEngine *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // crashcatEngineUnload -- virtual
-    pThis->__crashcatEngineUnload__ = &crashcatEngineUnload_IMPL;
-
-    // crashcatEngineConfigured -- pure virtual
-    pThis->__crashcatEngineConfigured__ = NULL;
-
-    // crashcatEngineVprintf -- pure virtual
-    pThis->__crashcatEngineVprintf__ = NULL;
-
-    // crashcatEnginePriRead -- pure virtual
-    pThis->__crashcatEnginePriRead__ = NULL;
-
-    // crashcatEnginePriWrite -- pure virtual
-    pThis->__crashcatEnginePriWrite__ = NULL;
-
-    // crashcatEngineMapBufferDescriptor -- pure virtual
-    pThis->__crashcatEngineMapBufferDescriptor__ = NULL;
-
-    // crashcatEngineUnmapBufferDescriptor -- pure virtual
-    pThis->__crashcatEngineUnmapBufferDescriptor__ = NULL;
-
-    // crashcatEngineSyncBufferDescriptor -- pure virtual
-    pThis->__crashcatEngineSyncBufferDescriptor__ = NULL;
-
-    // crashcatEngineGetScratchOffsets -- pure virtual
-    pThis->__crashcatEngineGetScratchOffsets__ = NULL;
-
-    // crashcatEngineGetWFL0Offset -- pure virtual
-    pThis->__crashcatEngineGetWFL0Offset__ = NULL;
-} // End __nvoc_init_funcTable_CrashCatEngine_1 with approximately 10 basic block(s).
+} // End __nvoc_init_funcTable_CrashCatEngine_1
 
 
 // Initialize vtable(s) for 10 virtual method(s).
 void __nvoc_init_funcTable_CrashCatEngine(CrashCatEngine *pThis) {
 
-    // Initialize vtable(s) with 10 per-object function pointer(s).
+    // Per-class vtable definition
+    static const struct NVOC_VTABLE__CrashCatEngine vtable = {
+        .__crashcatEngineUnload__ = &crashcatEngineUnload_IMPL,    // virtual
+        .__crashcatEngineConfigured__ = NULL,    // pure virtual
+        .__crashcatEngineVprintf__ = NULL,    // pure virtual
+        .__crashcatEnginePriRead__ = NULL,    // pure virtual
+        .__crashcatEnginePriWrite__ = NULL,    // pure virtual
+        .__crashcatEngineMapBufferDescriptor__ = NULL,    // pure virtual
+        .__crashcatEngineUnmapBufferDescriptor__ = NULL,    // pure virtual
+        .__crashcatEngineSyncBufferDescriptor__ = NULL,    // pure virtual
+        .__crashcatEngineGetScratchOffsets__ = NULL,    // pure virtual
+        .__crashcatEngineGetWFL0Offset__ = NULL,    // pure virtual
+    };
+
+    // Pointer(s) to per-class vtable(s)
+    pThis->__nvoc_vtable = &vtable;    // (crashcatEngine) this
     __nvoc_init_funcTable_CrashCatEngine_1(pThis);
 }
 

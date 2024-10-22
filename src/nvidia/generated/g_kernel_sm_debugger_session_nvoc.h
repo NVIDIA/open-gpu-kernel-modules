@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -98,10 +98,15 @@ typedef struct KernelGraphicsObject KernelGraphicsObject;
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__RmDebuggerSession;
+
+
 struct RmDebuggerSession {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__RmDebuggerSession *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct RsSession __nvoc_base_RsSession;
@@ -111,8 +116,13 @@ struct RmDebuggerSession {
     struct RsShared *__nvoc_pbase_RsShared;    // shr super^2
     struct RsSession *__nvoc_pbase_RsSession;    // session super
     struct RmDebuggerSession *__nvoc_pbase_RmDebuggerSession;    // dbgSession
+};
 
-    // Vtable with 2 per-object function pointers
+
+// Metadata including vtable with 2 function pointers plus superclass metadata
+struct NVOC_VTABLE__RmDebuggerSession {
+    const struct NVOC_VTABLE__RsSession RsSession;    // (session) 2 function pointers
+
     void (*__dbgSessionRemoveDependant__)(struct RmDebuggerSession * /*this*/, struct RsResourceRef *);  // virtual override (session) base (session)
     void (*__dbgSessionRemoveDependency__)(struct RmDebuggerSession * /*this*/, struct RsResourceRef *);  // virtual override (session) base (session)
 };
@@ -147,18 +157,18 @@ NV_STATUS __nvoc_objCreate_RmDebuggerSession(RmDebuggerSession**, Dynamic*, NvU3
 
 
 // Wrapper macros
-#define dbgSessionRemoveDependant_FNPTR(pDbgSession) pDbgSession->__dbgSessionRemoveDependant__
+#define dbgSessionRemoveDependant_FNPTR(pDbgSession) pDbgSession->__nvoc_vtable->__dbgSessionRemoveDependant__
 #define dbgSessionRemoveDependant(pDbgSession, pResourceRef) dbgSessionRemoveDependant_DISPATCH(pDbgSession, pResourceRef)
-#define dbgSessionRemoveDependency_FNPTR(pDbgSession) pDbgSession->__dbgSessionRemoveDependency__
+#define dbgSessionRemoveDependency_FNPTR(pDbgSession) pDbgSession->__nvoc_vtable->__dbgSessionRemoveDependency__
 #define dbgSessionRemoveDependency(pDbgSession, pResourceRef) dbgSessionRemoveDependency_DISPATCH(pDbgSession, pResourceRef)
 
 // Dispatch functions
 static inline void dbgSessionRemoveDependant_DISPATCH(struct RmDebuggerSession *pDbgSession, struct RsResourceRef *pResourceRef) {
-    pDbgSession->__dbgSessionRemoveDependant__(pDbgSession, pResourceRef);
+    pDbgSession->__nvoc_vtable->__dbgSessionRemoveDependant__(pDbgSession, pResourceRef);
 }
 
 static inline void dbgSessionRemoveDependency_DISPATCH(struct RmDebuggerSession *pDbgSession, struct RsResourceRef *pResourceRef) {
-    pDbgSession->__dbgSessionRemoveDependency__(pDbgSession, pResourceRef);
+    pDbgSession->__nvoc_vtable->__dbgSessionRemoveDependency__(pDbgSession, pResourceRef);
 }
 
 void dbgSessionRemoveDependant_IMPL(struct RmDebuggerSession *pDbgSession, struct RsResourceRef *pResourceRef);
@@ -179,10 +189,15 @@ void dbgSessionRemoveDependency_IMPL(struct RmDebuggerSession *pDbgSession, stru
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__KernelSMDebuggerSession;
+
+
 struct KernelSMDebuggerSession {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__KernelSMDebuggerSession *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct GpuResource __nvoc_base_GpuResource;
@@ -198,9 +213,7 @@ struct KernelSMDebuggerSession {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super
     struct KernelSMDebuggerSession *__nvoc_pbase_KernelSMDebuggerSession;    // ksmdbgssn
 
-    // Vtable with 59 per-object function pointers
-    NV_STATUS (*__ksmdbgssnInternalControlForward__)(struct KernelSMDebuggerSession * /*this*/, NvU32, void *, NvU32);  // virtual override (gpures) base (gpures)
-    NvHandle (*__ksmdbgssnGetInternalObjectHandle__)(struct KernelSMDebuggerSession * /*this*/);  // virtual override (gpures) base (gpures)
+    // Vtable with 29 per-object function pointers
     NV_STATUS (*__ksmdbgssnCtrlCmdSMDebugModeEnable__)(struct KernelSMDebuggerSession * /*this*/);  // inline exported (id=0x83de0301) body
     NV_STATUS (*__ksmdbgssnCtrlCmdSMDebugModeDisable__)(struct KernelSMDebuggerSession * /*this*/);  // inline exported (id=0x83de0302) body
     NV_STATUS (*__ksmdbgssnCtrlCmdDebugSetModeMMUDebug__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_SET_MODE_MMU_DEBUG_PARAMS *);  // inline exported (id=0x83de0307) body
@@ -230,6 +243,30 @@ struct KernelSMDebuggerSession {
     NV_STATUS (*__ksmdbgssnCtrlCmdDebugReadBatchMemory__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS *);  // exported (id=0x83de0326)
     NV_STATUS (*__ksmdbgssnCtrlCmdDebugWriteBatchMemory__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS *);  // exported (id=0x83de0327)
     NV_STATUS (*__ksmdbgssnCtrlCmdDebugReadMMUFaultInfo__)(struct KernelSMDebuggerSession * /*this*/, NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_PARAMS *);  // halified (2 hals) exported (id=0x83de0328)
+
+    // Data members
+    struct RmDebuggerSession *PRIVATE_FIELD(pDebugSession);
+    struct KernelGraphicsObject *PRIVATE_FIELD(pObject);
+    NvHandle PRIVATE_FIELD(hDebugger);
+    NvHandle PRIVATE_FIELD(hDebuggerClient);
+    NvHandle PRIVATE_FIELD(hChannel);
+    NvHandle PRIVATE_FIELD(hChannelClient);
+    NvHandle PRIVATE_FIELD(hSubdevice);
+    NvHandle PRIVATE_FIELD(hInternalClient);
+    NvHandle PRIVATE_FIELD(hInternalDevice);
+    NvHandle PRIVATE_FIELD(hInternalSubdevice);
+    NvHandle PRIVATE_FIELD(hInternalSubscription);
+    NvHandle PRIVATE_FIELD(hInternalMemMapping);
+};
+
+
+// Metadata including vtable with 30 function pointers plus superclass metadata
+struct NVOC_VTABLE__KernelSMDebuggerSession {
+    const struct NVOC_VTABLE__GpuResource GpuResource;    // (gpures) 25 function pointers
+    const struct NVOC_VTABLE__Notifier Notifier;    // (notify) 5 function pointers
+
+    NV_STATUS (*__ksmdbgssnInternalControlForward__)(struct KernelSMDebuggerSession * /*this*/, NvU32, void *, NvU32);  // virtual override (gpures) base (gpures)
+    NvHandle (*__ksmdbgssnGetInternalObjectHandle__)(struct KernelSMDebuggerSession * /*this*/);  // virtual override (gpures) base (gpures)
     NV_STATUS (*__ksmdbgssnControl__)(struct KernelSMDebuggerSession * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__ksmdbgssnMap__)(struct KernelSMDebuggerSession * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__ksmdbgssnUnmap__)(struct KernelSMDebuggerSession * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
@@ -258,20 +295,6 @@ struct KernelSMDebuggerSession {
     void (*__ksmdbgssnSetNotificationShare__)(struct KernelSMDebuggerSession * /*this*/, struct NotifShare *);  // virtual inherited (notify) base (notify)
     NV_STATUS (*__ksmdbgssnUnregisterEvent__)(struct KernelSMDebuggerSession * /*this*/, NvHandle, NvHandle, NvHandle, NvHandle);  // virtual inherited (notify) base (notify)
     NV_STATUS (*__ksmdbgssnGetOrAllocNotifShare__)(struct KernelSMDebuggerSession * /*this*/, NvHandle, NvHandle, struct NotifShare **);  // virtual inherited (notify) base (notify)
-
-    // Data members
-    struct RmDebuggerSession *PRIVATE_FIELD(pDebugSession);
-    struct KernelGraphicsObject *PRIVATE_FIELD(pObject);
-    NvHandle PRIVATE_FIELD(hDebugger);
-    NvHandle PRIVATE_FIELD(hDebuggerClient);
-    NvHandle PRIVATE_FIELD(hChannel);
-    NvHandle PRIVATE_FIELD(hChannelClient);
-    NvHandle PRIVATE_FIELD(hSubdevice);
-    NvHandle PRIVATE_FIELD(hInternalClient);
-    NvHandle PRIVATE_FIELD(hInternalDevice);
-    NvHandle PRIVATE_FIELD(hInternalSubdevice);
-    NvHandle PRIVATE_FIELD(hInternalSubscription);
-    NvHandle PRIVATE_FIELD(hInternalMemMapping);
 };
 
 #ifndef __NVOC_CLASS_KernelSMDebuggerSession_TYPEDEF__
@@ -304,9 +327,9 @@ NV_STATUS __nvoc_objCreate_KernelSMDebuggerSession(KernelSMDebuggerSession**, Dy
 
 
 // Wrapper macros
-#define ksmdbgssnInternalControlForward_FNPTR(arg_this) arg_this->__ksmdbgssnInternalControlForward__
+#define ksmdbgssnInternalControlForward_FNPTR(arg_this) arg_this->__nvoc_vtable->__ksmdbgssnInternalControlForward__
 #define ksmdbgssnInternalControlForward(arg_this, command, pParams, size) ksmdbgssnInternalControlForward_DISPATCH(arg_this, command, pParams, size)
-#define ksmdbgssnGetInternalObjectHandle_FNPTR(arg_this) arg_this->__ksmdbgssnGetInternalObjectHandle__
+#define ksmdbgssnGetInternalObjectHandle_FNPTR(arg_this) arg_this->__nvoc_vtable->__ksmdbgssnGetInternalObjectHandle__
 #define ksmdbgssnGetInternalObjectHandle(arg_this) ksmdbgssnGetInternalObjectHandle_DISPATCH(arg_this)
 #define ksmdbgssnCtrlCmdSMDebugModeEnable_FNPTR(pKernelSMDebuggerSession) pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdSMDebugModeEnable__
 #define ksmdbgssnCtrlCmdSMDebugModeEnable(pKernelSMDebuggerSession) ksmdbgssnCtrlCmdSMDebugModeEnable_DISPATCH(pKernelSMDebuggerSession)
@@ -367,70 +390,70 @@ NV_STATUS __nvoc_objCreate_KernelSMDebuggerSession(KernelSMDebuggerSession**, Dy
 #define ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_FNPTR(arg_this) arg_this->__ksmdbgssnCtrlCmdDebugReadMMUFaultInfo__
 #define ksmdbgssnCtrlCmdDebugReadMMUFaultInfo(arg_this, arg2) ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_DISPATCH(arg_this, arg2)
 #define ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_HAL(arg_this, arg2) ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_DISPATCH(arg_this, arg2)
-#define ksmdbgssnControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresControl__
+#define ksmdbgssnControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresControl__
 #define ksmdbgssnControl(pGpuResource, pCallContext, pParams) ksmdbgssnControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define ksmdbgssnMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresMap__
+#define ksmdbgssnMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresMap__
 #define ksmdbgssnMap(pGpuResource, pCallContext, pParams, pCpuMapping) ksmdbgssnMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define ksmdbgssnUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresUnmap__
+#define ksmdbgssnUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresUnmap__
 #define ksmdbgssnUnmap(pGpuResource, pCallContext, pCpuMapping) ksmdbgssnUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define ksmdbgssnShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresShareCallback__
+#define ksmdbgssnShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresShareCallback__
 #define ksmdbgssnShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) ksmdbgssnShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define ksmdbgssnGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetRegBaseOffsetAndSize__
+#define ksmdbgssnGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetRegBaseOffsetAndSize__
 #define ksmdbgssnGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) ksmdbgssnGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
-#define ksmdbgssnGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetMapAddrSpace__
+#define ksmdbgssnGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetMapAddrSpace__
 #define ksmdbgssnGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) ksmdbgssnGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
-#define ksmdbgssnAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresAccessCallback__
+#define ksmdbgssnAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
 #define ksmdbgssnAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) ksmdbgssnAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define ksmdbgssnGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemInterMapParams__
+#define ksmdbgssnGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
 #define ksmdbgssnGetMemInterMapParams(pRmResource, pParams) ksmdbgssnGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define ksmdbgssnCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresCheckMemInterUnmap__
+#define ksmdbgssnCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
 #define ksmdbgssnCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) ksmdbgssnCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define ksmdbgssnGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemoryMappingDescriptor__
+#define ksmdbgssnGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
 #define ksmdbgssnGetMemoryMappingDescriptor(pRmResource, ppMemDesc) ksmdbgssnGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define ksmdbgssnControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControlSerialization_Prologue__
+#define ksmdbgssnControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
 #define ksmdbgssnControlSerialization_Prologue(pResource, pCallContext, pParams) ksmdbgssnControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define ksmdbgssnControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControlSerialization_Epilogue__
+#define ksmdbgssnControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
 #define ksmdbgssnControlSerialization_Epilogue(pResource, pCallContext, pParams) ksmdbgssnControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define ksmdbgssnControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControl_Prologue__
+#define ksmdbgssnControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
 #define ksmdbgssnControl_Prologue(pResource, pCallContext, pParams) ksmdbgssnControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define ksmdbgssnControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControl_Epilogue__
+#define ksmdbgssnControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
 #define ksmdbgssnControl_Epilogue(pResource, pCallContext, pParams) ksmdbgssnControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define ksmdbgssnCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__
+#define ksmdbgssnCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
 #define ksmdbgssnCanCopy(pResource) ksmdbgssnCanCopy_DISPATCH(pResource)
-#define ksmdbgssnIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsDuplicate__
+#define ksmdbgssnIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
 #define ksmdbgssnIsDuplicate(pResource, hMemory, pDuplicate) ksmdbgssnIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define ksmdbgssnPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resPreDestruct__
+#define ksmdbgssnPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
 #define ksmdbgssnPreDestruct(pResource) ksmdbgssnPreDestruct_DISPATCH(pResource)
-#define ksmdbgssnControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resControlFilter__
+#define ksmdbgssnControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
 #define ksmdbgssnControlFilter(pResource, pCallContext, pParams) ksmdbgssnControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define ksmdbgssnIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsPartialUnmapSupported__
+#define ksmdbgssnIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
 #define ksmdbgssnIsPartialUnmapSupported(pResource) ksmdbgssnIsPartialUnmapSupported_DISPATCH(pResource)
-#define ksmdbgssnMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resMapTo__
+#define ksmdbgssnMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
 #define ksmdbgssnMapTo(pResource, pParams) ksmdbgssnMapTo_DISPATCH(pResource, pParams)
-#define ksmdbgssnUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resUnmapFrom__
+#define ksmdbgssnUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
 #define ksmdbgssnUnmapFrom(pResource, pParams) ksmdbgssnUnmapFrom_DISPATCH(pResource, pParams)
-#define ksmdbgssnGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resGetRefCount__
+#define ksmdbgssnGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
 #define ksmdbgssnGetRefCount(pResource) ksmdbgssnGetRefCount_DISPATCH(pResource)
-#define ksmdbgssnAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resAddAdditionalDependants__
+#define ksmdbgssnAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
 #define ksmdbgssnAddAdditionalDependants(pClient, pResource, pReference) ksmdbgssnAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define ksmdbgssnGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__notifyGetNotificationListPtr__
+#define ksmdbgssnGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationListPtr__
 #define ksmdbgssnGetNotificationListPtr(pNotifier) ksmdbgssnGetNotificationListPtr_DISPATCH(pNotifier)
-#define ksmdbgssnGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__notifyGetNotificationShare__
+#define ksmdbgssnGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationShare__
 #define ksmdbgssnGetNotificationShare(pNotifier) ksmdbgssnGetNotificationShare_DISPATCH(pNotifier)
-#define ksmdbgssnSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__notifySetNotificationShare__
+#define ksmdbgssnSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifySetNotificationShare__
 #define ksmdbgssnSetNotificationShare(pNotifier, pNotifShare) ksmdbgssnSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
-#define ksmdbgssnUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__notifyUnregisterEvent__
+#define ksmdbgssnUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyUnregisterEvent__
 #define ksmdbgssnUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) ksmdbgssnUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define ksmdbgssnGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__notifyGetOrAllocNotifShare__
+#define ksmdbgssnGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyGetOrAllocNotifShare__
 #define ksmdbgssnGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) ksmdbgssnGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
 static inline NV_STATUS ksmdbgssnInternalControlForward_DISPATCH(struct KernelSMDebuggerSession *arg_this, NvU32 command, void *pParams, NvU32 size) {
-    return arg_this->__ksmdbgssnInternalControlForward__(arg_this, command, pParams, size);
+    return arg_this->__nvoc_vtable->__ksmdbgssnInternalControlForward__(arg_this, command, pParams, size);
 }
 
 static inline NvHandle ksmdbgssnGetInternalObjectHandle_DISPATCH(struct KernelSMDebuggerSession *arg_this) {
-    return arg_this->__ksmdbgssnGetInternalObjectHandle__(arg_this);
+    return arg_this->__nvoc_vtable->__ksmdbgssnGetInternalObjectHandle__(arg_this);
 }
 
 static inline NV_STATUS ksmdbgssnCtrlCmdSMDebugModeEnable_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession) {
@@ -550,115 +573,115 @@ static inline NV_STATUS ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_DISPATCH(struct Ke
 }
 
 static inline NV_STATUS ksmdbgssnControl_DISPATCH(struct KernelSMDebuggerSession *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__ksmdbgssnControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_vtable->__ksmdbgssnControl__(pGpuResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS ksmdbgssnMap_DISPATCH(struct KernelSMDebuggerSession *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__ksmdbgssnMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_vtable->__ksmdbgssnMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS ksmdbgssnUnmap_DISPATCH(struct KernelSMDebuggerSession *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__ksmdbgssnUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_vtable->__ksmdbgssnUnmap__(pGpuResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool ksmdbgssnShareCallback_DISPATCH(struct KernelSMDebuggerSession *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__ksmdbgssnShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_vtable->__ksmdbgssnShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS ksmdbgssnGetRegBaseOffsetAndSize_DISPATCH(struct KernelSMDebuggerSession *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__ksmdbgssnGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_vtable->__ksmdbgssnGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS ksmdbgssnGetMapAddrSpace_DISPATCH(struct KernelSMDebuggerSession *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__ksmdbgssnGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_vtable->__ksmdbgssnGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NvBool ksmdbgssnAccessCallback_DISPATCH(struct KernelSMDebuggerSession *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__ksmdbgssnAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_vtable->__ksmdbgssnAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS ksmdbgssnGetMemInterMapParams_DISPATCH(struct KernelSMDebuggerSession *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__ksmdbgssnGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_vtable->__ksmdbgssnGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS ksmdbgssnCheckMemInterUnmap_DISPATCH(struct KernelSMDebuggerSession *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__ksmdbgssnCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_vtable->__ksmdbgssnCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS ksmdbgssnGetMemoryMappingDescriptor_DISPATCH(struct KernelSMDebuggerSession *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__ksmdbgssnGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_vtable->__ksmdbgssnGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS ksmdbgssnControlSerialization_Prologue_DISPATCH(struct KernelSMDebuggerSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__ksmdbgssnControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__ksmdbgssnControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void ksmdbgssnControlSerialization_Epilogue_DISPATCH(struct KernelSMDebuggerSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__ksmdbgssnControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__ksmdbgssnControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS ksmdbgssnControl_Prologue_DISPATCH(struct KernelSMDebuggerSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__ksmdbgssnControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__ksmdbgssnControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void ksmdbgssnControl_Epilogue_DISPATCH(struct KernelSMDebuggerSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__ksmdbgssnControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__ksmdbgssnControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool ksmdbgssnCanCopy_DISPATCH(struct KernelSMDebuggerSession *pResource) {
-    return pResource->__ksmdbgssnCanCopy__(pResource);
+    return pResource->__nvoc_vtable->__ksmdbgssnCanCopy__(pResource);
 }
 
 static inline NV_STATUS ksmdbgssnIsDuplicate_DISPATCH(struct KernelSMDebuggerSession *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__ksmdbgssnIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_vtable->__ksmdbgssnIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void ksmdbgssnPreDestruct_DISPATCH(struct KernelSMDebuggerSession *pResource) {
-    pResource->__ksmdbgssnPreDestruct__(pResource);
+    pResource->__nvoc_vtable->__ksmdbgssnPreDestruct__(pResource);
 }
 
 static inline NV_STATUS ksmdbgssnControlFilter_DISPATCH(struct KernelSMDebuggerSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__ksmdbgssnControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__ksmdbgssnControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool ksmdbgssnIsPartialUnmapSupported_DISPATCH(struct KernelSMDebuggerSession *pResource) {
-    return pResource->__ksmdbgssnIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_vtable->__ksmdbgssnIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS ksmdbgssnMapTo_DISPATCH(struct KernelSMDebuggerSession *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__ksmdbgssnMapTo__(pResource, pParams);
+    return pResource->__nvoc_vtable->__ksmdbgssnMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS ksmdbgssnUnmapFrom_DISPATCH(struct KernelSMDebuggerSession *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__ksmdbgssnUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_vtable->__ksmdbgssnUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 ksmdbgssnGetRefCount_DISPATCH(struct KernelSMDebuggerSession *pResource) {
-    return pResource->__ksmdbgssnGetRefCount__(pResource);
+    return pResource->__nvoc_vtable->__ksmdbgssnGetRefCount__(pResource);
 }
 
 static inline void ksmdbgssnAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct KernelSMDebuggerSession *pResource, RsResourceRef *pReference) {
-    pResource->__ksmdbgssnAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_vtable->__ksmdbgssnAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 static inline PEVENTNOTIFICATION * ksmdbgssnGetNotificationListPtr_DISPATCH(struct KernelSMDebuggerSession *pNotifier) {
-    return pNotifier->__ksmdbgssnGetNotificationListPtr__(pNotifier);
+    return pNotifier->__nvoc_vtable->__ksmdbgssnGetNotificationListPtr__(pNotifier);
 }
 
 static inline struct NotifShare * ksmdbgssnGetNotificationShare_DISPATCH(struct KernelSMDebuggerSession *pNotifier) {
-    return pNotifier->__ksmdbgssnGetNotificationShare__(pNotifier);
+    return pNotifier->__nvoc_vtable->__ksmdbgssnGetNotificationShare__(pNotifier);
 }
 
 static inline void ksmdbgssnSetNotificationShare_DISPATCH(struct KernelSMDebuggerSession *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__ksmdbgssnSetNotificationShare__(pNotifier, pNotifShare);
+    pNotifier->__nvoc_vtable->__ksmdbgssnSetNotificationShare__(pNotifier, pNotifShare);
 }
 
 static inline NV_STATUS ksmdbgssnUnregisterEvent_DISPATCH(struct KernelSMDebuggerSession *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return pNotifier->__ksmdbgssnUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return pNotifier->__nvoc_vtable->__ksmdbgssnUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 static inline NV_STATUS ksmdbgssnGetOrAllocNotifShare_DISPATCH(struct KernelSMDebuggerSession *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return pNotifier->__ksmdbgssnGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
+    return pNotifier->__nvoc_vtable->__ksmdbgssnGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 NV_STATUS ksmdbgssnInternalControlForward_IMPL(struct KernelSMDebuggerSession *arg1, NvU32 command, void *pParams, NvU32 size);

@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -257,10 +257,15 @@ struct RS_RES_DTOR_PARAMS
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__RsResource;
+
+
 struct RsResource {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__RsResource *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct Object __nvoc_base_Object;
@@ -269,7 +274,16 @@ struct RsResource {
     struct Object *__nvoc_pbase_Object;    // obj super
     struct RsResource *__nvoc_pbase_RsResource;    // res
 
-    // Vtable with 18 per-object function pointers
+    // Data members
+    RsResourceRef *pResourceRef;
+    struct RS_RES_DTOR_PARAMS dtorParams;
+    NvBool bConstructed;
+};
+
+
+// Metadata including vtable with 18 function pointers plus superclass metadata
+struct NVOC_VTABLE__RsResource {
+
     NvBool (*__resCanCopy__)(struct RsResource * /*this*/);  // virtual
     NV_STATUS (*__resIsDuplicate__)(struct RsResource * /*this*/, NvHandle, NvBool *);  // virtual
     void (*__resPreDestruct__)(struct RsResource * /*this*/);  // virtual
@@ -288,11 +302,6 @@ struct RsResource {
     NvBool (*__resAccessCallback__)(struct RsResource * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual
     NvBool (*__resShareCallback__)(struct RsResource * /*this*/, struct RsClient *, RsResourceRef *, RS_SHARE_POLICY *);  // virtual
     void (*__resAddAdditionalDependants__)(struct RsClient *, struct RsResource * /*this*/, RsResourceRef *);  // virtual
-
-    // Data members
-    RsResourceRef *pResourceRef;
-    struct RS_RES_DTOR_PARAMS dtorParams;
-    NvBool bConstructed;
 };
 
 #ifndef __NVOC_CLASS_RsResource_TYPEDEF__
@@ -325,114 +334,114 @@ NV_STATUS __nvoc_objCreate_RsResource(RsResource**, Dynamic*, NvU32, struct CALL
 
 
 // Wrapper macros
-#define resCanCopy_FNPTR(pResource) pResource->__resCanCopy__
+#define resCanCopy_FNPTR(pResource) pResource->__nvoc_vtable->__resCanCopy__
 #define resCanCopy(pResource) resCanCopy_DISPATCH(pResource)
-#define resIsDuplicate_FNPTR(pResource) pResource->__resIsDuplicate__
+#define resIsDuplicate_FNPTR(pResource) pResource->__nvoc_vtable->__resIsDuplicate__
 #define resIsDuplicate(pResource, hMemory, pDuplicate) resIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define resPreDestruct_FNPTR(pResource) pResource->__resPreDestruct__
+#define resPreDestruct_FNPTR(pResource) pResource->__nvoc_vtable->__resPreDestruct__
 #define resPreDestruct(pResource) resPreDestruct_DISPATCH(pResource)
-#define resControl_FNPTR(pResource) pResource->__resControl__
+#define resControl_FNPTR(pResource) pResource->__nvoc_vtable->__resControl__
 #define resControl(pResource, pCallContext, pParams) resControl_DISPATCH(pResource, pCallContext, pParams)
-#define resControlFilter_FNPTR(pResource) pResource->__resControlFilter__
+#define resControlFilter_FNPTR(pResource) pResource->__nvoc_vtable->__resControlFilter__
 #define resControlFilter(pResource, pCallContext, pParams) resControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define resControlSerialization_Prologue_FNPTR(pResource) pResource->__resControlSerialization_Prologue__
+#define resControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_vtable->__resControlSerialization_Prologue__
 #define resControlSerialization_Prologue(pResource, pCallContext, pParams) resControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define resControlSerialization_Epilogue_FNPTR(pResource) pResource->__resControlSerialization_Epilogue__
+#define resControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_vtable->__resControlSerialization_Epilogue__
 #define resControlSerialization_Epilogue(pResource, pCallContext, pParams) resControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define resControl_Prologue_FNPTR(pResource) pResource->__resControl_Prologue__
+#define resControl_Prologue_FNPTR(pResource) pResource->__nvoc_vtable->__resControl_Prologue__
 #define resControl_Prologue(pResource, pCallContext, pParams) resControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define resControl_Epilogue_FNPTR(pResource) pResource->__resControl_Epilogue__
+#define resControl_Epilogue_FNPTR(pResource) pResource->__nvoc_vtable->__resControl_Epilogue__
 #define resControl_Epilogue(pResource, pCallContext, pParams) resControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define resMap_FNPTR(pResource) pResource->__resMap__
+#define resMap_FNPTR(pResource) pResource->__nvoc_vtable->__resMap__
 #define resMap(pResource, pCallContext, pParams, pCpuMapping) resMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
-#define resUnmap_FNPTR(pResource) pResource->__resUnmap__
+#define resUnmap_FNPTR(pResource) pResource->__nvoc_vtable->__resUnmap__
 #define resUnmap(pResource, pCallContext, pCpuMapping) resUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
-#define resIsPartialUnmapSupported_FNPTR(pResource) pResource->__resIsPartialUnmapSupported__
+#define resIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_vtable->__resIsPartialUnmapSupported__
 #define resIsPartialUnmapSupported(pResource) resIsPartialUnmapSupported_DISPATCH(pResource)
-#define resMapTo_FNPTR(pResource) pResource->__resMapTo__
+#define resMapTo_FNPTR(pResource) pResource->__nvoc_vtable->__resMapTo__
 #define resMapTo(pResource, pParams) resMapTo_DISPATCH(pResource, pParams)
-#define resUnmapFrom_FNPTR(pResource) pResource->__resUnmapFrom__
+#define resUnmapFrom_FNPTR(pResource) pResource->__nvoc_vtable->__resUnmapFrom__
 #define resUnmapFrom(pResource, pParams) resUnmapFrom_DISPATCH(pResource, pParams)
-#define resGetRefCount_FNPTR(pResource) pResource->__resGetRefCount__
+#define resGetRefCount_FNPTR(pResource) pResource->__nvoc_vtable->__resGetRefCount__
 #define resGetRefCount(pResource) resGetRefCount_DISPATCH(pResource)
-#define resAccessCallback_FNPTR(pResource) pResource->__resAccessCallback__
+#define resAccessCallback_FNPTR(pResource) pResource->__nvoc_vtable->__resAccessCallback__
 #define resAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) resAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define resShareCallback_FNPTR(pResource) pResource->__resShareCallback__
+#define resShareCallback_FNPTR(pResource) pResource->__nvoc_vtable->__resShareCallback__
 #define resShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) resShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
-#define resAddAdditionalDependants_FNPTR(pResource) pResource->__resAddAdditionalDependants__
+#define resAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_vtable->__resAddAdditionalDependants__
 #define resAddAdditionalDependants(pClient, pResource, pReference) resAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
 static inline NvBool resCanCopy_DISPATCH(struct RsResource *pResource) {
-    return pResource->__resCanCopy__(pResource);
+    return pResource->__nvoc_vtable->__resCanCopy__(pResource);
 }
 
 static inline NV_STATUS resIsDuplicate_DISPATCH(struct RsResource *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__resIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_vtable->__resIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void resPreDestruct_DISPATCH(struct RsResource *pResource) {
-    pResource->__resPreDestruct__(pResource);
+    pResource->__nvoc_vtable->__resPreDestruct__(pResource);
 }
 
 static inline NV_STATUS resControl_DISPATCH(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__resControl__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__resControl__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS resControlFilter_DISPATCH(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__resControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__resControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS resControlSerialization_Prologue_DISPATCH(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__resControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__resControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void resControlSerialization_Epilogue_DISPATCH(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__resControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__resControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS resControl_Prologue_DISPATCH(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__resControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__resControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void resControl_Epilogue_DISPATCH(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__resControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__resControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS resMap_DISPATCH(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pResource->__resMap__(pResource, pCallContext, pParams, pCpuMapping);
+    return pResource->__nvoc_vtable->__resMap__(pResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS resUnmap_DISPATCH(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__resUnmap__(pResource, pCallContext, pCpuMapping);
+    return pResource->__nvoc_vtable->__resUnmap__(pResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool resIsPartialUnmapSupported_DISPATCH(struct RsResource *pResource) {
-    return pResource->__resIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_vtable->__resIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS resMapTo_DISPATCH(struct RsResource *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__resMapTo__(pResource, pParams);
+    return pResource->__nvoc_vtable->__resMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS resUnmapFrom_DISPATCH(struct RsResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__resUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_vtable->__resUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 resGetRefCount_DISPATCH(struct RsResource *pResource) {
-    return pResource->__resGetRefCount__(pResource);
+    return pResource->__nvoc_vtable->__resGetRefCount__(pResource);
 }
 
 static inline NvBool resAccessCallback_DISPATCH(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__resAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_vtable->__resAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool resShareCallback_DISPATCH(struct RsResource *pResource, struct RsClient *pInvokingClient, RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__resShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_vtable->__resShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline void resAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct RsResource *pResource, RsResourceRef *pReference) {
-    pResource->__resAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_vtable->__resAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NvBool resCanCopy_IMPL(struct RsResource *pResource);
@@ -457,8 +466,8 @@ NV_STATUS resMap_IMPL(struct RsResource *pResource, struct CALL_CONTEXT *pCallCo
 
 NV_STATUS resUnmap_IMPL(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);
 
-static inline NvBool resIsPartialUnmapSupported_bf6dfa(struct RsResource *pResource) {
-    return ((NvBool)(0 != 0));
+static inline NvBool resIsPartialUnmapSupported_d69453(struct RsResource *pResource) {
+    return NV_FALSE;
 }
 
 NV_STATUS resMapTo_IMPL(struct RsResource *pResource, RS_RES_MAP_TO_PARAMS *pParams);

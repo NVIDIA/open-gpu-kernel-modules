@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2026-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2026-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,9 +28,11 @@
 #include "core/locks.h"
 #include "gpu/gpu.h"
 #include "gpu/subdevice/subdevice.h"
+#include "gpu/gpu_fabric_probe.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "kernel/gpu/mem_sys/kern_mem_sys.h"
+#include "kernel/gpu_mgr/gpu_mgr.h"
 #include "vgpu/rpc.h"
 #include "nvRmReg.h"
 
@@ -195,7 +197,7 @@ subdeviceCtrlCmdNvlinkSetNvlinkPeer_IMPL
     OBJGPU       *pGpu          = GPU_RES_GET_GPU(pSubdevice);
     KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
     NV_STATUS     status        = NV_OK;
-    NV2080_CTRL_NVLINK_ENABLE_NVLINK_PEER_PARAMS enableNvlinkPeerParams;
+    NV2080_CTRL_INTERNAL_NVLINK_ENABLE_NVLINK_PEER_PARAMS enableNvlinkPeerParams;
 
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     NvBool bMIGNvLinkP2PSupported = ((pKernelMIGManager != NULL) &&
@@ -221,7 +223,7 @@ subdeviceCtrlCmdNvlinkSetNvlinkPeer_IMPL
 
     // Update the RM cache to reflect the updated status of USE_NVLINK_PEER
     status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
-                                 NV2080_CTRL_CMD_NVLINK_ENABLE_NVLINK_PEER,
+                                 NV2080_CTRL_CMD_INTERNAL_NVLINK_ENABLE_NVLINK_PEER,
                                  (void *)&enableNvlinkPeerParams,
                                  sizeof(enableNvlinkPeerParams));
     if (status != NV_OK)
@@ -259,3 +261,106 @@ subdeviceCtrlCmdNvlinkGetSupportedCounters_IMPL
     return knvlinkGetSupportedCounters_HAL(pGpu, pKernelNvlink, pParams);
 }
 
+//
+// subdeviceCtrlCmdNvlinkGetSupportedBWMode_IMPL
+//    Query the supported RBM modes from probe repsonse
+//
+NV_STATUS
+subdeviceCtrlCmdNvlinkGetSupportedBWMode_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_NVLINK_GET_SUPPORTED_BW_MODE_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    NvBool bMIGNvLinkP2PSupported = ((pKernelMIGManager != NULL) &&
+                                     kmigmgrIsMIGNvlinkP2PSupported(pGpu, pKernelMIGManager));
+
+    if ((pKernelNvlink == NULL) || !bMIGNvLinkP2PSupported)
+    {
+        NV_PRINTF(LEVEL_ERROR, "NVLink unavailable. Return\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    // Direct-connect system
+    if (pGpu->fabricProbeRetryDelay == 0)
+    {
+        //TODO: handle direct connect systems
+        NV_PRINTF(LEVEL_ERROR, "RBM not currently implemented on direct connect systems.\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    return knvlinkGetSupportedBwMode_HAL(pGpu, pKernelNvlink, pParams);
+}
+
+//
+// subdeviceCtrlCmdNvlinkSetBWMode_IMPL
+//    Set RBM mode on GPU
+//
+NV_STATUS
+subdeviceCtrlCmdNvlinkSetBWMode_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_NVLINK_SET_BW_MODE_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    NvBool bMIGNvLinkP2PSupported = ((pKernelMIGManager != NULL) &&
+                                     kmigmgrIsMIGNvlinkP2PSupported(pGpu, pKernelMIGManager));
+
+    if ((pKernelNvlink == NULL) || !bMIGNvLinkP2PSupported)
+    {
+        NV_PRINTF(LEVEL_INFO, "NVLink unavailable. Return\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    // Direct-connect system
+    if (pGpu->fabricProbeRetryDelay == 0)
+    {
+        //TODO: handle direct connect systems
+        NV_PRINTF(LEVEL_ERROR, "RBM not currently implemented on direct connect systems.\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    // Check if requested BW mode is supported
+    if (!knvlinkIsBwModeSupported_HAL(pGpu, pKernelNvlink, pParams->rbmMode))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Requested RBM mode is not supported by GPU.\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    // Set requested bw mode for GPU
+    return gpumgrSetGpuNvlinkBwModePerGpu(pGpu, pParams->rbmMode);
+}
+
+//
+// subdeviceCtrlCmdNvlinkGetBWMode_IMPL
+//    Get RBM mode link count of GPU
+//
+NV_STATUS
+subdeviceCtrlCmdNvlinkGetBWMode_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_NVLINK_GET_BW_MODE_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+    NvU8 bwModeScope;
+
+    bwModeScope = gpumgrGetGpuNvlinkBwModeScope();
+    if (bwModeScope == GPU_NVLINK_BW_MODE_SCOPE_PER_NODE)
+    {
+        pParams->rbmMode = gpumgrGetGpuNvlinkBwMode();
+    }
+    else
+    {
+        pParams->rbmMode = pKernelNvlink->nvlinkBwMode;
+    }
+
+    return NV_OK;
+}

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -54,7 +54,7 @@ subdeviceCtrlCmdTimerCancel_IMPL
     OBJGPU *pGpu;
     OBJTMR *pTmr;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (pSubdevice == NULL)
     {
@@ -214,11 +214,12 @@ subdeviceCtrlCmdTimerSchedule_IMPL
 
     if (pRmCtrlParams->flags & NVOS54_FLAGS_IRQL_RAISED)
     {
-        LOCK_ASSERT_AND_RETURN(rmDeviceGpuLockIsOwner(GPU_RES_GET_GPU(pSubdevice)->gpuInstance));
+        NV_ASSERT_OR_RETURN(rmDeviceGpuLockIsOwner(GPU_RES_GET_GPU(pSubdevice)->gpuInstance),
+            NV_ERR_INVALID_LOCK_STATE);
     }
     else
     {
-        LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+        NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
     }
 
     return timerSchedule(pSubdevice, pParams);
@@ -254,7 +255,8 @@ subdeviceCtrlCmdTimerGetTime_IMPL
     }
     else
     {
-        LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+        NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance),
+            NV_ERR_INVALID_LOCK_STATE);
     }
 
     tmrGetCurrentTime(pTmr, &pParams->time_nsec);
@@ -278,7 +280,7 @@ subdeviceCtrlCmdTimerGetRegisterOffset_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     return gpuGetRegBaseOffset_HAL(pGpu, NV_REG_BASE_TIMER, &pTimerRegOffsetParams->tmr_offset);
 }
@@ -306,7 +308,7 @@ subdeviceCtrlCmdTimerGetGpuCpuTimeCorrelationInfo_IMPL
     NvU8 i;
     NvU32 sec, usec;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     NV_CHECK_OR_RETURN(LEVEL_SILENT,
         (pParams->sampleCount <= NV2080_CTRL_TIMER_GPU_CPU_TIME_MAX_SAMPLES),
@@ -491,7 +493,7 @@ subdeviceCtrlCmdTimerSetGrTickFreq_IMPL
     OBJREFCNT *pRefcnt;
     NvHandle hSubDevice;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (pSubdevice == NULL || pTmr == NULL)
     {

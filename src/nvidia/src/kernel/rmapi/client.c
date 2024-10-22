@@ -70,8 +70,9 @@ rmclientConstruct_IMPL
     // Bug 4193761 - allow internal clients to be created with the GPU lock,
     // GR-2409 will remove the possible race condition with the client list.
     //
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsWriteOwner() ||
-        (serverIsClientInternal(&g_resServ, pRsClient->hClient) && rmGpuLockIsOwner()));
+    NV_ASSERT_OR_RETURN(rmapiLockIsWriteOwner() ||
+        (serverIsClientInternal(&g_resServ, pRsClient->hClient) && rmGpuLockIsOwner()),
+        NV_ERR_INVALID_LOCK_STATE);
 
     if (RMCFG_FEATURE_PLATFORM_GSP)
     {
@@ -943,25 +944,6 @@ NvBool rmclientIsCapable_IMPL
     NvHandle  hClient = pRsClient->hClient;
 
     return _rmclientIsCapable(hClient, capability);
-}
-
-//
-// RS-TODO: Delete this function once the RM Capabilities framework is in place.
-// JIRA GR-139
-//
-NvBool rmclientIsCapableByHandle
-(
-    NvHandle hClient,
-    NvU32 capability
-)
-{
-    RmClient *pClient = serverutilGetClientUnderLock(hClient);
-    if (pClient == NULL)
-    {
-        return NV_FALSE;
-    }
-
-    return rmclientIsCapable(pClient, capability);
 }
 
 /**

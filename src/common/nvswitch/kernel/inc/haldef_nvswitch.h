@@ -296,6 +296,8 @@
     _op(NvlStatus, nvswitch_tnvl_get_attestation_report, (nvswitch_device *device, NVSWITCH_GET_ATTESTATION_REPORT_PARAMS *params), _arch) \
     _op(NvlStatus, nvswitch_tnvl_send_fsp_lock_config, (nvswitch_device *device), _arch) \
     _op(NvlStatus, nvswitch_tnvl_get_status, (nvswitch_device *device, NVSWITCH_GET_TNVL_STATUS_PARAMS *params), _arch) \
+    _op(NvlStatus, nvswitch_send_tnvl_prelock_cmd, (nvswitch_device *device), _arch) \
+    _op(void,      nvswitch_tnvl_disable_interrupts, (nvswitch_device *device), _arch) \
     NVSWITCH_HAL_FUNCTION_LIST_FEATURE_0(_op, _arch) \
 
 #define NVSWITCH_HAL_FUNCTION_LIST_LS10(_op, _arch) \

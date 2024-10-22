@@ -37,6 +37,7 @@
 #include "gpu/gpu.h"
 #include "rmapi/rmapi_specific.h"
 #include "rmapi/rmapi_utils.h"
+#include "kernel/gpu/gsp/gsp_trace_rats_macro.h"
 
 #include "ctrl/ctrl0000/ctrl0000gpuacct.h" // NV0000_CTRL_CMD_GPUACCT_*
 #include "ctrl/ctrl2080/ctrl2080tmr.h" // NV2080_CTRL_CMD_TIMER_SCHEDULE
@@ -656,24 +657,6 @@ serverControl_ValidateVgpu
         if (privLevel >= RS_PRIV_LEVEL_USER_ROOT)
         {
             bPermissionGranted = NV_TRUE;
-        }
-    }
-
-    //
-    // If context is not privileged enough, check whether this
-    // control call is allowed in current hypervisor environment
-    //
-    if (!bPermissionGranted)
-    {
-        {
-            // For non-NV0000, identify current hypervisor environment and check for allow flag
-            if
-            (
-                (IS_SRIOV_WITH_VGPU_GSP_ENABLED(pGpu) && (cookieFlags & RMCTRL_FLAGS_CPU_PLUGIN_FOR_VGPU_GSP))
-            )
-            {
-                bPermissionGranted = NV_TRUE;
-            }
         }
     }
 

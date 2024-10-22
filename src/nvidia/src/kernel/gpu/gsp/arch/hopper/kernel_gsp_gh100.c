@@ -395,9 +395,9 @@ static GSP_DMA_TARGET _kgspMemdescToDmaTarget
 NV_STATUS
 kgspSetupGspFmcArgs_GH100
 (
-    OBJGPU       *pGpu,
-    KernelGsp    *pKernelGsp,
-    GSP_FIRMWARE *pGspFw
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp,
+    KernelGspBootMode bootMode
 )
 {
     NV_ASSERT_OR_RETURN(IS_GSP_CLIENT(pGpu), NV_ERR_NOT_SUPPORTED);
@@ -417,9 +417,19 @@ kgspSetupGspFmcArgs_GH100
         pGspFmcBootParams->initParams.regkeys |= pKernelNvlink->gspProxyRegkeys;
     }
 
-    pGspFmcBootParams->bootGspRmParams.gspRmDescOffset = memdescGetPhysAddr(pKernelGsp->pWprMetaDescriptor, AT_GPU, 0);
-    pGspFmcBootParams->bootGspRmParams.gspRmDescSize = sizeof(*pKernelGsp->pWprMeta);
-    pGspFmcBootParams->bootGspRmParams.target = _kgspMemdescToDmaTarget(pKernelGsp->pWprMetaDescriptor);
+    if (bootMode == KGSP_BOOT_MODE_SR_RESUME)
+    {
+        pGspFmcBootParams->bootGspRmParams.gspRmDescOffset = memdescGetPhysAddr(pKernelGsp->pSRMetaDescriptor, AT_GPU, 0);
+        pGspFmcBootParams->bootGspRmParams.gspRmDescSize = sizeof(GspFwSRMeta);
+        pGspFmcBootParams->bootGspRmParams.target = _kgspMemdescToDmaTarget(pKernelGsp->pSRMetaDescriptor);
+    }
+    else
+    {
+        pGspFmcBootParams->bootGspRmParams.gspRmDescOffset = memdescGetPhysAddr(pKernelGsp->pWprMetaDescriptor, AT_GPU, 0);
+        pGspFmcBootParams->bootGspRmParams.gspRmDescSize = sizeof(*pKernelGsp->pWprMeta);
+        pGspFmcBootParams->bootGspRmParams.target = _kgspMemdescToDmaTarget(pKernelGsp->pWprMetaDescriptor);
+    }
+
     pGspFmcBootParams->bootGspRmParams.bIsGspRmBoot = NV_TRUE;
 
     pGspFmcBootParams->gspRmParams.bootArgsOffset = memdescGetPhysAddr(pKernelGsp->pLibosInitArgumentsDescriptor, AT_GPU, 0);
@@ -716,7 +726,7 @@ _kgspBootstrapGspFmc_GH100
  *
  * @param[in]   pGpu            GPU object pointer
  * @param[in]   pKernelGsp      GSP object pointer
- * @param[in]   pGspFw          GSP_FIRMWARE image pointer
+ * @param[in]   bootMode        GSP boot mode
  *
  * @return NV_OK if GSP-RM RISCV preparation to boot was successful.
  *         Appropriate NV_ERR_xxx value otherwise.
@@ -724,9 +734,9 @@ _kgspBootstrapGspFmc_GH100
 NV_STATUS
 kgspPrepareForBootstrap_GH100
 (
-    OBJGPU         *pGpu,
-    KernelGsp      *pKernelGsp,
-    GSP_FIRMWARE   *pGspFw
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp,
+    KernelGspBootMode bootMode
 )
 {
     KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
@@ -740,7 +750,7 @@ kgspPrepareForBootstrap_GH100
 
     // Setup the descriptors that GSP-FMC needs to boot GSP-RM
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-            kgspSetupGspFmcArgs_HAL(pGpu, pKernelGsp, pGspFw));
+            kgspSetupGspFmcArgs_HAL(pGpu, pKernelGsp, bootMode));
 
     if (pKernelFsp != NULL && !pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_DISABLE_GSPFMC))
     {
@@ -776,7 +786,7 @@ kgspBootstrap_GH100
 (
     OBJGPU         *pGpu,
     KernelGsp      *pKernelGsp,
-    GSP_FIRMWARE   *pGspFw
+    KernelGspBootMode bootMode
 )
 {
     KernelFalcon *pKernelFalcon = staticCast(pKernelGsp, KernelFalcon);
@@ -873,14 +883,39 @@ kgspBootstrap_GH100
 
     NV_PRINTF(LEVEL_INFO, "Waiting for GSP fw RM to be ready...\n");
 
-    // Link the status queue.
-    NV_ASSERT_OK_OR_RETURN(GspStatusQueueInit(pGpu, &pKernelGsp->pRpc->pMessageQueueInfo));
+    //
+    // For normal boot, link the status queue.
+    // Note: for resume or GC6 exit, GSP-RM will restore queue state.
+    //
+    if (bootMode == KGSP_BOOT_MODE_NORMAL)
+    {
+        NV_ASSERT_OK_OR_RETURN(GspStatusQueueInit(pGpu, &pKernelGsp->pRpc->pMessageQueueInfo));
+    }
 
     NV_ASSERT_OK_OR_RETURN(kgspWaitForRmInitDone(pGpu, pKernelGsp));
 
     NV_PRINTF(LEVEL_INFO, "GSP FW RM ready.\n");
 
     return status;
+}
+
+/*!
+ * Teardown remaining GSP state after GSP-RM unloads.
+ *
+ * @param[in]   pGpu            GPU object pointer
+ * @param[in]   pKernelGsp      GSP object pointer
+ * @param[in]   unloadMode      GSP unload mode
+ */
+NV_STATUS
+kgspTeardown_GH100
+(
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp,
+    KernelGspUnloadMode unloadMode
+)
+{
+    // Wait for GSP to halt to allow ACR and GSP FMC to finish shutdown
+    return kflcnWaitForHaltRiscv_HAL(pGpu, staticCast(pKernelGsp, KernelFalcon), GPU_TIMEOUT_DEFAULT, 0);
 }
 
 void

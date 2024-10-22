@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -96,15 +96,23 @@ typedef struct {
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__IntrService;
+
+
 struct IntrService {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__IntrService *__nvoc_vtable;
 
     // Ancestor object pointers for `staticCast` feature
     struct IntrService *__nvoc_pbase_IntrService;    // intrserv
+};
 
-    // Vtable with 4 per-object function pointers
+
+// Metadata including vtable with 4 function pointers
+struct NVOC_VTABLE__IntrService {
     void (*__intrservRegisterIntrService__)(struct OBJGPU *, struct IntrService * /*this*/, IntrServiceRecord *);  // virtual
     NvBool (*__intrservClearInterrupt__)(struct OBJGPU *, struct IntrService * /*this*/, IntrServiceClearInterruptArguments *);  // virtual
     NvU32 (*__intrservServiceInterrupt__)(struct OBJGPU *, struct IntrService * /*this*/, IntrServiceServiceInterruptArguments *);  // virtual
@@ -141,30 +149,30 @@ NV_STATUS __nvoc_objCreate_IntrService(IntrService**, Dynamic*, NvU32);
 
 
 // Wrapper macros
-#define intrservRegisterIntrService_FNPTR(pIntrService) pIntrService->__intrservRegisterIntrService__
+#define intrservRegisterIntrService_FNPTR(pIntrService) pIntrService->__nvoc_vtable->__intrservRegisterIntrService__
 #define intrservRegisterIntrService(pGpu, pIntrService, pRecords) intrservRegisterIntrService_DISPATCH(pGpu, pIntrService, pRecords)
-#define intrservClearInterrupt_FNPTR(pIntrService) pIntrService->__intrservClearInterrupt__
+#define intrservClearInterrupt_FNPTR(pIntrService) pIntrService->__nvoc_vtable->__intrservClearInterrupt__
 #define intrservClearInterrupt(pGpu, pIntrService, pParams) intrservClearInterrupt_DISPATCH(pGpu, pIntrService, pParams)
-#define intrservServiceInterrupt_FNPTR(pIntrService) pIntrService->__intrservServiceInterrupt__
+#define intrservServiceInterrupt_FNPTR(pIntrService) pIntrService->__nvoc_vtable->__intrservServiceInterrupt__
 #define intrservServiceInterrupt(pGpu, pIntrService, pParams) intrservServiceInterrupt_DISPATCH(pGpu, pIntrService, pParams)
-#define intrservServiceNotificationInterrupt_FNPTR(pIntrService) pIntrService->__intrservServiceNotificationInterrupt__
+#define intrservServiceNotificationInterrupt_FNPTR(pIntrService) pIntrService->__nvoc_vtable->__intrservServiceNotificationInterrupt__
 #define intrservServiceNotificationInterrupt(pGpu, pIntrService, pParams) intrservServiceNotificationInterrupt_DISPATCH(pGpu, pIntrService, pParams)
 
 // Dispatch functions
 static inline void intrservRegisterIntrService_DISPATCH(struct OBJGPU *pGpu, struct IntrService *pIntrService, IntrServiceRecord pRecords[175]) {
-    pIntrService->__intrservRegisterIntrService__(pGpu, pIntrService, pRecords);
+    pIntrService->__nvoc_vtable->__intrservRegisterIntrService__(pGpu, pIntrService, pRecords);
 }
 
 static inline NvBool intrservClearInterrupt_DISPATCH(struct OBJGPU *pGpu, struct IntrService *pIntrService, IntrServiceClearInterruptArguments *pParams) {
-    return pIntrService->__intrservClearInterrupt__(pGpu, pIntrService, pParams);
+    return pIntrService->__nvoc_vtable->__intrservClearInterrupt__(pGpu, pIntrService, pParams);
 }
 
 static inline NvU32 intrservServiceInterrupt_DISPATCH(struct OBJGPU *pGpu, struct IntrService *pIntrService, IntrServiceServiceInterruptArguments *pParams) {
-    return pIntrService->__intrservServiceInterrupt__(pGpu, pIntrService, pParams);
+    return pIntrService->__nvoc_vtable->__intrservServiceInterrupt__(pGpu, pIntrService, pParams);
 }
 
 static inline NV_STATUS intrservServiceNotificationInterrupt_DISPATCH(struct OBJGPU *pGpu, struct IntrService *pIntrService, IntrServiceServiceNotificationInterruptArguments *pParams) {
-    return pIntrService->__intrservServiceNotificationInterrupt__(pGpu, pIntrService, pParams);
+    return pIntrService->__nvoc_vtable->__intrservServiceNotificationInterrupt__(pGpu, pIntrService, pParams);
 }
 
 void intrservRegisterIntrService_IMPL(struct OBJGPU *pGpu, struct IntrService *pIntrService, IntrServiceRecord pRecords[175]);

@@ -57,6 +57,10 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_RsShared =
     /*pExportInfo=*/        &__nvoc_export_info_RsShared
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+
+// Up-thunk(s) to bridge methods to ancestors (if any)
+
 const struct NVOC_EXPORT_INFO __nvoc_export_info_RsShared = 
 {
     /*numEntries=*/     0,
@@ -237,6 +241,10 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_RsSession =
     /*pExportInfo=*/        &__nvoc_export_info_RsSession
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+
+// Up-thunk(s) to bridge methods to ancestors (if any)
+
 const struct NVOC_EXPORT_INFO __nvoc_export_info_RsSession = 
 {
     /*numEntries=*/     0,
@@ -276,19 +284,20 @@ __nvoc_ctor_RsSession_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_RsSession_1(RsSession *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // sessionRemoveDependant -- virtual
-    pThis->__sessionRemoveDependant__ = &sessionRemoveDependant_IMPL;
-
-    // sessionRemoveDependency -- virtual
-    pThis->__sessionRemoveDependency__ = &sessionRemoveDependency_IMPL;
-} // End __nvoc_init_funcTable_RsSession_1 with approximately 2 basic block(s).
+} // End __nvoc_init_funcTable_RsSession_1
 
 
 // Initialize vtable(s) for 2 virtual method(s).
 void __nvoc_init_funcTable_RsSession(RsSession *pThis) {
 
-    // Initialize vtable(s) with 2 per-object function pointer(s).
+    // Per-class vtable definition
+    static const struct NVOC_VTABLE__RsSession vtable = {
+        .__sessionRemoveDependant__ = &sessionRemoveDependant_IMPL,    // virtual
+        .__sessionRemoveDependency__ = &sessionRemoveDependency_IMPL,    // virtual
+    };
+
+    // Pointer(s) to per-class vtable(s)
+    pThis->__nvoc_vtable = &vtable;    // (session) this
     __nvoc_init_funcTable_RsSession_1(pThis);
 }
 

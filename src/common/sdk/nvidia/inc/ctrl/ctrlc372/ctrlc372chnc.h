@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2021,2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -154,9 +154,9 @@
  *     means the cursor is disabled.
  *
  *   head.tileMask
- *     This parameter specifies the number of tiles which will be assigned to
- *     the head.  Normally, this parameter is set to zero, allowing IMP to
- *     calculate the number of tiles, but the number of tiles may be specified
+ *     This parameter contains a bitmask specifying which tiles must be
+ *     assigned to the head.  Normally, this parameter is set to zero, allowing
+ *     IMP to calculate the number of tiles, but the tiles may be specified
  *     explicitly for test or debug.  If the mode is not possible with the
  *     specified number of tiles, IMP will report the result as such; the
  *     number of tiles will not be adjusted.
@@ -168,29 +168,32 @@
  *     optionally be used to force the number of DSC slices.
  *
  *   head.bEnableDsc
- *     bEnableDsc indicates whether or not DSC is enabled
+ *     bEnableDsc indicates whether or not DSC is enabled, by default.  If it
+ *     is disabled by default, but head.possibleDscSliceCountMask is non-zero,
+ *     IMP may still present tiling solutions with DSC enabled, but only if the
+ *     mode is not possible otherwise.  (This will be indicated by a non-zero
+ *     tileList.headDscSlices output.)
  *
  *   head.dscTargetBppX16
  *     dscTargetBppX16 is the DSC encoder's target bits per pixel, multiplied
  *     by 16.
  *
  *     This field is required only on systems that support tiling, and only if
- *     head.bEnableDsc is true.
+ *     head.possibleDscSliceCountMask is true.
  *
  *   head.possibleDscSliceCountMask
  *     This is a bit mask indicating how many DSC slices are allowed in a
  *     scanline.  If a bit n is set in the bit mask, it means that one possible
  *     configuration has n+1 DSC slices per scanline.
  *
- *     This field is required only on systems that support tiling, and only if
- *     head.bEnableDsc is true.
+ *     This field is required only on systems that support tiling.
  *
  *   head.maxDscSliceWidth
  *     The maximum allowed DSC slice width is determined by spec restrictions
  *     and monitor capabilities.
  *
  *     This field is required only on systems that support tiling, and only if
- *     head.bEnableDsc is true.
+ *     head.possibleDscSliceCountMask is true.
  *
  *   head.bYUV420Format
  *     This parameter indicates output format is YUV420.
@@ -229,6 +232,12 @@
  *   window.rotatedFormatUsageBound
  *     This parameter is a bitmask of all possible rotated mode data formats
  *     (NVC372_CTRL_FORMAT_xxx values).
+ *
+ *   window.surfaceLayout
+ *     This parameter is the surface layout of the window.  It is one of
+ *     NVC372_CTRL_LAYOUT_xxx values.
+ *     The default value of 0U would imply that SW uses legacy equations
+ *     (pre NVD5.0) in its computation for fetch BW.
  *
  *   window.maxPixelsFetchedPerLine
  *     This parameter defines the maximum number of pixels that may need to be
@@ -517,6 +526,10 @@
  *     assigned to head 0, bringing the tile total to three for that head.  The
  *     number of DSC slices required for that head would be increased to three.
  *
+ *     Note that the tiling assignments do not specify which tiles to use; they
+ *     only specify how many tiles to assign to each head.  The client must
+ *     choose which tiles to assign, based on their capabilities.
+ *
  *   tilingAssignments.numTiles
  *     This is the number of additional tiles required for the indexed tiling
  *     assignment.  The tilingAssignment does not provide any benefit unless
@@ -535,6 +548,10 @@
  *     A single assignment may have multiple tileList.head entries for the same
  *     head (if a single head requires that more than one additional tile be
  *     assigned).
+ *
+ *     tilelist.head indexes heads as they are indexed in the
+ *     NVC372_CTRL_IMP_HEAD array within the IMP input data structure.  (These
+ *     do not necessarily correspond to physical head indexes.)
  *
  *   tileList.headDscSlices
  *     headDscSlices gives the recommended number of DSC slices for each
@@ -637,6 +654,7 @@ typedef struct NVC372_CTRL_IMP_WINDOW {
     NvBool bOverfetchEnabled;
     NvU8   lut;
     NvU8   tmoLut;
+    NvU8   surfaceLayout;
 } NVC372_CTRL_IMP_WINDOW;
 typedef struct NVC372_CTRL_IMP_WINDOW *PNVC372_CTRL_IMP_WINDOW;
 
@@ -721,6 +739,11 @@ typedef struct NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS *PNVC372_CTRL_IS_MODE_POSSIBL
 #define NVC372_CTRL_FORMAT_EXT_YUV_SEMI_PLANAR_422                    (0x00004000)
 #define NVC372_CTRL_FORMAT_EXT_YUV_SEMI_PLANAR_422R                   (0x00008000)
 #define NVC372_CTRL_FORMAT_EXT_YUV_SEMI_PLANAR_444                    (0x00010000)
+
+/* valid layout values */
+#define NVC372_CTRL_LAYOUT_PITCH_BLOCKLINEAR                          0
+#define NVC372_CTRL_LAYOUT_PITCH                                      1
+#define NVC372_CTRL_LAYOUT_BLOCKLINEAR                                2
 
 /* valid impResult values */
 #define NVC372_CTRL_IMP_MODE_POSSIBLE                                 0

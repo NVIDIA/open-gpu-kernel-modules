@@ -78,13 +78,14 @@ _vgpuRcResetCallback
                               sizeof params,
                               status);
 
+            rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
+
             threadStateFreeISRAndDeferredIntHandler(
                 &threadState,
                 pRcErrorContext->pGpu,
                 THREAD_STATE_FLAGS_IS_DEFERRED_INT_HANDLER);
 
             portMemFree(pRcErrorContext);
-            rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
         }
         else
         {
@@ -182,13 +183,14 @@ krcResetCallback
                         sizeof params);
                 }
 
+                rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
+
                 threadStateFreeISRAndDeferredIntHandler(
                     &threadState,
                     pRcErrorContext->pGpu,
                     THREAD_STATE_FLAGS_IS_DEFERRED_INT_HANDLER);
 
                 portMemFree(pRcErrorContext);
-                rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
             }
             else
             {

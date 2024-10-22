@@ -788,6 +788,12 @@ sysInitRegistryOverrides_IMPL
         pSys->setProperty(pSys, PDB_PROP_SYS_ENABLE_RM_TEST_ONLY_CODE, !!data32);
     }
 
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_ENABLE_FORCE_SHARED_LOCK, &data32)
+            == NV_OK)
+    {
+        pSys->setProperty(pSys, PDB_PROP_SYS_ENABLE_FORCE_SHARED_LOCK, !!data32);
+    }
+
     gpumgrSetGpuNvlinkBwModeFromRegistry(pGpu);
 }
 
@@ -818,3 +824,48 @@ sysSyncExternalFabricMgmtWAR_IMPL
 
     return status;
 }
+
+static void
+_sysRefreshAllGpuRecoveryAction
+(
+    void      *pData
+)
+{
+    NV_STATUS  status;
+    OBJGPU    *pGpu;
+    NvU32      i;
+    NvU32      gpuCount;
+    NvU32      gpuIndex;
+    NvU32      gpuMask;
+
+    NV_ASSERT_OK_OR_ELSE(status,
+        rmGpuGroupLockAcquire(0, GPU_LOCK_GRP_ALL, GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_NONE, &gpuMask),
+        return);
+
+    gpumgrGetGpuAttachInfo(&gpuCount, &gpuMask);
+    for (i = 0, gpuIndex = 0; i < gpuCount; i++)
+    {
+        pGpu = gpumgrGetNextGpu(gpuMask, &gpuIndex);
+        if (pGpu)
+        {
+            gpuRefreshRecoveryAction(pGpu, NV_TRUE);
+        }
+    }
+
+    rmGpuGroupLockRelease(gpuMask, GPUS_LOCK_FLAGS_NONE);
+}
+
+void
+sysSetRecoveryRebootRequired_IMPL
+(
+    OBJSYS  *pSys,
+    NvBool   bRebootRequired
+)
+{
+    if (!!pSys->getProperty(pSys, PDB_PROP_SYS_RECOVERY_REBOOT_REQUIRED) != !!bRebootRequired)
+    {
+        pSys->setProperty(pSys, PDB_PROP_SYS_RECOVERY_REBOOT_REQUIRED, bRebootRequired);
+        osQueueSystemWorkItem(_sysRefreshAllGpuRecoveryAction, NULL);
+    }
+}
+

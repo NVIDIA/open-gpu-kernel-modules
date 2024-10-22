@@ -44,6 +44,7 @@ typedef struct
     bool                            touch : 1;
     bool                            skip_mapped : 1;
     bool                            populate_on_cpu_alloc_failures : 1;
+    bool                            populate_on_migrate_vma_failures : 1;
     NvU64                           *user_space_start;
     NvU64                           *user_space_length;
 } uvm_migrate_args_t;

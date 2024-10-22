@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include "nvkms-api-types.h"
 #include "nvkms-types.h"
 
 #include "nvkms-evo-states.h"
@@ -48,6 +49,7 @@
 #include "nvkms-difr.h"
 #include "nvkms-vrr.h"
 #include "nvkms-ioctl.h"
+#include "nvkms-setlut-workarea.h"
 
 #include "nvctassert.h"
 
@@ -238,6 +240,14 @@ static NvBool HasActiveHeads(NVDispEvoPtr pDispEvo)
     return nvGetActiveHeadMask(pDispEvo) != 0;
 }
 
+static void EvoSetLUTContextDmaHelper(const NVDispEvoRec *pDispEvo,
+                                      const NvU32 head,
+                                      NVSurfaceEvoPtr pLutSurfEvo,
+                                      NvBool enableBaseLut,
+                                      NvBool enableOutputLut,
+                                      NVEvoUpdateState *pUpdateState,
+                                      NvBool bypassComposition);
+
 static void BlankHeadEvo(NVDispEvoPtr pDispEvo, const NvU32 head,
                          NVEvoUpdateState *updateState)
 {
@@ -252,13 +262,13 @@ static void BlankHeadEvo(NVDispEvoPtr pDispEvo, const NvU32 head,
      * Lut explicitly.
      */
     if (!pDevEvo->hal->caps.supportsCoreChannelSurface) {
-        pDevEvo->hal->SetLUTContextDma(pDispEvo,
-                                       head,
-                                       NULL /* pSurfEvo */,
-                                       FALSE /* baseLutEnabled */,
-                                       FALSE /* outputLutEnabled */,
-                                       updateState,
-                                       pHeadState->bypassComposition);
+        EvoSetLUTContextDmaHelper(pDispEvo,
+                                  head,
+                                  NULL /* pLutSurfEvo */,
+                                  FALSE /* baseLutEnabled */,
+                                  FALSE /* outputLutEnabled */,
+                                  updateState,
+                                  pHeadState->bypassComposition);
     }
 
     nvPushEvoSubDevMaskDisp(pDispEvo);
@@ -965,7 +975,7 @@ void nvEvoSetTimings(NVDispEvoPtr pDispEvo,
                                       NV_YUV420_MODE_SW));
 
     pDevEvo->hal->SetRasterParams(pDevEvo, head,
-                                  pTimings, pHeadState->tilePosition,
+                                  pTimings, pHeadState->mergeHeadSection,
                                   pDscInfo, &overscanColor, updateState);
 
     // Set the head parameters
@@ -2724,27 +2734,38 @@ void nvEnableMidFrameAndDWCFWatermark(NVDevEvoPtr pDevEvo,
                                                  pUpdateState);
 }
 
+static enum NvKmsDpyAttributeColorBpcValue GetMinRequiredBpc(
+    enum NvKmsOutputColorimetry colorimetry)
+{
+    // 10 BPC required for HDR
+    // XXX HDR TODO: Handle other colorimetries
+    return (colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100) ?
+               NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10 :
+               NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6;
+}
+
 static NvBool GetDefaultColorSpace(
     const NvKmsDpyOutputColorFormatInfo *pColorFormatsInfo,
     enum NvKmsDpyAttributeCurrentColorSpaceValue *pColorSpace,
-    enum NvKmsDpyAttributeColorBpcValue *pColorBpc)
+    enum NvKmsDpyAttributeColorBpcValue *pColorBpc,
+    const enum NvKmsDpyAttributeColorBpcValue minRequiredBpc)
 {
-    if (pColorFormatsInfo->rgb444.maxBpc !=
-            NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN) {
+    nvAssert(minRequiredBpc !=
+             NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN);
+
+    if (pColorFormatsInfo->rgb444.maxBpc >= minRequiredBpc) {
         *pColorSpace = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB;
         *pColorBpc = pColorFormatsInfo->rgb444.maxBpc;
         return TRUE;
     }
 
-    if (pColorFormatsInfo->yuv444.maxBpc !=
-            NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN) {
+    if (pColorFormatsInfo->yuv444.maxBpc >= minRequiredBpc) {
         *pColorSpace = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr444;
         *pColorBpc = pColorFormatsInfo->yuv444.maxBpc;
         return TRUE;
     }
 
-    if (pColorFormatsInfo->yuv422.maxBpc !=
-            NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN) {
+    if (pColorFormatsInfo->yuv422.maxBpc >= minRequiredBpc) {
         *pColorSpace = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr422;
         *pColorBpc = pColorFormatsInfo->yuv422.maxBpc;
         return TRUE;
@@ -2759,8 +2780,10 @@ NvBool nvGetDefaultDpyColor(
 {
     nvkms_memset(pDpyColor, 0, sizeof(*pDpyColor));
 
-    if (!GetDefaultColorSpace(pColorFormatsInfo, &pDpyColor->format,
-                              &pDpyColor->bpc)) {
+    if (!GetDefaultColorSpace(pColorFormatsInfo,
+                              &pDpyColor->format,
+                              &pDpyColor->bpc,
+                              GetMinRequiredBpc(pDpyColor->colorimetry))) {
         return FALSE;
     }
 
@@ -2776,7 +2799,6 @@ NvBool nvGetDefaultDpyColor(
 }
 
 NvBool nvChooseColorRangeEvo(
-    enum NvKmsOutputColorimetry colorimetry,
     const enum NvKmsDpyAttributeColorRangeValue requestedColorRange,
     const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
     const enum NvKmsDpyAttributeColorBpcValue colorBpc,
@@ -2789,16 +2811,11 @@ NvBool nvChooseColorRangeEvo(
     if ((colorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB) &&
             (colorBpc == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6)) {
         /* At depth 18 only RGB and full range are allowed */
-        if (colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100) {
-            /* BT2100 requires limited color range */
-            return FALSE;
-        }
         *pColorRange = NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_FULL;
     } else if ((colorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr444) ||
                (colorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr422) ||
-               (colorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420) ||
-               (colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100)) {
-        /* Both YUV and BT2100 colorimetry require limited color range. */
+               (colorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420)) {
+        /* YUV requires limited color range. */
         *pColorRange = NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_LIMITED;
     } else {
         *pColorRange = requestedColorRange;
@@ -2855,22 +2872,16 @@ NvBool nvChooseCurrentColorSpaceAndRangeEvo(
         NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_FULL;
     const NvKmsDpyOutputColorFormatInfo colorFormatsInfo =
         nvDpyGetOutputColorFormatInfo(pDpyEvo);
+    const enum NvKmsDpyAttributeColorBpcValue minRequiredBpc =
+        GetMinRequiredBpc(colorimetry);
 
-    // XXX HDR TODO: Handle other colorimetries
-    // XXX HDR TODO: Handle YUV
-    if (colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100) {
-        /*
-         * If the head currently has BT2100 colorimetry, we override the
-         * requested color space with RGB.  We cannot support yuv420Mode in
-         * that configuration, so fail in that case.
-         */
-        if (yuv420Mode != NV_YUV420_MODE_NONE) {
+    if (yuv420Mode != NV_YUV420_MODE_NONE) {
+        // XXX HDR TODO: Support YUV420 + HDR
+        // XXX HDR TODO: Handle other colorimetries
+        if (colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100) {
             return FALSE;
         }
 
-        newColorSpace = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB;
-        newColorBpc = colorFormatsInfo.rgb444.maxBpc;
-    } else if (yuv420Mode != NV_YUV420_MODE_NONE) {
         /*
          * If the current mode timing requires YUV420 compression, we override the
          * requested color space with YUV420.
@@ -2880,6 +2891,12 @@ NvBool nvChooseCurrentColorSpaceAndRangeEvo(
 
         nvAssert(colorFormatsInfo.rgb444.maxBpc >=
                     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8);
+    } else if ((colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100) &&
+               !pDpyEvo->pDispEvo->pDevEvo->caps.supportsYUV2020) {
+        newColorSpace = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB;
+        newColorBpc = ChooseColorBpc(requestedColorBpc,
+                                     colorFormatsInfo.rgb444.maxBpc,
+                                     colorFormatsInfo.rgb444.minBpc);
     } else {
         /*
          * Note this is an assignment between different enum types. Checking the
@@ -2909,23 +2926,18 @@ NvBool nvChooseCurrentColorSpaceAndRangeEvo(
             nvAssert(!"Invalid Requested ColorSpace");
         }
 
-        if ((newColorBpc ==
-                NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_UNKNOWN) &&
+        if ((newColorBpc < minRequiredBpc) &&
             !GetDefaultColorSpace(&colorFormatsInfo, &newColorSpace,
-                                  &newColorBpc)) {
+                                  &newColorBpc, minRequiredBpc)) {
             return FALSE;
         }
     }
 
-    // 10 BPC required for HDR
-    // XXX HDR TODO: Handle other colorimetries
-    // XXX HDR TODO: Handle YUV
-    if ((colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100) &&
-        (newColorBpc < NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10)) {
+    if (newColorBpc < minRequiredBpc) {
         return FALSE;
     }
 
-    if (!nvChooseColorRangeEvo(colorimetry, requestedColorRange, newColorSpace,
+    if (!nvChooseColorRangeEvo(requestedColorRange, newColorSpace,
                                newColorBpc, &newColorRange)) {
     }
 
@@ -2948,18 +2960,12 @@ void nvUpdateCurrentHardwareColorSpaceAndRangeEvo(
 
     nvAssert(pConnectorEvo != NULL);
 
-    // XXX HDR TODO: Support more output colorimetries
-    if (pDpyColor->colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100) {
-        nvAssert(pHeadState->timings.yuv420Mode == NV_YUV420_MODE_NONE);
-        nvAssert(pDpyColor->format == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB);
-        nvAssert(pDpyColor->range == NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_LIMITED);
-
-        pHeadState->procAmp.colorimetry =  NVT_COLORIMETRY_BT2020RGB;
-        pHeadState->procAmp.colorRange = NVT_COLOR_RANGE_LIMITED;
-        pHeadState->procAmp.colorFormat = NVT_COLOR_FORMAT_RGB;
-    } else if ((pHeadState->timings.yuv420Mode == NV_YUV420_MODE_SW) &&
+    if ((pHeadState->timings.yuv420Mode == NV_YUV420_MODE_SW) &&
                (pDpyColor->format ==
                 NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420)) {
+        // XXX HDR TODO: Support SW YUV420 + HDR Output
+        nvAssert(pDpyColor->colorimetry != NVKMS_OUTPUT_COLORIMETRY_BT2100);
+
         /*
          * In SW YUV420 mode, HW is programmed with RGB color space and full
          * color range.  The color space conversion and color range compression
@@ -2997,12 +3003,18 @@ void nvUpdateCurrentHardwareColorSpaceAndRangeEvo(
             // program HW with RGB/YCbCr
             switch (pDpyColor->format) {
             case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB:
-                pHeadState->procAmp.colorimetry = NVT_COLORIMETRY_RGB;
+                if (pDpyColor->colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100) {
+                    pHeadState->procAmp.colorimetry = NVT_COLORIMETRY_BT2020RGB;
+                } else {
+                    pHeadState->procAmp.colorimetry = NVT_COLORIMETRY_RGB;
+                }
                 break;
             case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr444:
             case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr422:
             case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420:
-                if (nvEvoIsHDQualityVideoTimings(&pHeadState->timings)) {
+                if (pDpyColor->colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100) {
+                    pHeadState->procAmp.colorimetry = NVT_COLORIMETRY_BT2020YCC;
+                } else if (nvEvoIsHDQualityVideoTimings(&pHeadState->timings)) {
                     pHeadState->procAmp.colorimetry = NVT_COLORIMETRY_YUV_709;
                 } else {
                     pHeadState->procAmp.colorimetry = NVT_COLORIMETRY_YUV_601;
@@ -3018,6 +3030,7 @@ void nvUpdateCurrentHardwareColorSpaceAndRangeEvo(
             // (i.e. the default - RGB)
             nvAssert(pDpyColor->format ==
                         NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB);
+            nvAssert(pDpyColor->colorimetry != NVKMS_OUTPUT_COLORIMETRY_BT2100);
 
             // program HW with RGB only
             pHeadState->procAmp.colorimetry = NVT_COLORIMETRY_RGB;
@@ -3053,9 +3066,9 @@ void nvUpdateCurrentHardwareColorSpaceAndRangeEvo(
         }
     }
 
-    // In YUV colorimetry, only limited color range is allowed.
-    nvAssert(!((pHeadState->procAmp.colorimetry != NVT_COLORIMETRY_RGB) &&
-               (pHeadState->procAmp.colorRange != NVT_COLOR_RANGE_LIMITED)));
+    // Full color range is only allowed with RGB color format.
+    nvAssert((pHeadState->procAmp.colorFormat == NVT_COLOR_FORMAT_RGB) ||
+             (pHeadState->procAmp.colorRange  == NVT_COLOR_RANGE_LIMITED));
 
     // Limited color range is not allowed with 18bpp mode
     nvAssert(!((pHeadState->pixelDepth == NVKMS_PIXEL_DEPTH_18_444) &&
@@ -3071,7 +3084,9 @@ void nvUpdateCurrentHardwareColorSpaceAndRangeEvo(
 }
 
 void nvEvoHeadSetControlOR(NVDispEvoPtr pDispEvo,
-                           const NvU32 head, NVEvoUpdateState *pUpdateState)
+                           const NvU32 head,
+                           const NVDpyAttributeColor *pDpyColor,
+                           NVEvoUpdateState *pUpdateState)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     const NVDispHeadStateEvoPtr pHeadState = &pDispEvo->headState[head];
@@ -3079,16 +3094,19 @@ void nvEvoHeadSetControlOR(NVDispEvoPtr pDispEvo,
     const enum nvKmsPixelDepth pixelDepth = pHeadState->pixelDepth;
     NvBool colorSpaceOverride = FALSE;
 
+    nvAssert(pHeadState->pixelDepth == nvEvoDpyColorToPixelDepth(pDpyColor));
+
     /*
      * Determine whether or not this dpy will need its color space
      * overridden.
      *
-     * This is currently only used for DP 1.3 YUV420 mode, where the
-     * HW's normal support for carrying color space information
+     * This is currently only used for DP 1.3 YUV420 mode or BT2100 colorimetry,
+     * where the HW's normal support for carrying color space information
      * together with the frame is insufficient.
      */
-    if ((pTimings->yuv420Mode == NV_YUV420_MODE_SW) &&
-        nvConnectorUsesDPLib(pHeadState->pConnectorEvo)) {
+   if (((pTimings->yuv420Mode == NV_YUV420_MODE_SW) ||
+        (pDpyColor->colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100)) &&
+       nvConnectorUsesDPLib(pHeadState->pConnectorEvo)) {
 
         nvAssert(pDispEvo->pDevEvo->caps.supportsDP13);
         colorSpaceOverride = TRUE;
@@ -4660,19 +4678,93 @@ static void EvoSetViewportPointIn(NVDispEvoPtr pDispEvo, const NvU32 head,
     nvPopEvoSubDevMask(pDevEvo);
 }
 
+static void EvoSetLUTContextDmaHelper(const NVDispEvoRec *pDispEvo,
+                                      const NvU32 head,
+                                      NVSurfaceEvoPtr pLutSurfEvo,
+                                      NvBool enableBaseLut,
+                                      NvBool enableOutputLut,
+                                      NVEvoUpdateState *pUpdateState,
+                                      NvBool bypassComposition)
+{
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    NvU32 layer, sd = pDispEvo->displayOwner;
+    NVEvoSubDevHeadStateRec *pSdHeadState = &pDevEvo->gpus[sd].headState[head];
+    NVFlipLutHwState inputLut, outputLut;
+
+    if (enableBaseLut) {
+        inputLut.pLutSurfaceEvo = pLutSurfEvo;
+        inputLut.offset = offsetof(NVEvoLutDataRec, base);
+        inputLut.lutEntries = NV_NUM_EVO_LUT_ENTRIES;
+    } else {
+        inputLut.pLutSurfaceEvo = NULL;
+        inputLut.offset = 0;
+        inputLut.lutEntries = 0;
+    }
+    inputLut.vssSegments = 0;
+    inputLut.fromOverride = FALSE;
+
+    if (enableOutputLut) {
+        outputLut.pLutSurfaceEvo = pLutSurfEvo;
+        outputLut.offset = offsetof(NVEvoLutDataRec, output);
+        outputLut.lutEntries = NV_NUM_EVO_LUT_ENTRIES;
+    } else {
+        outputLut.pLutSurfaceEvo = NULL;
+        outputLut.offset = 0;
+        outputLut.lutEntries = 0;
+    }
+    outputLut.vssSegments = 0;
+    outputLut.fromOverride = FALSE;
+
+    nvPushEvoSubDevMask(pDevEvo, NVBIT(pDispEvo->displayOwner));
+    if ((pSdHeadState->outputLut.pLutSurfaceEvo != outputLut.pLutSurfaceEvo) ||
+        (pSdHeadState->outputLut.offset != outputLut.offset) ||
+        (pSdHeadState->olutFpNormScale != NVKMS_OLUT_FP_NORM_SCALE_DEFAULT)) {
+
+        pSdHeadState->outputLut = outputLut;
+        pSdHeadState->olutFpNormScale = NVKMS_OLUT_FP_NORM_SCALE_DEFAULT;
+        pSdHeadState->layer[NVKMS_MAIN_LAYER].tearing = FALSE;
+
+        pDevEvo->hal->SetOutputLut(pDevEvo, sd, head,
+                                   &outputLut,
+                                   NVKMS_OLUT_FP_NORM_SCALE_DEFAULT,
+                                   pUpdateState,
+                                   bypassComposition);
+    }
+
+    for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
+        NVEvoChannelPtr pChannel = pDevEvo->head[head].layer[layer];
+        NVFlipChannelEvoHwState *pFlipState = &pSdHeadState->layer[layer];
+
+        if ((pFlipState->inputLut.pLutSurfaceEvo == inputLut.pLutSurfaceEvo) &&
+            (pFlipState->inputLut.offset == inputLut.offset)) {
+            continue;
+        }
+
+        pFlipState->tearing = FALSE;
+        pFlipState->inputLut = inputLut;
+
+        pDevEvo->hal->Flip(pDevEvo,
+                           pChannel,
+                           pFlipState,
+                           pUpdateState,
+                           bypassComposition);
+    }
+
+    nvPopEvoSubDevMask(pDevEvo);
+}
+
 void nvEvoSetLUTContextDma(NVDispEvoPtr pDispEvo,
                            const NvU32 head, NVEvoUpdateState *pUpdateState)
 {
-    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
+    const NVDispHeadStateEvoRec *pDispHeadState = &pDispEvo->headState[head];
 
-    pDevEvo->hal->SetLUTContextDma(pDispEvo,
-                                   head,
-                                   pHeadState->lut.pCurrSurface,
-                                   pHeadState->lut.baseLutEnabled,
-                                   pHeadState->lut.outputLutEnabled,
-                                   pUpdateState,
-                                   pHeadState->bypassComposition);
+    EvoSetLUTContextDmaHelper(pDispEvo,
+                              head,
+                              pDispHeadState->lut.pCurrSurface,
+                              pDispHeadState->lut.baseLutEnabled,
+                              pDispHeadState->lut.outputLutEnabled,
+                              pUpdateState,
+                              pDispHeadState->bypassComposition);
 }
 
 static void EvoUpdateCurrentPalette(NVDispEvoPtr pDispEvo, const NvU32 apiHead)
@@ -4684,8 +4776,16 @@ static void EvoUpdateCurrentPalette(NVDispEvoPtr pDispEvo, const NvU32 apiHead)
     NvU32 head;
     NVEvoUpdateState updateState = { };
 
+    struct NvKmsSetLutWorkArea *workarea =
+        nvPreallocGet(pDevEvo, PREALLOC_TYPE_SET_LUT_WORK_AREA, sizeof(*workarea));
+
     FOR_EACH_EVO_HW_HEAD_IN_MASK(pApiHeadState->hwHeadsMask, head) {
+        nvInitFlipEvoHwState(pDevEvo, dispIndex, head, &workarea->head[head].oldState);
+
         nvEvoSetLUTContextDma(pDispEvo, head, &updateState);
+
+        nvInitFlipEvoHwState(pDevEvo, dispIndex, head, &workarea->head[head].newState);
+        nvUpdateSurfacesFlipRefCount(pDevEvo, head, &workarea->head[head].newState, TRUE);
     }
 
     /*
@@ -4728,6 +4828,12 @@ static void EvoUpdateCurrentPalette(NVDispEvoPtr pDispEvo, const NvU32 apiHead)
                                         TRUE /* releaseElv */);
         pDevEvo->lut.apiHead[apiHead].disp[dispIndex].waitForPreviousUpdate |= notify;
     }
+
+    FOR_EACH_EVO_HW_HEAD_IN_MASK(pApiHeadState->hwHeadsMask, head) {
+        nvUpdateSurfacesFlipRefCount(pDevEvo, head, &workarea->head[head].oldState, FALSE);
+    }
+
+    nvPreallocRelease(pDevEvo, PREALLOC_TYPE_SET_LUT_WORK_AREA);
 }
 
 static void UpdateMaxPixelClock(NVDevEvoPtr pDevEvo)
@@ -4782,6 +4888,7 @@ static NvBool AllocEvoSubDevs(NVDevEvoPtr pDevEvo)
 
             pSdHeadState->cursor.cursorCompParams =
                 nvDefaultCursorCompositionParams(pDevEvo);
+            pSdHeadState->olutFpNormScale = NVKMS_OLUT_FP_NORM_SCALE_DEFAULT;
         }
     }
 
@@ -4864,6 +4971,8 @@ static void ClearApiHeadStateOneDisp(NVDispEvoRec *pDispEvo)
 {
     NvU32 apiHead;
 
+    nvKmsOrphanVblankSemControlForAllOpens(pDispEvo);
+
     /*
      * Unregister all the flip-occurred event callbacks which are
      * registered with the (api-head, layer) pair event data,
@@ -4877,7 +4986,11 @@ static void ClearApiHeadStateOneDisp(NVDispEvoRec *pDispEvo)
         NvU32 layer;
         NVDispApiHeadStateEvoRec *pApiHeadState =
             &pDispEvo->apiHeadState[apiHead];
-        nvAssert(nvListIsEmpty(&pApiHeadState->vblankCallbackList));
+        for (NvU32 i = 0; i < ARRAY_LEN(pApiHeadState->vblankCallbackList); i++) {
+            nvAssert(nvListIsEmpty(&pApiHeadState->vblankCallbackList[i]));
+        }
+        nvAssert(nvListIsEmpty(&pApiHeadState->vblankSemControl.list));
+
         for (layer = 0; layer < ARRAY_LEN(pApiHeadState->flipOccurredEvent); layer++) {
             if (pApiHeadState->flipOccurredEvent[layer].ref_ptr != NULL) {
                 nvkms_free_ref_ptr(pApiHeadState->flipOccurredEvent[layer].ref_ptr);
@@ -4916,7 +5029,10 @@ static NvBool InitApiHeadStateOneDisp(NVDispEvoRec *pDispEvo)
         pApiHeadState->activeDpys = nvEmptyDpyIdList();
         pApiHeadState->attributes = NV_EVO_DEFAULT_ATTRIBUTES_SET;
 
-        nvListInit(&pApiHeadState->vblankCallbackList);
+        for (NvU32 i = 0; i < ARRAY_LEN(pApiHeadState->vblankCallbackList); i++) {
+            nvListInit(&pApiHeadState->vblankCallbackList[i]);
+        }
+        nvListInit(&pApiHeadState->vblankSemControl.list);
 
         for (layer = 0; layer < ARRAY_LEN(pApiHeadState->flipOccurredEvent); layer++) {
             pApiHeadState->flipOccurredEvent[layer].ref_ptr =
@@ -5271,12 +5387,6 @@ NvBool nvAllocCoreChannelEvo(NVDevEvoPtr pDevEvo)
         goto failed;
     }
 
-    if (!nvAllocLutSurfacesEvo(pDevEvo)) {
-        nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
-            "Failed to allocate memory for the display color lookup table.");
-        goto failed;
-    }
-
     // Resume the DisplayPort library's control of the device.
     if (!nvRmResumeDP(pDevEvo)) {
         nvEvoLogDev(
@@ -5530,7 +5640,11 @@ NvBool nvResumeDevEvo(NVDevEvoRec *pDevEvo)
         }
     }
 
+    nvInvalidateDefaultLut(pDevEvo);
+
     if (!nvAllocCoreChannelEvo(pDevEvo)) {
+        // free the device if core channel allocation fails
+        nvRevokeDevice(pDevEvo);
         return FALSE;
     }
 
@@ -5599,8 +5713,6 @@ void nvFreeCoreChannelEvo(NVDevEvoPtr pDevEvo)
 
     // Pause the DisplayPort library's control of the device.
     nvRmPauseDP(pDevEvo);
-
-    nvFreeLutSurfacesEvo(pDevEvo);
 
     // Unmap and free the cursor controls for all heads
     nvFreeCursorEvo(pDevEvo);
@@ -5978,8 +6090,8 @@ NvBool nvConstructHwModeTimingsImpCheckEvo(
         timingsParams[head].pConnectorEvo = pConnectorEvo;
         timingsParams[head].activeRmId = activeRmId;
         timingsParams[head].pixelDepth = nvEvoDpyColorToPixelDepth(pColor);
-        if (!nvEvoGetSingleTileHwModeTimings(pTimings, numHeads,
-                                             &timings[head])) {
+        if (!nvEvoGetSingleMergeHeadSectionHwModeTimings(pTimings, numHeads,
+                                                         &timings[head])) {
             ret = FALSE;
             goto done;
         }
@@ -6716,8 +6828,7 @@ static NvBool GetDfpHdmiProtocol(const NVDpyEvoRec *pDpyEvo,
         nvDpyGetOutputColorFormatInfo(pDpyEvo);
     const NvBool forceHdmiFrlIsSupported = FALSE;
 
-    nvAssert(rmProtocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_DUAL_TMDS ||
-             rmProtocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_A ||
+    nvAssert(rmProtocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_A ||
              rmProtocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_B);
 
     /* Override protocol if this mode requires HDMI FRL. */
@@ -6744,28 +6855,14 @@ static NvBool GetDfpHdmiProtocol(const NVDpyEvoRec *pDpyEvo,
         if (nvHdmiGetEffectivePixelClockKHz(pDpyEvo, pTimings, pDpyColor) <=
                pDpyEvo->maxSingleLinkPixelClockKHz) {
 
-            switch (rmProtocol) {
-                case NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_DUAL_TMDS:
-                    /*
-                     * Force single link TMDS protocol. HDMI does not support
-                     * physically support dual link TMDS.
-                     *
-                     * TMDS_A: "use A side of the link"
-                     */
-                    *pTimingsProtocol = NVKMS_PROTOCOL_SOR_SINGLE_TMDS_A;
-                    break;
-                case NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_A:
-                    *pTimingsProtocol = NVKMS_PROTOCOL_SOR_SINGLE_TMDS_A;
-                    break;
-                case NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_B:
-                    *pTimingsProtocol = NVKMS_PROTOCOL_SOR_SINGLE_TMDS_B;
-                    break;
-                default:
-                    return FALSE;
-            }
+            *pTimingsProtocol = (rmProtocol ==
+                NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_A) ?
+                NVKMS_PROTOCOL_SOR_SINGLE_TMDS_A :
+                NVKMS_PROTOCOL_SOR_SINGLE_TMDS_B;
             return TRUE;
         }
-    } while (nvDowngradeColorSpaceAndBpc(&colorFormatsInfo,
+    } while (nvDowngradeColorSpaceAndBpc(pDpyEvo,
+                                         &colorFormatsInfo,
                                          pDpyColor));
     return FALSE;
 }
@@ -6994,6 +7091,7 @@ NvBool nvDowngradeColorBpc(
 }
 
 NvBool nvDowngradeColorSpaceAndBpc(
+    const NVDpyEvoRec *pDpyEvo,
     const NvKmsDpyOutputColorFormatInfo *pSupportedColorFormats,
     NVDpyAttributeColor *pDpyColor)
 {
@@ -7003,9 +7101,9 @@ NvBool nvDowngradeColorSpaceAndBpc(
 
     switch (pDpyColor->format) {
         case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB:
-            /* XXX Add support for downgrading to YUV with BT2100 */
-            if (pDpyColor->colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100) {
-                return FALSE;
+            if ((pDpyColor->colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100) &&
+                !pDpyEvo->pDispEvo->pDevEvo->caps.supportsYUV2020) {
+                break;
             }
             /* fallthrough */
         case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr444:
@@ -7060,7 +7158,7 @@ NvBool nvDPValidateModeEvo(NVDpyEvoPtr pDpyEvo,
 
     if (!nvDPValidateModeForDpyEvo(pDpyEvo, &dpyColor, pParams, pTimings,
                                    b2Heads1Or, pDscInfo)) {
-        if (nvDowngradeColorSpaceAndBpc(&supportedColorFormats, &dpyColor)) {
+        if (nvDowngradeColorSpaceAndBpc(pDpyEvo, &supportedColorFormats, &dpyColor)) {
              goto tryAgain;
         }
         /*
@@ -8460,7 +8558,7 @@ void nvEvoSetLut(NVDispEvoPtr pDispEvo, NvU32 apiHead, NvBool kickoff,
         pDevEvo->lut.apiHead[apiHead].disp[dispIndex].waitForPreviousUpdate;
     const int numLUTs = ARRAY_LEN(pDevEvo->lut.apiHead[apiHead].LUT);
     const int lutToFill = (curLUT + 1) % numLUTs;
-    NVLutSurfaceEvoPtr pSurfEvo = pDevEvo->lut.apiHead[apiHead].LUT[lutToFill];
+    NVSurfaceEvoPtr pSurfEvo = pDevEvo->lut.apiHead[apiHead].LUT[lutToFill];
     NvBool baseLutEnabled =
         pDevEvo->lut.apiHead[apiHead].disp[dispIndex].curBaseLutEnabled ;
     NvBool outputLutEnabled =
@@ -8747,6 +8845,8 @@ NvBool nvFreeDevEvo(NVDevEvoPtr pDevEvo)
         pDevEvo->fbConsoleSurfaceHandle = 0;
     }
 
+    nvFreeLutSurfacesEvo(pDevEvo);
+
     nvFreeCoreChannelEvo(pDevEvo);
 
     nvTeardownHdmiLibrary(pDevEvo);
@@ -8901,6 +9001,13 @@ NVDevEvoPtr nvAllocDevEvo(const struct NvKmsAllocDeviceRequest *pRequest,
     }
 
     if (!nvHsAllocDevice(pDevEvo, pRequest)) {
+        status = NVKMS_ALLOC_DEVICE_STATUS_FATAL_ERROR;
+        goto done;
+    }
+
+    if (!nvAllocLutSurfacesEvo(pDevEvo)) {
+        nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
+            "Failed to allocate memory for the display color lookup table.");
         status = NVKMS_ALLOC_DEVICE_STATUS_FATAL_ERROR;
         goto done;
     }
@@ -9426,6 +9533,11 @@ NvBool nvNeedsTmoLut(NVDevEvoPtr pDevEvo,
         return FALSE;
     }
 
+    // If the TMO is set directly by the client, honor the client's request.
+    if (pHwState->tmoLut.fromOverride) {
+        return (pHwState->tmoLut.pLutSurfaceEvo != NULL);
+    }
+
     // Don't tone map if layer doesn't have static metadata.
     // XXX HDR TODO: Support tone mapping SDR surfaces to HDR
     if (!pHwState->hdrStaticMetadata.enabled) {
@@ -9650,41 +9762,42 @@ void nvEvoDisableMergeMode(NVDispEvoRec *pDispEvo,
     }
 }
 
-NvBool nvEvoGetSingleTileHwModeTimings(const NVHwModeTimingsEvo *pSrc,
-                                       const NvU32 numTiles,
-                                       NVHwModeTimingsEvo *pDst)
+NvBool nvEvoGetSingleMergeHeadSectionHwModeTimings(
+    const NVHwModeTimingsEvo *pSrc,
+    const NvU32 numMergeHeadSections,
+    NVHwModeTimingsEvo *pDst)
 {
-    if (numTiles == 1) {
+    if (numMergeHeadSections == 1) {
         *pDst = *pSrc;
         return TRUE;
     }
 
-    if ((numTiles == 0) ||
+    if ((numMergeHeadSections == 0) ||
             (pSrc->viewPort.out.xAdjust != 0) ||
             (pSrc->viewPort.out.width != nvEvoVisibleWidth(pSrc))) {
         return FALSE;
     }
 
-    if (((pSrc->rasterSize.x % numTiles) != 0) ||
-            (((pSrc->rasterSyncEnd.x + 1) % numTiles) != 0) ||
-            (((pSrc->rasterBlankEnd.x + 1) % numTiles) != 0) ||
-            (((pSrc->rasterBlankStart.x + 1) % numTiles) != 0) ||
-            ((pSrc->pixelClock % numTiles) != 0) ||
-            ((pSrc->viewPort.in.width % numTiles) != 0)) {
+    if (((pSrc->rasterSize.x % numMergeHeadSections) != 0) ||
+            (((pSrc->rasterSyncEnd.x + 1) % numMergeHeadSections) != 0) ||
+            (((pSrc->rasterBlankEnd.x + 1) % numMergeHeadSections) != 0) ||
+            (((pSrc->rasterBlankStart.x + 1) % numMergeHeadSections) != 0) ||
+            ((pSrc->pixelClock % numMergeHeadSections) != 0) ||
+            ((pSrc->viewPort.in.width % numMergeHeadSections) != 0)) {
         return FALSE;
     }
 
     *pDst = *pSrc;
 
-    pDst->rasterSize.x /= numTiles;
-    pDst->rasterSyncEnd.x /= numTiles;
-    pDst->rasterBlankEnd.x /= numTiles;
-    pDst->rasterBlankStart.x /= numTiles;
+    pDst->rasterSize.x /= numMergeHeadSections;
+    pDst->rasterSyncEnd.x /= numMergeHeadSections;
+    pDst->rasterBlankEnd.x /= numMergeHeadSections;
+    pDst->rasterBlankStart.x /= numMergeHeadSections;
 
-    pDst->pixelClock /= numTiles;
+    pDst->pixelClock /= numMergeHeadSections;
 
-    pDst->viewPort.out.width /= numTiles;
-    pDst->viewPort.in.width /= numTiles;
+    pDst->viewPort.out.width /= numMergeHeadSections;
+    pDst->viewPort.in.width /= numMergeHeadSections;
 
     return TRUE;
 }

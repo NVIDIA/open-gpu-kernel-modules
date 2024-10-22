@@ -655,6 +655,20 @@ NV_STATUS pmaGetRegionInfo(PMA *pPma, NvU32 *pRegSize, PMA_REGION_DESCRIPTOR **p
 void pmaGetFreeMemory(PMA *pPma, NvU64 *pBytesFree);
 
 /*!
+ * @brief Returns information about the client address space size
+ *        that can be allocated
+ *
+ * @param[in]  pPma           PMA pointer
+ * @param[in]  pSize          Pointer that will return the size of the
+ *                            client-allocatable address space
+ *
+ * @return
+ *      void
+ */
+void
+pmaGetClientAddrSpaceSize(PMA *pPma, NvU64 *pSize);
+
+/*!
  * @brief Returns information about the largest free FB memory chunk across all regions.
  *
  * @param[in]  pPma           PMA pointer

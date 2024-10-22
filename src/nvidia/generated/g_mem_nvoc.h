@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -132,7 +132,6 @@ typedef struct _def_client_vgpu_ns_intr
     NvU64                   guestDomainId; // guest ID that we need to use to inject interrupt
     NvU64                   guestMSIAddr; // MSI address allocated by guest OS
     NvU32                   guestMSIData; // MSI data value set by guest OS
-    void                    *pVgpuVfioRef; // Reference to vgpu device in nvidia-vgpu-vfio module
     void                    *pEventDpc; // DPC event to pass the interrupt
 } VGPU_NS_INTR;
 
@@ -159,10 +158,15 @@ typedef struct
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__Memory;
+
+
 struct Memory {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__Memory *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct RmResource __nvoc_base_RmResource;
@@ -174,19 +178,7 @@ struct Memory {
     struct RmResource *__nvoc_pbase_RmResource;    // rmres super
     struct Memory *__nvoc_pbase_Memory;    // mem
 
-    // Vtable with 33 per-object function pointers
-    NV_STATUS (*__memIsDuplicate__)(struct Memory * /*this*/, NvHandle, NvBool *);  // virtual override (res) base (rmres)
-    NV_STATUS (*__memGetMapAddrSpace__)(struct Memory * /*this*/, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual
-    NV_STATUS (*__memControl__)(struct Memory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (rmres)
-    NV_STATUS (*__memMap__)(struct Memory * /*this*/, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);  // virtual override (res) base (rmres)
-    NV_STATUS (*__memUnmap__)(struct Memory * /*this*/, CALL_CONTEXT *, RsCpuMapping *);  // virtual override (res) base (rmres)
-    NV_STATUS (*__memGetMemInterMapParams__)(struct Memory * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual override (rmres) base (rmres)
-    NV_STATUS (*__memCheckMemInterUnmap__)(struct Memory * /*this*/, NvBool);  // inline virtual override (rmres) base (rmres) body
-    NV_STATUS (*__memGetMemoryMappingDescriptor__)(struct Memory * /*this*/, MEMORY_DESCRIPTOR **);  // virtual override (rmres) base (rmres)
-    NV_STATUS (*__memCheckCopyPermissions__)(struct Memory * /*this*/, struct OBJGPU *, struct Device *);  // inline virtual body
-    NV_STATUS (*__memIsReady__)(struct Memory * /*this*/, NvBool);  // virtual
-    NvBool (*__memIsGpuMapAllowed__)(struct Memory * /*this*/, struct OBJGPU *);  // inline virtual body
-    NvBool (*__memIsExportAllowed__)(struct Memory * /*this*/);  // inline virtual body
+    // Vtable with 7 per-object function pointers
     NV_STATUS (*__memCtrlCmdGetSurfaceCompressionCoverageLvm__)(struct Memory * /*this*/, NV0041_CTRL_GET_SURFACE_COMPRESSION_COVERAGE_PARAMS *);  // exported (id=0x410112)
     NV_STATUS (*__memCtrlCmdGetSurfaceInfoLvm__)(struct Memory * /*this*/, NV0041_CTRL_GET_SURFACE_INFO_PARAMS *);  // exported (id=0x410110)
     NV_STATUS (*__memCtrlCmdSurfaceFlushGpuCache__)(struct Memory * /*this*/, NV0041_CTRL_SURFACE_FLUSH_GPU_CACHE_PARAMS *);  // exported (id=0x410116)
@@ -194,20 +186,6 @@ struct Memory {
     NV_STATUS (*__memCtrlCmdSetTag__)(struct Memory * /*this*/, NV0041_CTRL_CMD_SET_TAG_PARAMS *);  // exported (id=0x410120)
     NV_STATUS (*__memCtrlCmdGetTag__)(struct Memory * /*this*/, NV0041_CTRL_CMD_GET_TAG_PARAMS *);  // exported (id=0x410121)
     NV_STATUS (*__memCtrlCmdGetSurfacePhysAttrLvm__)(struct Memory * /*this*/, NV0041_CTRL_GET_SURFACE_PHYS_ATTR_PARAMS *);  // exported (id=0x410103)
-    NvBool (*__memAccessCallback__)(struct Memory * /*this*/, RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (rmres)
-    NvBool (*__memShareCallback__)(struct Memory * /*this*/, RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__memControlSerialization_Prologue__)(struct Memory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    void (*__memControlSerialization_Epilogue__)(struct Memory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    NV_STATUS (*__memControl_Prologue__)(struct Memory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    void (*__memControl_Epilogue__)(struct Memory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
-    NvBool (*__memCanCopy__)(struct Memory * /*this*/);  // virtual inherited (res) base (rmres)
-    void (*__memPreDestruct__)(struct Memory * /*this*/);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__memControlFilter__)(struct Memory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (rmres)
-    NvBool (*__memIsPartialUnmapSupported__)(struct Memory * /*this*/);  // inline virtual inherited (res) base (rmres) body
-    NV_STATUS (*__memMapTo__)(struct Memory * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (rmres)
-    NV_STATUS (*__memUnmapFrom__)(struct Memory * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (rmres)
-    NvU32 (*__memGetRefCount__)(struct Memory * /*this*/);  // virtual inherited (res) base (rmres)
-    void (*__memAddAdditionalDependants__)(struct RsClient *, struct Memory * /*this*/, RsResourceRef *);  // virtual inherited (res) base (rmres)
 
     // Data members
     NvBool bConstructed;
@@ -240,6 +218,39 @@ struct Memory {
     VGPU_NS_INTR vgpuNsIntr;
 };
 
+
+// Metadata including vtable with 26 function pointers plus superclass metadata
+struct NVOC_VTABLE__Memory {
+    const struct NVOC_VTABLE__RmResource RmResource;    // (rmres) 21 function pointers
+
+    NV_STATUS (*__memIsDuplicate__)(struct Memory * /*this*/, NvHandle, NvBool *);  // virtual override (res) base (rmres)
+    NV_STATUS (*__memGetMapAddrSpace__)(struct Memory * /*this*/, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual
+    NV_STATUS (*__memControl__)(struct Memory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual override (res) base (rmres)
+    NV_STATUS (*__memMap__)(struct Memory * /*this*/, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);  // virtual override (res) base (rmres)
+    NV_STATUS (*__memUnmap__)(struct Memory * /*this*/, CALL_CONTEXT *, RsCpuMapping *);  // virtual override (res) base (rmres)
+    NV_STATUS (*__memGetMemInterMapParams__)(struct Memory * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual override (rmres) base (rmres)
+    NV_STATUS (*__memCheckMemInterUnmap__)(struct Memory * /*this*/, NvBool);  // inline virtual override (rmres) base (rmres) body
+    NV_STATUS (*__memGetMemoryMappingDescriptor__)(struct Memory * /*this*/, MEMORY_DESCRIPTOR **);  // virtual override (rmres) base (rmres)
+    NV_STATUS (*__memCheckCopyPermissions__)(struct Memory * /*this*/, struct OBJGPU *, struct Device *);  // inline virtual body
+    NV_STATUS (*__memIsReady__)(struct Memory * /*this*/, NvBool);  // virtual
+    NvBool (*__memIsGpuMapAllowed__)(struct Memory * /*this*/, struct OBJGPU *);  // inline virtual body
+    NvBool (*__memIsExportAllowed__)(struct Memory * /*this*/);  // inline virtual body
+    NvBool (*__memAccessCallback__)(struct Memory * /*this*/, RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (rmres)
+    NvBool (*__memShareCallback__)(struct Memory * /*this*/, RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (rmres)
+    NV_STATUS (*__memControlSerialization_Prologue__)(struct Memory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
+    void (*__memControlSerialization_Epilogue__)(struct Memory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
+    NV_STATUS (*__memControl_Prologue__)(struct Memory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
+    void (*__memControl_Epilogue__)(struct Memory * /*this*/, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (rmres)
+    NvBool (*__memCanCopy__)(struct Memory * /*this*/);  // virtual inherited (res) base (rmres)
+    void (*__memPreDestruct__)(struct Memory * /*this*/);  // virtual inherited (res) base (rmres)
+    NV_STATUS (*__memControlFilter__)(struct Memory * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (rmres)
+    NvBool (*__memIsPartialUnmapSupported__)(struct Memory * /*this*/);  // inline virtual inherited (res) base (rmres) body
+    NV_STATUS (*__memMapTo__)(struct Memory * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (rmres)
+    NV_STATUS (*__memUnmapFrom__)(struct Memory * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (rmres)
+    NvU32 (*__memGetRefCount__)(struct Memory * /*this*/);  // virtual inherited (res) base (rmres)
+    void (*__memAddAdditionalDependants__)(struct RsClient *, struct Memory * /*this*/, RsResourceRef *);  // virtual inherited (res) base (rmres)
+};
+
 #ifndef __NVOC_CLASS_Memory_TYPEDEF__
 #define __NVOC_CLASS_Memory_TYPEDEF__
 typedef struct Memory Memory;
@@ -270,29 +281,29 @@ NV_STATUS __nvoc_objCreate_Memory(Memory**, Dynamic*, NvU32, CALL_CONTEXT * arg_
 
 
 // Wrapper macros
-#define memIsDuplicate_FNPTR(pMemory) pMemory->__memIsDuplicate__
+#define memIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_vtable->__memIsDuplicate__
 #define memIsDuplicate(pMemory, hMemory, pDuplicate) memIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
-#define memGetMapAddrSpace_FNPTR(pMemory) pMemory->__memGetMapAddrSpace__
+#define memGetMapAddrSpace_FNPTR(pMemory) pMemory->__nvoc_vtable->__memGetMapAddrSpace__
 #define memGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) memGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
-#define memControl_FNPTR(pMemory) pMemory->__memControl__
+#define memControl_FNPTR(pMemory) pMemory->__nvoc_vtable->__memControl__
 #define memControl(pMemory, pCallContext, pParams) memControl_DISPATCH(pMemory, pCallContext, pParams)
-#define memMap_FNPTR(pMemory) pMemory->__memMap__
+#define memMap_FNPTR(pMemory) pMemory->__nvoc_vtable->__memMap__
 #define memMap(pMemory, pCallContext, pParams, pCpuMapping) memMap_DISPATCH(pMemory, pCallContext, pParams, pCpuMapping)
-#define memUnmap_FNPTR(pMemory) pMemory->__memUnmap__
+#define memUnmap_FNPTR(pMemory) pMemory->__nvoc_vtable->__memUnmap__
 #define memUnmap(pMemory, pCallContext, pCpuMapping) memUnmap_DISPATCH(pMemory, pCallContext, pCpuMapping)
-#define memGetMemInterMapParams_FNPTR(pMemory) pMemory->__memGetMemInterMapParams__
+#define memGetMemInterMapParams_FNPTR(pMemory) pMemory->__nvoc_vtable->__memGetMemInterMapParams__
 #define memGetMemInterMapParams(pMemory, pParams) memGetMemInterMapParams_DISPATCH(pMemory, pParams)
-#define memCheckMemInterUnmap_FNPTR(pMemory) pMemory->__memCheckMemInterUnmap__
+#define memCheckMemInterUnmap_FNPTR(pMemory) pMemory->__nvoc_vtable->__memCheckMemInterUnmap__
 #define memCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) memCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
-#define memGetMemoryMappingDescriptor_FNPTR(pMemory) pMemory->__memGetMemoryMappingDescriptor__
+#define memGetMemoryMappingDescriptor_FNPTR(pMemory) pMemory->__nvoc_vtable->__memGetMemoryMappingDescriptor__
 #define memGetMemoryMappingDescriptor(pMemory, ppMemDesc) memGetMemoryMappingDescriptor_DISPATCH(pMemory, ppMemDesc)
-#define memCheckCopyPermissions_FNPTR(pMemory) pMemory->__memCheckCopyPermissions__
+#define memCheckCopyPermissions_FNPTR(pMemory) pMemory->__nvoc_vtable->__memCheckCopyPermissions__
 #define memCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) memCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
-#define memIsReady_FNPTR(pMemory) pMemory->__memIsReady__
+#define memIsReady_FNPTR(pMemory) pMemory->__nvoc_vtable->__memIsReady__
 #define memIsReady(pMemory, bCopyConstructorContext) memIsReady_DISPATCH(pMemory, bCopyConstructorContext)
-#define memIsGpuMapAllowed_FNPTR(pMemory) pMemory->__memIsGpuMapAllowed__
+#define memIsGpuMapAllowed_FNPTR(pMemory) pMemory->__nvoc_vtable->__memIsGpuMapAllowed__
 #define memIsGpuMapAllowed(pMemory, pGpu) memIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
-#define memIsExportAllowed_FNPTR(pMemory) pMemory->__memIsExportAllowed__
+#define memIsExportAllowed_FNPTR(pMemory) pMemory->__nvoc_vtable->__memIsExportAllowed__
 #define memIsExportAllowed(pMemory) memIsExportAllowed_DISPATCH(pMemory)
 #define memCtrlCmdGetSurfaceCompressionCoverageLvm_FNPTR(pMemory) pMemory->__memCtrlCmdGetSurfaceCompressionCoverageLvm__
 #define memCtrlCmdGetSurfaceCompressionCoverageLvm(pMemory, pParams) memCtrlCmdGetSurfaceCompressionCoverageLvm_DISPATCH(pMemory, pParams)
@@ -308,82 +319,82 @@ NV_STATUS __nvoc_objCreate_Memory(Memory**, Dynamic*, NvU32, CALL_CONTEXT * arg_
 #define memCtrlCmdGetTag(pMemory, pParams) memCtrlCmdGetTag_DISPATCH(pMemory, pParams)
 #define memCtrlCmdGetSurfacePhysAttrLvm_FNPTR(pMemory) pMemory->__memCtrlCmdGetSurfacePhysAttrLvm__
 #define memCtrlCmdGetSurfacePhysAttrLvm(pMemory, pGPAP) memCtrlCmdGetSurfacePhysAttrLvm_DISPATCH(pMemory, pGPAP)
-#define memAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresAccessCallback__
+#define memAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
 #define memAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) memAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define memShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresShareCallback__
+#define memShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresShareCallback__
 #define memShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) memShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
-#define memControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresControlSerialization_Prologue__
+#define memControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
 #define memControlSerialization_Prologue(pResource, pCallContext, pParams) memControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define memControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresControlSerialization_Epilogue__
+#define memControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
 #define memControlSerialization_Epilogue(pResource, pCallContext, pParams) memControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define memControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresControl_Prologue__
+#define memControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
 #define memControl_Prologue(pResource, pCallContext, pParams) memControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define memControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresControl_Epilogue__
+#define memControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
 #define memControl_Epilogue(pResource, pCallContext, pParams) memControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define memCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__
+#define memCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
 #define memCanCopy(pResource) memCanCopy_DISPATCH(pResource)
-#define memPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resPreDestruct__
+#define memPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
 #define memPreDestruct(pResource) memPreDestruct_DISPATCH(pResource)
-#define memControlFilter_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resControlFilter__
+#define memControlFilter_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
 #define memControlFilter(pResource, pCallContext, pParams) memControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define memIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsPartialUnmapSupported__
+#define memIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
 #define memIsPartialUnmapSupported(pResource) memIsPartialUnmapSupported_DISPATCH(pResource)
-#define memMapTo_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resMapTo__
+#define memMapTo_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
 #define memMapTo(pResource, pParams) memMapTo_DISPATCH(pResource, pParams)
-#define memUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resUnmapFrom__
+#define memUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
 #define memUnmapFrom(pResource, pParams) memUnmapFrom_DISPATCH(pResource, pParams)
-#define memGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resGetRefCount__
+#define memGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
 #define memGetRefCount(pResource) memGetRefCount_DISPATCH(pResource)
-#define memAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resAddAdditionalDependants__
+#define memAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
 #define memAddAdditionalDependants(pClient, pResource, pReference) memAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
 static inline NV_STATUS memIsDuplicate_DISPATCH(struct Memory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
-    return pMemory->__memIsDuplicate__(pMemory, hMemory, pDuplicate);
+    return pMemory->__nvoc_vtable->__memIsDuplicate__(pMemory, hMemory, pDuplicate);
 }
 
 static inline NV_STATUS memGetMapAddrSpace_DISPATCH(struct Memory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pMemory->__memGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+    return pMemory->__nvoc_vtable->__memGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS memControl_DISPATCH(struct Memory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pMemory->__memControl__(pMemory, pCallContext, pParams);
+    return pMemory->__nvoc_vtable->__memControl__(pMemory, pCallContext, pParams);
 }
 
 static inline NV_STATUS memMap_DISPATCH(struct Memory *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pMemory->__memMap__(pMemory, pCallContext, pParams, pCpuMapping);
+    return pMemory->__nvoc_vtable->__memMap__(pMemory, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS memUnmap_DISPATCH(struct Memory *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pMemory->__memUnmap__(pMemory, pCallContext, pCpuMapping);
+    return pMemory->__nvoc_vtable->__memUnmap__(pMemory, pCallContext, pCpuMapping);
 }
 
 static inline NV_STATUS memGetMemInterMapParams_DISPATCH(struct Memory *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pMemory->__memGetMemInterMapParams__(pMemory, pParams);
+    return pMemory->__nvoc_vtable->__memGetMemInterMapParams__(pMemory, pParams);
 }
 
 static inline NV_STATUS memCheckMemInterUnmap_DISPATCH(struct Memory *pMemory, NvBool bSubdeviceHandleProvided) {
-    return pMemory->__memCheckMemInterUnmap__(pMemory, bSubdeviceHandleProvided);
+    return pMemory->__nvoc_vtable->__memCheckMemInterUnmap__(pMemory, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS memGetMemoryMappingDescriptor_DISPATCH(struct Memory *pMemory, MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pMemory->__memGetMemoryMappingDescriptor__(pMemory, ppMemDesc);
+    return pMemory->__nvoc_vtable->__memGetMemoryMappingDescriptor__(pMemory, ppMemDesc);
 }
 
 static inline NV_STATUS memCheckCopyPermissions_DISPATCH(struct Memory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
-    return pMemory->__memCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
+    return pMemory->__nvoc_vtable->__memCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
 }
 
 static inline NV_STATUS memIsReady_DISPATCH(struct Memory *pMemory, NvBool bCopyConstructorContext) {
-    return pMemory->__memIsReady__(pMemory, bCopyConstructorContext);
+    return pMemory->__nvoc_vtable->__memIsReady__(pMemory, bCopyConstructorContext);
 }
 
 static inline NvBool memIsGpuMapAllowed_DISPATCH(struct Memory *pMemory, struct OBJGPU *pGpu) {
-    return pMemory->__memIsGpuMapAllowed__(pMemory, pGpu);
+    return pMemory->__nvoc_vtable->__memIsGpuMapAllowed__(pMemory, pGpu);
 }
 
 static inline NvBool memIsExportAllowed_DISPATCH(struct Memory *pMemory) {
-    return pMemory->__memIsExportAllowed__(pMemory);
+    return pMemory->__nvoc_vtable->__memIsExportAllowed__(pMemory);
 }
 
 static inline NV_STATUS memCtrlCmdGetSurfaceCompressionCoverageLvm_DISPATCH(struct Memory *pMemory, NV0041_CTRL_GET_SURFACE_COMPRESSION_COVERAGE_PARAMS *pParams) {
@@ -415,59 +426,59 @@ static inline NV_STATUS memCtrlCmdGetSurfacePhysAttrLvm_DISPATCH(struct Memory *
 }
 
 static inline NvBool memAccessCallback_DISPATCH(struct Memory *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__memAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_vtable->__memAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool memShareCallback_DISPATCH(struct Memory *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__memShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_vtable->__memShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS memControlSerialization_Prologue_DISPATCH(struct Memory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__memControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__memControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void memControlSerialization_Epilogue_DISPATCH(struct Memory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__memControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__memControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS memControl_Prologue_DISPATCH(struct Memory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__memControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__memControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void memControl_Epilogue_DISPATCH(struct Memory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__memControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__memControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool memCanCopy_DISPATCH(struct Memory *pResource) {
-    return pResource->__memCanCopy__(pResource);
+    return pResource->__nvoc_vtable->__memCanCopy__(pResource);
 }
 
 static inline void memPreDestruct_DISPATCH(struct Memory *pResource) {
-    pResource->__memPreDestruct__(pResource);
+    pResource->__nvoc_vtable->__memPreDestruct__(pResource);
 }
 
 static inline NV_STATUS memControlFilter_DISPATCH(struct Memory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__memControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__memControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool memIsPartialUnmapSupported_DISPATCH(struct Memory *pResource) {
-    return pResource->__memIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_vtable->__memIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS memMapTo_DISPATCH(struct Memory *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__memMapTo__(pResource, pParams);
+    return pResource->__nvoc_vtable->__memMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS memUnmapFrom_DISPATCH(struct Memory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__memUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_vtable->__memUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 memGetRefCount_DISPATCH(struct Memory *pResource) {
-    return pResource->__memGetRefCount__(pResource);
+    return pResource->__nvoc_vtable->__memGetRefCount__(pResource);
 }
 
 static inline void memAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct Memory *pResource, RsResourceRef *pReference) {
-    pResource->__memAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_vtable->__memAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NV_STATUS memIsDuplicate_IMPL(struct Memory *pMemory, NvHandle hMemory, NvBool *pDuplicate);
@@ -494,12 +505,12 @@ static inline NV_STATUS memCheckCopyPermissions_ac1694(struct Memory *pMemory, s
 
 NV_STATUS memIsReady_IMPL(struct Memory *pMemory, NvBool bCopyConstructorContext);
 
-static inline NvBool memIsGpuMapAllowed_0c883b(struct Memory *pMemory, struct OBJGPU *pGpu) {
-    return ((NvBool)(0 == 0));
+static inline NvBool memIsGpuMapAllowed_e661f0(struct Memory *pMemory, struct OBJGPU *pGpu) {
+    return NV_TRUE;
 }
 
-static inline NvBool memIsExportAllowed_0c883b(struct Memory *pMemory) {
-    return ((NvBool)(0 == 0));
+static inline NvBool memIsExportAllowed_e661f0(struct Memory *pMemory) {
+    return NV_TRUE;
 }
 
 NV_STATUS memCtrlCmdGetSurfaceCompressionCoverageLvm_IMPL(struct Memory *pMemory, NV0041_CTRL_GET_SURFACE_COMPRESSION_COVERAGE_PARAMS *pParams);

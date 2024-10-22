@@ -66,78 +66,96 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_MemoryManager =
     /*pExportInfo=*/        &__nvoc_export_info_MemoryManager
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+NV_STATUS __nvoc_down_thunk_MemoryManager_engstateConstructEngine(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager, ENGDESCRIPTOR arg3);    // this
+NV_STATUS __nvoc_down_thunk_MemoryManager_engstateStatePreInitLocked(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager);    // this
+NV_STATUS __nvoc_down_thunk_MemoryManager_engstateStateInitLocked(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager);    // this
+NV_STATUS __nvoc_down_thunk_MemoryManager_engstateStateLoad(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager, NvU32 arg3);    // this
+NV_STATUS __nvoc_down_thunk_MemoryManager_engstateStatePostLoad(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager, NvU32 arg3);    // this
+NV_STATUS __nvoc_down_thunk_MemoryManager_engstateStatePreUnload(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager, NvU32 arg3);    // this
+NV_STATUS __nvoc_down_thunk_MemoryManager_engstateStateUnload(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager, NvU32 arg3);    // this
+void __nvoc_down_thunk_MemoryManager_engstateStateDestroy(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager);    // this
+
 // 8 down-thunk(s) defined to bridge methods in MemoryManager from superclasses
 
 // memmgrConstructEngine: virtual override (engstate) base (engstate)
-static NV_STATUS __nvoc_down_thunk_MemoryManager_engstateConstructEngine(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager, ENGDESCRIPTOR arg3) {
+NV_STATUS __nvoc_down_thunk_MemoryManager_engstateConstructEngine(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager, ENGDESCRIPTOR arg3) {
     return memmgrConstructEngine(pGpu, (struct MemoryManager *)(((unsigned char *) pMemoryManager) - __nvoc_rtti_MemoryManager_OBJENGSTATE.offset), arg3);
 }
 
 // memmgrStatePreInitLocked: virtual override (engstate) base (engstate)
-static NV_STATUS __nvoc_down_thunk_MemoryManager_engstateStatePreInitLocked(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager) {
+NV_STATUS __nvoc_down_thunk_MemoryManager_engstateStatePreInitLocked(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager) {
     return memmgrStatePreInitLocked(pGpu, (struct MemoryManager *)(((unsigned char *) pMemoryManager) - __nvoc_rtti_MemoryManager_OBJENGSTATE.offset));
 }
 
 // memmgrStateInitLocked: virtual override (engstate) base (engstate)
-static NV_STATUS __nvoc_down_thunk_MemoryManager_engstateStateInitLocked(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager) {
+NV_STATUS __nvoc_down_thunk_MemoryManager_engstateStateInitLocked(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager) {
     return memmgrStateInitLocked(pGpu, (struct MemoryManager *)(((unsigned char *) pMemoryManager) - __nvoc_rtti_MemoryManager_OBJENGSTATE.offset));
 }
 
 // memmgrStateLoad: virtual override (engstate) base (engstate)
-static NV_STATUS __nvoc_down_thunk_MemoryManager_engstateStateLoad(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager, NvU32 arg3) {
+NV_STATUS __nvoc_down_thunk_MemoryManager_engstateStateLoad(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager, NvU32 arg3) {
     return memmgrStateLoad(pGpu, (struct MemoryManager *)(((unsigned char *) pMemoryManager) - __nvoc_rtti_MemoryManager_OBJENGSTATE.offset), arg3);
 }
 
 // memmgrStatePostLoad: virtual override (engstate) base (engstate)
-static NV_STATUS __nvoc_down_thunk_MemoryManager_engstateStatePostLoad(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager, NvU32 arg3) {
+NV_STATUS __nvoc_down_thunk_MemoryManager_engstateStatePostLoad(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager, NvU32 arg3) {
     return memmgrStatePostLoad(pGpu, (struct MemoryManager *)(((unsigned char *) pMemoryManager) - __nvoc_rtti_MemoryManager_OBJENGSTATE.offset), arg3);
 }
 
 // memmgrStatePreUnload: virtual override (engstate) base (engstate)
-static NV_STATUS __nvoc_down_thunk_MemoryManager_engstateStatePreUnload(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager, NvU32 arg3) {
+NV_STATUS __nvoc_down_thunk_MemoryManager_engstateStatePreUnload(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager, NvU32 arg3) {
     return memmgrStatePreUnload(pGpu, (struct MemoryManager *)(((unsigned char *) pMemoryManager) - __nvoc_rtti_MemoryManager_OBJENGSTATE.offset), arg3);
 }
 
 // memmgrStateUnload: virtual override (engstate) base (engstate)
-static NV_STATUS __nvoc_down_thunk_MemoryManager_engstateStateUnload(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager, NvU32 arg3) {
+NV_STATUS __nvoc_down_thunk_MemoryManager_engstateStateUnload(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager, NvU32 arg3) {
     return memmgrStateUnload(pGpu, (struct MemoryManager *)(((unsigned char *) pMemoryManager) - __nvoc_rtti_MemoryManager_OBJENGSTATE.offset), arg3);
 }
 
 // memmgrStateDestroy: virtual override (engstate) base (engstate)
-static void __nvoc_down_thunk_MemoryManager_engstateStateDestroy(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager) {
+void __nvoc_down_thunk_MemoryManager_engstateStateDestroy(OBJGPU *pGpu, struct OBJENGSTATE *pMemoryManager) {
     memmgrStateDestroy(pGpu, (struct MemoryManager *)(((unsigned char *) pMemoryManager) - __nvoc_rtti_MemoryManager_OBJENGSTATE.offset));
 }
 
 
+// Up-thunk(s) to bridge methods to ancestors (if any)
+void __nvoc_up_thunk_OBJENGSTATE_memmgrInitMissing(struct OBJGPU *pGpu, struct MemoryManager *pEngstate);    // this
+NV_STATUS __nvoc_up_thunk_OBJENGSTATE_memmgrStatePreInitUnlocked(struct OBJGPU *pGpu, struct MemoryManager *pEngstate);    // this
+NV_STATUS __nvoc_up_thunk_OBJENGSTATE_memmgrStateInitUnlocked(struct OBJGPU *pGpu, struct MemoryManager *pEngstate);    // this
+NV_STATUS __nvoc_up_thunk_OBJENGSTATE_memmgrStatePreLoad(struct OBJGPU *pGpu, struct MemoryManager *pEngstate, NvU32 arg3);    // this
+NV_STATUS __nvoc_up_thunk_OBJENGSTATE_memmgrStatePostUnload(struct OBJGPU *pGpu, struct MemoryManager *pEngstate, NvU32 arg3);    // this
+NvBool __nvoc_up_thunk_OBJENGSTATE_memmgrIsPresent(struct OBJGPU *pGpu, struct MemoryManager *pEngstate);    // this
+
 // 6 up-thunk(s) defined to bridge methods in MemoryManager to superclasses
 
 // memmgrInitMissing: virtual inherited (engstate) base (engstate)
-static void __nvoc_up_thunk_OBJENGSTATE_memmgrInitMissing(struct OBJGPU *pGpu, struct MemoryManager *pEngstate) {
+void __nvoc_up_thunk_OBJENGSTATE_memmgrInitMissing(struct OBJGPU *pGpu, struct MemoryManager *pEngstate) {
     engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_MemoryManager_OBJENGSTATE.offset));
 }
 
 // memmgrStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_memmgrStatePreInitUnlocked(struct OBJGPU *pGpu, struct MemoryManager *pEngstate) {
+NV_STATUS __nvoc_up_thunk_OBJENGSTATE_memmgrStatePreInitUnlocked(struct OBJGPU *pGpu, struct MemoryManager *pEngstate) {
     return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_MemoryManager_OBJENGSTATE.offset));
 }
 
 // memmgrStateInitUnlocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_memmgrStateInitUnlocked(struct OBJGPU *pGpu, struct MemoryManager *pEngstate) {
+NV_STATUS __nvoc_up_thunk_OBJENGSTATE_memmgrStateInitUnlocked(struct OBJGPU *pGpu, struct MemoryManager *pEngstate) {
     return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_MemoryManager_OBJENGSTATE.offset));
 }
 
 // memmgrStatePreLoad: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_memmgrStatePreLoad(struct OBJGPU *pGpu, struct MemoryManager *pEngstate, NvU32 arg3) {
+NV_STATUS __nvoc_up_thunk_OBJENGSTATE_memmgrStatePreLoad(struct OBJGPU *pGpu, struct MemoryManager *pEngstate, NvU32 arg3) {
     return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_MemoryManager_OBJENGSTATE.offset), arg3);
 }
 
 // memmgrStatePostUnload: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_memmgrStatePostUnload(struct OBJGPU *pGpu, struct MemoryManager *pEngstate, NvU32 arg3) {
+NV_STATUS __nvoc_up_thunk_OBJENGSTATE_memmgrStatePostUnload(struct OBJGPU *pGpu, struct MemoryManager *pEngstate, NvU32 arg3) {
     return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_MemoryManager_OBJENGSTATE.offset), arg3);
 }
 
 // memmgrIsPresent: virtual inherited (engstate) base (engstate)
-static NvBool __nvoc_up_thunk_OBJENGSTATE_memmgrIsPresent(struct OBJGPU *pGpu, struct MemoryManager *pEngstate) {
+NvBool __nvoc_up_thunk_OBJENGSTATE_memmgrIsPresent(struct OBJGPU *pGpu, struct MemoryManager *pEngstate) {
     return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_MemoryManager_OBJENGSTATE.offset));
 }
 
@@ -170,138 +188,138 @@ void __nvoc_init_dataField_MemoryManager(MemoryManager *pThis, RmHalspecOwner *p
     // Hal field -- bFbRegionsSupported
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->bFbRegionsSupported = ((NvBool)(0 == 0));
+        pThis->bFbRegionsSupported = NV_TRUE;
     }
 
     // Hal field -- bPmaEnabled
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->bPmaEnabled = ((NvBool)(0 == 0));
+        pThis->bPmaEnabled = NV_TRUE;
     }
 
     // Hal field -- bClientPageTablesPmaManaged
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->bClientPageTablesPmaManaged = ((NvBool)(0 == 0));
+        pThis->bClientPageTablesPmaManaged = NV_TRUE;
     }
 
     // Hal field -- bScanoutSysmem
     // default
     {
-        pThis->bScanoutSysmem = ((NvBool)(0 != 0));
+        pThis->bScanoutSysmem = NV_FALSE;
     }
 
     // Hal field -- bDisallowSplitLowerMemory
     // default
     {
-        pThis->bDisallowSplitLowerMemory = ((NvBool)(0 != 0));
+        pThis->bDisallowSplitLowerMemory = NV_FALSE;
     }
 
     // Hal field -- bSmallPageCompression
     // default
     {
-        pThis->bSmallPageCompression = ((NvBool)(0 != 0));
+        pThis->bSmallPageCompression = NV_FALSE;
     }
 
     // Hal field -- bSysmemCompressionSupportDef
     // default
     {
-        pThis->bSysmemCompressionSupportDef = ((NvBool)(0 != 0));
+        pThis->bSysmemCompressionSupportDef = NV_FALSE;
     }
 
     // Hal field -- bBug2301372IncreaseRmReserveMemoryWar
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
     {
-        pThis->bBug2301372IncreaseRmReserveMemoryWar = ((NvBool)(0 == 0));
+        pThis->bBug2301372IncreaseRmReserveMemoryWar = NV_TRUE;
     }
     // default
     else
     {
-        pThis->bBug2301372IncreaseRmReserveMemoryWar = ((NvBool)(0 != 0));
+        pThis->bBug2301372IncreaseRmReserveMemoryWar = NV_FALSE;
     }
 
-    pThis->bEnableDynamicPageOfflining = ((NvBool)(0 != 0));
+    pThis->bEnableDynamicPageOfflining = NV_FALSE;
 
     // Hal field -- bVgpuPmaSupport
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->bVgpuPmaSupport = ((NvBool)(0 == 0));
+        pThis->bVgpuPmaSupport = NV_TRUE;
     }
     // default
     else
     {
-        pThis->bVgpuPmaSupport = ((NvBool)(0 != 0));
+        pThis->bVgpuPmaSupport = NV_FALSE;
     }
 
-    pThis->bScrubChannelSetupInProgress = ((NvBool)(0 != 0));
+    pThis->bScrubChannelSetupInProgress = NV_FALSE;
 
     // Hal field -- bBug3922001DisableCtxBufOnSim
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
-        pThis->bBug3922001DisableCtxBufOnSim = ((NvBool)(0 == 0));
+        pThis->bBug3922001DisableCtxBufOnSim = NV_TRUE;
     }
     // default
     else
     {
-        pThis->bBug3922001DisableCtxBufOnSim = ((NvBool)(0 != 0));
+        pThis->bBug3922001DisableCtxBufOnSim = NV_FALSE;
     }
 
-    pThis->bEnableDynamicGranularityPageArrays = ((NvBool)(0 != 0));
+    pThis->bEnableDynamicGranularityPageArrays = NV_FALSE;
 
     // Hal field -- bAllowNoncontiguousAllocation
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->bAllowNoncontiguousAllocation = ((NvBool)(0 == 0));
+        pThis->bAllowNoncontiguousAllocation = NV_TRUE;
     }
 
     // Hal field -- bLocalEgmSupported
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
-        pThis->bLocalEgmSupported = ((NvBool)(0 == 0));
+        pThis->bLocalEgmSupported = NV_TRUE;
     }
     // default
     else
     {
-        pThis->bLocalEgmSupported = ((NvBool)(0 != 0));
+        pThis->bLocalEgmSupported = NV_FALSE;
     }
 
     // Hal field -- bScrubOnFreeEnabled
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->bScrubOnFreeEnabled = ((NvBool)(0 == 0));
+        pThis->bScrubOnFreeEnabled = NV_TRUE;
     }
 
     // Hal field -- bFastScrubberEnabled
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
-        pThis->bFastScrubberEnabled = ((NvBool)(0 == 0));
+        pThis->bFastScrubberEnabled = NV_TRUE;
     }
     // default
     else
     {
-        pThis->bFastScrubberEnabled = ((NvBool)(0 != 0));
+        pThis->bFastScrubberEnabled = NV_FALSE;
     }
 
     // Hal field -- bMonitoredFenceSupported
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->bMonitoredFenceSupported = ((NvBool)(0 == 0));
+        pThis->bMonitoredFenceSupported = NV_TRUE;
     }
 
     // Hal field -- b64BitSemaphoresSupported
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->b64BitSemaphoresSupported = ((NvBool)(0 == 0));
+        pThis->b64BitSemaphoresSupported = NV_TRUE;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
     {
-        pThis->b64BitSemaphoresSupported = ((NvBool)(0 != 0));
+        pThis->b64BitSemaphoresSupported = NV_FALSE;
     }
 
     // Hal field -- bGenericKindSupport
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->bGenericKindSupport = ((NvBool)(0 == 0));
+        pThis->bGenericKindSupport = NV_TRUE;
     }
 }
 
@@ -332,38 +350,6 @@ static void __nvoc_init_funcTable_MemoryManager_1(MemoryManager *pThis, RmHalspe
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
-    // memmgrConstructEngine -- virtual override (engstate) base (engstate)
-    pThis->__memmgrConstructEngine__ = &memmgrConstructEngine_IMPL;
-    pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_down_thunk_MemoryManager_engstateConstructEngine;
-
-    // memmgrStatePreInitLocked -- virtual override (engstate) base (engstate)
-    pThis->__memmgrStatePreInitLocked__ = &memmgrStatePreInitLocked_IMPL;
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStatePreInitLocked__ = &__nvoc_down_thunk_MemoryManager_engstateStatePreInitLocked;
-
-    // memmgrStateInitLocked -- virtual override (engstate) base (engstate)
-    pThis->__memmgrStateInitLocked__ = &memmgrStateInitLocked_IMPL;
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__ = &__nvoc_down_thunk_MemoryManager_engstateStateInitLocked;
-
-    // memmgrStateLoad -- virtual override (engstate) base (engstate)
-    pThis->__memmgrStateLoad__ = &memmgrStateLoad_IMPL;
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStateLoad__ = &__nvoc_down_thunk_MemoryManager_engstateStateLoad;
-
-    // memmgrStatePostLoad -- virtual override (engstate) base (engstate)
-    pThis->__memmgrStatePostLoad__ = &memmgrStatePostLoad_IMPL;
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStatePostLoad__ = &__nvoc_down_thunk_MemoryManager_engstateStatePostLoad;
-
-    // memmgrStatePreUnload -- virtual override (engstate) base (engstate)
-    pThis->__memmgrStatePreUnload__ = &memmgrStatePreUnload_IMPL;
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStatePreUnload__ = &__nvoc_down_thunk_MemoryManager_engstateStatePreUnload;
-
-    // memmgrStateUnload -- virtual override (engstate) base (engstate)
-    pThis->__memmgrStateUnload__ = &memmgrStateUnload_IMPL;
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStateUnload__ = &__nvoc_down_thunk_MemoryManager_engstateStateUnload;
-
-    // memmgrStateDestroy -- virtual override (engstate) base (engstate)
-    pThis->__memmgrStateDestroy__ = &memmgrStateDestroy_IMPL;
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStateDestroy__ = &__nvoc_down_thunk_MemoryManager_engstateStateDestroy;
-
     // memmgrAllocateConsoleRegion -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
@@ -392,7 +378,7 @@ static void __nvoc_init_funcTable_MemoryManager_1(MemoryManager *pThis, RmHalspe
     }
     else
     {
-        pThis->__memmgrMemUtilsCheckMemoryFastScrubEnable__ = &memmgrMemUtilsCheckMemoryFastScrubEnable_491d52;
+        pThis->__memmgrMemUtilsCheckMemoryFastScrubEnable__ = &memmgrMemUtilsCheckMemoryFastScrubEnable_3dd2c9;
     }
 
     // memmgrAllocDetermineAlignment -- halified (2 hals) body
@@ -552,7 +538,7 @@ static void __nvoc_init_funcTable_MemoryManager_1(MemoryManager *pThis, RmHalspe
     }
     else
     {
-        pThis->__memmgrReadMmuLock__ = &memmgrReadMmuLock_e133c0;
+        pThis->__memmgrReadMmuLock__ = &memmgrReadMmuLock_ccda6f;
     }
 
     // memmgrBlockMemLockedMemory -- halified (2 hals) body
@@ -660,31 +646,49 @@ static void __nvoc_init_funcTable_MemoryManager_1(MemoryManager *pThis, RmHalspe
     {
         pThis->__memmgrGetFBEndReserveSizeEstimate__ = &memmgrGetFBEndReserveSizeEstimate_GM107;
     }
-
-    // memmgrInitMissing -- virtual inherited (engstate) base (engstate)
-    pThis->__memmgrInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_memmgrInitMissing;
-
-    // memmgrStatePreInitUnlocked -- virtual inherited (engstate) base (engstate)
-    pThis->__memmgrStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_memmgrStatePreInitUnlocked;
-
-    // memmgrStateInitUnlocked -- virtual inherited (engstate) base (engstate)
-    pThis->__memmgrStateInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_memmgrStateInitUnlocked;
-
-    // memmgrStatePreLoad -- virtual inherited (engstate) base (engstate)
-    pThis->__memmgrStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_memmgrStatePreLoad;
-
-    // memmgrStatePostUnload -- virtual inherited (engstate) base (engstate)
-    pThis->__memmgrStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_memmgrStatePostUnload;
-
-    // memmgrIsPresent -- virtual inherited (engstate) base (engstate)
-    pThis->__memmgrIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_memmgrIsPresent;
-} // End __nvoc_init_funcTable_MemoryManager_1 with approximately 81 basic block(s).
+} // End __nvoc_init_funcTable_MemoryManager_1 with approximately 59 basic block(s).
 
 
 // Initialize vtable(s) for 42 virtual method(s).
 void __nvoc_init_funcTable_MemoryManager(MemoryManager *pThis, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 42 per-object function pointer(s).
+    // Per-class vtable definition
+    static const struct NVOC_VTABLE__MemoryManager vtable = {
+        .__memmgrConstructEngine__ = &memmgrConstructEngine_IMPL,    // virtual override (engstate) base (engstate)
+        .OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_down_thunk_MemoryManager_engstateConstructEngine,    // virtual
+        .__memmgrStatePreInitLocked__ = &memmgrStatePreInitLocked_IMPL,    // virtual override (engstate) base (engstate)
+        .OBJENGSTATE.__engstateStatePreInitLocked__ = &__nvoc_down_thunk_MemoryManager_engstateStatePreInitLocked,    // virtual
+        .__memmgrStateInitLocked__ = &memmgrStateInitLocked_IMPL,    // virtual override (engstate) base (engstate)
+        .OBJENGSTATE.__engstateStateInitLocked__ = &__nvoc_down_thunk_MemoryManager_engstateStateInitLocked,    // virtual
+        .__memmgrStateLoad__ = &memmgrStateLoad_IMPL,    // virtual override (engstate) base (engstate)
+        .OBJENGSTATE.__engstateStateLoad__ = &__nvoc_down_thunk_MemoryManager_engstateStateLoad,    // virtual
+        .__memmgrStatePostLoad__ = &memmgrStatePostLoad_IMPL,    // virtual override (engstate) base (engstate)
+        .OBJENGSTATE.__engstateStatePostLoad__ = &__nvoc_down_thunk_MemoryManager_engstateStatePostLoad,    // virtual
+        .__memmgrStatePreUnload__ = &memmgrStatePreUnload_IMPL,    // virtual override (engstate) base (engstate)
+        .OBJENGSTATE.__engstateStatePreUnload__ = &__nvoc_down_thunk_MemoryManager_engstateStatePreUnload,    // virtual
+        .__memmgrStateUnload__ = &memmgrStateUnload_IMPL,    // virtual override (engstate) base (engstate)
+        .OBJENGSTATE.__engstateStateUnload__ = &__nvoc_down_thunk_MemoryManager_engstateStateUnload,    // virtual
+        .__memmgrStateDestroy__ = &memmgrStateDestroy_IMPL,    // virtual override (engstate) base (engstate)
+        .OBJENGSTATE.__engstateStateDestroy__ = &__nvoc_down_thunk_MemoryManager_engstateStateDestroy,    // virtual
+        .__memmgrInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_memmgrInitMissing,    // virtual inherited (engstate) base (engstate)
+        .OBJENGSTATE.__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
+        .__memmgrStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_memmgrStatePreInitUnlocked,    // virtual inherited (engstate) base (engstate)
+        .OBJENGSTATE.__engstateStatePreInitUnlocked__ = &engstateStatePreInitUnlocked_IMPL,    // virtual
+        .__memmgrStateInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_memmgrStateInitUnlocked,    // virtual inherited (engstate) base (engstate)
+        .OBJENGSTATE.__engstateStateInitUnlocked__ = &engstateStateInitUnlocked_IMPL,    // virtual
+        .__memmgrStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_memmgrStatePreLoad,    // virtual inherited (engstate) base (engstate)
+        .OBJENGSTATE.__engstateStatePreLoad__ = &engstateStatePreLoad_IMPL,    // virtual
+        .__memmgrStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_memmgrStatePostUnload,    // virtual inherited (engstate) base (engstate)
+        .OBJENGSTATE.__engstateStatePostUnload__ = &engstateStatePostUnload_IMPL,    // virtual
+        .__memmgrIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_memmgrIsPresent,    // virtual inherited (engstate) base (engstate)
+        .OBJENGSTATE.__engstateIsPresent__ = &engstateIsPresent_IMPL,    // virtual
+    };
+
+    // Pointer(s) to per-class vtable(s)
+    pThis->__nvoc_base_OBJENGSTATE.__nvoc_vtable = &vtable.OBJENGSTATE;    // (engstate) super
+    pThis->__nvoc_vtable = &vtable;    // (memmgr) this
+
+    // Initialize vtable(s) with 28 per-object function pointer(s).
     __nvoc_init_funcTable_MemoryManager_1(pThis, pRmhalspecowner);
 }
 

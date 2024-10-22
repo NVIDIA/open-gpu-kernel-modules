@@ -125,14 +125,6 @@ static NV_INLINE void NV_RM_RPC_UPDATE_GPU_PDES(OBJGPU *pGpu, ...) { }
             status = rpcGetEncoderCapacity_HAL(pGpu, pRpc, hClient, hObject, encoderCapacity);  \
     } while(0)
 
-#define NV_RM_RPC_DISABLE_CHANNELS(pGpu, bDisable, status)              \
-    do                                                                  \
-    {                                                                   \
-        OBJRPC *pRpc = GPU_GET_RPC(pGpu);                               \
-        if ((status == NV_OK) && (pRpc != NULL))                        \
-            status = rpcDisableChannels_HAL(pGpu, pRpc, bDisable);      \
-    } while(0)
-
 #define NV_RM_RPC_SAVE_HIBERNATION_DATA(pGpu, status)                   \
     do                                                                  \
     {                                                                   \

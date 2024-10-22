@@ -327,23 +327,22 @@ static NV_STATUS _threadNodeInitTime(THREAD_STATE_NODE *pThreadNode)
         computeTimeoutMsecs = pThreadNode->timeout.overrideTimeoutMsecs;
     }
 
-    NvBool deviceInit = ((pThreadNode->flags & THREAD_STATE_FLAGS_DEVICE_INIT) != 0);
-    if (deviceInit && hypervisorIsType(OS_HYPERVISOR_HYPERV))
+    if ((pThreadNode->flags & THREAD_STATE_FLAGS_DEVICE_INIT) != 0)
     {
         //
-        // Hyper-V intercepts MMIO accesses to the GPU adding a lot of extra
-        // latency. This causes RM device init that is very heavy in MMIO
-        // accesses to take much longer than on baremetal. To WAR this, use a
-        // long 60 secs timeout for threads performing device init. This should
-        // leave us with a comfortable buffer as the longest init observed so
-        // far was 20 seconds on K80.
+        // Even on platforms with strict timing requirements (e.g. WDDM) there
+        // is an exception for initialization. While init time is an important
+        // performance metric, we do not want to functionally fail because of
+        // an arbitrary deadline. Thus, we set the timeout to give plenty of
+        // buffer room for some of the slower platforms:
+        // - P40 can take ~30 seconds when booting in passthrough due to
+        //   Hyper-V intercepting all MMIO accesses (bug 1900927)
+        // - Hopper+ can take 3+ seconds due to memory link initialization
         //
-        // See bug 1900927 for more details.
-        //
-        const NvU32 HYPER_V_INIT_TIMEOUT_MS = 60 * 1000;
+        const NvU32 DEVICE_INIT_TIMEOUT_MS = 60 * 1000;
 
-        computeTimeoutMsecs = HYPER_V_INIT_TIMEOUT_MS;
-        nonComputeTimeoutMsecs = HYPER_V_INIT_TIMEOUT_MS;
+        computeTimeoutMsecs = DEVICE_INIT_TIMEOUT_MS;
+        nonComputeTimeoutMsecs = DEVICE_INIT_TIMEOUT_MS;
     }
 
     _threadStateSetNextCpuYieldTime(pThreadNode);

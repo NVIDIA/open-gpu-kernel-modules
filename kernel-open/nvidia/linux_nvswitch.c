@@ -31,6 +31,7 @@
 #include "nvCpuUuid.h"
 #include "nv-time.h"
 #include "nvlink_caps.h"
+#include "nvlink_proto.h"
 
 #include <linux/module.h>
 #include <linux/interrupt.h>

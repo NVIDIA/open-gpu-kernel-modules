@@ -252,40 +252,12 @@ static NvBool osInterruptPending(
                 {
                     if (pKernelDisplay != NULL)
                     {
-                        NvU32 head = 0;
-                        NvU32 headIntrMask = 0;
                         MC_ENGINE_BITVECTOR intrDispPending;
 
                         kdispServiceVblank_HAL(pGpu, pKernelDisplay, 0,
                                                (VBLANK_STATE_PROCESS_LOW_LATENCY |
                                                 VBLANK_STATE_PROCESS_CALLED_FROM_ISR),
                                                &threadState);
-
-                        // handle RG line interrupt, if it is forwared from GSP.
-                        if (IS_GSP_CLIENT(pGpu))
-                        {
-                            for (head = 0; head < kdispGetNumHeads(pKernelDisplay); ++head)
-                            {
-                                KernelHead *pKernelHead = KDISP_GET_HEAD(pKernelDisplay, head);
-
-                                headIntrMask = kheadReadPendingRgLineIntr_HAL(pGpu, pKernelHead, &threadState);
-                                if (headIntrMask != 0)
-                                {
-                                    NvU32 clearIntrMask = 0;
-
-                                    kheadProcessRgLineCallbacks_HAL(pGpu,
-                                                                    pKernelHead,
-                                                                    head,
-                                                                    &headIntrMask,
-                                                                    &clearIntrMask,
-                                                                    osIsISR());
-                                    if (clearIntrMask != 0)
-                                    {
-                                        kheadResetRgLineIntrMask_HAL(pGpu, pKernelHead, clearIntrMask, &threadState);
-                                    }
-                                }
-                            }
-                        }
 
                         *serviced = NV_TRUE;
                         bitVectorClr(&intr0Pending, MC_ENGINE_IDX_DISP);
@@ -332,8 +304,6 @@ static NvBool osInterruptPending(
                 }
             }
         }
-        threadStateFreeISRAndDeferredIntHandler(&threadState,
-                pDeviceLockGpu, THREAD_STATE_FLAGS_IS_ISR);
 
         if (sema_release)
         {
@@ -346,6 +316,9 @@ static NvBool osInterruptPending(
         {
             rmDeviceGpuLockSetOwner(pDeviceLockGpu, GPUS_LOCK_OWNER_PENDING_DPC_REFRESH);
         }
+
+        threadStateFreeISRAndDeferredIntHandler(&threadState,
+                pDeviceLockGpu, THREAD_STATE_FLAGS_IS_ISR);
     }
 
     tlsIsrDestroy(pIsrAllocator);
@@ -544,8 +517,17 @@ static void RmIsrBottomHalf(
             pGpu, THREAD_STATE_FLAGS_IS_ISR_DEFERRED_INT_HANDLER);
     }
 
+    gpuInstance = 0;
+    pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance);
+
+    threadStateInitISRAndDeferredIntHandler(&threadState,
+        pGpu, THREAD_STATE_FLAGS_IS_ISR_DEFERRED_INT_HANDLER);
+
     // UNLOCK: release GPUs lock
     rmDeviceGpuLocksRelease(pDeviceLockGpu, GPUS_LOCK_FLAGS_NONE, NULL);
+
+    threadStateFreeISRAndDeferredIntHandler(&threadState,
+            pGpu, THREAD_STATE_FLAGS_IS_ISR_DEFERRED_INT_HANDLER);
 
     tlsIsrDestroy(pIsrAllocator);
     portMemAllocatorRelease(pIsrAllocator);
@@ -568,6 +550,8 @@ static void RmIsrBottomHalfUnlocked(
         return;
     }
 
+    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
+
     // Grab GPU lock here as this kthread-item was enqueued without grabbing GPU lock
     if (rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DPC) == NV_OK)
     {
@@ -575,20 +559,18 @@ static void RmIsrBottomHalfUnlocked(
         {
             pIntr = GPU_GET_INTR(pGpu);
 
-            threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
-
             if (intrGetIntrEn(pIntr) != INTERRUPT_TYPE_DISABLED)
             {
                 MC_ENGINE_BITVECTOR intrPending;
                 intrGetPendingStall_HAL(pGpu, pIntr, &intrPending, &threadState);
                 intrServiceNonStallBottomHalf(pGpu, pIntr, &intrPending, &threadState);
             }
-
-            threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
         }
 
         rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
     }
+
+    threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 }
 
 NvBool NV_API_CALL rm_isr(

@@ -163,6 +163,24 @@ struct nv_drm_device {
     struct drm_property *nv_hdr_output_metadata_property;
 #endif
 
+    struct drm_property *nv_plane_lms_ctm_property;
+    struct drm_property *nv_plane_lms_to_itp_ctm_property;
+    struct drm_property *nv_plane_itp_to_lms_ctm_property;
+    struct drm_property *nv_plane_blend_ctm_property;
+
+    struct drm_property *nv_plane_degamma_tf_property;
+    struct drm_property *nv_plane_degamma_lut_property;
+    struct drm_property *nv_plane_degamma_lut_size_property;
+    struct drm_property *nv_plane_degamma_multiplier_property;
+
+    struct drm_property *nv_plane_tmo_lut_property;
+    struct drm_property *nv_plane_tmo_lut_size_property;
+
+    struct drm_property *nv_crtc_regamma_tf_property;
+    struct drm_property *nv_crtc_regamma_lut_property;
+    struct drm_property *nv_crtc_regamma_lut_size_property;
+    struct drm_property *nv_crtc_regamma_divisor_property;
+
     struct nv_drm_device *next;
 };
 

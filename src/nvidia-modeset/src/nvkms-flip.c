@@ -26,6 +26,7 @@
 #include "nvkms-flip.h"
 #include "nvkms-hw-flip.h"
 #include "nvkms-utils-flip.h"
+#include "nvkms-lut.h"
 #include "nvkms-prealloc.h"
 #include "nvkms-private.h"
 #include "nvkms-utils.h"
@@ -68,9 +69,10 @@ NvBool nvCheckFlipPermissions(
         layerMask = allLayersMask;
     }
 
-    /* Changing viewPortIn or LUT requires permission to alter all layers. */
+    /* Changing viewPortIn or output LUT requires permission to alter all layers. */
 
     if ((layerMask != allLayersMask) && ((pParams->viewPortIn.specified) ||
+                                         (pParams->olut.specified) ||
                                          (pParams->lut.input.specified)  ||
                                          (pParams->lut.output.specified))) {
         return FALSE;
@@ -196,8 +198,7 @@ static NvBool UpdateProposedFlipStateOneApiHead(
             }
         }
 
-        if (!nvChooseColorRangeEvo(pProposedApiHead->hdr.dpyColor.colorimetry,
-                                   pDpyEvo->requestedColorRange,
+        if (!nvChooseColorRangeEvo(pDpyEvo->requestedColorRange,
                                    pProposedApiHead->hdr.dpyColor.format,
                                    pProposedApiHead->hdr.dpyColor.bpc,
                                    &pProposedApiHead->hdr.dpyColor.range)) {
@@ -354,6 +355,26 @@ static void InitNvKmsFlipWorkArea(const NVDevEvoRec *pDevEvo,
     }
 }
 
+static void CleanupNvKmsFlipWorkArea(NVDevEvoPtr pDevEvo,
+                                     struct NvKmsFlipWorkArea *pWorkArea)
+{
+    const NVDispEvoRec *pDispEvo;
+    NvU32 sd, head;
+
+    FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
+        for (head = 0; head < ARRAY_LEN(pWorkArea->sd[sd].head); head++) {
+            /*
+             * If the flip failed or wasn't committed, any TMO surfaces
+             * allocated by nvSetTmoLutSurfaceEvo will be left in newState with
+             * 1 refcnt, so free them now.
+             */
+            nvFreeUnrefedTmoLutSurfacesEvo(pDevEvo,
+                                           &pWorkArea->sd[sd].head[head].newState,
+                                           head);
+        }
+    }
+}
+
 static void FlipEvoOneApiHead(NVDispEvoRec *pDispEvo,
                               const NvU32 apiHead,
                               const struct NvKmsFlipWorkArea *pWorkArea,
@@ -396,12 +417,6 @@ static void FlipEvoOneApiHead(NVDispEvoRec *pDispEvo,
                 head,
                 &pProposedApiHead->hdr.dpyColor,
                 pUpdateState);
-        }
-
-        if (pProposedApiHead->lut.input.specified ||
-            pProposedApiHead->lut.output.specified) {
-            /* Update current LUT to hardware */
-            nvEvoSetLUTContextDma(pDispEvo, head, pUpdateState);
         }
     }
 
@@ -502,9 +517,7 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
     const NvBool allowVrr =
         GetAllowVrr(pDevEvo, pFlipHead, numFlipHeads,
                     requestAllowVrr, &applyAllowVrr);
-    struct NvKmsFlipWorkArea *pWorkArea =
-        nvPreallocGet(pDevEvo, PREALLOC_TYPE_FLIP_WORK_AREA,
-                      sizeof(*pWorkArea));
+    struct NvKmsFlipWorkArea *pWorkArea;
     NvU32 i;
 
     /*
@@ -516,9 +529,14 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
      * NVKMS_IOCTL_FLIP requests.
      */
     if (pDevEvo->coreInitMethodsPending) {
-        goto done;
+        if (reply) {
+            reply->flipResult = result;
+        }
+        return ret;
     }
 
+    pWorkArea = nvPreallocGet(pDevEvo, PREALLOC_TYPE_FLIP_WORK_AREA,
+                              sizeof(*pWorkArea));
     InitNvKmsFlipWorkArea(pDevEvo, pWorkArea);
 
     /* Validate the flip parameters and update the work area. */
@@ -677,7 +695,7 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
     /* fall through */
 
 done:
-
+    CleanupNvKmsFlipWorkArea(pDevEvo, pWorkArea);
     nvPreallocRelease(pDevEvo, PREALLOC_TYPE_FLIP_WORK_AREA);
     if (reply) {
         reply->flipResult = result;
@@ -782,7 +800,7 @@ void nvApiHeadSetViewportPointIn(const NVDispEvoRec *pDispEvo,
 
         nvPushEvoSubDevMaskDisp(pDispEvo);
         pDevEvo->hal->SetViewportPointIn(pDevEvo, head,
-            x + (hwViewportInWidth * pHeadState->tilePosition), y,
+            x + (hwViewportInWidth * pHeadState->mergeHeadSection), y,
             &updateState);
         nvPopEvoSubDevMask(pDevEvo);
 

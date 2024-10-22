@@ -47,7 +47,7 @@ cliresCtrlCmdGpuGetVideoLinks_IMPL
     NV0000_CTRL_GPU_GET_VIDEO_LINKS_PARAMS *pParams
 )
 {
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     return gpumgrGetSliLinks(pParams);
 }

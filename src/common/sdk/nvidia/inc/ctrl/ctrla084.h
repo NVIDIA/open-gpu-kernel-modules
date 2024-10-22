@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -307,5 +307,53 @@ typedef struct NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_GET_BAR_MAPPING_RANGES_PARAMS
 typedef struct NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_FREE_STATES_PARAMS {
     NvU32 flags;
 } NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_FREE_STATES_PARAMS;
+
+#define NVA084_MAX_VMMU_SEGMENTS_COUNT                             384
+
+/*
+ * NVA084_CTRL_CMD_KERNEL_HOST_VGPU_DEVICE_BOOTLOAD_VGPU_TASK
+ *
+ * This command will update the bootload vGPU task 
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_CLIENT
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_INVALID_OBJECT_HANDLE
+ *   NV_ERR_OBJECT_NOT_FOUND
+ *   NV_ERR_NOT_SUPPORTED
+ *
+ * Parameters:
+ * numGuestFbHandles        -> number of guest memory handles, the client handle is hPluginClient
+ * guestFbHandleList        -> handle list to guest memory
+ * hPluginHeapMemory        -> plugin heap memory handle, the client handle is hPluginClient
+ * ctrlBuffOffset           -> offset of control buffer
+ * initTaskLogBuffOffset    -> offset of init task log buffer
+ * initTaskLogBuffSize      -> size of init task log buffer
+ * vgpuTaskLogBuffOffset    -> offset of vgpu task log buffer
+ * vgpuTaskLogBuffSize      -> size of vgpu task log buffer
+ * kernelLogBuffOffset      -> offset of kernel log buffer
+ * kernelLogBuffSize        -> size of kernel log buffer
+ * hMigRmHeapMemory         -> MIG-RM heap memory handle
+ * bDeviceProfilingEnabled  -> If set to true, profiling is allowed
+ */
+#define NVA084_CTRL_CMD_KERNEL_HOST_VGPU_DEVICE_BOOTLOAD_VGPU_TASK (0xa084010d) /* finn: Evaluated from "(FINN_NVA084_KERNEL_HOST_VGPU_DEVICE_KERNEL_HOST_VGPU_DEVICE_INTERFACE_ID << 8) | NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BOOTLOAD_VGPU_TASK_PARAMS_MESSAGE_ID" */
+
+#define NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BOOTLOAD_VGPU_TASK_PARAMS_MESSAGE_ID (0xDU)
+
+typedef struct NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BOOTLOAD_VGPU_TASK_PARAMS {
+    NvU32    numGuestFbHandles;
+    NvHandle guestFbHandleList[NVA084_MAX_VMMU_SEGMENTS_COUNT];
+    NvHandle hPluginHeapMemory;
+    NV_DECLARE_ALIGNED(NvU64 ctrlBuffOffset, 8);
+    NV_DECLARE_ALIGNED(NvU64 initTaskLogBuffOffset, 8);
+    NV_DECLARE_ALIGNED(NvU64 initTaskLogBuffSize, 8);
+    NV_DECLARE_ALIGNED(NvU64 vgpuTaskLogBuffOffset, 8);
+    NV_DECLARE_ALIGNED(NvU64 vgpuTaskLogBuffSize, 8);
+    NV_DECLARE_ALIGNED(NvU64 kernelLogBuffOffset, 8);
+    NV_DECLARE_ALIGNED(NvU64 kernelLogBuffSize, 8);
+    NvHandle hMigRmHeapMemory;
+    NvBool   bDeviceProfilingEnabled;
+} NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BOOTLOAD_VGPU_TASK_PARAMS;
 
 /* _ctrla084_h_ */

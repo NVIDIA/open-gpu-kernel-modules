@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1032,6 +1032,15 @@ _nvswitch_ctrl_get_tnvl_status
     return device->hal.nvswitch_tnvl_get_status(device, params);
 }
 
+void
+nvswitch_tnvl_disable_interrupts
+(
+    nvswitch_device *device
+)
+{
+    device->hal.nvswitch_tnvl_disable_interrupts(device);
+}
+
 static NvlStatus
 _nvswitch_construct_soe
 (
@@ -1879,9 +1888,16 @@ nvswitch_lib_initialize_device
     (void)device->hal.nvswitch_read_oob_blacklist_state(device);
     (void)device->hal.nvswitch_write_fabric_state(device);
 
-    nvswitch_task_create(device, &nvswitch_fabric_state_heartbeat,
-                         NVSWITCH_HEARTBEAT_INTERVAL_NS,
-                         NVSWITCH_TASK_TYPE_FLAGS_RUN_EVEN_IF_DEVICE_NOT_INITIALIZED);
+    if (!nvswitch_is_tnvl_mode_enabled(device))
+    {
+        nvswitch_task_create(device, &nvswitch_fabric_state_heartbeat,
+                             NVSWITCH_HEARTBEAT_INTERVAL_NS,
+                             NVSWITCH_TASK_TYPE_FLAGS_RUN_EVEN_IF_DEVICE_NOT_INITIALIZED);
+    }
+    else
+    {
+        NVSWITCH_PRINT(device, INFO, "Skipping Fabric state heartbeat background task when TNVL is enabled\n");
+    }
 
     //
     // Blacklisted devices return successfully in order to preserve the fabric state heartbeat
@@ -1985,12 +2001,26 @@ nvswitch_lib_initialize_device
 
     if (device->regkeys.latency_counter == NV_SWITCH_REGKEY_LATENCY_COUNTER_LOGGING_ENABLE)
     {
-        nvswitch_task_create(device, &nvswitch_internal_latency_bin_log,
-            nvswitch_get_latency_sample_interval_msec(device) * NVSWITCH_INTERVAL_1MSEC_IN_NS * 9/10, 0);
+        if (!nvswitch_is_tnvl_mode_enabled(device))
+        {
+            nvswitch_task_create(device, &nvswitch_internal_latency_bin_log,
+                nvswitch_get_latency_sample_interval_msec(device) * NVSWITCH_INTERVAL_1MSEC_IN_NS * 9/10, 0);
+        }
+        else
+        {
+            NVSWITCH_PRINT(device, INFO, "Skipping Internal latency background task when TNVL is enabled\n");
+        }
     }
 
-    nvswitch_task_create(device, &nvswitch_ecc_writeback_task,
-        (60 * NVSWITCH_INTERVAL_1SEC_IN_NS), 0);
+    if (!nvswitch_is_tnvl_mode_enabled(device))
+    {
+        nvswitch_task_create(device, &nvswitch_ecc_writeback_task,
+            (60 * NVSWITCH_INTERVAL_1SEC_IN_NS), 0);
+    }
+    else
+    {
+        NVSWITCH_PRINT(device, INFO, "Skipping ECC writeback background task when TNVL is enabled\n");
+    }
 
     if (IS_RTLSIM(device) || IS_EMULATION(device) || IS_FMODEL(device))
     {
@@ -2000,8 +2030,15 @@ nvswitch_lib_initialize_device
     }
     else
     {
-        nvswitch_task_create(device, &nvswitch_monitor_thermal_alert,
-            100*NVSWITCH_INTERVAL_1MSEC_IN_NS, 0);
+        if (!nvswitch_is_tnvl_mode_enabled(device))
+        {
+            nvswitch_task_create(device, &nvswitch_monitor_thermal_alert,
+                100*NVSWITCH_INTERVAL_1MSEC_IN_NS, 0);
+        }
+        else
+        {
+            NVSWITCH_PRINT(device, INFO, "Skipping Thermal alert background task when TNVL is enabled\n");
+        }
     }
 
     device->nvlink_device->initialized = 1;
@@ -5987,6 +6024,15 @@ nvswitch_tnvl_send_fsp_lock_config
     return device->hal.nvswitch_tnvl_send_fsp_lock_config(device);
 }
 
+NvlStatus
+nvswitch_send_tnvl_prelock_cmd
+(
+    nvswitch_device *device
+)
+{
+    return device->hal.nvswitch_send_tnvl_prelock_cmd(device);
+}
+
 static NvlStatus
 _nvswitch_ctrl_set_device_tnvl_lock
 (
@@ -6020,8 +6066,18 @@ _nvswitch_ctrl_set_device_tnvl_lock
 
     //
     // Disable non-fatal and legacy interrupts
-    // Disable commands to SOE
     //
+    nvswitch_tnvl_disable_interrupts(device);
+
+    // 
+    //
+    // Send Pre-Lock sequence command to SOE
+    //
+    status = nvswitch_send_tnvl_prelock_cmd(device);
+    if (status != NVL_SUCCESS)
+    {
+        return status;
+    }
 
     // Send lock-config command to FSP
     status = nvswitch_tnvl_send_fsp_lock_config(device);

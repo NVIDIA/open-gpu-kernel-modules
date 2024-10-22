@@ -1219,6 +1219,73 @@ NV_STATUS nv_uvm_event_interrupt(const NvU8 *pUuid)
     return NV_ERR_NO_INTR_PENDING;
 }
 
+NV_STATUS nvUvmInterfaceGetNvlinkInfo(uvmGpuDeviceHandle device,
+                                      UvmGpuNvlinkInfo *nvlinkInfo)
+{
+    nvidia_stack_t *sp = NULL;
+    NV_STATUS status;
+
+    if (nv_kmem_cache_alloc_stack(&sp) != 0)
+    {
+        return NV_ERR_NO_MEMORY;
+    }
+
+    status = rm_gpu_ops_get_nvlink_info(sp, (gpuDeviceHandle)device, nvlinkInfo);
+
+    nv_kmem_cache_free_stack(sp);
+
+    return status;
+}
+EXPORT_SYMBOL(nvUvmInterfaceGetNvlinkInfo);
+
+NV_STATUS nv_uvm_drain_P2P(const NvU8 *uuid)
+{
+    NvProcessorUuid uvmUuid;
+    struct UvmOpsUvmEvents *events;
+    NV_STATUS ret = NV_ERR_NOT_SUPPORTED;
+
+    memcpy(uvmUuid.uuid, uuid, UVM_UUID_LEN);
+
+    // Synchronize callbacks with unregistration
+    down(&g_pNvUvmEventsLock);
+
+    // It's not strictly necessary to use a cached local copy of the events
+    // pointer here since it can't change under the lock, but we'll do it for
+    // consistency.
+    events = getUvmEvents();
+    if(events && events->drainP2P)
+    {
+        ret = events->drainP2P(&uvmUuid);
+    }
+    up(&g_pNvUvmEventsLock);
+
+    return ret;
+}
+
+NV_STATUS nv_uvm_resume_P2P(const NvU8 *uuid)
+{
+    NvProcessorUuid uvmUuid;
+    struct UvmOpsUvmEvents *events;
+    NV_STATUS ret = NV_ERR_NOT_SUPPORTED;
+
+    memcpy(uvmUuid.uuid, uuid, UVM_UUID_LEN);
+
+    // Synchronize callbacks with unregistration
+    down(&g_pNvUvmEventsLock);
+
+    // It's not strictly necessary to use a cached local copy of the events
+    // pointer here since it can't change under the lock, but we'll do it for
+    // consistency.
+    events = getUvmEvents();
+    if(events && events->resumeP2P)
+    {
+        ret = events->resumeP2P(&uvmUuid);
+    }
+    up(&g_pNvUvmEventsLock);
+
+    return ret;
+}
+
 NV_STATUS nvUvmInterfaceP2pObjectCreate(uvmGpuDeviceHandle device1,
                                         uvmGpuDeviceHandle device2,
                                         NvHandle *hP2pObject)
@@ -1276,6 +1343,32 @@ NV_STATUS nvUvmInterfaceGetExternalAllocPtes(uvmGpuAddressSpaceHandle vaSpace,
     return status;
 }
 EXPORT_SYMBOL(nvUvmInterfaceGetExternalAllocPtes);
+
+NV_STATUS nvUvmInterfaceGetExternalAllocPhysAddrs(uvmGpuAddressSpaceHandle vaSpace,
+                                                  NvHandle hDupedMemory,
+                                                  NvU64 offset,
+                                                  NvU64 size,
+                                                  UvmGpuExternalPhysAddrInfo *gpuExternalPhysAddrInfo)
+{
+    nvidia_stack_t *sp = NULL;
+    NV_STATUS status;
+
+    if (nv_kmem_cache_alloc_stack(&sp) != 0)
+    {
+        return NV_ERR_NO_MEMORY;
+    }
+
+    status = rm_gpu_ops_get_external_alloc_phys_addrs(sp,
+                                                      (gpuAddressSpaceHandle)vaSpace,
+                                                      hDupedMemory,
+                                                      offset,
+                                                      size,
+                                                      gpuExternalPhysAddrInfo);
+
+    nv_kmem_cache_free_stack(sp);
+    return status;
+}
+EXPORT_SYMBOL(nvUvmInterfaceGetExternalAllocPhysAddrs);
 
 NV_STATUS nvUvmInterfaceRetainChannel(uvmGpuAddressSpaceHandle vaSpace,
                                       NvHandle hClient,
@@ -1477,6 +1570,14 @@ NV_STATUS nvUvmInterfacePagingChannelPushStream(UvmGpuPagingChannelHandle channe
                                                  methodStreamSize);
 }
 EXPORT_SYMBOL(nvUvmInterfacePagingChannelPushStream);
+
+void nvUvmInterfaceReportFatalError(NV_STATUS error)
+{
+    nvidia_stack_t *sp = nvUvmGetSafeStack();
+    rm_gpu_ops_report_fatal_error(sp, error);
+    nvUvmFreeSafeStack(sp);
+}
+EXPORT_SYMBOL(nvUvmInterfaceReportFatalError);
 
 NV_STATUS nvUvmInterfaceCslInitContext(UvmCslContext *uvmCslContext,
                                        uvmGpuChannelHandle channel)

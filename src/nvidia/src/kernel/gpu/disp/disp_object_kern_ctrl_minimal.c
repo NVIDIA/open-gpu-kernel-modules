@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -171,20 +171,16 @@ dispobjCtrlCmdGetRgConnectedLockpinStateless_IMPL
     OBJGPU         *pGpu = DISPAPI_GET_GPU(pDispObject);
     KernelDisplay *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
     NvHandle        hClient = RES_GET_CLIENT_HANDLE(pDispObject);
-    DisplayApi     *pDisplayApi;
     OBJGPU         *pPeerGpu;
 
     NV_ASSERT_OR_RETURN(pParams->head < pKernelDisplay->numHeads, NV_ERR_INVALID_ARGUMENT);
 
-    if (!CliGetDispInfo(hClient, pParams->peer.hDisplay, &pDisplayApi) &&
-        !CliGetDispCommonInfo(hClient, pParams->peer.hDisplay, &pDisplayApi))
-    {
-        return NV_ERR_INVALID_OBJECT_HANDLE;
-    }
-
     RsResourceRef *pPeerDisplayRef;
     NV_ASSERT_OK_OR_RETURN(serverutilGetResourceRef(hClient, pParams->peer.hDisplay, &pPeerDisplayRef));
     NV_ASSERT_OR_RETURN(pPeerDisplayRef->pParentRef != NULL, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN((dynamicCast(pPeerDisplayRef->pResource, DispCommon) != NULL ||
+                         dynamicCast(pPeerDisplayRef->pResource, DispObject) != NULL), 
+                         NV_ERR_INVALID_OBJECT);
 
     Subdevice *pPeerSubdevice;
     NV_ASSERT_OK_OR_RETURN(subdeviceGetByInstance(RES_GET_CLIENT(pDispObject), pPeerDisplayRef->pParentRef->hResource,

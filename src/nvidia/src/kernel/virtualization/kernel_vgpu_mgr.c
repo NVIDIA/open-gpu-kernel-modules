@@ -32,6 +32,7 @@
 #include "virtualization/kernel_vgpu_mgr.h"
 #include "gpu/device/device.h"
 #include "vgpu/vgpu_version.h"
+#include "vgpu/vgpu_events.h"
 #include "rmapi/rmapi_utils.h"
 #include "rmapi/rs_utils.h"
 #include "gpu/gpu.h"
@@ -159,8 +160,9 @@ kvgpumgrGetPgpuIndex(KernelVgpuMgr *pKernelVgpuMgr, NvU32 gpuPciId, NvU32* index
 NvBool
 kvgpumgrIsHeterogeneousVgpuSupported(void)
 {
-    /*This support is currently limited to VMware and KVM*/
-    return (osIsVgpuVfioPresent() == NV_OK);
+
+    return ((osIsVgpuVfioPresent() == NV_OK)
+           );
 }
 
 NvBool
@@ -712,8 +714,6 @@ kvgpumgrRegisterGuestId(SET_GUEST_ID_PARAMS *pParams,
                         break;
                     }
                 }
-                else
-                    return NV_ERR_INVALID_ARGUMENT;
             }
         }
 
@@ -947,7 +947,7 @@ kvgpumgrGuestRegister(OBJGPU *pGpu,
              pRequestVgpu != NULL;
              pRequestVgpu = listNext(&pKernelVgpuMgr->listRequestVgpuHead, pRequestVgpu))
         {
-            if (portMemCmp(pRequestVgpu->mdevUuid, pVgpuDevName, VM_UUID_SIZE) == 0)
+            if (portMemCmp(pRequestVgpu->vgpuDevName, pVgpuDevName, VM_UUID_SIZE) == 0)
                 break;
         }
 
@@ -992,6 +992,10 @@ kvgpumgrGuestRegister(OBJGPU *pGpu,
     portMemSet(pKernelHostVgpuDevice, 0, sizeof(KERNEL_HOST_VGPU_DEVICE));
 
     pKernelHostVgpuDevice->vgpuType = vgpuType;
+
+    NV_ASSERT_OR_RETURN(((vmIdType == VM_ID_DOMAIN_ID) ||
+                         (vmIdType == VM_ID_UUID)),
+                         NV_ERR_INVALID_ARGUMENT);
 
     setGuestIDParams.action   = SET_GUEST_ID_ACTION_SET;
     setGuestIDParams.vmPid    = vmPid;
@@ -2111,7 +2115,7 @@ kvgpumgrSetVgpuEncoderCapacity(OBJGPU *pGpu, NvU8 *vgpuUuid, NvU32 encoderCapaci
 // only creates REQUEST_VGPU_INFO_NODE entry, actual vGPU will be created later
 //
 NV_STATUS
-kvgpumgrCreateRequestVgpu(NvU32 gpuPciId, const NvU8 *pMdevUuid,
+kvgpumgrCreateRequestVgpu(NvU32 gpuPciId, const NvU8 *pVgpuDevName,
                           NvU32 vgpuTypeId, NvU16 *vgpuId, NvU32 gpuPciBdf)
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();
@@ -2130,8 +2134,8 @@ kvgpumgrCreateRequestVgpu(NvU32 gpuPciId, const NvU8 *pMdevUuid,
 
     if (pGpu == NULL)
     {
-        NV_PRINTF(LEVEL_ERROR, "GPU handle is not valid \n");
-        return NV_ERR_INVALID_STATE;
+        NV_PRINTF(LEVEL_ERROR, "GPU %u is not initialized yet \n", gpuPciBdf);
+        return NV_ERR_TIMEOUT_RETRY;
     }
 
     if ((status = kvgpumgrGetPgpuIndex(pKernelVgpuMgr, gpuPciId, &pgpuIndex)) != NV_OK)
@@ -2232,7 +2236,7 @@ kvgpumgrCreateRequestVgpu(NvU32 gpuPciId, const NvU8 *pMdevUuid,
 
     portMemSet(pRequestVgpu, 0, sizeof(REQUEST_VGPU_INFO_NODE));
 
-    portMemCopy(pRequestVgpu->mdevUuid, VGPU_UUID_SIZE, pMdevUuid, VGPU_UUID_SIZE);
+    portMemCopy(pRequestVgpu->vgpuDevName, VGPU_UUID_SIZE, pVgpuDevName, VGPU_UUID_SIZE);
     pRequestVgpu->gpuPciId = gpuPciId; /* For SRIOV, this is PF's gpuPciId */
     pRequestVgpu->gpuPciBdf = gpuPciBdf; /* For SRIOV, this is VF's gpuPciBdf */
     pRequestVgpu->vgpuId = *vgpuId;
@@ -2262,7 +2266,7 @@ failed:
 // REQUEST_VGPU_INFO_NODE is currently used only for vGPU on KVM.
 //
 NV_STATUS
-kvgpumgrDeleteRequestVgpu(const NvU8 *pMdevUuid, NvU16 vgpuId)
+kvgpumgrDeleteRequestVgpu(const NvU8 *pVgpuDevName, NvU16 vgpuId)
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();
     OBJGPU *pGpu = NULL;
@@ -2278,7 +2282,7 @@ kvgpumgrDeleteRequestVgpu(const NvU8 *pMdevUuid, NvU16 vgpuId)
          pRequestVgpu = pRequestVgpuNext)
     {
         pRequestVgpuNext = listNext(&(pKernelVgpuMgr->listRequestVgpuHead), pRequestVgpu);
-        if (portMemCmp(pMdevUuid, pRequestVgpu->mdevUuid, VGPU_UUID_SIZE) == 0)
+        if (portMemCmp(pVgpuDevName, pRequestVgpu->vgpuDevName, VGPU_UUID_SIZE) == 0)
         {
             if ((status = kvgpumgrGetPgpuIndex(pKernelVgpuMgr, pRequestVgpu->gpuPciId,
                                               &pgpuIndex)) != NV_OK)
@@ -2422,7 +2426,7 @@ exit:
 }
 
 NV_STATUS
-kvgpumgrGetHostVgpuDeviceFromMdevUuid(NvU32 gpuPciId, const NvU8 *pMdevUuid,
+kvgpumgrGetHostVgpuDeviceFromVgpuDevName(NvU32 gpuPciId, const NvU8 *pVgpuDevName,
                                       KERNEL_HOST_VGPU_DEVICE **ppKernelHostVgpuDevice)
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();
@@ -2430,6 +2434,9 @@ kvgpumgrGetHostVgpuDeviceFromMdevUuid(NvU32 gpuPciId, const NvU8 *pMdevUuid,
     NvU32 pgpuIndex , rmStatus;
     KERNEL_PHYS_GPU_INFO *pPgpuInfo;
     KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice;
+
+    if (osIsVgpuVfioPresent() != NV_OK)
+       return NV_ERR_NOT_SUPPORTED;
 
     if ((rmStatus = kvgpumgrGetPgpuIndex(pKernelVgpuMgr, gpuPciId, &pgpuIndex)) != NV_OK)
         return rmStatus;
@@ -2443,8 +2450,8 @@ kvgpumgrGetHostVgpuDeviceFromMdevUuid(NvU32 gpuPciId, const NvU8 *pMdevUuid,
         if (pKernelHostVgpuDevice == NULL || pKernelHostVgpuDevice->pRequestVgpuInfoNode == NULL)
             return NV_ERR_INVALID_POINTER;
 
-        if (portMemCmp(pKernelHostVgpuDevice->pRequestVgpuInfoNode->mdevUuid,
-                       pMdevUuid, VM_UUID_SIZE) == 0)
+        if (portMemCmp(pKernelHostVgpuDevice->pRequestVgpuInfoNode->vgpuDevName,
+                       pVgpuDevName, VM_UUID_SIZE) == 0)
         {
             *ppKernelHostVgpuDevice = pKernelHostVgpuDevice;
             return NV_OK;
@@ -2797,12 +2804,14 @@ kvgpumgrSetSupportedPlacementIds(OBJGPU *pGpu)
 
     pPgpuInfo->heterogeneousTimesliceSizesSupported = NV_FALSE;
 
-    /* Heterogeneous vgpus enabled for SRIOV vGPUs on VMware/KVM */
     if (gpuIsSriovEnabled(pGpu)
         )
     {
-        if (osIsVgpuVfioPresent() == NV_OK)
+        if ((osIsVgpuVfioPresent() == NV_OK)
+           )
+        {
             pPgpuInfo->heterogeneousTimesliceSizesSupported = NV_TRUE;
+        }
     }
 
     if (!pPgpuInfo->heterogeneousTimesliceSizesSupported)
@@ -3083,7 +3092,7 @@ _kvgpumgrUpdateCreatablePlacementIds(OBJGPU *pGpu, NvU16 placementId, NvU32 vgpu
 NV_STATUS
 kvgpumgrUpdateHeterogeneousInfo(OBJGPU *pGpu, NvU32 vgpuTypeId, NvU16 *placementId,
                                 NvU64 *guestFbLength, NvU64 *guestFbOffset,
-                                NvU64 *gspHeapOffset)
+                                NvU64 *gspHeapOffset, NvU64 *guestBar1PFOffset)
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();
     KernelVgpuMgr *pKernelVgpuMgr = SYS_GET_KERNEL_VGPUMGR(pSys);
@@ -3125,6 +3134,7 @@ kvgpumgrUpdateHeterogeneousInfo(OBJGPU *pGpu, NvU32 vgpuTypeId, NvU16 *placement
                             *guestFbLength = pPgpuInfo->guestVmmuCount[i] *
                                              gpuGetVmmuSegmentSize(pGpu);
                             *gspHeapOffset = pPgpuInfo->gspHeapOffsets[i][j];
+                            *guestBar1PFOffset    = 0;
                         }
                         bIdFound = NV_TRUE;
                         break;
@@ -3141,6 +3151,7 @@ kvgpumgrUpdateHeterogeneousInfo(OBJGPU *pGpu, NvU32 vgpuTypeId, NvU16 *placement
                             *guestFbLength = pPgpuInfo->guestVmmuCount[i] *
                                              gpuGetVmmuSegmentSize(pGpu);
                             *gspHeapOffset = pPgpuInfo->gspHeapOffsets[i][j];
+                            *guestBar1PFOffset    = 0;
                         }
                         bIdFound = NV_TRUE;
                         break;
@@ -3268,3 +3279,4 @@ done:
     portMemFree(pExecPartImportParams);
     return rmStatus;
 }
+

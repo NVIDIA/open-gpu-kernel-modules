@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -939,6 +939,23 @@ _gpuCollectMemInfo
     }
 }
 
+static NvBool
+_gpuMatchClientPid
+(
+    RmClient *pClient,
+    NvU32 pid,
+    NvU32 subPid
+)
+{
+    NvU32 clientNsPid; // pClient PID on current's namespace
+
+    if (_gpuConvertPid(pClient, &clientNsPid) != NV_OK)
+        return NV_FALSE;
+
+    return (((subPid == 0) && (clientNsPid == pid)) ||
+            ((subPid != 0) && (clientNsPid == pid)  && (pClient->SubProcessID == subPid)));
+}
+
 //
 // This function takes in the PID for the process of interest, and queries all
 // clients for elementType. The 64-bit Data is updated by specific functions
@@ -979,8 +996,7 @@ gpuFindClientInfoWithPidIterator_IMPL
         pClient = *ppClient;
         pRsClient = staticCast(pClient, RsClient);
 
-        if (((subPid == 0) && (pClient->ProcID == pid)) ||
-            ((subPid != 0) && (pClient->ProcID == pid)  && (pClient->SubProcessID == subPid)))
+        if (_gpuMatchClientPid(pClient, pid, subPid))
         {
             RS_PRIV_LEVEL privLevel = rmclientGetCachedPrivilege(pClient);
             RS_ITERATOR it;

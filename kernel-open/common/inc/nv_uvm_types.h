@@ -543,6 +543,36 @@ typedef struct UvmGpuExternalMappingInfo_tag
     NvU32 pteSize;
 } UvmGpuExternalMappingInfo;
 
+typedef struct UvmGpuExternalPhysAddrInfo_tag
+{
+    // In: Virtual permissions. Returns
+    // NV_ERR_INVALID_ACCESS_TYPE if input is
+    // inaccurate
+    UvmRmGpuMappingType mappingType;
+
+    // In: Size of the buffer to store PhysAddrs (in bytes).
+    NvU64 physAddrBufferSize;
+
+    // In: Page size for mapping
+    //     If this field is passed as 0, the page size
+    //     of the allocation is used for mapping.
+    //     nvUvmInterfaceGetExternalAllocPtes must pass
+    //     this field as zero.
+    NvU64 mappingPageSize;
+
+    // In: Pointer to a buffer to store PhysAddrs.
+    // Out: The interface will fill the buffer with PhysAddrs
+    NvU64 *physAddrBuffer;
+
+    // Out: Number of PhysAddrs filled in to the buffer.
+    NvU64 numWrittenPhysAddrs;
+
+    // Out: Number of PhysAddrs remaining to be filled
+    //      if the buffer is not sufficient to accommodate
+    //      requested PhysAddrs.
+    NvU64 numRemainingPhysAddrs;
+} UvmGpuExternalPhysAddrInfo;
+
 typedef struct UvmGpuP2PCapsParams_tag
 {
     // Out: peerId[i] contains gpu[i]'s peer id of gpu[1 - i]. Only defined if
@@ -660,6 +690,9 @@ typedef struct UvmGpuInfo_tag
     // Maximum number of TPCs per GPC
     NvU32 maxTpcPerGpcCount;
 
+    // Number of access counter buffers.
+    NvU32 accessCntrBufferCount;
+
     // NV_TRUE if SMC is enabled on this GPU.
     NvBool smcEnabled;
 
@@ -721,10 +754,12 @@ typedef struct UvmGpuFbInfo_tag
     // RM regions that are not registered with PMA either.
     NvU64 maxAllocatableAddress;
 
-    NvU32 heapSize;          // RAM in KB available for user allocations
-    NvU32 reservedHeapSize;  // RAM in KB reserved for internal RM allocation
-    NvBool bZeroFb;          // Zero FB mode enabled.
-    NvU64 maxVidmemPageSize; // Largest GPU page size to access vidmem.
+    NvU32  heapSize;           // RAM in KB available for user allocations
+    NvU32  reservedHeapSize;   // RAM in KB reserved for internal RM allocation
+    NvBool bZeroFb;            // Zero FB mode enabled.
+    NvU64  maxVidmemPageSize;  // Largest GPU page size to access vidmem.
+    NvBool bStaticBar1Enabled; // Static BAR1 mode is enabled
+    NvU64  staticBar1Size;     // The size of the static mapping
 } UvmGpuFbInfo;
 
 typedef struct UvmGpuEccInfo_tag
@@ -735,6 +770,15 @@ typedef struct UvmGpuEccInfo_tag
     NvBool  *eccErrorNotifier;
     NvBool   bEccEnabled;
 } UvmGpuEccInfo;
+
+typedef struct UvmGpuNvlinkInfo_tag
+{
+    unsigned nvlinkMask;
+    unsigned nvlinkOffset;
+    void    *nvlinkReadLocation;
+    NvBool  *nvlinkErrorNotifier;
+    NvBool   bNvlinkRecoveryEnabled;
+} UvmGpuNvlinkInfo;
 
 typedef struct UvmPmaAllocationOptions_tag
 {
@@ -852,6 +896,41 @@ typedef NV_STATUS (*uvmEventIsrTopHalf_t) (const NvProcessorUuid *pGpuUuidStruct
 typedef void (*uvmEventIsrTopHalf_t) (void);
 #endif
 
+/*******************************************************************************
+    uvmEventDrainP2P
+    This function will be called by the GPU driver to signal to UVM that the
+    GPU has encountered an uncontained error, and all peer work must be drained
+    to recover.  When it is called, the following assumptions/guarantees are
+    valid/made:
+
+      * Impacted user channels have been preempted and disabled
+      * UVM channels are still running normally and will continue to do
+        so unless an unrecoverable error is hit on said channels
+      * UVM must not return from this function until all enqueued work on
+      * peer channels has drained
+      * In the context of this function call, RM will still service faults
+      * UVM must prevent new peer work from being enqueued until the
+        uvmEventResumeP2P callback is issued
+
+    Returns:
+        NV_OK if UVM has idled peer work and will prevent new peer workloads.
+        NV_ERR_TIMEOUT if peer work was unable to be drained within a timeout
+        XXX NV_ERR_* for any other failure (TBD)
+
+*/
+typedef NV_STATUS (*uvmEventDrainP2P_t) (const NvProcessorUuid *pGpuUuidStruct);
+
+/*******************************************************************************
+    uvmEventResumeP2P
+    This function will be called by the GPU driver to signal to UVM that the
+    GPU has recovered from the previously reported uncontained NVLINK error.
+    When it is called, the following assumptions/guarantees are valid/made:
+
+      * UVM is again allowed to enqueue peer work
+      * UVM channels are still running normally
+*/
+typedef NV_STATUS (*uvmEventResumeP2P_t) (const NvProcessorUuid *pGpuUuidStruct);
+
 struct UvmOpsUvmEvents
 {
     uvmEventSuspend_t     suspend;
@@ -864,6 +943,8 @@ struct UvmOpsUvmEvents
     uvmEventWddmRestartAfterTimeout_t wddmRestartAfterTimeout;
     uvmEventServiceInterrupt_t serviceInterrupt;
 #endif
+    uvmEventDrainP2P_t drainP2P;
+    uvmEventResumeP2P_t resumeP2P;
 };
 
 #define UVM_CSL_SIGN_AUTH_TAG_SIZE_BYTES 32
@@ -1071,11 +1152,13 @@ typedef UvmGpuAccessCntrConfig gpuAccessCntrConfig;
 typedef UvmGpuFaultInfo gpuFaultInfo;
 typedef UvmGpuMemoryInfo gpuMemoryInfo;
 typedef UvmGpuExternalMappingInfo gpuExternalMappingInfo;
+typedef UvmGpuExternalPhysAddrInfo gpuExternalPhysAddrInfo;
 typedef UvmGpuChannelResourceInfo gpuChannelResourceInfo;
 typedef UvmGpuChannelInstanceInfo gpuChannelInstanceInfo;
 typedef UvmGpuChannelResourceBindParams gpuChannelResourceBindParams;
 typedef UvmGpuFbInfo gpuFbInfo;
 typedef UvmGpuEccInfo gpuEccInfo;
+typedef UvmGpuNvlinkInfo gpuNvlinkInfo;
 typedef UvmGpuPagingChannel *gpuPagingChannelHandle;
 typedef UvmGpuPagingChannelInfo gpuPagingChannelInfo;
 typedef UvmGpuPagingChannelAllocParams gpuPagingChannelAllocParams;

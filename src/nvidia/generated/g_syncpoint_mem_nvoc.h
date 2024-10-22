@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,10 +58,15 @@ extern "C" {
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__SyncpointMemory;
+
+
 struct SyncpointMemory {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__SyncpointMemory *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct Memory __nvoc_base_Memory;
@@ -73,8 +78,13 @@ struct SyncpointMemory {
     struct RmResource *__nvoc_pbase_RmResource;    // rmres super^2
     struct Memory *__nvoc_pbase_Memory;    // mem super
     struct SyncpointMemory *__nvoc_pbase_SyncpointMemory;    // syncpoint
+};
 
-    // Vtable with 26 per-object function pointers
+
+// Metadata including vtable with 26 function pointers plus superclass metadata
+struct NVOC_VTABLE__SyncpointMemory {
+    const struct NVOC_VTABLE__Memory Memory;    // (mem) 26 function pointers
+
     NvBool (*__syncpointCanCopy__)(struct SyncpointMemory * /*this*/);  // virtual override (res) base (mem)
     NV_STATUS (*__syncpointIsDuplicate__)(struct SyncpointMemory * /*this*/, NvHandle, NvBool *);  // virtual inherited (mem) base (mem)
     NV_STATUS (*__syncpointGetMapAddrSpace__)(struct SyncpointMemory * /*this*/, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual inherited (mem) base (mem)
@@ -133,162 +143,162 @@ NV_STATUS __nvoc_objCreate_SyncpointMemory(SyncpointMemory**, Dynamic*, NvU32, C
 
 
 // Wrapper macros
-#define syncpointCanCopy_FNPTR(pSyncpointMemory) pSyncpointMemory->__syncpointCanCopy__
+#define syncpointCanCopy_FNPTR(pSyncpointMemory) pSyncpointMemory->__nvoc_vtable->__syncpointCanCopy__
 #define syncpointCanCopy(pSyncpointMemory) syncpointCanCopy_DISPATCH(pSyncpointMemory)
-#define syncpointIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memIsDuplicate__
+#define syncpointIsDuplicate_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memIsDuplicate__
 #define syncpointIsDuplicate(pMemory, hMemory, pDuplicate) syncpointIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
-#define syncpointGetMapAddrSpace_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memGetMapAddrSpace__
+#define syncpointGetMapAddrSpace_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memGetMapAddrSpace__
 #define syncpointGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) syncpointGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
-#define syncpointControl_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memControl__
+#define syncpointControl_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memControl__
 #define syncpointControl(pMemory, pCallContext, pParams) syncpointControl_DISPATCH(pMemory, pCallContext, pParams)
-#define syncpointMap_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memMap__
+#define syncpointMap_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memMap__
 #define syncpointMap(pMemory, pCallContext, pParams, pCpuMapping) syncpointMap_DISPATCH(pMemory, pCallContext, pParams, pCpuMapping)
-#define syncpointUnmap_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memUnmap__
+#define syncpointUnmap_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memUnmap__
 #define syncpointUnmap(pMemory, pCallContext, pCpuMapping) syncpointUnmap_DISPATCH(pMemory, pCallContext, pCpuMapping)
-#define syncpointGetMemInterMapParams_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memGetMemInterMapParams__
+#define syncpointGetMemInterMapParams_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memGetMemInterMapParams__
 #define syncpointGetMemInterMapParams(pMemory, pParams) syncpointGetMemInterMapParams_DISPATCH(pMemory, pParams)
-#define syncpointCheckMemInterUnmap_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memCheckMemInterUnmap__
+#define syncpointCheckMemInterUnmap_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memCheckMemInterUnmap__
 #define syncpointCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) syncpointCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
-#define syncpointGetMemoryMappingDescriptor_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memGetMemoryMappingDescriptor__
+#define syncpointGetMemoryMappingDescriptor_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memGetMemoryMappingDescriptor__
 #define syncpointGetMemoryMappingDescriptor(pMemory, ppMemDesc) syncpointGetMemoryMappingDescriptor_DISPATCH(pMemory, ppMemDesc)
-#define syncpointCheckCopyPermissions_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memCheckCopyPermissions__
+#define syncpointCheckCopyPermissions_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memCheckCopyPermissions__
 #define syncpointCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) syncpointCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
-#define syncpointIsReady_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memIsReady__
+#define syncpointIsReady_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memIsReady__
 #define syncpointIsReady(pMemory, bCopyConstructorContext) syncpointIsReady_DISPATCH(pMemory, bCopyConstructorContext)
-#define syncpointIsGpuMapAllowed_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memIsGpuMapAllowed__
+#define syncpointIsGpuMapAllowed_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memIsGpuMapAllowed__
 #define syncpointIsGpuMapAllowed(pMemory, pGpu) syncpointIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
-#define syncpointIsExportAllowed_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__memIsExportAllowed__
+#define syncpointIsExportAllowed_FNPTR(pMemory) pMemory->__nvoc_base_Memory.__nvoc_vtable->__memIsExportAllowed__
 #define syncpointIsExportAllowed(pMemory) syncpointIsExportAllowed_DISPATCH(pMemory)
-#define syncpointAccessCallback_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__rmresAccessCallback__
+#define syncpointAccessCallback_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
 #define syncpointAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) syncpointAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define syncpointShareCallback_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__rmresShareCallback__
+#define syncpointShareCallback_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_vtable->__rmresShareCallback__
 #define syncpointShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) syncpointShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
-#define syncpointControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__rmresControlSerialization_Prologue__
+#define syncpointControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
 #define syncpointControlSerialization_Prologue(pResource, pCallContext, pParams) syncpointControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define syncpointControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__rmresControlSerialization_Epilogue__
+#define syncpointControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
 #define syncpointControlSerialization_Epilogue(pResource, pCallContext, pParams) syncpointControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define syncpointControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__rmresControl_Prologue__
+#define syncpointControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
 #define syncpointControl_Prologue(pResource, pCallContext, pParams) syncpointControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define syncpointControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__rmresControl_Epilogue__
+#define syncpointControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
 #define syncpointControl_Epilogue(pResource, pCallContext, pParams) syncpointControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define syncpointPreDestruct_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resPreDestruct__
+#define syncpointPreDestruct_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
 #define syncpointPreDestruct(pResource) syncpointPreDestruct_DISPATCH(pResource)
-#define syncpointControlFilter_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resControlFilter__
+#define syncpointControlFilter_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
 #define syncpointControlFilter(pResource, pCallContext, pParams) syncpointControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define syncpointIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsPartialUnmapSupported__
+#define syncpointIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
 #define syncpointIsPartialUnmapSupported(pResource) syncpointIsPartialUnmapSupported_DISPATCH(pResource)
-#define syncpointMapTo_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resMapTo__
+#define syncpointMapTo_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
 #define syncpointMapTo(pResource, pParams) syncpointMapTo_DISPATCH(pResource, pParams)
-#define syncpointUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resUnmapFrom__
+#define syncpointUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
 #define syncpointUnmapFrom(pResource, pParams) syncpointUnmapFrom_DISPATCH(pResource, pParams)
-#define syncpointGetRefCount_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resGetRefCount__
+#define syncpointGetRefCount_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
 #define syncpointGetRefCount(pResource) syncpointGetRefCount_DISPATCH(pResource)
-#define syncpointAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resAddAdditionalDependants__
+#define syncpointAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
 #define syncpointAddAdditionalDependants(pClient, pResource, pReference) syncpointAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
 static inline NvBool syncpointCanCopy_DISPATCH(struct SyncpointMemory *pSyncpointMemory) {
-    return pSyncpointMemory->__syncpointCanCopy__(pSyncpointMemory);
+    return pSyncpointMemory->__nvoc_vtable->__syncpointCanCopy__(pSyncpointMemory);
 }
 
 static inline NV_STATUS syncpointIsDuplicate_DISPATCH(struct SyncpointMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
-    return pMemory->__syncpointIsDuplicate__(pMemory, hMemory, pDuplicate);
+    return pMemory->__nvoc_vtable->__syncpointIsDuplicate__(pMemory, hMemory, pDuplicate);
 }
 
 static inline NV_STATUS syncpointGetMapAddrSpace_DISPATCH(struct SyncpointMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pMemory->__syncpointGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+    return pMemory->__nvoc_vtable->__syncpointGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS syncpointControl_DISPATCH(struct SyncpointMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pMemory->__syncpointControl__(pMemory, pCallContext, pParams);
+    return pMemory->__nvoc_vtable->__syncpointControl__(pMemory, pCallContext, pParams);
 }
 
 static inline NV_STATUS syncpointMap_DISPATCH(struct SyncpointMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pMemory->__syncpointMap__(pMemory, pCallContext, pParams, pCpuMapping);
+    return pMemory->__nvoc_vtable->__syncpointMap__(pMemory, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS syncpointUnmap_DISPATCH(struct SyncpointMemory *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pMemory->__syncpointUnmap__(pMemory, pCallContext, pCpuMapping);
+    return pMemory->__nvoc_vtable->__syncpointUnmap__(pMemory, pCallContext, pCpuMapping);
 }
 
 static inline NV_STATUS syncpointGetMemInterMapParams_DISPATCH(struct SyncpointMemory *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pMemory->__syncpointGetMemInterMapParams__(pMemory, pParams);
+    return pMemory->__nvoc_vtable->__syncpointGetMemInterMapParams__(pMemory, pParams);
 }
 
 static inline NV_STATUS syncpointCheckMemInterUnmap_DISPATCH(struct SyncpointMemory *pMemory, NvBool bSubdeviceHandleProvided) {
-    return pMemory->__syncpointCheckMemInterUnmap__(pMemory, bSubdeviceHandleProvided);
+    return pMemory->__nvoc_vtable->__syncpointCheckMemInterUnmap__(pMemory, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS syncpointGetMemoryMappingDescriptor_DISPATCH(struct SyncpointMemory *pMemory, MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pMemory->__syncpointGetMemoryMappingDescriptor__(pMemory, ppMemDesc);
+    return pMemory->__nvoc_vtable->__syncpointGetMemoryMappingDescriptor__(pMemory, ppMemDesc);
 }
 
 static inline NV_STATUS syncpointCheckCopyPermissions_DISPATCH(struct SyncpointMemory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
-    return pMemory->__syncpointCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
+    return pMemory->__nvoc_vtable->__syncpointCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
 }
 
 static inline NV_STATUS syncpointIsReady_DISPATCH(struct SyncpointMemory *pMemory, NvBool bCopyConstructorContext) {
-    return pMemory->__syncpointIsReady__(pMemory, bCopyConstructorContext);
+    return pMemory->__nvoc_vtable->__syncpointIsReady__(pMemory, bCopyConstructorContext);
 }
 
 static inline NvBool syncpointIsGpuMapAllowed_DISPATCH(struct SyncpointMemory *pMemory, struct OBJGPU *pGpu) {
-    return pMemory->__syncpointIsGpuMapAllowed__(pMemory, pGpu);
+    return pMemory->__nvoc_vtable->__syncpointIsGpuMapAllowed__(pMemory, pGpu);
 }
 
 static inline NvBool syncpointIsExportAllowed_DISPATCH(struct SyncpointMemory *pMemory) {
-    return pMemory->__syncpointIsExportAllowed__(pMemory);
+    return pMemory->__nvoc_vtable->__syncpointIsExportAllowed__(pMemory);
 }
 
 static inline NvBool syncpointAccessCallback_DISPATCH(struct SyncpointMemory *pResource, RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__syncpointAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_vtable->__syncpointAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool syncpointShareCallback_DISPATCH(struct SyncpointMemory *pResource, RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__syncpointShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_vtable->__syncpointShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS syncpointControlSerialization_Prologue_DISPATCH(struct SyncpointMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__syncpointControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__syncpointControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void syncpointControlSerialization_Epilogue_DISPATCH(struct SyncpointMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__syncpointControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__syncpointControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS syncpointControl_Prologue_DISPATCH(struct SyncpointMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__syncpointControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__syncpointControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void syncpointControl_Epilogue_DISPATCH(struct SyncpointMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__syncpointControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__syncpointControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline void syncpointPreDestruct_DISPATCH(struct SyncpointMemory *pResource) {
-    pResource->__syncpointPreDestruct__(pResource);
+    pResource->__nvoc_vtable->__syncpointPreDestruct__(pResource);
 }
 
 static inline NV_STATUS syncpointControlFilter_DISPATCH(struct SyncpointMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__syncpointControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__syncpointControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool syncpointIsPartialUnmapSupported_DISPATCH(struct SyncpointMemory *pResource) {
-    return pResource->__syncpointIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_vtable->__syncpointIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS syncpointMapTo_DISPATCH(struct SyncpointMemory *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__syncpointMapTo__(pResource, pParams);
+    return pResource->__nvoc_vtable->__syncpointMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS syncpointUnmapFrom_DISPATCH(struct SyncpointMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__syncpointUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_vtable->__syncpointUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 syncpointGetRefCount_DISPATCH(struct SyncpointMemory *pResource) {
-    return pResource->__syncpointGetRefCount__(pResource);
+    return pResource->__nvoc_vtable->__syncpointGetRefCount__(pResource);
 }
 
 static inline void syncpointAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct SyncpointMemory *pResource, RsResourceRef *pReference) {
-    pResource->__syncpointAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_vtable->__syncpointAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NvBool syncpointCanCopy_IMPL(struct SyncpointMemory *pSyncpointMemory);

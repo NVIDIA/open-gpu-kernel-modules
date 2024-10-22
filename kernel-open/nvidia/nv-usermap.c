@@ -55,6 +55,8 @@ NV_STATUS NV_API_CALL nv_add_mapping_context_to_file(
         status = NV_ERR_STATE_IN_USE;
         goto done;
     }
+    
+    os_mem_set((void*) nvamc, 0, sizeof(nv_alloc_mapping_context_t));
 
     if (NV_IS_CTL_DEVICE(nv))
     {
@@ -69,8 +71,18 @@ NV_STATUS NV_API_CALL nv_add_mapping_context_to_file(
             goto done;
         }
 
-        nvamc->mmap_start = nvuap->mmap_start;
-        nvamc->mmap_size = nvuap->mmap_size;
+        status = os_alloc_mem((void**) &nvamc->memArea.pRanges,
+            sizeof(MemoryRange) * nvuap->memArea.numRanges);
+
+        if (status != NV_OK)
+        {
+            nvamc->memArea.pRanges = NULL;
+            goto done;
+        }
+        nvamc->memArea.numRanges = nvuap->memArea.numRanges;
+        os_mem_copy(nvamc->memArea.pRanges, nvuap->memArea.pRanges,
+            sizeof(MemoryRange) * nvuap->memArea.numRanges);
+
         if (nv_get_numa_status(nvl) == NV_NUMA_STATUS_ONLINE)
         {
             nvamc->page_array = nvuap->page_array;
@@ -148,8 +160,9 @@ NV_STATUS NV_API_CALL nv_get_usermap_access_params(
         nvuap->remap_prot_extra = NV_PROT_4K_PAGE_ISOLATION;
         nvuap->access_start = (NvU64)NV_4K_PAGE_ISOLATION_ACCESS_START(addr);
         nvuap->access_size = NV_4K_PAGE_ISOLATION_ACCESS_LEN(addr, size);
-        nvuap->mmap_start = (NvU64)NV_4K_PAGE_ISOLATION_MMAP_ADDR(addr);
-        nvuap->mmap_size = NV_4K_PAGE_ISOLATION_MMAP_LEN(size);
+
+        nvuap->memArea.pRanges[0].start = (NvU64)NV_4K_PAGE_ISOLATION_MMAP_ADDR(addr);
+        nvuap->memArea.pRanges[0].size = NV_4K_PAGE_ISOLATION_MMAP_LEN(size);
 #else
         NV_DEV_PRINTF(NV_DBG_ERRORS, nv, "4K page isolation required but not available!\n");
         return NV_ERR_OPERATING_SYSTEM;

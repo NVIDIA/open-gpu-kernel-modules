@@ -220,7 +220,7 @@ enum {
     X(RM, GET_BRAND_CAPS,                                         210)
     X(RM, CTRL_CMD_NVLINK_INBAND_SEND_DATA,                       211)
     X(RM, UPDATE_GPM_GUEST_BUFFER_INFO,                           212)
-    X(RM, RESERVED_213,                                           213)
+    X(RM, CTRL_CMD_INTERNAL_CONTROL_GSP_TRACE,                    213)
     X(RM, CTRL_SET_ZBC_STENCIL_CLEAR,                             214)
     X(RM, NUM_FUNCTIONS,                                          215)
 #ifdef DEFINING_X_IN_RPC_GLOBAL_ENUMS_H
@@ -269,7 +269,8 @@ enum {
     E(NVLINK_FATAL_ERROR_RECOVERY,                            0x101f)
     E(GSP_POST_NOCAT_RECORD,                                  0x1020)
     E(FECS_ERROR,                                             0x1021)
-    E(NUM_EVENTS,                                             0x1022)
+    E(RECOVERY_ACTION,                                        0x1022)
+    E(NUM_EVENTS,                                             0x1023)
 #ifdef DEFINING_E_IN_RPC_GLOBAL_ENUMS_H
 };
 #   undef E

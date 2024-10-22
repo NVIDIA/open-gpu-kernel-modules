@@ -110,4 +110,18 @@ NvBool nvKmsSetBacklight(NvU32 display_id, void *drv_priv, NvU32 brightness);
 
 NvBool nvKmsOpenDevHasSubOwnerPermissionOrBetter(const struct NvKmsPerOpenDev *pOpenDev);
 
+NvU32 nvKmsKapiF16ToF32Internal(NvU16 a);
+
+NvU16 nvKmsKapiF32ToF16Internal(NvU32 a);
+
+NvU32 nvKmsKapiF32MulInternal(NvU32 a, NvU32 b);
+
+NvU32 nvKmsKapiF32DivInternal(NvU32 a, NvU32 b);
+
+NvU32 nvKmsKapiF32AddInternal(NvU32 a, NvU32 b);
+
+NvU32 nvKmsKapiF32ToUI32RMinMagInternal(NvU32 a, NvBool exact);
+
+NvU32 nvKmsKapiUI32ToF32Internal(NvU32 a);
+
 #endif /* __NV_KMS_H__ */

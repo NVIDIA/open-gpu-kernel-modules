@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,10 +67,15 @@ extern "C" {
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__ConfidentialComputeApi;
+
+
 struct ConfidentialComputeApi {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__ConfidentialComputeApi *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct RmResource __nvoc_base_RmResource;
@@ -82,7 +87,7 @@ struct ConfidentialComputeApi {
     struct RmResource *__nvoc_pbase_RmResource;    // rmres super
     struct ConfidentialComputeApi *__nvoc_pbase_ConfidentialComputeApi;    // confComputeApi
 
-    // Vtable with 32 per-object function pointers
+    // Vtable with 11 per-object function pointers
     NV_STATUS (*__confComputeApiCtrlCmdSystemGetCapabilities__)(struct ConfidentialComputeApi * /*this*/, NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_GET_CAPABILITIES_PARAMS *);  // exported (id=0xcb330101)
     NV_STATUS (*__confComputeApiCtrlCmdSystemGetGpusState__)(struct ConfidentialComputeApi * /*this*/, NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_GET_GPUS_STATE_PARAMS *);  // exported (id=0xcb330104)
     NV_STATUS (*__confComputeApiCtrlCmdSystemSetGpusState__)(struct ConfidentialComputeApi * /*this*/, NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_SET_GPUS_STATE_PARAMS *);  // exported (id=0xcb330105)
@@ -94,6 +99,16 @@ struct ConfidentialComputeApi {
     NV_STATUS (*__confComputeApiCtrlCmdSystemGetSecurityPolicy__)(struct ConfidentialComputeApi * /*this*/, NV_CONF_COMPUTE_CTRL_GET_SECURITY_POLICY_PARAMS *);  // exported (id=0xc56f010e)
     NV_STATUS (*__confComputeApiCtrlCmdSystemSetSecurityPolicy__)(struct ConfidentialComputeApi * /*this*/, NV_CONF_COMPUTE_CTRL_SET_SECURITY_POLICY_PARAMS *);  // exported (id=0xc56f010d)
     NV_STATUS (*__confComputeApiCtrlCmdGpuGetKeyRotationState__)(struct ConfidentialComputeApi * /*this*/, NV_CONF_COMPUTE_CTRL_CMD_GPU_GET_KEY_ROTATION_STATE_PARAMS *);  // exported (id=0xcb33010c)
+
+    // Data members
+    struct CONF_COMPUTE_CAPS *pCcCaps;
+};
+
+
+// Metadata including vtable with 21 function pointers plus superclass metadata
+struct NVOC_VTABLE__ConfidentialComputeApi {
+    const struct NVOC_VTABLE__RmResource RmResource;    // (rmres) 21 function pointers
+
     NvBool (*__confComputeApiAccessCallback__)(struct ConfidentialComputeApi * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (rmres)
     NvBool (*__confComputeApiShareCallback__)(struct ConfidentialComputeApi * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (rmres)
     NV_STATUS (*__confComputeApiGetMemInterMapParams__)(struct ConfidentialComputeApi * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (rmres)
@@ -115,9 +130,6 @@ struct ConfidentialComputeApi {
     NV_STATUS (*__confComputeApiUnmapFrom__)(struct ConfidentialComputeApi * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (rmres)
     NvU32 (*__confComputeApiGetRefCount__)(struct ConfidentialComputeApi * /*this*/);  // virtual inherited (res) base (rmres)
     void (*__confComputeApiAddAdditionalDependants__)(struct RsClient *, struct ConfidentialComputeApi * /*this*/, RsResourceRef *);  // virtual inherited (res) base (rmres)
-
-    // Data members
-    struct CONF_COMPUTE_CAPS *pCcCaps;
 };
 
 #ifndef __NVOC_CLASS_ConfidentialComputeApi_TYPEDEF__
@@ -172,47 +184,47 @@ NV_STATUS __nvoc_objCreate_ConfidentialComputeApi(ConfidentialComputeApi**, Dyna
 #define confComputeApiCtrlCmdSystemSetSecurityPolicy(pConfComputeApi, pParams) confComputeApiCtrlCmdSystemSetSecurityPolicy_DISPATCH(pConfComputeApi, pParams)
 #define confComputeApiCtrlCmdGpuGetKeyRotationState_FNPTR(pConfComputeApi) pConfComputeApi->__confComputeApiCtrlCmdGpuGetKeyRotationState__
 #define confComputeApiCtrlCmdGpuGetKeyRotationState(pConfComputeApi, pParams) confComputeApiCtrlCmdGpuGetKeyRotationState_DISPATCH(pConfComputeApi, pParams)
-#define confComputeApiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresAccessCallback__
+#define confComputeApiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
 #define confComputeApiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) confComputeApiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define confComputeApiShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresShareCallback__
+#define confComputeApiShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresShareCallback__
 #define confComputeApiShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) confComputeApiShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
-#define confComputeApiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__rmresGetMemInterMapParams__
+#define confComputeApiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
 #define confComputeApiGetMemInterMapParams(pRmResource, pParams) confComputeApiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define confComputeApiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__rmresCheckMemInterUnmap__
+#define confComputeApiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
 #define confComputeApiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) confComputeApiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define confComputeApiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__rmresGetMemoryMappingDescriptor__
+#define confComputeApiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
 #define confComputeApiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) confComputeApiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define confComputeApiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresControlSerialization_Prologue__
+#define confComputeApiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
 #define confComputeApiControlSerialization_Prologue(pResource, pCallContext, pParams) confComputeApiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define confComputeApiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresControlSerialization_Epilogue__
+#define confComputeApiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
 #define confComputeApiControlSerialization_Epilogue(pResource, pCallContext, pParams) confComputeApiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define confComputeApiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresControl_Prologue__
+#define confComputeApiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
 #define confComputeApiControl_Prologue(pResource, pCallContext, pParams) confComputeApiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define confComputeApiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresControl_Epilogue__
+#define confComputeApiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
 #define confComputeApiControl_Epilogue(pResource, pCallContext, pParams) confComputeApiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define confComputeApiCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__
+#define confComputeApiCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
 #define confComputeApiCanCopy(pResource) confComputeApiCanCopy_DISPATCH(pResource)
-#define confComputeApiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsDuplicate__
+#define confComputeApiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
 #define confComputeApiIsDuplicate(pResource, hMemory, pDuplicate) confComputeApiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define confComputeApiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resPreDestruct__
+#define confComputeApiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
 #define confComputeApiPreDestruct(pResource) confComputeApiPreDestruct_DISPATCH(pResource)
-#define confComputeApiControl_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resControl__
+#define confComputeApiControl_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControl__
 #define confComputeApiControl(pResource, pCallContext, pParams) confComputeApiControl_DISPATCH(pResource, pCallContext, pParams)
-#define confComputeApiControlFilter_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resControlFilter__
+#define confComputeApiControlFilter_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
 #define confComputeApiControlFilter(pResource, pCallContext, pParams) confComputeApiControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define confComputeApiMap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resMap__
+#define confComputeApiMap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMap__
 #define confComputeApiMap(pResource, pCallContext, pParams, pCpuMapping) confComputeApiMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
-#define confComputeApiUnmap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resUnmap__
+#define confComputeApiUnmap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmap__
 #define confComputeApiUnmap(pResource, pCallContext, pCpuMapping) confComputeApiUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
-#define confComputeApiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsPartialUnmapSupported__
+#define confComputeApiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
 #define confComputeApiIsPartialUnmapSupported(pResource) confComputeApiIsPartialUnmapSupported_DISPATCH(pResource)
-#define confComputeApiMapTo_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resMapTo__
+#define confComputeApiMapTo_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
 #define confComputeApiMapTo(pResource, pParams) confComputeApiMapTo_DISPATCH(pResource, pParams)
-#define confComputeApiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resUnmapFrom__
+#define confComputeApiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
 #define confComputeApiUnmapFrom(pResource, pParams) confComputeApiUnmapFrom_DISPATCH(pResource, pParams)
-#define confComputeApiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resGetRefCount__
+#define confComputeApiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
 #define confComputeApiGetRefCount(pResource) confComputeApiGetRefCount_DISPATCH(pResource)
-#define confComputeApiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resAddAdditionalDependants__
+#define confComputeApiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
 #define confComputeApiAddAdditionalDependants(pClient, pResource, pReference) confComputeApiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
@@ -261,87 +273,87 @@ static inline NV_STATUS confComputeApiCtrlCmdGpuGetKeyRotationState_DISPATCH(str
 }
 
 static inline NvBool confComputeApiAccessCallback_DISPATCH(struct ConfidentialComputeApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__confComputeApiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_vtable->__confComputeApiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool confComputeApiShareCallback_DISPATCH(struct ConfidentialComputeApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__confComputeApiShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_vtable->__confComputeApiShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS confComputeApiGetMemInterMapParams_DISPATCH(struct ConfidentialComputeApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__confComputeApiGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_vtable->__confComputeApiGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS confComputeApiCheckMemInterUnmap_DISPATCH(struct ConfidentialComputeApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__confComputeApiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_vtable->__confComputeApiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS confComputeApiGetMemoryMappingDescriptor_DISPATCH(struct ConfidentialComputeApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__confComputeApiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_vtable->__confComputeApiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS confComputeApiControlSerialization_Prologue_DISPATCH(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__confComputeApiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__confComputeApiControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void confComputeApiControlSerialization_Epilogue_DISPATCH(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__confComputeApiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__confComputeApiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS confComputeApiControl_Prologue_DISPATCH(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__confComputeApiControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__confComputeApiControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void confComputeApiControl_Epilogue_DISPATCH(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__confComputeApiControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__confComputeApiControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool confComputeApiCanCopy_DISPATCH(struct ConfidentialComputeApi *pResource) {
-    return pResource->__confComputeApiCanCopy__(pResource);
+    return pResource->__nvoc_vtable->__confComputeApiCanCopy__(pResource);
 }
 
 static inline NV_STATUS confComputeApiIsDuplicate_DISPATCH(struct ConfidentialComputeApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__confComputeApiIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_vtable->__confComputeApiIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void confComputeApiPreDestruct_DISPATCH(struct ConfidentialComputeApi *pResource) {
-    pResource->__confComputeApiPreDestruct__(pResource);
+    pResource->__nvoc_vtable->__confComputeApiPreDestruct__(pResource);
 }
 
 static inline NV_STATUS confComputeApiControl_DISPATCH(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__confComputeApiControl__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__confComputeApiControl__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS confComputeApiControlFilter_DISPATCH(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__confComputeApiControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__confComputeApiControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS confComputeApiMap_DISPATCH(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pResource->__confComputeApiMap__(pResource, pCallContext, pParams, pCpuMapping);
+    return pResource->__nvoc_vtable->__confComputeApiMap__(pResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS confComputeApiUnmap_DISPATCH(struct ConfidentialComputeApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__confComputeApiUnmap__(pResource, pCallContext, pCpuMapping);
+    return pResource->__nvoc_vtable->__confComputeApiUnmap__(pResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool confComputeApiIsPartialUnmapSupported_DISPATCH(struct ConfidentialComputeApi *pResource) {
-    return pResource->__confComputeApiIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_vtable->__confComputeApiIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS confComputeApiMapTo_DISPATCH(struct ConfidentialComputeApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__confComputeApiMapTo__(pResource, pParams);
+    return pResource->__nvoc_vtable->__confComputeApiMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS confComputeApiUnmapFrom_DISPATCH(struct ConfidentialComputeApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__confComputeApiUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_vtable->__confComputeApiUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 confComputeApiGetRefCount_DISPATCH(struct ConfidentialComputeApi *pResource) {
-    return pResource->__confComputeApiGetRefCount__(pResource);
+    return pResource->__nvoc_vtable->__confComputeApiGetRefCount__(pResource);
 }
 
 static inline void confComputeApiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct ConfidentialComputeApi *pResource, RsResourceRef *pReference) {
-    pResource->__confComputeApiAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_vtable->__confComputeApiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NV_STATUS confComputeApiCtrlCmdSystemGetCapabilities_IMPL(struct ConfidentialComputeApi *pConfComputeApi, NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_GET_CAPABILITIES_PARAMS *pParams);

@@ -94,7 +94,7 @@ typedef struct OBJMEMSCRUB {
     Sec2Utils                         *pSec2Utils;
 #endif //  !defined(SRT_BUILD)
     // Engine used for scrubbing 
-    NvU32                              engineType;
+    NvBool                             bIsEngineTypeSec2;
 
     struct OBJGPU                     *pGpu;
     VGPU_GUEST_PMA_SCRUB_BUFFER_RING   vgpuScrubBuffRing;

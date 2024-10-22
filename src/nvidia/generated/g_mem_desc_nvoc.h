@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -117,6 +117,10 @@ typedef NvU32      NV_ADDRESS_SPACE;
 #define ADDR_FABRIC_V2  6         // Fabric address space for the FLA based addressing. Will replace ADDR_FABRIC.
 #define ADDR_EGM        7         // Extended GPU Memory (EGM)
 #define ADDR_FABRIC_MC  8         // Multicast fabric address space (MCFLA)
+
+typedef NvU32 MEMDESC_CUSTOM_HEAP;
+#define MEMDESC_CUSTOM_HEAP_NONE                0
+#define MEMDESC_CUSTOM_HEAP_ACR                 1
 
 //
 // Address translation identifiers:
@@ -384,15 +388,15 @@ typedef enum
     NV_FB_ALLOC_RM_INTERNAL_OWNER_GSP_NOTIFY_OP_SURFACE = 177U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_FAKE_WPR_RSVD         = 178U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_GR_SCRUB_CHANNEL      = 179U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_147       = 180U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_148       = 181U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_PMU_ACR_SHADOW_COPY   = 182U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_FLCN_BACKING_STORE    = 183U,
 
     //
     // Unused tags from here, for any new use-case it's required 
     // to replace the below tags with known verbose strings
     //
-    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_147       = 180U,
-    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_148       = 181U,
-    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_149       = 182U,
-    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_150       = 183U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_151       = 184U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_152       = 185U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_153       = 186U,
@@ -909,8 +913,8 @@ NV_ADDRESS_SPACE memdescGetAddressSpace(PMEMORY_DESCRIPTOR pMemDesc);
 NvU64 memdescGetPageSize(MEMORY_DESCRIPTOR *pMemDesc, ADDRESS_TRANSLATION addressTranslation);
 void  memdescSetPageSize(MEMORY_DESCRIPTOR *pMemDesc, ADDRESS_TRANSLATION addressTranslation, NvU64 pageSize);
 PMEMORY_DESCRIPTOR memdescGetRootMemDesc(PMEMORY_DESCRIPTOR pMemDesc, NvU64 *pRootOffset);
-void memdescSetCustomHeap(PMEMORY_DESCRIPTOR);
-NvBool memdescGetCustomHeap(PMEMORY_DESCRIPTOR);
+void memdescSetCustomHeap(PMEMORY_DESCRIPTOR, MEMDESC_CUSTOM_HEAP heap);
+MEMDESC_CUSTOM_HEAP memdescGetCustomHeap(PMEMORY_DESCRIPTOR);
 NV_STATUS memdescSetPageArrayGranularity(MEMORY_DESCRIPTOR *pMemDesc, NvU64 pageArrayGranularity);
 NvBool memdescAcquireRmExclusiveUse(MEMORY_DESCRIPTOR *pMemDesc);
 NV_STATUS memdescFillMemdescForPhysAttr(MEMORY_DESCRIPTOR *pMemDesc, ADDRESS_TRANSLATION addressTranslation,
@@ -1341,7 +1345,10 @@ void memdescSetName(OBJGPU*, MEMORY_DESCRIPTOR *pMemDesc, const char *name, cons
 // created using NV01_MEMORY_LIST_SYSTEM, NV01_MEMORY_LIST_FBMEM or NV01_MEMORY_LIST_OBJECT.
 #define MEMDESC_FLAGS_LIST_MEMORY                  NVBIT64(34)
 
-// unused                                          NVBIT64(35)
+// This flag is used to configure the memory descriptor as SKED reflected for SYSMEM address spaces.
+// Memory accesses to these pages will be routed to SKED. Note that the memory aperture needs to be
+// non-coherent to enable the feature.
+#define MEMDESC_FLAGS_ALLOC_SKED_REFLECTED         NVBIT64(35)
 
 // This flag is used to denote that this memdesc is allocated from
 // a context buffer pool. When this flag is set, we expect a pointer
@@ -1417,6 +1424,7 @@ void memdescSetName(OBJGPU*, MEMORY_DESCRIPTOR *pMemDesc, const char *name, cons
 //
 #define MEMDESC_FLAGS_RESTORE_PTE_KIND_ON_FREE     NVBIT64(49)
 
+#define MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT  NVBIT64(51)
 
 #endif // _MEMDESC_H_
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -287,7 +287,7 @@ kgmmuFaultCancelIssueInvalidate_GP100
 
     pParams->regVal = data32;
 
-    NV_ASSERT_OK_OR_RETURN(kgmmuCheckPendingInvalidates_HAL(pGpu, pKernelGmmu, &pParams->timeout, pParams->gfid));
+    NV_ASSERT_OK_OR_RETURN(kgmmuCheckPendingInvalidates_HAL(pGpu, pKernelGmmu, &pParams->timeout));
 
     NV_ASSERT_OK_OR_RETURN(kgmmuCommitTlbInvalidate_HAL(pGpu, pKernelGmmu, pParams));
 

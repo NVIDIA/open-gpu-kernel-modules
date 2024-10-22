@@ -354,22 +354,11 @@ memMap_IMPL
                 //       this function will transition to storing the mapping parameters onto
                 //       the FD.  Also note: All mapping parameters are ignored (!).
                 //
-                //   For now, we're going to return the first page of the nvlink aperture
-                //   mapping of this allocation.  See nvidia_mmap_helper for establishment
-                //   of direct mapping.
-                //
+                //   TODO: refactor this to either use the new osMapMemoryArea interface or unify with kernel in osMapSystemMemory
 
-                rmStatus = osMapPciMemoryUser(pGpu->pOsGpuInfo,
-                                              ((NvUPtr)pKernelMemorySystem->coherentCpuFbBase +
-                                               (NvUPtr)memdescGetPhysAddr(pMemDesc,
-                                                AT_CPU, pMapParams->offset)),
-                                              pMapParams->length,
-                                              pMapParams->protect,
-                                              pMapParams->ppCpuVirtAddr,
-                                              &priv,
-                                              NV_MEMORY_UNCACHED);
-                if (rmStatus != NV_OK)
-                    return rmStatus;
+                rmStatus = NV_OK;
+                *((NvU64*) pMapParams->ppCpuVirtAddr) = ((NvU64) pKernelMemorySystem->coherentCpuFbBase) +
+                    ((NvU64) memdescGetPhysAddr(pMemDesc, AT_CPU, pMapParams->offset));
             }
 
             NV_PRINTF(LEVEL_INFO,
@@ -384,8 +373,8 @@ memMap_IMPL
                                                     priv,
                                                     *(pMapParams->ppCpuVirtAddr),
                                                     pMapParams->length,
-                                                    -1,
-                                                    -1,
+                                                    0,
+                                                    0,
                                                     pMapParams->flags);
             pCpuMapping->pPrivate->pGpu = pGpu;
 
@@ -410,6 +399,8 @@ memMap_IMPL
         NvBool bcState = NV_FALSE;
         NvU64 gpuVirtAddr = 0;
         NvU64 gpuMapLength = 0;
+        MemoryArea memArea;
+        NvBool bUseMemArea = NV_FALSE;
 
         //
         // MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1 indicates a special mapping type of HW registers,
@@ -454,6 +445,9 @@ memMap_IMPL
 
                 // Below, we only map one GPU's address for CPU access, so we can use UNICAST here
                 NvU32 busMapFbFlags = BUS_MAP_FB_FLAGS_MAP_UNICAST;
+#if defined(NV_UNIX)
+                busMapFbFlags |= pMapParams->bKernel ? 0 : BUS_MAP_FB_FLAGS_ALLOW_DISCONTIG;
+#endif
                 if(DRF_VAL(OS33, _FLAGS, _MAPPING, pMapParams->flags) == NVOS33_FLAGS_MAPPING_DIRECT)
                 {
                     busMapFbFlags |= BUS_MAP_FB_FLAGS_DISABLE_ENCRYPTION;
@@ -480,11 +474,17 @@ memMap_IMPL
 
                 (void) deviceGetByHandle(staticCast(pClient, RsClient),
                                          pMapParams->hDevice, &pDevice);
+                bUseMemArea = NV_TRUE;
+                rmStatus = kbusMapFbAperture_HAL(pGpu, pKernelBus,
+                                                   pMemDesc, mrangeMake(pMapParams->offset, gpuMapLength),
+                                                   &memArea, busMapFbFlags, pDevice);
 
-                rmStatus = kbusMapFbApertureSingle(pGpu, pKernelBus,
-                                                   pMemDesc, pMapParams->offset,
-                                                   &gpuVirtAddr, &gpuMapLength,
-                                                   busMapFbFlags, pDevice);
+                if (rmStatus == NV_OK)
+                {
+                    gpuVirtAddr = memArea.pRanges[0].start;
+                }
+
+
             }
 
             if (rmStatus != NV_OK)
@@ -509,7 +509,7 @@ memMap_IMPL
                                               pMapParams->ppCpuVirtAddr,
                                               cachingType);
         }
-        else
+        else if(!bUseMemArea)
         {
             rmStatus = osMapPciMemoryUser(pGpu->pOsGpuInfo,
                                           (kbusIsBar1PhysicalModeEnabled(pKernelBus)?
@@ -519,6 +519,29 @@ memMap_IMPL
                                           pMapParams->ppCpuVirtAddr,
                                           &priv,
                                           cachingType);
+        }
+        else
+        {
+            NvU64 idx;
+            NvU64 barAddr = gpumgrGetGpuPhysFbAddr(pGpu);
+
+            for (idx = 0; idx < memArea.numRanges; idx++)
+            {
+                memArea.pRanges[idx].start += barAddr;
+            }
+
+            rmStatus = osMapPciMemoryAreaUser(pGpu->pOsGpuInfo,
+                                          memArea,
+                                          pMapParams->protect,
+                                          cachingType,
+                                          pMapParams->ppCpuVirtAddr,
+                                          &priv);
+
+            for (idx = 0; idx < memArea.numRanges; idx++)
+            {
+                memArea.pRanges[idx].start -= barAddr;
+            }
+
         }
 
         //
@@ -538,12 +561,17 @@ memMap_IMPL
                                                 *(pMapParams->ppCpuVirtAddr),
                                                 pMapParams->length,
                                                 kbusIsBar1PhysicalModeEnabled(pKernelBus)
-                                                    ? (NvU64)-1
+                                                    ? (NvU64)0
                                                     : gpuVirtAddr,
                                                 kbusIsBar1PhysicalModeEnabled(pKernelBus)
-                                                    ? (NvU64)-1
+                                                    ? (NvU64)0
                                                     : gpuMapLength,
                                                 pMapParams->flags);
+
+        if (bUseMemArea)
+        {
+            pCpuMapping->pPrivate->memArea = memArea;
+        }
         pCpuMapping->pPrivate->pGpu = pGpu;
 
         if (rmStatus != NV_OK)
@@ -556,11 +584,10 @@ memMap_IMPL
     _rmMapMemory_pciFail:
             if (!kbusIsBar1PhysicalModeEnabled(pKernelBus))
             {
-                kbusUnmapFbApertureSingle(pGpu,
+                kbusUnmapFbAperture_HAL(pGpu,
                                           pKernelBus,
                                           pMemDesc,
-                                          gpuVirtAddr,
-                                          gpuMapLength,
+                                          memArea,
                                           BUS_MAP_FB_FLAGS_MAP_UNICAST);
     _rmMapMemory_busFail:
                 gpumgrSetBcEnabledStatus(pGpu, bcState);
@@ -631,8 +658,8 @@ memMap_IMPL
                                                 priv,
                                                 *(pMapParams->ppCpuVirtAddr),
                                                 pMapParams->length,
-                                                -1, // gpu virtual addr
-                                                -1, // gpu map length
+                                                0, // gpu virtual addr
+                                                0, // gpu map length
                                                 pMapParams->flags);
         pCpuMapping->pPrivate->pGpu = pGpu;
 
@@ -739,10 +766,9 @@ memUnmap_IMPL
         if (!kbusIsBar1PhysicalModeEnabled(pKernelBus))
         {
             {
-                kbusUnmapFbApertureSingle(pGpu, pKernelBus,
+                kbusUnmapFbAperture_HAL(pGpu, pKernelBus,
                                           pMemory->pMemDesc,
-                                          pCpuMapping->pPrivate->gpuAddress,
-                                          pCpuMapping->pPrivate->gpuMapLength,
+                                          pCpuMapping->pPrivate->memArea,
                                           BUS_MAP_FB_FLAGS_MAP_UNICAST);
             }
         }

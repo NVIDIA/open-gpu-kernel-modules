@@ -146,6 +146,7 @@ typedef struct NV2080_CTRL_CE_GET_CAPS_V2_PARAMS {
  * NV2080_CTRL_CMD_CE_GET_CE_PCE_MASK
  *
  * This command returns the mapping of PCE's for the given LCE.
+ * The pceMask is local to the CE shim that ceEngineType belongs to.
  *
  *   ceEngineType
  *     This parameter specifies the copy engine type
@@ -158,12 +159,6 @@ typedef struct NV2080_CTRL_CE_GET_CAPS_V2_PARAMS {
  *   NV_ERR_INVALID_PARAM_STRUCT
  *   NV_ERR_INVALID_ARGUMENT
  */
-
-/*
- * The pceMask is local to the CE shim that ceEngineType belongs to.
- */
-
-
 
 #define NV2080_CTRL_CMD_CE_GET_CE_PCE_MASK (0x20802a02) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_CE_INTERFACE_ID << 8) | NV2080_CTRL_CE_GET_CE_PCE_MASK_PARAMS_MESSAGE_ID" */
 
@@ -236,18 +231,6 @@ typedef struct NV2080_CTRL_CE_SET_PCE_LCE_CONFIG_PARAMS {
  *   NV_ERR_INVALID_ARGUMENT
  *   NV_ERR_GENERIC
  */
-
-/*
- * This command updates the PCE-LCE mappings for one CE shim.  On
- * GPUs with multiple CE shims, this interface must be called for
- * each shim.
- *
- *   shimInstance [IN]
- *     Specify which CE shim instance to operate on.
- */
-
-
-
 #define NV2080_CTRL_CMD_CE_UPDATE_PCE_LCE_MAPPINGS (0x20802a05) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_CE_INTERFACE_ID << 8) | NV2080_CTRL_CE_UPDATE_PCE_LCE_MAPPINGS_PARAMS_MESSAGE_ID" */
 
 #define NV2080_CTRL_CE_UPDATE_PCE_LCE_MAPPINGS_PARAMS_MESSAGE_ID (0x5U)
@@ -270,13 +253,9 @@ typedef struct NV2080_CTRL_CE_UPDATE_PCE_LCE_MAPPINGS_PARAMS {
  *
  * An example if NV2080_ENGINE_TYPE_COPY4 is stubbed (1<<4) will be
  * set in stubbedCeMask.
- */
-
-/*
+ *
  * This function operates on all CE shims.
  */
-
-
 #define NV2080_CTRL_CMD_CE_UPDATE_CLASS_DB (0x20802a06) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_CE_INTERFACE_ID << 8) | NV2080_CTRL_CE_UPDATE_CLASS_DB_PARAMS_MESSAGE_ID" */
 
 #define NV2080_CTRL_CE_UPDATE_CLASS_DB_PARAMS_MESSAGE_ID (0x6U)
@@ -360,7 +339,6 @@ typedef struct NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS {
 
 typedef NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS NV2080_CTRL_CE_GET_ALL_PHYSICAL_CAPS_PARAMS;
 
-
 /*
  * NV2080_CTRL_CMD_CE_GET_LCE_SHIM_INFO
  *
@@ -439,11 +417,15 @@ typedef enum NV2080_CTRL_CE_LCE_TYPE {
     NV2080_CTRL_CE_LCE_TYPE_SCRUB = 3,
     NV2080_CTRL_CE_LCE_TYPE_NVLINK_PEER = 4,
     NV2080_CTRL_CE_LCE_TYPE_C2C = 5,
+    NV2080_CTRL_CE_LCE_TYPE_PCIE_RD = 6,
+    NV2080_CTRL_CE_LCE_TYPE_PCIE_WR = 7,
+    NV2080_CTRL_CE_LCE_TYPE_C2C_H2D = 8,
+    NV2080_CTRL_CE_LCE_TYPE_C2C_D2H = 9,
 } NV2080_CTRL_CE_LCE_TYPE;
 
 /*
  * NV2080_CTRL_CMD_INTERNAL_CE_GET_PCE_CONFIG_FOR_LCE_TYPE
- * 
+ *
  * This command queries the PCE config required for the specified LCE type.
  *
  *  [in] lceType
@@ -497,6 +479,24 @@ typedef struct NV2080_CTRL_CE_GET_DECOMP_LCE_MASK_PARAMS {
     NvU32 shimInstance;
 } NV2080_CTRL_CE_GET_DECOMP_LCE_MASK_PARAMS;
 
+/*
+ * NV2080_CTRL_CMD_CE_IS_DECOMP_LCE_ENABLED
+ *
+ * This command returns whether a given global LCE index is enabled for decomp workloads.
+ * It has to be given a global LCE index (cannot support shim local LCE ID)
+ *
+ *   [in]  lceIndex
+ *   [out] bDecompEnabled
+ *     Returns NV_TRUE if LCE is enabled for decompression, else returns NV_FALSE
+ */
 
+#define NV2080_CTRL_CMD_CE_IS_DECOMP_LCE_ENABLED (0x20802a12) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_CE_INTERFACE_ID << 8) | NV2080_CTRL_CE_IS_DECOMP_LCE_ENABLED_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_CE_IS_DECOMP_LCE_ENABLED_PARAMS_MESSAGE_ID (0x12U)
+
+typedef struct NV2080_CTRL_CE_IS_DECOMP_LCE_ENABLED_PARAMS {
+    NvU32  lceIndex;
+    NvBool bDecompEnabled;
+} NV2080_CTRL_CE_IS_DECOMP_LCE_ENABLED_PARAMS;
 
 /* _ctrl2080ce_h_ */

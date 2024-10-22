@@ -64,7 +64,7 @@ kgraphicsSetFecsTraceRdOffset_GP100
 
     data = FLD_SET_DRF_NUM(_CTXSW, _TIMESTAMP_BUFFER, _RD_WR_POINTER, rdOffset, data);
 
-    if (pKernelGraphics->bCtxswLoggingEnabled)
+    if (kgraphicsIsCtxswLoggingEnabled(pGpu, pKernelGraphics))
         data = FLD_SET_DRF(_CTXSW, _TIMESTAMP_BUFFER, _MAILBOX1_TRACE_FEATURE, _ENABLED, data);
 
     GPU_REG_WR32(pGpu, NV_PGRAPH_PRI_FECS_FALCON_MAILBOX1, data);
@@ -102,7 +102,7 @@ kgraphicsSetFecsTraceHwEnable_GP100
         data = FLD_SET_DRF(_CTXSW, _TIMESTAMP_BUFFER, _MAILBOX1_TRACE_FEATURE, _ENABLED, data);
 
     GPU_REG_WR32(pGpu, NV_PGRAPH_PRI_FECS_FALCON_MAILBOX1, data);
-    pKernelGraphics->bCtxswLoggingEnabled = bEnable;
+    kgraphicsSetCtxswLoggingEnabled(pGpu, pKernelGraphics, bEnable);
 }
 
 void

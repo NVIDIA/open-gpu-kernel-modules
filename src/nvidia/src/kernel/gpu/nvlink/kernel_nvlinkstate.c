@@ -230,6 +230,15 @@ knvlinkConstructEngine_IMPL
             PDB_PROP_KNVLINK_MINION_GFW_BOOT, NV_FALSE);
     }
 
+    {
+        NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *pInfo = gpumgrGetNvlinkRecoveryInfo(gpuGetDBDF(pGpu));
+
+        NV_ASSERT_OR_RETURN(pInfo != NULL, NV_ERR_INVALID_STATE);
+        // Mark recovery info as valid for use by error recovery workqueues
+        pInfo->bValid = NV_TRUE;
+        pInfo->DomainBusDevice = gpuGetDBDF(pGpu);
+    }
+
     return NV_OK;
 }
 
@@ -679,6 +688,9 @@ knvlinkStateLoad_IMPL
 
     knvlinkDumpCallbackRegister_HAL(pGpu, pKernelNvlink);
 
+    // Update list of HSHUB supported RBM modes
+    knvlinkGetHshubSupportedRbmModes_HAL(pGpu, pKernelNvlink);
+
 knvlinkStateLoad_end:
 
     if (status != NV_OK)
@@ -986,7 +998,7 @@ _knvlinkPurgeState
     NvBool bMIGNvLinkP2PDisabled = ((pKernelMIGManager != NULL) &&
                           !kmigmgrIsMIGNvlinkP2PSupported(pGpu, pKernelMIGManager));
 
-    FOR_EACH_INDEX_IN_MASK(32, linkId, pKernelNvlink->enabledLinks)
+    FOR_EACH_INDEX_IN_MASK(32, linkId, pKernelNvlink->discoveredLinks)
     {
         if ((pKernelNvlink->nvlinkLinks[linkId].pTmrEvent != NULL) && (pTmr != NULL))
         {
@@ -1031,6 +1043,18 @@ _knvlinkPurgeState
         }
     }
 
+    //
+    // pGidString is allocated within knvlinkStatePostLoad -> knvlinkCoreUpdateDeviceUUID
+    // so need to free it during destruct
+    // Freeing it within knvlinkCoreRemoveDevice could create problems if
+    // AddDevice/RemoveDevice are used outside StateLoad/StatePostUnload/StateDestroy in the future
+    //
+    if (pKernelNvlink->pGidString)
+    {
+        portMemFree(pKernelNvlink->pGidString);
+        pKernelNvlink->pGidString = NULL;
+    }
+
 _knvlinkPurgeState_end:
 
 #endif
@@ -1061,6 +1085,33 @@ _knvlinkPurgeState_end:
 }
 
 /*!
+ * @brief Workitem to shutdown links async to any error
+ * paths that were taken
+ *
+ * @param[in] pGpu           OBJGPU pointer
+ * @param[in] pKernelNvlink  KernelNvlink pointer
+ *
+ */
+void
+knvlinkShutdownLinks_WORKITEM
+(
+    NvU32 gpuInstance,
+    void *pData
+)
+{
+    OBJGPU *pGpu                = gpumgrGetGpu(gpuInstance);
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    // Sanity Checks
+    NV_CHECK_OR_RETURN_VOID(LEVEL_INFO,
+            (pGpu != NULL &&
+             pKernelNvlink != NULL));
+
+    NV_ASSERT_OR_RETURN_VOID(
+            knvlinkCoreShutdownDeviceLinks(pGpu, pKernelNvlink, NV_TRUE) == NV_OK);
+}
+
+/*!
  * @brief Degraded Mode will be set if other end of the linkId
  *        is not degraded.
  *        Once degraded destroy the RM NVLink SW state
@@ -1078,7 +1129,6 @@ knvlinkSetDegradedMode_IMPL
     NvU32         linkId
 )
 {
-    NvU32         status = NV_ERR_GENERIC;
     NvU32         gpuInstance;
     OBJGPU       *pRemoteGpu = NULL;
     KernelNvlink *pRemoteKernelNvlink = NULL;
@@ -1107,6 +1157,7 @@ knvlinkSetDegradedMode_IMPL
         }
     }
 
+    // Sanity checks
     if (pRemoteGpu == NULL)
     {
         NV_PRINTF(LEVEL_ERROR,
@@ -1126,20 +1177,25 @@ knvlinkSetDegradedMode_IMPL
         return;
     }
 
+    //
+    // Only mark the current GPU if the peer GPU is not degraded.
+    // In the case where the peer GPU is already degraded then there is no additional
+    // loss of connectivity in the fabric due to the link error that caused this
+    // path to be triggered.
+    //
     if (pRemoteKernelNvlink->bIsGpuDegraded == NV_FALSE)
     {
         pKernelNvlink->bIsGpuDegraded = NV_TRUE;
         NV_PRINTF(LEVEL_ERROR,
-                "GPU%d marked Degraded for error on linkId %d \n",
+                "GPU%d marked Degraded. Error originated on linkId %d!\n",
                 pGpu->gpuInstance, linkId);
 
-        // shutdown all the links on this GPU
-        status = knvlinkCoreShutdownDeviceLinks(pGpu, pKernelNvlink, NV_TRUE);
-        if (status != NV_OK)
-        {
-           NV_PRINTF(LEVEL_ERROR,
-                     "failed to shutdown links on degraded GPU%d\n", pGpu->gpuInstance);
-        }
+        // Queue a workitem to handle rest of the degraded mode handling
+        NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR, NV_OK ==
+                osQueueWorkItemWithFlags(pGpu, knvlinkShutdownLinks_WORKITEM,
+                                            NULL,
+                                            (OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RO |
+                                                OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE)));
     }
 
     return;

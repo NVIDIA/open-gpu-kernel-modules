@@ -127,12 +127,12 @@ static NvU32 smmu_vintf_read32(void __iomem *smmu_cmdqv_base, int reg)
 
 // We always use VCMDQ127 for the WAR
 #define VCMDQ 127
-void smmu_vcmdq_write32(void __iomem *smmu_cmdqv_base, int reg, NvU32 val)
+static void smmu_vcmdq_write32(void __iomem *smmu_cmdqv_base, int reg, NvU32 val)
 {
     iowrite32(val, SMMU_VCMDQ_BASE_ADDR(smmu_cmdqv_base, VCMDQ) + reg);
 }
 
-NvU32 smmu_vcmdq_read32(void __iomem *smmu_cmdqv_base, int reg)
+static NvU32 smmu_vcmdq_read32(void __iomem *smmu_cmdqv_base, int reg)
 {
     return ioread32(SMMU_VCMDQ_BASE_ADDR(smmu_cmdqv_base, VCMDQ) + reg);
 }

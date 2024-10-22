@@ -91,54 +91,7 @@ typedef struct NV0080_CTRL_FIFO_GET_CAPS_PARAMS {
 #define NV0080_CTRL_FIFO_CAPS_SUPPORT_WDDM_INTERLEAVING              1:0x40
 
 /* size in bytes of fifo caps table */
-#define NV0080_CTRL_FIFO_CAPS_TBL_SIZE 2
-
-/*
- * NV0080_CTRL_CMD_FIFO_START_SELECTED_CHANNELS
- *
- * This command allows the caller to request that a set of channels
- * be added to the runlist.
- *
- *   fifoStartChannelListSize
- *     Size of the fifoStartChannelList.  The units are in entries, not
- *     bytes.
- *   fifoStartChannelList
- *     This will be a list of NV0080_CTRL_FIFO_CHANNEL data structures, 
- *     one for each channel that is to be started.
- *   channelHandle
- *     deprecated
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_INVALID_PARAM_STRUCT
- *   NV_ERR_INVALID_ARGUMENT
- */
-
-/*
- *   hChannel
- *     This is the handle to the channel that is scheduled to be started.
- */
-typedef struct NV0080_CTRL_FIFO_CHANNEL {
-    NvHandle hChannel;
-} NV0080_CTRL_FIFO_CHANNEL;
-
-#define NV0080_CTRL_CMD_FIFO_START_SELECTED_CHANNELS (0x801705) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_FIFO_INTERFACE_ID << 8) | NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS_MESSAGE_ID" */
-
-#define NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS_MESSAGE_ID (0x5U)
-
-typedef struct NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS {
-    NvU32    fifoStartChannelListCount;
-    NvHandle channelHandle[8];
-    NV_DECLARE_ALIGNED(NvP64 fifoStartChannelList, 8);
-} NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS;
-
-#define NV0080_CTRL_FIFO_ENGINE_ID_GRAPHICS                                               (0x00000000)
-#define NV0080_CTRL_FIFO_ENGINE_ID_MPEG                                                   (0x00000001)
-#define NV0080_CTRL_FIFO_ENGINE_ID_MOTION_ESTIMATION                                      (0x00000002)
-#define NV0080_CTRL_FIFO_ENGINE_ID_VIDEO                                                  (0x00000003)
-#define NV0080_CTRL_FIFO_ENGINE_ID_BITSTREAM                                              (0x00000004)
-#define NV0080_CTRL_FIFO_ENGINE_ID_ENCRYPTION                                             (0x00000005)
-#define NV0080_CTRL_FIFO_ENGINE_ID_FGT                                                    (0x00000006)
+#define NV0080_CTRL_FIFO_CAPS_TBL_SIZE                                                    2
 
 /*
  * NV0080_CTRL_CMD_FIFO_GET_ENGINE_CONTEXT_PROPERTIES

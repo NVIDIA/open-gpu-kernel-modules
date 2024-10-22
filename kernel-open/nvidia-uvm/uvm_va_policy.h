@@ -292,6 +292,31 @@ static uvm_va_policy_node_t *uvm_va_policy_node_iter_first(uvm_va_block_t *va_bl
     return NULL;
 }
 
+static const uvm_va_policy_t *uvm_va_policy_iter_first(uvm_va_block_t *va_block,
+                                                       NvU64 start,
+                                                       NvU64 end,
+                                                       uvm_va_policy_node_t **out_node,
+                                                       uvm_va_block_region_t *out_region)
+{
+    UVM_ASSERT(0);
+    return NULL;
+}
+
+static const uvm_va_policy_t *uvm_va_policy_iter_next(uvm_va_block_t *va_block,
+                                                      const uvm_va_policy_t *policy,
+                                                      NvU64 end,
+                                                      uvm_va_policy_node_t **inout_node,
+                                                      uvm_va_block_region_t *inout_region)
+{
+    UVM_ASSERT(0);
+    return NULL;
+}
+
+#define uvm_for_each_va_policy_in(policy, va_block, start, end, node, region) \
+    for ((policy) = uvm_va_policy_iter_first((va_block), (start), (end), &(node), &(region)); \
+         (policy);                                                              \
+         (policy) = uvm_va_policy_iter_next((va_block), (policy), (end), &(node), &(region)))
+
 #endif // UVM_IS_CONFIG_HMM()
 
 #endif // __UVM_VA_POLICY_H__

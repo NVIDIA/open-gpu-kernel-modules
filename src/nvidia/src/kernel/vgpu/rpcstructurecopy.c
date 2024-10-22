@@ -1407,6 +1407,61 @@ NV_STATUS deserialize_GPU_PARTITION_INFO_v24_05(GPU_PARTITION_INFO *gpuPartition
     return NVOS_STATUS_SUCCESS;
 }
 
+NV_STATUS deserialize_GPU_PARTITION_INFO_v28_02(GPU_PARTITION_INFO *gpuPartitionInfo, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
+{
+    if (!offset)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+
+    // If gpuPartitionInfo and buffer are valid, then copy data and return the offset
+    if (gpuPartitionInfo && buffer)
+    {
+        NvU32 i;
+        GPU_PARTITION_INFO_v28_02 *gpu_partition_info_v28_02 = NULL;
+
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(GPU_PARTITION_INFO_v28_02))))
+        {
+            return NV_ERR_BUFFER_TOO_SMALL;
+        }
+
+        gpu_partition_info_v28_02 = (void*)(buffer + *offset);
+
+        // GPU PARTITION INFO
+        gpuPartitionInfo->swizzId         = gpu_partition_info_v28_02->swizzId;
+        gpuPartitionInfo->grEngCount      = gpu_partition_info_v28_02->grEngCount;
+        gpuPartitionInfo->veidCount       = gpu_partition_info_v28_02->veidCount;
+        gpuPartitionInfo->ceCount         = gpu_partition_info_v28_02->ceCount;
+        gpuPartitionInfo->gpcCount        = gpu_partition_info_v28_02->gpcCount;
+        gpuPartitionInfo->virtualGpcCount = gpu_partition_info_v28_02->virtualGpcCount;
+        gpuPartitionInfo->gfxGpcCount     = gpu_partition_info_v28_02->gfxGpcCount;
+        gpuPartitionInfo->nvDecCount      = gpu_partition_info_v28_02->nvDecCount;
+        gpuPartitionInfo->nvEncCount      = gpu_partition_info_v28_02->nvEncCount;
+        gpuPartitionInfo->nvJpgCount      = gpu_partition_info_v28_02->nvJpgCount;
+        gpuPartitionInfo->partitionFlag   = gpu_partition_info_v28_02->partitionFlag;
+        gpuPartitionInfo->smCount         = gpu_partition_info_v28_02->smCount;
+        gpuPartitionInfo->nvOfaCount      = gpu_partition_info_v28_02->nvOfaCount;
+        gpuPartitionInfo->memSize         = gpu_partition_info_v28_02->memSize;
+        gpuPartitionInfo->bValid          = gpu_partition_info_v28_02->bValid;
+        gpuPartitionInfo->span.lo         = gpu_partition_info_v28_02->span.lo;
+        gpuPartitionInfo->span.hi         = gpu_partition_info_v28_02->span.hi;
+        gpuPartitionInfo->validCTSIdMask  = gpu_partition_info_v28_02->validCTSIdMask;
+        gpuPartitionInfo->validGfxCTSIdMask  = gpu_partition_info_v28_02->validGfxCTSIdMask;
+
+        for (i = 0; i < gpuPartitionInfo->grEngCount; i++)
+        {
+            gpuPartitionInfo->gpcsPerGr[i]        = gpu_partition_info_v28_02->gpcsPerGr[i];
+            gpuPartitionInfo->veidsPerGr[i]       = gpu_partition_info_v28_02->veidsPerGr[i];
+            gpuPartitionInfo->virtualGpcsPerGr[i] = gpu_partition_info_v28_02->virtualGpcsPerGr[i];
+            gpuPartitionInfo->gfxGpcPerGr[i]      = gpu_partition_info_v28_02->gfxGpcPerGr[i];
+        }
+    }
+    *offset += sizeof(GPU_PARTITION_INFO_v28_02);
+
+    return NVOS_STATUS_SUCCESS;
+}
+
 // NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS deserialization is used starting with v24_06
 NV_STATUS deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v15_01(NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS *eccStatusParams, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
 {
@@ -1538,6 +1593,82 @@ NV_STATUS deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v27_04(NV2080_CTRL
         }
     }
     *offset += sizeof(NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v27_04);
+
+    return NVOS_STATUS_SUCCESS;
+}
+
+NV_STATUS deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v28_01(NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS *eccStatusParams, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
+{
+    if (offset == NULL)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+
+    // If eccStatusParams and buffer are valid, then copy data and return the offset
+    if (eccStatusParams && buffer)
+    {
+        NvU32 i;
+        NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v28_01 *eccStatusParams_v28_01 = NULL;
+
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v28_01))))
+        {
+            return NV_ERR_BUFFER_TOO_SMALL;
+        }
+
+        eccStatusParams_v28_01 = (void*)(buffer + *offset);
+
+        eccStatusParams->bFatalPoisonError = eccStatusParams_v28_01->bFatalPoisonError;
+
+        for (i = 0; i < NV2080_CTRL_GPU_ECC_UNIT_COUNT_v28_01; i++) {
+            eccStatusParams->units[i].enabled                = eccStatusParams_v28_01->units[i].enabled;
+            eccStatusParams->units[i].scrubComplete          = eccStatusParams_v28_01->units[i].scrubComplete;
+            eccStatusParams->units[i].supported              = eccStatusParams_v28_01->units[i].supported;
+            eccStatusParams->units[i].dbe.count              = eccStatusParams_v28_01->units[i].dbe.count;
+            eccStatusParams->units[i].dbeNonResettable.count = eccStatusParams_v28_01->units[i].dbeNonResettable.count;
+            eccStatusParams->units[i].sbe.count              = eccStatusParams_v28_01->units[i].sbe.count;
+            eccStatusParams->units[i].sbeNonResettable.count = eccStatusParams_v28_01->units[i].sbeNonResettable.count;
+        }
+    }
+    *offset += sizeof(NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v28_01);
+
+    return NVOS_STATUS_SUCCESS;
+}
+
+NV_STATUS deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v28_08(NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS *eccStatusParams, NvU8 *buffer, NvU32 bufferSize, NvU32 *offset)
+{
+    if (offset == NULL)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+
+    // If eccStatusParams and buffer are valid, then copy data and return the offset
+    if (eccStatusParams && buffer)
+    {
+        NvU32 i;
+        NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v28_08 *eccStatusParams_v28_08 = NULL;
+
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v28_08))))
+        {
+            return NV_ERR_BUFFER_TOO_SMALL;
+        }
+
+        eccStatusParams_v28_08 = (void*)(buffer + *offset);
+
+        eccStatusParams->bFatalPoisonError = eccStatusParams_v28_08->bFatalPoisonError;
+
+        for (i = 0; i < NV2080_CTRL_GPU_ECC_UNIT_COUNT_v28_08; i++) {
+            eccStatusParams->units[i].enabled                = eccStatusParams_v28_08->units[i].enabled;
+            eccStatusParams->units[i].scrubComplete          = eccStatusParams_v28_08->units[i].scrubComplete;
+            eccStatusParams->units[i].supported              = eccStatusParams_v28_08->units[i].supported;
+            eccStatusParams->units[i].dbe.count              = eccStatusParams_v28_08->units[i].dbe.count;
+            eccStatusParams->units[i].dbeNonResettable.count = eccStatusParams_v28_08->units[i].dbeNonResettable.count;
+            eccStatusParams->units[i].sbe.count              = eccStatusParams_v28_08->units[i].sbe.count;
+            eccStatusParams->units[i].sbeNonResettable.count = eccStatusParams_v28_08->units[i].sbeNonResettable.count;
+        }
+    }
+    *offset += sizeof(NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_v28_08);
 
     return NVOS_STATUS_SUCCESS;
 }
@@ -2214,6 +2345,46 @@ NV_STATUS deserialize_NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_v27_05(
     }
 
     *offset += sizeof(*pParams_v27_05);
+    return NVOS_STATUS_SUCCESS;
+}
+
+NV_STATUS deserialize_NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_v28_04(
+    NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS *pParams, NvU8 *buffer, NvU32 bufferSize,
+    NvU32 *offset)
+{
+    NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_v28_04 *pParams_v28_04 = NULL;
+    if (offset == NULL)
+    {
+        return NVOS_STATUS_ERROR_INVALID_ARGUMENT;
+    }
+    if (pParams != NULL && buffer != NULL)
+    {
+        NvU32 i;
+        if ((bufferSize < *offset) ||
+            (bufferSize < (*offset + sizeof(*pParams_v28_04))))
+        {
+            return NV_ERR_BUFFER_TOO_SMALL;
+        }
+        pParams_v28_04 = (void*)(buffer + *offset);
+        pParams->numEntries = pParams_v28_04->numEntries;
+        for (i = 0; i < NV2080_CTRL_CMD_INTERNAL_DEVICE_INFO_MAX_ENTRIES_V28_04; i++) {
+            NV2080_CTRL_INTERNAL_DEVICE_INFO *dst = &(pParams->deviceInfoTable[i]);
+            NV2080_CTRL_INTERNAL_DEVICE_INFO_v28_04 *src = &(pParams_v28_04->deviceInfoTable[i]);
+            dst->faultId = src->faultId;
+            dst->instanceId = src->instanceId;
+            dst->typeEnum = src->typeEnum;
+            dst->resetId = src->resetId;
+            dst->devicePriBase = src->devicePriBase;
+            dst->isEngine = src->isEngine;
+            dst->rlEngId = src->rlEngId;
+            dst->runlistPriBase = src->runlistPriBase;
+            dst->groupId = src->groupId;
+            dst->ginTargetId = src->ginTargetId;
+            dst->deviceBroadcastPriBase = src->deviceBroadcastPriBase;
+            dst->groupLocalInstanceId = src->groupLocalInstanceId;
+        }
+    }
+    *offset += sizeof(*pParams_v28_04);
     return NVOS_STATUS_SUCCESS;
 }
 

@@ -408,17 +408,6 @@ NV_STATUS embeddedParamCopyIn(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmCt
                             sizeof(NV0080_CTRL_GR_INFO));
             break;
         }
-        case NV0080_CTRL_CMD_FIFO_START_SELECTED_CHANNELS:
-        {
-            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS);
-
-            RMAPI_PARAM_COPY_INIT(paramCopies[0],
-                            ((NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS*)pParams)->fifoStartChannelList,
-                            ((NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS*)pParams)->fifoStartChannelList,
-                            ((NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS*)pParams)->fifoStartChannelListCount,
-                            sizeof(NV0080_CTRL_FIFO_CHANNEL));
-            break;
-        }
         case NV0080_CTRL_CMD_FIFO_GET_CAPS:
         {
             CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0080_CTRL_FIFO_GET_CAPS_PARAMS);
@@ -939,14 +928,6 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmC
 
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV0080_CTRL_GR_GET_INFO_PARAMS*)pParams)->grInfoList = paramCopies[0].pUserParams;
-            break;
-        }
-        case NV0080_CTRL_CMD_FIFO_START_SELECTED_CHANNELS:
-        {
-            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS);
-
-            status = rmapiParamsRelease(&paramCopies[0]);
-            ((NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS*)pParams)->fifoStartChannelList = paramCopies[0].pUserParams;
             break;
         }
         case NV0080_CTRL_CMD_FIFO_GET_CAPS:

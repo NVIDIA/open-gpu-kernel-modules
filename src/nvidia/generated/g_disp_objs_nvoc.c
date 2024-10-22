@@ -102,138 +102,191 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_DisplayApi =
     /*pExportInfo=*/        &__nvoc_export_info_DisplayApi
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super
+NvBool __nvoc_down_thunk_RmResource_resShareCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super
+NV_STATUS __nvoc_down_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+void __nvoc_down_thunk_RmResource_resControlSerialization_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_down_thunk_RmResource_resControl_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+void __nvoc_down_thunk_RmResource_resControl_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+PEVENTNOTIFICATION * __nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr(struct INotifier *pNotifier);    // super
+struct NotifShare * __nvoc_down_thunk_Notifier_inotifyGetNotificationShare(struct INotifier *pNotifier);    // super
+void __nvoc_down_thunk_Notifier_inotifySetNotificationShare(struct INotifier *pNotifier, struct NotifShare *pNotifShare);    // super
+NV_STATUS __nvoc_down_thunk_Notifier_inotifyUnregisterEvent(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // super
+NV_STATUS __nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // super
+NV_STATUS __nvoc_down_thunk_DisplayApi_resControl(struct RsResource *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_down_thunk_DisplayApi_rmresControl_Prologue(struct RmResource *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams);    // this
+void __nvoc_down_thunk_DisplayApi_rmresControl_Epilogue(struct RmResource *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams);    // this
+
 // 3 down-thunk(s) defined to bridge methods in DisplayApi from superclasses
 
 // dispapiControl: virtual override (res) base (rmres)
-static NV_STATUS __nvoc_down_thunk_DisplayApi_resControl(struct RsResource *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_down_thunk_DisplayApi_resControl(struct RsResource *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return dispapiControl((struct DisplayApi *)(((unsigned char *) pDisplayApi) - __nvoc_rtti_DisplayApi_RsResource.offset), pCallContext, pParams);
 }
 
 // dispapiControl_Prologue: virtual override (res) base (rmres)
-static NV_STATUS __nvoc_down_thunk_DisplayApi_rmresControl_Prologue(struct RmResource *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
+NV_STATUS __nvoc_down_thunk_DisplayApi_rmresControl_Prologue(struct RmResource *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
     return dispapiControl_Prologue((struct DisplayApi *)(((unsigned char *) pDisplayApi) - __nvoc_rtti_DisplayApi_RmResource.offset), pCallContext, pRsParams);
 }
 
 // dispapiControl_Epilogue: virtual override (res) base (rmres)
-static void __nvoc_down_thunk_DisplayApi_rmresControl_Epilogue(struct RmResource *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
+void __nvoc_down_thunk_DisplayApi_rmresControl_Epilogue(struct RmResource *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
     dispapiControl_Epilogue((struct DisplayApi *)(((unsigned char *) pDisplayApi) - __nvoc_rtti_DisplayApi_RmResource.offset), pCallContext, pRsParams);
 }
 
 
+// Up-thunk(s) to bridge methods to ancestors (if any)
+NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super
+void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_rmresControl(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_rmresControlFilter(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_rmresMap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // super
+NvBool __nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported(struct RmResource *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_rmresMapTo(struct RmResource *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmapFrom(struct RmResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super
+NvU32 __nvoc_up_thunk_RsResource_rmresGetRefCount(struct RmResource *pResource);    // super
+void __nvoc_up_thunk_RsResource_rmresAddAdditionalDependants(struct RsClient *pClient, struct RmResource *pResource, RsResourceRef *pReference);    // super
+NvBool __nvoc_up_thunk_RmResource_dispapiAccessCallback(struct DisplayApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // this
+NvBool __nvoc_up_thunk_RmResource_dispapiShareCallback(struct DisplayApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiGetMemInterMapParams(struct DisplayApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiCheckMemInterUnmap(struct DisplayApi *pRmResource, NvBool bSubdeviceHandleProvided);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiGetMemoryMappingDescriptor(struct DisplayApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiControlSerialization_Prologue(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+void __nvoc_up_thunk_RmResource_dispapiControlSerialization_Epilogue(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NvBool __nvoc_up_thunk_RsResource_dispapiCanCopy(struct DisplayApi *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiIsDuplicate(struct DisplayApi *pResource, NvHandle hMemory, NvBool *pDuplicate);    // this
+void __nvoc_up_thunk_RsResource_dispapiPreDestruct(struct DisplayApi *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiControlFilter(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiMap(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiUnmap(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // this
+NvBool __nvoc_up_thunk_RsResource_dispapiIsPartialUnmapSupported(struct DisplayApi *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiMapTo(struct DisplayApi *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiUnmapFrom(struct DisplayApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
+NvU32 __nvoc_up_thunk_RsResource_dispapiGetRefCount(struct DisplayApi *pResource);    // this
+void __nvoc_up_thunk_RsResource_dispapiAddAdditionalDependants(struct RsClient *pClient, struct DisplayApi *pResource, RsResourceRef *pReference);    // this
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_dispapiGetNotificationListPtr(struct DisplayApi *pNotifier);    // this
+struct NotifShare * __nvoc_up_thunk_Notifier_dispapiGetNotificationShare(struct DisplayApi *pNotifier);    // this
+void __nvoc_up_thunk_Notifier_dispapiSetNotificationShare(struct DisplayApi *pNotifier, struct NotifShare *pNotifShare);    // this
+NV_STATUS __nvoc_up_thunk_Notifier_dispapiUnregisterEvent(struct DisplayApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // this
+NV_STATUS __nvoc_up_thunk_Notifier_dispapiGetOrAllocNotifShare(struct DisplayApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // this
+
 // 23 up-thunk(s) defined to bridge methods in DisplayApi to superclasses
 
 // dispapiAccessCallback: virtual inherited (rmres) base (rmres)
-static NvBool __nvoc_up_thunk_RmResource_dispapiAccessCallback(struct DisplayApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+NvBool __nvoc_up_thunk_RmResource_dispapiAccessCallback(struct DisplayApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DisplayApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
 // dispapiShareCallback: virtual inherited (rmres) base (rmres)
-static NvBool __nvoc_up_thunk_RmResource_dispapiShareCallback(struct DisplayApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+NvBool __nvoc_up_thunk_RmResource_dispapiShareCallback(struct DisplayApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DisplayApi_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 // dispapiGetMemInterMapParams: virtual inherited (rmres) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RmResource_dispapiGetMemInterMapParams(struct DisplayApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiGetMemInterMapParams(struct DisplayApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
     return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DisplayApi_RmResource.offset), pParams);
 }
 
 // dispapiCheckMemInterUnmap: virtual inherited (rmres) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RmResource_dispapiCheckMemInterUnmap(struct DisplayApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiCheckMemInterUnmap(struct DisplayApi *pRmResource, NvBool bSubdeviceHandleProvided) {
     return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DisplayApi_RmResource.offset), bSubdeviceHandleProvided);
 }
 
 // dispapiGetMemoryMappingDescriptor: virtual inherited (rmres) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RmResource_dispapiGetMemoryMappingDescriptor(struct DisplayApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiGetMemoryMappingDescriptor(struct DisplayApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
     return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DisplayApi_RmResource.offset), ppMemDesc);
 }
 
 // dispapiControlSerialization_Prologue: virtual inherited (rmres) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RmResource_dispapiControlSerialization_Prologue(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiControlSerialization_Prologue(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DisplayApi_RmResource.offset), pCallContext, pParams);
 }
 
 // dispapiControlSerialization_Epilogue: virtual inherited (rmres) base (rmres)
-static void __nvoc_up_thunk_RmResource_dispapiControlSerialization_Epilogue(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+void __nvoc_up_thunk_RmResource_dispapiControlSerialization_Epilogue(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DisplayApi_RmResource.offset), pCallContext, pParams);
 }
 
 // dispapiCanCopy: virtual inherited (res) base (rmres)
-static NvBool __nvoc_up_thunk_RsResource_dispapiCanCopy(struct DisplayApi *pResource) {
+NvBool __nvoc_up_thunk_RsResource_dispapiCanCopy(struct DisplayApi *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DisplayApi_RsResource.offset));
 }
 
 // dispapiIsDuplicate: virtual inherited (res) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispapiIsDuplicate(struct DisplayApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiIsDuplicate(struct DisplayApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DisplayApi_RsResource.offset), hMemory, pDuplicate);
 }
 
 // dispapiPreDestruct: virtual inherited (res) base (rmres)
-static void __nvoc_up_thunk_RsResource_dispapiPreDestruct(struct DisplayApi *pResource) {
+void __nvoc_up_thunk_RsResource_dispapiPreDestruct(struct DisplayApi *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DisplayApi_RsResource.offset));
 }
 
 // dispapiControlFilter: virtual inherited (res) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispapiControlFilter(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiControlFilter(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DisplayApi_RsResource.offset), pCallContext, pParams);
 }
 
 // dispapiMap: virtual inherited (res) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispapiMap(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiMap(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
     return resMap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DisplayApi_RsResource.offset), pCallContext, pParams, pCpuMapping);
 }
 
 // dispapiUnmap: virtual inherited (res) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispapiUnmap(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiUnmap(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
     return resUnmap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DisplayApi_RsResource.offset), pCallContext, pCpuMapping);
 }
 
 // dispapiIsPartialUnmapSupported: inline virtual inherited (res) base (rmres) body
-static NvBool __nvoc_up_thunk_RsResource_dispapiIsPartialUnmapSupported(struct DisplayApi *pResource) {
+NvBool __nvoc_up_thunk_RsResource_dispapiIsPartialUnmapSupported(struct DisplayApi *pResource) {
     return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DisplayApi_RsResource.offset));
 }
 
 // dispapiMapTo: virtual inherited (res) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispapiMapTo(struct DisplayApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiMapTo(struct DisplayApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
     return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DisplayApi_RsResource.offset), pParams);
 }
 
 // dispapiUnmapFrom: virtual inherited (res) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispapiUnmapFrom(struct DisplayApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiUnmapFrom(struct DisplayApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
     return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DisplayApi_RsResource.offset), pParams);
 }
 
 // dispapiGetRefCount: virtual inherited (res) base (rmres)
-static NvU32 __nvoc_up_thunk_RsResource_dispapiGetRefCount(struct DisplayApi *pResource) {
+NvU32 __nvoc_up_thunk_RsResource_dispapiGetRefCount(struct DisplayApi *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DisplayApi_RsResource.offset));
 }
 
 // dispapiAddAdditionalDependants: virtual inherited (res) base (rmres)
-static void __nvoc_up_thunk_RsResource_dispapiAddAdditionalDependants(struct RsClient *pClient, struct DisplayApi *pResource, RsResourceRef *pReference) {
+void __nvoc_up_thunk_RsResource_dispapiAddAdditionalDependants(struct RsClient *pClient, struct DisplayApi *pResource, RsResourceRef *pReference) {
     resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DisplayApi_RsResource.offset), pReference);
 }
 
 // dispapiGetNotificationListPtr: virtual inherited (notify) base (notify)
-static PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_dispapiGetNotificationListPtr(struct DisplayApi *pNotifier) {
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_dispapiGetNotificationListPtr(struct DisplayApi *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DisplayApi_Notifier.offset));
 }
 
 // dispapiGetNotificationShare: virtual inherited (notify) base (notify)
-static struct NotifShare * __nvoc_up_thunk_Notifier_dispapiGetNotificationShare(struct DisplayApi *pNotifier) {
+struct NotifShare * __nvoc_up_thunk_Notifier_dispapiGetNotificationShare(struct DisplayApi *pNotifier) {
     return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DisplayApi_Notifier.offset));
 }
 
 // dispapiSetNotificationShare: virtual inherited (notify) base (notify)
-static void __nvoc_up_thunk_Notifier_dispapiSetNotificationShare(struct DisplayApi *pNotifier, struct NotifShare *pNotifShare) {
+void __nvoc_up_thunk_Notifier_dispapiSetNotificationShare(struct DisplayApi *pNotifier, struct NotifShare *pNotifShare) {
     notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DisplayApi_Notifier.offset), pNotifShare);
 }
 
 // dispapiUnregisterEvent: virtual inherited (notify) base (notify)
-static NV_STATUS __nvoc_up_thunk_Notifier_dispapiUnregisterEvent(struct DisplayApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
+NV_STATUS __nvoc_up_thunk_Notifier_dispapiUnregisterEvent(struct DisplayApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DisplayApi_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 // dispapiGetOrAllocNotifShare: virtual inherited (notify) base (notify)
-static NV_STATUS __nvoc_up_thunk_Notifier_dispapiGetOrAllocNotifShare(struct DisplayApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
+NV_STATUS __nvoc_up_thunk_Notifier_dispapiGetOrAllocNotifShare(struct DisplayApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DisplayApi_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
@@ -294,94 +347,97 @@ static void __nvoc_init_funcTable_DisplayApi_1(DisplayApi *pThis, RmHalspecOwner
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
-
-    // dispapiControl -- virtual override (res) base (rmres)
-    pThis->__dispapiControl__ = &dispapiControl_IMPL;
-    pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__resControl__ = &__nvoc_down_thunk_DisplayApi_resControl;
-
-    // dispapiControl_Prologue -- virtual override (res) base (rmres)
-    pThis->__dispapiControl_Prologue__ = &dispapiControl_Prologue_IMPL;
-    pThis->__nvoc_base_RmResource.__rmresControl_Prologue__ = &__nvoc_down_thunk_DisplayApi_rmresControl_Prologue;
-
-    // dispapiControl_Epilogue -- virtual override (res) base (rmres)
-    pThis->__dispapiControl_Epilogue__ = &dispapiControl_Epilogue_IMPL;
-    pThis->__nvoc_base_RmResource.__rmresControl_Epilogue__ = &__nvoc_down_thunk_DisplayApi_rmresControl_Epilogue;
-
-    // dispapiAccessCallback -- virtual inherited (rmres) base (rmres)
-    pThis->__dispapiAccessCallback__ = &__nvoc_up_thunk_RmResource_dispapiAccessCallback;
-
-    // dispapiShareCallback -- virtual inherited (rmres) base (rmres)
-    pThis->__dispapiShareCallback__ = &__nvoc_up_thunk_RmResource_dispapiShareCallback;
-
-    // dispapiGetMemInterMapParams -- virtual inherited (rmres) base (rmres)
-    pThis->__dispapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispapiGetMemInterMapParams;
-
-    // dispapiCheckMemInterUnmap -- virtual inherited (rmres) base (rmres)
-    pThis->__dispapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispapiCheckMemInterUnmap;
-
-    // dispapiGetMemoryMappingDescriptor -- virtual inherited (rmres) base (rmres)
-    pThis->__dispapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispapiGetMemoryMappingDescriptor;
-
-    // dispapiControlSerialization_Prologue -- virtual inherited (rmres) base (rmres)
-    pThis->__dispapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispapiControlSerialization_Prologue;
-
-    // dispapiControlSerialization_Epilogue -- virtual inherited (rmres) base (rmres)
-    pThis->__dispapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispapiControlSerialization_Epilogue;
-
-    // dispapiCanCopy -- virtual inherited (res) base (rmres)
-    pThis->__dispapiCanCopy__ = &__nvoc_up_thunk_RsResource_dispapiCanCopy;
-
-    // dispapiIsDuplicate -- virtual inherited (res) base (rmres)
-    pThis->__dispapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispapiIsDuplicate;
-
-    // dispapiPreDestruct -- virtual inherited (res) base (rmres)
-    pThis->__dispapiPreDestruct__ = &__nvoc_up_thunk_RsResource_dispapiPreDestruct;
-
-    // dispapiControlFilter -- virtual inherited (res) base (rmres)
-    pThis->__dispapiControlFilter__ = &__nvoc_up_thunk_RsResource_dispapiControlFilter;
-
-    // dispapiMap -- virtual inherited (res) base (rmres)
-    pThis->__dispapiMap__ = &__nvoc_up_thunk_RsResource_dispapiMap;
-
-    // dispapiUnmap -- virtual inherited (res) base (rmres)
-    pThis->__dispapiUnmap__ = &__nvoc_up_thunk_RsResource_dispapiUnmap;
-
-    // dispapiIsPartialUnmapSupported -- inline virtual inherited (res) base (rmres) body
-    pThis->__dispapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispapiIsPartialUnmapSupported;
-
-    // dispapiMapTo -- virtual inherited (res) base (rmres)
-    pThis->__dispapiMapTo__ = &__nvoc_up_thunk_RsResource_dispapiMapTo;
-
-    // dispapiUnmapFrom -- virtual inherited (res) base (rmres)
-    pThis->__dispapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispapiUnmapFrom;
-
-    // dispapiGetRefCount -- virtual inherited (res) base (rmres)
-    pThis->__dispapiGetRefCount__ = &__nvoc_up_thunk_RsResource_dispapiGetRefCount;
-
-    // dispapiAddAdditionalDependants -- virtual inherited (res) base (rmres)
-    pThis->__dispapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispapiAddAdditionalDependants;
-
-    // dispapiGetNotificationListPtr -- virtual inherited (notify) base (notify)
-    pThis->__dispapiGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispapiGetNotificationListPtr;
-
-    // dispapiGetNotificationShare -- virtual inherited (notify) base (notify)
-    pThis->__dispapiGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispapiGetNotificationShare;
-
-    // dispapiSetNotificationShare -- virtual inherited (notify) base (notify)
-    pThis->__dispapiSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispapiSetNotificationShare;
-
-    // dispapiUnregisterEvent -- virtual inherited (notify) base (notify)
-    pThis->__dispapiUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispapiUnregisterEvent;
-
-    // dispapiGetOrAllocNotifShare -- virtual inherited (notify) base (notify)
-    pThis->__dispapiGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispapiGetOrAllocNotifShare;
-} // End __nvoc_init_funcTable_DisplayApi_1 with approximately 29 basic block(s).
+} // End __nvoc_init_funcTable_DisplayApi_1
 
 
 // Initialize vtable(s) for 26 virtual method(s).
 void __nvoc_init_funcTable_DisplayApi(DisplayApi *pThis, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 26 per-object function pointer(s).
+    // Per-class vtable definition
+    static const struct NVOC_VTABLE__DisplayApi vtable = {
+        .__dispapiControl__ = &dispapiControl_IMPL,    // virtual override (res) base (rmres)
+        .RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resControl__ = &__nvoc_down_thunk_DisplayApi_resControl,    // virtual
+        .__dispapiControl_Prologue__ = &dispapiControl_Prologue_IMPL,    // virtual override (res) base (rmres)
+        .RmResource.__rmresControl_Prologue__ = &__nvoc_down_thunk_DisplayApi_rmresControl_Prologue,    // virtual override (res) base (res)
+        .RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+        .__dispapiControl_Epilogue__ = &dispapiControl_Epilogue_IMPL,    // virtual override (res) base (rmres)
+        .RmResource.__rmresControl_Epilogue__ = &__nvoc_down_thunk_DisplayApi_rmresControl_Epilogue,    // virtual override (res) base (res)
+        .RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+        .__dispapiAccessCallback__ = &__nvoc_up_thunk_RmResource_dispapiAccessCallback,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+        .RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+        .__dispapiShareCallback__ = &__nvoc_up_thunk_RmResource_dispapiShareCallback,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresShareCallback__ = &rmresShareCallback_IMPL,    // virtual override (res) base (res)
+        .RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+        .__dispapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispapiGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
+        .__dispapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispapiCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
+        .__dispapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispapiGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
+        .__dispapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispapiControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+        .RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+        .__dispapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispapiControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+        .RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+        .__dispapiCanCopy__ = &__nvoc_up_thunk_RsResource_dispapiCanCopy,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+        .__dispapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispapiIsDuplicate,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+        .__dispapiPreDestruct__ = &__nvoc_up_thunk_RsResource_dispapiPreDestruct,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+        .__dispapiControlFilter__ = &__nvoc_up_thunk_RsResource_dispapiControlFilter,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+        .__dispapiMap__ = &__nvoc_up_thunk_RsResource_dispapiMap,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resMap__ = &resMap_IMPL,    // virtual
+        .__dispapiUnmap__ = &__nvoc_up_thunk_RsResource_dispapiUnmap,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resUnmap__ = &resUnmap_IMPL,    // virtual
+        .__dispapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispapiIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+        .RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+        .RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+        .__dispapiMapTo__ = &__nvoc_up_thunk_RsResource_dispapiMapTo,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
+        .__dispapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispapiUnmapFrom,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+        .__dispapiGetRefCount__ = &__nvoc_up_thunk_RsResource_dispapiGetRefCount,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+        .__dispapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispapiAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+        .__dispapiGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispapiGetNotificationListPtr,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifyGetNotificationListPtr__ = &notifyGetNotificationListPtr_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifyGetNotificationListPtr__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr,    // pure virtual
+        .__dispapiGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispapiGetNotificationShare,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifyGetNotificationShare__ = &notifyGetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifyGetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationShare,    // pure virtual
+        .__dispapiSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispapiSetNotificationShare,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifySetNotificationShare__ = &notifySetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifySetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifySetNotificationShare,    // pure virtual
+        .__dispapiUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispapiUnregisterEvent,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifyUnregisterEvent__ = &notifyUnregisterEvent_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifyUnregisterEvent__ = &__nvoc_down_thunk_Notifier_inotifyUnregisterEvent,    // pure virtual
+        .__dispapiGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispapiGetOrAllocNotifShare,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifyGetOrAllocNotifShare__ = &notifyGetOrAllocNotifShare_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifyGetOrAllocNotifShare__ = &__nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare,    // pure virtual
+    };
+
+    // Pointer(s) to per-class vtable(s)
+    pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.RmResource.RsResource;    // (res) super^2
+    pThis->__nvoc_base_RmResource.__nvoc_vtable = &vtable.RmResource;    // (rmres) super
+    pThis->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_vtable = &vtable.Notifier.INotifier;    // (inotify) super^2
+    pThis->__nvoc_base_Notifier.__nvoc_vtable = &vtable.Notifier;    // (notify) super
+    pThis->__nvoc_vtable = &vtable;    // (dispapi) this
     __nvoc_init_funcTable_DisplayApi_1(pThis, pRmhalspecowner);
 }
 
@@ -889,135 +945,214 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispObje
 
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^2
+NvBool __nvoc_down_thunk_RmResource_resShareCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super^2
+NV_STATUS __nvoc_down_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+void __nvoc_down_thunk_RmResource_resControlSerialization_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_down_thunk_RmResource_resControl_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+void __nvoc_down_thunk_RmResource_resControl_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+PEVENTNOTIFICATION * __nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr(struct INotifier *pNotifier);    // super^2
+struct NotifShare * __nvoc_down_thunk_Notifier_inotifyGetNotificationShare(struct INotifier *pNotifier);    // super^2
+void __nvoc_down_thunk_Notifier_inotifySetNotificationShare(struct INotifier *pNotifier, struct NotifShare *pNotifShare);    // super^2
+NV_STATUS __nvoc_down_thunk_Notifier_inotifyUnregisterEvent(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // super^2
+NV_STATUS __nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // super^2
+NV_STATUS __nvoc_down_thunk_DisplayApi_resControl(struct RsResource *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_down_thunk_DisplayApi_rmresControl_Prologue(struct RmResource *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams);    // super
+void __nvoc_down_thunk_DisplayApi_rmresControl_Epilogue(struct RmResource *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams);    // super
+
+// Up-thunk(s) to bridge methods to ancestors (if any)
+NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super^2
+void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresControl(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresControlFilter(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresMap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // super^2
+NvBool __nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported(struct RmResource *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresMapTo(struct RmResource *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmapFrom(struct RmResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super^2
+NvU32 __nvoc_up_thunk_RsResource_rmresGetRefCount(struct RmResource *pResource);    // super^2
+void __nvoc_up_thunk_RsResource_rmresAddAdditionalDependants(struct RsClient *pClient, struct RmResource *pResource, RsResourceRef *pReference);    // super^2
+NvBool __nvoc_up_thunk_RmResource_dispapiAccessCallback(struct DisplayApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super
+NvBool __nvoc_up_thunk_RmResource_dispapiShareCallback(struct DisplayApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiGetMemInterMapParams(struct DisplayApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiCheckMemInterUnmap(struct DisplayApi *pRmResource, NvBool bSubdeviceHandleProvided);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiGetMemoryMappingDescriptor(struct DisplayApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiControlSerialization_Prologue(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+void __nvoc_up_thunk_RmResource_dispapiControlSerialization_Epilogue(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NvBool __nvoc_up_thunk_RsResource_dispapiCanCopy(struct DisplayApi *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiIsDuplicate(struct DisplayApi *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super
+void __nvoc_up_thunk_RsResource_dispapiPreDestruct(struct DisplayApi *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiControlFilter(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiMap(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiUnmap(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // super
+NvBool __nvoc_up_thunk_RsResource_dispapiIsPartialUnmapSupported(struct DisplayApi *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiMapTo(struct DisplayApi *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiUnmapFrom(struct DisplayApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super
+NvU32 __nvoc_up_thunk_RsResource_dispapiGetRefCount(struct DisplayApi *pResource);    // super
+void __nvoc_up_thunk_RsResource_dispapiAddAdditionalDependants(struct RsClient *pClient, struct DisplayApi *pResource, RsResourceRef *pReference);    // super
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_dispapiGetNotificationListPtr(struct DisplayApi *pNotifier);    // super
+struct NotifShare * __nvoc_up_thunk_Notifier_dispapiGetNotificationShare(struct DisplayApi *pNotifier);    // super
+void __nvoc_up_thunk_Notifier_dispapiSetNotificationShare(struct DisplayApi *pNotifier, struct NotifShare *pNotifShare);    // super
+NV_STATUS __nvoc_up_thunk_Notifier_dispapiUnregisterEvent(struct DisplayApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // super
+NV_STATUS __nvoc_up_thunk_Notifier_dispapiGetOrAllocNotifShare(struct DisplayApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // super
+NV_STATUS __nvoc_up_thunk_DisplayApi_dispobjControl(struct DispObject *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_DisplayApi_dispobjControl_Prologue(struct DispObject *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams);    // this
+void __nvoc_up_thunk_DisplayApi_dispobjControl_Epilogue(struct DispObject *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams);    // this
+NvBool __nvoc_up_thunk_RmResource_dispobjAccessCallback(struct DispObject *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // this
+NvBool __nvoc_up_thunk_RmResource_dispobjShareCallback(struct DispObject *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_dispobjGetMemInterMapParams(struct DispObject *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_dispobjCheckMemInterUnmap(struct DispObject *pRmResource, NvBool bSubdeviceHandleProvided);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_dispobjGetMemoryMappingDescriptor(struct DispObject *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_dispobjControlSerialization_Prologue(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+void __nvoc_up_thunk_RmResource_dispobjControlSerialization_Epilogue(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NvBool __nvoc_up_thunk_RsResource_dispobjCanCopy(struct DispObject *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispobjIsDuplicate(struct DispObject *pResource, NvHandle hMemory, NvBool *pDuplicate);    // this
+void __nvoc_up_thunk_RsResource_dispobjPreDestruct(struct DispObject *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispobjControlFilter(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispobjMap(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispobjUnmap(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // this
+NvBool __nvoc_up_thunk_RsResource_dispobjIsPartialUnmapSupported(struct DispObject *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispobjMapTo(struct DispObject *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispobjUnmapFrom(struct DispObject *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
+NvU32 __nvoc_up_thunk_RsResource_dispobjGetRefCount(struct DispObject *pResource);    // this
+void __nvoc_up_thunk_RsResource_dispobjAddAdditionalDependants(struct RsClient *pClient, struct DispObject *pResource, RsResourceRef *pReference);    // this
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_dispobjGetNotificationListPtr(struct DispObject *pNotifier);    // this
+struct NotifShare * __nvoc_up_thunk_Notifier_dispobjGetNotificationShare(struct DispObject *pNotifier);    // this
+void __nvoc_up_thunk_Notifier_dispobjSetNotificationShare(struct DispObject *pNotifier, struct NotifShare *pNotifShare);    // this
+NV_STATUS __nvoc_up_thunk_Notifier_dispobjUnregisterEvent(struct DispObject *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // this
+NV_STATUS __nvoc_up_thunk_Notifier_dispobjGetOrAllocNotifShare(struct DispObject *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // this
+
 // 26 up-thunk(s) defined to bridge methods in DispObject to superclasses
 
 // dispobjControl: virtual inherited (dispapi) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_DisplayApi_dispobjControl(struct DispObject *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_DisplayApi_dispobjControl(struct DispObject *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return dispapiControl((struct DisplayApi *)(((unsigned char *) pDisplayApi) + __nvoc_rtti_DispObject_DisplayApi.offset), pCallContext, pParams);
 }
 
 // dispobjControl_Prologue: virtual inherited (dispapi) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_DisplayApi_dispobjControl_Prologue(struct DispObject *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
+NV_STATUS __nvoc_up_thunk_DisplayApi_dispobjControl_Prologue(struct DispObject *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
     return dispapiControl_Prologue((struct DisplayApi *)(((unsigned char *) pDisplayApi) + __nvoc_rtti_DispObject_DisplayApi.offset), pCallContext, pRsParams);
 }
 
 // dispobjControl_Epilogue: virtual inherited (dispapi) base (dispapi)
-static void __nvoc_up_thunk_DisplayApi_dispobjControl_Epilogue(struct DispObject *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
+void __nvoc_up_thunk_DisplayApi_dispobjControl_Epilogue(struct DispObject *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
     dispapiControl_Epilogue((struct DisplayApi *)(((unsigned char *) pDisplayApi) + __nvoc_rtti_DispObject_DisplayApi.offset), pCallContext, pRsParams);
 }
 
 // dispobjAccessCallback: virtual inherited (rmres) base (dispapi)
-static NvBool __nvoc_up_thunk_RmResource_dispobjAccessCallback(struct DispObject *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+NvBool __nvoc_up_thunk_RmResource_dispobjAccessCallback(struct DispObject *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispObject_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
 // dispobjShareCallback: virtual inherited (rmres) base (dispapi)
-static NvBool __nvoc_up_thunk_RmResource_dispobjShareCallback(struct DispObject *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+NvBool __nvoc_up_thunk_RmResource_dispobjShareCallback(struct DispObject *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispObject_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 // dispobjGetMemInterMapParams: virtual inherited (rmres) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RmResource_dispobjGetMemInterMapParams(struct DispObject *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_dispobjGetMemInterMapParams(struct DispObject *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
     return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DispObject_RmResource.offset), pParams);
 }
 
 // dispobjCheckMemInterUnmap: virtual inherited (rmres) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RmResource_dispobjCheckMemInterUnmap(struct DispObject *pRmResource, NvBool bSubdeviceHandleProvided) {
+NV_STATUS __nvoc_up_thunk_RmResource_dispobjCheckMemInterUnmap(struct DispObject *pRmResource, NvBool bSubdeviceHandleProvided) {
     return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DispObject_RmResource.offset), bSubdeviceHandleProvided);
 }
 
 // dispobjGetMemoryMappingDescriptor: virtual inherited (rmres) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RmResource_dispobjGetMemoryMappingDescriptor(struct DispObject *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+NV_STATUS __nvoc_up_thunk_RmResource_dispobjGetMemoryMappingDescriptor(struct DispObject *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
     return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DispObject_RmResource.offset), ppMemDesc);
 }
 
 // dispobjControlSerialization_Prologue: virtual inherited (rmres) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RmResource_dispobjControlSerialization_Prologue(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_dispobjControlSerialization_Prologue(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispObject_RmResource.offset), pCallContext, pParams);
 }
 
 // dispobjControlSerialization_Epilogue: virtual inherited (rmres) base (dispapi)
-static void __nvoc_up_thunk_RmResource_dispobjControlSerialization_Epilogue(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+void __nvoc_up_thunk_RmResource_dispobjControlSerialization_Epilogue(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispObject_RmResource.offset), pCallContext, pParams);
 }
 
 // dispobjCanCopy: virtual inherited (res) base (dispapi)
-static NvBool __nvoc_up_thunk_RsResource_dispobjCanCopy(struct DispObject *pResource) {
+NvBool __nvoc_up_thunk_RsResource_dispobjCanCopy(struct DispObject *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispObject_RsResource.offset));
 }
 
 // dispobjIsDuplicate: virtual inherited (res) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispobjIsDuplicate(struct DispObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispobjIsDuplicate(struct DispObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispObject_RsResource.offset), hMemory, pDuplicate);
 }
 
 // dispobjPreDestruct: virtual inherited (res) base (dispapi)
-static void __nvoc_up_thunk_RsResource_dispobjPreDestruct(struct DispObject *pResource) {
+void __nvoc_up_thunk_RsResource_dispobjPreDestruct(struct DispObject *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispObject_RsResource.offset));
 }
 
 // dispobjControlFilter: virtual inherited (res) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispobjControlFilter(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispobjControlFilter(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispObject_RsResource.offset), pCallContext, pParams);
 }
 
 // dispobjMap: virtual inherited (res) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispobjMap(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispobjMap(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
     return resMap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispObject_RsResource.offset), pCallContext, pParams, pCpuMapping);
 }
 
 // dispobjUnmap: virtual inherited (res) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispobjUnmap(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispobjUnmap(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
     return resUnmap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispObject_RsResource.offset), pCallContext, pCpuMapping);
 }
 
 // dispobjIsPartialUnmapSupported: inline virtual inherited (res) base (dispapi) body
-static NvBool __nvoc_up_thunk_RsResource_dispobjIsPartialUnmapSupported(struct DispObject *pResource) {
+NvBool __nvoc_up_thunk_RsResource_dispobjIsPartialUnmapSupported(struct DispObject *pResource) {
     return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispObject_RsResource.offset));
 }
 
 // dispobjMapTo: virtual inherited (res) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispobjMapTo(struct DispObject *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispobjMapTo(struct DispObject *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
     return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispObject_RsResource.offset), pParams);
 }
 
 // dispobjUnmapFrom: virtual inherited (res) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispobjUnmapFrom(struct DispObject *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispobjUnmapFrom(struct DispObject *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
     return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispObject_RsResource.offset), pParams);
 }
 
 // dispobjGetRefCount: virtual inherited (res) base (dispapi)
-static NvU32 __nvoc_up_thunk_RsResource_dispobjGetRefCount(struct DispObject *pResource) {
+NvU32 __nvoc_up_thunk_RsResource_dispobjGetRefCount(struct DispObject *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispObject_RsResource.offset));
 }
 
 // dispobjAddAdditionalDependants: virtual inherited (res) base (dispapi)
-static void __nvoc_up_thunk_RsResource_dispobjAddAdditionalDependants(struct RsClient *pClient, struct DispObject *pResource, RsResourceRef *pReference) {
+void __nvoc_up_thunk_RsResource_dispobjAddAdditionalDependants(struct RsClient *pClient, struct DispObject *pResource, RsResourceRef *pReference) {
     resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispObject_RsResource.offset), pReference);
 }
 
 // dispobjGetNotificationListPtr: virtual inherited (notify) base (dispapi)
-static PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_dispobjGetNotificationListPtr(struct DispObject *pNotifier) {
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_dispobjGetNotificationListPtr(struct DispObject *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispObject_Notifier.offset));
 }
 
 // dispobjGetNotificationShare: virtual inherited (notify) base (dispapi)
-static struct NotifShare * __nvoc_up_thunk_Notifier_dispobjGetNotificationShare(struct DispObject *pNotifier) {
+struct NotifShare * __nvoc_up_thunk_Notifier_dispobjGetNotificationShare(struct DispObject *pNotifier) {
     return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispObject_Notifier.offset));
 }
 
 // dispobjSetNotificationShare: virtual inherited (notify) base (dispapi)
-static void __nvoc_up_thunk_Notifier_dispobjSetNotificationShare(struct DispObject *pNotifier, struct NotifShare *pNotifShare) {
+void __nvoc_up_thunk_Notifier_dispobjSetNotificationShare(struct DispObject *pNotifier, struct NotifShare *pNotifShare) {
     notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispObject_Notifier.offset), pNotifShare);
 }
 
 // dispobjUnregisterEvent: virtual inherited (notify) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_Notifier_dispobjUnregisterEvent(struct DispObject *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
+NV_STATUS __nvoc_up_thunk_Notifier_dispobjUnregisterEvent(struct DispObject *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispObject_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 // dispobjGetOrAllocNotifShare: virtual inherited (notify) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_Notifier_dispobjGetOrAllocNotifShare(struct DispObject *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
+NV_STATUS __nvoc_up_thunk_Notifier_dispobjGetOrAllocNotifShare(struct DispObject *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispObject_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
@@ -1170,91 +1305,166 @@ static void __nvoc_init_funcTable_DispObject_1(DispObject *pThis, RmHalspecOwner
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__dispobjCtrlCmdEventSetTrigger__ = &dispobjCtrlCmdEventSetTrigger_IMPL;
 #endif
-
-    // dispobjControl -- virtual inherited (dispapi) base (dispapi)
-    pThis->__dispobjControl__ = &__nvoc_up_thunk_DisplayApi_dispobjControl;
-
-    // dispobjControl_Prologue -- virtual inherited (dispapi) base (dispapi)
-    pThis->__dispobjControl_Prologue__ = &__nvoc_up_thunk_DisplayApi_dispobjControl_Prologue;
-
-    // dispobjControl_Epilogue -- virtual inherited (dispapi) base (dispapi)
-    pThis->__dispobjControl_Epilogue__ = &__nvoc_up_thunk_DisplayApi_dispobjControl_Epilogue;
-
-    // dispobjAccessCallback -- virtual inherited (rmres) base (dispapi)
-    pThis->__dispobjAccessCallback__ = &__nvoc_up_thunk_RmResource_dispobjAccessCallback;
-
-    // dispobjShareCallback -- virtual inherited (rmres) base (dispapi)
-    pThis->__dispobjShareCallback__ = &__nvoc_up_thunk_RmResource_dispobjShareCallback;
-
-    // dispobjGetMemInterMapParams -- virtual inherited (rmres) base (dispapi)
-    pThis->__dispobjGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispobjGetMemInterMapParams;
-
-    // dispobjCheckMemInterUnmap -- virtual inherited (rmres) base (dispapi)
-    pThis->__dispobjCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispobjCheckMemInterUnmap;
-
-    // dispobjGetMemoryMappingDescriptor -- virtual inherited (rmres) base (dispapi)
-    pThis->__dispobjGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispobjGetMemoryMappingDescriptor;
-
-    // dispobjControlSerialization_Prologue -- virtual inherited (rmres) base (dispapi)
-    pThis->__dispobjControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispobjControlSerialization_Prologue;
-
-    // dispobjControlSerialization_Epilogue -- virtual inherited (rmres) base (dispapi)
-    pThis->__dispobjControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispobjControlSerialization_Epilogue;
-
-    // dispobjCanCopy -- virtual inherited (res) base (dispapi)
-    pThis->__dispobjCanCopy__ = &__nvoc_up_thunk_RsResource_dispobjCanCopy;
-
-    // dispobjIsDuplicate -- virtual inherited (res) base (dispapi)
-    pThis->__dispobjIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispobjIsDuplicate;
-
-    // dispobjPreDestruct -- virtual inherited (res) base (dispapi)
-    pThis->__dispobjPreDestruct__ = &__nvoc_up_thunk_RsResource_dispobjPreDestruct;
-
-    // dispobjControlFilter -- virtual inherited (res) base (dispapi)
-    pThis->__dispobjControlFilter__ = &__nvoc_up_thunk_RsResource_dispobjControlFilter;
-
-    // dispobjMap -- virtual inherited (res) base (dispapi)
-    pThis->__dispobjMap__ = &__nvoc_up_thunk_RsResource_dispobjMap;
-
-    // dispobjUnmap -- virtual inherited (res) base (dispapi)
-    pThis->__dispobjUnmap__ = &__nvoc_up_thunk_RsResource_dispobjUnmap;
-
-    // dispobjIsPartialUnmapSupported -- inline virtual inherited (res) base (dispapi) body
-    pThis->__dispobjIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispobjIsPartialUnmapSupported;
-
-    // dispobjMapTo -- virtual inherited (res) base (dispapi)
-    pThis->__dispobjMapTo__ = &__nvoc_up_thunk_RsResource_dispobjMapTo;
-
-    // dispobjUnmapFrom -- virtual inherited (res) base (dispapi)
-    pThis->__dispobjUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispobjUnmapFrom;
-
-    // dispobjGetRefCount -- virtual inherited (res) base (dispapi)
-    pThis->__dispobjGetRefCount__ = &__nvoc_up_thunk_RsResource_dispobjGetRefCount;
-
-    // dispobjAddAdditionalDependants -- virtual inherited (res) base (dispapi)
-    pThis->__dispobjAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispobjAddAdditionalDependants;
-
-    // dispobjGetNotificationListPtr -- virtual inherited (notify) base (dispapi)
-    pThis->__dispobjGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispobjGetNotificationListPtr;
-
-    // dispobjGetNotificationShare -- virtual inherited (notify) base (dispapi)
-    pThis->__dispobjGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispobjGetNotificationShare;
-
-    // dispobjSetNotificationShare -- virtual inherited (notify) base (dispapi)
-    pThis->__dispobjSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispobjSetNotificationShare;
-
-    // dispobjUnregisterEvent -- virtual inherited (notify) base (dispapi)
-    pThis->__dispobjUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispobjUnregisterEvent;
-
-    // dispobjGetOrAllocNotifShare -- virtual inherited (notify) base (dispapi)
-    pThis->__dispobjGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispobjGetOrAllocNotifShare;
-} // End __nvoc_init_funcTable_DispObject_1 with approximately 46 basic block(s).
+} // End __nvoc_init_funcTable_DispObject_1 with approximately 20 basic block(s).
 
 
 // Initialize vtable(s) for 46 virtual method(s).
 void __nvoc_init_funcTable_DispObject(DispObject *pThis, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 46 per-object function pointer(s).
+    // Per-class vtable definition
+    static const struct NVOC_VTABLE__DispObject vtable = {
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+        .__dispobjControl__ = &__nvoc_up_thunk_DisplayApi_dispobjControl,    // virtual inherited (dispapi) base (dispapi)
+        .DisplayApi.__dispapiControl__ = &dispapiControl_IMPL,    // virtual override (res) base (rmres)
+        .DisplayApi.RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resControl__ = &__nvoc_down_thunk_DisplayApi_resControl,    // virtual
+        .__dispobjControl_Prologue__ = &__nvoc_up_thunk_DisplayApi_dispobjControl_Prologue,    // virtual inherited (dispapi) base (dispapi)
+        .DisplayApi.__dispapiControl_Prologue__ = &dispapiControl_Prologue_IMPL,    // virtual override (res) base (rmres)
+        .DisplayApi.RmResource.__rmresControl_Prologue__ = &__nvoc_down_thunk_DisplayApi_rmresControl_Prologue,    // virtual override (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+        .__dispobjControl_Epilogue__ = &__nvoc_up_thunk_DisplayApi_dispobjControl_Epilogue,    // virtual inherited (dispapi) base (dispapi)
+        .DisplayApi.__dispapiControl_Epilogue__ = &dispapiControl_Epilogue_IMPL,    // virtual override (res) base (rmres)
+        .DisplayApi.RmResource.__rmresControl_Epilogue__ = &__nvoc_down_thunk_DisplayApi_rmresControl_Epilogue,    // virtual override (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+        .__dispobjAccessCallback__ = &__nvoc_up_thunk_RmResource_dispobjAccessCallback,    // virtual inherited (rmres) base (dispapi)
+        .DisplayApi.__dispapiAccessCallback__ = &__nvoc_up_thunk_RmResource_dispapiAccessCallback,    // virtual inherited (rmres) base (rmres)
+        .DisplayApi.RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+        .__dispobjShareCallback__ = &__nvoc_up_thunk_RmResource_dispobjShareCallback,    // virtual inherited (rmres) base (dispapi)
+        .DisplayApi.__dispapiShareCallback__ = &__nvoc_up_thunk_RmResource_dispapiShareCallback,    // virtual inherited (rmres) base (rmres)
+        .DisplayApi.RmResource.__rmresShareCallback__ = &rmresShareCallback_IMPL,    // virtual override (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+        .__dispobjGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispobjGetMemInterMapParams,    // virtual inherited (rmres) base (dispapi)
+        .DisplayApi.__dispapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispapiGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
+        .DisplayApi.RmResource.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
+        .__dispobjCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispobjCheckMemInterUnmap,    // virtual inherited (rmres) base (dispapi)
+        .DisplayApi.__dispapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispapiCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
+        .DisplayApi.RmResource.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
+        .__dispobjGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispobjGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (dispapi)
+        .DisplayApi.__dispapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispapiGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
+        .DisplayApi.RmResource.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
+        .__dispobjControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispobjControlSerialization_Prologue,    // virtual inherited (rmres) base (dispapi)
+        .DisplayApi.__dispapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispapiControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+        .DisplayApi.RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+        .__dispobjControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispobjControlSerialization_Epilogue,    // virtual inherited (rmres) base (dispapi)
+        .DisplayApi.__dispapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispapiControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+        .DisplayApi.RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+        .__dispobjCanCopy__ = &__nvoc_up_thunk_RsResource_dispobjCanCopy,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiCanCopy__ = &__nvoc_up_thunk_RsResource_dispapiCanCopy,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+        .__dispobjIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispobjIsDuplicate,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispapiIsDuplicate,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+        .__dispobjPreDestruct__ = &__nvoc_up_thunk_RsResource_dispobjPreDestruct,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiPreDestruct__ = &__nvoc_up_thunk_RsResource_dispapiPreDestruct,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+        .__dispobjControlFilter__ = &__nvoc_up_thunk_RsResource_dispobjControlFilter,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiControlFilter__ = &__nvoc_up_thunk_RsResource_dispapiControlFilter,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+        .__dispobjMap__ = &__nvoc_up_thunk_RsResource_dispobjMap,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiMap__ = &__nvoc_up_thunk_RsResource_dispapiMap,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resMap__ = &resMap_IMPL,    // virtual
+        .__dispobjUnmap__ = &__nvoc_up_thunk_RsResource_dispobjUnmap,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiUnmap__ = &__nvoc_up_thunk_RsResource_dispapiUnmap,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resUnmap__ = &resUnmap_IMPL,    // virtual
+        .__dispobjIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispobjIsPartialUnmapSupported,    // inline virtual inherited (res) base (dispapi) body
+        .DisplayApi.__dispapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispapiIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+        .DisplayApi.RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+        .DisplayApi.RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+        .__dispobjMapTo__ = &__nvoc_up_thunk_RsResource_dispobjMapTo,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiMapTo__ = &__nvoc_up_thunk_RsResource_dispapiMapTo,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
+        .__dispobjUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispobjUnmapFrom,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispapiUnmapFrom,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+        .__dispobjGetRefCount__ = &__nvoc_up_thunk_RsResource_dispobjGetRefCount,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiGetRefCount__ = &__nvoc_up_thunk_RsResource_dispapiGetRefCount,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+        .__dispobjAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispobjAddAdditionalDependants,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispapiAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+        .__dispobjGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispobjGetNotificationListPtr,    // virtual inherited (notify) base (dispapi)
+        .DisplayApi.__dispapiGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispapiGetNotificationListPtr,    // virtual inherited (notify) base (notify)
+        .DisplayApi.Notifier.__notifyGetNotificationListPtr__ = &notifyGetNotificationListPtr_IMPL,    // virtual override (inotify) base (inotify)
+        .DisplayApi.Notifier.INotifier.__inotifyGetNotificationListPtr__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr,    // pure virtual
+        .__dispobjGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispobjGetNotificationShare,    // virtual inherited (notify) base (dispapi)
+        .DisplayApi.__dispapiGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispapiGetNotificationShare,    // virtual inherited (notify) base (notify)
+        .DisplayApi.Notifier.__notifyGetNotificationShare__ = &notifyGetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+        .DisplayApi.Notifier.INotifier.__inotifyGetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationShare,    // pure virtual
+        .__dispobjSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispobjSetNotificationShare,    // virtual inherited (notify) base (dispapi)
+        .DisplayApi.__dispapiSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispapiSetNotificationShare,    // virtual inherited (notify) base (notify)
+        .DisplayApi.Notifier.__notifySetNotificationShare__ = &notifySetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+        .DisplayApi.Notifier.INotifier.__inotifySetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifySetNotificationShare,    // pure virtual
+        .__dispobjUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispobjUnregisterEvent,    // virtual inherited (notify) base (dispapi)
+        .DisplayApi.__dispapiUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispapiUnregisterEvent,    // virtual inherited (notify) base (notify)
+        .DisplayApi.Notifier.__notifyUnregisterEvent__ = &notifyUnregisterEvent_IMPL,    // virtual override (inotify) base (inotify)
+        .DisplayApi.Notifier.INotifier.__inotifyUnregisterEvent__ = &__nvoc_down_thunk_Notifier_inotifyUnregisterEvent,    // pure virtual
+        .__dispobjGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispobjGetOrAllocNotifShare,    // virtual inherited (notify) base (dispapi)
+        .DisplayApi.__dispapiGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispapiGetOrAllocNotifShare,    // virtual inherited (notify) base (notify)
+        .DisplayApi.Notifier.__notifyGetOrAllocNotifShare__ = &notifyGetOrAllocNotifShare_IMPL,    // virtual override (inotify) base (inotify)
+        .DisplayApi.Notifier.INotifier.__inotifyGetOrAllocNotifShare__ = &__nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare,    // pure virtual
+    };
+
+    // Pointer(s) to per-class vtable(s)
+    pThis->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.DisplayApi.RmResource.RsResource;    // (res) super^3
+    pThis->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable = &vtable.DisplayApi.RmResource;    // (rmres) super^2
+    pThis->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_vtable = &vtable.DisplayApi.Notifier.INotifier;    // (inotify) super^3
+    pThis->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable = &vtable.DisplayApi.Notifier;    // (notify) super^2
+    pThis->__nvoc_base_DisplayApi.__nvoc_vtable = &vtable.DisplayApi;    // (dispapi) super
+    pThis->__nvoc_vtable = &vtable;    // (dispobj) this
+
+    // Initialize vtable(s) with 20 per-object function pointer(s).
     __nvoc_init_funcTable_DispObject_1(pThis, pRmhalspecowner);
 }
 
@@ -1575,135 +1785,240 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_NvDispAp
 
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^3
+NvBool __nvoc_down_thunk_RmResource_resShareCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super^3
+NV_STATUS __nvoc_down_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^3
+void __nvoc_down_thunk_RmResource_resControlSerialization_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^3
+NV_STATUS __nvoc_down_thunk_RmResource_resControl_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^3
+void __nvoc_down_thunk_RmResource_resControl_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^3
+PEVENTNOTIFICATION * __nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr(struct INotifier *pNotifier);    // super^3
+struct NotifShare * __nvoc_down_thunk_Notifier_inotifyGetNotificationShare(struct INotifier *pNotifier);    // super^3
+void __nvoc_down_thunk_Notifier_inotifySetNotificationShare(struct INotifier *pNotifier, struct NotifShare *pNotifShare);    // super^3
+NV_STATUS __nvoc_down_thunk_Notifier_inotifyUnregisterEvent(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // super^3
+NV_STATUS __nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // super^3
+NV_STATUS __nvoc_down_thunk_DisplayApi_resControl(struct RsResource *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_down_thunk_DisplayApi_rmresControl_Prologue(struct RmResource *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams);    // super^2
+void __nvoc_down_thunk_DisplayApi_rmresControl_Epilogue(struct RmResource *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams);    // super^2
+
+// Up-thunk(s) to bridge methods to ancestors (if any)
+NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super^3
+NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super^3
+void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource);    // super^3
+NV_STATUS __nvoc_up_thunk_RsResource_rmresControl(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^3
+NV_STATUS __nvoc_up_thunk_RsResource_rmresControlFilter(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^3
+NV_STATUS __nvoc_up_thunk_RsResource_rmresMap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // super^3
+NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // super^3
+NvBool __nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported(struct RmResource *pResource);    // super^3
+NV_STATUS __nvoc_up_thunk_RsResource_rmresMapTo(struct RmResource *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super^3
+NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmapFrom(struct RmResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super^3
+NvU32 __nvoc_up_thunk_RsResource_rmresGetRefCount(struct RmResource *pResource);    // super^3
+void __nvoc_up_thunk_RsResource_rmresAddAdditionalDependants(struct RsClient *pClient, struct RmResource *pResource, RsResourceRef *pReference);    // super^3
+NvBool __nvoc_up_thunk_RmResource_dispapiAccessCallback(struct DisplayApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^2
+NvBool __nvoc_up_thunk_RmResource_dispapiShareCallback(struct DisplayApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super^2
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiGetMemInterMapParams(struct DisplayApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiCheckMemInterUnmap(struct DisplayApi *pRmResource, NvBool bSubdeviceHandleProvided);    // super^2
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiGetMemoryMappingDescriptor(struct DisplayApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // super^2
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiControlSerialization_Prologue(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+void __nvoc_up_thunk_RmResource_dispapiControlSerialization_Epilogue(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NvBool __nvoc_up_thunk_RsResource_dispapiCanCopy(struct DisplayApi *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiIsDuplicate(struct DisplayApi *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super^2
+void __nvoc_up_thunk_RsResource_dispapiPreDestruct(struct DisplayApi *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiControlFilter(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiMap(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiUnmap(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // super^2
+NvBool __nvoc_up_thunk_RsResource_dispapiIsPartialUnmapSupported(struct DisplayApi *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiMapTo(struct DisplayApi *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiUnmapFrom(struct DisplayApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super^2
+NvU32 __nvoc_up_thunk_RsResource_dispapiGetRefCount(struct DisplayApi *pResource);    // super^2
+void __nvoc_up_thunk_RsResource_dispapiAddAdditionalDependants(struct RsClient *pClient, struct DisplayApi *pResource, RsResourceRef *pReference);    // super^2
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_dispapiGetNotificationListPtr(struct DisplayApi *pNotifier);    // super^2
+struct NotifShare * __nvoc_up_thunk_Notifier_dispapiGetNotificationShare(struct DisplayApi *pNotifier);    // super^2
+void __nvoc_up_thunk_Notifier_dispapiSetNotificationShare(struct DisplayApi *pNotifier, struct NotifShare *pNotifShare);    // super^2
+NV_STATUS __nvoc_up_thunk_Notifier_dispapiUnregisterEvent(struct DisplayApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // super^2
+NV_STATUS __nvoc_up_thunk_Notifier_dispapiGetOrAllocNotifShare(struct DisplayApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // super^2
+NV_STATUS __nvoc_up_thunk_DisplayApi_dispobjControl(struct DispObject *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_up_thunk_DisplayApi_dispobjControl_Prologue(struct DispObject *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams);    // super
+void __nvoc_up_thunk_DisplayApi_dispobjControl_Epilogue(struct DispObject *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams);    // super
+NvBool __nvoc_up_thunk_RmResource_dispobjAccessCallback(struct DispObject *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super
+NvBool __nvoc_up_thunk_RmResource_dispobjShareCallback(struct DispObject *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_dispobjGetMemInterMapParams(struct DispObject *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_dispobjCheckMemInterUnmap(struct DispObject *pRmResource, NvBool bSubdeviceHandleProvided);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_dispobjGetMemoryMappingDescriptor(struct DispObject *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_dispobjControlSerialization_Prologue(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+void __nvoc_up_thunk_RmResource_dispobjControlSerialization_Epilogue(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NvBool __nvoc_up_thunk_RsResource_dispobjCanCopy(struct DispObject *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispobjIsDuplicate(struct DispObject *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super
+void __nvoc_up_thunk_RsResource_dispobjPreDestruct(struct DispObject *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispobjControlFilter(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispobjMap(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispobjUnmap(struct DispObject *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // super
+NvBool __nvoc_up_thunk_RsResource_dispobjIsPartialUnmapSupported(struct DispObject *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispobjMapTo(struct DispObject *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispobjUnmapFrom(struct DispObject *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super
+NvU32 __nvoc_up_thunk_RsResource_dispobjGetRefCount(struct DispObject *pResource);    // super
+void __nvoc_up_thunk_RsResource_dispobjAddAdditionalDependants(struct RsClient *pClient, struct DispObject *pResource, RsResourceRef *pReference);    // super
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_dispobjGetNotificationListPtr(struct DispObject *pNotifier);    // super
+struct NotifShare * __nvoc_up_thunk_Notifier_dispobjGetNotificationShare(struct DispObject *pNotifier);    // super
+void __nvoc_up_thunk_Notifier_dispobjSetNotificationShare(struct DispObject *pNotifier, struct NotifShare *pNotifShare);    // super
+NV_STATUS __nvoc_up_thunk_Notifier_dispobjUnregisterEvent(struct DispObject *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // super
+NV_STATUS __nvoc_up_thunk_Notifier_dispobjGetOrAllocNotifShare(struct DispObject *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // super
+NV_STATUS __nvoc_up_thunk_DisplayApi_nvdispapiControl(struct NvDispApi *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_DisplayApi_nvdispapiControl_Prologue(struct NvDispApi *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams);    // this
+void __nvoc_up_thunk_DisplayApi_nvdispapiControl_Epilogue(struct NvDispApi *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams);    // this
+NvBool __nvoc_up_thunk_RmResource_nvdispapiAccessCallback(struct NvDispApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // this
+NvBool __nvoc_up_thunk_RmResource_nvdispapiShareCallback(struct NvDispApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_nvdispapiGetMemInterMapParams(struct NvDispApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_nvdispapiCheckMemInterUnmap(struct NvDispApi *pRmResource, NvBool bSubdeviceHandleProvided);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_nvdispapiGetMemoryMappingDescriptor(struct NvDispApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_nvdispapiControlSerialization_Prologue(struct NvDispApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+void __nvoc_up_thunk_RmResource_nvdispapiControlSerialization_Epilogue(struct NvDispApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NvBool __nvoc_up_thunk_RsResource_nvdispapiCanCopy(struct NvDispApi *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_nvdispapiIsDuplicate(struct NvDispApi *pResource, NvHandle hMemory, NvBool *pDuplicate);    // this
+void __nvoc_up_thunk_RsResource_nvdispapiPreDestruct(struct NvDispApi *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_nvdispapiControlFilter(struct NvDispApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_nvdispapiMap(struct NvDispApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_nvdispapiUnmap(struct NvDispApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // this
+NvBool __nvoc_up_thunk_RsResource_nvdispapiIsPartialUnmapSupported(struct NvDispApi *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_nvdispapiMapTo(struct NvDispApi *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_nvdispapiUnmapFrom(struct NvDispApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
+NvU32 __nvoc_up_thunk_RsResource_nvdispapiGetRefCount(struct NvDispApi *pResource);    // this
+void __nvoc_up_thunk_RsResource_nvdispapiAddAdditionalDependants(struct RsClient *pClient, struct NvDispApi *pResource, RsResourceRef *pReference);    // this
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_nvdispapiGetNotificationListPtr(struct NvDispApi *pNotifier);    // this
+struct NotifShare * __nvoc_up_thunk_Notifier_nvdispapiGetNotificationShare(struct NvDispApi *pNotifier);    // this
+void __nvoc_up_thunk_Notifier_nvdispapiSetNotificationShare(struct NvDispApi *pNotifier, struct NotifShare *pNotifShare);    // this
+NV_STATUS __nvoc_up_thunk_Notifier_nvdispapiUnregisterEvent(struct NvDispApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // this
+NV_STATUS __nvoc_up_thunk_Notifier_nvdispapiGetOrAllocNotifShare(struct NvDispApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // this
+
 // 26 up-thunk(s) defined to bridge methods in NvDispApi to superclasses
 
 // nvdispapiControl: virtual inherited (dispapi) base (dispobj)
-static NV_STATUS __nvoc_up_thunk_DisplayApi_nvdispapiControl(struct NvDispApi *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_DisplayApi_nvdispapiControl(struct NvDispApi *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return dispapiControl((struct DisplayApi *)(((unsigned char *) pDisplayApi) + __nvoc_rtti_NvDispApi_DisplayApi.offset), pCallContext, pParams);
 }
 
 // nvdispapiControl_Prologue: virtual inherited (dispapi) base (dispobj)
-static NV_STATUS __nvoc_up_thunk_DisplayApi_nvdispapiControl_Prologue(struct NvDispApi *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
+NV_STATUS __nvoc_up_thunk_DisplayApi_nvdispapiControl_Prologue(struct NvDispApi *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
     return dispapiControl_Prologue((struct DisplayApi *)(((unsigned char *) pDisplayApi) + __nvoc_rtti_NvDispApi_DisplayApi.offset), pCallContext, pRsParams);
 }
 
 // nvdispapiControl_Epilogue: virtual inherited (dispapi) base (dispobj)
-static void __nvoc_up_thunk_DisplayApi_nvdispapiControl_Epilogue(struct NvDispApi *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
+void __nvoc_up_thunk_DisplayApi_nvdispapiControl_Epilogue(struct NvDispApi *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
     dispapiControl_Epilogue((struct DisplayApi *)(((unsigned char *) pDisplayApi) + __nvoc_rtti_NvDispApi_DisplayApi.offset), pCallContext, pRsParams);
 }
 
 // nvdispapiAccessCallback: virtual inherited (rmres) base (dispobj)
-static NvBool __nvoc_up_thunk_RmResource_nvdispapiAccessCallback(struct NvDispApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+NvBool __nvoc_up_thunk_RmResource_nvdispapiAccessCallback(struct NvDispApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvDispApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
 // nvdispapiShareCallback: virtual inherited (rmres) base (dispobj)
-static NvBool __nvoc_up_thunk_RmResource_nvdispapiShareCallback(struct NvDispApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+NvBool __nvoc_up_thunk_RmResource_nvdispapiShareCallback(struct NvDispApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvDispApi_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 // nvdispapiGetMemInterMapParams: virtual inherited (rmres) base (dispobj)
-static NV_STATUS __nvoc_up_thunk_RmResource_nvdispapiGetMemInterMapParams(struct NvDispApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_nvdispapiGetMemInterMapParams(struct NvDispApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
     return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_NvDispApi_RmResource.offset), pParams);
 }
 
 // nvdispapiCheckMemInterUnmap: virtual inherited (rmres) base (dispobj)
-static NV_STATUS __nvoc_up_thunk_RmResource_nvdispapiCheckMemInterUnmap(struct NvDispApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+NV_STATUS __nvoc_up_thunk_RmResource_nvdispapiCheckMemInterUnmap(struct NvDispApi *pRmResource, NvBool bSubdeviceHandleProvided) {
     return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_NvDispApi_RmResource.offset), bSubdeviceHandleProvided);
 }
 
 // nvdispapiGetMemoryMappingDescriptor: virtual inherited (rmres) base (dispobj)
-static NV_STATUS __nvoc_up_thunk_RmResource_nvdispapiGetMemoryMappingDescriptor(struct NvDispApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+NV_STATUS __nvoc_up_thunk_RmResource_nvdispapiGetMemoryMappingDescriptor(struct NvDispApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
     return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_NvDispApi_RmResource.offset), ppMemDesc);
 }
 
 // nvdispapiControlSerialization_Prologue: virtual inherited (rmres) base (dispobj)
-static NV_STATUS __nvoc_up_thunk_RmResource_nvdispapiControlSerialization_Prologue(struct NvDispApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_nvdispapiControlSerialization_Prologue(struct NvDispApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvDispApi_RmResource.offset), pCallContext, pParams);
 }
 
 // nvdispapiControlSerialization_Epilogue: virtual inherited (rmres) base (dispobj)
-static void __nvoc_up_thunk_RmResource_nvdispapiControlSerialization_Epilogue(struct NvDispApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+void __nvoc_up_thunk_RmResource_nvdispapiControlSerialization_Epilogue(struct NvDispApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvDispApi_RmResource.offset), pCallContext, pParams);
 }
 
 // nvdispapiCanCopy: virtual inherited (res) base (dispobj)
-static NvBool __nvoc_up_thunk_RsResource_nvdispapiCanCopy(struct NvDispApi *pResource) {
+NvBool __nvoc_up_thunk_RsResource_nvdispapiCanCopy(struct NvDispApi *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvDispApi_RsResource.offset));
 }
 
 // nvdispapiIsDuplicate: virtual inherited (res) base (dispobj)
-static NV_STATUS __nvoc_up_thunk_RsResource_nvdispapiIsDuplicate(struct NvDispApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+NV_STATUS __nvoc_up_thunk_RsResource_nvdispapiIsDuplicate(struct NvDispApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvDispApi_RsResource.offset), hMemory, pDuplicate);
 }
 
 // nvdispapiPreDestruct: virtual inherited (res) base (dispobj)
-static void __nvoc_up_thunk_RsResource_nvdispapiPreDestruct(struct NvDispApi *pResource) {
+void __nvoc_up_thunk_RsResource_nvdispapiPreDestruct(struct NvDispApi *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvDispApi_RsResource.offset));
 }
 
 // nvdispapiControlFilter: virtual inherited (res) base (dispobj)
-static NV_STATUS __nvoc_up_thunk_RsResource_nvdispapiControlFilter(struct NvDispApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_nvdispapiControlFilter(struct NvDispApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvDispApi_RsResource.offset), pCallContext, pParams);
 }
 
 // nvdispapiMap: virtual inherited (res) base (dispobj)
-static NV_STATUS __nvoc_up_thunk_RsResource_nvdispapiMap(struct NvDispApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+NV_STATUS __nvoc_up_thunk_RsResource_nvdispapiMap(struct NvDispApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
     return resMap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvDispApi_RsResource.offset), pCallContext, pParams, pCpuMapping);
 }
 
 // nvdispapiUnmap: virtual inherited (res) base (dispobj)
-static NV_STATUS __nvoc_up_thunk_RsResource_nvdispapiUnmap(struct NvDispApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+NV_STATUS __nvoc_up_thunk_RsResource_nvdispapiUnmap(struct NvDispApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
     return resUnmap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvDispApi_RsResource.offset), pCallContext, pCpuMapping);
 }
 
 // nvdispapiIsPartialUnmapSupported: inline virtual inherited (res) base (dispobj) body
-static NvBool __nvoc_up_thunk_RsResource_nvdispapiIsPartialUnmapSupported(struct NvDispApi *pResource) {
+NvBool __nvoc_up_thunk_RsResource_nvdispapiIsPartialUnmapSupported(struct NvDispApi *pResource) {
     return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvDispApi_RsResource.offset));
 }
 
 // nvdispapiMapTo: virtual inherited (res) base (dispobj)
-static NV_STATUS __nvoc_up_thunk_RsResource_nvdispapiMapTo(struct NvDispApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_nvdispapiMapTo(struct NvDispApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
     return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvDispApi_RsResource.offset), pParams);
 }
 
 // nvdispapiUnmapFrom: virtual inherited (res) base (dispobj)
-static NV_STATUS __nvoc_up_thunk_RsResource_nvdispapiUnmapFrom(struct NvDispApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_nvdispapiUnmapFrom(struct NvDispApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
     return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvDispApi_RsResource.offset), pParams);
 }
 
 // nvdispapiGetRefCount: virtual inherited (res) base (dispobj)
-static NvU32 __nvoc_up_thunk_RsResource_nvdispapiGetRefCount(struct NvDispApi *pResource) {
+NvU32 __nvoc_up_thunk_RsResource_nvdispapiGetRefCount(struct NvDispApi *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvDispApi_RsResource.offset));
 }
 
 // nvdispapiAddAdditionalDependants: virtual inherited (res) base (dispobj)
-static void __nvoc_up_thunk_RsResource_nvdispapiAddAdditionalDependants(struct RsClient *pClient, struct NvDispApi *pResource, RsResourceRef *pReference) {
+void __nvoc_up_thunk_RsResource_nvdispapiAddAdditionalDependants(struct RsClient *pClient, struct NvDispApi *pResource, RsResourceRef *pReference) {
     resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_NvDispApi_RsResource.offset), pReference);
 }
 
 // nvdispapiGetNotificationListPtr: virtual inherited (notify) base (dispobj)
-static PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_nvdispapiGetNotificationListPtr(struct NvDispApi *pNotifier) {
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_nvdispapiGetNotificationListPtr(struct NvDispApi *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_NvDispApi_Notifier.offset));
 }
 
 // nvdispapiGetNotificationShare: virtual inherited (notify) base (dispobj)
-static struct NotifShare * __nvoc_up_thunk_Notifier_nvdispapiGetNotificationShare(struct NvDispApi *pNotifier) {
+struct NotifShare * __nvoc_up_thunk_Notifier_nvdispapiGetNotificationShare(struct NvDispApi *pNotifier) {
     return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_NvDispApi_Notifier.offset));
 }
 
 // nvdispapiSetNotificationShare: virtual inherited (notify) base (dispobj)
-static void __nvoc_up_thunk_Notifier_nvdispapiSetNotificationShare(struct NvDispApi *pNotifier, struct NotifShare *pNotifShare) {
+void __nvoc_up_thunk_Notifier_nvdispapiSetNotificationShare(struct NvDispApi *pNotifier, struct NotifShare *pNotifShare) {
     notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_NvDispApi_Notifier.offset), pNotifShare);
 }
 
 // nvdispapiUnregisterEvent: virtual inherited (notify) base (dispobj)
-static NV_STATUS __nvoc_up_thunk_Notifier_nvdispapiUnregisterEvent(struct NvDispApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
+NV_STATUS __nvoc_up_thunk_Notifier_nvdispapiUnregisterEvent(struct NvDispApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_NvDispApi_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 // nvdispapiGetOrAllocNotifShare: virtual inherited (notify) base (dispobj)
-static NV_STATUS __nvoc_up_thunk_Notifier_nvdispapiGetOrAllocNotifShare(struct NvDispApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
+NV_STATUS __nvoc_up_thunk_Notifier_nvdispapiGetOrAllocNotifShare(struct NvDispApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_NvDispApi_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
@@ -1781,91 +2096,167 @@ static void __nvoc_init_funcTable_NvDispApi_1(NvDispApi *pThis) {
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
     pThis->__nvdispapiCtrlCmdSetForceModeswitchFlagsOverrides__ = &nvdispapiCtrlCmdSetForceModeswitchFlagsOverrides_IMPL;
 #endif
-
-    // nvdispapiControl -- virtual inherited (dispapi) base (dispobj)
-    pThis->__nvdispapiControl__ = &__nvoc_up_thunk_DisplayApi_nvdispapiControl;
-
-    // nvdispapiControl_Prologue -- virtual inherited (dispapi) base (dispobj)
-    pThis->__nvdispapiControl_Prologue__ = &__nvoc_up_thunk_DisplayApi_nvdispapiControl_Prologue;
-
-    // nvdispapiControl_Epilogue -- virtual inherited (dispapi) base (dispobj)
-    pThis->__nvdispapiControl_Epilogue__ = &__nvoc_up_thunk_DisplayApi_nvdispapiControl_Epilogue;
-
-    // nvdispapiAccessCallback -- virtual inherited (rmres) base (dispobj)
-    pThis->__nvdispapiAccessCallback__ = &__nvoc_up_thunk_RmResource_nvdispapiAccessCallback;
-
-    // nvdispapiShareCallback -- virtual inherited (rmres) base (dispobj)
-    pThis->__nvdispapiShareCallback__ = &__nvoc_up_thunk_RmResource_nvdispapiShareCallback;
-
-    // nvdispapiGetMemInterMapParams -- virtual inherited (rmres) base (dispobj)
-    pThis->__nvdispapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_nvdispapiGetMemInterMapParams;
-
-    // nvdispapiCheckMemInterUnmap -- virtual inherited (rmres) base (dispobj)
-    pThis->__nvdispapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_nvdispapiCheckMemInterUnmap;
-
-    // nvdispapiGetMemoryMappingDescriptor -- virtual inherited (rmres) base (dispobj)
-    pThis->__nvdispapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_nvdispapiGetMemoryMappingDescriptor;
-
-    // nvdispapiControlSerialization_Prologue -- virtual inherited (rmres) base (dispobj)
-    pThis->__nvdispapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_nvdispapiControlSerialization_Prologue;
-
-    // nvdispapiControlSerialization_Epilogue -- virtual inherited (rmres) base (dispobj)
-    pThis->__nvdispapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_nvdispapiControlSerialization_Epilogue;
-
-    // nvdispapiCanCopy -- virtual inherited (res) base (dispobj)
-    pThis->__nvdispapiCanCopy__ = &__nvoc_up_thunk_RsResource_nvdispapiCanCopy;
-
-    // nvdispapiIsDuplicate -- virtual inherited (res) base (dispobj)
-    pThis->__nvdispapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_nvdispapiIsDuplicate;
-
-    // nvdispapiPreDestruct -- virtual inherited (res) base (dispobj)
-    pThis->__nvdispapiPreDestruct__ = &__nvoc_up_thunk_RsResource_nvdispapiPreDestruct;
-
-    // nvdispapiControlFilter -- virtual inherited (res) base (dispobj)
-    pThis->__nvdispapiControlFilter__ = &__nvoc_up_thunk_RsResource_nvdispapiControlFilter;
-
-    // nvdispapiMap -- virtual inherited (res) base (dispobj)
-    pThis->__nvdispapiMap__ = &__nvoc_up_thunk_RsResource_nvdispapiMap;
-
-    // nvdispapiUnmap -- virtual inherited (res) base (dispobj)
-    pThis->__nvdispapiUnmap__ = &__nvoc_up_thunk_RsResource_nvdispapiUnmap;
-
-    // nvdispapiIsPartialUnmapSupported -- inline virtual inherited (res) base (dispobj) body
-    pThis->__nvdispapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_nvdispapiIsPartialUnmapSupported;
-
-    // nvdispapiMapTo -- virtual inherited (res) base (dispobj)
-    pThis->__nvdispapiMapTo__ = &__nvoc_up_thunk_RsResource_nvdispapiMapTo;
-
-    // nvdispapiUnmapFrom -- virtual inherited (res) base (dispobj)
-    pThis->__nvdispapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_nvdispapiUnmapFrom;
-
-    // nvdispapiGetRefCount -- virtual inherited (res) base (dispobj)
-    pThis->__nvdispapiGetRefCount__ = &__nvoc_up_thunk_RsResource_nvdispapiGetRefCount;
-
-    // nvdispapiAddAdditionalDependants -- virtual inherited (res) base (dispobj)
-    pThis->__nvdispapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_nvdispapiAddAdditionalDependants;
-
-    // nvdispapiGetNotificationListPtr -- virtual inherited (notify) base (dispobj)
-    pThis->__nvdispapiGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_nvdispapiGetNotificationListPtr;
-
-    // nvdispapiGetNotificationShare -- virtual inherited (notify) base (dispobj)
-    pThis->__nvdispapiGetNotificationShare__ = &__nvoc_up_thunk_Notifier_nvdispapiGetNotificationShare;
-
-    // nvdispapiSetNotificationShare -- virtual inherited (notify) base (dispobj)
-    pThis->__nvdispapiSetNotificationShare__ = &__nvoc_up_thunk_Notifier_nvdispapiSetNotificationShare;
-
-    // nvdispapiUnregisterEvent -- virtual inherited (notify) base (dispobj)
-    pThis->__nvdispapiUnregisterEvent__ = &__nvoc_up_thunk_Notifier_nvdispapiUnregisterEvent;
-
-    // nvdispapiGetOrAllocNotifShare -- virtual inherited (notify) base (dispobj)
-    pThis->__nvdispapiGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_nvdispapiGetOrAllocNotifShare;
-} // End __nvoc_init_funcTable_NvDispApi_1 with approximately 33 basic block(s).
+} // End __nvoc_init_funcTable_NvDispApi_1 with approximately 7 basic block(s).
 
 
 // Initialize vtable(s) for 33 virtual method(s).
 void __nvoc_init_funcTable_NvDispApi(NvDispApi *pThis) {
 
-    // Initialize vtable(s) with 33 per-object function pointer(s).
+    // Per-class vtable definition
+    static const struct NVOC_VTABLE__NvDispApi vtable = {
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+        .__nvdispapiControl__ = &__nvoc_up_thunk_DisplayApi_nvdispapiControl,    // virtual inherited (dispapi) base (dispobj)
+        .DispObject.__dispobjControl__ = &__nvoc_up_thunk_DisplayApi_dispobjControl,    // virtual inherited (dispapi) base (dispapi)
+        .DispObject.DisplayApi.__dispapiControl__ = &dispapiControl_IMPL,    // virtual override (res) base (rmres)
+        .DispObject.DisplayApi.RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+        .DispObject.DisplayApi.RmResource.RsResource.__resControl__ = &__nvoc_down_thunk_DisplayApi_resControl,    // virtual
+        .__nvdispapiControl_Prologue__ = &__nvoc_up_thunk_DisplayApi_nvdispapiControl_Prologue,    // virtual inherited (dispapi) base (dispobj)
+        .DispObject.__dispobjControl_Prologue__ = &__nvoc_up_thunk_DisplayApi_dispobjControl_Prologue,    // virtual inherited (dispapi) base (dispapi)
+        .DispObject.DisplayApi.__dispapiControl_Prologue__ = &dispapiControl_Prologue_IMPL,    // virtual override (res) base (rmres)
+        .DispObject.DisplayApi.RmResource.__rmresControl_Prologue__ = &__nvoc_down_thunk_DisplayApi_rmresControl_Prologue,    // virtual override (res) base (res)
+        .DispObject.DisplayApi.RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+        .__nvdispapiControl_Epilogue__ = &__nvoc_up_thunk_DisplayApi_nvdispapiControl_Epilogue,    // virtual inherited (dispapi) base (dispobj)
+        .DispObject.__dispobjControl_Epilogue__ = &__nvoc_up_thunk_DisplayApi_dispobjControl_Epilogue,    // virtual inherited (dispapi) base (dispapi)
+        .DispObject.DisplayApi.__dispapiControl_Epilogue__ = &dispapiControl_Epilogue_IMPL,    // virtual override (res) base (rmres)
+        .DispObject.DisplayApi.RmResource.__rmresControl_Epilogue__ = &__nvoc_down_thunk_DisplayApi_rmresControl_Epilogue,    // virtual override (res) base (res)
+        .DispObject.DisplayApi.RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+        .__nvdispapiAccessCallback__ = &__nvoc_up_thunk_RmResource_nvdispapiAccessCallback,    // virtual inherited (rmres) base (dispobj)
+        .DispObject.__dispobjAccessCallback__ = &__nvoc_up_thunk_RmResource_dispobjAccessCallback,    // virtual inherited (rmres) base (dispapi)
+        .DispObject.DisplayApi.__dispapiAccessCallback__ = &__nvoc_up_thunk_RmResource_dispapiAccessCallback,    // virtual inherited (rmres) base (rmres)
+        .DispObject.DisplayApi.RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+        .DispObject.DisplayApi.RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+        .__nvdispapiShareCallback__ = &__nvoc_up_thunk_RmResource_nvdispapiShareCallback,    // virtual inherited (rmres) base (dispobj)
+        .DispObject.__dispobjShareCallback__ = &__nvoc_up_thunk_RmResource_dispobjShareCallback,    // virtual inherited (rmres) base (dispapi)
+        .DispObject.DisplayApi.__dispapiShareCallback__ = &__nvoc_up_thunk_RmResource_dispapiShareCallback,    // virtual inherited (rmres) base (rmres)
+        .DispObject.DisplayApi.RmResource.__rmresShareCallback__ = &rmresShareCallback_IMPL,    // virtual override (res) base (res)
+        .DispObject.DisplayApi.RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+        .__nvdispapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_nvdispapiGetMemInterMapParams,    // virtual inherited (rmres) base (dispobj)
+        .DispObject.__dispobjGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispobjGetMemInterMapParams,    // virtual inherited (rmres) base (dispapi)
+        .DispObject.DisplayApi.__dispapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispapiGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
+        .DispObject.DisplayApi.RmResource.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
+        .__nvdispapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_nvdispapiCheckMemInterUnmap,    // virtual inherited (rmres) base (dispobj)
+        .DispObject.__dispobjCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispobjCheckMemInterUnmap,    // virtual inherited (rmres) base (dispapi)
+        .DispObject.DisplayApi.__dispapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispapiCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
+        .DispObject.DisplayApi.RmResource.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
+        .__nvdispapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_nvdispapiGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (dispobj)
+        .DispObject.__dispobjGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispobjGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (dispapi)
+        .DispObject.DisplayApi.__dispapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispapiGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
+        .DispObject.DisplayApi.RmResource.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
+        .__nvdispapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_nvdispapiControlSerialization_Prologue,    // virtual inherited (rmres) base (dispobj)
+        .DispObject.__dispobjControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispobjControlSerialization_Prologue,    // virtual inherited (rmres) base (dispapi)
+        .DispObject.DisplayApi.__dispapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispapiControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+        .DispObject.DisplayApi.RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+        .DispObject.DisplayApi.RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+        .__nvdispapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_nvdispapiControlSerialization_Epilogue,    // virtual inherited (rmres) base (dispobj)
+        .DispObject.__dispobjControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispobjControlSerialization_Epilogue,    // virtual inherited (rmres) base (dispapi)
+        .DispObject.DisplayApi.__dispapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispapiControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+        .DispObject.DisplayApi.RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+        .DispObject.DisplayApi.RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+        .__nvdispapiCanCopy__ = &__nvoc_up_thunk_RsResource_nvdispapiCanCopy,    // virtual inherited (res) base (dispobj)
+        .DispObject.__dispobjCanCopy__ = &__nvoc_up_thunk_RsResource_dispobjCanCopy,    // virtual inherited (res) base (dispapi)
+        .DispObject.DisplayApi.__dispapiCanCopy__ = &__nvoc_up_thunk_RsResource_dispapiCanCopy,    // virtual inherited (res) base (rmres)
+        .DispObject.DisplayApi.RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+        .DispObject.DisplayApi.RmResource.RsResource.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+        .__nvdispapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_nvdispapiIsDuplicate,    // virtual inherited (res) base (dispobj)
+        .DispObject.__dispobjIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispobjIsDuplicate,    // virtual inherited (res) base (dispapi)
+        .DispObject.DisplayApi.__dispapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispapiIsDuplicate,    // virtual inherited (res) base (rmres)
+        .DispObject.DisplayApi.RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+        .DispObject.DisplayApi.RmResource.RsResource.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+        .__nvdispapiPreDestruct__ = &__nvoc_up_thunk_RsResource_nvdispapiPreDestruct,    // virtual inherited (res) base (dispobj)
+        .DispObject.__dispobjPreDestruct__ = &__nvoc_up_thunk_RsResource_dispobjPreDestruct,    // virtual inherited (res) base (dispapi)
+        .DispObject.DisplayApi.__dispapiPreDestruct__ = &__nvoc_up_thunk_RsResource_dispapiPreDestruct,    // virtual inherited (res) base (rmres)
+        .DispObject.DisplayApi.RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+        .DispObject.DisplayApi.RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+        .__nvdispapiControlFilter__ = &__nvoc_up_thunk_RsResource_nvdispapiControlFilter,    // virtual inherited (res) base (dispobj)
+        .DispObject.__dispobjControlFilter__ = &__nvoc_up_thunk_RsResource_dispobjControlFilter,    // virtual inherited (res) base (dispapi)
+        .DispObject.DisplayApi.__dispapiControlFilter__ = &__nvoc_up_thunk_RsResource_dispapiControlFilter,    // virtual inherited (res) base (rmres)
+        .DispObject.DisplayApi.RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+        .DispObject.DisplayApi.RmResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+        .__nvdispapiMap__ = &__nvoc_up_thunk_RsResource_nvdispapiMap,    // virtual inherited (res) base (dispobj)
+        .DispObject.__dispobjMap__ = &__nvoc_up_thunk_RsResource_dispobjMap,    // virtual inherited (res) base (dispapi)
+        .DispObject.DisplayApi.__dispapiMap__ = &__nvoc_up_thunk_RsResource_dispapiMap,    // virtual inherited (res) base (rmres)
+        .DispObject.DisplayApi.RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+        .DispObject.DisplayApi.RmResource.RsResource.__resMap__ = &resMap_IMPL,    // virtual
+        .__nvdispapiUnmap__ = &__nvoc_up_thunk_RsResource_nvdispapiUnmap,    // virtual inherited (res) base (dispobj)
+        .DispObject.__dispobjUnmap__ = &__nvoc_up_thunk_RsResource_dispobjUnmap,    // virtual inherited (res) base (dispapi)
+        .DispObject.DisplayApi.__dispapiUnmap__ = &__nvoc_up_thunk_RsResource_dispapiUnmap,    // virtual inherited (res) base (rmres)
+        .DispObject.DisplayApi.RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+        .DispObject.DisplayApi.RmResource.RsResource.__resUnmap__ = &resUnmap_IMPL,    // virtual
+        .__nvdispapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_nvdispapiIsPartialUnmapSupported,    // inline virtual inherited (res) base (dispobj) body
+        .DispObject.__dispobjIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispobjIsPartialUnmapSupported,    // inline virtual inherited (res) base (dispapi) body
+        .DispObject.DisplayApi.__dispapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispapiIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+        .DispObject.DisplayApi.RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+        .DispObject.DisplayApi.RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+        .__nvdispapiMapTo__ = &__nvoc_up_thunk_RsResource_nvdispapiMapTo,    // virtual inherited (res) base (dispobj)
+        .DispObject.__dispobjMapTo__ = &__nvoc_up_thunk_RsResource_dispobjMapTo,    // virtual inherited (res) base (dispapi)
+        .DispObject.DisplayApi.__dispapiMapTo__ = &__nvoc_up_thunk_RsResource_dispapiMapTo,    // virtual inherited (res) base (rmres)
+        .DispObject.DisplayApi.RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+        .DispObject.DisplayApi.RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
+        .__nvdispapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_nvdispapiUnmapFrom,    // virtual inherited (res) base (dispobj)
+        .DispObject.__dispobjUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispobjUnmapFrom,    // virtual inherited (res) base (dispapi)
+        .DispObject.DisplayApi.__dispapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispapiUnmapFrom,    // virtual inherited (res) base (rmres)
+        .DispObject.DisplayApi.RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+        .DispObject.DisplayApi.RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+        .__nvdispapiGetRefCount__ = &__nvoc_up_thunk_RsResource_nvdispapiGetRefCount,    // virtual inherited (res) base (dispobj)
+        .DispObject.__dispobjGetRefCount__ = &__nvoc_up_thunk_RsResource_dispobjGetRefCount,    // virtual inherited (res) base (dispapi)
+        .DispObject.DisplayApi.__dispapiGetRefCount__ = &__nvoc_up_thunk_RsResource_dispapiGetRefCount,    // virtual inherited (res) base (rmres)
+        .DispObject.DisplayApi.RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+        .DispObject.DisplayApi.RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+        .__nvdispapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_nvdispapiAddAdditionalDependants,    // virtual inherited (res) base (dispobj)
+        .DispObject.__dispobjAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispobjAddAdditionalDependants,    // virtual inherited (res) base (dispapi)
+        .DispObject.DisplayApi.__dispapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispapiAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+        .DispObject.DisplayApi.RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+        .DispObject.DisplayApi.RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+        .__nvdispapiGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_nvdispapiGetNotificationListPtr,    // virtual inherited (notify) base (dispobj)
+        .DispObject.__dispobjGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispobjGetNotificationListPtr,    // virtual inherited (notify) base (dispapi)
+        .DispObject.DisplayApi.__dispapiGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispapiGetNotificationListPtr,    // virtual inherited (notify) base (notify)
+        .DispObject.DisplayApi.Notifier.__notifyGetNotificationListPtr__ = &notifyGetNotificationListPtr_IMPL,    // virtual override (inotify) base (inotify)
+        .DispObject.DisplayApi.Notifier.INotifier.__inotifyGetNotificationListPtr__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr,    // pure virtual
+        .__nvdispapiGetNotificationShare__ = &__nvoc_up_thunk_Notifier_nvdispapiGetNotificationShare,    // virtual inherited (notify) base (dispobj)
+        .DispObject.__dispobjGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispobjGetNotificationShare,    // virtual inherited (notify) base (dispapi)
+        .DispObject.DisplayApi.__dispapiGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispapiGetNotificationShare,    // virtual inherited (notify) base (notify)
+        .DispObject.DisplayApi.Notifier.__notifyGetNotificationShare__ = &notifyGetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+        .DispObject.DisplayApi.Notifier.INotifier.__inotifyGetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationShare,    // pure virtual
+        .__nvdispapiSetNotificationShare__ = &__nvoc_up_thunk_Notifier_nvdispapiSetNotificationShare,    // virtual inherited (notify) base (dispobj)
+        .DispObject.__dispobjSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispobjSetNotificationShare,    // virtual inherited (notify) base (dispapi)
+        .DispObject.DisplayApi.__dispapiSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispapiSetNotificationShare,    // virtual inherited (notify) base (notify)
+        .DispObject.DisplayApi.Notifier.__notifySetNotificationShare__ = &notifySetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+        .DispObject.DisplayApi.Notifier.INotifier.__inotifySetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifySetNotificationShare,    // pure virtual
+        .__nvdispapiUnregisterEvent__ = &__nvoc_up_thunk_Notifier_nvdispapiUnregisterEvent,    // virtual inherited (notify) base (dispobj)
+        .DispObject.__dispobjUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispobjUnregisterEvent,    // virtual inherited (notify) base (dispapi)
+        .DispObject.DisplayApi.__dispapiUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispapiUnregisterEvent,    // virtual inherited (notify) base (notify)
+        .DispObject.DisplayApi.Notifier.__notifyUnregisterEvent__ = &notifyUnregisterEvent_IMPL,    // virtual override (inotify) base (inotify)
+        .DispObject.DisplayApi.Notifier.INotifier.__inotifyUnregisterEvent__ = &__nvoc_down_thunk_Notifier_inotifyUnregisterEvent,    // pure virtual
+        .__nvdispapiGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_nvdispapiGetOrAllocNotifShare,    // virtual inherited (notify) base (dispobj)
+        .DispObject.__dispobjGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispobjGetOrAllocNotifShare,    // virtual inherited (notify) base (dispapi)
+        .DispObject.DisplayApi.__dispapiGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispapiGetOrAllocNotifShare,    // virtual inherited (notify) base (notify)
+        .DispObject.DisplayApi.Notifier.__notifyGetOrAllocNotifShare__ = &notifyGetOrAllocNotifShare_IMPL,    // virtual override (inotify) base (inotify)
+        .DispObject.DisplayApi.Notifier.INotifier.__inotifyGetOrAllocNotifShare__ = &__nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare,    // pure virtual
+    };
+
+    // Pointer(s) to per-class vtable(s)
+    pThis->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.DispObject.DisplayApi.RmResource.RsResource;    // (res) super^4
+    pThis->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable = &vtable.DispObject.DisplayApi.RmResource;    // (rmres) super^3
+    pThis->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_vtable = &vtable.DispObject.DisplayApi.Notifier.INotifier;    // (inotify) super^4
+    pThis->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable = &vtable.DispObject.DisplayApi.Notifier;    // (notify) super^3
+    pThis->__nvoc_base_DispObject.__nvoc_base_DisplayApi.__nvoc_vtable = &vtable.DispObject.DisplayApi;    // (dispapi) super^2
+    pThis->__nvoc_base_DispObject.__nvoc_vtable = &vtable.DispObject;    // (dispobj) super
+    pThis->__nvoc_vtable = &vtable;    // (nvdispapi) this
+
+    // Initialize vtable(s) with 7 per-object function pointer(s).
     __nvoc_init_funcTable_NvDispApi_1(pThis);
 }
 
@@ -2133,135 +2524,214 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispSwOb
 
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^2
+NvBool __nvoc_down_thunk_RmResource_resShareCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super^2
+NV_STATUS __nvoc_down_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+void __nvoc_down_thunk_RmResource_resControlSerialization_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_down_thunk_RmResource_resControl_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+void __nvoc_down_thunk_RmResource_resControl_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+PEVENTNOTIFICATION * __nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr(struct INotifier *pNotifier);    // super^2
+struct NotifShare * __nvoc_down_thunk_Notifier_inotifyGetNotificationShare(struct INotifier *pNotifier);    // super^2
+void __nvoc_down_thunk_Notifier_inotifySetNotificationShare(struct INotifier *pNotifier, struct NotifShare *pNotifShare);    // super^2
+NV_STATUS __nvoc_down_thunk_Notifier_inotifyUnregisterEvent(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // super^2
+NV_STATUS __nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // super^2
+NV_STATUS __nvoc_down_thunk_DisplayApi_resControl(struct RsResource *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_down_thunk_DisplayApi_rmresControl_Prologue(struct RmResource *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams);    // super
+void __nvoc_down_thunk_DisplayApi_rmresControl_Epilogue(struct RmResource *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams);    // super
+
+// Up-thunk(s) to bridge methods to ancestors (if any)
+NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super^2
+void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresControl(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresControlFilter(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresMap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // super^2
+NvBool __nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported(struct RmResource *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresMapTo(struct RmResource *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmapFrom(struct RmResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super^2
+NvU32 __nvoc_up_thunk_RsResource_rmresGetRefCount(struct RmResource *pResource);    // super^2
+void __nvoc_up_thunk_RsResource_rmresAddAdditionalDependants(struct RsClient *pClient, struct RmResource *pResource, RsResourceRef *pReference);    // super^2
+NvBool __nvoc_up_thunk_RmResource_dispapiAccessCallback(struct DisplayApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super
+NvBool __nvoc_up_thunk_RmResource_dispapiShareCallback(struct DisplayApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiGetMemInterMapParams(struct DisplayApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiCheckMemInterUnmap(struct DisplayApi *pRmResource, NvBool bSubdeviceHandleProvided);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiGetMemoryMappingDescriptor(struct DisplayApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiControlSerialization_Prologue(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+void __nvoc_up_thunk_RmResource_dispapiControlSerialization_Epilogue(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NvBool __nvoc_up_thunk_RsResource_dispapiCanCopy(struct DisplayApi *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiIsDuplicate(struct DisplayApi *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super
+void __nvoc_up_thunk_RsResource_dispapiPreDestruct(struct DisplayApi *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiControlFilter(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiMap(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiUnmap(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // super
+NvBool __nvoc_up_thunk_RsResource_dispapiIsPartialUnmapSupported(struct DisplayApi *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiMapTo(struct DisplayApi *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiUnmapFrom(struct DisplayApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super
+NvU32 __nvoc_up_thunk_RsResource_dispapiGetRefCount(struct DisplayApi *pResource);    // super
+void __nvoc_up_thunk_RsResource_dispapiAddAdditionalDependants(struct RsClient *pClient, struct DisplayApi *pResource, RsResourceRef *pReference);    // super
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_dispapiGetNotificationListPtr(struct DisplayApi *pNotifier);    // super
+struct NotifShare * __nvoc_up_thunk_Notifier_dispapiGetNotificationShare(struct DisplayApi *pNotifier);    // super
+void __nvoc_up_thunk_Notifier_dispapiSetNotificationShare(struct DisplayApi *pNotifier, struct NotifShare *pNotifShare);    // super
+NV_STATUS __nvoc_up_thunk_Notifier_dispapiUnregisterEvent(struct DisplayApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // super
+NV_STATUS __nvoc_up_thunk_Notifier_dispapiGetOrAllocNotifShare(struct DisplayApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // super
+NV_STATUS __nvoc_up_thunk_DisplayApi_dispswobjControl(struct DispSwObj *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_DisplayApi_dispswobjControl_Prologue(struct DispSwObj *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams);    // this
+void __nvoc_up_thunk_DisplayApi_dispswobjControl_Epilogue(struct DispSwObj *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams);    // this
+NvBool __nvoc_up_thunk_RmResource_dispswobjAccessCallback(struct DispSwObj *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // this
+NvBool __nvoc_up_thunk_RmResource_dispswobjShareCallback(struct DispSwObj *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_dispswobjGetMemInterMapParams(struct DispSwObj *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_dispswobjCheckMemInterUnmap(struct DispSwObj *pRmResource, NvBool bSubdeviceHandleProvided);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_dispswobjGetMemoryMappingDescriptor(struct DispSwObj *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_dispswobjControlSerialization_Prologue(struct DispSwObj *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+void __nvoc_up_thunk_RmResource_dispswobjControlSerialization_Epilogue(struct DispSwObj *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NvBool __nvoc_up_thunk_RsResource_dispswobjCanCopy(struct DispSwObj *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispswobjIsDuplicate(struct DispSwObj *pResource, NvHandle hMemory, NvBool *pDuplicate);    // this
+void __nvoc_up_thunk_RsResource_dispswobjPreDestruct(struct DispSwObj *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispswobjControlFilter(struct DispSwObj *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispswobjMap(struct DispSwObj *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispswobjUnmap(struct DispSwObj *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // this
+NvBool __nvoc_up_thunk_RsResource_dispswobjIsPartialUnmapSupported(struct DispSwObj *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispswobjMapTo(struct DispSwObj *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispswobjUnmapFrom(struct DispSwObj *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
+NvU32 __nvoc_up_thunk_RsResource_dispswobjGetRefCount(struct DispSwObj *pResource);    // this
+void __nvoc_up_thunk_RsResource_dispswobjAddAdditionalDependants(struct RsClient *pClient, struct DispSwObj *pResource, RsResourceRef *pReference);    // this
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_dispswobjGetNotificationListPtr(struct DispSwObj *pNotifier);    // this
+struct NotifShare * __nvoc_up_thunk_Notifier_dispswobjGetNotificationShare(struct DispSwObj *pNotifier);    // this
+void __nvoc_up_thunk_Notifier_dispswobjSetNotificationShare(struct DispSwObj *pNotifier, struct NotifShare *pNotifShare);    // this
+NV_STATUS __nvoc_up_thunk_Notifier_dispswobjUnregisterEvent(struct DispSwObj *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // this
+NV_STATUS __nvoc_up_thunk_Notifier_dispswobjGetOrAllocNotifShare(struct DispSwObj *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // this
+
 // 26 up-thunk(s) defined to bridge methods in DispSwObj to superclasses
 
 // dispswobjControl: virtual inherited (dispapi) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_DisplayApi_dispswobjControl(struct DispSwObj *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_DisplayApi_dispswobjControl(struct DispSwObj *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return dispapiControl((struct DisplayApi *)(((unsigned char *) pDisplayApi) + __nvoc_rtti_DispSwObj_DisplayApi.offset), pCallContext, pParams);
 }
 
 // dispswobjControl_Prologue: virtual inherited (dispapi) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_DisplayApi_dispswobjControl_Prologue(struct DispSwObj *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
+NV_STATUS __nvoc_up_thunk_DisplayApi_dispswobjControl_Prologue(struct DispSwObj *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
     return dispapiControl_Prologue((struct DisplayApi *)(((unsigned char *) pDisplayApi) + __nvoc_rtti_DispSwObj_DisplayApi.offset), pCallContext, pRsParams);
 }
 
 // dispswobjControl_Epilogue: virtual inherited (dispapi) base (dispapi)
-static void __nvoc_up_thunk_DisplayApi_dispswobjControl_Epilogue(struct DispSwObj *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
+void __nvoc_up_thunk_DisplayApi_dispswobjControl_Epilogue(struct DispSwObj *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
     dispapiControl_Epilogue((struct DisplayApi *)(((unsigned char *) pDisplayApi) + __nvoc_rtti_DispSwObj_DisplayApi.offset), pCallContext, pRsParams);
 }
 
 // dispswobjAccessCallback: virtual inherited (rmres) base (dispapi)
-static NvBool __nvoc_up_thunk_RmResource_dispswobjAccessCallback(struct DispSwObj *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+NvBool __nvoc_up_thunk_RmResource_dispswobjAccessCallback(struct DispSwObj *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSwObj_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
 // dispswobjShareCallback: virtual inherited (rmres) base (dispapi)
-static NvBool __nvoc_up_thunk_RmResource_dispswobjShareCallback(struct DispSwObj *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+NvBool __nvoc_up_thunk_RmResource_dispswobjShareCallback(struct DispSwObj *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSwObj_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 // dispswobjGetMemInterMapParams: virtual inherited (rmres) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RmResource_dispswobjGetMemInterMapParams(struct DispSwObj *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_dispswobjGetMemInterMapParams(struct DispSwObj *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
     return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DispSwObj_RmResource.offset), pParams);
 }
 
 // dispswobjCheckMemInterUnmap: virtual inherited (rmres) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RmResource_dispswobjCheckMemInterUnmap(struct DispSwObj *pRmResource, NvBool bSubdeviceHandleProvided) {
+NV_STATUS __nvoc_up_thunk_RmResource_dispswobjCheckMemInterUnmap(struct DispSwObj *pRmResource, NvBool bSubdeviceHandleProvided) {
     return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DispSwObj_RmResource.offset), bSubdeviceHandleProvided);
 }
 
 // dispswobjGetMemoryMappingDescriptor: virtual inherited (rmres) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RmResource_dispswobjGetMemoryMappingDescriptor(struct DispSwObj *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+NV_STATUS __nvoc_up_thunk_RmResource_dispswobjGetMemoryMappingDescriptor(struct DispSwObj *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
     return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DispSwObj_RmResource.offset), ppMemDesc);
 }
 
 // dispswobjControlSerialization_Prologue: virtual inherited (rmres) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RmResource_dispswobjControlSerialization_Prologue(struct DispSwObj *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_dispswobjControlSerialization_Prologue(struct DispSwObj *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSwObj_RmResource.offset), pCallContext, pParams);
 }
 
 // dispswobjControlSerialization_Epilogue: virtual inherited (rmres) base (dispapi)
-static void __nvoc_up_thunk_RmResource_dispswobjControlSerialization_Epilogue(struct DispSwObj *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+void __nvoc_up_thunk_RmResource_dispswobjControlSerialization_Epilogue(struct DispSwObj *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSwObj_RmResource.offset), pCallContext, pParams);
 }
 
 // dispswobjCanCopy: virtual inherited (res) base (dispapi)
-static NvBool __nvoc_up_thunk_RsResource_dispswobjCanCopy(struct DispSwObj *pResource) {
+NvBool __nvoc_up_thunk_RsResource_dispswobjCanCopy(struct DispSwObj *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSwObj_RsResource.offset));
 }
 
 // dispswobjIsDuplicate: virtual inherited (res) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispswobjIsDuplicate(struct DispSwObj *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispswobjIsDuplicate(struct DispSwObj *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSwObj_RsResource.offset), hMemory, pDuplicate);
 }
 
 // dispswobjPreDestruct: virtual inherited (res) base (dispapi)
-static void __nvoc_up_thunk_RsResource_dispswobjPreDestruct(struct DispSwObj *pResource) {
+void __nvoc_up_thunk_RsResource_dispswobjPreDestruct(struct DispSwObj *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSwObj_RsResource.offset));
 }
 
 // dispswobjControlFilter: virtual inherited (res) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispswobjControlFilter(struct DispSwObj *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispswobjControlFilter(struct DispSwObj *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSwObj_RsResource.offset), pCallContext, pParams);
 }
 
 // dispswobjMap: virtual inherited (res) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispswobjMap(struct DispSwObj *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispswobjMap(struct DispSwObj *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
     return resMap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSwObj_RsResource.offset), pCallContext, pParams, pCpuMapping);
 }
 
 // dispswobjUnmap: virtual inherited (res) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispswobjUnmap(struct DispSwObj *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispswobjUnmap(struct DispSwObj *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
     return resUnmap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSwObj_RsResource.offset), pCallContext, pCpuMapping);
 }
 
 // dispswobjIsPartialUnmapSupported: inline virtual inherited (res) base (dispapi) body
-static NvBool __nvoc_up_thunk_RsResource_dispswobjIsPartialUnmapSupported(struct DispSwObj *pResource) {
+NvBool __nvoc_up_thunk_RsResource_dispswobjIsPartialUnmapSupported(struct DispSwObj *pResource) {
     return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSwObj_RsResource.offset));
 }
 
 // dispswobjMapTo: virtual inherited (res) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispswobjMapTo(struct DispSwObj *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispswobjMapTo(struct DispSwObj *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
     return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSwObj_RsResource.offset), pParams);
 }
 
 // dispswobjUnmapFrom: virtual inherited (res) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispswobjUnmapFrom(struct DispSwObj *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispswobjUnmapFrom(struct DispSwObj *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
     return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSwObj_RsResource.offset), pParams);
 }
 
 // dispswobjGetRefCount: virtual inherited (res) base (dispapi)
-static NvU32 __nvoc_up_thunk_RsResource_dispswobjGetRefCount(struct DispSwObj *pResource) {
+NvU32 __nvoc_up_thunk_RsResource_dispswobjGetRefCount(struct DispSwObj *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSwObj_RsResource.offset));
 }
 
 // dispswobjAddAdditionalDependants: virtual inherited (res) base (dispapi)
-static void __nvoc_up_thunk_RsResource_dispswobjAddAdditionalDependants(struct RsClient *pClient, struct DispSwObj *pResource, RsResourceRef *pReference) {
+void __nvoc_up_thunk_RsResource_dispswobjAddAdditionalDependants(struct RsClient *pClient, struct DispSwObj *pResource, RsResourceRef *pReference) {
     resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispSwObj_RsResource.offset), pReference);
 }
 
 // dispswobjGetNotificationListPtr: virtual inherited (notify) base (dispapi)
-static PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_dispswobjGetNotificationListPtr(struct DispSwObj *pNotifier) {
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_dispswobjGetNotificationListPtr(struct DispSwObj *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispSwObj_Notifier.offset));
 }
 
 // dispswobjGetNotificationShare: virtual inherited (notify) base (dispapi)
-static struct NotifShare * __nvoc_up_thunk_Notifier_dispswobjGetNotificationShare(struct DispSwObj *pNotifier) {
+struct NotifShare * __nvoc_up_thunk_Notifier_dispswobjGetNotificationShare(struct DispSwObj *pNotifier) {
     return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispSwObj_Notifier.offset));
 }
 
 // dispswobjSetNotificationShare: virtual inherited (notify) base (dispapi)
-static void __nvoc_up_thunk_Notifier_dispswobjSetNotificationShare(struct DispSwObj *pNotifier, struct NotifShare *pNotifShare) {
+void __nvoc_up_thunk_Notifier_dispswobjSetNotificationShare(struct DispSwObj *pNotifier, struct NotifShare *pNotifShare) {
     notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispSwObj_Notifier.offset), pNotifShare);
 }
 
 // dispswobjUnregisterEvent: virtual inherited (notify) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_Notifier_dispswobjUnregisterEvent(struct DispSwObj *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
+NV_STATUS __nvoc_up_thunk_Notifier_dispswobjUnregisterEvent(struct DispSwObj *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispSwObj_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 // dispswobjGetOrAllocNotifShare: virtual inherited (notify) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_Notifier_dispswobjGetOrAllocNotifShare(struct DispSwObj *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
+NV_STATUS __nvoc_up_thunk_Notifier_dispswobjGetOrAllocNotifShare(struct DispSwObj *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispSwObj_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
@@ -2324,91 +2794,134 @@ static void __nvoc_init_funcTable_DispSwObj_1(DispSwObj *pThis) {
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x49u)
     pThis->__dispswobjCtrlCmdGetActiveViewportPointIn__ = &dispswobjCtrlCmdGetActiveViewportPointIn_IMPL;
 #endif
-
-    // dispswobjControl -- virtual inherited (dispapi) base (dispapi)
-    pThis->__dispswobjControl__ = &__nvoc_up_thunk_DisplayApi_dispswobjControl;
-
-    // dispswobjControl_Prologue -- virtual inherited (dispapi) base (dispapi)
-    pThis->__dispswobjControl_Prologue__ = &__nvoc_up_thunk_DisplayApi_dispswobjControl_Prologue;
-
-    // dispswobjControl_Epilogue -- virtual inherited (dispapi) base (dispapi)
-    pThis->__dispswobjControl_Epilogue__ = &__nvoc_up_thunk_DisplayApi_dispswobjControl_Epilogue;
-
-    // dispswobjAccessCallback -- virtual inherited (rmres) base (dispapi)
-    pThis->__dispswobjAccessCallback__ = &__nvoc_up_thunk_RmResource_dispswobjAccessCallback;
-
-    // dispswobjShareCallback -- virtual inherited (rmres) base (dispapi)
-    pThis->__dispswobjShareCallback__ = &__nvoc_up_thunk_RmResource_dispswobjShareCallback;
-
-    // dispswobjGetMemInterMapParams -- virtual inherited (rmres) base (dispapi)
-    pThis->__dispswobjGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispswobjGetMemInterMapParams;
-
-    // dispswobjCheckMemInterUnmap -- virtual inherited (rmres) base (dispapi)
-    pThis->__dispswobjCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispswobjCheckMemInterUnmap;
-
-    // dispswobjGetMemoryMappingDescriptor -- virtual inherited (rmres) base (dispapi)
-    pThis->__dispswobjGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispswobjGetMemoryMappingDescriptor;
-
-    // dispswobjControlSerialization_Prologue -- virtual inherited (rmres) base (dispapi)
-    pThis->__dispswobjControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispswobjControlSerialization_Prologue;
-
-    // dispswobjControlSerialization_Epilogue -- virtual inherited (rmres) base (dispapi)
-    pThis->__dispswobjControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispswobjControlSerialization_Epilogue;
-
-    // dispswobjCanCopy -- virtual inherited (res) base (dispapi)
-    pThis->__dispswobjCanCopy__ = &__nvoc_up_thunk_RsResource_dispswobjCanCopy;
-
-    // dispswobjIsDuplicate -- virtual inherited (res) base (dispapi)
-    pThis->__dispswobjIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispswobjIsDuplicate;
-
-    // dispswobjPreDestruct -- virtual inherited (res) base (dispapi)
-    pThis->__dispswobjPreDestruct__ = &__nvoc_up_thunk_RsResource_dispswobjPreDestruct;
-
-    // dispswobjControlFilter -- virtual inherited (res) base (dispapi)
-    pThis->__dispswobjControlFilter__ = &__nvoc_up_thunk_RsResource_dispswobjControlFilter;
-
-    // dispswobjMap -- virtual inherited (res) base (dispapi)
-    pThis->__dispswobjMap__ = &__nvoc_up_thunk_RsResource_dispswobjMap;
-
-    // dispswobjUnmap -- virtual inherited (res) base (dispapi)
-    pThis->__dispswobjUnmap__ = &__nvoc_up_thunk_RsResource_dispswobjUnmap;
-
-    // dispswobjIsPartialUnmapSupported -- inline virtual inherited (res) base (dispapi) body
-    pThis->__dispswobjIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispswobjIsPartialUnmapSupported;
-
-    // dispswobjMapTo -- virtual inherited (res) base (dispapi)
-    pThis->__dispswobjMapTo__ = &__nvoc_up_thunk_RsResource_dispswobjMapTo;
-
-    // dispswobjUnmapFrom -- virtual inherited (res) base (dispapi)
-    pThis->__dispswobjUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispswobjUnmapFrom;
-
-    // dispswobjGetRefCount -- virtual inherited (res) base (dispapi)
-    pThis->__dispswobjGetRefCount__ = &__nvoc_up_thunk_RsResource_dispswobjGetRefCount;
-
-    // dispswobjAddAdditionalDependants -- virtual inherited (res) base (dispapi)
-    pThis->__dispswobjAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispswobjAddAdditionalDependants;
-
-    // dispswobjGetNotificationListPtr -- virtual inherited (notify) base (dispapi)
-    pThis->__dispswobjGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispswobjGetNotificationListPtr;
-
-    // dispswobjGetNotificationShare -- virtual inherited (notify) base (dispapi)
-    pThis->__dispswobjGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispswobjGetNotificationShare;
-
-    // dispswobjSetNotificationShare -- virtual inherited (notify) base (dispapi)
-    pThis->__dispswobjSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispswobjSetNotificationShare;
-
-    // dispswobjUnregisterEvent -- virtual inherited (notify) base (dispapi)
-    pThis->__dispswobjUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispswobjUnregisterEvent;
-
-    // dispswobjGetOrAllocNotifShare -- virtual inherited (notify) base (dispapi)
-    pThis->__dispswobjGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispswobjGetOrAllocNotifShare;
-} // End __nvoc_init_funcTable_DispSwObj_1 with approximately 30 basic block(s).
+} // End __nvoc_init_funcTable_DispSwObj_1 with approximately 4 basic block(s).
 
 
 // Initialize vtable(s) for 30 virtual method(s).
 void __nvoc_init_funcTable_DispSwObj(DispSwObj *pThis) {
 
-    // Initialize vtable(s) with 30 per-object function pointer(s).
+    // Per-class vtable definition
+    static const struct NVOC_VTABLE__DispSwObj vtable = {
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x49u)
+#endif
+        .__dispswobjControl__ = &__nvoc_up_thunk_DisplayApi_dispswobjControl,    // virtual inherited (dispapi) base (dispapi)
+        .DisplayApi.__dispapiControl__ = &dispapiControl_IMPL,    // virtual override (res) base (rmres)
+        .DisplayApi.RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resControl__ = &__nvoc_down_thunk_DisplayApi_resControl,    // virtual
+        .__dispswobjControl_Prologue__ = &__nvoc_up_thunk_DisplayApi_dispswobjControl_Prologue,    // virtual inherited (dispapi) base (dispapi)
+        .DisplayApi.__dispapiControl_Prologue__ = &dispapiControl_Prologue_IMPL,    // virtual override (res) base (rmres)
+        .DisplayApi.RmResource.__rmresControl_Prologue__ = &__nvoc_down_thunk_DisplayApi_rmresControl_Prologue,    // virtual override (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+        .__dispswobjControl_Epilogue__ = &__nvoc_up_thunk_DisplayApi_dispswobjControl_Epilogue,    // virtual inherited (dispapi) base (dispapi)
+        .DisplayApi.__dispapiControl_Epilogue__ = &dispapiControl_Epilogue_IMPL,    // virtual override (res) base (rmres)
+        .DisplayApi.RmResource.__rmresControl_Epilogue__ = &__nvoc_down_thunk_DisplayApi_rmresControl_Epilogue,    // virtual override (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+        .__dispswobjAccessCallback__ = &__nvoc_up_thunk_RmResource_dispswobjAccessCallback,    // virtual inherited (rmres) base (dispapi)
+        .DisplayApi.__dispapiAccessCallback__ = &__nvoc_up_thunk_RmResource_dispapiAccessCallback,    // virtual inherited (rmres) base (rmres)
+        .DisplayApi.RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+        .__dispswobjShareCallback__ = &__nvoc_up_thunk_RmResource_dispswobjShareCallback,    // virtual inherited (rmres) base (dispapi)
+        .DisplayApi.__dispapiShareCallback__ = &__nvoc_up_thunk_RmResource_dispapiShareCallback,    // virtual inherited (rmres) base (rmres)
+        .DisplayApi.RmResource.__rmresShareCallback__ = &rmresShareCallback_IMPL,    // virtual override (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+        .__dispswobjGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispswobjGetMemInterMapParams,    // virtual inherited (rmres) base (dispapi)
+        .DisplayApi.__dispapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispapiGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
+        .DisplayApi.RmResource.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
+        .__dispswobjCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispswobjCheckMemInterUnmap,    // virtual inherited (rmres) base (dispapi)
+        .DisplayApi.__dispapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispapiCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
+        .DisplayApi.RmResource.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
+        .__dispswobjGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispswobjGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (dispapi)
+        .DisplayApi.__dispapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispapiGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
+        .DisplayApi.RmResource.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
+        .__dispswobjControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispswobjControlSerialization_Prologue,    // virtual inherited (rmres) base (dispapi)
+        .DisplayApi.__dispapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispapiControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+        .DisplayApi.RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+        .__dispswobjControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispswobjControlSerialization_Epilogue,    // virtual inherited (rmres) base (dispapi)
+        .DisplayApi.__dispapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispapiControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+        .DisplayApi.RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+        .__dispswobjCanCopy__ = &__nvoc_up_thunk_RsResource_dispswobjCanCopy,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiCanCopy__ = &__nvoc_up_thunk_RsResource_dispapiCanCopy,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+        .__dispswobjIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispswobjIsDuplicate,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispapiIsDuplicate,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+        .__dispswobjPreDestruct__ = &__nvoc_up_thunk_RsResource_dispswobjPreDestruct,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiPreDestruct__ = &__nvoc_up_thunk_RsResource_dispapiPreDestruct,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+        .__dispswobjControlFilter__ = &__nvoc_up_thunk_RsResource_dispswobjControlFilter,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiControlFilter__ = &__nvoc_up_thunk_RsResource_dispapiControlFilter,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+        .__dispswobjMap__ = &__nvoc_up_thunk_RsResource_dispswobjMap,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiMap__ = &__nvoc_up_thunk_RsResource_dispapiMap,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resMap__ = &resMap_IMPL,    // virtual
+        .__dispswobjUnmap__ = &__nvoc_up_thunk_RsResource_dispswobjUnmap,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiUnmap__ = &__nvoc_up_thunk_RsResource_dispapiUnmap,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resUnmap__ = &resUnmap_IMPL,    // virtual
+        .__dispswobjIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispswobjIsPartialUnmapSupported,    // inline virtual inherited (res) base (dispapi) body
+        .DisplayApi.__dispapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispapiIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+        .DisplayApi.RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+        .DisplayApi.RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+        .__dispswobjMapTo__ = &__nvoc_up_thunk_RsResource_dispswobjMapTo,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiMapTo__ = &__nvoc_up_thunk_RsResource_dispapiMapTo,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
+        .__dispswobjUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispswobjUnmapFrom,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispapiUnmapFrom,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+        .__dispswobjGetRefCount__ = &__nvoc_up_thunk_RsResource_dispswobjGetRefCount,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiGetRefCount__ = &__nvoc_up_thunk_RsResource_dispapiGetRefCount,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+        .__dispswobjAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispswobjAddAdditionalDependants,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispapiAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+        .__dispswobjGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispswobjGetNotificationListPtr,    // virtual inherited (notify) base (dispapi)
+        .DisplayApi.__dispapiGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispapiGetNotificationListPtr,    // virtual inherited (notify) base (notify)
+        .DisplayApi.Notifier.__notifyGetNotificationListPtr__ = &notifyGetNotificationListPtr_IMPL,    // virtual override (inotify) base (inotify)
+        .DisplayApi.Notifier.INotifier.__inotifyGetNotificationListPtr__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr,    // pure virtual
+        .__dispswobjGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispswobjGetNotificationShare,    // virtual inherited (notify) base (dispapi)
+        .DisplayApi.__dispapiGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispapiGetNotificationShare,    // virtual inherited (notify) base (notify)
+        .DisplayApi.Notifier.__notifyGetNotificationShare__ = &notifyGetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+        .DisplayApi.Notifier.INotifier.__inotifyGetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationShare,    // pure virtual
+        .__dispswobjSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispswobjSetNotificationShare,    // virtual inherited (notify) base (dispapi)
+        .DisplayApi.__dispapiSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispapiSetNotificationShare,    // virtual inherited (notify) base (notify)
+        .DisplayApi.Notifier.__notifySetNotificationShare__ = &notifySetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+        .DisplayApi.Notifier.INotifier.__inotifySetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifySetNotificationShare,    // pure virtual
+        .__dispswobjUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispswobjUnregisterEvent,    // virtual inherited (notify) base (dispapi)
+        .DisplayApi.__dispapiUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispapiUnregisterEvent,    // virtual inherited (notify) base (notify)
+        .DisplayApi.Notifier.__notifyUnregisterEvent__ = &notifyUnregisterEvent_IMPL,    // virtual override (inotify) base (inotify)
+        .DisplayApi.Notifier.INotifier.__inotifyUnregisterEvent__ = &__nvoc_down_thunk_Notifier_inotifyUnregisterEvent,    // pure virtual
+        .__dispswobjGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispswobjGetOrAllocNotifShare,    // virtual inherited (notify) base (dispapi)
+        .DisplayApi.__dispapiGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispapiGetOrAllocNotifShare,    // virtual inherited (notify) base (notify)
+        .DisplayApi.Notifier.__notifyGetOrAllocNotifShare__ = &notifyGetOrAllocNotifShare_IMPL,    // virtual override (inotify) base (inotify)
+        .DisplayApi.Notifier.INotifier.__inotifyGetOrAllocNotifShare__ = &__nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare,    // pure virtual
+    };
+
+    // Pointer(s) to per-class vtable(s)
+    pThis->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.DisplayApi.RmResource.RsResource;    // (res) super^3
+    pThis->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable = &vtable.DisplayApi.RmResource;    // (rmres) super^2
+    pThis->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_vtable = &vtable.DisplayApi.Notifier.INotifier;    // (inotify) super^3
+    pThis->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable = &vtable.DisplayApi.Notifier;    // (notify) super^2
+    pThis->__nvoc_base_DisplayApi.__nvoc_vtable = &vtable.DisplayApi;    // (dispapi) super
+    pThis->__nvoc_vtable = &vtable;    // (dispswobj) this
+
+    // Initialize vtable(s) with 4 per-object function pointer(s).
     __nvoc_init_funcTable_DispSwObj_1(pThis);
 }
 
@@ -3108,6 +3621,36 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
 #endif
     },
     {               /*  [33] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc0u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) dispcmnCtrlCmdSystemInternalAllocateDisplayBandwidth_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc0u)
+        /*flags=*/      0xc0u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0x730157u,
+        /*paramSize=*/  sizeof(NV0073_CTRL_SYSTEM_INTERNAL_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_DispCommon.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "dispcmnCtrlCmdSystemInternalAllocateDisplayBandwidth"
+#endif
+    },
+    {               /*  [34] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) dispcmnCtrlCmdSystemNotifyDrrMscgWar_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+        /*flags=*/      0x48u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0x730158u,
+        /*paramSize=*/  sizeof(NV0073_CTRL_CMD_SYSTEM_NOTIFY_DRR_MSCG_WAR_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_DispCommon.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "dispcmnCtrlCmdSystemNotifyDrrMscgWar"
+#endif
+    },
+    {               /*  [35] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3122,7 +3665,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificGetI2cPortid"
 #endif
     },
-    {               /*  [34] */
+    {               /*  [36] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x46u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3137,7 +3680,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificGetType"
 #endif
     },
-    {               /*  [35] */
+    {               /*  [37] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3152,7 +3695,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificFakeDevice"
 #endif
     },
-    {               /*  [36] */
+    {               /*  [38] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3167,7 +3710,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificGetEdidV2"
 #endif
     },
-    {               /*  [37] */
+    {               /*  [39] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3182,7 +3725,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetEdidV2"
 #endif
     },
-    {               /*  [38] */
+    {               /*  [40] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3197,7 +3740,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificGetConnectorData"
 #endif
     },
-    {               /*  [39] */
+    {               /*  [41] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3212,7 +3755,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetHdmiEnable"
 #endif
     },
-    {               /*  [40] */
+    {               /*  [42] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3227,7 +3770,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificCtrlHdmi"
 #endif
     },
-    {               /*  [41] */
+    {               /*  [43] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3242,7 +3785,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetHdmiAudioMutestream"
 #endif
     },
-    {               /*  [42] */
+    {               /*  [44] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3257,7 +3800,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetAcpiIdMapping"
 #endif
     },
-    {               /*  [43] */
+    {               /*  [45] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3272,7 +3815,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificGetAcpiDodDisplayPortAttachment"
 #endif
     },
-    {               /*  [44] */
+    {               /*  [46] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3287,7 +3830,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificGetAllHeadMask"
 #endif
     },
-    {               /*  [45] */
+    {               /*  [47] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3302,7 +3845,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetOdPacket"
 #endif
     },
-    {               /*  [46] */
+    {               /*  [48] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3317,7 +3860,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetOdPacketCtrl"
 #endif
     },
-    {               /*  [47] */
+    {               /*  [49] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3332,7 +3875,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificGetPclkLimit"
 #endif
     },
-    {               /*  [48] */
+    {               /*  [50] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x46u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3347,7 +3890,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificOrGetInfo"
 #endif
     },
-    {               /*  [49] */
+    {               /*  [51] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3362,7 +3905,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificGetBacklightBrightness"
 #endif
     },
-    {               /*  [50] */
+    {               /*  [52] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3377,7 +3920,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetBacklightBrightness"
 #endif
     },
-    {               /*  [51] */
+    {               /*  [53] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3392,7 +3935,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetHdmiSinkCaps"
 #endif
     },
-    {               /*  [52] */
+    {               /*  [54] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3407,7 +3950,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetMonitorPower"
 #endif
     },
-    {               /*  [53] */
+    {               /*  [55] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3422,7 +3965,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetHdmiFrlLinkConfig"
 #endif
     },
-    {               /*  [54] */
+    {               /*  [56] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3437,7 +3980,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificApplyEdidOverrideV2"
 #endif
     },
-    {               /*  [55] */
+    {               /*  [57] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3452,7 +3995,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificGetHdmiGpuCaps"
 #endif
     },
-    {               /*  [56] */
+    {               /*  [58] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3467,7 +4010,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificDisplayChange"
 #endif
     },
-    {               /*  [57] */
+    {               /*  [59] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3482,7 +4025,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificGetHdmiScdcData"
 #endif
     },
-    {               /*  [58] */
+    {               /*  [60] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3497,7 +4040,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificIsDirectmodeDisplay"
 #endif
     },
-    {               /*  [59] */
+    {               /*  [61] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3512,7 +4055,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetHdmiFrlCapacityComputation"
 #endif
     },
-    {               /*  [60] */
+    {               /*  [62] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3527,7 +4070,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetSharedGenericPacket"
 #endif
     },
-    {               /*  [61] */
+    {               /*  [63] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3542,7 +4085,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificAcquireSharedGenericPacket"
 #endif
     },
-    {               /*  [62] */
+    {               /*  [64] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3557,7 +4100,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificReleaseSharedGenericPacket"
 #endif
     },
-    {               /*  [63] */
+    {               /*  [65] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3572,7 +4115,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificDispI2cReadWrite"
 #endif
     },
-    {               /*  [64] */
+    {               /*  [66] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3587,7 +4130,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificGetValidHeadWindowAssignment"
 #endif
     },
-    {               /*  [65] */
+    {               /*  [67] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3602,7 +4145,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificDefaultAdaptivesyncDisplay"
 #endif
     },
-    {               /*  [66] */
+    {               /*  [68] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc0u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3617,7 +4160,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdInternalGetHotplugUnplugState"
 #endif
     },
-    {               /*  [67] */
+    {               /*  [69] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc0u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3632,7 +4175,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdInternalVRRSetRgLineActive"
 #endif
     },
-    {               /*  [68] */
+    {               /*  [70] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc0u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3647,7 +4190,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdInternalDfpGetDispMuxStatus"
 #endif
     },
-    {               /*  [69] */
+    {               /*  [71] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc0u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3662,7 +4205,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdInternalVblankSemControlEnable"
 #endif
     },
-    {               /*  [70] */
+    {               /*  [72] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc0u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3677,7 +4220,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdInternalDfpSwitchDispMux"
 #endif
     },
-    {               /*  [71] */
+    {               /*  [73] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3692,7 +4235,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdFrlConfigMacroPad"
 #endif
     },
-    {               /*  [72] */
+    {               /*  [74] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4au)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3707,7 +4250,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpGetInfo"
 #endif
     },
-    {               /*  [73] */
+    {               /*  [75] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3722,7 +4265,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpGetDisplayportDongleInfo"
 #endif
     },
-    {               /*  [74] */
+    {               /*  [76] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3737,7 +4280,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpSetEldAudioCaps"
 #endif
     },
-    {               /*  [75] */
+    {               /*  [77] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3752,7 +4295,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpGetSpreadSpectrum"
 #endif
     },
-    {               /*  [76] */
+    {               /*  [78] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3767,7 +4310,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpUpdateDynamicDfpCache"
 #endif
     },
-    {               /*  [77] */
+    {               /*  [79] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3782,7 +4325,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpSetAudioEnable"
 #endif
     },
-    {               /*  [78] */
+    {               /*  [80] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3797,7 +4340,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpAssignSor"
 #endif
     },
-    {               /*  [79] */
+    {               /*  [81] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3812,7 +4355,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpGetPadlinkMask"
 #endif
     },
-    {               /*  [80] */
+    {               /*  [82] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3827,7 +4370,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpGetLcdGpioPinNum"
 #endif
     },
-    {               /*  [81] */
+    {               /*  [83] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3842,7 +4385,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpConfigTwoHeadOneOr"
 #endif
     },
-    {               /*  [82] */
+    {               /*  [84] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3857,7 +4400,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpDscCrcControl"
 #endif
     },
-    {               /*  [83] */
+    {               /*  [85] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3872,7 +4415,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpInitMuxData"
 #endif
     },
-    {               /*  [84] */
+    {               /*  [86] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3887,7 +4430,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpSwitchDispMux"
 #endif
     },
-    {               /*  [85] */
+    {               /*  [87] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3902,7 +4445,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpRunPreDispMuxOperations"
 #endif
     },
-    {               /*  [86] */
+    {               /*  [88] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3917,7 +4460,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpRunPostDispMuxOperations"
 #endif
     },
-    {               /*  [87] */
+    {               /*  [89] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3932,7 +4475,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpGetDispMuxStatus"
 #endif
     },
-    {               /*  [88] */
+    {               /*  [90] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3947,7 +4490,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpGetDsiModeTiming"
 #endif
     },
-    {               /*  [89] */
+    {               /*  [91] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x42u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3962,7 +4505,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpGetFixedModeTiming"
 #endif
     },
-    {               /*  [90] */
+    {               /*  [92] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4au)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3977,7 +4520,22 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpEdpDriverUnload"
 #endif
     },
-    {               /*  [91] */
+    {               /*  [93] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) dispcmnCtrlCmdDfpSetForceBlackPixels_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+        /*flags=*/      0x48u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0x731179u,
+        /*paramSize=*/  sizeof(NV0073_CTRL_DFP_SET_FORCE_BLACK_PIXELS_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_DispCommon.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "dispcmnCtrlCmdDfpSetForceBlackPixels"
+#endif
+    },
+    {               /*  [94] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x844u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3992,7 +4550,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpAuxchCtrl"
 #endif
     },
-    {               /*  [92] */
+    {               /*  [95] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4007,7 +4565,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpAuxchSetSema"
 #endif
     },
-    {               /*  [93] */
+    {               /*  [96] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x844u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4022,7 +4580,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpCtrl"
 #endif
     },
-    {               /*  [94] */
+    {               /*  [97] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4037,7 +4595,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpGetLaneData"
 #endif
     },
-    {               /*  [95] */
+    {               /*  [98] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4052,7 +4610,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSetLaneData"
 #endif
     },
-    {               /*  [96] */
+    {               /*  [99] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4067,7 +4625,22 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSetTestpattern"
 #endif
     },
-    {               /*  [97] */
+    {               /*  [100] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) dispcmnCtrlCmdDpGetTestpattern_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+        /*flags=*/      0x44u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0x731348u,
+        /*paramSize=*/  sizeof(NV0073_CTRL_DP_GET_TESTPATTERN_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_DispCommon.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "dispcmnCtrlCmdDpGetTestpattern"
+#endif
+    },
+    {               /*  [101] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4082,7 +4655,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSetPreemphasisDrivecurrentPostcursor2Data"
 #endif
     },
-    {               /*  [98] */
+    {               /*  [102] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4097,7 +4670,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data"
 #endif
     },
-    {               /*  [99] */
+    {               /*  [103] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4112,7 +4685,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpMainLinkCtrl"
 #endif
     },
-    {               /*  [100] */
+    {               /*  [104] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4127,7 +4700,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSetAudioMuteStream"
 #endif
     },
-    {               /*  [101] */
+    {               /*  [105] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4142,7 +4715,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpASSRCtrl"
 #endif
     },
-    {               /*  [102] */
+    {               /*  [106] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4157,7 +4730,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpTopologyAllocateDisplayId"
 #endif
     },
-    {               /*  [103] */
+    {               /*  [107] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4172,7 +4745,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpTopologyFreeDisplayId"
 #endif
     },
-    {               /*  [104] */
+    {               /*  [108] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4187,7 +4760,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpGetLinkConfig"
 #endif
     },
-    {               /*  [105] */
+    {               /*  [109] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4202,7 +4775,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpGetEDPData"
 #endif
     },
-    {               /*  [106] */
+    {               /*  [110] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4217,7 +4790,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpConfigStream"
 #endif
     },
-    {               /*  [107] */
+    {               /*  [111] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4232,7 +4805,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSetRateGov"
 #endif
     },
-    {               /*  [108] */
+    {               /*  [112] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4247,7 +4820,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSetManualDisplayPort"
 #endif
     },
-    {               /*  [109] */
+    {               /*  [113] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4262,7 +4835,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSetEcf"
 #endif
     },
-    {               /*  [110] */
+    {               /*  [114] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4277,7 +4850,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSendACT"
 #endif
     },
-    {               /*  [111] */
+    {               /*  [115] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x46u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4292,7 +4865,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpGetCaps"
 #endif
     },
-    {               /*  [112] */
+    {               /*  [116] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4307,7 +4880,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpGenerateFakeInterrupt"
 #endif
     },
-    {               /*  [113] */
+    {               /*  [117] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4322,7 +4895,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpConfigRadScratchReg"
 #endif
     },
-    {               /*  [114] */
+    {               /*  [118] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4337,7 +4910,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpConfigSingleHeadMultiStream"
 #endif
     },
-    {               /*  [115] */
+    {               /*  [119] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4352,7 +4925,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSetTriggerSelect"
 #endif
     },
-    {               /*  [116] */
+    {               /*  [120] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4367,7 +4940,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSetTriggerAll"
 #endif
     },
-    {               /*  [117] */
+    {               /*  [121] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4382,7 +4955,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpGetAuxLogData"
 #endif
     },
-    {               /*  [118] */
+    {               /*  [122] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4397,7 +4970,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpConfigIndexedLinkRates"
 #endif
     },
-    {               /*  [119] */
+    {               /*  [123] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4412,7 +4985,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSetStereoMSAProperties"
 #endif
     },
-    {               /*  [120] */
+    {               /*  [124] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4427,7 +5000,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpConfigureFec"
 #endif
     },
-    {               /*  [121] */
+    {               /*  [125] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4442,7 +5015,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpConfigMacroPad"
 #endif
     },
-    {               /*  [122] */
+    {               /*  [126] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4457,7 +5030,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpAuxchI2cTransferCtrl"
 #endif
     },
-    {               /*  [123] */
+    {               /*  [127] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x844u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4472,7 +5045,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpEnableVrr"
 #endif
     },
-    {               /*  [124] */
+    {               /*  [128] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4487,7 +5060,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpGetGenericInfoframe"
 #endif
     },
-    {               /*  [125] */
+    {               /*  [129] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4502,7 +5075,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpGetMsaAttributes"
 #endif
     },
-    {               /*  [126] */
+    {               /*  [130] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4517,7 +5090,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpInternalLcdOverdrive"
 #endif
     },
-    {               /*  [127] */
+    {               /*  [131] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4532,7 +5105,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSetMSAPropertiesv2"
 #endif
     },
-    {               /*  [128] */
+    {               /*  [132] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4547,7 +5120,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpVariableBacklightCtrl"
 #endif
     },
-    {               /*  [129] */
+    {               /*  [133] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4565,142 +5138,221 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
 
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^2
+NvBool __nvoc_down_thunk_RmResource_resShareCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super^2
+NV_STATUS __nvoc_down_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+void __nvoc_down_thunk_RmResource_resControlSerialization_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_down_thunk_RmResource_resControl_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+void __nvoc_down_thunk_RmResource_resControl_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+PEVENTNOTIFICATION * __nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr(struct INotifier *pNotifier);    // super^2
+struct NotifShare * __nvoc_down_thunk_Notifier_inotifyGetNotificationShare(struct INotifier *pNotifier);    // super^2
+void __nvoc_down_thunk_Notifier_inotifySetNotificationShare(struct INotifier *pNotifier, struct NotifShare *pNotifShare);    // super^2
+NV_STATUS __nvoc_down_thunk_Notifier_inotifyUnregisterEvent(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // super^2
+NV_STATUS __nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // super^2
+NV_STATUS __nvoc_down_thunk_DisplayApi_resControl(struct RsResource *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_down_thunk_DisplayApi_rmresControl_Prologue(struct RmResource *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams);    // super
+void __nvoc_down_thunk_DisplayApi_rmresControl_Epilogue(struct RmResource *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams);    // super
+
+// Up-thunk(s) to bridge methods to ancestors (if any)
+NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super^2
+void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresControl(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresControlFilter(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresMap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // super^2
+NvBool __nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported(struct RmResource *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresMapTo(struct RmResource *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmapFrom(struct RmResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super^2
+NvU32 __nvoc_up_thunk_RsResource_rmresGetRefCount(struct RmResource *pResource);    // super^2
+void __nvoc_up_thunk_RsResource_rmresAddAdditionalDependants(struct RsClient *pClient, struct RmResource *pResource, RsResourceRef *pReference);    // super^2
+NvBool __nvoc_up_thunk_RmResource_dispapiAccessCallback(struct DisplayApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super
+NvBool __nvoc_up_thunk_RmResource_dispapiShareCallback(struct DisplayApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiGetMemInterMapParams(struct DisplayApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiCheckMemInterUnmap(struct DisplayApi *pRmResource, NvBool bSubdeviceHandleProvided);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiGetMemoryMappingDescriptor(struct DisplayApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_dispapiControlSerialization_Prologue(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+void __nvoc_up_thunk_RmResource_dispapiControlSerialization_Epilogue(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NvBool __nvoc_up_thunk_RsResource_dispapiCanCopy(struct DisplayApi *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiIsDuplicate(struct DisplayApi *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super
+void __nvoc_up_thunk_RsResource_dispapiPreDestruct(struct DisplayApi *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiControlFilter(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiMap(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiUnmap(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // super
+NvBool __nvoc_up_thunk_RsResource_dispapiIsPartialUnmapSupported(struct DisplayApi *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiMapTo(struct DisplayApi *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_dispapiUnmapFrom(struct DisplayApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super
+NvU32 __nvoc_up_thunk_RsResource_dispapiGetRefCount(struct DisplayApi *pResource);    // super
+void __nvoc_up_thunk_RsResource_dispapiAddAdditionalDependants(struct RsClient *pClient, struct DisplayApi *pResource, RsResourceRef *pReference);    // super
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_dispapiGetNotificationListPtr(struct DisplayApi *pNotifier);    // super
+struct NotifShare * __nvoc_up_thunk_Notifier_dispapiGetNotificationShare(struct DisplayApi *pNotifier);    // super
+void __nvoc_up_thunk_Notifier_dispapiSetNotificationShare(struct DisplayApi *pNotifier, struct NotifShare *pNotifShare);    // super
+NV_STATUS __nvoc_up_thunk_Notifier_dispapiUnregisterEvent(struct DisplayApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // super
+NV_STATUS __nvoc_up_thunk_Notifier_dispapiGetOrAllocNotifShare(struct DisplayApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // super
+NV_STATUS __nvoc_up_thunk_DisplayApi_dispcmnControl(struct DispCommon *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_DisplayApi_dispcmnControl_Prologue(struct DispCommon *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams);    // this
+void __nvoc_up_thunk_DisplayApi_dispcmnControl_Epilogue(struct DispCommon *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams);    // this
+NvBool __nvoc_up_thunk_RmResource_dispcmnAccessCallback(struct DispCommon *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // this
+NvBool __nvoc_up_thunk_RmResource_dispcmnShareCallback(struct DispCommon *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_dispcmnGetMemInterMapParams(struct DispCommon *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_dispcmnCheckMemInterUnmap(struct DispCommon *pRmResource, NvBool bSubdeviceHandleProvided);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_dispcmnGetMemoryMappingDescriptor(struct DispCommon *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_dispcmnControlSerialization_Prologue(struct DispCommon *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+void __nvoc_up_thunk_RmResource_dispcmnControlSerialization_Epilogue(struct DispCommon *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NvBool __nvoc_up_thunk_RsResource_dispcmnCanCopy(struct DispCommon *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispcmnIsDuplicate(struct DispCommon *pResource, NvHandle hMemory, NvBool *pDuplicate);    // this
+void __nvoc_up_thunk_RsResource_dispcmnPreDestruct(struct DispCommon *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispcmnControlFilter(struct DispCommon *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispcmnMap(struct DispCommon *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispcmnUnmap(struct DispCommon *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // this
+NvBool __nvoc_up_thunk_RsResource_dispcmnIsPartialUnmapSupported(struct DispCommon *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispcmnMapTo(struct DispCommon *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_dispcmnUnmapFrom(struct DispCommon *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
+NvU32 __nvoc_up_thunk_RsResource_dispcmnGetRefCount(struct DispCommon *pResource);    // this
+void __nvoc_up_thunk_RsResource_dispcmnAddAdditionalDependants(struct RsClient *pClient, struct DispCommon *pResource, RsResourceRef *pReference);    // this
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_dispcmnGetNotificationListPtr(struct DispCommon *pNotifier);    // this
+struct NotifShare * __nvoc_up_thunk_Notifier_dispcmnGetNotificationShare(struct DispCommon *pNotifier);    // this
+void __nvoc_up_thunk_Notifier_dispcmnSetNotificationShare(struct DispCommon *pNotifier, struct NotifShare *pNotifShare);    // this
+NV_STATUS __nvoc_up_thunk_Notifier_dispcmnUnregisterEvent(struct DispCommon *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // this
+NV_STATUS __nvoc_up_thunk_Notifier_dispcmnGetOrAllocNotifShare(struct DispCommon *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // this
+
 // 26 up-thunk(s) defined to bridge methods in DispCommon to superclasses
 
 // dispcmnControl: virtual inherited (dispapi) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_DisplayApi_dispcmnControl(struct DispCommon *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_DisplayApi_dispcmnControl(struct DispCommon *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return dispapiControl((struct DisplayApi *)(((unsigned char *) pDisplayApi) + __nvoc_rtti_DispCommon_DisplayApi.offset), pCallContext, pParams);
 }
 
 // dispcmnControl_Prologue: virtual inherited (dispapi) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_DisplayApi_dispcmnControl_Prologue(struct DispCommon *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
+NV_STATUS __nvoc_up_thunk_DisplayApi_dispcmnControl_Prologue(struct DispCommon *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
     return dispapiControl_Prologue((struct DisplayApi *)(((unsigned char *) pDisplayApi) + __nvoc_rtti_DispCommon_DisplayApi.offset), pCallContext, pRsParams);
 }
 
 // dispcmnControl_Epilogue: virtual inherited (dispapi) base (dispapi)
-static void __nvoc_up_thunk_DisplayApi_dispcmnControl_Epilogue(struct DispCommon *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
+void __nvoc_up_thunk_DisplayApi_dispcmnControl_Epilogue(struct DispCommon *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams) {
     dispapiControl_Epilogue((struct DisplayApi *)(((unsigned char *) pDisplayApi) + __nvoc_rtti_DispCommon_DisplayApi.offset), pCallContext, pRsParams);
 }
 
 // dispcmnAccessCallback: virtual inherited (rmres) base (dispapi)
-static NvBool __nvoc_up_thunk_RmResource_dispcmnAccessCallback(struct DispCommon *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+NvBool __nvoc_up_thunk_RmResource_dispcmnAccessCallback(struct DispCommon *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispCommon_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
 // dispcmnShareCallback: virtual inherited (rmres) base (dispapi)
-static NvBool __nvoc_up_thunk_RmResource_dispcmnShareCallback(struct DispCommon *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+NvBool __nvoc_up_thunk_RmResource_dispcmnShareCallback(struct DispCommon *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispCommon_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 // dispcmnGetMemInterMapParams: virtual inherited (rmres) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RmResource_dispcmnGetMemInterMapParams(struct DispCommon *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_dispcmnGetMemInterMapParams(struct DispCommon *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
     return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DispCommon_RmResource.offset), pParams);
 }
 
 // dispcmnCheckMemInterUnmap: virtual inherited (rmres) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RmResource_dispcmnCheckMemInterUnmap(struct DispCommon *pRmResource, NvBool bSubdeviceHandleProvided) {
+NV_STATUS __nvoc_up_thunk_RmResource_dispcmnCheckMemInterUnmap(struct DispCommon *pRmResource, NvBool bSubdeviceHandleProvided) {
     return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DispCommon_RmResource.offset), bSubdeviceHandleProvided);
 }
 
 // dispcmnGetMemoryMappingDescriptor: virtual inherited (rmres) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RmResource_dispcmnGetMemoryMappingDescriptor(struct DispCommon *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+NV_STATUS __nvoc_up_thunk_RmResource_dispcmnGetMemoryMappingDescriptor(struct DispCommon *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
     return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DispCommon_RmResource.offset), ppMemDesc);
 }
 
 // dispcmnControlSerialization_Prologue: virtual inherited (rmres) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RmResource_dispcmnControlSerialization_Prologue(struct DispCommon *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_dispcmnControlSerialization_Prologue(struct DispCommon *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispCommon_RmResource.offset), pCallContext, pParams);
 }
 
 // dispcmnControlSerialization_Epilogue: virtual inherited (rmres) base (dispapi)
-static void __nvoc_up_thunk_RmResource_dispcmnControlSerialization_Epilogue(struct DispCommon *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+void __nvoc_up_thunk_RmResource_dispcmnControlSerialization_Epilogue(struct DispCommon *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispCommon_RmResource.offset), pCallContext, pParams);
 }
 
 // dispcmnCanCopy: virtual inherited (res) base (dispapi)
-static NvBool __nvoc_up_thunk_RsResource_dispcmnCanCopy(struct DispCommon *pResource) {
+NvBool __nvoc_up_thunk_RsResource_dispcmnCanCopy(struct DispCommon *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispCommon_RsResource.offset));
 }
 
 // dispcmnIsDuplicate: virtual inherited (res) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispcmnIsDuplicate(struct DispCommon *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispcmnIsDuplicate(struct DispCommon *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispCommon_RsResource.offset), hMemory, pDuplicate);
 }
 
 // dispcmnPreDestruct: virtual inherited (res) base (dispapi)
-static void __nvoc_up_thunk_RsResource_dispcmnPreDestruct(struct DispCommon *pResource) {
+void __nvoc_up_thunk_RsResource_dispcmnPreDestruct(struct DispCommon *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispCommon_RsResource.offset));
 }
 
 // dispcmnControlFilter: virtual inherited (res) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispcmnControlFilter(struct DispCommon *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispcmnControlFilter(struct DispCommon *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispCommon_RsResource.offset), pCallContext, pParams);
 }
 
 // dispcmnMap: virtual inherited (res) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispcmnMap(struct DispCommon *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispcmnMap(struct DispCommon *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
     return resMap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispCommon_RsResource.offset), pCallContext, pParams, pCpuMapping);
 }
 
 // dispcmnUnmap: virtual inherited (res) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispcmnUnmap(struct DispCommon *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispcmnUnmap(struct DispCommon *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
     return resUnmap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispCommon_RsResource.offset), pCallContext, pCpuMapping);
 }
 
 // dispcmnIsPartialUnmapSupported: inline virtual inherited (res) base (dispapi) body
-static NvBool __nvoc_up_thunk_RsResource_dispcmnIsPartialUnmapSupported(struct DispCommon *pResource) {
+NvBool __nvoc_up_thunk_RsResource_dispcmnIsPartialUnmapSupported(struct DispCommon *pResource) {
     return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispCommon_RsResource.offset));
 }
 
 // dispcmnMapTo: virtual inherited (res) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispcmnMapTo(struct DispCommon *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispcmnMapTo(struct DispCommon *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
     return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispCommon_RsResource.offset), pParams);
 }
 
 // dispcmnUnmapFrom: virtual inherited (res) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_RsResource_dispcmnUnmapFrom(struct DispCommon *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_dispcmnUnmapFrom(struct DispCommon *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
     return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispCommon_RsResource.offset), pParams);
 }
 
 // dispcmnGetRefCount: virtual inherited (res) base (dispapi)
-static NvU32 __nvoc_up_thunk_RsResource_dispcmnGetRefCount(struct DispCommon *pResource) {
+NvU32 __nvoc_up_thunk_RsResource_dispcmnGetRefCount(struct DispCommon *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispCommon_RsResource.offset));
 }
 
 // dispcmnAddAdditionalDependants: virtual inherited (res) base (dispapi)
-static void __nvoc_up_thunk_RsResource_dispcmnAddAdditionalDependants(struct RsClient *pClient, struct DispCommon *pResource, RsResourceRef *pReference) {
+void __nvoc_up_thunk_RsResource_dispcmnAddAdditionalDependants(struct RsClient *pClient, struct DispCommon *pResource, RsResourceRef *pReference) {
     resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DispCommon_RsResource.offset), pReference);
 }
 
 // dispcmnGetNotificationListPtr: virtual inherited (notify) base (dispapi)
-static PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_dispcmnGetNotificationListPtr(struct DispCommon *pNotifier) {
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_dispcmnGetNotificationListPtr(struct DispCommon *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispCommon_Notifier.offset));
 }
 
 // dispcmnGetNotificationShare: virtual inherited (notify) base (dispapi)
-static struct NotifShare * __nvoc_up_thunk_Notifier_dispcmnGetNotificationShare(struct DispCommon *pNotifier) {
+struct NotifShare * __nvoc_up_thunk_Notifier_dispcmnGetNotificationShare(struct DispCommon *pNotifier) {
     return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispCommon_Notifier.offset));
 }
 
 // dispcmnSetNotificationShare: virtual inherited (notify) base (dispapi)
-static void __nvoc_up_thunk_Notifier_dispcmnSetNotificationShare(struct DispCommon *pNotifier, struct NotifShare *pNotifShare) {
+void __nvoc_up_thunk_Notifier_dispcmnSetNotificationShare(struct DispCommon *pNotifier, struct NotifShare *pNotifShare) {
     notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispCommon_Notifier.offset), pNotifShare);
 }
 
 // dispcmnUnregisterEvent: virtual inherited (notify) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_Notifier_dispcmnUnregisterEvent(struct DispCommon *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
+NV_STATUS __nvoc_up_thunk_Notifier_dispcmnUnregisterEvent(struct DispCommon *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispCommon_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 // dispcmnGetOrAllocNotifShare: virtual inherited (notify) base (dispapi)
-static NV_STATUS __nvoc_up_thunk_Notifier_dispcmnGetOrAllocNotifShare(struct DispCommon *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
+NV_STATUS __nvoc_up_thunk_Notifier_dispcmnGetOrAllocNotifShare(struct DispCommon *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DispCommon_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_DispCommon = 
 {
-    /*numEntries=*/     130,
+    /*numEntries=*/     134,
     /*pExportEntries=*/ __nvoc_exported_method_def_DispCommon
 };
 
@@ -4755,6 +5407,11 @@ static void __nvoc_init_funcTable_DispCommon_1(DispCommon *pThis) {
     // dispcmnCtrlCmdSystemGetHotplugState -- exported (id=0x73010a)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
     pThis->__dispcmnCtrlCmdSystemGetHotplugState__ = &dispcmnCtrlCmdSystemGetHotplugState_IMPL;
+#endif
+
+    // dispcmnCtrlCmdSystemNotifyDrrMscgWar -- exported (id=0x730158)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+    pThis->__dispcmnCtrlCmdSystemNotifyDrrMscgWar__ = &dispcmnCtrlCmdSystemNotifyDrrMscgWar_IMPL;
 #endif
 
     // dispcmnCtrlCmdSystemGetInternalDisplays -- exported (id=0x730116)
@@ -4992,6 +5649,11 @@ static void __nvoc_init_funcTable_DispCommon_1(DispCommon *pThis) {
     pThis->__dispcmnCtrlCmdSystemAllocateDisplayBandwidth__ = &dispcmnCtrlCmdSystemAllocateDisplayBandwidth_IMPL;
 #endif
 
+    // dispcmnCtrlCmdSystemInternalAllocateDisplayBandwidth -- exported (id=0x730157)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc0u)
+    pThis->__dispcmnCtrlCmdSystemInternalAllocateDisplayBandwidth__ = &dispcmnCtrlCmdSystemInternalAllocateDisplayBandwidth_IMPL;
+#endif
+
     // dispcmnCtrlCmdSystemGetHotplugConfig -- exported (id=0x730109)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
     pThis->__dispcmnCtrlCmdSystemGetHotplugConfig__ = &dispcmnCtrlCmdSystemGetHotplugConfig_IMPL;
@@ -5162,6 +5824,11 @@ static void __nvoc_init_funcTable_DispCommon_1(DispCommon *pThis) {
     pThis->__dispcmnCtrlCmdDfpEdpDriverUnload__ = &dispcmnCtrlCmdDfpEdpDriverUnload_IMPL;
 #endif
 
+    // dispcmnCtrlCmdDfpSetForceBlackPixels -- exported (id=0x731179)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+    pThis->__dispcmnCtrlCmdDfpSetForceBlackPixels__ = &dispcmnCtrlCmdDfpSetForceBlackPixels_IMPL;
+#endif
+
     // dispcmnCtrlCmdDfpGetInfo -- exported (id=0x731140)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4au)
     pThis->__dispcmnCtrlCmdDfpGetInfo__ = &dispcmnCtrlCmdDfpGetInfo_IMPL;
@@ -5245,6 +5912,11 @@ static void __nvoc_init_funcTable_DispCommon_1(DispCommon *pThis) {
     // dispcmnCtrlCmdDpSetLaneData -- exported (id=0x731346)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
     pThis->__dispcmnCtrlCmdDpSetLaneData__ = &dispcmnCtrlCmdDpSetLaneData_IMPL;
+#endif
+
+    // dispcmnCtrlCmdDpGetTestpattern -- exported (id=0x731348)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+    pThis->__dispcmnCtrlCmdDpGetTestpattern__ = &dispcmnCtrlCmdDpGetTestpattern_IMPL;
 #endif
 
     // dispcmnCtrlCmdDpSetTestpattern -- exported (id=0x731347)
@@ -5386,91 +6058,394 @@ static void __nvoc_init_funcTable_DispCommon_1(DispCommon *pThis) {
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
     pThis->__dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data__ = &dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data_IMPL;
 #endif
-
-    // dispcmnControl -- virtual inherited (dispapi) base (dispapi)
-    pThis->__dispcmnControl__ = &__nvoc_up_thunk_DisplayApi_dispcmnControl;
-
-    // dispcmnControl_Prologue -- virtual inherited (dispapi) base (dispapi)
-    pThis->__dispcmnControl_Prologue__ = &__nvoc_up_thunk_DisplayApi_dispcmnControl_Prologue;
-
-    // dispcmnControl_Epilogue -- virtual inherited (dispapi) base (dispapi)
-    pThis->__dispcmnControl_Epilogue__ = &__nvoc_up_thunk_DisplayApi_dispcmnControl_Epilogue;
-
-    // dispcmnAccessCallback -- virtual inherited (rmres) base (dispapi)
-    pThis->__dispcmnAccessCallback__ = &__nvoc_up_thunk_RmResource_dispcmnAccessCallback;
-
-    // dispcmnShareCallback -- virtual inherited (rmres) base (dispapi)
-    pThis->__dispcmnShareCallback__ = &__nvoc_up_thunk_RmResource_dispcmnShareCallback;
-
-    // dispcmnGetMemInterMapParams -- virtual inherited (rmres) base (dispapi)
-    pThis->__dispcmnGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispcmnGetMemInterMapParams;
-
-    // dispcmnCheckMemInterUnmap -- virtual inherited (rmres) base (dispapi)
-    pThis->__dispcmnCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispcmnCheckMemInterUnmap;
-
-    // dispcmnGetMemoryMappingDescriptor -- virtual inherited (rmres) base (dispapi)
-    pThis->__dispcmnGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispcmnGetMemoryMappingDescriptor;
-
-    // dispcmnControlSerialization_Prologue -- virtual inherited (rmres) base (dispapi)
-    pThis->__dispcmnControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispcmnControlSerialization_Prologue;
-
-    // dispcmnControlSerialization_Epilogue -- virtual inherited (rmres) base (dispapi)
-    pThis->__dispcmnControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispcmnControlSerialization_Epilogue;
-
-    // dispcmnCanCopy -- virtual inherited (res) base (dispapi)
-    pThis->__dispcmnCanCopy__ = &__nvoc_up_thunk_RsResource_dispcmnCanCopy;
-
-    // dispcmnIsDuplicate -- virtual inherited (res) base (dispapi)
-    pThis->__dispcmnIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispcmnIsDuplicate;
-
-    // dispcmnPreDestruct -- virtual inherited (res) base (dispapi)
-    pThis->__dispcmnPreDestruct__ = &__nvoc_up_thunk_RsResource_dispcmnPreDestruct;
-
-    // dispcmnControlFilter -- virtual inherited (res) base (dispapi)
-    pThis->__dispcmnControlFilter__ = &__nvoc_up_thunk_RsResource_dispcmnControlFilter;
-
-    // dispcmnMap -- virtual inherited (res) base (dispapi)
-    pThis->__dispcmnMap__ = &__nvoc_up_thunk_RsResource_dispcmnMap;
-
-    // dispcmnUnmap -- virtual inherited (res) base (dispapi)
-    pThis->__dispcmnUnmap__ = &__nvoc_up_thunk_RsResource_dispcmnUnmap;
-
-    // dispcmnIsPartialUnmapSupported -- inline virtual inherited (res) base (dispapi) body
-    pThis->__dispcmnIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispcmnIsPartialUnmapSupported;
-
-    // dispcmnMapTo -- virtual inherited (res) base (dispapi)
-    pThis->__dispcmnMapTo__ = &__nvoc_up_thunk_RsResource_dispcmnMapTo;
-
-    // dispcmnUnmapFrom -- virtual inherited (res) base (dispapi)
-    pThis->__dispcmnUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispcmnUnmapFrom;
-
-    // dispcmnGetRefCount -- virtual inherited (res) base (dispapi)
-    pThis->__dispcmnGetRefCount__ = &__nvoc_up_thunk_RsResource_dispcmnGetRefCount;
-
-    // dispcmnAddAdditionalDependants -- virtual inherited (res) base (dispapi)
-    pThis->__dispcmnAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispcmnAddAdditionalDependants;
-
-    // dispcmnGetNotificationListPtr -- virtual inherited (notify) base (dispapi)
-    pThis->__dispcmnGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispcmnGetNotificationListPtr;
-
-    // dispcmnGetNotificationShare -- virtual inherited (notify) base (dispapi)
-    pThis->__dispcmnGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispcmnGetNotificationShare;
-
-    // dispcmnSetNotificationShare -- virtual inherited (notify) base (dispapi)
-    pThis->__dispcmnSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispcmnSetNotificationShare;
-
-    // dispcmnUnregisterEvent -- virtual inherited (notify) base (dispapi)
-    pThis->__dispcmnUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispcmnUnregisterEvent;
-
-    // dispcmnGetOrAllocNotifShare -- virtual inherited (notify) base (dispapi)
-    pThis->__dispcmnGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispcmnGetOrAllocNotifShare;
-} // End __nvoc_init_funcTable_DispCommon_1 with approximately 156 basic block(s).
+} // End __nvoc_init_funcTable_DispCommon_1 with approximately 134 basic block(s).
 
 
-// Initialize vtable(s) for 156 virtual method(s).
+// Initialize vtable(s) for 160 virtual method(s).
 void __nvoc_init_funcTable_DispCommon(DispCommon *pThis) {
 
-    // Initialize vtable(s) with 156 per-object function pointer(s).
+    // Per-class vtable definition
+    static const struct NVOC_VTABLE__DispCommon vtable = {
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4au)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc0u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc0u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x844u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc0u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc0u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xau)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4au)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4au)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x848u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc0u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc0u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x46u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x46u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4au)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4au)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x42u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x844u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x844u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x46u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+        .__dispcmnControl__ = &__nvoc_up_thunk_DisplayApi_dispcmnControl,    // virtual inherited (dispapi) base (dispapi)
+        .DisplayApi.__dispapiControl__ = &dispapiControl_IMPL,    // virtual override (res) base (rmres)
+        .DisplayApi.RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resControl__ = &__nvoc_down_thunk_DisplayApi_resControl,    // virtual
+        .__dispcmnControl_Prologue__ = &__nvoc_up_thunk_DisplayApi_dispcmnControl_Prologue,    // virtual inherited (dispapi) base (dispapi)
+        .DisplayApi.__dispapiControl_Prologue__ = &dispapiControl_Prologue_IMPL,    // virtual override (res) base (rmres)
+        .DisplayApi.RmResource.__rmresControl_Prologue__ = &__nvoc_down_thunk_DisplayApi_rmresControl_Prologue,    // virtual override (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+        .__dispcmnControl_Epilogue__ = &__nvoc_up_thunk_DisplayApi_dispcmnControl_Epilogue,    // virtual inherited (dispapi) base (dispapi)
+        .DisplayApi.__dispapiControl_Epilogue__ = &dispapiControl_Epilogue_IMPL,    // virtual override (res) base (rmres)
+        .DisplayApi.RmResource.__rmresControl_Epilogue__ = &__nvoc_down_thunk_DisplayApi_rmresControl_Epilogue,    // virtual override (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+        .__dispcmnAccessCallback__ = &__nvoc_up_thunk_RmResource_dispcmnAccessCallback,    // virtual inherited (rmres) base (dispapi)
+        .DisplayApi.__dispapiAccessCallback__ = &__nvoc_up_thunk_RmResource_dispapiAccessCallback,    // virtual inherited (rmres) base (rmres)
+        .DisplayApi.RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+        .__dispcmnShareCallback__ = &__nvoc_up_thunk_RmResource_dispcmnShareCallback,    // virtual inherited (rmres) base (dispapi)
+        .DisplayApi.__dispapiShareCallback__ = &__nvoc_up_thunk_RmResource_dispapiShareCallback,    // virtual inherited (rmres) base (rmres)
+        .DisplayApi.RmResource.__rmresShareCallback__ = &rmresShareCallback_IMPL,    // virtual override (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+        .__dispcmnGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispcmnGetMemInterMapParams,    // virtual inherited (rmres) base (dispapi)
+        .DisplayApi.__dispapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_dispapiGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
+        .DisplayApi.RmResource.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
+        .__dispcmnCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispcmnCheckMemInterUnmap,    // virtual inherited (rmres) base (dispapi)
+        .DisplayApi.__dispapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_dispapiCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
+        .DisplayApi.RmResource.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
+        .__dispcmnGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispcmnGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (dispapi)
+        .DisplayApi.__dispapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_dispapiGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
+        .DisplayApi.RmResource.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
+        .__dispcmnControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispcmnControlSerialization_Prologue,    // virtual inherited (rmres) base (dispapi)
+        .DisplayApi.__dispapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_dispapiControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+        .DisplayApi.RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+        .__dispcmnControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispcmnControlSerialization_Epilogue,    // virtual inherited (rmres) base (dispapi)
+        .DisplayApi.__dispapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_dispapiControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+        .DisplayApi.RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+        .__dispcmnCanCopy__ = &__nvoc_up_thunk_RsResource_dispcmnCanCopy,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiCanCopy__ = &__nvoc_up_thunk_RsResource_dispapiCanCopy,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+        .__dispcmnIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispcmnIsDuplicate,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_dispapiIsDuplicate,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+        .__dispcmnPreDestruct__ = &__nvoc_up_thunk_RsResource_dispcmnPreDestruct,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiPreDestruct__ = &__nvoc_up_thunk_RsResource_dispapiPreDestruct,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+        .__dispcmnControlFilter__ = &__nvoc_up_thunk_RsResource_dispcmnControlFilter,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiControlFilter__ = &__nvoc_up_thunk_RsResource_dispapiControlFilter,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+        .__dispcmnMap__ = &__nvoc_up_thunk_RsResource_dispcmnMap,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiMap__ = &__nvoc_up_thunk_RsResource_dispapiMap,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resMap__ = &resMap_IMPL,    // virtual
+        .__dispcmnUnmap__ = &__nvoc_up_thunk_RsResource_dispcmnUnmap,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiUnmap__ = &__nvoc_up_thunk_RsResource_dispapiUnmap,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resUnmap__ = &resUnmap_IMPL,    // virtual
+        .__dispcmnIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispcmnIsPartialUnmapSupported,    // inline virtual inherited (res) base (dispapi) body
+        .DisplayApi.__dispapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_dispapiIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+        .DisplayApi.RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+        .DisplayApi.RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+        .__dispcmnMapTo__ = &__nvoc_up_thunk_RsResource_dispcmnMapTo,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiMapTo__ = &__nvoc_up_thunk_RsResource_dispapiMapTo,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
+        .__dispcmnUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispcmnUnmapFrom,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_dispapiUnmapFrom,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+        .__dispcmnGetRefCount__ = &__nvoc_up_thunk_RsResource_dispcmnGetRefCount,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiGetRefCount__ = &__nvoc_up_thunk_RsResource_dispapiGetRefCount,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+        .__dispcmnAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispcmnAddAdditionalDependants,    // virtual inherited (res) base (dispapi)
+        .DisplayApi.__dispapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_dispapiAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+        .DisplayApi.RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+        .DisplayApi.RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+        .__dispcmnGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispcmnGetNotificationListPtr,    // virtual inherited (notify) base (dispapi)
+        .DisplayApi.__dispapiGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_dispapiGetNotificationListPtr,    // virtual inherited (notify) base (notify)
+        .DisplayApi.Notifier.__notifyGetNotificationListPtr__ = &notifyGetNotificationListPtr_IMPL,    // virtual override (inotify) base (inotify)
+        .DisplayApi.Notifier.INotifier.__inotifyGetNotificationListPtr__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr,    // pure virtual
+        .__dispcmnGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispcmnGetNotificationShare,    // virtual inherited (notify) base (dispapi)
+        .DisplayApi.__dispapiGetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispapiGetNotificationShare,    // virtual inherited (notify) base (notify)
+        .DisplayApi.Notifier.__notifyGetNotificationShare__ = &notifyGetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+        .DisplayApi.Notifier.INotifier.__inotifyGetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationShare,    // pure virtual
+        .__dispcmnSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispcmnSetNotificationShare,    // virtual inherited (notify) base (dispapi)
+        .DisplayApi.__dispapiSetNotificationShare__ = &__nvoc_up_thunk_Notifier_dispapiSetNotificationShare,    // virtual inherited (notify) base (notify)
+        .DisplayApi.Notifier.__notifySetNotificationShare__ = &notifySetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+        .DisplayApi.Notifier.INotifier.__inotifySetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifySetNotificationShare,    // pure virtual
+        .__dispcmnUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispcmnUnregisterEvent,    // virtual inherited (notify) base (dispapi)
+        .DisplayApi.__dispapiUnregisterEvent__ = &__nvoc_up_thunk_Notifier_dispapiUnregisterEvent,    // virtual inherited (notify) base (notify)
+        .DisplayApi.Notifier.__notifyUnregisterEvent__ = &notifyUnregisterEvent_IMPL,    // virtual override (inotify) base (inotify)
+        .DisplayApi.Notifier.INotifier.__inotifyUnregisterEvent__ = &__nvoc_down_thunk_Notifier_inotifyUnregisterEvent,    // pure virtual
+        .__dispcmnGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispcmnGetOrAllocNotifShare,    // virtual inherited (notify) base (dispapi)
+        .DisplayApi.__dispapiGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_dispapiGetOrAllocNotifShare,    // virtual inherited (notify) base (notify)
+        .DisplayApi.Notifier.__notifyGetOrAllocNotifShare__ = &notifyGetOrAllocNotifShare_IMPL,    // virtual override (inotify) base (inotify)
+        .DisplayApi.Notifier.INotifier.__inotifyGetOrAllocNotifShare__ = &__nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare,    // pure virtual
+    };
+
+    // Pointer(s) to per-class vtable(s)
+    pThis->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.DisplayApi.RmResource.RsResource;    // (res) super^3
+    pThis->__nvoc_base_DisplayApi.__nvoc_base_RmResource.__nvoc_vtable = &vtable.DisplayApi.RmResource;    // (rmres) super^2
+    pThis->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_vtable = &vtable.DisplayApi.Notifier.INotifier;    // (inotify) super^3
+    pThis->__nvoc_base_DisplayApi.__nvoc_base_Notifier.__nvoc_vtable = &vtable.DisplayApi.Notifier;    // (notify) super^2
+    pThis->__nvoc_base_DisplayApi.__nvoc_vtable = &vtable.DisplayApi;    // (dispapi) super
+    pThis->__nvoc_vtable = &vtable;    // (dispcmn) this
+
+    // Initialize vtable(s) with 134 per-object function pointer(s).
     __nvoc_init_funcTable_DispCommon_1(pThis);
 }
 

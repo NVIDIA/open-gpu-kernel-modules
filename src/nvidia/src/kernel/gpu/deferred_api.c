@@ -529,10 +529,6 @@ _class5080DeferredApiV2
             break;
         }
 
-        case NV2080_CTRL_CMD_FB_SET_GPU_CACHE_ALLOC_POLICY_V2:
-            paramSize = sizeof(NV2080_CTRL_FB_GPU_CACHE_ALLOC_POLICY_V2_PARAMS);
-            break;
-
         case NV2080_CTRL_CMD_GR_CTXSW_ZCULL_BIND:
             paramSize = sizeof(NV2080_CTRL_GR_CTXSW_ZCULL_BIND_PARAMS);
             break;
@@ -543,10 +539,6 @@ _class5080DeferredApiV2
 
         case NV2080_CTRL_CMD_GR_CTXSW_PREEMPTION_BIND:
             paramSize = sizeof(NV2080_CTRL_GR_CTXSW_PREEMPTION_BIND_PARAMS);
-            break;
-
-        case NV2080_CTRL_CMD_FB_SET_GPU_CACHE_PROMOTION_POLICY:
-            paramSize = sizeof(NV2080_CTRL_FB_GPU_CACHE_PROMOTION_POLICY_PARAMS);
             break;
 
         default:

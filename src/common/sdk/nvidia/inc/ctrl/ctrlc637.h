@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,7 @@
 // Source file:      ctrl/ctrlc637.finn
 //
 
+#include "nvlimits.h"
 #include "ctrl/ctrlxxxx.h"
 /* AMPERE_SMC_PARTITION_REF commands and parameters */
 
@@ -257,9 +258,8 @@ typedef struct NVC637_CTRL_EXEC_PARTITIONS_GET_PARAMS {
  *   NV_ERR_NOT_SUPPORTED
  */
 
-/* 'M' 'I' 'G' '-'(x5), '\0x0', extra = 9 */
 #define NVC637_UUID_LEN                     16
-#define NVC637_UUID_STR_LEN                 (0x29) /* finn: Evaluated from "((NVC637_UUID_LEN << 1) + 9)" */
+#define NVC637_UUID_STR_LEN                 NV_MIG_DEVICE_UUID_STR_LENGTH
 
 typedef struct NVC637_EXEC_PARTITION_UUID {
     // C form: char str[NVC638_UUID_STR_LEN];

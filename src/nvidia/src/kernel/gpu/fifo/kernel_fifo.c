@@ -25,7 +25,6 @@
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/gpu/fifo/kernel_channel_group.h"
 #include "kernel/gpu/fifo/kernel_channel_group_api.h"
-#include "kernel/gpu/fifo/kernel_sched_mgr.h"
 #include "virtualization/kernel_vgpu_mgr.h"
 #include "rmapi/rs_utils.h"
 #include "rmapi/client.h"
@@ -338,7 +337,7 @@ _kfifoChidMgrAllocChidHeaps
         // should not be in the same page
         //
         kfifoGetUserdSizeAlign_HAL(pKernelFifo, &userdBar1Size, NULL);
-        NvBool bIsolationEnabled = (pKernelFifo->bUsePerRunlistChram && pKernelFifo->bDisableChidIsolation) ? NV_FALSE : NV_TRUE;
+        NvBool bIsolationEnabled = kfifoIsPreAllocatedUserDEnabled(pKernelFifo);
         pChidMgr->pGlobalChIDHeap->eheapSetOwnerIsolation(pChidMgr->pGlobalChIDHeap,
                                                           bIsolationEnabled,
                                                           RM_PAGE_SIZE / userdBar1Size);
@@ -1740,22 +1739,25 @@ kfifoGetChannelIterator_IMPL
 )
 {
     portMemSet(pIt, 0, sizeof(*pIt));
-    pIt->physicalChannelID = 0;
-    pIt->pFifoDataBlock    = NULL;
-    pIt->runlistId         = 0;
-    pIt->numRunlists       = 1;
 
-    // Do we want to ierate all runlist channels
     if (runlistId == INVALID_RUNLIST_ID)
     {
-        if (kfifoIsPerRunlistChramEnabled(pKernelFifo))
-        {
-            pIt->numRunlists = kfifoGetMaxNumRunlists_HAL(pGpu, pKernelFifo);
-        }
+        pIt->runlistId = 0;
+
+        // Resulting iterator will iterate over constructed CHID_MGRs only
+        pIt->numRunlists = pKernelFifo->numChidMgrs;
     }
     else
     {
         pIt->runlistId = runlistId;
+
+        //
+        // kfifoGetChidMgr() ignores the runlistId argument if per-runlist channel RAM is disabled.
+        // If there's no valid CHID_MGR for the given runlist ID, we can't iterate through the
+        // channels on the runlist, so we return an empty iterator instead.
+        //
+        CHID_MGR *pChidMgr = kfifoGetChidMgr(pGpu, pKernelFifo, pIt->runlistId);
+        pIt->numRunlists = (pChidMgr == NULL) ? 0 : 1;
     }
 }
 
@@ -3512,7 +3514,6 @@ kfifoGetGuestEngineLookupTable_IMPL
         {NV2080_ENGINE_TYPE_NVJPEG7,    MC_ENGINE_IDX_NVJPEG7},
         {NV2080_ENGINE_TYPE_OFA0,       MC_ENGINE_IDX_OFA0},
         {NV2080_ENGINE_TYPE_OFA1,       MC_ENGINE_IDX_OFA1},
-        // removal tracking bug: 3748354
         {NV2080_ENGINE_TYPE_COPY10,     MC_ENGINE_IDX_CE10},
         {NV2080_ENGINE_TYPE_COPY11,     MC_ENGINE_IDX_CE11},
         {NV2080_ENGINE_TYPE_COPY12,     MC_ENGINE_IDX_CE12},
@@ -3523,7 +3524,6 @@ kfifoGetGuestEngineLookupTable_IMPL
         {NV2080_ENGINE_TYPE_COPY17,     MC_ENGINE_IDX_CE17},
         {NV2080_ENGINE_TYPE_COPY18,     MC_ENGINE_IDX_CE18},
         {NV2080_ENGINE_TYPE_COPY19,     MC_ENGINE_IDX_CE19},
-        // removal tracking bug: 3748354
         {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY0,      MC_ENGINE_IDX_CE0},
         {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY1,      MC_ENGINE_IDX_CE1},
         {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY2,      MC_ENGINE_IDX_CE2},
@@ -3534,7 +3534,6 @@ kfifoGetGuestEngineLookupTable_IMPL
         {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY7,      MC_ENGINE_IDX_CE7},
         {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY8,      MC_ENGINE_IDX_CE8},
         {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY9,      MC_ENGINE_IDX_CE9},
-        // removal tracking bug: 3748354
         {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY10,     MC_ENGINE_IDX_CE10},
         {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY11,     MC_ENGINE_IDX_CE11},
         {NV2080_ENGINE_TYPE_COMP_DECOMP_COPY12,     MC_ENGINE_IDX_CE12},
@@ -3719,5 +3718,92 @@ kfifoGetEngineTypeFromPbdmaFaultId_IMPL
 
     *pRmEngineType = RM_ENGINE_TYPE_NULL;
     return NV_ERR_OBJECT_NOT_FOUND;
+}
+
+NV_STATUS kfifoGenerateWorkSubmitToken_IMPL
+(
+    OBJGPU          *pGpu,
+    KernelFifo      *pKernelFifo,
+    KernelChannel   *pKernelChannel,
+    NvU32           *pGeneratedToken,
+    NvBool           bUsedForHost
+)
+{
+    {
+        NV_ASSERT_OK_OR_RETURN(kfifoGenerateWorkSubmitTokenHal_HAL(pGpu, pKernelFifo,
+                                                                   pKernelChannel, pGeneratedToken, bUsedForHost));
+    }
+    return NV_OK;
+}
+
+/*!
+ *  * @brief Function to print engine with pbdmaId/VEID for the given pbdma falut id
+ *  
+ *  @param[in]  pGpu
+ *  @param[in]  pKernelFifo
+ *  @param[in]  pbdmaFaultId
+ *  
+ *  @returns engine name with pbdmaId/VEID 
+ * 
+ */
+const char *
+kfifoPrintFaultingPbdmaEngineName_IMPL
+(
+    OBJGPU          *pGpu,
+    KernelFifo      *pKernelFifo,
+    NvU32            pbdmaFaultId
+)
+{
+    NvU32  i, j;
+    const ENGINE_INFO *pEngineInfo = kfifoGetEngineInfo(pKernelFifo);
+    static char faultingEngineName[64] = {0};
+    const char *pbdmaIdString[2] = {"_PBDMA0", "_PBDMA1"};
+
+    if (!pKernelFifo->bIsPbdmaMmuEngineIdContiguous)
+    {
+        RM_ENGINE_TYPE rmEngineType;
+
+        NV_ASSERT_OR_RETURN(kfifoGetEngineTypeFromPbdmaFaultId(pGpu, pKernelFifo,
+                                        pbdmaFaultId, &rmEngineType) == NV_OK, "UNKNOWN");
+        if (RM_ENGINE_TYPE_IS_GR(rmEngineType))
+        {
+            NvU32  grIdx = RM_ENGINE_TYPE_GR_IDX(rmEngineType);
+            const char *grHostString[RM_ENGINE_TYPE_GR_SIZE] = {
+                                "GR_HOST0", "GR_HOST1", "GR_HOST2", "GR_HOST3",
+                                "GR_HOST4", "GR_HOST5", "GR_HOST6", "GR_HOST7"};
+
+            NV_ASSERT_OR_RETURN(grIdx < RM_ENGINE_TYPE_GR_SIZE, "UNKNOWN");
+
+            portStringCopy(faultingEngineName,
+                           sizeof(grHostString),
+                           grHostString[grIdx],
+                           portStringLength(grHostString[grIdx]) + 1);
+
+            return faultingEngineName;
+        }
+    }
+
+    for (i = 0; i < pEngineInfo->engineInfoListSize; i++)
+    {
+        for (j = 0; j < pEngineInfo->engineInfoList[i].numPbdmas; j++)
+        {
+            if (pbdmaFaultId == pEngineInfo->engineInfoList[i].pbdmaFaultIds[j])
+            {
+                portStringCopy(faultingEngineName,
+                               sizeof(faultingEngineName),
+                               pEngineInfo->engineInfoList[i].engineName,
+                               portStringLength(pEngineInfo->engineInfoList[i].engineName) + 1);
+
+                portStringCat(faultingEngineName,
+                              sizeof(faultingEngineName),
+                              pbdmaIdString[j],
+                              portStringLength(pbdmaIdString[j]) + 1);
+
+                return faultingEngineName;
+            }
+        }
+    }
+
+    return "UNKNOWN";
 }
 

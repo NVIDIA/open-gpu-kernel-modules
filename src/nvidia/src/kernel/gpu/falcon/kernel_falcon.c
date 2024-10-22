@@ -80,6 +80,14 @@ KernelFalcon *kflcnGetKernelFalconForEngine_IMPL(OBJGPU *pGpu, ENGDESCRIPTOR phy
     return staticCast(gpuGetGenericKernelFalconForEngine(pGpu, physEngDesc), KernelFalcon);
 }
 
+NvU32 kflcnGetPendingHostInterrupts(OBJGPU *pGpu, KernelFalcon *pKernelFalcon)
+{
+    if (kflcnIsRiscvActive_HAL(pGpu, pKernelFalcon))
+        return kflcnRiscvReadIntrStatus(pGpu, pKernelFalcon);
+    else
+        return kflcnReadIntrStatus(pGpu, pKernelFalcon);
+}
+
 
 static NvBool _kflcnNeedToAllocContext(OBJGPU *pGpu, KernelChannel *pKernelChannel)
 {

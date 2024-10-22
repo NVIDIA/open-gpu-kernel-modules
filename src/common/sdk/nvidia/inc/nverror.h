@@ -145,7 +145,8 @@
 #define ROBUST_CHANNEL_KEY_ROTATION_ERROR               (151)
 #define RESERVED7_ERROR                                 (152)
 #define RESERVED8_ERROR                                 (153)
-#define ROBUST_CHANNEL_LAST_ERROR                       (153)
+#define GPU_RECOVERY_ACTION_CHANGED                     (154)
+#define ROBUST_CHANNEL_LAST_ERROR                       (154)
 
 
 // Indexed CE reference

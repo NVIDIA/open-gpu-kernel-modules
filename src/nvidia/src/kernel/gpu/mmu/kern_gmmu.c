@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -200,6 +200,13 @@ NV_STATUS kgmmuStateInitLocked_IMPL
     if (!pKernelGmmu->getProperty(pKernelGmmu, PDB_PROP_KGMMU_FAULT_BUFFER_DISABLED))
     {
         NV_ASSERT_OK_OR_RETURN(kgmmuFaultBufferInit_HAL(pGpu, pKernelGmmu));
+    }
+
+    if (gpuIsSelfHosted(pGpu) &&
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) &&
+        IsdBLACKWELL(pGpu))
+    {
+        pKernelGmmu->bBug4686457WAR = NV_TRUE;
     }
 
     return status;
@@ -1688,7 +1695,7 @@ kgmmuClientShadowFaultBufferRegister_IMPL
     NV_STATUS status = NV_OK;
     struct GMMU_FAULT_BUFFER *pFaultBuffer;
     GMMU_CLIENT_SHADOW_FAULT_BUFFER *pClientShadowFaultBuffer;
-    GMMU_SHADOW_FAULT_BUF *pQueue;
+    GMMU_SHADOW_FAULT_BUF *pQueue = NULL;
     MEMORY_DESCRIPTOR *pBufferMemDesc;
     RmPhysAddr shadowFaultBufferQueuePhysAddr;
     NvU32 queueCapacity, numBufferPages;

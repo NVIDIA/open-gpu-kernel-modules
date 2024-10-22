@@ -135,9 +135,14 @@ typedef struct NVB0CC_CTRL_INTERNAL_PERMISSIONS_INIT_PARAMS {
     NvBool bDevProfilingPermitted;
 
     /*!
-     * [in] Is Memory profiling permitted
+     * [in] Is Video memory profiling permitted
      */
-    NvBool bMemoryProfilingPermitted;
+    NvBool bVideoMemoryProfilingPermitted;
+
+    /*!
+     * [in] Is SYS memory profiling permitted
+     */
+    NvBool bSysMemoryProfilingPermitted;
 } NVB0CC_CTRL_INTERNAL_PERMISSIONS_INIT_PARAMS;
 
 #define NVB0CC_CTRL_INTERNAL_ALLOC_PMA_STREAM_PARAMS_MESSAGE_ID (0x4U)

@@ -33,6 +33,8 @@ extern "C" {
 struct NvKmsPerOpenDev *nvAllocPerOpenDev(struct NvKmsPerOpen *pOpen,
                                           NVDevEvoPtr pDevEvo, NvBool isPrivileged);
 
+void nvRevokeDevice(NVDevEvoPtr pDevEvo);
+
 void nvFreePerOpenDev(struct NvKmsPerOpen *pOpen,
                       struct NvKmsPerOpenDev *pOpenDev);
 
@@ -70,6 +72,8 @@ const NVEvoApiHandlesRec *nvGetSurfaceHandlesFromOpenDevConst(
     const struct NvKmsPerOpenDev *pOpenDev);
 
 void nvKmsServiceNonStallInterrupt(void *dataPtr, NvU32 dataU32);
+
+void nvKmsOrphanVblankSemControlForAllOpens(NVDispEvoRec *pDispEvo);
 
 #ifdef __cplusplus
 };

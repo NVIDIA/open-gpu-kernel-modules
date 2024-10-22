@@ -66,6 +66,95 @@ gpuFuseSupportsDisplay_GM107
 }
 
 /*!
+ * @brief Read the pcie spec registers using config cycles
+ *
+ * @param[in]  pGpu      GPU object pointer
+ * @param[in]  hwDefAddr HW defined register address
+ * @param[out] pData     Value of the register
+ *
+ * @returns    NV_OK on success
+ */
+NV_STATUS
+gpuReadBusConfigCycle_GM107
+(
+    OBJGPU *pGpu,
+    NvU32   hwDefAddr,
+    NvU32  *pData
+)
+{
+    NvU32     domain              = gpuGetDomain(pGpu);
+    NvU8      bus                 = gpuGetBus(pGpu);
+    NvU8      device              = gpuGetDevice(pGpu);
+    NvU8      function            = 0;
+    NvBool    bIsCCFeatureEnabled = NV_FALSE;
+    NV_STATUS status              = NV_OK;
+
+    status = gpuConfigAccessSanityCheck_HAL(pGpu);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    // Todo: Reorganize this sanity check and handle for later chips
+    bIsCCFeatureEnabled = gpuIsCCFeatureEnabled(pGpu);
+
+    if (IS_PASSTHRU(pGpu) && !bIsCCFeatureEnabled)
+    {
+        gpuReadPassThruConfigReg_HAL(pGpu, hwDefAddr, pData);
+    }
+    else
+    {
+        if (pGpu->hPci == NULL)
+        {
+            pGpu->hPci = osPciInitHandle(domain, bus, device, function, NULL, NULL);
+        }
+
+        *pData = osPciReadDword(pGpu->hPci, hwDefAddr);
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Write to pcie spec registers using config cycles
+ *
+ * @param[in] pGpu      GPU object pointer
+ * @param[in] hwDefAddr HW defined register address
+ * @param[in] value     Write this value to the register
+ *
+ * @returns    NV_OK on success
+ */
+NV_STATUS
+gpuWriteBusConfigCycle_GM107
+(
+    OBJGPU *pGpu,
+    NvU32   hwDefAddr,
+    NvU32   value
+)
+{
+    NvU32     domain   = gpuGetDomain(pGpu);
+    NvU8      bus      = gpuGetBus(pGpu);
+    NvU8      device   = gpuGetDevice(pGpu);
+    NvU8      function = 0;
+    NV_STATUS status   = NV_OK;
+
+    status = gpuConfigAccessSanityCheck_HAL(pGpu);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    if (pGpu->hPci == NULL)
+    {
+        pGpu->hPci = osPciInitHandle(domain, bus, device, function, NULL, NULL);
+    }
+
+    osPciWriteDword(pGpu->hPci, hwDefAddr, value);
+
+    return NV_OK;
+}
+
+/*!
  * @brief gpuReadBusConfigRegEx_GM107
  *
  * param[in] pGpu         The GPU object pointer
@@ -487,7 +576,6 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GM200[] =
     GPU_CHILD_PRESENT(KernelRc, 1),
     GPU_CHILD_PRESENT(Intr, 1),
     GPU_CHILD_PRESENT(NvDebugDump, 1),
-    GPU_CHILD_PRESENT(OBJGPUMON, 1),
     GPU_CHILD_PRESENT(OBJSWENG, 1),
     GPU_CHILD_PRESENT(KernelBif, 1),
     GPU_CHILD_PRESENT(KernelBus, 1),

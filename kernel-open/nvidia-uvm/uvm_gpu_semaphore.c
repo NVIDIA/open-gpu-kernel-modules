@@ -507,11 +507,12 @@ uvm_gpu_address_t uvm_gpu_semaphore_get_encrypted_payload_gpu_va(uvm_gpu_semapho
     return uvm_gpu_address_virtual_unprotected(encrypted_base_va + semaphore->index * UVM_SEMAPHORE_SIZE);
 }
 
-NvU32 *uvm_gpu_semaphore_get_notifier_cpu_va(uvm_gpu_semaphore_t *semaphore)
+uvm_gpu_semaphore_notifier_t *uvm_gpu_semaphore_get_notifier_cpu_va(uvm_gpu_semaphore_t *semaphore)
 {
-    char *notifier_base_va = uvm_rm_mem_get_cpu_va(semaphore->page->conf_computing.notifier_memory);
+    uvm_gpu_semaphore_notifier_t *notifier_base_va =
+        uvm_rm_mem_get_cpu_va(semaphore->page->conf_computing.notifier_memory);
 
-    return (NvU32*)(notifier_base_va + semaphore->index * sizeof(NvU32));
+    return notifier_base_va + semaphore->index;
 }
 
 uvm_gpu_address_t uvm_gpu_semaphore_get_notifier_gpu_va(uvm_gpu_semaphore_t *semaphore)
@@ -519,7 +520,8 @@ uvm_gpu_address_t uvm_gpu_semaphore_get_notifier_gpu_va(uvm_gpu_semaphore_t *sem
     NvU64 notifier_base_va = uvm_rm_mem_get_gpu_uvm_va(semaphore->page->conf_computing.notifier_memory,
                                                        semaphore->page->pool->gpu);
 
-    return uvm_gpu_address_virtual_unprotected(notifier_base_va + semaphore->index * sizeof(NvU32));
+    return uvm_gpu_address_virtual_unprotected(notifier_base_va +
+                                               semaphore->index * sizeof(uvm_gpu_semaphore_notifier_t));
 }
 
 void *uvm_gpu_semaphore_get_auth_tag_cpu_va(uvm_gpu_semaphore_t *semaphore)
@@ -622,22 +624,11 @@ void uvm_gpu_tracking_semaphore_free(uvm_gpu_tracking_semaphore_t *tracking_sem)
     uvm_gpu_semaphore_free(&tracking_sem->semaphore);
 }
 
-static bool should_skip_secure_semaphore_update(NvU32 last_observed_notifier, NvU32 gpu_notifier)
+static void gpu_semaphore_encrypted_payload_update(uvm_channel_t *channel, uvm_gpu_semaphore_t *semaphore)
 {
-    // No new value, or the GPU is currently writing the new encrypted material
-    // and no change in value would still result in corrupted data.
-    return (last_observed_notifier == gpu_notifier) || (gpu_notifier % 2);
-}
-
-static void uvm_gpu_semaphore_encrypted_payload_update(uvm_channel_t *channel, uvm_gpu_semaphore_t *semaphore)
-{
-    UvmCslIv local_iv;
     NvU32 local_payload;
-    NvU32 new_sem_value;
-    NvU32 gpu_notifier;
-    NvU32 last_observed_notifier;
-    NvU32 new_gpu_notifier = 0;
-    NvU32 iv_index = 0;
+    uvm_gpu_semaphore_notifier_t gpu_notifier;
+    uvm_gpu_semaphore_notifier_t new_gpu_notifier = 0;
 
     // A channel can have multiple entries pending and the tracking semaphore
     // update of each entry can race with this function. Since the semaphore
@@ -646,62 +637,72 @@ static void uvm_gpu_semaphore_encrypted_payload_update(uvm_channel_t *channel, u
     unsigned tries_left = channel->num_gpfifo_entries;
     NV_STATUS status = NV_OK;
     NvU8 local_auth_tag[UVM_CONF_COMPUTING_AUTH_TAG_SIZE];
-    UvmCslIv *ivs_cpu_addr = semaphore->conf_computing.ivs;
-    NvU32 *gpu_notifier_cpu_addr = uvm_gpu_semaphore_get_notifier_cpu_va(semaphore);
+    uvm_gpu_semaphore_notifier_t *semaphore_notifier_cpu_addr = uvm_gpu_semaphore_get_notifier_cpu_va(semaphore);
 
     UVM_ASSERT(g_uvm_global.conf_computing_enabled);
     UVM_ASSERT(uvm_channel_is_ce(channel));
 
-    last_observed_notifier = semaphore->conf_computing.last_observed_notifier;
-    gpu_notifier = UVM_READ_ONCE(*gpu_notifier_cpu_addr);
-    UVM_ASSERT(last_observed_notifier <= gpu_notifier);
-
-    if (should_skip_secure_semaphore_update(last_observed_notifier, gpu_notifier))
-        return;
-
     do {
-        gpu_notifier = UVM_READ_ONCE(*gpu_notifier_cpu_addr);
+        gpu_notifier = READ_ONCE(*semaphore_notifier_cpu_addr);
+
+        UVM_ASSERT(gpu_notifier >= semaphore->conf_computing.last_observed_notifier);
 
         // Odd notifier value means there's an update in progress.
         if (gpu_notifier % 2)
             continue;
 
+        // There's no change since last time
+        if (gpu_notifier == semaphore->conf_computing.last_observed_notifier)
+            return;
+
         // Make sure no memory accesses happen before we read the notifier
         smp_mb__after_atomic();
 
-        iv_index = (gpu_notifier / 2) % channel->num_gpfifo_entries;
         memcpy(local_auth_tag, uvm_gpu_semaphore_get_auth_tag_cpu_va(semaphore), sizeof(local_auth_tag));
-        local_payload = UVM_READ_ONCE(*uvm_gpu_semaphore_get_encrypted_payload_cpu_va(semaphore));
-        memcpy(&local_iv, &ivs_cpu_addr[iv_index], sizeof(local_iv));
+        local_payload = READ_ONCE(*uvm_gpu_semaphore_get_encrypted_payload_cpu_va(semaphore));
 
         // Make sure the second read of notifier happens after
         // all memory accesses.
         smp_mb__before_atomic();
-        new_gpu_notifier = UVM_READ_ONCE(*gpu_notifier_cpu_addr);
+        new_gpu_notifier = READ_ONCE(*semaphore_notifier_cpu_addr);
         tries_left--;
     } while ((tries_left > 0) && ((gpu_notifier != new_gpu_notifier) || (gpu_notifier % 2)));
 
     if (!tries_left) {
         status = NV_ERR_INVALID_STATE;
-        goto error;
     }
+    else {
+        NvU32 key_version;
+        const NvU32 iv_index = (gpu_notifier / 2) % channel->num_gpfifo_entries;
+        NvU32 new_semaphore_value;
 
-    if (gpu_notifier == new_gpu_notifier) {
+        UVM_ASSERT(gpu_notifier == new_gpu_notifier);
+        UVM_ASSERT(gpu_notifier % 2 == 0);
+
+        // CPU decryption is guaranteed to use the same key version as the
+        // associated GPU encryption, because if there was any key rotation in
+        // between, then key rotation waited for all channels to complete before
+        // proceeding. The wait implies that the semaphore value matches the
+        // last one encrypted on the GPU, so this CPU decryption should happen
+        // before the key is rotated.
+        key_version = uvm_channel_pool_key_version(channel->pool);
+
         status = uvm_conf_computing_cpu_decrypt(channel,
-                                                &new_sem_value,
+                                                &new_semaphore_value,
                                                 &local_payload,
-                                                &local_iv,
-                                                sizeof(new_sem_value),
+                                                &semaphore->conf_computing.ivs[iv_index],
+                                                key_version,
+                                                sizeof(new_semaphore_value),
                                                 &local_auth_tag);
 
         if (status != NV_OK)
             goto error;
 
-        uvm_gpu_semaphore_set_payload(semaphore, new_sem_value);
-        UVM_WRITE_ONCE(semaphore->conf_computing.last_observed_notifier, new_gpu_notifier);
-    }
+        uvm_gpu_semaphore_set_payload(semaphore, new_semaphore_value);
+        WRITE_ONCE(semaphore->conf_computing.last_observed_notifier, new_gpu_notifier);
 
-    return;
+        return;
+    }
 
 error:
     // Decryption failure is a fatal error as well as running out of try left.
@@ -728,7 +729,7 @@ static NvU64 update_completed_value_locked(uvm_gpu_tracking_semaphore_t *trackin
         // TODO: Bug 4008734: [UVM][HCC] Extend secure tracking semaphore
         //                     mechanism to all semaphore
         uvm_channel_t *channel = container_of(tracking_semaphore, uvm_channel_t, tracking_sem);
-        uvm_gpu_semaphore_encrypted_payload_update(channel, &tracking_semaphore->semaphore);
+        gpu_semaphore_encrypted_payload_update(channel, &tracking_semaphore->semaphore);
     }
 
     new_sem_value = uvm_gpu_semaphore_get_payload(&tracking_semaphore->semaphore);

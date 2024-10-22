@@ -74,13 +74,21 @@ confComputeApiCtrlCmdSystemGetCapabilities_IMPL
     OBJSYS    *pSys = SYS_GET_INSTANCE();
     CONF_COMPUTE_CAPS *pCcCaps = pConfComputeApi->pCcCaps;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     pParams->cpuCapability = NV_CONF_COMPUTE_SYSTEM_CPU_CAPABILITY_NONE;
     if ((sysGetStaticConfig(pSys))->bOsCCEnabled)
     {
         pParams->cpuCapability = NV_CONF_COMPUTE_SYSTEM_CPU_CAPABILITY_AMD_SEV;
-        if ((sysGetStaticConfig(pSys))->bOsCCTdxEnabled)
+        if ((sysGetStaticConfig(pSys))->bOsCCSevSnpEnabled)
+        {
+            pParams->cpuCapability = NV_CONF_COMPUTE_SYSTEM_CPU_CAPABILITY_AMD_SEV_SNP;
+        }
+        else if ((sysGetStaticConfig(pSys))->bOsCCSnpVtomEnabled)
+        {
+            pParams->cpuCapability = NV_CONF_COMPUTE_SYSTEM_CPU_CAPABILITY_AMD_SNP_VTOM;
+        }
+        else if ((sysGetStaticConfig(pSys))->bOsCCTdxEnabled)
         {
             pParams->cpuCapability = NV_CONF_COMPUTE_SYSTEM_CPU_CAPABILITY_INTEL_TDX;
         }
@@ -139,7 +147,7 @@ confComputeApiCtrlCmdSystemGetGpusState_IMPL
     NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_GET_GPUS_STATE_PARAMS *pParams
 )
 {
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     pParams->bAcceptClientRequest = pConfComputeApi->pCcCaps->bAcceptClientRequest;
 
@@ -160,7 +168,7 @@ confComputeApiCtrlCmdSystemSetGpusState_IMPL
     NV_STATUS  status = NV_OK;
     NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_GPU_STATE_PARAMS params = {0};
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // Make sure 'ready state' can't be set after being set to false once.
     if (pConfComputeApi->pCcCaps->bFatalFailure)
@@ -211,7 +219,7 @@ confComputeApiCtrlCmdGpuGetVidmemSize_IMPL
     NvU64             totalProtectedBytes   = 0;
     NvU64             totalUnprotectedBytes = 0;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
         subdeviceGetByHandle(RES_GET_CLIENT(pConfComputeApi),
@@ -255,7 +263,7 @@ confComputeApiCtrlCmdGpuSetVidmemSize_IMPL
     NV_CONF_COMPUTE_CTRL_CMD_GPU_SET_VIDMEM_SIZE_PARAMS *pParams
 )
 {
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     return NV_OK;
 }
@@ -272,7 +280,7 @@ confComputeApiCtrlCmdGetGpuCertificate_IMPL
     ConfidentialCompute *pConfCompute = NULL;
     NV_STATUS            status       = NV_OK;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
         subdeviceGetByHandle(RES_GET_CLIENT(pConfComputeApi),
@@ -317,7 +325,7 @@ confComputeApiCtrlCmdGetGpuAttestationReport_IMPL
     ConfidentialCompute *pConfCompute = NULL;
     NV_STATUS            status       = NV_OK;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
         subdeviceGetByHandle(RES_GET_CLIENT(pConfComputeApi),
@@ -363,7 +371,7 @@ confComputeApiCtrlCmdGpuGetNumSecureChannels_IMPL
     OBJGPU     *pGpu;
     KernelFifo *pKernelFifo;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
         subdeviceGetByHandle(RES_GET_CLIENT(pConfComputeApi),
@@ -388,7 +396,7 @@ confComputeApiCtrlCmdSystemGetSecurityPolicy_IMPL
     OBJSYS    *pSys = SYS_GET_INSTANCE();
     OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     pParams->attackerAdvantage = pGpuMgr->ccAttackerAdvantage;
 
@@ -411,10 +419,11 @@ confComputeApiCtrlCmdSystemSetSecurityPolicy_IMPL
     NV_STATUS  status = NV_OK;
     NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_SECURITY_POLICY_PARAMS params = {0};
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // CC security policy can only be set before GpuReadyState is set.
-    NV_ASSERT_OR_RETURN(pConfComputeApi->pCcCaps->bAcceptClientRequest == NV_FALSE, NV_ERR_INVALID_STATE);
+    NV_CHECK_OR_RETURN(LEVEL_INFO, pConfComputeApi->pCcCaps->bAcceptClientRequest == NV_FALSE,
+                       NV_ERR_INVALID_STATE);
 
     if ((pParams->attackerAdvantage < SET_SECURITY_POLICY_ATTACKER_ADVANTAGE_MIN) ||
         (pParams->attackerAdvantage > SET_SECURITY_POLICY_ATTACKER_ADVANTAGE_MAX))
@@ -461,7 +470,7 @@ confComputeApiCtrlCmdGpuGetKeyRotationState_IMPL
     NvBool               bKernelKeyRotation = NV_FALSE;
     NvBool               bUserKeyRotation = NV_FALSE;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
         subdeviceGetByHandle(RES_GET_CLIENT(pConfComputeApi),

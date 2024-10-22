@@ -122,6 +122,7 @@ static void _calculateNvlinkCaps
         {
             RMCTRL_SET_CAP(tempCaps, NV2080_CTRL_NVLINK_CAPS, _SYSMEM_ATOMICS);
         }
+
     }
 
     switch (ipVerNvlink)
@@ -755,7 +756,7 @@ subdeviceCtrlCmdBusGetNvlinkStatus_IMPL
         pParams->enabledLinkMask = (bIsNvlinkReady) ? pKernelNvlink->enabledLinks : 0x0;
 
         pTmpData->nvlinkLinkAndClockInfoParams.linkMask = pParams->enabledLinkMask;
-        pTmpData->nvlinkLinkAndClockInfoParams.bSublinkStateInst = pParams->bSublinkStateInst;
+        pTmpData->nvlinkLinkAndClockInfoParams.bSublinkStateInst = NV_TRUE;
 
         status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
                                      NV2080_CTRL_CMD_NVLINK_GET_LINK_AND_CLOCK_INFO,

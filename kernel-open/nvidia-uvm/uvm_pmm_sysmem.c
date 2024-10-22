@@ -126,7 +126,7 @@ NV_STATUS uvm_pmm_sysmem_mappings_add_gpu_mapping(uvm_pmm_sysmem_mappings_t *sys
             NvU64 remove_key;
 
             for (remove_key = base_key; remove_key < key; ++remove_key)
-                (void *)radix_tree_delete(&sysmem_mappings->reverse_map_tree, remove_key);
+                (void)radix_tree_delete(&sysmem_mappings->reverse_map_tree, remove_key);
 
             kmem_cache_free(g_reverse_page_map_cache, new_reverse_map);
             status = errno_to_nv_status(ret);
@@ -455,7 +455,7 @@ static NvU32 compute_gpu_mappings_entry_index(uvm_parent_processor_mask_t *dma_a
     // above and including the id and then counting the number of bits
     // remaining.
     uvm_parent_processor_mask_zero(&subset_mask);
-    bitmap_set(subset_mask.bitmap, UVM_PARENT_ID_GPU0_VALUE, uvm_parent_id_gpu_index(id));
+    uvm_parent_processor_mask_range_fill(&subset_mask, uvm_parent_gpu_id_from_index(0), uvm_parent_id_gpu_index(id));
     uvm_parent_processor_mask_and(&subset_mask, dma_addrs_mask, &subset_mask);
 
     return uvm_parent_processor_mask_get_gpu_count(&subset_mask);

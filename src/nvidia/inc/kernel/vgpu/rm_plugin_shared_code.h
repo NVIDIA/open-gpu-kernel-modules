@@ -436,7 +436,36 @@ return_t deserialize_NV2080_CTRL_GR_CTXSW_PREEMPTION_BIND_PARAMS_v12_01(NV2080_C
         dest->flags           = src->flags;
         dest->hClient         = src->hClient;
         dest->hChannel        = src->hChannel;
-        for (i = 0; i < NV2080_CTRL_CMD_GR_CTXSW_PREEMPTION_BIND_BUFFERS_END; ++i)
+        for (i = 0; i < NV2080_CTRL_CMD_GR_CTXSW_PREEMPTION_BIND_BUFFERS_END_v03_00; ++i)
+            dest->vMemPtrs[i] = src->vMemPtrs[i];
+        dest->gfxpPreemptMode = src->gfxpPreemptMode;
+        dest->cilpPreemptMode = src->cilpPreemptMode;
+        dest->grRouteInfo.flags = src->grRouteInfo.flags;
+        dest->grRouteInfo.route = src->grRouteInfo.route;
+    }
+    else
+        return FAILURE_T;
+#endif
+    return SUCCESS_T;
+}
+
+static
+return_t deserialize_NV2080_CTRL_GR_CTXSW_PREEMPTION_BIND_PARAMS_v28_07(NV2080_CTRL_GR_CTXSW_PREEMPTION_BIND_PARAMS* pParams,
+    NvU8* buffer,
+    NvU32 bufferSize,
+    NvU32* offset)
+{
+#ifdef COPY_INPUT_PARAMETERS
+    NV2080_CTRL_GR_CTXSW_PREEMPTION_BIND_PARAMS_v28_07* src = (void*)(buffer);
+    NV2080_CTRL_GR_CTXSW_PREEMPTION_BIND_PARAMS* dest = pParams;
+
+    if (src && dest) {
+        NvU32 i;
+
+        dest->flags = src->flags;
+        dest->hClient = src->hClient;
+        dest->hChannel = src->hChannel;
+        for (i = 0; i < NV2080_CTRL_CMD_GR_CTXSW_PREEMPTION_BIND_BUFFERS_END_v28_07; ++i)
             dest->vMemPtrs[i] = src->vMemPtrs[i];
         dest->gfxpPreemptMode = src->gfxpPreemptMode;
         dest->cilpPreemptMode = src->cilpPreemptMode;
@@ -3100,7 +3129,36 @@ return_t serialize_NV2080_CTRL_GR_CTXSW_PREEMPTION_BIND_PARAMS_v12_01(NV2080_CTR
         dest->flags           = src->flags;
         dest->hClient         = src->hClient;
         dest->hChannel        = src->hChannel;
-        for (i = 0; i < NV2080_CTRL_CMD_GR_CTXSW_PREEMPTION_BIND_BUFFERS_END; ++i)
+        for (i = 0; i < NV2080_CTRL_CMD_GR_CTXSW_PREEMPTION_BIND_BUFFERS_END_v03_00; ++i)
+            dest->vMemPtrs[i] = src->vMemPtrs[i];
+        dest->gfxpPreemptMode = src->gfxpPreemptMode;
+        dest->cilpPreemptMode = src->cilpPreemptMode;
+        dest->grRouteInfo.flags = src->grRouteInfo.flags;
+        dest->grRouteInfo.route = src->grRouteInfo.route;
+    }
+    else
+        return FAILURE_T;
+#endif
+    return SUCCESS_T;
+}
+
+static
+return_t serialize_NV2080_CTRL_GR_CTXSW_PREEMPTION_BIND_PARAMS_v28_07(NV2080_CTRL_GR_CTXSW_PREEMPTION_BIND_PARAMS* pParams,
+    NvU8* buffer,
+    NvU32 bufferSize,
+    NvU32* offset)
+{
+#ifdef COPY_INPUT_PARAMETERS
+    NV2080_CTRL_GR_CTXSW_PREEMPTION_BIND_PARAMS* src = pParams;
+    NV2080_CTRL_GR_CTXSW_PREEMPTION_BIND_PARAMS_v28_07* dest = (void*)(buffer);
+
+    if (src && dest) {
+        NvU32 i;
+
+        dest->flags = src->flags;
+        dest->hClient = src->hClient;
+        dest->hChannel = src->hChannel;
+        for (i = 0; i < NV2080_CTRL_CMD_GR_CTXSW_PREEMPTION_BIND_BUFFERS_END_v28_07; ++i)
             dest->vMemPtrs[i] = src->vMemPtrs[i];
         dest->gfxpPreemptMode = src->gfxpPreemptMode;
         dest->cilpPreemptMode = src->cilpPreemptMode;

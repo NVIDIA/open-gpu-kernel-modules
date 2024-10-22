@@ -31,4 +31,6 @@
 #define NV_PTOP_DEVICE_INFO_CFG_MAX_ROWS_PER_DEVICE 19:16              /* C--UF */
 #define NV_PTOP_DEVICE_INFO_CFG_NUM_ROWS            31:20              /* C--UF */
 
+#define NV_PTOP_DEVICE_INFO2_DEV_TYPE_ENUM_LCE       19 /*       */
+
 #endif // __ga100_dev_top_h__

@@ -33,19 +33,16 @@ typedef struct nv_dma_buf_mem_handle
     NvU64                    size;
 
     // RM memdesc specific data
-    void                    *static_mem_info;
+    void                    *mem_info;
 
     //
     // Refcount for phys addresses
-    // If refcount > 0, phys address ranges in phys_range are reused.
+    // If refcount > 0, phys address ranges in memArea are reused.
     //
     NvU64                    phys_refcount;
 
-    // Number of scatterlist entries in phys_range[] array
-    NvU32                    phys_range_count;
-
-    // List of phys address ranges to be used to dma map
-    nv_phys_addr_range_t    *phys_range;
+    // Scatterlist of all the memory ranges associated with the buf
+    MemoryArea               memArea;
 } nv_dma_buf_mem_handle_t;
 
 typedef struct nv_dma_buf_file_private
@@ -331,7 +328,7 @@ nv_dma_buf_dup_mem_handles(
         priv->handles[index].h_memory = h_memory_duped;
         priv->handles[index].offset = params->offsets[i];
         priv->handles[index].size = params->sizes[i];
-        priv->handles[index].static_mem_info = mem_info;
+        priv->handles[index].mem_info = mem_info;
         priv->num_objects++;
         index++;
         count++;
@@ -380,14 +377,14 @@ nv_put_phys_addresses(
             continue;
         }
 
-        // Per-handle phys_range is freed by RM
+        // Per-handle memArea is freed by RM
         rm_dma_buf_unmap_mem_handle(sp, priv->nv, priv->h_client,
                                     priv->handles[index].h_memory,
-                                    priv->handles[index].size,
-                                    &priv->handles[index].phys_range,
-                                    priv->handles[index].phys_range_count);
+                                    priv->handles[index].mem_info,
+                                    priv->static_phys_addrs,
+                                    priv->handles[index].memArea);
 
-        priv->handles[index].phys_range_count = 0;
+        priv->handles[index].memArea.numRanges = 0;
     }
 }
 
@@ -506,14 +503,14 @@ nv_dma_buf_get_phys_addresses (
             continue;
         }
 
-        // Per-handle phys_range is allocated by RM
+        // Per-handle memArea is allocated by RM
         status = rm_dma_buf_map_mem_handle(sp, priv->nv, priv->h_client,
                                            priv->handles[index].h_memory,
-                                           priv->handles[index].offset,
-                                           priv->handles[index].size,
-                                           priv->handles[index].static_mem_info,
-                                           &priv->handles[index].phys_range,
-                                           &priv->handles[index].phys_range_count);
+                                           mrangeMake(priv->handles[index].offset,
+                                                priv->handles[index].size),
+                                           priv->handles[index].mem_info,
+                                           priv->static_phys_addrs,
+                                           &priv->handles[index].memArea);
         if (status != NV_OK)
         {
             goto unmap_handles;
@@ -602,7 +599,7 @@ nv_dma_buf_map_pages (
     // Calculate nents needed to allocate sg_table
     for (i = 0; i < priv->num_objects; i++)
     {
-        nents += priv->handles[i].phys_range_count;
+        nents += priv->handles[i].memArea.numRanges;
     }
 
     NV_KZALLOC(sgt, sizeof(struct sg_table));
@@ -621,12 +618,12 @@ nv_dma_buf_map_pages (
 
     for (i = 0; i < priv->num_objects; i++)
     {
-        NvU32 range_count = priv->handles[i].phys_range_count;
+        NvU32 range_count = priv->handles[i].memArea.numRanges;
         NvU32 index = 0;
         for (index = 0; index < range_count; index++)
         {
-            NvU64 addr = priv->handles[i].phys_range[index].addr;
-            NvU64 len  = priv->handles[i].phys_range[index].len;
+            NvU64 addr = priv->handles[i].memArea.pRanges[index].start;
+            NvU64 len  = priv->handles[i].memArea.pRanges[index].size;
             struct page *page = NV_GET_PAGE_STRUCT(addr);
 
             if ((page == NULL) || (sg == NULL))
@@ -634,7 +631,7 @@ nv_dma_buf_map_pages (
                 goto free_table;
             }
 
-            sg_set_page(sg, page, len, 0);
+            sg_set_page(sg, page, len, NV_GET_OFFSET_IN_PAGE(addr));
             sg = sg_next(sg);
         }
     }
@@ -687,12 +684,12 @@ nv_dma_buf_map_pfns (
     // Calculate nents needed to allocate sg_table
     for (i = 0; i < priv->num_objects; i++)
     {
-        NvU32 range_count = priv->handles[i].phys_range_count;
+        NvU32 range_count = priv->handles[i].memArea.numRanges;
         NvU32 index;
 
         for (index = 0; index < range_count; index++)
         {
-            NvU64 length = priv->handles[i].phys_range[index].len;
+            NvU64 length = priv->handles[i].memArea.pRanges[index].size;
             NvU64 count = length + dma_max_seg_size - 1;
             do_div(count, dma_max_seg_size);
             nents += count;
@@ -714,13 +711,13 @@ nv_dma_buf_map_pfns (
     sg = sgt->sgl;
     for (i = 0; i < priv->num_objects; i++)
     {
-        NvU32 range_count = priv->handles[i].phys_range_count;
+        NvU32 range_count = priv->handles[i].memArea.numRanges;
         NvU32 index = 0;
 
         for (index = 0; index < range_count; index++)
         {
-            NvU64 dma_addr = priv->handles[i].phys_range[index].addr;
-            NvU64 dma_len  = priv->handles[i].phys_range[index].len;
+            NvU64 dma_addr = priv->handles[i].memArea.pRanges[index].start;
+            NvU64 dma_len  = priv->handles[i].memArea.pRanges[index].size;
 
             // Break the scatterlist into dma_max_seg_size chunks
             while(dma_len != 0)

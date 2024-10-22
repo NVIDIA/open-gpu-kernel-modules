@@ -28,6 +28,7 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "rmapi/client.h"
 #include "virtualization/hypervisor/hypervisor.h"
+#include "gpu/bus/kern_bus.h"
 
 #include "class/cl0040.h" // NV01_MEMORY_LOCAL_USER
 
@@ -82,4 +83,17 @@ conmemCanCopy_IMPL
 )
 {
     return NV_TRUE;
+}
+
+NV_STATUS conmemCtrlCmdNotifyConsoleDisabled_IMPL(ConsoleMemory *pConsoleMemory)
+{
+    Memory            *pMemory        = staticCast(pConsoleMemory, Memory);
+    OBJGPU            *pGpu           = pMemory->pGpu;
+    MEMORY_DESCRIPTOR *pMemDesc       = pMemory->pMemDesc;
+    KernelBus         *pKernelBus     = GPU_GET_KERNEL_BUS(pGpu);
+    NvU32              gfid           = pMemDesc->gfid;
+
+    // Remove the BAR1 mapping of the framebuffer console.
+    kbusUnmapPreservedConsole(pGpu, pKernelBus, gfid);
+    return NV_OK;
 }

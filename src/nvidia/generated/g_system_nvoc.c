@@ -66,6 +66,10 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJSYS =
     /*pExportInfo=*/        &__nvoc_export_info_OBJSYS
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+
+// Up-thunk(s) to bridge methods to ancestors (if any)
+
 const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJSYS = 
 {
     /*numEntries=*/     0,
@@ -90,13 +94,15 @@ void __nvoc_init_dataField_OBJSYS(OBJSYS *pThis) {
     pThis->setProperty(pThis, PDB_PROP_SYS_IS_AGGRESSIVE_GC6_ENABLED, (0));
     pThis->setProperty(pThis, PDB_PROP_SYS_PRIORITY_BOOST, (0));
     pThis->setProperty(pThis, PDB_PROP_SYS_PRIORITY_THROTTLE_DELAY_US, 16 * 1000);
-    pThis->setProperty(pThis, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT, ((NvBool)(0 != 0)));
-    pThis->setProperty(pThis, PDB_PROP_SYS_ENABLE_RM_TEST_ONLY_CODE, ((NvBool)(0 != 0)));
-    pThis->setProperty(pThis, PDB_PROP_SYS_ROUTE_TO_PHYSICAL_LOCK_BYPASS, ((NvBool)(0 == 0)));
+    pThis->setProperty(pThis, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT, NV_FALSE);
+    pThis->setProperty(pThis, PDB_PROP_SYS_ENABLE_RM_TEST_ONLY_CODE, NV_FALSE);
+    pThis->setProperty(pThis, PDB_PROP_SYS_ROUTE_TO_PHYSICAL_LOCK_BYPASS, NV_TRUE);
+    pThis->setProperty(pThis, PDB_PROP_SYS_ENABLE_FORCE_SHARED_LOCK, NV_TRUE);
 
-    pThis->bUseDeferredClientListFree = ((NvBool)(0 != 0));
+    pThis->bUseDeferredClientListFree = NV_FALSE;
 
     pThis->clientListDeferredFreeLimit = 0;
+    pThis->setProperty(pThis, PDB_PROP_SYS_RECOVERY_REBOOT_REQUIRED, NV_FALSE);
 }
 
 NV_STATUS __nvoc_ctor_Object(Object* );
@@ -126,16 +132,19 @@ __nvoc_ctor_OBJSYS_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_OBJSYS_1(OBJSYS *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // sysCaptureState -- virtual
-    pThis->__sysCaptureState__ = &sysCaptureState_IMPL;
-} // End __nvoc_init_funcTable_OBJSYS_1 with approximately 1 basic block(s).
+} // End __nvoc_init_funcTable_OBJSYS_1
 
 
 // Initialize vtable(s) for 1 virtual method(s).
 void __nvoc_init_funcTable_OBJSYS(OBJSYS *pThis) {
 
-    // Initialize vtable(s) with 1 per-object function pointer(s).
+    // Per-class vtable definition
+    static const struct NVOC_VTABLE__OBJSYS vtable = {
+        .__sysCaptureState__ = &sysCaptureState_IMPL,    // virtual
+    };
+
+    // Pointer(s) to per-class vtable(s)
+    pThis->__nvoc_vtable = &vtable;    // (sys) this
     __nvoc_init_funcTable_OBJSYS_1(pThis);
 }
 

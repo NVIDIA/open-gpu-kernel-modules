@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -69,7 +69,7 @@ kfifoUpdateUsermodeDoorbell_TU102
  *
  */
 NV_STATUS
-kfifoGenerateWorkSubmitToken_TU102
+kfifoGenerateWorkSubmitTokenHal_TU102
 (
     OBJGPU        *pGpu,
     KernelFifo    *pKernelFifo,

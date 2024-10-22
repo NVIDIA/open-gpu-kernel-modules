@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -271,10 +271,15 @@ typedef struct Device Device;
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__Intr;
+
+
 struct Intr {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__Intr *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -284,12 +289,7 @@ struct Intr {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct Intr *__nvoc_pbase_Intr;    // intr
 
-    // Vtable with 32 per-object function pointers
-    NV_STATUS (*__intrConstructEngine__)(OBJGPU *, struct Intr * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__intrStatePreInitLocked__)(OBJGPU *, struct Intr * /*this*/);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__intrStateInitUnlocked__)(OBJGPU *, struct Intr * /*this*/);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__intrStateInitLocked__)(OBJGPU *, struct Intr * /*this*/);  // virtual override (engstate) base (engstate)
-    void (*__intrStateDestroy__)(OBJGPU *, struct Intr * /*this*/);  // virtual override (engstate) base (engstate)
+    // Vtable with 18 per-object function pointers
     NvU32 (*__intrDecodeStallIntrEn__)(OBJGPU *, struct Intr * /*this*/, NvU32);  // halified (2 hals) body
     void (*__intrServiceVirtual__)(OBJGPU *, struct Intr * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__intrTriggerPrivDoorbell__)(OBJGPU *, struct Intr * /*this*/, NvU32);  // halified (2 hals) body
@@ -303,20 +303,11 @@ struct Intr {
     NvU64 (*__intrGetIntrTopNonStallMask__)(OBJGPU *, struct Intr * /*this*/);  // halified (2 hals) body
     void (*__intrSanityCheckEngineIntrStallVector__)(OBJGPU *, struct Intr * /*this*/, NvU32, NvU16);  // halified (3 hals) body
     void (*__intrSanityCheckEngineIntrNotificationVector__)(OBJGPU *, struct Intr * /*this*/, NvU32, NvU16);  // halified (3 hals) body
-    NV_STATUS (*__intrStateLoad__)(OBJGPU *, struct Intr * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
-    NV_STATUS (*__intrStateUnload__)(OBJGPU *, struct Intr * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
     NV_STATUS (*__intrInitSubtreeMap__)(OBJGPU *, struct Intr * /*this*/);  // halified (3 hals) body
     NV_STATUS (*__intrInitInterruptTable__)(OBJGPU *, struct Intr * /*this*/);  // halified (2 hals)
     NV_STATUS (*__intrSetIntrMask__)(OBJGPU *, struct Intr * /*this*/, union MC_ENGINE_BITVECTOR *, struct THREAD_STATE_NODE *);  // halified (2 hals) body
     void (*__intrSetIntrEnInHw__)(OBJGPU *, struct Intr * /*this*/, NvU32, struct THREAD_STATE_NODE *);  // halified (2 hals) body
     NvU32 (*__intrGetIntrEnFromHw__)(OBJGPU *, struct Intr * /*this*/, struct THREAD_STATE_NODE *);  // halified (2 hals) body
-    void (*__intrInitMissing__)(struct OBJGPU *, struct Intr * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__intrStatePreInitUnlocked__)(struct OBJGPU *, struct Intr * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__intrStatePreLoad__)(struct OBJGPU *, struct Intr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__intrStatePostLoad__)(struct OBJGPU *, struct Intr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__intrStatePreUnload__)(struct OBJGPU *, struct Intr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__intrStatePostUnload__)(struct OBJGPU *, struct Intr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__intrIsPresent__)(struct OBJGPU *, struct Intr * /*this*/);  // virtual inherited (engstate) base (engstate)
 
     // 8 PDB properties
     NvBool PDB_PROP_INTR_ENABLE_DETAILED_LOGS;
@@ -356,6 +347,27 @@ struct Intr {
     NvU32 intrEn0Orig;
     NvBool halIntrEnabled;
     NvU32 saveIntrEn0;
+};
+
+
+// Metadata including vtable with 14 function pointers plus superclass metadata
+struct NVOC_VTABLE__Intr {
+    const struct NVOC_VTABLE__OBJENGSTATE OBJENGSTATE;    // (engstate) 14 function pointers
+
+    NV_STATUS (*__intrConstructEngine__)(OBJGPU *, struct Intr * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__intrStatePreInitLocked__)(OBJGPU *, struct Intr * /*this*/);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__intrStateInitUnlocked__)(OBJGPU *, struct Intr * /*this*/);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__intrStateInitLocked__)(OBJGPU *, struct Intr * /*this*/);  // virtual override (engstate) base (engstate)
+    void (*__intrStateDestroy__)(OBJGPU *, struct Intr * /*this*/);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__intrStateLoad__)(OBJGPU *, struct Intr * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
+    NV_STATUS (*__intrStateUnload__)(OBJGPU *, struct Intr * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
+    void (*__intrInitMissing__)(struct OBJGPU *, struct Intr * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__intrStatePreInitUnlocked__)(struct OBJGPU *, struct Intr * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__intrStatePreLoad__)(struct OBJGPU *, struct Intr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__intrStatePostLoad__)(struct OBJGPU *, struct Intr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__intrStatePreUnload__)(struct OBJGPU *, struct Intr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__intrStatePostUnload__)(struct OBJGPU *, struct Intr * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__intrIsPresent__)(struct OBJGPU *, struct Intr * /*this*/);  // virtual inherited (engstate) base (engstate)
 };
 
 #ifndef __NVOC_CLASS_Intr_TYPEDEF__
@@ -408,15 +420,15 @@ NV_STATUS __nvoc_objCreate_Intr(Intr**, Dynamic*, NvU32);
 
 
 // Wrapper macros
-#define intrConstructEngine_FNPTR(pIntr) pIntr->__intrConstructEngine__
+#define intrConstructEngine_FNPTR(pIntr) pIntr->__nvoc_vtable->__intrConstructEngine__
 #define intrConstructEngine(pGpu, pIntr, arg3) intrConstructEngine_DISPATCH(pGpu, pIntr, arg3)
-#define intrStatePreInitLocked_FNPTR(pIntr) pIntr->__intrStatePreInitLocked__
+#define intrStatePreInitLocked_FNPTR(pIntr) pIntr->__nvoc_vtable->__intrStatePreInitLocked__
 #define intrStatePreInitLocked(pGpu, pIntr) intrStatePreInitLocked_DISPATCH(pGpu, pIntr)
-#define intrStateInitUnlocked_FNPTR(pIntr) pIntr->__intrStateInitUnlocked__
+#define intrStateInitUnlocked_FNPTR(pIntr) pIntr->__nvoc_vtable->__intrStateInitUnlocked__
 #define intrStateInitUnlocked(pGpu, pIntr) intrStateInitUnlocked_DISPATCH(pGpu, pIntr)
-#define intrStateInitLocked_FNPTR(pIntr) pIntr->__intrStateInitLocked__
+#define intrStateInitLocked_FNPTR(pIntr) pIntr->__nvoc_vtable->__intrStateInitLocked__
 #define intrStateInitLocked(pGpu, pIntr) intrStateInitLocked_DISPATCH(pGpu, pIntr)
-#define intrStateDestroy_FNPTR(pIntr) pIntr->__intrStateDestroy__
+#define intrStateDestroy_FNPTR(pIntr) pIntr->__nvoc_vtable->__intrStateDestroy__
 #define intrStateDestroy(pGpu, pIntr) intrStateDestroy_DISPATCH(pGpu, pIntr)
 #define intrDecodeStallIntrEn_FNPTR(pIntr) pIntr->__intrDecodeStallIntrEn__
 #define intrDecodeStallIntrEn(pGpu, pIntr, arg3) intrDecodeStallIntrEn_DISPATCH(pGpu, pIntr, arg3)
@@ -457,10 +469,10 @@ NV_STATUS __nvoc_objCreate_Intr(Intr**, Dynamic*, NvU32);
 #define intrSanityCheckEngineIntrNotificationVector_FNPTR(pIntr) pIntr->__intrSanityCheckEngineIntrNotificationVector__
 #define intrSanityCheckEngineIntrNotificationVector(pGpu, pIntr, vector, mcEngine) intrSanityCheckEngineIntrNotificationVector_DISPATCH(pGpu, pIntr, vector, mcEngine)
 #define intrSanityCheckEngineIntrNotificationVector_HAL(pGpu, pIntr, vector, mcEngine) intrSanityCheckEngineIntrNotificationVector_DISPATCH(pGpu, pIntr, vector, mcEngine)
-#define intrStateLoad_FNPTR(pIntr) pIntr->__intrStateLoad__
+#define intrStateLoad_FNPTR(pIntr) pIntr->__nvoc_vtable->__intrStateLoad__
 #define intrStateLoad(pGpu, pIntr, arg3) intrStateLoad_DISPATCH(pGpu, pIntr, arg3)
 #define intrStateLoad_HAL(pGpu, pIntr, arg3) intrStateLoad_DISPATCH(pGpu, pIntr, arg3)
-#define intrStateUnload_FNPTR(pIntr) pIntr->__intrStateUnload__
+#define intrStateUnload_FNPTR(pIntr) pIntr->__nvoc_vtable->__intrStateUnload__
 #define intrStateUnload(pGpu, pIntr, arg3) intrStateUnload_DISPATCH(pGpu, pIntr, arg3)
 #define intrStateUnload_HAL(pGpu, pIntr, arg3) intrStateUnload_DISPATCH(pGpu, pIntr, arg3)
 #define intrInitSubtreeMap_FNPTR(pIntr) pIntr->__intrInitSubtreeMap__
@@ -478,40 +490,40 @@ NV_STATUS __nvoc_objCreate_Intr(Intr**, Dynamic*, NvU32);
 #define intrGetIntrEnFromHw_FNPTR(pIntr) pIntr->__intrGetIntrEnFromHw__
 #define intrGetIntrEnFromHw(pGpu, pIntr, arg3) intrGetIntrEnFromHw_DISPATCH(pGpu, pIntr, arg3)
 #define intrGetIntrEnFromHw_HAL(pGpu, pIntr, arg3) intrGetIntrEnFromHw_DISPATCH(pGpu, pIntr, arg3)
-#define intrInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateInitMissing__
+#define intrInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateInitMissing__
 #define intrInitMissing(pGpu, pEngstate) intrInitMissing_DISPATCH(pGpu, pEngstate)
-#define intrStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreInitUnlocked__
+#define intrStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreInitUnlocked__
 #define intrStatePreInitUnlocked(pGpu, pEngstate) intrStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define intrStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreLoad__
+#define intrStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreLoad__
 #define intrStatePreLoad(pGpu, pEngstate, arg3) intrStatePreLoad_DISPATCH(pGpu, pEngstate, arg3)
-#define intrStatePostLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePostLoad__
+#define intrStatePostLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePostLoad__
 #define intrStatePostLoad(pGpu, pEngstate, arg3) intrStatePostLoad_DISPATCH(pGpu, pEngstate, arg3)
-#define intrStatePreUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreUnload__
+#define intrStatePreUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreUnload__
 #define intrStatePreUnload(pGpu, pEngstate, arg3) intrStatePreUnload_DISPATCH(pGpu, pEngstate, arg3)
-#define intrStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePostUnload__
+#define intrStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePostUnload__
 #define intrStatePostUnload(pGpu, pEngstate, arg3) intrStatePostUnload_DISPATCH(pGpu, pEngstate, arg3)
-#define intrIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateIsPresent__
+#define intrIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateIsPresent__
 #define intrIsPresent(pGpu, pEngstate) intrIsPresent_DISPATCH(pGpu, pEngstate)
 
 // Dispatch functions
 static inline NV_STATUS intrConstructEngine_DISPATCH(OBJGPU *pGpu, struct Intr *pIntr, ENGDESCRIPTOR arg3) {
-    return pIntr->__intrConstructEngine__(pGpu, pIntr, arg3);
+    return pIntr->__nvoc_vtable->__intrConstructEngine__(pGpu, pIntr, arg3);
 }
 
 static inline NV_STATUS intrStatePreInitLocked_DISPATCH(OBJGPU *pGpu, struct Intr *pIntr) {
-    return pIntr->__intrStatePreInitLocked__(pGpu, pIntr);
+    return pIntr->__nvoc_vtable->__intrStatePreInitLocked__(pGpu, pIntr);
 }
 
 static inline NV_STATUS intrStateInitUnlocked_DISPATCH(OBJGPU *pGpu, struct Intr *pIntr) {
-    return pIntr->__intrStateInitUnlocked__(pGpu, pIntr);
+    return pIntr->__nvoc_vtable->__intrStateInitUnlocked__(pGpu, pIntr);
 }
 
 static inline NV_STATUS intrStateInitLocked_DISPATCH(OBJGPU *pGpu, struct Intr *pIntr) {
-    return pIntr->__intrStateInitLocked__(pGpu, pIntr);
+    return pIntr->__nvoc_vtable->__intrStateInitLocked__(pGpu, pIntr);
 }
 
 static inline void intrStateDestroy_DISPATCH(OBJGPU *pGpu, struct Intr *pIntr) {
-    pIntr->__intrStateDestroy__(pGpu, pIntr);
+    pIntr->__nvoc_vtable->__intrStateDestroy__(pGpu, pIntr);
 }
 
 static inline NvU32 intrDecodeStallIntrEn_DISPATCH(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3) {
@@ -567,11 +579,11 @@ static inline void intrSanityCheckEngineIntrNotificationVector_DISPATCH(OBJGPU *
 }
 
 static inline NV_STATUS intrStateLoad_DISPATCH(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3) {
-    return pIntr->__intrStateLoad__(pGpu, pIntr, arg3);
+    return pIntr->__nvoc_vtable->__intrStateLoad__(pGpu, pIntr, arg3);
 }
 
 static inline NV_STATUS intrStateUnload_DISPATCH(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg3) {
-    return pIntr->__intrStateUnload__(pGpu, pIntr, arg3);
+    return pIntr->__nvoc_vtable->__intrStateUnload__(pGpu, pIntr, arg3);
 }
 
 static inline NV_STATUS intrInitSubtreeMap_DISPATCH(OBJGPU *pGpu, struct Intr *pIntr) {
@@ -595,31 +607,31 @@ static inline NvU32 intrGetIntrEnFromHw_DISPATCH(OBJGPU *pGpu, struct Intr *pInt
 }
 
 static inline void intrInitMissing_DISPATCH(struct OBJGPU *pGpu, struct Intr *pEngstate) {
-    pEngstate->__intrInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_vtable->__intrInitMissing__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS intrStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct Intr *pEngstate) {
-    return pEngstate->__intrStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_vtable->__intrStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS intrStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct Intr *pEngstate, NvU32 arg3) {
-    return pEngstate->__intrStatePreLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_vtable->__intrStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS intrStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct Intr *pEngstate, NvU32 arg3) {
-    return pEngstate->__intrStatePostLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_vtable->__intrStatePostLoad__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS intrStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct Intr *pEngstate, NvU32 arg3) {
-    return pEngstate->__intrStatePreUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_vtable->__intrStatePreUnload__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS intrStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct Intr *pEngstate, NvU32 arg3) {
-    return pEngstate->__intrStatePostUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_vtable->__intrStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
 static inline NvBool intrIsPresent_DISPATCH(struct OBJGPU *pGpu, struct Intr *pEngstate) {
-    return pEngstate->__intrIsPresent__(pGpu, pEngstate);
+    return pEngstate->__nvoc_vtable->__intrIsPresent__(pGpu, pEngstate);
 }
 
 NV_STATUS intrCheckFecsEventbufferPending_IMPL(OBJGPU *pGpu, struct Intr *pIntr, union MC_ENGINE_BITVECTOR *arg3, NvBool *arg4);
@@ -1461,8 +1473,8 @@ static inline NV_STATUS intrGetNvlinkIntrMaskOffset(OBJGPU *pGpu, struct Intr *p
 
 #define intrGetNvlinkIntrMaskOffset_HAL(pGpu, pIntr, arg3, arg4) intrGetNvlinkIntrMaskOffset(pGpu, pIntr, arg3, arg4)
 
-static inline NvBool intrRequiresPossibleErrorNotifier_491d52(OBJGPU *pGpu, struct Intr *pIntr, union MC_ENGINE_BITVECTOR *pEngines) {
-    return ((NvBool)(0 != 0));
+static inline NvBool intrRequiresPossibleErrorNotifier_3dd2c9(OBJGPU *pGpu, struct Intr *pIntr, union MC_ENGINE_BITVECTOR *pEngines) {
+    return NV_FALSE;
 }
 
 NvBool intrRequiresPossibleErrorNotifier_TU102(OBJGPU *pGpu, struct Intr *pIntr, union MC_ENGINE_BITVECTOR *pEngines);
@@ -1478,7 +1490,7 @@ static inline NvBool intrRequiresPossibleErrorNotifier(OBJGPU *pGpu, struct Intr
     return NV_FALSE;
 }
 #else //__nvoc_intr_h_disabled
-#define intrRequiresPossibleErrorNotifier(pGpu, pIntr, pEngines) intrRequiresPossibleErrorNotifier_491d52(pGpu, pIntr, pEngines)
+#define intrRequiresPossibleErrorNotifier(pGpu, pIntr, pEngines) intrRequiresPossibleErrorNotifier_3dd2c9(pGpu, pIntr, pEngines)
 #endif //__nvoc_intr_h_disabled
 
 #define intrRequiresPossibleErrorNotifier_HAL(pGpu, pIntr, pEngines) intrRequiresPossibleErrorNotifier(pGpu, pIntr, pEngines)

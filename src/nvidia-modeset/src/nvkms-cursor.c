@@ -305,7 +305,7 @@ void nvMoveCursor(NVDispEvoPtr pDispEvo, const NvU32 apiHead,
         }
 
         pDevEvo->gpus[sd].headState[head].cursor.x =
-            pParams->x - (hwViewportInWidth * pHeadState->tilePosition);
+            pParams->x - (hwViewportInWidth * pHeadState->mergeHeadSection);
         pDevEvo->gpus[sd].headState[head].cursor.y = pParams->y;
 
         nvEvoMoveCursorInternal(pDispEvo,

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -451,20 +451,27 @@ vidmemCopyConstruct
     RS_RES_ALLOC_PARAMS_INTERNAL    *pParams
 )
 {
-    Memory    *pMemorySrc            = dynamicCast(pParams->pSrcRef->pResource, Memory);
-    OBJGPU    *pGpu                  = pMemorySrc->pGpu;
-    NV_STATUS  status;
+    Memory            *pMemorySrc   = dynamicCast(pParams->pSrcRef->pResource, Memory);
+    OBJGPU            *pGpu         = pMemorySrc->pGpu;
+    MEMORY_DESCRIPTOR *pMemDesc     = pMemorySrc->pMemDesc;
+    NV_STATUS          status       = NV_ERR_INVALID_ARGUMENT;
 
-    NV_ASSERT_OR_RETURN(!memdescGetCustomHeap(pMemorySrc->pMemDesc), NV_ERR_INVALID_ARGUMENT);
+    switch (memdescGetCustomHeap(pMemDesc))
+    {
+        case MEMDESC_CUSTOM_HEAP_NONE:
+            SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
+                MEMORY_DESCRIPTOR *pSrcMemDesc = memdescGetMemDescFromGpu(pMemorySrc->pMemDesc, pGpu);
+                status = heapReference(pGpu, pSrcMemDesc->pHeap, pMemorySrc->HeapOwner,
+                                       pSrcMemDesc);
+                NV_ASSERT_OK_OR_RETURN(status);
+            SLI_LOOP_END
+            break;
+        default:
+            NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_ARGUMENT);
+            break;
+    }
 
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
-        MEMORY_DESCRIPTOR *pSrcMemDesc = memdescGetMemDescFromGpu(pMemorySrc->pMemDesc, pGpu);
-        status = heapReference(pGpu, pSrcMemDesc->pHeap, pMemorySrc->HeapOwner,
-                               pSrcMemDesc);
-        NV_ASSERT(status == NV_OK);
-    SLI_LOOP_END
-
-    return NV_OK;
+    return status;
 }
 
 /*!
@@ -506,7 +513,7 @@ vidmemConstruct_IMPL
     MEMORY_ALLOCATION_REQUEST   *pAllocRequest         = &allocRequest;
     OBJGPU                      *pGpu                  = pMemory->pGpu;
     MemoryManager               *pMemoryManager        = GPU_GET_MEMORY_MANAGER(pGpu);
-    Heap                        *pHeap;
+    Heap                        *pHeap                 = NULL;
     NvBool                       bSubheap              = NV_FALSE;
     NvBool                       bRsvdHeap             = NV_FALSE;
     MEMORY_DESCRIPTOR           *pTopLevelMemDesc      = NULL;
@@ -1008,8 +1015,7 @@ vidmemConstruct_IMPL
     if (bUpdatePteKind)
     {
         rmStatus = kbusUpdateStaticBar1VAMapping_HAL(pGpu, pKernelBus,
-                         pMemory->pMemDesc, 0,
-                         memdescGetSize(pMemory->pMemDesc), NV_FALSE);
+                         pMemory->pMemDesc, NV_FALSE);
 
         if (rmStatus != NV_OK)
         {
@@ -1071,6 +1077,7 @@ vidmemDestruct_IMPL
     Memory             *pMemory        = staticCast(pVideoMemory, Memory);
     OBJGPU             *pGpu           = pMemory->pGpu;
     MEMORY_DESCRIPTOR  *pMemDesc       = pMemory->pMemDesc;
+    MEMDESC_CUSTOM_HEAP customHeap;
 
     // Free any association of the memory with existing third-party p2p object
     CliUnregisterMemoryFromThirdPartyP2P(pMemory);
@@ -1079,7 +1086,8 @@ vidmemDestruct_IMPL
 
     // free the video memory based on how it was alloced ... a non-zero
     // heapOwner indicates it was heapAlloc-ed.
-    if (!memdescGetCustomHeap(pMemDesc))
+    customHeap = memdescGetCustomHeap(pMemDesc);
+    if (customHeap == MEMDESC_CUSTOM_HEAP_NONE)
     {
         MemoryManager      *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
         NvHandle            hClient        = RES_GET_CLIENT_HANDLE(pVideoMemory);

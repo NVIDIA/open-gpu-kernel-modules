@@ -334,9 +334,6 @@ memmgrAllocHal_GM107
     type          = pFbAllocInfo->pageFormat->type;
     addrSpace     = memmgrAllocGetAddrSpace(pMemoryManager, pFbAllocInfo->pageFormat->flags, retAttr);
 
-    if ( NVOS32_ATTR_LOCATION_AGP == DRF_VAL(OS32, _ATTR, _LOCATION, pFbAllocInfo->pageFormat->attr) )
-        return NV_ERR_NOT_SUPPORTED; // only local vid & pci (sysmem) supported
-
     bAlignPhase = !!(pFbAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_SKIP_RESOURCE_ALLOC);
 
     //
@@ -641,12 +638,56 @@ memmgrGetBAR1InfoForDevice_GM107
         bar1Info->bankSwizzleAlignment = vaspaceGetBigPageSize(pBar1VAS);
 
         bar1Info->bar1AvailSize = 0;
+        bar1Info->bar1MaxContigAvailSize = 0;
 
-        if (pVASHeap != NULL)
+        if (!kbusIsStaticBar1Enabled(pGpu, pKernelBus))
         {
-            pVASHeap->eheapInfoForRange(pVASHeap, bar1VARange, NULL, &largestFreeSize, NULL, &freeSize);
-            bar1Info->bar1AvailSize = (NvU32)(freeSize / 1024);
-            bar1Info->bar1MaxContigAvailSize = (NvU32)(largestFreeSize / 1024);
+            // normal non-static BAR1 case
+            if (pVASHeap != NULL)
+            {
+                pVASHeap->eheapInfoForRange(pVASHeap, bar1VARange, NULL, &largestFreeSize, NULL, &freeSize);
+                bar1Info->bar1AvailSize = (NvU32)(freeSize / 1024);
+                bar1Info->bar1MaxContigAvailSize = (NvU32)(largestFreeSize / 1024);
+            }
+        }
+        else
+        {
+            //
+            // Actual BAR1 usage isn't interesting in static BAR1 because all the
+            // client BAR1 is already mapped. Also BAR1 >= client FB size.
+            // So free BAR1 that can stil be used is reported as
+            // bar1Size - FB in-use size
+            //
+            NV2080_CTRL_FB_GET_INFO_V2_PARAMS fbInfoParams = {0};
+            Subdevice *pSubdevice;
+            RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+
+            NvU32 fbInUse;
+
+            NV_ASSERT_OK_OR_RETURN(
+                subdeviceGetByInstance(pClient,
+                                       RES_GET_HANDLE(pDevice),
+                                       gpumgrGetSubDeviceInstanceFromGpu(pGpu),
+                                       &pSubdevice));
+
+            fbInfoParams.fbInfoList[0].index = NV2080_CTRL_FB_INFO_INDEX_HEAP_SIZE;
+            fbInfoParams.fbInfoList[1].index = NV2080_CTRL_FB_INFO_INDEX_HEAP_FREE;
+
+            fbInfoParams.fbInfoListSize = 2;
+
+            NV_ASSERT_OK_OR_RETURN(
+                pRmApi->Control(pRmApi, pClient->hClient, RES_GET_HANDLE(pSubdevice),
+                                NV2080_CTRL_CMD_FB_GET_INFO_V2,
+                                &fbInfoParams,
+                                sizeof(fbInfoParams)));
+
+            fbInUse = fbInfoParams.fbInfoList[0].data -
+                      fbInfoParams.fbInfoList[1].data;
+
+            bar1Info->bar1AvailSize = bar1Info->bar1Size - fbInUse;
+
+            // Bug 4087553: we're requeted to return 0 for now
+            bar1Info->bar1MaxContigAvailSize = 0;
         }
     }
     else

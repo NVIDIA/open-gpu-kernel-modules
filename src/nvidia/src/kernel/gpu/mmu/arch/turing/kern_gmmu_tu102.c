@@ -45,28 +45,20 @@
  * @param pGpu
  * @param pKernelGmmu
  * @param pTimeOut      Timeout for the invalidate operation.
- * @param gfid          GFID
  */
 NV_STATUS
 kgmmuCheckPendingInvalidates_TU102
 (
     OBJGPU     *pGpu,
     KernelGmmu *pKernelGmmu,
-    RMTIMEOUT  *pTimeOut,
-    NvU32       gfid
+    RMTIMEOUT  *pTimeOut
 )
 {
     NV_STATUS status = NV_OK;
 
     while (1)
     {
-        NvU32   regVal;
-
-        {
-            NV_ASSERT(IS_GFID_PF(gfid));
-
-            regVal = GPU_VREG_RD32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_MMU_INVALIDATE);
-        }
+        NvU32 regVal = GPU_VREG_RD32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_MMU_INVALIDATE);
 
         if (FLD_TEST_DRF(_VIRTUAL_FUNCTION_PRIV, _MMU_INVALIDATE, _TRIGGER, _FALSE, regVal))
             break;
@@ -103,25 +95,23 @@ kgmmuCommitTlbInvalidate_TU102
 {
     NV_STATUS status = NV_OK;
 
+    NV_ASSERT_OR_RETURN(IS_GFID_PF(pParams->gfid), NV_ERR_INVALID_ARGUMENT);
+
+    if (IS_VIRTUAL(pGpu))
+    {
+        // Prevent PF from updating INVALIDATE_ALL_PDB from VF requests, bug 3356599
+        pParams->regVal = FLD_SET_DRF(_VIRTUAL_FUNCTION_PRIV, _MMU_INVALIDATE, _ALL_PDB, _FALSE, pParams->regVal);
+    }
+
     if (!FLD_TEST_DRF(_VIRTUAL_FUNCTION_PRIV, _MMU_INVALIDATE, _ALL_PDB, _TRUE, pParams->regVal))
     {
         kgmmuSetPdbToInvalidate_HAL(pGpu, pKernelGmmu, pParams);
     }
 
-    {
-        NV_ASSERT(IS_GFID_PF(pParams->gfid));
-
-        if (IS_VIRTUAL(pGpu))
-        {
-            // Prevent VF from updating INVALIDATE_ALL_PDB, bug 3356599
-            pParams->regVal = FLD_SET_DRF(_VIRTUAL_FUNCTION_PRIV, _MMU_INVALIDATE, _ALL_PDB, _FALSE, pParams->regVal);
-        }
-
-        GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_MMU_INVALIDATE, pParams->regVal);
-    }
+    GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_MMU_INVALIDATE, pParams->regVal);
 
     // Wait for the invalidate command to complete.
-    status = kgmmuCheckPendingInvalidates_HAL(pGpu, pKernelGmmu, &pParams->timeout, pParams->gfid);
+    status = kgmmuCheckPendingInvalidates_HAL(pGpu, pKernelGmmu, &pParams->timeout);
 
     return status;
 }
@@ -142,21 +132,19 @@ kgmmuSetPdbToInvalidate_TU102
     TLB_INVALIDATE_PARAMS *pParams
 )
 {
-    {
-        NV_ASSERT(IS_GFID_PF(pParams->gfid));
+    NV_ASSERT_OR_RETURN_VOID(IS_GFID_PF(pParams->gfid));
 
-        GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_MMU_INVALIDATE_PDB,
-                DRF_NUM(_VIRTUAL_FUNCTION_PRIV, _MMU_INVALIDATE_PDB, _ADDR,
-                        NvU64_LO32(pParams->pdbAddress >>
-                                NV_VIRTUAL_FUNCTION_PRIV_MMU_INVALIDATE_PDB_ADDR_ALIGNMENT)) |
-                DRF_NUM(_VIRTUAL_FUNCTION_PRIV, _MMU_INVALIDATE_PDB, _APERTURE, pParams->pdbAperture));
+    GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_MMU_INVALIDATE_PDB,
+            DRF_NUM(_VIRTUAL_FUNCTION_PRIV, _MMU_INVALIDATE_PDB, _ADDR,
+                    NvU64_LO32(pParams->pdbAddress >>
+                            NV_VIRTUAL_FUNCTION_PRIV_MMU_INVALIDATE_PDB_ADDR_ALIGNMENT)) |
+            DRF_NUM(_VIRTUAL_FUNCTION_PRIV, _MMU_INVALIDATE_PDB, _APERTURE, pParams->pdbAperture));
 
-        GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_MMU_INVALIDATE_UPPER_PDB,
-                DRF_NUM(_VIRTUAL_FUNCTION_PRIV, _MMU_INVALIDATE_UPPER_PDB, _ADDR,
-                        NvU64_LO32((pParams->pdbAddress >>
-                                    NV_VIRTUAL_FUNCTION_PRIV_MMU_INVALIDATE_PDB_ADDR_ALIGNMENT) >>
-                                    DRF_SIZE(NV_VIRTUAL_FUNCTION_PRIV_MMU_INVALIDATE_PDB_ADDR))));
-    }
+    GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_MMU_INVALIDATE_UPPER_PDB,
+            DRF_NUM(_VIRTUAL_FUNCTION_PRIV, _MMU_INVALIDATE_UPPER_PDB, _ADDR,
+                    NvU64_LO32((pParams->pdbAddress >>
+                                NV_VIRTUAL_FUNCTION_PRIV_MMU_INVALIDATE_PDB_ADDR_ALIGNMENT) >>
+                                DRF_SIZE(NV_VIRTUAL_FUNCTION_PRIV_MMU_INVALIDATE_PDB_ADDR))));
 }
 
 /*!

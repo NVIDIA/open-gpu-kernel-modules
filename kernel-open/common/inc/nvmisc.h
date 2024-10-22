@@ -722,6 +722,42 @@ nvPrevPow2_U64(const NvU64 x )
 }
 
 //
+// Bug 4851259: Newly added functions must be hidden from certain HS-signed
+// ucode compilers to avoid signature mismatch.
+//
+#ifndef NVDEC_1_0
+/*!
+ * Returns the position of nth set bit in the given mask.
+ *
+ * Returns -1 if mask has fewer than n bits set.
+ *
+ * n is 0 indexed and has valid values 0..31 inclusive, so "zeroth" set bit is
+ * the first set LSB.
+ *
+ * Example, if mask = 0x000000F0u and n = 1, the return value will be 5.
+ * Example, if mask = 0x000000F0u and n = 4, the return value will be -1.
+ */
+static NV_FORCEINLINE NvS32
+nvGetNthSetBitIndex32(NvU32 mask, NvU32 n)
+{
+    NvU32 seenSetBitsCount = 0;
+    NvS32 index;
+    FOR_EACH_INDEX_IN_MASK(32, index, mask)
+    {
+        if (seenSetBitsCount == n)
+        {
+            return index;
+        }
+        ++seenSetBitsCount;
+    }
+    FOR_EACH_INDEX_IN_MASK_END;
+
+    return -1;
+}
+
+#endif // NVDEC_1_0
+
+//
 // Size to use when declaring variable-sized arrays
 //
 #define NV_ANYSIZE_ARRAY                                                      1

@@ -46,7 +46,7 @@ kfifoValidateSCGTypeAndRunqueue_GP102
     NvU32       runqueue
 )
 {
-    if (scgType == NV_PPBDMA_SET_CHANNEL_INFO_SCG_TYPE_COMPUTE1 &&
+    if (scgType == NV_PBDMA_SET_CHANNEL_INFO_SCG_TYPE_COMPUTE1 &&
         runqueue == 0)
     {
         NV_PRINTF(LEVEL_INFO,

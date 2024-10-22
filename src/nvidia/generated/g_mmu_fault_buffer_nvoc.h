@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -62,10 +62,15 @@ extern "C" {
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__MmuFaultBuffer;
+
+
 struct MmuFaultBuffer {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__MmuFaultBuffer *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct GpuResource __nvoc_base_GpuResource;
@@ -81,16 +86,24 @@ struct MmuFaultBuffer {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super
     struct MmuFaultBuffer *__nvoc_pbase_MmuFaultBuffer;    // faultbuf
 
-    // Vtable with 36 per-object function pointers
-    NV_STATUS (*__faultbufMap__)(struct MmuFaultBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual override (res) base (gpures)
-    NV_STATUS (*__faultbufUnmap__)(struct MmuFaultBuffer * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual override (res) base (gpures)
-    NV_STATUS (*__faultbufGetMapAddrSpace__)(struct MmuFaultBuffer * /*this*/, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual override (gpures) base (gpures)
+    // Vtable with 6 per-object function pointers
     NV_STATUS (*__faultbufCtrlCmdFaultbufferGetSize__)(struct MmuFaultBuffer * /*this*/, NVB069_CTRL_FAULTBUFFER_GET_SIZE_PARAMS *);  // exported (id=0xb0690105)
     NV_STATUS (*__faultbufCtrlCmdFaultbufferGetRegisterMappings__)(struct MmuFaultBuffer * /*this*/, NVB069_CTRL_CMD_FAULTBUFFER_GET_REGISTER_MAPPINGS_PARAMS *);  // exported (id=0xb0690106)
     NV_STATUS (*__faultbufCtrlCmdMmuFaultBufferRegisterNonReplayBuf__)(struct MmuFaultBuffer * /*this*/, NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_NON_REPLAY_BUF_PARAMS *);  // exported (id=0xc3690101)
     NV_STATUS (*__faultbufCtrlCmdMmuFaultBufferUnregisterNonReplayBuf__)(struct MmuFaultBuffer * /*this*/, NVC369_CTRL_MMU_FAULT_BUFFER_UNREGISTER_NON_REPLAY_BUF_PARAMS *);  // exported (id=0xc3690102)
     NV_STATUS (*__faultbufCtrlCmdMmuFaultBufferRegisterReplayBuf__)(struct MmuFaultBuffer * /*this*/, NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_REPLAY_BUF_PARAMS *);  // exported (id=0xc3690103)
     NV_STATUS (*__faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf__)(struct MmuFaultBuffer * /*this*/, NVC369_CTRL_MMU_FAULT_BUFFER_UNREGISTER_REPLAY_BUF_PARAMS *);  // exported (id=0xc3690104)
+};
+
+
+// Metadata including vtable with 30 function pointers plus superclass metadata
+struct NVOC_VTABLE__MmuFaultBuffer {
+    const struct NVOC_VTABLE__GpuResource GpuResource;    // (gpures) 25 function pointers
+    const struct NVOC_VTABLE__Notifier Notifier;    // (notify) 5 function pointers
+
+    NV_STATUS (*__faultbufMap__)(struct MmuFaultBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual override (res) base (gpures)
+    NV_STATUS (*__faultbufUnmap__)(struct MmuFaultBuffer * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual override (res) base (gpures)
+    NV_STATUS (*__faultbufGetMapAddrSpace__)(struct MmuFaultBuffer * /*this*/, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual override (gpures) base (gpures)
     NV_STATUS (*__faultbufControl__)(struct MmuFaultBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
     NvBool (*__faultbufShareCallback__)(struct MmuFaultBuffer * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__faultbufGetRegBaseOffsetAndSize__)(struct MmuFaultBuffer * /*this*/, struct OBJGPU *, NvU32 *, NvU32 *);  // virtual inherited (gpures) base (gpures)
@@ -150,11 +163,11 @@ NV_STATUS __nvoc_objCreate_MmuFaultBuffer(MmuFaultBuffer**, Dynamic*, NvU32, str
 
 
 // Wrapper macros
-#define faultbufMap_FNPTR(pMmuFaultBuffer) pMmuFaultBuffer->__faultbufMap__
+#define faultbufMap_FNPTR(pMmuFaultBuffer) pMmuFaultBuffer->__nvoc_vtable->__faultbufMap__
 #define faultbufMap(pMmuFaultBuffer, pCallContext, pParams, pCpuMapping) faultbufMap_DISPATCH(pMmuFaultBuffer, pCallContext, pParams, pCpuMapping)
-#define faultbufUnmap_FNPTR(pMmuFaultBuffer) pMmuFaultBuffer->__faultbufUnmap__
+#define faultbufUnmap_FNPTR(pMmuFaultBuffer) pMmuFaultBuffer->__nvoc_vtable->__faultbufUnmap__
 #define faultbufUnmap(pMmuFaultBuffer, pCallContext, pCpuMapping) faultbufUnmap_DISPATCH(pMmuFaultBuffer, pCallContext, pCpuMapping)
-#define faultbufGetMapAddrSpace_FNPTR(pMmuFaultBuffer) pMmuFaultBuffer->__faultbufGetMapAddrSpace__
+#define faultbufGetMapAddrSpace_FNPTR(pMmuFaultBuffer) pMmuFaultBuffer->__nvoc_vtable->__faultbufGetMapAddrSpace__
 #define faultbufGetMapAddrSpace(pMmuFaultBuffer, pCallContext, mapFlags, pAddrSpace) faultbufGetMapAddrSpace_DISPATCH(pMmuFaultBuffer, pCallContext, mapFlags, pAddrSpace)
 #define faultbufCtrlCmdFaultbufferGetSize_FNPTR(pMmuFaultBuffer) pMmuFaultBuffer->__faultbufCtrlCmdFaultbufferGetSize__
 #define faultbufCtrlCmdFaultbufferGetSize(pMmuFaultBuffer, pGetParams) faultbufCtrlCmdFaultbufferGetSize_DISPATCH(pMmuFaultBuffer, pGetParams)
@@ -168,72 +181,72 @@ NV_STATUS __nvoc_objCreate_MmuFaultBuffer(MmuFaultBuffer**, Dynamic*, NvU32, str
 #define faultbufCtrlCmdMmuFaultBufferRegisterReplayBuf(pMmuFaultBuffer, pParams) faultbufCtrlCmdMmuFaultBufferRegisterReplayBuf_DISPATCH(pMmuFaultBuffer, pParams)
 #define faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf_FNPTR(pMmuFaultBuffer) pMmuFaultBuffer->__faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf__
 #define faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf(pMmuFaultBuffer, pParams) faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf_DISPATCH(pMmuFaultBuffer, pParams)
-#define faultbufControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresControl__
+#define faultbufControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresControl__
 #define faultbufControl(pGpuResource, pCallContext, pParams) faultbufControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define faultbufShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresShareCallback__
+#define faultbufShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresShareCallback__
 #define faultbufShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) faultbufShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define faultbufGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetRegBaseOffsetAndSize__
+#define faultbufGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetRegBaseOffsetAndSize__
 #define faultbufGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) faultbufGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
-#define faultbufInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresInternalControlForward__
+#define faultbufInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresInternalControlForward__
 #define faultbufInternalControlForward(pGpuResource, command, pParams, size) faultbufInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
-#define faultbufGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetInternalObjectHandle__
+#define faultbufGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetInternalObjectHandle__
 #define faultbufGetInternalObjectHandle(pGpuResource) faultbufGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define faultbufAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresAccessCallback__
+#define faultbufAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
 #define faultbufAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) faultbufAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define faultbufGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemInterMapParams__
+#define faultbufGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
 #define faultbufGetMemInterMapParams(pRmResource, pParams) faultbufGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define faultbufCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresCheckMemInterUnmap__
+#define faultbufCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
 #define faultbufCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) faultbufCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define faultbufGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemoryMappingDescriptor__
+#define faultbufGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
 #define faultbufGetMemoryMappingDescriptor(pRmResource, ppMemDesc) faultbufGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define faultbufControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControlSerialization_Prologue__
+#define faultbufControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
 #define faultbufControlSerialization_Prologue(pResource, pCallContext, pParams) faultbufControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define faultbufControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControlSerialization_Epilogue__
+#define faultbufControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
 #define faultbufControlSerialization_Epilogue(pResource, pCallContext, pParams) faultbufControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define faultbufControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControl_Prologue__
+#define faultbufControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
 #define faultbufControl_Prologue(pResource, pCallContext, pParams) faultbufControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define faultbufControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControl_Epilogue__
+#define faultbufControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
 #define faultbufControl_Epilogue(pResource, pCallContext, pParams) faultbufControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define faultbufCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__
+#define faultbufCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
 #define faultbufCanCopy(pResource) faultbufCanCopy_DISPATCH(pResource)
-#define faultbufIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsDuplicate__
+#define faultbufIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
 #define faultbufIsDuplicate(pResource, hMemory, pDuplicate) faultbufIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define faultbufPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resPreDestruct__
+#define faultbufPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
 #define faultbufPreDestruct(pResource) faultbufPreDestruct_DISPATCH(pResource)
-#define faultbufControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resControlFilter__
+#define faultbufControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
 #define faultbufControlFilter(pResource, pCallContext, pParams) faultbufControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define faultbufIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsPartialUnmapSupported__
+#define faultbufIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
 #define faultbufIsPartialUnmapSupported(pResource) faultbufIsPartialUnmapSupported_DISPATCH(pResource)
-#define faultbufMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resMapTo__
+#define faultbufMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
 #define faultbufMapTo(pResource, pParams) faultbufMapTo_DISPATCH(pResource, pParams)
-#define faultbufUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resUnmapFrom__
+#define faultbufUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
 #define faultbufUnmapFrom(pResource, pParams) faultbufUnmapFrom_DISPATCH(pResource, pParams)
-#define faultbufGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resGetRefCount__
+#define faultbufGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
 #define faultbufGetRefCount(pResource) faultbufGetRefCount_DISPATCH(pResource)
-#define faultbufAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resAddAdditionalDependants__
+#define faultbufAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
 #define faultbufAddAdditionalDependants(pClient, pResource, pReference) faultbufAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define faultbufGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__notifyGetNotificationListPtr__
+#define faultbufGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationListPtr__
 #define faultbufGetNotificationListPtr(pNotifier) faultbufGetNotificationListPtr_DISPATCH(pNotifier)
-#define faultbufGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__notifyGetNotificationShare__
+#define faultbufGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationShare__
 #define faultbufGetNotificationShare(pNotifier) faultbufGetNotificationShare_DISPATCH(pNotifier)
-#define faultbufSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__notifySetNotificationShare__
+#define faultbufSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifySetNotificationShare__
 #define faultbufSetNotificationShare(pNotifier, pNotifShare) faultbufSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
-#define faultbufUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__notifyUnregisterEvent__
+#define faultbufUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyUnregisterEvent__
 #define faultbufUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) faultbufUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define faultbufGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__notifyGetOrAllocNotifShare__
+#define faultbufGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyGetOrAllocNotifShare__
 #define faultbufGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) faultbufGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
 static inline NV_STATUS faultbufMap_DISPATCH(struct MmuFaultBuffer *pMmuFaultBuffer, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pMmuFaultBuffer->__faultbufMap__(pMmuFaultBuffer, pCallContext, pParams, pCpuMapping);
+    return pMmuFaultBuffer->__nvoc_vtable->__faultbufMap__(pMmuFaultBuffer, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS faultbufUnmap_DISPATCH(struct MmuFaultBuffer *pMmuFaultBuffer, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pMmuFaultBuffer->__faultbufUnmap__(pMmuFaultBuffer, pCallContext, pCpuMapping);
+    return pMmuFaultBuffer->__nvoc_vtable->__faultbufUnmap__(pMmuFaultBuffer, pCallContext, pCpuMapping);
 }
 
 static inline NV_STATUS faultbufGetMapAddrSpace_DISPATCH(struct MmuFaultBuffer *pMmuFaultBuffer, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pMmuFaultBuffer->__faultbufGetMapAddrSpace__(pMmuFaultBuffer, pCallContext, mapFlags, pAddrSpace);
+    return pMmuFaultBuffer->__nvoc_vtable->__faultbufGetMapAddrSpace__(pMmuFaultBuffer, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS faultbufCtrlCmdFaultbufferGetSize_DISPATCH(struct MmuFaultBuffer *pMmuFaultBuffer, NVB069_CTRL_FAULTBUFFER_GET_SIZE_PARAMS *pGetParams) {
@@ -261,111 +274,111 @@ static inline NV_STATUS faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf_DISPATC
 }
 
 static inline NV_STATUS faultbufControl_DISPATCH(struct MmuFaultBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__faultbufControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_vtable->__faultbufControl__(pGpuResource, pCallContext, pParams);
 }
 
 static inline NvBool faultbufShareCallback_DISPATCH(struct MmuFaultBuffer *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__faultbufShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_vtable->__faultbufShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS faultbufGetRegBaseOffsetAndSize_DISPATCH(struct MmuFaultBuffer *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__faultbufGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_vtable->__faultbufGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS faultbufInternalControlForward_DISPATCH(struct MmuFaultBuffer *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__faultbufInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_vtable->__faultbufInternalControlForward__(pGpuResource, command, pParams, size);
 }
 
 static inline NvHandle faultbufGetInternalObjectHandle_DISPATCH(struct MmuFaultBuffer *pGpuResource) {
-    return pGpuResource->__faultbufGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_vtable->__faultbufGetInternalObjectHandle__(pGpuResource);
 }
 
 static inline NvBool faultbufAccessCallback_DISPATCH(struct MmuFaultBuffer *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__faultbufAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_vtable->__faultbufAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS faultbufGetMemInterMapParams_DISPATCH(struct MmuFaultBuffer *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__faultbufGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_vtable->__faultbufGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS faultbufCheckMemInterUnmap_DISPATCH(struct MmuFaultBuffer *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__faultbufCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_vtable->__faultbufCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS faultbufGetMemoryMappingDescriptor_DISPATCH(struct MmuFaultBuffer *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__faultbufGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_vtable->__faultbufGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS faultbufControlSerialization_Prologue_DISPATCH(struct MmuFaultBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__faultbufControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__faultbufControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void faultbufControlSerialization_Epilogue_DISPATCH(struct MmuFaultBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__faultbufControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__faultbufControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS faultbufControl_Prologue_DISPATCH(struct MmuFaultBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__faultbufControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__faultbufControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void faultbufControl_Epilogue_DISPATCH(struct MmuFaultBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__faultbufControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__faultbufControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool faultbufCanCopy_DISPATCH(struct MmuFaultBuffer *pResource) {
-    return pResource->__faultbufCanCopy__(pResource);
+    return pResource->__nvoc_vtable->__faultbufCanCopy__(pResource);
 }
 
 static inline NV_STATUS faultbufIsDuplicate_DISPATCH(struct MmuFaultBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__faultbufIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_vtable->__faultbufIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void faultbufPreDestruct_DISPATCH(struct MmuFaultBuffer *pResource) {
-    pResource->__faultbufPreDestruct__(pResource);
+    pResource->__nvoc_vtable->__faultbufPreDestruct__(pResource);
 }
 
 static inline NV_STATUS faultbufControlFilter_DISPATCH(struct MmuFaultBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__faultbufControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__faultbufControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool faultbufIsPartialUnmapSupported_DISPATCH(struct MmuFaultBuffer *pResource) {
-    return pResource->__faultbufIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_vtable->__faultbufIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS faultbufMapTo_DISPATCH(struct MmuFaultBuffer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__faultbufMapTo__(pResource, pParams);
+    return pResource->__nvoc_vtable->__faultbufMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS faultbufUnmapFrom_DISPATCH(struct MmuFaultBuffer *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__faultbufUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_vtable->__faultbufUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 faultbufGetRefCount_DISPATCH(struct MmuFaultBuffer *pResource) {
-    return pResource->__faultbufGetRefCount__(pResource);
+    return pResource->__nvoc_vtable->__faultbufGetRefCount__(pResource);
 }
 
 static inline void faultbufAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct MmuFaultBuffer *pResource, RsResourceRef *pReference) {
-    pResource->__faultbufAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_vtable->__faultbufAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 static inline PEVENTNOTIFICATION * faultbufGetNotificationListPtr_DISPATCH(struct MmuFaultBuffer *pNotifier) {
-    return pNotifier->__faultbufGetNotificationListPtr__(pNotifier);
+    return pNotifier->__nvoc_vtable->__faultbufGetNotificationListPtr__(pNotifier);
 }
 
 static inline struct NotifShare * faultbufGetNotificationShare_DISPATCH(struct MmuFaultBuffer *pNotifier) {
-    return pNotifier->__faultbufGetNotificationShare__(pNotifier);
+    return pNotifier->__nvoc_vtable->__faultbufGetNotificationShare__(pNotifier);
 }
 
 static inline void faultbufSetNotificationShare_DISPATCH(struct MmuFaultBuffer *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__faultbufSetNotificationShare__(pNotifier, pNotifShare);
+    pNotifier->__nvoc_vtable->__faultbufSetNotificationShare__(pNotifier, pNotifShare);
 }
 
 static inline NV_STATUS faultbufUnregisterEvent_DISPATCH(struct MmuFaultBuffer *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return pNotifier->__faultbufUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return pNotifier->__nvoc_vtable->__faultbufUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 static inline NV_STATUS faultbufGetOrAllocNotifShare_DISPATCH(struct MmuFaultBuffer *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return pNotifier->__faultbufGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
+    return pNotifier->__nvoc_vtable->__faultbufGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 NV_STATUS faultbufMap_IMPL(struct MmuFaultBuffer *pMmuFaultBuffer, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping);

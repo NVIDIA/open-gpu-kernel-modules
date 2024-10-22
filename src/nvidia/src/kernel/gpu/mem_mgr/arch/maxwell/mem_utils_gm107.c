@@ -272,7 +272,8 @@ _memUtilsChannelAllocatePB_GM107
     hVirtMem          =  pChannel->pushBufferId;
     size              =  pChannel->channelSize;
 
-    LOCK_ASSERT_AND_RETURN(!rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(!rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
+
     // allocate the physical memory
     portMemSet(&memAllocParams, 0, sizeof(memAllocParams));
     memAllocParams.owner     = HEAP_OWNER_RM_CLIENT_GENERIC;
@@ -1127,7 +1128,7 @@ _memUtilsAllocateUserD
     NvU32                        userdMemClass = NV01_MEMORY_LOCAL_USER;
 
     // Ensure that call is not made with lock held
-    LOCK_ASSERT_AND_RETURN(!rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(!rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     portMemSet(&memAllocParams, 0, sizeof(memAllocParams));
 

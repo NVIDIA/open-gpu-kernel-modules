@@ -498,15 +498,6 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             }
             break;
 
-        // Dell
-        case 0xAC10:
-            // Dell U2713H has problem with LQA. Disable it.
-            if ((ProductID == 0xA092) || (ProductID == 0xF046))
-            {
-                this->WARFlags.reassessMaxLink = true;
-            }
-            break;
-
         // CMN
         case 0xAE0D:
             if (ProductID == 0x1747)

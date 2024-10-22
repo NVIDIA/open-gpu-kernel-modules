@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -327,21 +327,21 @@ static inline void kheadSetVblankNormLatencyCounter(struct KernelHead *pKernelHe
 
 NvBool kheadReadVblankIntrEnable_KERNEL(struct OBJGPU *pGpu, struct KernelHead *pKernelHead);
 
-static inline NvBool kheadReadVblankIntrEnable_108313(struct OBJGPU *pGpu, struct KernelHead *pKernelHead) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, ((NvBool)(0 != 0)));
+static inline NvBool kheadReadVblankIntrEnable_86b752(struct OBJGPU *pGpu, struct KernelHead *pKernelHead) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_FALSE);
 }
 
 NvBool kheadReadVblankIntrEnable_v03_00(struct OBJGPU *pGpu, struct KernelHead *pKernelHead);
 
-static inline NvBool kheadReadVblankIntrEnable_ceaee8(struct OBJGPU *pGpu, struct KernelHead *pKernelHead) {
+static inline NvBool kheadReadVblankIntrEnable_72a2e1(struct OBJGPU *pGpu, struct KernelHead *pKernelHead) {
     NV_ASSERT_PRECOMP(0);
-    return ((NvBool)(0 != 0));
+    return NV_FALSE;
 }
 
 NvBool kheadGetDisplayInitialized_KERNEL(struct OBJGPU *pGpu, struct KernelHead *pKernelHead);
 
-static inline NvBool kheadGetDisplayInitialized_108313(struct OBJGPU *pGpu, struct KernelHead *pKernelHead) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, ((NvBool)(0 != 0)));
+static inline NvBool kheadGetDisplayInitialized_86b752(struct OBJGPU *pGpu, struct KernelHead *pKernelHead) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_FALSE);
 }
 
 void kheadWriteVblankIntrEnable_KERNEL(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvBool arg3);
@@ -377,9 +377,9 @@ static inline void kheadResetPendingVblank_f2d351(struct OBJGPU *pGpu, struct Ke
 
 NvBool kheadReadPendingVblank_v03_00(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvU32 *pCachedIntr, THREAD_STATE_NODE *pThreadState);
 
-static inline NvBool kheadReadPendingVblank_ceaee8(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvU32 *pCachedIntr, THREAD_STATE_NODE *pThreadState) {
+static inline NvBool kheadReadPendingVblank_72a2e1(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvU32 *pCachedIntr, THREAD_STATE_NODE *pThreadState) {
     NV_ASSERT_PRECOMP(0);
-    return ((NvBool)(0 != 0));
+    return NV_FALSE;
 }
 
 NvU32 kheadGetLoadVCounter_v03_00(struct OBJGPU *pGpu, struct KernelHead *pKernelHead);

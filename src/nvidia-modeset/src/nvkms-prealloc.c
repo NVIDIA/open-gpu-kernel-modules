@@ -25,6 +25,7 @@
 #include "nvkms-flip-workarea.h"
 #include "nvkms-modeset-types.h"
 #include "nvkms-modeset-workarea.h"
+#include "nvkms-setlut-workarea.h"
 #include "nvkms-prealloc.h"
 #include "nvkms-utils.h"
 
@@ -64,6 +65,8 @@ static size_t GetSizeForType(NVDevEvoPtr pDevEvo, enum NVPreallocType type)
         return sizeof(struct NvKmsUsageBounds);
     case PREALLOC_TYPE_DPLIB_IS_MODE_POSSIBLE_PARAMS:
         return sizeof(NVDpLibIsModePossibleParamsRec);
+    case PREALLOC_TYPE_SET_LUT_WORK_AREA:
+        return sizeof(struct NvKmsSetLutWorkArea);
     case PREALLOC_TYPE_MAX:
         /* Not a real option, but added for -Wswitch-enum */
         break;

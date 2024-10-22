@@ -35,6 +35,7 @@
 #include "virtualization/hypervisor/hypervisor.h"
 #include "gpu_mgr/gpu_mgr.h"
 #include "platform/sli/sli.h"
+#include "kernel/gpu/gsp/gsp_trace_rats_macro.h"
 
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 
@@ -557,12 +558,6 @@ _serverAlloc_ValidateVgpu
     const NvU32 flags
 )
 {
-    //
-    // Get any GPU to check environmental properties
-    // Assume: In multi-vGPU systems, no mix and matching SRIOV and non-SRIOV GPUs.
-    // Assume: This OBJGPU will only used to read system properties.
-    //
-    OBJGPU *pGpu = gpumgrGetSomeGpu();
 
     // Check whether context is already sufficiently privileged
     if (flags & RS_FLAGS_ALLOC_PRIVILEGED)
@@ -571,15 +566,6 @@ _serverAlloc_ValidateVgpu
         {
             return NV_TRUE;
         }
-    }
-
-    // Check whether object is allowed in current environment
-    if
-    (
-        (IS_SRIOV_WITH_VGPU_GSP_ENABLED(pGpu) && (flags & RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_VGPU_GSP))
-    )
-    {
-        return NV_TRUE;
     }
 
     return NV_FALSE;
@@ -1254,7 +1240,6 @@ rmapiAllocWithSecInfo
                       pRightsRequested,
                       *pSecInfo);
 
-
     //
     // If hClient is allocated behind GPU locks, client is marked as internal
     //
@@ -1618,17 +1603,12 @@ serverAllocResourceLookupLockFlags
     LOCK_ACCESS_TYPE *pAccess
 )
 {
+    OBJSYS *pSys = SYS_GET_INSTANCE();
     NV_ASSERT_OR_RETURN(pAccess != NULL, NV_ERR_INVALID_ARGUMENT);
 
     if (lock == RS_LOCK_TOP)
     {
         RS_RESOURCE_DESC *pResDesc;
-
-        if (!serverSupportsReadOnlyLock(&g_resServ, RS_LOCK_TOP, RS_API_ALLOC_RESOURCE))
-        {
-            *pAccess = LOCK_ACCESS_WRITE;
-            return NV_OK;
-        }
 
         pResDesc = RsResInfoByExternalClassId(pParams->externalClassId);
 
@@ -1641,6 +1621,23 @@ serverAllocResourceLookupLockFlags
             *pAccess = LOCK_ACCESS_READ;
         else
             *pAccess = LOCK_ACCESS_WRITE;
+
+        if ((pResDesc->flags & RS_FLAGS_FORCE_ACQUIRE_RO_API_LOCK_ON_ALLOC_FREE) != 0 &&
+            pSys->getProperty(pSys, PDB_PROP_SYS_ENABLE_FORCE_SHARED_LOCK))
+        {
+            //
+            // If the force acquire RO flag is set then ignore module parameter
+            // setting and always use RO.
+            //
+            *pAccess = LOCK_ACCESS_READ;
+            return NV_OK;
+        }
+
+        if (!serverSupportsReadOnlyLock(&g_resServ, RS_LOCK_TOP, RS_API_ALLOC_RESOURCE))
+        {
+            *pAccess = LOCK_ACCESS_WRITE;
+            return NV_OK;
+        }
 
         return NV_OK;
     }
@@ -1660,13 +1657,35 @@ serverFreeResourceLookupLockFlags
     RsServer *pServer,
     RS_LOCK_ENUM lock,
     RS_RES_FREE_PARAMS_INTERNAL *pParams,
-    LOCK_ACCESS_TYPE *pAccess
+    LOCK_ACCESS_TYPE *pAccess,
+    NvBool *pbSupportForceROLock
 )
 {
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    NvU32 flags;
     NV_ASSERT_OR_RETURN(pAccess != NULL, NV_ERR_INVALID_ARGUMENT);
 
     *pAccess = (serverSupportsReadOnlyLock(pServer, lock, RS_API_FREE_RESOURCE))
         ? LOCK_ACCESS_READ
         : LOCK_ACCESS_WRITE;
+
+    *pbSupportForceROLock = pSys->getProperty(pSys, PDB_PROP_SYS_ENABLE_FORCE_SHARED_LOCK);
+
+    if (pParams->pResourceRef != NULL)
+    {
+        //
+        // If pResourceRef is set, check for the explicit RO opt-in flag that
+        // some resources set as a transition before enabling RO across the
+        // board.
+        //
+        // bug 4283710 - [RM][Locking] Allow RMAPI to take API lock in reader's mode by default.
+        //
+        flags = pParams->pResourceRef->pResourceDesc->flags;
+        if ((flags & RS_FLAGS_FORCE_ACQUIRE_RO_API_LOCK_ON_ALLOC_FREE) != 0 &&
+            (*pbSupportForceROLock))
+        {
+            *pAccess = LOCK_ACCESS_READ;
+        }
+    }
     return NV_OK;
 }

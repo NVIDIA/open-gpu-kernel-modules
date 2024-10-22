@@ -1668,6 +1668,27 @@ pmaGetTotalMemory
     }
 }
 
+void
+pmaGetClientAddrSpaceSize
+(
+    PMA             *pPma,
+    NvU64           *pSize
+)
+{
+    NvU64 highestAddr = 0;
+
+    // Iterate the regions that were given to PMA
+    for (NvU32 i = 0; i < pPma->regSize; i++)
+    {
+        highestAddr = NV_MAX(highestAddr, pPma->pRegDescriptors[i]->limit);
+    }
+
+    // should end in 0xFFFF as a limit
+    NV_ASSERT((highestAddr & RM_PAGE_SIZE ) != 0);
+
+    *pSize = highestAddr + 1;
+}
+
 NV_STATUS
 pmaGetRegionInfo
 (
@@ -1838,6 +1859,8 @@ pmaGetClientBlacklistedPages
     NvU32 blacklistCount = 0;
     NvBool bClientManagedBlacklist = NV_FALSE;
     PMA_BLACKLIST_CHUNK *pBlacklistChunks, *pBlacklistChunk;
+
+    NV_ASSERT_OR_RETURN_VOID((pPma != NULL) && (pChunks != NULL) && (pPageSize != NULL) && (pNumChunks != NULL));
 
     for (region = 0; region < pPma->regSize; region++)
     {

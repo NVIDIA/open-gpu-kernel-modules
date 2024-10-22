@@ -47,7 +47,7 @@
     {                                                                               \
         params_type params;                                                         \
         BUILD_BUG_ON(sizeof(params) > UVM_MAX_IOCTL_PARAM_STACK_SIZE);              \
-        if (nv_copy_from_user(&params, (void __user*)arg, sizeof(params)))          \
+        if (copy_from_user(&params, (void __user*)arg, sizeof(params)))             \
             return -EFAULT;                                                         \
                                                                                     \
         params.rmStatus = uvm_global_get_status();                                  \
@@ -60,7 +60,7 @@
                 params.rmStatus = function_name(&params, filp);                     \
         }                                                                           \
                                                                                     \
-        if (nv_copy_to_user((void __user*)arg, &params, sizeof(params)))            \
+        if (copy_to_user((void __user*)arg, &params, sizeof(params)))               \
             return -EFAULT;                                                         \
                                                                                     \
         return 0;                                                                   \
@@ -84,7 +84,7 @@
         if (!params)                                                                    \
             return -ENOMEM;                                                             \
         BUILD_BUG_ON(sizeof(*params) <= UVM_MAX_IOCTL_PARAM_STACK_SIZE);                \
-        if (nv_copy_from_user(params, (void __user*)arg, sizeof(*params))) {            \
+        if (copy_from_user(params, (void __user*)arg, sizeof(*params))) {               \
             uvm_kvfree(params);                                                         \
             return -EFAULT;                                                             \
         }                                                                               \
@@ -99,7 +99,7 @@
                 params->rmStatus = function_name(params, filp);                         \
         }                                                                               \
                                                                                         \
-        if (nv_copy_to_user((void __user*)arg, params, sizeof(*params)))                \
+        if (copy_to_user((void __user*)arg, params, sizeof(*params)))                   \
             ret = -EFAULT;                                                              \
                                                                                         \
         uvm_kvfree(params);                                                             \
@@ -244,6 +244,7 @@ NV_STATUS uvm_api_migrate(UVM_MIGRATE_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_enable_system_wide_atomics(UVM_ENABLE_SYSTEM_WIDE_ATOMICS_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_disable_system_wide_atomics(UVM_DISABLE_SYSTEM_WIDE_ATOMICS_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_tools_init_event_tracker(UVM_TOOLS_INIT_EVENT_TRACKER_PARAMS *params, struct file *filp);
+NV_STATUS uvm_api_tools_init_event_tracker_v2(UVM_TOOLS_INIT_EVENT_TRACKER_V2_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_tools_set_notification_threshold(UVM_TOOLS_SET_NOTIFICATION_THRESHOLD_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_tools_event_queue_enable_events(UVM_TOOLS_EVENT_QUEUE_ENABLE_EVENTS_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_tools_event_queue_disable_events(UVM_TOOLS_EVENT_QUEUE_DISABLE_EVENTS_PARAMS *params, struct file *filp);
@@ -256,5 +257,7 @@ NV_STATUS uvm_api_unmap_external(UVM_UNMAP_EXTERNAL_PARAMS *params, struct file 
 NV_STATUS uvm_api_migrate_range_group(UVM_MIGRATE_RANGE_GROUP_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_alloc_semaphore_pool(UVM_ALLOC_SEMAPHORE_POOL_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_populate_pageable(const UVM_POPULATE_PAGEABLE_PARAMS *params, struct file *filp);
+NV_STATUS uvm_api_alloc_device_p2p(UVM_ALLOC_DEVICE_P2P_PARAMS *params, struct file *filp);
+NV_STATUS uvm_api_clear_all_access_counters(UVM_CLEAR_ALL_ACCESS_COUNTERS_PARAMS *params, struct file *filp);
 
 #endif // __UVM_API_H__

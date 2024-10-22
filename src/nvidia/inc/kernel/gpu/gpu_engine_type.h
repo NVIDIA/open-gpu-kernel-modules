@@ -50,7 +50,6 @@ typedef enum
     RM_ENGINE_TYPE_COPY7                           =       (0x00000010),
     RM_ENGINE_TYPE_COPY8                           =       (0x00000011),
     RM_ENGINE_TYPE_COPY9                           =       (0x00000012),
-    // removal tracking bug: 3748354
     RM_ENGINE_TYPE_COPY10                          =       (0x00000013),
     RM_ENGINE_TYPE_COPY11                          =       (0x00000014),
     RM_ENGINE_TYPE_COPY12                          =       (0x00000015),
@@ -95,7 +94,6 @@ typedef enum
     RM_ENGINE_TYPE_NVJPEG6                         =       (0x0000003c),
     RM_ENGINE_TYPE_NVJPEG7                         =       (0x0000003d),
     RM_ENGINE_TYPE_OFA0                            =       (0x0000003e),
-    // removal tracking bug: 3748354
     RM_ENGINE_TYPE_OFA1                            =       (0x0000003f),
     RM_ENGINE_TYPE_RESERVED40                      =       (0x00000040),
     RM_ENGINE_TYPE_RESERVED41                      =       (0x00000041),
@@ -130,12 +128,10 @@ typedef enum
 #define RM_ENGINE_TYPE_CIPHER                   RM_ENGINE_TYPE_TSEC
 #define RM_ENGINE_TYPE_NVJPG                    RM_ENGINE_TYPE_NVJPEG0
 
-// removal tracking bug: 3748354
 #define RM_ENGINE_TYPE_COPY_SIZE 20
 #define RM_ENGINE_TYPE_NVENC_SIZE 3
 #define RM_ENGINE_TYPE_NVJPEG_SIZE 8
 #define RM_ENGINE_TYPE_NVDEC_SIZE 8
-// removal tracking bug: 3748354
 #define RM_ENGINE_TYPE_OFA_SIZE 2
 #define RM_ENGINE_TYPE_GR_SIZE 8
 

@@ -72,6 +72,7 @@
 #include <ctrl/ctrl0073/ctrl0073dp.h> /* NV0073_CTRL_CMD_DP_TOPOLOGY_ALLOCATE_DISPLAYID */
 #include <ctrl/ctrl0073/ctrl0073specific.h> /* NV0073_CTRL_CMD_SPECIFIC_OR_GET_INFO */
 #include <ctrl/ctrl0073/ctrl0073system.h> /* NV0073_CTRL_CMD_SYSTEM_GET_SUPPORTED */
+#include <ctrl/ctrl0076.h> /* NV0076_CTRL_CMD_NOTIFY_CONSOLE_DISABLED */
 #include <ctrl/ctrl0080/ctrl0080gpu.h> /* NV0080_CTRL_CMD_GPU_SET_DISPLAY_OWNER */
 #include <ctrl/ctrl0080/ctrl0080gr.h> /* NV0080_CTRL_CMD_GR_GET_CAPS_V2 */
 #include <ctrl/ctrl0080/ctrl0080unix.h> /* NV0080_CTRL_CMD_OS_UNIX_VT_SWITCH */
@@ -3284,6 +3285,9 @@ static NVEvoChannel* EvoAllocateCoreChannel(NVDevEvoRec *pDevEvo)
         goto failed;
     }
 
+    nvkms_memset(&pDevEvo->lut.notifierState, 0,
+                 sizeof(pDevEvo->lut.notifierState));
+
     for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
         NvU32 ret = nvRmApiMapMemory(nvEvoGlobal.clientHandle,
                                      pDevEvo->pSubDevices[sd]->handle,
@@ -4720,6 +4724,38 @@ void nvRmImportFbConsoleMemory(NVDevEvoPtr pDevEvo)
                 hMemory);
 done:
     nvFreeUnixRmHandle(&pDevEvo->handleAllocator, hMemory);
+}
+
+void nvRmUnmapFbConsoleMemory(NVDevEvoPtr pDevEvo)
+{
+    struct NvKmsPerOpenDev *pOpenDev = pDevEvo->pNvKmsOpenDev;
+    NVEvoApiHandlesRec *pOpenDevSurfaceHandles =
+        nvGetSurfaceHandlesFromOpenDev(pOpenDev);
+    NVSurfaceEvoPtr pSurfaceEvo =
+        nvEvoGetSurfaceFromHandle(pDevEvo,
+                                  pOpenDevSurfaceHandles,
+                                  pDevEvo->fbConsoleSurfaceHandle,
+                                  FALSE,
+                                  TRUE);
+    NvU32 status;
+
+    if (!pSurfaceEvo) {
+        return;
+    }
+
+    // Tell Resman that the surface mapping is no longer needed.
+    status = nvRmApiControl(nvEvoGlobal.clientHandle,
+                            pSurfaceEvo->planes[0].rmHandle,
+                            NV0076_CTRL_CMD_NOTIFY_CONSOLE_DISABLED,
+                            NULL, 0);
+    (void)status;
+    nvAssert(status == NVOS_STATUS_SUCCESS);
+
+    // Free the NVKMS surface.
+    nvEvoUnregisterSurface(pDevEvo, pDevEvo->pNvKmsOpenDev,
+                           pDevEvo->fbConsoleSurfaceHandle,
+                           TRUE /* skipUpdate */);
+    pDevEvo->fbConsoleSurfaceHandle = 0;
 }
 
 static void LogAuxPacket(const NVDispEvoRec *pDispEvo, const DPAUXPACKET *pkt)

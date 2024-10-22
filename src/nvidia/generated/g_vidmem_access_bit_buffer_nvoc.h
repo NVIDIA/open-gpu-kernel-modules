@@ -7,14 +7,14 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -95,10 +95,15 @@ typedef struct
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__VidmemAccessBitBuffer;
+
+
 struct VidmemAccessBitBuffer {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__VidmemAccessBitBuffer *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct GpuResource __nvoc_base_GpuResource;
@@ -114,8 +119,16 @@ struct VidmemAccessBitBuffer {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super
     struct VidmemAccessBitBuffer *__nvoc_pbase_VidmemAccessBitBuffer;    // vidmemAccessBitBuf
 
-    // Vtable with 31 per-object function pointers
+    // Vtable with 1 per-object function pointer
     NV_STATUS (*__vidmemAccessBitBufCtrlCmdVidmemAccessBitDump__)(struct VidmemAccessBitBuffer * /*this*/, NVC763_CTRL_VIDMEM_ACCESS_BIT_BUFFER_DUMP_PARAMS *);  // exported (id=0xc7630103)
+};
+
+
+// Metadata including vtable with 30 function pointers plus superclass metadata
+struct NVOC_VTABLE__VidmemAccessBitBuffer {
+    const struct NVOC_VTABLE__GpuResource GpuResource;    // (gpures) 25 function pointers
+    const struct NVOC_VTABLE__Notifier Notifier;    // (notify) 5 function pointers
+
     NV_STATUS (*__vidmemAccessBitBufControl__)(struct VidmemAccessBitBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__vidmemAccessBitBufMap__)(struct VidmemAccessBitBuffer * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__vidmemAccessBitBufUnmap__)(struct VidmemAccessBitBuffer * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
@@ -180,65 +193,65 @@ NV_STATUS __nvoc_objCreate_VidmemAccessBitBuffer(VidmemAccessBitBuffer**, Dynami
 // Wrapper macros
 #define vidmemAccessBitBufCtrlCmdVidmemAccessBitDump_FNPTR(pVidmemAccessBitBuffer) pVidmemAccessBitBuffer->__vidmemAccessBitBufCtrlCmdVidmemAccessBitDump__
 #define vidmemAccessBitBufCtrlCmdVidmemAccessBitDump(pVidmemAccessBitBuffer, pParams) vidmemAccessBitBufCtrlCmdVidmemAccessBitDump_DISPATCH(pVidmemAccessBitBuffer, pParams)
-#define vidmemAccessBitBufControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresControl__
+#define vidmemAccessBitBufControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresControl__
 #define vidmemAccessBitBufControl(pGpuResource, pCallContext, pParams) vidmemAccessBitBufControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define vidmemAccessBitBufMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresMap__
+#define vidmemAccessBitBufMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresMap__
 #define vidmemAccessBitBufMap(pGpuResource, pCallContext, pParams, pCpuMapping) vidmemAccessBitBufMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define vidmemAccessBitBufUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresUnmap__
+#define vidmemAccessBitBufUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresUnmap__
 #define vidmemAccessBitBufUnmap(pGpuResource, pCallContext, pCpuMapping) vidmemAccessBitBufUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define vidmemAccessBitBufShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresShareCallback__
+#define vidmemAccessBitBufShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresShareCallback__
 #define vidmemAccessBitBufShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) vidmemAccessBitBufShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define vidmemAccessBitBufGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetRegBaseOffsetAndSize__
+#define vidmemAccessBitBufGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetRegBaseOffsetAndSize__
 #define vidmemAccessBitBufGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) vidmemAccessBitBufGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
-#define vidmemAccessBitBufGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetMapAddrSpace__
+#define vidmemAccessBitBufGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetMapAddrSpace__
 #define vidmemAccessBitBufGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) vidmemAccessBitBufGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
-#define vidmemAccessBitBufInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresInternalControlForward__
+#define vidmemAccessBitBufInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresInternalControlForward__
 #define vidmemAccessBitBufInternalControlForward(pGpuResource, command, pParams, size) vidmemAccessBitBufInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
-#define vidmemAccessBitBufGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetInternalObjectHandle__
+#define vidmemAccessBitBufGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetInternalObjectHandle__
 #define vidmemAccessBitBufGetInternalObjectHandle(pGpuResource) vidmemAccessBitBufGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define vidmemAccessBitBufAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresAccessCallback__
+#define vidmemAccessBitBufAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
 #define vidmemAccessBitBufAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) vidmemAccessBitBufAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define vidmemAccessBitBufGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemInterMapParams__
+#define vidmemAccessBitBufGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
 #define vidmemAccessBitBufGetMemInterMapParams(pRmResource, pParams) vidmemAccessBitBufGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define vidmemAccessBitBufCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresCheckMemInterUnmap__
+#define vidmemAccessBitBufCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
 #define vidmemAccessBitBufCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) vidmemAccessBitBufCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define vidmemAccessBitBufGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemoryMappingDescriptor__
+#define vidmemAccessBitBufGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
 #define vidmemAccessBitBufGetMemoryMappingDescriptor(pRmResource, ppMemDesc) vidmemAccessBitBufGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define vidmemAccessBitBufControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControlSerialization_Prologue__
+#define vidmemAccessBitBufControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
 #define vidmemAccessBitBufControlSerialization_Prologue(pResource, pCallContext, pParams) vidmemAccessBitBufControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define vidmemAccessBitBufControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControlSerialization_Epilogue__
+#define vidmemAccessBitBufControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
 #define vidmemAccessBitBufControlSerialization_Epilogue(pResource, pCallContext, pParams) vidmemAccessBitBufControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define vidmemAccessBitBufControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControl_Prologue__
+#define vidmemAccessBitBufControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
 #define vidmemAccessBitBufControl_Prologue(pResource, pCallContext, pParams) vidmemAccessBitBufControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define vidmemAccessBitBufControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControl_Epilogue__
+#define vidmemAccessBitBufControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
 #define vidmemAccessBitBufControl_Epilogue(pResource, pCallContext, pParams) vidmemAccessBitBufControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define vidmemAccessBitBufCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__
+#define vidmemAccessBitBufCanCopy_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
 #define vidmemAccessBitBufCanCopy(pResource) vidmemAccessBitBufCanCopy_DISPATCH(pResource)
-#define vidmemAccessBitBufIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsDuplicate__
+#define vidmemAccessBitBufIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
 #define vidmemAccessBitBufIsDuplicate(pResource, hMemory, pDuplicate) vidmemAccessBitBufIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define vidmemAccessBitBufPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resPreDestruct__
+#define vidmemAccessBitBufPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
 #define vidmemAccessBitBufPreDestruct(pResource) vidmemAccessBitBufPreDestruct_DISPATCH(pResource)
-#define vidmemAccessBitBufControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resControlFilter__
+#define vidmemAccessBitBufControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
 #define vidmemAccessBitBufControlFilter(pResource, pCallContext, pParams) vidmemAccessBitBufControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define vidmemAccessBitBufIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsPartialUnmapSupported__
+#define vidmemAccessBitBufIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
 #define vidmemAccessBitBufIsPartialUnmapSupported(pResource) vidmemAccessBitBufIsPartialUnmapSupported_DISPATCH(pResource)
-#define vidmemAccessBitBufMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resMapTo__
+#define vidmemAccessBitBufMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
 #define vidmemAccessBitBufMapTo(pResource, pParams) vidmemAccessBitBufMapTo_DISPATCH(pResource, pParams)
-#define vidmemAccessBitBufUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resUnmapFrom__
+#define vidmemAccessBitBufUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
 #define vidmemAccessBitBufUnmapFrom(pResource, pParams) vidmemAccessBitBufUnmapFrom_DISPATCH(pResource, pParams)
-#define vidmemAccessBitBufGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resGetRefCount__
+#define vidmemAccessBitBufGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
 #define vidmemAccessBitBufGetRefCount(pResource) vidmemAccessBitBufGetRefCount_DISPATCH(pResource)
-#define vidmemAccessBitBufAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resAddAdditionalDependants__
+#define vidmemAccessBitBufAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
 #define vidmemAccessBitBufAddAdditionalDependants(pClient, pResource, pReference) vidmemAccessBitBufAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define vidmemAccessBitBufGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__notifyGetNotificationListPtr__
+#define vidmemAccessBitBufGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationListPtr__
 #define vidmemAccessBitBufGetNotificationListPtr(pNotifier) vidmemAccessBitBufGetNotificationListPtr_DISPATCH(pNotifier)
-#define vidmemAccessBitBufGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__notifyGetNotificationShare__
+#define vidmemAccessBitBufGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationShare__
 #define vidmemAccessBitBufGetNotificationShare(pNotifier) vidmemAccessBitBufGetNotificationShare_DISPATCH(pNotifier)
-#define vidmemAccessBitBufSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__notifySetNotificationShare__
+#define vidmemAccessBitBufSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifySetNotificationShare__
 #define vidmemAccessBitBufSetNotificationShare(pNotifier, pNotifShare) vidmemAccessBitBufSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
-#define vidmemAccessBitBufUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__notifyUnregisterEvent__
+#define vidmemAccessBitBufUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyUnregisterEvent__
 #define vidmemAccessBitBufUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) vidmemAccessBitBufUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define vidmemAccessBitBufGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__notifyGetOrAllocNotifShare__
+#define vidmemAccessBitBufGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyGetOrAllocNotifShare__
 #define vidmemAccessBitBufGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) vidmemAccessBitBufGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
@@ -247,126 +260,128 @@ static inline NV_STATUS vidmemAccessBitBufCtrlCmdVidmemAccessBitDump_DISPATCH(st
 }
 
 static inline NV_STATUS vidmemAccessBitBufControl_DISPATCH(struct VidmemAccessBitBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__vidmemAccessBitBufControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_vtable->__vidmemAccessBitBufControl__(pGpuResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS vidmemAccessBitBufMap_DISPATCH(struct VidmemAccessBitBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__vidmemAccessBitBufMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_vtable->__vidmemAccessBitBufMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS vidmemAccessBitBufUnmap_DISPATCH(struct VidmemAccessBitBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__vidmemAccessBitBufUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_vtable->__vidmemAccessBitBufUnmap__(pGpuResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool vidmemAccessBitBufShareCallback_DISPATCH(struct VidmemAccessBitBuffer *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__vidmemAccessBitBufShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_vtable->__vidmemAccessBitBufShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS vidmemAccessBitBufGetRegBaseOffsetAndSize_DISPATCH(struct VidmemAccessBitBuffer *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__vidmemAccessBitBufGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_vtable->__vidmemAccessBitBufGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS vidmemAccessBitBufGetMapAddrSpace_DISPATCH(struct VidmemAccessBitBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__vidmemAccessBitBufGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_vtable->__vidmemAccessBitBufGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS vidmemAccessBitBufInternalControlForward_DISPATCH(struct VidmemAccessBitBuffer *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__vidmemAccessBitBufInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_vtable->__vidmemAccessBitBufInternalControlForward__(pGpuResource, command, pParams, size);
 }
 
 static inline NvHandle vidmemAccessBitBufGetInternalObjectHandle_DISPATCH(struct VidmemAccessBitBuffer *pGpuResource) {
-    return pGpuResource->__vidmemAccessBitBufGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_vtable->__vidmemAccessBitBufGetInternalObjectHandle__(pGpuResource);
 }
 
 static inline NvBool vidmemAccessBitBufAccessCallback_DISPATCH(struct VidmemAccessBitBuffer *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__vidmemAccessBitBufAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_vtable->__vidmemAccessBitBufAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS vidmemAccessBitBufGetMemInterMapParams_DISPATCH(struct VidmemAccessBitBuffer *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__vidmemAccessBitBufGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_vtable->__vidmemAccessBitBufGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS vidmemAccessBitBufCheckMemInterUnmap_DISPATCH(struct VidmemAccessBitBuffer *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__vidmemAccessBitBufCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_vtable->__vidmemAccessBitBufCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS vidmemAccessBitBufGetMemoryMappingDescriptor_DISPATCH(struct VidmemAccessBitBuffer *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__vidmemAccessBitBufGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_vtable->__vidmemAccessBitBufGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS vidmemAccessBitBufControlSerialization_Prologue_DISPATCH(struct VidmemAccessBitBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__vidmemAccessBitBufControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__vidmemAccessBitBufControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void vidmemAccessBitBufControlSerialization_Epilogue_DISPATCH(struct VidmemAccessBitBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__vidmemAccessBitBufControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__vidmemAccessBitBufControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS vidmemAccessBitBufControl_Prologue_DISPATCH(struct VidmemAccessBitBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__vidmemAccessBitBufControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__vidmemAccessBitBufControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void vidmemAccessBitBufControl_Epilogue_DISPATCH(struct VidmemAccessBitBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__vidmemAccessBitBufControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__vidmemAccessBitBufControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool vidmemAccessBitBufCanCopy_DISPATCH(struct VidmemAccessBitBuffer *pResource) {
-    return pResource->__vidmemAccessBitBufCanCopy__(pResource);
+    return pResource->__nvoc_vtable->__vidmemAccessBitBufCanCopy__(pResource);
 }
 
 static inline NV_STATUS vidmemAccessBitBufIsDuplicate_DISPATCH(struct VidmemAccessBitBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__vidmemAccessBitBufIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_vtable->__vidmemAccessBitBufIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void vidmemAccessBitBufPreDestruct_DISPATCH(struct VidmemAccessBitBuffer *pResource) {
-    pResource->__vidmemAccessBitBufPreDestruct__(pResource);
+    pResource->__nvoc_vtable->__vidmemAccessBitBufPreDestruct__(pResource);
 }
 
 static inline NV_STATUS vidmemAccessBitBufControlFilter_DISPATCH(struct VidmemAccessBitBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__vidmemAccessBitBufControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__vidmemAccessBitBufControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool vidmemAccessBitBufIsPartialUnmapSupported_DISPATCH(struct VidmemAccessBitBuffer *pResource) {
-    return pResource->__vidmemAccessBitBufIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_vtable->__vidmemAccessBitBufIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS vidmemAccessBitBufMapTo_DISPATCH(struct VidmemAccessBitBuffer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__vidmemAccessBitBufMapTo__(pResource, pParams);
+    return pResource->__nvoc_vtable->__vidmemAccessBitBufMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS vidmemAccessBitBufUnmapFrom_DISPATCH(struct VidmemAccessBitBuffer *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__vidmemAccessBitBufUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_vtable->__vidmemAccessBitBufUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 vidmemAccessBitBufGetRefCount_DISPATCH(struct VidmemAccessBitBuffer *pResource) {
-    return pResource->__vidmemAccessBitBufGetRefCount__(pResource);
+    return pResource->__nvoc_vtable->__vidmemAccessBitBufGetRefCount__(pResource);
 }
 
 static inline void vidmemAccessBitBufAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct VidmemAccessBitBuffer *pResource, RsResourceRef *pReference) {
-    pResource->__vidmemAccessBitBufAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_vtable->__vidmemAccessBitBufAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 static inline PEVENTNOTIFICATION * vidmemAccessBitBufGetNotificationListPtr_DISPATCH(struct VidmemAccessBitBuffer *pNotifier) {
-    return pNotifier->__vidmemAccessBitBufGetNotificationListPtr__(pNotifier);
+    return pNotifier->__nvoc_vtable->__vidmemAccessBitBufGetNotificationListPtr__(pNotifier);
 }
 
 static inline struct NotifShare * vidmemAccessBitBufGetNotificationShare_DISPATCH(struct VidmemAccessBitBuffer *pNotifier) {
-    return pNotifier->__vidmemAccessBitBufGetNotificationShare__(pNotifier);
+    return pNotifier->__nvoc_vtable->__vidmemAccessBitBufGetNotificationShare__(pNotifier);
 }
 
 static inline void vidmemAccessBitBufSetNotificationShare_DISPATCH(struct VidmemAccessBitBuffer *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__vidmemAccessBitBufSetNotificationShare__(pNotifier, pNotifShare);
+    pNotifier->__nvoc_vtable->__vidmemAccessBitBufSetNotificationShare__(pNotifier, pNotifShare);
 }
 
 static inline NV_STATUS vidmemAccessBitBufUnregisterEvent_DISPATCH(struct VidmemAccessBitBuffer *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return pNotifier->__vidmemAccessBitBufUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return pNotifier->__nvoc_vtable->__vidmemAccessBitBufUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 static inline NV_STATUS vidmemAccessBitBufGetOrAllocNotifShare_DISPATCH(struct VidmemAccessBitBuffer *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return pNotifier->__vidmemAccessBitBufGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
+    return pNotifier->__nvoc_vtable->__vidmemAccessBitBufGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-NV_STATUS vidmemAccessBitBufConstructHelper_KERNEL(struct VidmemAccessBitBuffer *pVidmem, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+static inline NV_STATUS vidmemAccessBitBufConstructHelper_56cd7a(struct VidmemAccessBitBuffer *pVidmem, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
+    return NV_OK;
+}
 
 
 #ifdef __nvoc_vidmem_access_bit_buffer_h_disabled
@@ -375,7 +390,7 @@ static inline NV_STATUS vidmemAccessBitBufConstructHelper(struct VidmemAccessBit
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_vidmem_access_bit_buffer_h_disabled
-#define vidmemAccessBitBufConstructHelper(pVidmem, pCallContext, pParams) vidmemAccessBitBufConstructHelper_KERNEL(pVidmem, pCallContext, pParams)
+#define vidmemAccessBitBufConstructHelper(pVidmem, pCallContext, pParams) vidmemAccessBitBufConstructHelper_56cd7a(pVidmem, pCallContext, pParams)
 #endif //__nvoc_vidmem_access_bit_buffer_h_disabled
 
 #define vidmemAccessBitBufConstructHelper_HAL(pVidmem, pCallContext, pParams) vidmemAccessBitBufConstructHelper(pVidmem, pCallContext, pParams)

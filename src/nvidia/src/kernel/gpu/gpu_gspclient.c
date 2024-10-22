@@ -167,18 +167,24 @@ gpuGenGidData_FWCLIENT
 NvU64 gpuGetActiveFBIOs_FWCLIENT(OBJGPU *pGpu)
 {
     GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
+    NV_ASSERT_OR_RETURN(pGSCI != NULL, 0);
+
     return pGSCI->fbio_mask;
 }
 
 NvBool gpuIsGlobalPoisonFuseEnabled_FWCLIENT(OBJGPU *pGpu)
 {
     GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
+    NV_ASSERT_OR_RETURN(pGSCI != NULL, NV_FALSE);
+
     return pGSCI->poisonFuseEnabled;
 }
 
 void gpuGetRtd3GC6Data_FWCLIENT(OBJGPU *pGpu)
 {
     GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
+
+    NV_ASSERT_OR_RETURN_VOID(pGSCI != NULL);
 
     pGpu->gc6State.GC6PerstDelay      = pGSCI->RTD3GC6PerstDelay;
     pGpu->gc6State.GC6TotalBoardPower = pGSCI->RTD3GC6TotalBoardPower;
@@ -327,3 +333,17 @@ gpuGetChipSubRev_FWCLIENT
 
     return pChipInfo->chipSubRev;
 }
+
+/*! GPU has a new reset required state */
+NV_STATUS
+gpuResetRequiredStateChanged_FWCLIENT
+(
+    OBJGPU *pGpu,
+    NvBool  newState
+)
+{
+    gpuRefreshRecoveryAction_HAL(pGpu, NV_FALSE);
+
+    return NV_OK;
+}
+

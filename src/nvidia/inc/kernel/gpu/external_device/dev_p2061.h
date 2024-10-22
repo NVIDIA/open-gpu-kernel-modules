@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,5 +33,14 @@
 #define NV_P2061_STATUS6_INT_PORT_DIRECTION         7:7  /* RWXVF */
 #define NV_P2061_STATUS6_INT_PORT_DIRECTION_INPUT   0    /* RWXVF */
 #define NV_P2061_STATUS6_INT_PORT_DIRECTION_OUTPUT  1    /* RWXVF */
+
+// Used in FW 3.00 and above
+#define NV_P2061_CONTROL5                                            0x33 /* RW-1R */
+#define NV_P2061_CONTROL5_RASTER_SYNC_DECODE_MODE                    1:0  /* RWXVF */
+#define NV_P2061_CONTROL5_RASTER_SYNC_DECODE_MODE_VSYNC_SHORT_PULSE  0 /* RWXVF */
+#define NV_P2061_CONTROL5_RASTER_SYNC_DECODE_MODE_VSYNC_SINGLE_PULSE 1 /* RWXVF */
+#define NV_P2061_CONTROL5_SYNC_MODE                                  2:2  /* RWXVF */
+#define NV_P2061_CONTROL5_SYNC_MODE_FIXED_REFRESH_RATE               0  /* RWXVF */
+#define NV_P2061_CONTROL5_SYNC_MODE_VARIABLE_REFRESH_RATE            1  /* RWXVF */
 
 #endif //DEV_P2061_H

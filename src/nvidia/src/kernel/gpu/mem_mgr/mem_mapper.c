@@ -41,6 +41,28 @@
 #include "class/cl2080.h"
 
 static NV_STATUS
+memmapperCheckGpuFullPower(OBJGPU *pGpu)
+{
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    // API lock should protect us from getting called in the middle of suspend/resume
+    NV_ASSERT_OR_RETURN(!pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_CODEPATH), NV_ERR_INVALID_STATE);
+
+    // MemoryMapper should stop executing all operations if one of affected GPUs is suspended
+    return gpuIsGpuFullPower(pGpu) ? NV_OK : NV_ERR_NOT_READY;
+}
+
+static NV_STATUS
+memmapperCheckGpuFullPowerForMemory(Memory *pMemory)
+{
+    if (pMemory == NULL || pMemory->pMemDesc->pGpu == NULL)
+        return NV_OK;
+
+    // Use GPU from memdesc, as it can be duped under a different GPU
+    return memmapperCheckGpuFullPower(pMemory->pMemDesc->pGpu);
+}
+
+static NV_STATUS
 memmapperExecuteMap
 (
     MemoryMapper                         *pMemoryMapper,
@@ -54,7 +76,17 @@ memmapperExecuteMap
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, clientGetResourceRef(pClient, pMap->hVirtualMemory, &pVirtualResourceRef));
     VirtualMemory *pVirtualMemory = dynamicCast(pVirtualResourceRef->pResource, VirtualMemory);
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pVirtualMemory != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, staticCast(pVirtualMemory, Memory)->pMemDesc->pGpu == GPU_RES_GET_GPU(pMemoryMapper),
+        NV_ERR_INVALID_ARGUMENT);
     NvU64 baseVirtAddr = memdescGetPhysAddr(staticCast(pVirtualMemory, Memory)->pMemDesc, AT_GPU_VA, 0);
+
+    RsResourceRef *pResourceRef;
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, clientGetResourceRef(pClient, pMap->hPhysicalMemory, &pResourceRef));
+    Memory *pMemory = dynamicCast(pResourceRef->pResource, Memory);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pMemory != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    // physical memory can be owned by a remote GPU
+    NV_CHECK_OK_OR_RETURN(LEVEL_INFO, memmapperCheckGpuFullPowerForMemory(pMemory));
 
     NV_PRINTF(LEVEL_INFO, "map virt:(0x%x:0x%llx)  phys:(0x%x:0x%llx) size:0x%llx dmaFlags:0x%x\n",
         pMap->hVirtualMemory, pMap->virtualOffset, pMap->hPhysicalMemory, pMap->physicalOffset,
@@ -92,6 +124,8 @@ memmapperExecuteUnmap
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, clientGetResourceRef(pClient, pUnmap->hVirtualMemory, &pVirtualResourceRef));
     VirtualMemory *pVirtualMemory = dynamicCast(pVirtualResourceRef->pResource, VirtualMemory);
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pVirtualMemory != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, staticCast(pVirtualMemory, Memory)->pMemDesc->pGpu == GPU_RES_GET_GPU(pMemoryMapper),
+        NV_ERR_INVALID_ARGUMENT);
     NvU64 baseVirtAddr = memdescGetPhysAddr(staticCast(pVirtualMemory, Memory)->pMemDesc, AT_GPU_VA, 0);
 
     NV_PRINTF(LEVEL_INFO, "unmap virt:(0x%x:0x%llx) size:0x%llx dmaFlags:0x%x\n",
@@ -182,12 +216,35 @@ memmapperProcessWork
         return;
     }
 
-    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    NV_CHECK_OR_RETURN_VOID(LEVEL_INFO,
+        memmapperCheckGpuFullPower(GPU_RES_GET_GPU(pMemoryMapper)) == NV_OK);
+    NV_CHECK_OR_RETURN_VOID(LEVEL_INFO,
+        memmapperCheckGpuFullPowerForMemory(pMemoryMapper->pSemSurf->pShared->pSemaphoreMem) == NV_OK);
+    NV_CHECK_OR_RETURN_VOID(LEVEL_INFO,
+        memmapperCheckGpuFullPowerForMemory(pMemoryMapper->pSemSurf->pShared->pMaxSubmittedMem) == NV_OK);
+    NV_CHECK_OR_RETURN_VOID(LEVEL_INFO,
+        memmapperCheckGpuFullPowerForMemory(pMemoryMapper->pNotificationMemory) == NV_OK);
+
+    RM_API *pRmApi = rmapiGetInterface(RMAPI_API_LOCK_INTERNAL);
+    NvBool bMapExecuted = NV_FALSE;
 
     while (pMemoryMapper->operationQueueGet != pMemoryMapper->operationQueuePut)
     {
         NV00FE_CTRL_OPERATION *pOperation = &pMemoryMapper->pOperationQueue[pMemoryMapper->operationQueueGet];
         NV_STATUS status = NV_OK;
+
+        if (pOperation->type == NV00FE_CTRL_OPERATION_TYPE_MAP ||
+            pOperation->type == NV00FE_CTRL_OPERATION_TYPE_UNMAP)
+        {
+            if (bMapExecuted)
+            {
+                // queue another work item to avoid holding the worker for too long
+                memmapperQueueWork(pMemoryMapper);
+                break;
+            }
+
+            bMapExecuted = NV_TRUE;
+        }
 
         switch (pOperation->type)
         {
@@ -247,8 +304,8 @@ memoryMapperWorker
     }
 }
 
-static void
-memoryMapperQueueWork
+void
+memmapperQueueWork_IMPL
 (
     MemoryMapper *pMemoryMapper
 )
@@ -260,9 +317,9 @@ memoryMapperQueueWork
                                           memoryMapperWorker,
                                           pMemoryMapper->pWorkerParams,
                                           OS_QUEUE_WORKITEM_FLAGS_DONT_FREE_PARAMS
+                                          | OS_QUEUE_WORKITEM_FLAGS_DROP_ON_UNLOAD_QUEUE_FLUSH
                                           | OS_QUEUE_WORKITEM_FLAGS_FALLBACK_TO_DPC
-                                          | OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW
-                                          | OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS));
+                                          | OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW));
 }
 
 static void
@@ -275,7 +332,7 @@ memmapperSemaphoreEventCallback
     NvU32        status
 )
 {
-    memoryMapperQueueWork(pArg);
+    memmapperQueueWork(pArg);
 }
 
 NV_STATUS
@@ -507,7 +564,7 @@ op_failed:
     if (bQueueWorker && pMemoryMapper->operationQueuePut != pMemoryMapper->operationQueueGet)
     {
         // only queue worker when the queue is not empty
-        memoryMapperQueueWork(pMemoryMapper);
+        memmapperQueueWork(pMemoryMapper);
     }
 
     return status;

@@ -422,7 +422,7 @@ NV_STATUS rcdbAddAssertJournalRecWithLine(void *pVoidGpu, NvU32 lineNum, void** 
     OBJGPU                     *pPossibleNULLGpu;
     JOURNAL_ASSERT_LIST        *pAssertList;
     RmRCCommonAssert_RECORD     newAssertRec;
-    RmRCCommonAssert_RECORD    *pAssertRec;
+    RmRCCommonAssert_RECORD    *pAssertRec = NULL;
     NV_STATUS                   rmStatus = NV_ERR_GENERIC;
     NvU32                       i;
 
@@ -503,7 +503,7 @@ NV_STATUS rcdbAddAssertJournalRecWithLine(void *pVoidGpu, NvU32 lineNum, void** 
         portAtomicDecrementS32(&assertListRecursion);
     }
 
-    if (rmStatus == NV_OK)
+    if (rmStatus == NV_OK && pAssertRec != NULL)
     {
         RMTRACE_RMJOURNAL(_ASSERTLOG, (pPossibleNULLGpu ? pPossibleNULLGpu->gpuId : RMTRACE_UNKNOWN_GPUID),
                                       type,

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,9 +25,9 @@
  * nv-ibmnpu.c - interface with the ibmnpu (IBM NVLink Processing Unit) "module"
  */
 #include "nv-linux.h"
+#include "nv-ibmnpu.h"
 
 #if defined(NVCPU_PPC64LE)
-#include "nv-ibmnpu.h"
 #include "nv-rsync.h"
 
 /*

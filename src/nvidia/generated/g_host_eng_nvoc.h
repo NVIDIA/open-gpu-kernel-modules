@@ -7,14 +7,14 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -52,8 +52,6 @@ extern "C" {
 
 #include "kernel/gpu/fifo/kernel_channel.h"
 
-typedef struct OBJHOSTENG *POBJHOSTENG;
-
 /*!
  * Interface class for all Hosteng modules.
  */
@@ -68,15 +66,23 @@ typedef struct OBJHOSTENG *POBJHOSTENG;
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__OBJHOSTENG;
+
+
 struct OBJHOSTENG {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__OBJHOSTENG *__nvoc_vtable;
 
     // Ancestor object pointers for `staticCast` feature
     struct OBJHOSTENG *__nvoc_pbase_OBJHOSTENG;    // hosteng
+};
 
-    // Vtable with 1 per-object function pointer
+
+// Metadata including vtable with 1 function pointer
+struct NVOC_VTABLE__OBJHOSTENG {
     NV_STATUS (*__hostengHaltAndReset__)(struct OBJGPU *, struct OBJHOSTENG * /*this*/, RMTIMEOUT *);  // virtual
 };
 
@@ -110,12 +116,12 @@ NV_STATUS __nvoc_objCreate_OBJHOSTENG(OBJHOSTENG**, Dynamic*, NvU32);
 
 
 // Wrapper macros
-#define hostengHaltAndReset_FNPTR(pHosteng) pHosteng->__hostengHaltAndReset__
+#define hostengHaltAndReset_FNPTR(pHosteng) pHosteng->__nvoc_vtable->__hostengHaltAndReset__
 #define hostengHaltAndReset(pGpu, pHosteng, pRmTimeout) hostengHaltAndReset_DISPATCH(pGpu, pHosteng, pRmTimeout)
 
 // Dispatch functions
 static inline NV_STATUS hostengHaltAndReset_DISPATCH(struct OBJGPU *pGpu, struct OBJHOSTENG *pHosteng, RMTIMEOUT *pRmTimeout) {
-    return pHosteng->__hostengHaltAndReset__(pGpu, pHosteng, pRmTimeout);
+    return pHosteng->__nvoc_vtable->__hostengHaltAndReset__(pGpu, pHosteng, pRmTimeout);
 }
 
 NV_STATUS hostengHaltAndReset_IMPL(struct OBJGPU *pGpu, struct OBJHOSTENG *pHosteng, RMTIMEOUT *pRmTimeout);

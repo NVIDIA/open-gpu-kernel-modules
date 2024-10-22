@@ -7,14 +7,14 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -112,6 +112,9 @@ typedef enum {
     refSetCommit       = 2,
 } REFTYPE;
 
+// Pre-define to use OBJGSYNC references in API calls
+typedef struct _def_gsync OBJGSYNC;
+
 typedef NV30F1_CTRL_GSYNC_GET_OPTIMIZED_TIMING_PARAMS GSYNCTIMINGPARAMS;
 typedef NV30F1_CTRL_GSYNC_GET_CAPS_PARAMS             GSYNCCAPSPARAMS;
 
@@ -136,7 +139,7 @@ typedef NV_STATUS GsyncGetInterlaceMode  (struct OBJGPU *, PDACEXTERNALDEVICE, N
 typedef NV_STATUS GsyncSetInterlaceMode  (struct OBJGPU *, PDACEXTERNALDEVICE, NvU32);
 typedef NV_STATUS GsyncRefSwapBarrier    (struct OBJGPU *, PDACEXTERNALDEVICE, REFTYPE, NvBool *);
 typedef NV_STATUS GsyncRefSignal         (struct OBJGPU *, PDACEXTERNALDEVICE, REFTYPE, GSYNCSYNCSIGNAL, NvBool TestRate, NvU32 *);
-typedef NV_STATUS GsyncRefMaster         (struct OBJGPU *, PDACEXTERNALDEVICE, REFTYPE, NvU32 *, NvU32 *, NvBool, NvBool);
+typedef NV_STATUS GsyncRefMaster         (struct OBJGPU *, OBJGSYNC *, REFTYPE, NvU32 *, NvU32 *, NvBool, NvBool);
 typedef NV_STATUS GsyncRefSlaves         (struct OBJGPU *, PDACEXTERNALDEVICE, REFTYPE, NvU32 *, NvU32 *);
 typedef NV_STATUS GsyncGetCplStatus      (struct OBJGPU *, PDACEXTERNALDEVICE, GSYNCSTATUS, NvU32 *);
 typedef NV_STATUS GsyncSetWatchdog       (struct OBJGPU *, PDACEXTERNALDEVICE, NvU32);
@@ -151,6 +154,7 @@ typedef NV_STATUS GsyncGetHouseSyncMode  (struct OBJGPU *, PDACEXTERNALDEVICE, N
 typedef NV_STATUS GsyncSetHouseSyncMode  (struct OBJGPU *, PDACEXTERNALDEVICE, NvU8);
 typedef NV_STATUS GsyncGetMulDiv         (struct OBJGPU *, DACEXTERNALDEVICE *, NV30F1_CTRL_GSYNC_MULTIPLY_DIVIDE_SETTINGS *);
 typedef NV_STATUS GsyncSetMulDiv         (struct OBJGPU *, DACEXTERNALDEVICE *, NV30F1_CTRL_GSYNC_MULTIPLY_DIVIDE_SETTINGS *);
+typedef NV_STATUS GsyncSetRasterSyncDecodeMode (struct OBJGPU *, DACEXTERNALDEVICE *);
 
 typedef struct GSYNC_HAL_IFACES {
 
@@ -188,6 +192,7 @@ typedef struct GSYNC_HAL_IFACES {
     GsyncSetHouseSyncMode   *gsyncSetHouseSyncMode;
     GsyncGetMulDiv          *gsyncGetMulDiv;
     GsyncSetMulDiv          *gsyncSetMulDiv;
+    GsyncSetRasterSyncDecodeMode *gsyncSetRasterSyncDecodeMode;
 
 } GSYNC_HAL_IFACES;
 

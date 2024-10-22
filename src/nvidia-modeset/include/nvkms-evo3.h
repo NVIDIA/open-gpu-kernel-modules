@@ -71,6 +71,12 @@ struct EvoClampRangeC5 {
     NvU32 green, red_blue;
 };
 
+typedef void (NVEvoParseCapabilityNotifierFunc3)(NVDevEvoPtr pDevEvo,
+    NVEvoSubDevPtr pEvoSubDev, volatile const NvU32 *pCaps);
+
+typedef NvU32 (NVEvoHwFormatFromKmsFormatFunc3)(
+                   const enum NvKmsSurfaceMemoryFormat format);
+
 /*
  * Converts FP32 to fixed point S5.14 coefficient format
  */
@@ -130,6 +136,23 @@ void nvEvoSetNotifierC3(NVDevEvoRec *pDevEvo,
                              const NvU32 notifier,
                              NVEvoUpdateState *updateState);
 
+static inline NvU32 nvEvoReadCapReg3(volatile const NvU32 *pCaps, NvU32 offset)
+{
+    /* Offsets are in bytes, but the array has dword-sized elements. */
+    return pCaps[offset / sizeof(NvU32)];
+}
+
+NvBool nvEvoGetCapabilities3(NVDevEvoPtr pDevEvo,
+                             NVEvoParseCapabilityNotifierFunc3 *pParse,
+                             NVEvoHwFormatFromKmsFormatFunc3 *pGetHwFmt,
+                             NvU32 hwclass, size_t length);
+
+void nvEvoParseCapabilityNotifier6(NVDevEvoPtr pDevEvo,
+                                   NVEvoSubDevPtr pEvoSubDev,
+                                   volatile const NvU32 *pCaps);
+
+NvU32 nvHwFormatFromKmsFormatC6(const enum NvKmsSurfaceMemoryFormat format);
+
 NvBool nvEvoGetCapabilitiesC6(NVDevEvoPtr pDevEvo);
 
 void
@@ -153,14 +176,11 @@ nvEvoFillLUTSurfaceC5(NVEvoLutEntryRec *pLUTBuffer,
 
 void nvSetupOutputLUT5(NVDevEvoPtr pDevEvo,
                        const NVDispHeadStateEvoRec *pHeadState,
-                       const int head,
-                       NVLutSurfaceEvoPtr pLutSurfEvo,
-                       NvBool enableBaseLut,
                        NvBool enableOutputLut,
-                       NVEvoUpdateState *updateState,
                        NvBool bypassComposition,
                        NVSurfaceDescriptor **pSurfaceDesc,
                        NvU32 *lutSize,
+                       NvU64 *offset,
                        NvBool *disableOcsc0,
                        NvU32 *fpNormScale,
                        NvBool *isLutModeVss);
@@ -257,7 +277,8 @@ const struct NvKmsCscMatrix* nvEvoGetOCsc1MatrixC5(const NVDispHeadStateEvoRec *
 
 struct EvoClampRangeC5 nvEvoGetOCsc1ClampRange(const NVDispHeadStateEvoRec *pHeadState);
 
-void nvEvo3PickOCsc0(NVDispEvoPtr pDispEvo, const NvU32 head, struct NvKms3x4MatrixF32 *ocsc0Matrix);
+void nvEvo3PickOCsc0(const NVDispEvoRec* pDispEvo, const NvU32 head,
+                     struct NvKms3x4MatrixF32 *ocsc0Matrix, NvBool *pOutputRoundingFix);
 
 static inline const NVEvoScalerCaps*
 nvEvoGetWindowScalingCapsC3(const NVDevEvoRec *pDevEvo)

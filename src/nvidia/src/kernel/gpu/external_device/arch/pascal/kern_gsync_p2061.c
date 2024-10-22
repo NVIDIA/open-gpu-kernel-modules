@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -252,6 +252,56 @@ gsyncGetSyncSkew_P2061_V204
         }
     }
     *pSyncSkew = syncSkew;
+
+    return NV_OK;
+}
+
+// Determine and write the proper RasterSync Decode Mode to the CONTROL5 register
+NV_STATUS
+gsyncSetRasterSyncDecodeMode_P2061_V300
+(
+    OBJGPU            *pGpu,
+    DACEXTERNALDEVICE *pExtDev
+)
+{
+    NV2080_CTRL_INTERNAL_GSYNC_GET_RASTER_SYNC_DECODE_MODE_PARAMS
+            rasterSyncDecodeModeParams;
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NvU8    old_data, data;
+
+    //
+    // Get the raster sync mode flag from the GPU
+    // This is only used in P2061 v3.00+ for gsyncSetRasterDecodeMode()
+    //
+    NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi, pGpu->hInternalClient,
+        pGpu->hInternalSubdevice, NV2080_CTRL_CMD_INTERNAL_GSYNC_GET_RASTER_SYNC_DECODE_MODE,
+        &rasterSyncDecodeModeParams, sizeof(rasterSyncDecodeModeParams)));
+
+    NV_ASSERT_OK_OR_RETURN(readregu008_extdeviceTargeted(pGpu, pExtDev, (NvU8)NV_P2061_CONTROL5, &data));
+    old_data = data;
+
+    // Modify the register field with the corresponding mode
+    switch(rasterSyncDecodeModeParams.rasterSyncDecodeMode)
+    {
+        case NV_P2061_CONTROL5_RASTER_SYNC_DECODE_MODE_VSYNC_SHORT_PULSE:
+            data = FLD_SET_DRF(_P2061, _CONTROL5, _RASTER_SYNC_DECODE_MODE,
+                               _VSYNC_SHORT_PULSE, data);
+            break;
+
+        case NV_P2061_CONTROL5_RASTER_SYNC_DECODE_MODE_VSYNC_SINGLE_PULSE:
+            data = FLD_SET_DRF(_P2061, _CONTROL5, _RASTER_SYNC_DECODE_MODE,
+                               _VSYNC_SINGLE_PULSE, data);
+            break;
+       default:
+            return NV_ERR_INVALID_PARAMETER;
+    };
+
+    // Write if changed
+    if (data != old_data)
+    {
+        NV_ASSERT_OK_OR_RETURN(
+            writeregu008_extdeviceTargeted(pGpu, pExtDev, NV_P2061_CONTROL5, data));
+    }
 
     return NV_OK;
 }

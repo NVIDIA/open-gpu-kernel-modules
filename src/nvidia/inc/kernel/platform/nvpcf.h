@@ -435,5 +435,177 @@ typedef struct
 // Controller Entry, Output Params6
 #define NVPCF_DYNAMIC_PARAMS_ENTRY_2X_OUTPUT_PARAM6_CMD0_UNSIGNED           31:0
 
+#define NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_VERSION_10                       0x10
+#define NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_1X_HEADER_SIZE_02                0x02
+#define NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_1X_HEADER_FMT_SIZE_02            "2b"
+#define NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_1X_HEADER_SIZE_04                0x04
+#define NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_1X_HEADER_FMT_SIZE_04            "4b"
+#define NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_1X_ENTRY_SIZE_11                 0x11
+#define NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_1X_ENTRY_FMT_SIZE_11             "1b4d"
+
+#define NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_VERSION_20                       0x20
+#define NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_2X_HEADER_SIZE_02                0x02
+#define NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_2X_HEADER_FMT_SIZE_02            "2b"
+#define NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_2X_HEADER_SIZE_04                0x04
+#define NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_2X_HEADER_FMT_SIZE_04            "4b"
+
+#define NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_VERSION_20_MIN_ENTRIES           0x01
+#define NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_VERSION_20_MAX_ENTRIES           0x08
+
+typedef struct
+{
+    /*!
+     * Table version.
+     */
+    NvU32   version;
+
+    /*!
+     * Size of header in bytes.
+     */
+    NvU32    headerSize;
+
+    /*!
+     * Size of each table entry in bytes.
+     */
+    NvU32    entrySize;
+
+    /*!
+     * Number of entries.
+     */
+    NvU32    entryCount;
+} DC_SYSTEM_POWER_LIMITS_HEADER_1X;
+
+typedef struct
+{
+    /*!
+     * Table version.
+     */
+    NvU32    version;
+
+    /*!
+     * Size of header in bytes.
+     */
+    NvU32    headerSize;
+
+    /*!
+     * Size of each table entry in bytes.
+     */
+    NvU32    entrySize;
+
+    /*!
+     * Number of entries.
+     */
+    NvU32    entryCount;
+} DC_SYSTEM_POWER_LIMITS_HEADER_2X;
+
+typedef struct
+{
+    /*
+     * Params0 - Battery state of charge threshold (percent 0-100)
+     */
+    NvU32   batteryStateOfChargePercent;
+
+    /*
+     * Params1 - Battery current limit (milliamps)
+     */
+    NvU32  batteryCurrentLimitmA;
+
+    /*
+     * Params2 - Rest of system reserved power (milliwatts)
+     */
+    NvU32  restOfSytemReservedPowermW;
+
+    /*
+     * Params3 - Min CPU TDP (milliwatts)
+     */
+    NvU32  minCpuTdpmW;
+
+    /*
+     * Params4 - Max CPU TDP (milliwatts)
+     */
+    NvU32  maxCpuTdpmW;
+} DC_SYSTEM_POWER_LIMITS_ENTRY_1X;
+
+typedef struct
+{
+    /*
+     * Params0 - Battery state of charge threshold (percent 0-100)
+     */
+    NvU8   batteryStateOfChargePercent;
+
+    /*
+     * Params1 - Long timescale battery current limit (milliamps)
+     */
+    NvU32  longTimescaleBatteryCurrentLimitmA;
+
+    /*
+     * Params2 - Short timescale battery current limit (milliamps)
+     */
+    NvU32  shortTimescaleBatteryCurrentLimitmA;
+} DC_SYSTEM_POWER_LIMITS_ENTRY_2X;
+
+#define NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_2X_ENTRY_SIZE_09                 0x09
+#define NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_2X_ENTRY_FMT_SIZE_09             "1b2d"
+
+#define NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_VERSION_10_MIN_ENTRIES           0x01
+#define NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_VERSION_10_MAX_ENTRIES           0x08
+
+/*
+ * Layout of CPU TDP Limit Control 1x data used for static config and driver-sbios
+ * inter-communication
+ */
+
+#define NVPCF_CPU_TDP_LIMIT_CONTROL_TABLE_1X_VERSION            (0x10)
+#define NVPCF_CPU_TDP_LIMIT_CONTROL_TABLE_1X_HEADER_SIZE_03     (0x03U)
+#define NVPCF_CPU_TDP_LIMIT_CONTROL_TABLE_1X_HEADER_FMT_SIZE_03 ("3b")
+#define NVPCF_CPU_TDP_LIMIT_CONTROL_TABLE_1X_BODY_SIZE_04       (0x04U)
+#define NVPCF_CPU_TDP_LIMIT_CONTROL_TABLE_1X_BODY_FMT_SIZE_04   ("1d")
+
+/*!
+ * CPU TDP Limit Control Header, unpacked
+ */
+typedef struct
+{
+    /*
+     * CPU TDP Limit Control Table Version.
+     */
+    NvU8   version;
+
+    /*
+     * Size of CPU TDP Limit Control Table Header in bytes.
+     */
+    NvU8   headerSize;
+
+    /*
+     * Size of body entry in bytes.
+     */
+    NvU8   bodySize;
+} CPU_TDP_LIMIT_CONTROL_HEADER_1X;
+
+/*!
+ * CPU TDP Limit Control Table Common Entry, unpacked
+ */
+typedef struct
+{
+    NvU32 param0;
+} CPU_TDP_LIMIT_CONTROL_BODY_1X;
+
+/*!
+ * CPU TDP Limit Control Header, packed
+ */
+typedef struct
+{
+    NvU8 version;
+    NvU8 headerSize;
+    NvU8 bodySize;
+} CPU_TDP_LIMIT_CONTROL_HEADER_1X_PACKED;
+
+/*!
+ * CPU TDP Limit Control Table Output, packed
+ */
+typedef struct
+{
+    NvU32 param0;
+} CPU_TDP_LIMIT_CONTROL_BODY_1X_PACKED;
 #endif // NVPCF_H
 

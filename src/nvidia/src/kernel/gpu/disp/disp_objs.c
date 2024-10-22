@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -64,7 +64,7 @@ dispapiConstruct_IMPL
     NvBool           bBcResource;
     NvU32            i;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // Use gpuGetByRef instead of GpuResource because it will work even if resource
     // isn't a GpuResource.
@@ -611,80 +611,6 @@ CliFindDispChannelInfo
         *phParent = RES_GET_PARENT_HANDLE(*ppDispChannel);
 
     return NV_OK;
-}
-
-/**
- * @warning This function is deprecated! Please use dispcmnGetByHandle.
- */
-NvBool
-CliGetDispCommonInfo
-(
-    NvHandle     hClient,
-    NvHandle     hDispCommon,
-    DisplayApi **ppDisplayApi
-)
-{
-    RsClient   *pClient;
-    NV_STATUS   status;
-    DispCommon *pDispCommon;
-
-    *ppDisplayApi = NULL;
-
-    status = serverGetClientUnderLock(&g_resServ, hClient, &pClient);
-    if (status != NV_OK)
-        return NV_FALSE;
-
-    status = dispcmnGetByHandle(pClient, hDispCommon, &pDispCommon);
-    if (status != NV_OK)
-        return NV_FALSE;
-
-    *ppDisplayApi = staticCast(pDispCommon, DisplayApi);
-
-    return NV_TRUE;
-}
-
-/**
- * @warning This function is deprecated! Please use dispobjGetByHandle.
- */
-NvBool
-CliGetDispInfo
-(
-    NvHandle     hClient,
-    NvHandle     hObject,
-    DisplayApi **pDisplayApi
-)
-{
-    if (!pDisplayApi)
-        return NV_FALSE;
-
-    *pDisplayApi = CliGetDispFromDispHandle(hClient, hObject);
-
-    return *pDisplayApi ? NV_TRUE : NV_FALSE;
-}
-
-/**
- * @warning This function is deprecated! Please use dispobjGetByHandle.
- */
-DisplayApi *
-CliGetDispFromDispHandle
-(
-    NvHandle hClient,
-    NvHandle hDisp
-)
-{
-    RsClient   *pClient;
-    NV_STATUS   status;
-    DispObject *pDispObject;
-
-    status = serverGetClientUnderLock(&g_resServ, hClient, &pClient);
-    if (status != NV_OK)
-        return NULL;
-
-    status = dispobjGetByHandle(pClient, hDisp, &pDispObject);
-    if (status != NV_OK)
-        return NULL;
-
-    return staticCast(pDispObject, DisplayApi);
 }
 
 //

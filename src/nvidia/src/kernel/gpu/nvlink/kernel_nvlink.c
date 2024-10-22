@@ -557,6 +557,11 @@ knvlinkGetP2pConnectionStatus_IMPL
             (knvlinkGetNumLinksToPeer(pGpu1, pKernelNvlink1, pGpu0) == numPeerLinks),
             NV_ERR_INVALID_STATE);
 
+        // P2P is not supported between GPUs with different RBMs.
+        NV_CHECK_OR_RETURN(LEVEL_INFO,
+            (pKernelNvlink0->nvlinkBwMode == pKernelNvlink1->nvlinkBwMode),
+            NV_ERR_INVALID_STATE);
+
         NV_CHECK_OR_RETURN(LEVEL_INFO,
                 knvlinkCheckNvswitchP2pConfig(pGpu0, pKernelNvlink0, pGpu1),
                 NV_ERR_INVALID_STATE);
@@ -1053,6 +1058,7 @@ knvlinkGetPeersNvlinkMaskFromHshub_IMPL
 
     portMemSet(pParams, 0, sizeof(*pParams));
     pParams->linkMask = pKernelNvlink->enabledLinks;
+    pParams->bSublinkStateInst = NV_TRUE;
 
     status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
                                  NV2080_CTRL_CMD_NVLINK_GET_LINK_AND_CLOCK_INFO,
@@ -2139,23 +2145,241 @@ knvlinkFatalErrorRecovery_WORKITEM
 {
     OBJGPU *pGpu = gpumgrGetGpu(gpuInstance);
     rcAndDisableOutstandingClientsWithImportedMemory(pGpu, NV_FABRIC_INVALID_NODE_ID);
+
+    {
+        NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *pInfo = (NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *)pArgs;
+        if (pInfo != NULL)
+            portAtomicSetU32(&pInfo->rcCompleted, 1); 
+    }
+}
+
+void
+knvlinkUncontainedErrorRecoveryUvmIdle_WORKITEM
+(
+    NvU32 gpuInstance,
+    void  *pArgs
+)
+{
+    NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *pInfo = (NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *)pArgs;
+    NV_STATUS status;
+
+    NV_ASSERT_OR_RETURN_VOID(pInfo != NULL);
+
+    status = osQueueDrainP2PHandler(pInfo->uuid);
+
+    if ((status == NV_OK) || (status == NV_ERR_NOT_SUPPORTED))
+        portAtomicSetU32(&pInfo->uvmIdle, 1); 
+    else
+        NV_ASSERT_FAILED("Failed to idle UVM peer traffic. This will lead to NVLINK Degradation!");
+}
+
+void
+knvlinkUncontainedErrorRecoveryUvmResume_WORKITEM
+(
+    NvU32 gpuInstance,
+    void  *pArgs
+)
+{
+    NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *pInfo = (NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *)pArgs;
+
+    NV_ASSERT_OR_RETURN_VOID(pInfo != NULL);
+
+    osQueueResumeP2PHandler(pInfo->uuid);
+
+    // Clear the active recovery
+    portAtomicSetU32(&pInfo->active, 0); 
+}
+
+void
+knvlinkUncontainedErrorRecoveryReadyCheck_WORKITEM
+(
+    OBJGPU *pGpu,
+    void *pArgs
+)
+{
+    NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *pInfo = (NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *)pArgs;
+    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
+    NvU64 currentTime;
+    NV_STATUS status = NV_OK;
+
+    NV_ASSERT_OR_RETURN_VOID(pInfo != NULL);
+
+    NV_ASSERT_OK_OR_GOTO(status, tmrGetCurrentTime(pTmr, &currentTime), remove);
+    if ((currentTime - pInfo->startTime) <= NVLINK_UNCONTAINED_ERROR_IDLE_PERIOD_NS)
+        return;
+
+    portAtomicSetU32(&pInfo->recoveryReady, 1); 
+
+remove:
+    osRemove1HzCallback(pGpu, knvlinkUncontainedErrorRecoveryReadyCheck_WORKITEM, pArgs);
+}
+
+void
+knvlinkUncontainedErrorRecovery_WORKITEM
+(
+    OBJGPU *pGpu,
+    void *pArgs
+)
+{
+    NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *pInfo = (NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *)pArgs;
+    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
+    NvU64 currentTime;
+    NvBool bRemove = NV_FALSE;
+    NvBool bDegrade = NV_FALSE;
+    NV_STATUS status = NV_OK;
+
+    NV_ASSERT_OR_RETURN_VOID(pInfo != NULL);
+
+    NV_ASSERT_OK_OR_GOTO(status, tmrGetCurrentTime(pTmr, &currentTime), exit);
+
+    // If we do not successfully idle within a resonable time, degrade
+    if ((currentTime - pInfo->startTime) > NVLINK_UNCONTAINED_ERROR_ABORT_PERIOD_NS)
+    {
+        bRemove = NV_TRUE;
+        bDegrade = NV_TRUE;
+        // One more pass in case it just took a long time to get scheduled
+    }
+
+    if (portAtomicOrU32(&pInfo->rcCompleted, 0) == 0)
+        goto exit;
+
+    if (portAtomicOrU32(&pInfo->uvmIdle, 0) == 0)
+        goto exit;
+
+    if (portAtomicOrU32(&pInfo->recoveryReady, 0) == 0)
+        goto exit;
+
+    bRemove = NV_TRUE;
+    bDegrade = NV_FALSE;
+
+    // Launch recovery action in the HW to allow new traffic
+    {
+        RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+        NV_ASSERT_OK_OR_GOTO(status,
+            pRmApi->Control(pRmApi,
+                            pGpu->hInternalClient,
+                            pGpu->hInternalSubdevice,
+                            NV2080_CTRL_CMD_INTERNAL_NVLINK_POST_FATAL_ERROR_RECOVERY,
+                            NULL,
+                            0),
+            exit);
+    }
+
+    // Launch lockless workitem to resume P2P in UVM
+    NV_ASSERT_OK_OR_GOTO(status,
+        osQueueWorkItemWithFlags(pGpu, knvlinkUncontainedErrorRecoveryUvmResume_WORKITEM, pInfo,
+                                 (OS_QUEUE_WORKITEM_FLAGS_DONT_FREE_PARAMS)),
+        exit);
+
+exit:
+    if (status != NV_OK)
+    {
+        bRemove = NV_TRUE;
+        bDegrade = NV_TRUE;
+    }
+
+    if (bRemove)
+        osRemove1HzCallback(pGpu, knvlinkUncontainedErrorRecovery_WORKITEM, pArgs);
+
+    if (bDegrade)
+    {
+        KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+        NV_PRINTF(LEVEL_ERROR, "Failed to recover from uncontained NVLINK error. Triggering Degraded Mode!\n");
+        knvlinkSetDegradedMode(pGpu, pKernelNvlink, portUtilCountTrailingZeros32(pKernelNvlink->enabledLinks));
+    }
 }
 
 NV_STATUS
 knvlinkFatalErrorRecovery_IMPL
 (
     OBJGPU *pGpu,
-    KernelNvlink *pKernelNvlink
+    KernelNvlink *pKernelNvlink,
+    NvBool bRecoverable
 )
 {
-    NV_STATUS status;
+    NV_STATUS status = NV_OK;
+    NVLINK_UNCONTAINED_ERROR_RECOVERY_INFO *pInfo = gpumgrGetNvlinkRecoveryInfo(gpuGetDBDF(pGpu));
 
-    status = osQueueWorkItemWithFlags(pGpu, knvlinkFatalErrorRecovery_WORKITEM, NULL,
-                                      (OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
-                                        OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW |
-                                        OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE));
+    if (bRecoverable && pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_UNCONTAINED_ERROR_RECOVERY_SUPPORTED))
+    {
+        OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
 
-     return status;
+        if ((pInfo == NULL) || !pInfo->bValid)
+        {
+            status = NV_ERR_INVALID_STATE;
+            goto fail;
+        }
+
+        // This recovery process should not be able to occur twice synchronously
+        if (portAtomicOrU32(&pInfo->active, 0) != 0)
+        {
+            NV_ASSERT_FAILED("NVLINK Uncontained error recovery re-triggered unexpectedly!");
+            status = NV_ERR_INVALID_STATE;
+            goto fail;
+        }
+
+        // Kickoff the recovery process
+        portAtomicSetU32(&pInfo->active, 1); 
+        portAtomicSetU32(&pInfo->rcCompleted, 0); 
+        portAtomicSetU32(&pInfo->uvmIdle, 0); 
+        portAtomicSetU32(&pInfo->recoveryReady, 0); 
+        NV_ASSERT_OK_OR_GOTO(status, tmrGetCurrentTime(pTmr, &pInfo->startTime), fail);
+
+        {
+            NvU32 flags = DRF_DEF(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _TYPE, _SHA1) |
+                DRF_DEF(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _FORMAT, _BINARY);
+            NvU32 uuidLength;
+            NvU8 *pUuid;
+
+            // allocates memory for pUuid on success
+            NV_ASSERT_OK_OR_GOTO(status, gpuGetGidInfo(pGpu, &pUuid, &uuidLength, flags), fail);
+            NV_ASSERT_OR_GOTO(uuidLength == sizeof(pInfo->uuid), fail);
+
+            portMemCopy(pInfo->uuid, uuidLength, pUuid, uuidLength);
+            portMemFree(pUuid);
+        }
+
+        // Launch workitem to RC outstanding IMEX clients
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+            osQueueWorkItemWithFlags(pGpu, knvlinkFatalErrorRecovery_WORKITEM, pInfo,
+                                     (OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
+                                       OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW |
+                                       OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE |
+                                       OS_QUEUE_WORKITEM_FLAGS_DONT_FREE_PARAMS)),
+            fail);
+
+        // Launch lockless workitem to idle UVM channels
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+            osQueueWorkItemWithFlags(pGpu, knvlinkUncontainedErrorRecoveryUvmIdle_WORKITEM, pInfo,
+                                     (OS_QUEUE_WORKITEM_FLAGS_DONT_FREE_PARAMS)),
+            fail);
+
+        // Launch repeated 1Hz workitem to wait 1 STO period
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+            osSchedule1HzCallback(pGpu, knvlinkUncontainedErrorRecoveryReadyCheck_WORKITEM, pInfo, NV_OS_1HZ_REPEAT),
+            fail);
+
+        // Launch repeated 1Hz workitem to await completion and kickoff recovery process
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+            osSchedule1HzCallback(pGpu, knvlinkUncontainedErrorRecovery_WORKITEM, pInfo, NV_OS_1HZ_REPEAT),
+            fail);
+    }
+    else
+    {
+        status = osQueueWorkItemWithFlags(pGpu, knvlinkFatalErrorRecovery_WORKITEM, NULL,
+                                          (OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
+                                            OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW |
+                                            OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE));
+    }
+
+    return status;
+
+fail:
+    NV_PRINTF(LEVEL_ERROR, "Failed to recover from uncontained NVLINK error. Triggering Degraded Mode!\n");
+    knvlinkSetDegradedMode(pGpu, pKernelNvlink, portUtilCountTrailingZeros32(pKernelNvlink->enabledLinks));
+
+    return status;
 }
 
 // Grab GPU locks before RPCing into GSP-RM for NVLink RPCs

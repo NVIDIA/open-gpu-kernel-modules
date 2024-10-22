@@ -360,158 +360,236 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
 
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^2
+NvBool __nvoc_down_thunk_RmResource_resShareCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super^2
+NV_STATUS __nvoc_down_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+void __nvoc_down_thunk_RmResource_resControlSerialization_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_down_thunk_RmResource_resControl_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+void __nvoc_down_thunk_RmResource_resControl_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_down_thunk_GpuResource_resControl(struct RsResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_down_thunk_GpuResource_resMap(struct RsResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping);    // super
+NV_STATUS __nvoc_down_thunk_GpuResource_resUnmap(struct RsResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping);    // super
+NvBool __nvoc_down_thunk_GpuResource_rmresShareCallback(struct RmResource *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super
+PEVENTNOTIFICATION * __nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr(struct INotifier *pNotifier);    // super
+struct NotifShare * __nvoc_down_thunk_Notifier_inotifyGetNotificationShare(struct INotifier *pNotifier);    // super
+void __nvoc_down_thunk_Notifier_inotifySetNotificationShare(struct INotifier *pNotifier, struct NotifShare *pNotifShare);    // super
+NV_STATUS __nvoc_down_thunk_Notifier_inotifyUnregisterEvent(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // super
+NV_STATUS __nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // super
+NV_STATUS __nvoc_down_thunk_DiagApi_gpuresControl(struct GpuResource *pDiagApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_down_thunk_DiagApi_resControlFilter(struct RsResource *pDiagApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+
 // 2 down-thunk(s) defined to bridge methods in DiagApi from superclasses
 
 // diagapiControl: virtual override (res) base (gpures)
-static NV_STATUS __nvoc_down_thunk_DiagApi_gpuresControl(struct GpuResource *pDiagApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_down_thunk_DiagApi_gpuresControl(struct GpuResource *pDiagApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return diagapiControl((struct DiagApi *)(((unsigned char *) pDiagApi) - __nvoc_rtti_DiagApi_GpuResource.offset), pCallContext, pParams);
 }
 
 // diagapiControlFilter: virtual override (res) base (gpures)
-static NV_STATUS __nvoc_down_thunk_DiagApi_resControlFilter(struct RsResource *pDiagApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_down_thunk_DiagApi_resControlFilter(struct RsResource *pDiagApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return diagapiControlFilter((struct DiagApi *)(((unsigned char *) pDiagApi) - __nvoc_rtti_DiagApi_RsResource.offset), pCallContext, pParams);
 }
 
 
+// Up-thunk(s) to bridge methods to ancestors (if any)
+NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super^2
+void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresControl(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresControlFilter(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresMap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // super^2
+NvBool __nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported(struct RmResource *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresMapTo(struct RmResource *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmapFrom(struct RmResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super^2
+NvU32 __nvoc_up_thunk_RsResource_rmresGetRefCount(struct RmResource *pResource);    // super^2
+void __nvoc_up_thunk_RsResource_rmresAddAdditionalDependants(struct RsClient *pClient, struct RmResource *pResource, RsResourceRef *pReference);    // super^2
+NvBool __nvoc_up_thunk_RmResource_gpuresAccessCallback(struct GpuResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams(struct GpuResource *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap(struct GpuResource *pRmResource, NvBool bSubdeviceHandleProvided);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor(struct GpuResource *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+void __nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_gpuresControl_Prologue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+void __nvoc_up_thunk_RmResource_gpuresControl_Epilogue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NvBool __nvoc_up_thunk_RsResource_gpuresCanCopy(struct GpuResource *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_gpuresIsDuplicate(struct GpuResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super
+void __nvoc_up_thunk_RsResource_gpuresPreDestruct(struct GpuResource *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_gpuresControlFilter(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NvBool __nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported(struct GpuResource *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_gpuresMapTo(struct GpuResource *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_gpuresUnmapFrom(struct GpuResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super
+NvU32 __nvoc_up_thunk_RsResource_gpuresGetRefCount(struct GpuResource *pResource);    // super
+void __nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants(struct RsClient *pClient, struct GpuResource *pResource, RsResourceRef *pReference);    // super
+NV_STATUS __nvoc_up_thunk_GpuResource_diagapiMap(struct DiagApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping);    // this
+NV_STATUS __nvoc_up_thunk_GpuResource_diagapiUnmap(struct DiagApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping);    // this
+NvBool __nvoc_up_thunk_GpuResource_diagapiShareCallback(struct DiagApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // this
+NV_STATUS __nvoc_up_thunk_GpuResource_diagapiGetRegBaseOffsetAndSize(struct DiagApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize);    // this
+NV_STATUS __nvoc_up_thunk_GpuResource_diagapiGetMapAddrSpace(struct DiagApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace);    // this
+NV_STATUS __nvoc_up_thunk_GpuResource_diagapiInternalControlForward(struct DiagApi *pGpuResource, NvU32 command, void *pParams, NvU32 size);    // this
+NvHandle __nvoc_up_thunk_GpuResource_diagapiGetInternalObjectHandle(struct DiagApi *pGpuResource);    // this
+NvBool __nvoc_up_thunk_RmResource_diagapiAccessCallback(struct DiagApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_diagapiGetMemInterMapParams(struct DiagApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_diagapiCheckMemInterUnmap(struct DiagApi *pRmResource, NvBool bSubdeviceHandleProvided);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_diagapiGetMemoryMappingDescriptor(struct DiagApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_diagapiControlSerialization_Prologue(struct DiagApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+void __nvoc_up_thunk_RmResource_diagapiControlSerialization_Epilogue(struct DiagApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_diagapiControl_Prologue(struct DiagApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+void __nvoc_up_thunk_RmResource_diagapiControl_Epilogue(struct DiagApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NvBool __nvoc_up_thunk_RsResource_diagapiCanCopy(struct DiagApi *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_diagapiIsDuplicate(struct DiagApi *pResource, NvHandle hMemory, NvBool *pDuplicate);    // this
+void __nvoc_up_thunk_RsResource_diagapiPreDestruct(struct DiagApi *pResource);    // this
+NvBool __nvoc_up_thunk_RsResource_diagapiIsPartialUnmapSupported(struct DiagApi *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_diagapiMapTo(struct DiagApi *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_diagapiUnmapFrom(struct DiagApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
+NvU32 __nvoc_up_thunk_RsResource_diagapiGetRefCount(struct DiagApi *pResource);    // this
+void __nvoc_up_thunk_RsResource_diagapiAddAdditionalDependants(struct RsClient *pClient, struct DiagApi *pResource, RsResourceRef *pReference);    // this
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_diagapiGetNotificationListPtr(struct DiagApi *pNotifier);    // this
+struct NotifShare * __nvoc_up_thunk_Notifier_diagapiGetNotificationShare(struct DiagApi *pNotifier);    // this
+void __nvoc_up_thunk_Notifier_diagapiSetNotificationShare(struct DiagApi *pNotifier, struct NotifShare *pNotifShare);    // this
+NV_STATUS __nvoc_up_thunk_Notifier_diagapiUnregisterEvent(struct DiagApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // this
+NV_STATUS __nvoc_up_thunk_Notifier_diagapiGetOrAllocNotifShare(struct DiagApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // this
+
 // 28 up-thunk(s) defined to bridge methods in DiagApi to superclasses
 
 // diagapiMap: virtual inherited (gpures) base (gpures)
-static NV_STATUS __nvoc_up_thunk_GpuResource_diagapiMap(struct DiagApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+NV_STATUS __nvoc_up_thunk_GpuResource_diagapiMap(struct DiagApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
     return gpuresMap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DiagApi_GpuResource.offset), pCallContext, pParams, pCpuMapping);
 }
 
 // diagapiUnmap: virtual inherited (gpures) base (gpures)
-static NV_STATUS __nvoc_up_thunk_GpuResource_diagapiUnmap(struct DiagApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+NV_STATUS __nvoc_up_thunk_GpuResource_diagapiUnmap(struct DiagApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
     return gpuresUnmap((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DiagApi_GpuResource.offset), pCallContext, pCpuMapping);
 }
 
 // diagapiShareCallback: virtual inherited (gpures) base (gpures)
-static NvBool __nvoc_up_thunk_GpuResource_diagapiShareCallback(struct DiagApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+NvBool __nvoc_up_thunk_GpuResource_diagapiShareCallback(struct DiagApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DiagApi_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 // diagapiGetRegBaseOffsetAndSize: virtual inherited (gpures) base (gpures)
-static NV_STATUS __nvoc_up_thunk_GpuResource_diagapiGetRegBaseOffsetAndSize(struct DiagApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+NV_STATUS __nvoc_up_thunk_GpuResource_diagapiGetRegBaseOffsetAndSize(struct DiagApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
     return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DiagApi_GpuResource.offset), pGpu, pOffset, pSize);
 }
 
 // diagapiGetMapAddrSpace: virtual inherited (gpures) base (gpures)
-static NV_STATUS __nvoc_up_thunk_GpuResource_diagapiGetMapAddrSpace(struct DiagApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+NV_STATUS __nvoc_up_thunk_GpuResource_diagapiGetMapAddrSpace(struct DiagApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DiagApi_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
 // diagapiInternalControlForward: virtual inherited (gpures) base (gpures)
-static NV_STATUS __nvoc_up_thunk_GpuResource_diagapiInternalControlForward(struct DiagApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+NV_STATUS __nvoc_up_thunk_GpuResource_diagapiInternalControlForward(struct DiagApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
     return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DiagApi_GpuResource.offset), command, pParams, size);
 }
 
 // diagapiGetInternalObjectHandle: virtual inherited (gpures) base (gpures)
-static NvHandle __nvoc_up_thunk_GpuResource_diagapiGetInternalObjectHandle(struct DiagApi *pGpuResource) {
+NvHandle __nvoc_up_thunk_GpuResource_diagapiGetInternalObjectHandle(struct DiagApi *pGpuResource) {
     return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_DiagApi_GpuResource.offset));
 }
 
 // diagapiAccessCallback: virtual inherited (rmres) base (gpures)
-static NvBool __nvoc_up_thunk_RmResource_diagapiAccessCallback(struct DiagApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+NvBool __nvoc_up_thunk_RmResource_diagapiAccessCallback(struct DiagApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DiagApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
 // diagapiGetMemInterMapParams: virtual inherited (rmres) base (gpures)
-static NV_STATUS __nvoc_up_thunk_RmResource_diagapiGetMemInterMapParams(struct DiagApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_diagapiGetMemInterMapParams(struct DiagApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
     return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DiagApi_RmResource.offset), pParams);
 }
 
 // diagapiCheckMemInterUnmap: virtual inherited (rmres) base (gpures)
-static NV_STATUS __nvoc_up_thunk_RmResource_diagapiCheckMemInterUnmap(struct DiagApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+NV_STATUS __nvoc_up_thunk_RmResource_diagapiCheckMemInterUnmap(struct DiagApi *pRmResource, NvBool bSubdeviceHandleProvided) {
     return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DiagApi_RmResource.offset), bSubdeviceHandleProvided);
 }
 
 // diagapiGetMemoryMappingDescriptor: virtual inherited (rmres) base (gpures)
-static NV_STATUS __nvoc_up_thunk_RmResource_diagapiGetMemoryMappingDescriptor(struct DiagApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+NV_STATUS __nvoc_up_thunk_RmResource_diagapiGetMemoryMappingDescriptor(struct DiagApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
     return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_DiagApi_RmResource.offset), ppMemDesc);
 }
 
 // diagapiControlSerialization_Prologue: virtual inherited (rmres) base (gpures)
-static NV_STATUS __nvoc_up_thunk_RmResource_diagapiControlSerialization_Prologue(struct DiagApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_diagapiControlSerialization_Prologue(struct DiagApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DiagApi_RmResource.offset), pCallContext, pParams);
 }
 
 // diagapiControlSerialization_Epilogue: virtual inherited (rmres) base (gpures)
-static void __nvoc_up_thunk_RmResource_diagapiControlSerialization_Epilogue(struct DiagApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+void __nvoc_up_thunk_RmResource_diagapiControlSerialization_Epilogue(struct DiagApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DiagApi_RmResource.offset), pCallContext, pParams);
 }
 
 // diagapiControl_Prologue: virtual inherited (rmres) base (gpures)
-static NV_STATUS __nvoc_up_thunk_RmResource_diagapiControl_Prologue(struct DiagApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_diagapiControl_Prologue(struct DiagApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DiagApi_RmResource.offset), pCallContext, pParams);
 }
 
 // diagapiControl_Epilogue: virtual inherited (rmres) base (gpures)
-static void __nvoc_up_thunk_RmResource_diagapiControl_Epilogue(struct DiagApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+void __nvoc_up_thunk_RmResource_diagapiControl_Epilogue(struct DiagApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_DiagApi_RmResource.offset), pCallContext, pParams);
 }
 
 // diagapiCanCopy: virtual inherited (res) base (gpures)
-static NvBool __nvoc_up_thunk_RsResource_diagapiCanCopy(struct DiagApi *pResource) {
+NvBool __nvoc_up_thunk_RsResource_diagapiCanCopy(struct DiagApi *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DiagApi_RsResource.offset));
 }
 
 // diagapiIsDuplicate: virtual inherited (res) base (gpures)
-static NV_STATUS __nvoc_up_thunk_RsResource_diagapiIsDuplicate(struct DiagApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+NV_STATUS __nvoc_up_thunk_RsResource_diagapiIsDuplicate(struct DiagApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DiagApi_RsResource.offset), hMemory, pDuplicate);
 }
 
 // diagapiPreDestruct: virtual inherited (res) base (gpures)
-static void __nvoc_up_thunk_RsResource_diagapiPreDestruct(struct DiagApi *pResource) {
+void __nvoc_up_thunk_RsResource_diagapiPreDestruct(struct DiagApi *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DiagApi_RsResource.offset));
 }
 
 // diagapiIsPartialUnmapSupported: inline virtual inherited (res) base (gpures) body
-static NvBool __nvoc_up_thunk_RsResource_diagapiIsPartialUnmapSupported(struct DiagApi *pResource) {
+NvBool __nvoc_up_thunk_RsResource_diagapiIsPartialUnmapSupported(struct DiagApi *pResource) {
     return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DiagApi_RsResource.offset));
 }
 
 // diagapiMapTo: virtual inherited (res) base (gpures)
-static NV_STATUS __nvoc_up_thunk_RsResource_diagapiMapTo(struct DiagApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_diagapiMapTo(struct DiagApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
     return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DiagApi_RsResource.offset), pParams);
 }
 
 // diagapiUnmapFrom: virtual inherited (res) base (gpures)
-static NV_STATUS __nvoc_up_thunk_RsResource_diagapiUnmapFrom(struct DiagApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_diagapiUnmapFrom(struct DiagApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
     return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DiagApi_RsResource.offset), pParams);
 }
 
 // diagapiGetRefCount: virtual inherited (res) base (gpures)
-static NvU32 __nvoc_up_thunk_RsResource_diagapiGetRefCount(struct DiagApi *pResource) {
+NvU32 __nvoc_up_thunk_RsResource_diagapiGetRefCount(struct DiagApi *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DiagApi_RsResource.offset));
 }
 
 // diagapiAddAdditionalDependants: virtual inherited (res) base (gpures)
-static void __nvoc_up_thunk_RsResource_diagapiAddAdditionalDependants(struct RsClient *pClient, struct DiagApi *pResource, RsResourceRef *pReference) {
+void __nvoc_up_thunk_RsResource_diagapiAddAdditionalDependants(struct RsClient *pClient, struct DiagApi *pResource, RsResourceRef *pReference) {
     resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_DiagApi_RsResource.offset), pReference);
 }
 
 // diagapiGetNotificationListPtr: virtual inherited (notify) base (notify)
-static PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_diagapiGetNotificationListPtr(struct DiagApi *pNotifier) {
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_diagapiGetNotificationListPtr(struct DiagApi *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DiagApi_Notifier.offset));
 }
 
 // diagapiGetNotificationShare: virtual inherited (notify) base (notify)
-static struct NotifShare * __nvoc_up_thunk_Notifier_diagapiGetNotificationShare(struct DiagApi *pNotifier) {
+struct NotifShare * __nvoc_up_thunk_Notifier_diagapiGetNotificationShare(struct DiagApi *pNotifier) {
     return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DiagApi_Notifier.offset));
 }
 
 // diagapiSetNotificationShare: virtual inherited (notify) base (notify)
-static void __nvoc_up_thunk_Notifier_diagapiSetNotificationShare(struct DiagApi *pNotifier, struct NotifShare *pNotifShare) {
+void __nvoc_up_thunk_Notifier_diagapiSetNotificationShare(struct DiagApi *pNotifier, struct NotifShare *pNotifShare) {
     notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DiagApi_Notifier.offset), pNotifShare);
 }
 
 // diagapiUnregisterEvent: virtual inherited (notify) base (notify)
-static NV_STATUS __nvoc_up_thunk_Notifier_diagapiUnregisterEvent(struct DiagApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
+NV_STATUS __nvoc_up_thunk_Notifier_diagapiUnregisterEvent(struct DiagApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DiagApi_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 // diagapiGetOrAllocNotifShare: virtual inherited (notify) base (notify)
-static NV_STATUS __nvoc_up_thunk_Notifier_diagapiGetOrAllocNotifShare(struct DiagApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
+NV_STATUS __nvoc_up_thunk_Notifier_diagapiGetOrAllocNotifShare(struct DiagApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_DiagApi_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
@@ -571,14 +649,6 @@ static void __nvoc_init_funcTable_DiagApi_1(DiagApi *pThis, RmHalspecOwner *pRmh
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
-
-    // diagapiControl -- virtual override (res) base (gpures)
-    pThis->__diagapiControl__ = &diagapiControl_IMPL;
-    pThis->__nvoc_base_GpuResource.__gpuresControl__ = &__nvoc_down_thunk_DiagApi_gpuresControl;
-
-    // diagapiControlFilter -- virtual override (res) base (gpures)
-    pThis->__diagapiControlFilter__ = &diagapiControlFilter_IMPL;
-    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resControlFilter__ = &__nvoc_down_thunk_DiagApi_resControlFilter;
 
     // diagapiCtrlCmdFifoCheckEngineContext -- exported (id=0x208f0401)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
@@ -664,97 +734,159 @@ static void __nvoc_init_funcTable_DiagApi_1(DiagApi *pThis, RmHalspecOwner *pRmh
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
     pThis->__diagapiCtrlCmdUcodeCoverageGetData__ = &diagapiCtrlCmdUcodeCoverageGetData_IMPL;
 #endif
-
-    // diagapiMap -- virtual inherited (gpures) base (gpures)
-    pThis->__diagapiMap__ = &__nvoc_up_thunk_GpuResource_diagapiMap;
-
-    // diagapiUnmap -- virtual inherited (gpures) base (gpures)
-    pThis->__diagapiUnmap__ = &__nvoc_up_thunk_GpuResource_diagapiUnmap;
-
-    // diagapiShareCallback -- virtual inherited (gpures) base (gpures)
-    pThis->__diagapiShareCallback__ = &__nvoc_up_thunk_GpuResource_diagapiShareCallback;
-
-    // diagapiGetRegBaseOffsetAndSize -- virtual inherited (gpures) base (gpures)
-    pThis->__diagapiGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_diagapiGetRegBaseOffsetAndSize;
-
-    // diagapiGetMapAddrSpace -- virtual inherited (gpures) base (gpures)
-    pThis->__diagapiGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_diagapiGetMapAddrSpace;
-
-    // diagapiInternalControlForward -- virtual inherited (gpures) base (gpures)
-    pThis->__diagapiInternalControlForward__ = &__nvoc_up_thunk_GpuResource_diagapiInternalControlForward;
-
-    // diagapiGetInternalObjectHandle -- virtual inherited (gpures) base (gpures)
-    pThis->__diagapiGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_diagapiGetInternalObjectHandle;
-
-    // diagapiAccessCallback -- virtual inherited (rmres) base (gpures)
-    pThis->__diagapiAccessCallback__ = &__nvoc_up_thunk_RmResource_diagapiAccessCallback;
-
-    // diagapiGetMemInterMapParams -- virtual inherited (rmres) base (gpures)
-    pThis->__diagapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_diagapiGetMemInterMapParams;
-
-    // diagapiCheckMemInterUnmap -- virtual inherited (rmres) base (gpures)
-    pThis->__diagapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_diagapiCheckMemInterUnmap;
-
-    // diagapiGetMemoryMappingDescriptor -- virtual inherited (rmres) base (gpures)
-    pThis->__diagapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_diagapiGetMemoryMappingDescriptor;
-
-    // diagapiControlSerialization_Prologue -- virtual inherited (rmres) base (gpures)
-    pThis->__diagapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_diagapiControlSerialization_Prologue;
-
-    // diagapiControlSerialization_Epilogue -- virtual inherited (rmres) base (gpures)
-    pThis->__diagapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_diagapiControlSerialization_Epilogue;
-
-    // diagapiControl_Prologue -- virtual inherited (rmres) base (gpures)
-    pThis->__diagapiControl_Prologue__ = &__nvoc_up_thunk_RmResource_diagapiControl_Prologue;
-
-    // diagapiControl_Epilogue -- virtual inherited (rmres) base (gpures)
-    pThis->__diagapiControl_Epilogue__ = &__nvoc_up_thunk_RmResource_diagapiControl_Epilogue;
-
-    // diagapiCanCopy -- virtual inherited (res) base (gpures)
-    pThis->__diagapiCanCopy__ = &__nvoc_up_thunk_RsResource_diagapiCanCopy;
-
-    // diagapiIsDuplicate -- virtual inherited (res) base (gpures)
-    pThis->__diagapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_diagapiIsDuplicate;
-
-    // diagapiPreDestruct -- virtual inherited (res) base (gpures)
-    pThis->__diagapiPreDestruct__ = &__nvoc_up_thunk_RsResource_diagapiPreDestruct;
-
-    // diagapiIsPartialUnmapSupported -- inline virtual inherited (res) base (gpures) body
-    pThis->__diagapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_diagapiIsPartialUnmapSupported;
-
-    // diagapiMapTo -- virtual inherited (res) base (gpures)
-    pThis->__diagapiMapTo__ = &__nvoc_up_thunk_RsResource_diagapiMapTo;
-
-    // diagapiUnmapFrom -- virtual inherited (res) base (gpures)
-    pThis->__diagapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_diagapiUnmapFrom;
-
-    // diagapiGetRefCount -- virtual inherited (res) base (gpures)
-    pThis->__diagapiGetRefCount__ = &__nvoc_up_thunk_RsResource_diagapiGetRefCount;
-
-    // diagapiAddAdditionalDependants -- virtual inherited (res) base (gpures)
-    pThis->__diagapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_diagapiAddAdditionalDependants;
-
-    // diagapiGetNotificationListPtr -- virtual inherited (notify) base (notify)
-    pThis->__diagapiGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_diagapiGetNotificationListPtr;
-
-    // diagapiGetNotificationShare -- virtual inherited (notify) base (notify)
-    pThis->__diagapiGetNotificationShare__ = &__nvoc_up_thunk_Notifier_diagapiGetNotificationShare;
-
-    // diagapiSetNotificationShare -- virtual inherited (notify) base (notify)
-    pThis->__diagapiSetNotificationShare__ = &__nvoc_up_thunk_Notifier_diagapiSetNotificationShare;
-
-    // diagapiUnregisterEvent -- virtual inherited (notify) base (notify)
-    pThis->__diagapiUnregisterEvent__ = &__nvoc_up_thunk_Notifier_diagapiUnregisterEvent;
-
-    // diagapiGetOrAllocNotifShare -- virtual inherited (notify) base (notify)
-    pThis->__diagapiGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_diagapiGetOrAllocNotifShare;
-} // End __nvoc_init_funcTable_DiagApi_1 with approximately 49 basic block(s).
+} // End __nvoc_init_funcTable_DiagApi_1 with approximately 17 basic block(s).
 
 
 // Initialize vtable(s) for 46 virtual method(s).
 void __nvoc_init_funcTable_DiagApi(DiagApi *pThis, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 46 per-object function pointer(s).
+    // Per-class vtable definition
+    static const struct NVOC_VTABLE__DiagApi vtable = {
+        .__diagapiControl__ = &diagapiControl_IMPL,    // virtual override (res) base (gpures)
+        .GpuResource.__gpuresControl__ = &__nvoc_down_thunk_DiagApi_gpuresControl,    // virtual override (res) base (rmres)
+        .GpuResource.RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+        .GpuResource.RmResource.RsResource.__resControl__ = &__nvoc_down_thunk_GpuResource_resControl,    // virtual
+        .__diagapiControlFilter__ = &diagapiControlFilter_IMPL,    // virtual override (res) base (gpures)
+        .GpuResource.__gpuresControlFilter__ = &__nvoc_up_thunk_RsResource_gpuresControlFilter,    // virtual inherited (res) base (rmres)
+        .GpuResource.RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+        .GpuResource.RmResource.RsResource.__resControlFilter__ = &__nvoc_down_thunk_DiagApi_resControlFilter,    // virtual
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x44u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+        .__diagapiMap__ = &__nvoc_up_thunk_GpuResource_diagapiMap,    // virtual inherited (gpures) base (gpures)
+        .GpuResource.__gpuresMap__ = &gpuresMap_IMPL,    // virtual override (res) base (rmres)
+        .GpuResource.RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+        .GpuResource.RmResource.RsResource.__resMap__ = &__nvoc_down_thunk_GpuResource_resMap,    // virtual
+        .__diagapiUnmap__ = &__nvoc_up_thunk_GpuResource_diagapiUnmap,    // virtual inherited (gpures) base (gpures)
+        .GpuResource.__gpuresUnmap__ = &gpuresUnmap_IMPL,    // virtual override (res) base (rmres)
+        .GpuResource.RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+        .GpuResource.RmResource.RsResource.__resUnmap__ = &__nvoc_down_thunk_GpuResource_resUnmap,    // virtual
+        .__diagapiShareCallback__ = &__nvoc_up_thunk_GpuResource_diagapiShareCallback,    // virtual inherited (gpures) base (gpures)
+        .GpuResource.__gpuresShareCallback__ = &gpuresShareCallback_IMPL,    // virtual override (res) base (rmres)
+        .GpuResource.RmResource.__rmresShareCallback__ = &__nvoc_down_thunk_GpuResource_rmresShareCallback,    // virtual override (res) base (res)
+        .GpuResource.RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+        .__diagapiGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_diagapiGetRegBaseOffsetAndSize,    // virtual inherited (gpures) base (gpures)
+        .GpuResource.__gpuresGetRegBaseOffsetAndSize__ = &gpuresGetRegBaseOffsetAndSize_IMPL,    // virtual
+        .__diagapiGetMapAddrSpace__ = &__nvoc_up_thunk_GpuResource_diagapiGetMapAddrSpace,    // virtual inherited (gpures) base (gpures)
+        .GpuResource.__gpuresGetMapAddrSpace__ = &gpuresGetMapAddrSpace_IMPL,    // virtual
+        .__diagapiInternalControlForward__ = &__nvoc_up_thunk_GpuResource_diagapiInternalControlForward,    // virtual inherited (gpures) base (gpures)
+        .GpuResource.__gpuresInternalControlForward__ = &gpuresInternalControlForward_IMPL,    // virtual
+        .__diagapiGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_diagapiGetInternalObjectHandle,    // virtual inherited (gpures) base (gpures)
+        .GpuResource.__gpuresGetInternalObjectHandle__ = &gpuresGetInternalObjectHandle_IMPL,    // virtual
+        .__diagapiAccessCallback__ = &__nvoc_up_thunk_RmResource_diagapiAccessCallback,    // virtual inherited (rmres) base (gpures)
+        .GpuResource.__gpuresAccessCallback__ = &__nvoc_up_thunk_RmResource_gpuresAccessCallback,    // virtual inherited (rmres) base (rmres)
+        .GpuResource.RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+        .GpuResource.RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+        .__diagapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_diagapiGetMemInterMapParams,    // virtual inherited (rmres) base (gpures)
+        .GpuResource.__gpuresGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
+        .GpuResource.RmResource.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
+        .__diagapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_diagapiCheckMemInterUnmap,    // virtual inherited (rmres) base (gpures)
+        .GpuResource.__gpuresCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
+        .GpuResource.RmResource.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
+        .__diagapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_diagapiGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (gpures)
+        .GpuResource.__gpuresGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
+        .GpuResource.RmResource.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
+        .__diagapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_diagapiControlSerialization_Prologue,    // virtual inherited (rmres) base (gpures)
+        .GpuResource.__gpuresControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+        .GpuResource.RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+        .GpuResource.RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+        .__diagapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_diagapiControlSerialization_Epilogue,    // virtual inherited (rmres) base (gpures)
+        .GpuResource.__gpuresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+        .GpuResource.RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+        .GpuResource.RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+        .__diagapiControl_Prologue__ = &__nvoc_up_thunk_RmResource_diagapiControl_Prologue,    // virtual inherited (rmres) base (gpures)
+        .GpuResource.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
+        .GpuResource.RmResource.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
+        .GpuResource.RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+        .__diagapiControl_Epilogue__ = &__nvoc_up_thunk_RmResource_diagapiControl_Epilogue,    // virtual inherited (rmres) base (gpures)
+        .GpuResource.__gpuresControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Epilogue,    // virtual inherited (rmres) base (rmres)
+        .GpuResource.RmResource.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
+        .GpuResource.RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+        .__diagapiCanCopy__ = &__nvoc_up_thunk_RsResource_diagapiCanCopy,    // virtual inherited (res) base (gpures)
+        .GpuResource.__gpuresCanCopy__ = &__nvoc_up_thunk_RsResource_gpuresCanCopy,    // virtual inherited (res) base (rmres)
+        .GpuResource.RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+        .GpuResource.RmResource.RsResource.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+        .__diagapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_diagapiIsDuplicate,    // virtual inherited (res) base (gpures)
+        .GpuResource.__gpuresIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpuresIsDuplicate,    // virtual inherited (res) base (rmres)
+        .GpuResource.RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+        .GpuResource.RmResource.RsResource.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+        .__diagapiPreDestruct__ = &__nvoc_up_thunk_RsResource_diagapiPreDestruct,    // virtual inherited (res) base (gpures)
+        .GpuResource.__gpuresPreDestruct__ = &__nvoc_up_thunk_RsResource_gpuresPreDestruct,    // virtual inherited (res) base (rmres)
+        .GpuResource.RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+        .GpuResource.RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+        .__diagapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_diagapiIsPartialUnmapSupported,    // inline virtual inherited (res) base (gpures) body
+        .GpuResource.__gpuresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+        .GpuResource.RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+        .GpuResource.RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+        .__diagapiMapTo__ = &__nvoc_up_thunk_RsResource_diagapiMapTo,    // virtual inherited (res) base (gpures)
+        .GpuResource.__gpuresMapTo__ = &__nvoc_up_thunk_RsResource_gpuresMapTo,    // virtual inherited (res) base (rmres)
+        .GpuResource.RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+        .GpuResource.RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
+        .__diagapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_diagapiUnmapFrom,    // virtual inherited (res) base (gpures)
+        .GpuResource.__gpuresUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpuresUnmapFrom,    // virtual inherited (res) base (rmres)
+        .GpuResource.RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+        .GpuResource.RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+        .__diagapiGetRefCount__ = &__nvoc_up_thunk_RsResource_diagapiGetRefCount,    // virtual inherited (res) base (gpures)
+        .GpuResource.__gpuresGetRefCount__ = &__nvoc_up_thunk_RsResource_gpuresGetRefCount,    // virtual inherited (res) base (rmres)
+        .GpuResource.RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+        .GpuResource.RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+        .__diagapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_diagapiAddAdditionalDependants,    // virtual inherited (res) base (gpures)
+        .GpuResource.__gpuresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+        .GpuResource.RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+        .GpuResource.RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+        .__diagapiGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_diagapiGetNotificationListPtr,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifyGetNotificationListPtr__ = &notifyGetNotificationListPtr_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifyGetNotificationListPtr__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr,    // pure virtual
+        .__diagapiGetNotificationShare__ = &__nvoc_up_thunk_Notifier_diagapiGetNotificationShare,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifyGetNotificationShare__ = &notifyGetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifyGetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationShare,    // pure virtual
+        .__diagapiSetNotificationShare__ = &__nvoc_up_thunk_Notifier_diagapiSetNotificationShare,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifySetNotificationShare__ = &notifySetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifySetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifySetNotificationShare,    // pure virtual
+        .__diagapiUnregisterEvent__ = &__nvoc_up_thunk_Notifier_diagapiUnregisterEvent,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifyUnregisterEvent__ = &notifyUnregisterEvent_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifyUnregisterEvent__ = &__nvoc_down_thunk_Notifier_inotifyUnregisterEvent,    // pure virtual
+        .__diagapiGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_diagapiGetOrAllocNotifShare,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifyGetOrAllocNotifShare__ = &notifyGetOrAllocNotifShare_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifyGetOrAllocNotifShare__ = &__nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare,    // pure virtual
+    };
+
+    // Pointer(s) to per-class vtable(s)
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.GpuResource.RmResource.RsResource;    // (res) super^3
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable = &vtable.GpuResource.RmResource;    // (rmres) super^2
+    pThis->__nvoc_base_GpuResource.__nvoc_vtable = &vtable.GpuResource;    // (gpures) super
+    pThis->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_vtable = &vtable.Notifier.INotifier;    // (inotify) super^2
+    pThis->__nvoc_base_Notifier.__nvoc_vtable = &vtable.Notifier;    // (notify) super
+    pThis->__nvoc_vtable = &vtable;    // (diagapi) this
+
+    // Initialize vtable(s) with 16 per-object function pointer(s).
     __nvoc_init_funcTable_DiagApi_1(pThis, pRmhalspecowner);
 }
 

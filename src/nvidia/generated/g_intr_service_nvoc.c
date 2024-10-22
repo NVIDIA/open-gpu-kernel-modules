@@ -49,6 +49,10 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_IntrService =
     /*pExportInfo=*/        &__nvoc_export_info_IntrService
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+
+// Up-thunk(s) to bridge methods to ancestors (if any)
+
 const struct NVOC_EXPORT_INFO __nvoc_export_info_IntrService = 
 {
     /*numEntries=*/     0,
@@ -76,25 +80,22 @@ __nvoc_ctor_IntrService_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_IntrService_1(IntrService *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // intrservRegisterIntrService -- virtual
-    pThis->__intrservRegisterIntrService__ = &intrservRegisterIntrService_IMPL;
-
-    // intrservClearInterrupt -- virtual
-    pThis->__intrservClearInterrupt__ = &intrservClearInterrupt_IMPL;
-
-    // intrservServiceInterrupt -- virtual
-    pThis->__intrservServiceInterrupt__ = &intrservServiceInterrupt_IMPL;
-
-    // intrservServiceNotificationInterrupt -- virtual
-    pThis->__intrservServiceNotificationInterrupt__ = &intrservServiceNotificationInterrupt_IMPL;
-} // End __nvoc_init_funcTable_IntrService_1 with approximately 4 basic block(s).
+} // End __nvoc_init_funcTable_IntrService_1
 
 
 // Initialize vtable(s) for 4 virtual method(s).
 void __nvoc_init_funcTable_IntrService(IntrService *pThis) {
 
-    // Initialize vtable(s) with 4 per-object function pointer(s).
+    // Per-class vtable definition
+    static const struct NVOC_VTABLE__IntrService vtable = {
+        .__intrservRegisterIntrService__ = &intrservRegisterIntrService_IMPL,    // virtual
+        .__intrservClearInterrupt__ = &intrservClearInterrupt_IMPL,    // virtual
+        .__intrservServiceInterrupt__ = &intrservServiceInterrupt_IMPL,    // virtual
+        .__intrservServiceNotificationInterrupt__ = &intrservServiceNotificationInterrupt_IMPL,    // virtual
+    };
+
+    // Pointer(s) to per-class vtable(s)
+    pThis->__nvoc_vtable = &vtable;    // (intrserv) this
     __nvoc_init_funcTable_IntrService_1(pThis);
 }
 

@@ -171,14 +171,14 @@ scrubberConstruct
         {
             NV_ASSERT_OK_OR_GOTO(status, objCreate(&pScrubber->pSec2Utils, pHeap, Sec2Utils, pGpu, pKernelMIGGPUInstance),
                destroyscrublist);
-            pScrubber->engineType = NV2080_ENGINE_TYPE_SEC2;
+            pScrubber->bIsEngineTypeSec2 = NV_TRUE;
         }
         else
         {
             NV_ASSERT_OK_OR_GOTO(status, objCreate(&pScrubber->pCeUtils, pHeap, CeUtils, pGpu, pKernelMIGGPUInstance, &ceUtilsAllocParams),
                destroyscrublist);
 
-            pScrubber->engineType = gpuGetFirstAsyncLce_HAL(pGpu);
+            pScrubber->bIsEngineTypeSec2 = NV_FALSE;
         }
         NV_ASSERT_OK_OR_GOTO(status, pmaRegMemScrub(pPma, pScrubber), destroyscrublist);
     }
@@ -215,7 +215,7 @@ _isScrubWorkPending(
     else
     {
         NvU64 lastCompleted;
-        if (pScrubber->engineType ==  NV2080_ENGINE_TYPE_SEC2)
+        if (pScrubber->bIsEngineTypeSec2)
         {
             lastCompleted = sec2utilsUpdateProgress(pScrubber->pSec2Utils);
         }
@@ -298,7 +298,7 @@ scrubberDestruct
 
     portMemFree(pScrubber->pScrubList);
     {
-        if (pScrubber->engineType == NV2080_ENGINE_TYPE_SEC2)
+        if (pScrubber->bIsEngineTypeSec2)
         {
             objDelete(pScrubber->pSec2Utils);
         }
@@ -825,7 +825,7 @@ _scrubWaitAndSave
     while (currentCompletedId < (pScrubber->lastSeenIdByClient + itemsToSave))
     {
         {
-            if (pScrubber->engineType == NV2080_ENGINE_TYPE_SEC2)
+            if (pScrubber->bIsEngineTypeSec2)
                 sec2utilsServiceInterrupts(pScrubber->pSec2Utils);
             else
                 ceutilsServiceInterrupts(pScrubber->pCeUtils);
@@ -935,7 +935,7 @@ _scrubCheckProgress
     }
     else
     {
-        if (pScrubber->engineType ==  NV2080_ENGINE_TYPE_SEC2)
+        if (pScrubber->bIsEngineTypeSec2)
             lastSWSemaphoreDone = sec2utilsUpdateProgress(pScrubber->pSec2Utils);
         else
             lastSWSemaphoreDone = ceutilsUpdateProgress(pScrubber->pCeUtils);
@@ -968,7 +968,7 @@ _scrubMemory
 
     memdescDescribe(pMemDesc, ADDR_FBMEM, base, size);
 
-    if (pScrubber->engineType ==  NV2080_ENGINE_TYPE_SEC2)
+    if (pScrubber->bIsEngineTypeSec2)
     {
         SEC2UTILS_MEMSET_PARAMS memsetParams = {0};
         memsetParams.pMemDesc = pMemDesc;

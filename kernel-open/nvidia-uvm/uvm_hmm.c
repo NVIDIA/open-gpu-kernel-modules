@@ -73,6 +73,24 @@ module_param(uvm_disable_hmm, bool, 0444);
 #include "uvm_va_policy.h"
 #include "uvm_tools.h"
 
+// The function nv_PageSwapCache() wraps the check for page swap cache flag in
+// order to support a wide variety of kernel versions.
+// The function PageSwapCache() is removed after 32f51ead3d77 ("mm: remove
+// PageSwapCache") in v6.12-rc1.
+// The function folio_test_swapcache() was added in Linux 5.16 (d389a4a811551
+// "mm: Add folio flag manipulation functions")
+// Systems with HMM patches backported to 5.14 are possible, but those systems
+// do not include folio_test_swapcache()
+// TODO: Bug 4050579: Remove this when migration of swap cached pages is updated
+static __always_inline bool nv_PageSwapCache(struct page *page)
+{
+#if defined(NV_FOLIO_TEST_SWAPCACHE_PRESENT)
+    return folio_test_swapcache(page_folio(page));
+#else
+    return PageSwapCache(page);
+#endif
+}
+
 static NV_STATUS gpu_chunk_add(uvm_va_block_t *va_block,
                                uvm_page_index_t page_index,
                                struct page *page);
@@ -853,7 +871,7 @@ static NV_STATUS hmm_split_block(uvm_va_block_t *va_block,
 
     uvm_mutex_lock(&va_block->lock);
 
-    status = uvm_va_block_split_locked(va_block, new_end, new_va_block, NULL);
+    status = uvm_va_block_split_locked(va_block, new_end, new_va_block);
     if (status != NV_OK)
         goto err;
 
@@ -1351,7 +1369,7 @@ void uvm_hmm_block_add_eviction_mappings(uvm_va_space_t *va_space,
             uvm_processor_mask_andnot(map_processors, &va_block->evicted_gpus, &node->policy.accessed_by);
 
             for_each_gpu_id_in_mask(id, map_processors) {
-                uvm_gpu_t *gpu = uvm_va_space_get_gpu(va_space, id);
+                uvm_gpu_t *gpu = uvm_gpu_get(id);
                 uvm_va_block_gpu_state_t *gpu_state;
 
                 if (!gpu->parent->access_counters_supported)
@@ -1981,7 +1999,7 @@ static void fill_dst_pfns(uvm_va_block_t *va_block,
                           uvm_page_mask_t *same_devmem_page_mask,
                           uvm_processor_id_t dest_id)
 {
-    uvm_gpu_t *gpu = uvm_va_space_get_gpu(va_block->hmm.va_space, dest_id);
+    uvm_gpu_t *gpu = uvm_gpu_get(dest_id);
     uvm_page_index_t page_index;
 
     uvm_page_mask_zero(same_devmem_page_mask);
@@ -2694,7 +2712,7 @@ static NV_STATUS dmamap_src_sysmem_pages(uvm_va_block_t *va_block,
                 continue;
             }
 
-            if (PageSwapCache(src_page)) {
+            if (nv_PageSwapCache(src_page)) {
                 // TODO: Bug 4050579: Remove this when swap cached pages can be
                 // migrated.
                 status = NV_WARN_MISMATCHED_TARGET;
@@ -3512,17 +3530,17 @@ NV_STATUS uvm_hmm_va_block_range_bounds(uvm_va_space_t *va_space,
     *endp   = end;
 
     if (params) {
-        uvm_va_space_processor_uuid(va_space, &params->resident_on[0], UVM_ID_CPU);
+        uvm_processor_get_uuid(UVM_ID_CPU, &params->resident_on[0]);
         params->resident_physical_size[0] = PAGE_SIZE;
         params->resident_on_count = 1;
 
-        uvm_va_space_processor_uuid(va_space, &params->mapped_on[0], UVM_ID_CPU);
+        uvm_processor_get_uuid(UVM_ID_CPU, &params->mapped_on[0]);
         params->mapping_type[0] = (vma->vm_flags & VM_WRITE) ?
                                   UVM_PROT_READ_WRITE_ATOMIC : UVM_PROT_READ_ONLY;
         params->page_size[0] = PAGE_SIZE;
         params->mapped_on_count = 1;
 
-        uvm_va_space_processor_uuid(va_space, &params->populated_on[0], UVM_ID_CPU);
+        uvm_processor_get_uuid(UVM_ID_CPU, &params->populated_on[0]);
         params->populated_on_count = 1;
     }
 
@@ -3676,12 +3694,12 @@ NV_STATUS uvm_hmm_va_range_info(uvm_va_space_t *va_space,
         params->read_duplication = node->policy.read_duplication;
 
         if (!UVM_ID_IS_INVALID(node->policy.preferred_location)) {
-            uvm_va_space_processor_uuid(va_space, &params->preferred_location, node->policy.preferred_location);
+            uvm_processor_get_uuid(node->policy.preferred_location, &params->preferred_location);
             params->preferred_cpu_nid = node->policy.preferred_nid;
         }
 
         for_each_id_in_mask(processor_id, &node->policy.accessed_by)
-            uvm_va_space_processor_uuid(va_space, &params->accessed_by[params->accessed_by_count++], processor_id);
+            uvm_processor_get_uuid(processor_id, &params->accessed_by[params->accessed_by_count++]);
     }
     else {
         uvm_range_tree_find_hole_in(&va_block->hmm.va_policy_tree, params->lookup_address,

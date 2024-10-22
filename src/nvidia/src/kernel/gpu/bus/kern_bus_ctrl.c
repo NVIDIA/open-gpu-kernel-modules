@@ -52,7 +52,7 @@ kbusControlGetCaps
     NvU32 caps = 0;
 
     // if the Chip is integrated.
-    if ( IsTEGRA(pGpu) )
+    if ( IsTEGRA(pGpu) || pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_SOC_SDM ))
     {
         caps |= NV2080_CTRL_BUS_INFO_CAPS_CHIP_INTEGRATED;
     }
@@ -251,7 +251,7 @@ subdeviceCtrlCmdBusGetNvlinkPeerIdMask_IMPL
         KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
         NvU32 gfid;
 
-        LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+        NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
         // This control call should always run in context of a VF.
         NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid));

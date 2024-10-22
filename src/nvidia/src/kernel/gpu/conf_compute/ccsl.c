@@ -571,6 +571,10 @@ ccslContextInitViaKeyId_KERNEL
         return NV_ERR_NO_MEMORY;
     }
     *ppCtx = pCtx;
+
+    // Ensure all pointers are default set to NULL, in case we get out of sync with channel context values
+    portMemSet(pCtx, 0, sizeof(*pCtx));
+
     if (!libspdm_aead_gcm_prealloc(&pCtx->openrmCtx))
     {
         portMemFree(pCtx);
@@ -593,6 +597,7 @@ ccslContextInitViaKeyId_KERNEL
                                                      &kmb);
     if (status != NV_OK)
     {
+        portMemFree((void *)pCtx->pEncStatsBuffer);
         openrmCtxFree(pCtx->openrmCtx);
         portMemFree(pCtx);
         return status;
@@ -600,7 +605,6 @@ ccslContextInitViaKeyId_KERNEL
 
     // For now assume any call to this function uses a 64-bit message counter.
     pCtx->msgCounterSize = CSL_MSG_CTR_64;
-    pCtx->pMemDesc = NULL;
     writeKmbToContext(pCtx, &kmb, ROTATE_IV_ALL_VALID);
 
     confComputeGetKeyPairByKey(pConfCompute, globalKeyId, &pCtx->globalKeyIdOut, &pCtx->globalKeyIdIn);

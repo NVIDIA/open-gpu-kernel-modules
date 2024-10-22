@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -147,13 +147,11 @@ kfifoPrintInternalEngine_GH100
 {
     NV_STATUS status = NV_OK;
     KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
-    NvU32 pbdmaId;
     NvU32 engTag;
 
     if (kfifoIsMmuFaultEngineIdPbdma(pGpu, pKernelFifo, engineID))
     {
-        NV_ASSERT_OR_RETURN(kfifoGetPbdmaIdFromMmuFaultId(pGpu, pKernelFifo, engineID, &pbdmaId) == NV_OK, "UNKNOWN");
-        return kfifoPrintPbdmaId_HAL(pGpu, pKernelFifo, pbdmaId);
+        return kfifoPrintFaultingPbdmaEngineName(pGpu, pKernelFifo, engineID);
     }
 
     if (kgmmuIsFaultEngineBar1_HAL(pKernelGmmu, engineID))

@@ -138,7 +138,7 @@ _halmgrIsChipSupported
 
     if (pPmcBoot42)
     {
-        if ((gpuGetArchitectureFromPmcBoot42(pPmcBoot42) == chipID[publicHalID].arch) &&
+        if ((decodePmcBoot42Architecture(pPmcBoot42) == chipID[publicHalID].arch) &&
             (DRF_VAL(_PMC, _BOOT_42, _IMPLEMENTATION, pPmcBoot42) == chipID[publicHalID].impl))
         {
             retVal = NV_TRUE;

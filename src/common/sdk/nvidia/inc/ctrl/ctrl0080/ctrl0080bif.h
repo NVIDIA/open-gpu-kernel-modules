@@ -74,28 +74,6 @@ typedef struct NV0080_CTRL_BIF_RESET_PARAMS {
 #define NV0080_CTRL_BIF_RESET_FLAGS_TYPE_BASE             0x8
 
 /*
- * NV0080_CTRL_BIF_GET_DMA_BASE_SYSMEM_ADDR
- *
- * baseDmaSysmemAddr
- *    This parameter represents the base DMA address for sysmem which will be
- *    added to all DMA accesses issued by GPU. Currently GPUs do not support 64-bit physical address,
- *    hence if sysmem is greater than max GPU supported physical address width, this address
- *    will be non-zero
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_INVALID_OBJECT_PARENT
- */
-
-#define NV0080_CTRL_CMD_BIF_GET_DMA_BASE_SYSMEM_ADDR      (0x800103) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_BIF_INTERFACE_ID << 8) | NV0080_CTRL_BIF_GET_DMA_BASE_SYSMEM_ADDR_PARAMS_MESSAGE_ID" */
-
-#define NV0080_CTRL_BIF_GET_DMA_BASE_SYSMEM_ADDR_PARAMS_MESSAGE_ID (0x3U)
-
-typedef struct NV0080_CTRL_BIF_GET_DMA_BASE_SYSMEM_ADDR_PARAMS {
-    NV_DECLARE_ALIGNED(NvU64 baseDmaSysmemAddr, 8);
-} NV0080_CTRL_BIF_GET_DMA_BASE_SYSMEM_ADDR_PARAMS;
-
-/*
  * NV0080_CTRL_BIF_SET_ASPM_FEATURE
  *
  * aspmFeatureSupported
@@ -105,7 +83,7 @@ typedef struct NV0080_CTRL_BIF_GET_DMA_BASE_SYSMEM_ADDR_PARAMS {
  *   NV_OK
  */
 
-#define NV0080_CTRL_CMD_BIF_SET_ASPM_FEATURE (0x800104) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_BIF_INTERFACE_ID << 8) | NV0080_CTRL_BIF_SET_ASPM_FEATURE_PARAMS_MESSAGE_ID" */
+#define NV0080_CTRL_CMD_BIF_SET_ASPM_FEATURE              (0x800104) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_BIF_INTERFACE_ID << 8) | NV0080_CTRL_BIF_SET_ASPM_FEATURE_PARAMS_MESSAGE_ID" */
 
 #define NV0080_CTRL_BIF_SET_ASPM_FEATURE_PARAMS_MESSAGE_ID (0x4U)
 

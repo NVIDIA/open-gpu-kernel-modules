@@ -28,15 +28,35 @@
 #include "rmapi/client.h"
 #include "rmapi/rmapi.h"
 #include "rmapi/rs_utils.h"
+#include "nvrm_registry.h"
 #include "class/cl00de.h"
 #include "class/cl003e.h" // NV01_MEMORY_SYSTEM
 
 #include "gpu/mig_mgr/kernel_mig_manager.h"
 
 static NV_STATUS _gpushareddataInitGsp(OBJGPU *pGpu);
+static NV_STATUS _gpushareddataSendDataPollRpc(OBJGPU *pGpu, NvU64 polledDataMask);
 static NV_STATUS _gpushareddataRequestDataPoll(GpuUserSharedData *pData, NvU64 polledDataMask);
 static inline void _gpushareddataUpdateSeqOpen(volatile NvU64 *pSeq);
 static inline void _gpushareddataUpdateSeqClose(volatile NvU64 *pSeq);
+
+static inline
+NvBool
+_rusdPollingSupported
+(
+    OBJGPU *pGpu
+)
+{
+    //
+    // RUSD polling is disabled on non-GSP for pre-GA102 due to collisions
+    // with VSYNC interrupt on high refresh rate monitors. See Bug 4432698.
+    // For GA102+, the RPC to PMU are replaced by PMUMON RMCTRLs.
+    //
+    return ((pGpu->userSharedData.pollingRegistryOverride != NV_REG_STR_RM_DEBUG_RUSD_POLLING_FORCE_DISABLE) &&
+            (IS_GSP_CLIENT(pGpu) ||
+                (pGpu->userSharedData.pollingRegistryOverride == NV_REG_STR_RM_DEBUG_RUSD_POLLING_FORCE_ENABLE) ||
+                pGpu->getProperty(pGpu, PDB_PROP_GPU_RUSD_POLLING_SUPPORT_MONOLITHIC)));
+}
 
 NV_STATUS
 gpushareddataConstruct_IMPL
@@ -56,11 +76,7 @@ gpushareddataConstruct_IMPL
     if (IS_VIRTUAL(pGpu))
         return NV_ERR_NOT_SUPPORTED;
 
-    //
-    // RUSD polling temporarily disabled on non-GSP due to collisions with VSYNC interrupt
-    // on high refresh rate monitors. See Bug 4432698.
-    //
-    if (!IS_GSP_CLIENT(pGpu) && (pAllocParams->polledDataMask != 0U))
+    if (!_rusdPollingSupported(pGpu) && (pAllocParams->polledDataMask != 0U))
         return NV_ERR_NOT_SUPPORTED;
 
     if (RS_IS_COPY_CTOR(pParams))
@@ -108,8 +124,10 @@ _gpushareddataUpdateSeqOpen
     volatile NvU64 *pSeq
 )
 {
+    NvU64 seqVal;
+
     // Initialize seq to RUSD_SEQ_START at first write. If never written before, seq is treated as an invalid timestamp
-    if (*pSeq == 0LLU)
+    if (MEM_RD64(pSeq) == 0LLU)
     {
         portAtomicExSetU64(pSeq, RUSD_SEQ_START + 1);
     }
@@ -120,7 +138,9 @@ _gpushareddataUpdateSeqOpen
 
     portAtomicMemoryFenceStore();
 
-    NV_ASSERT(!RUSD_SEQ_DATA_VALID(*pSeq));
+    seqVal = MEM_RD64(pSeq);
+
+    NV_ASSERT(!RUSD_SEQ_DATA_VALID(seqVal));
 }
 
 // Called after finishing a non-polled data write, changes seq invalid->valid
@@ -130,10 +150,14 @@ _gpushareddataUpdateSeqClose
     volatile NvU64 *pSeq
 )
 {
+    NvU64 seqVal;
+
     portAtomicExIncrementU64(pSeq);
     portAtomicMemoryFenceStore();
 
-    NV_ASSERT(RUSD_SEQ_DATA_VALID(*pSeq));
+    seqVal = MEM_RD64(pSeq);
+
+    NV_ASSERT(RUSD_SEQ_DATA_VALID(seqVal));
 }
 
 
@@ -167,15 +191,6 @@ void gpushareddataWriteFinish_INTERNAL(OBJGPU *pGpu, NvU64 offset)
     }
 
     _gpushareddataUpdateSeqClose((volatile NvU64*)(((NvU8*)pSharedData) + offset));
-
-    // Clone data until UMDs can migrate to new data locations across branches
-    // TODO Remove this
-    if (offset == NV_OFFSETOF(NV00DE_SHARED_DATA, bar1MemoryInfo))
-    {
-        pSharedData->bar1Size = pSharedData->bar1MemoryInfo.bar1Size;
-        pSharedData->bar1AvailSize = pSharedData->bar1MemoryInfo.bar1AvailSize;
-        pSharedData->seq = pSharedData->bar1MemoryInfo.lastModifiedTimestamp;
-    }
 }
 
 static NV_STATUS
@@ -194,6 +209,13 @@ _gpushareddataInitGsp
                                            pGpu->hInternalSubdevice,
                                            NV2080_CTRL_CMD_INTERNAL_INIT_USER_SHARED_DATA,
                                            &params, sizeof(params)));
+
+    if (pGpu->userSharedData.pollingRegistryOverride == NV_REG_STR_RM_DEBUG_RUSD_POLLING_FORCE_ENABLE)
+    {
+        // If polling is forced always on, start polling during init and never stop
+        return _gpushareddataSendDataPollRpc(pGpu, ~0ULL);
+    }
+
     return NV_OK;
 }
 
@@ -262,6 +284,34 @@ gpuDestroyRusdMemory_IMPL
 }
 
 static NV_STATUS
+_gpushareddataSendDataPollRpc
+(
+    OBJGPU *pGpu,
+    NvU64 polledDataMask
+)
+{
+    NV2080_CTRL_INTERNAL_USER_SHARED_DATA_SET_DATA_POLL_PARAMS params;
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+    if (polledDataMask == pGpu->userSharedData.lastPolledDataMask)
+        return NV_OK; // Nothing to do
+
+    portMemSet(&params, 0, sizeof(params));
+
+    params.polledDataMask = polledDataMask;
+
+    // Send updated data request to GSP
+    NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi, pGpu->hInternalClient,
+                                           pGpu->hInternalSubdevice,
+                                           NV2080_CTRL_CMD_INTERNAL_USER_SHARED_DATA_SET_DATA_POLL,
+                                           &params, sizeof(params)));
+
+    pGpu->userSharedData.lastPolledDataMask = polledDataMask;
+
+    return NV_OK;
+}
+
+static NV_STATUS
 _gpushareddataRequestDataPoll
 (
     GpuUserSharedData *pData,
@@ -269,8 +319,6 @@ _gpushareddataRequestDataPoll
 )
 {
     OBJGPU *pGpu = staticCast(pData, Memory)->pGpu;
-    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-    NV2080_CTRL_INTERNAL_USER_SHARED_DATA_SET_DATA_POLL_PARAMS params;
     NvU64 polledDataUnion = 0U;
     RmClient **ppClient;
 
@@ -298,20 +346,7 @@ _gpushareddataRequestDataPoll
         }
     }
 
-    if (polledDataUnion == pGpu->userSharedData.lastPolledDataMask)
-        return NV_OK; // Nothing to do
-
-    params.polledDataMask = polledDataUnion;
-
-    // Send updated data request to GSP
-    NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi, pGpu->hInternalClient,
-                                           pGpu->hInternalSubdevice,
-                                           NV2080_CTRL_CMD_INTERNAL_USER_SHARED_DATA_SET_DATA_POLL,
-                                           &params, sizeof(params)));
-
-    pGpu->userSharedData.lastPolledDataMask = polledDataUnion;
-
-    return NV_OK;
+    return _gpushareddataSendDataPollRpc(pGpu, polledDataUnion);
 }
 
 NV_STATUS
@@ -321,5 +356,14 @@ gpushareddataCtrlCmdRequestDataPoll_IMPL
     NV00DE_CTRL_REQUEST_DATA_POLL_PARAMS *pParams
 )
 {
+    OBJGPU *pGpu = staticCast(pData, Memory)->pGpu;
+
+    // Polling is always forced on, no point routing to GSP because we will never change state
+    if (pGpu->userSharedData.pollingRegistryOverride == NV_REG_STR_RM_DEBUG_RUSD_POLLING_FORCE_ENABLE)
+        return NV_OK;
+
+    if (!_rusdPollingSupported(pGpu) && (pParams->polledDataMask != 0U))
+        return NV_ERR_NOT_SUPPORTED;
+
     return _gpushareddataRequestDataPoll(pData, pParams->polledDataMask);
 }

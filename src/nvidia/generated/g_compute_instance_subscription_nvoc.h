@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -69,10 +69,15 @@ extern "C" {
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__ComputeInstanceSubscription;
+
+
 struct ComputeInstanceSubscription {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__ComputeInstanceSubscription *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct GpuResource __nvoc_base_GpuResource;
@@ -85,33 +90,8 @@ struct ComputeInstanceSubscription {
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct ComputeInstanceSubscription *__nvoc_pbase_ComputeInstanceSubscription;    // cisubscription
 
-    // Vtable with 26 per-object function pointers
-    NvBool (*__cisubscriptionCanCopy__)(struct ComputeInstanceSubscription * /*this*/);  // virtual override (res) base (gpures)
+    // Vtable with 1 per-object function pointer
     NV_STATUS (*__cisubscriptionCtrlCmdGetUuid__)(struct ComputeInstanceSubscription * /*this*/, NVC638_CTRL_GET_UUID_PARAMS *);  // exported (id=0xc6380101)
-    NV_STATUS (*__cisubscriptionControl__)(struct ComputeInstanceSubscription * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__cisubscriptionMap__)(struct ComputeInstanceSubscription * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__cisubscriptionUnmap__)(struct ComputeInstanceSubscription * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__cisubscriptionShareCallback__)(struct ComputeInstanceSubscription * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__cisubscriptionGetRegBaseOffsetAndSize__)(struct ComputeInstanceSubscription * /*this*/, struct OBJGPU *, NvU32 *, NvU32 *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__cisubscriptionGetMapAddrSpace__)(struct ComputeInstanceSubscription * /*this*/, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);  // virtual inherited (gpures) base (gpures)
-    NV_STATUS (*__cisubscriptionInternalControlForward__)(struct ComputeInstanceSubscription * /*this*/, NvU32, void *, NvU32);  // virtual inherited (gpures) base (gpures)
-    NvHandle (*__cisubscriptionGetInternalObjectHandle__)(struct ComputeInstanceSubscription * /*this*/);  // virtual inherited (gpures) base (gpures)
-    NvBool (*__cisubscriptionAccessCallback__)(struct ComputeInstanceSubscription * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__cisubscriptionGetMemInterMapParams__)(struct ComputeInstanceSubscription * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__cisubscriptionCheckMemInterUnmap__)(struct ComputeInstanceSubscription * /*this*/, NvBool);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__cisubscriptionGetMemoryMappingDescriptor__)(struct ComputeInstanceSubscription * /*this*/, struct MEMORY_DESCRIPTOR **);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__cisubscriptionControlSerialization_Prologue__)(struct ComputeInstanceSubscription * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__cisubscriptionControlSerialization_Epilogue__)(struct ComputeInstanceSubscription * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__cisubscriptionControl_Prologue__)(struct ComputeInstanceSubscription * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    void (*__cisubscriptionControl_Epilogue__)(struct ComputeInstanceSubscription * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (rmres) base (gpures)
-    NV_STATUS (*__cisubscriptionIsDuplicate__)(struct ComputeInstanceSubscription * /*this*/, NvHandle, NvBool *);  // virtual inherited (res) base (gpures)
-    void (*__cisubscriptionPreDestruct__)(struct ComputeInstanceSubscription * /*this*/);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__cisubscriptionControlFilter__)(struct ComputeInstanceSubscription * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (res) base (gpures)
-    NvBool (*__cisubscriptionIsPartialUnmapSupported__)(struct ComputeInstanceSubscription * /*this*/);  // inline virtual inherited (res) base (gpures) body
-    NV_STATUS (*__cisubscriptionMapTo__)(struct ComputeInstanceSubscription * /*this*/, RS_RES_MAP_TO_PARAMS *);  // virtual inherited (res) base (gpures)
-    NV_STATUS (*__cisubscriptionUnmapFrom__)(struct ComputeInstanceSubscription * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (gpures)
-    NvU32 (*__cisubscriptionGetRefCount__)(struct ComputeInstanceSubscription * /*this*/);  // virtual inherited (res) base (gpures)
-    void (*__cisubscriptionAddAdditionalDependants__)(struct RsClient *, struct ComputeInstanceSubscription * /*this*/, RsResourceRef *);  // virtual inherited (res) base (gpures)
 
     // Data members
     MIG_COMPUTE_INSTANCE *PRIVATE_FIELD(pMIGComputeInstance);
@@ -123,6 +103,7 @@ struct ComputeInstanceSubscription_PRIVATE {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__ComputeInstanceSubscription *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct GpuResource __nvoc_base_GpuResource;
@@ -135,9 +116,20 @@ struct ComputeInstanceSubscription_PRIVATE {
     struct GpuResource *__nvoc_pbase_GpuResource;    // gpures super
     struct ComputeInstanceSubscription *__nvoc_pbase_ComputeInstanceSubscription;    // cisubscription
 
-    // Vtable with 26 per-object function pointers
-    NvBool (*__cisubscriptionCanCopy__)(struct ComputeInstanceSubscription * /*this*/);  // virtual override (res) base (gpures)
+    // Vtable with 1 per-object function pointer
     NV_STATUS (*__cisubscriptionCtrlCmdGetUuid__)(struct ComputeInstanceSubscription * /*this*/, NVC638_CTRL_GET_UUID_PARAMS *);  // exported (id=0xc6380101)
+
+    // Data members
+    MIG_COMPUTE_INSTANCE *pMIGComputeInstance;
+    NvU64 dupedCapDescriptor;
+};
+
+
+// Metadata including vtable with 25 function pointers plus superclass metadata
+struct NVOC_VTABLE__ComputeInstanceSubscription {
+    const struct NVOC_VTABLE__GpuResource GpuResource;    // (gpures) 25 function pointers
+
+    NvBool (*__cisubscriptionCanCopy__)(struct ComputeInstanceSubscription * /*this*/);  // virtual override (res) base (gpures)
     NV_STATUS (*__cisubscriptionControl__)(struct ComputeInstanceSubscription * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__cisubscriptionMap__)(struct ComputeInstanceSubscription * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__cisubscriptionUnmap__)(struct ComputeInstanceSubscription * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
@@ -162,10 +154,6 @@ struct ComputeInstanceSubscription_PRIVATE {
     NV_STATUS (*__cisubscriptionUnmapFrom__)(struct ComputeInstanceSubscription * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (gpures)
     NvU32 (*__cisubscriptionGetRefCount__)(struct ComputeInstanceSubscription * /*this*/);  // virtual inherited (res) base (gpures)
     void (*__cisubscriptionAddAdditionalDependants__)(struct RsClient *, struct ComputeInstanceSubscription * /*this*/, RsResourceRef *);  // virtual inherited (res) base (gpures)
-
-    // Data members
-    MIG_COMPUTE_INSTANCE *pMIGComputeInstance;
-    NvU64 dupedCapDescriptor;
 };
 
 #ifndef __NVOC_CLASS_ComputeInstanceSubscription_TYPEDEF__
@@ -198,62 +186,62 @@ NV_STATUS __nvoc_objCreate_ComputeInstanceSubscription(ComputeInstanceSubscripti
 
 
 // Wrapper macros
-#define cisubscriptionCanCopy_FNPTR(arg_this) arg_this->__cisubscriptionCanCopy__
+#define cisubscriptionCanCopy_FNPTR(arg_this) arg_this->__nvoc_vtable->__cisubscriptionCanCopy__
 #define cisubscriptionCanCopy(arg_this) cisubscriptionCanCopy_DISPATCH(arg_this)
 #define cisubscriptionCtrlCmdGetUuid_FNPTR(arg_this) arg_this->__cisubscriptionCtrlCmdGetUuid__
 #define cisubscriptionCtrlCmdGetUuid(arg_this, arg2) cisubscriptionCtrlCmdGetUuid_DISPATCH(arg_this, arg2)
-#define cisubscriptionControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresControl__
+#define cisubscriptionControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresControl__
 #define cisubscriptionControl(pGpuResource, pCallContext, pParams) cisubscriptionControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define cisubscriptionMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresMap__
+#define cisubscriptionMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresMap__
 #define cisubscriptionMap(pGpuResource, pCallContext, pParams, pCpuMapping) cisubscriptionMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define cisubscriptionUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresUnmap__
+#define cisubscriptionUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresUnmap__
 #define cisubscriptionUnmap(pGpuResource, pCallContext, pCpuMapping) cisubscriptionUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define cisubscriptionShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresShareCallback__
+#define cisubscriptionShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresShareCallback__
 #define cisubscriptionShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) cisubscriptionShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define cisubscriptionGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetRegBaseOffsetAndSize__
+#define cisubscriptionGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetRegBaseOffsetAndSize__
 #define cisubscriptionGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) cisubscriptionGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
-#define cisubscriptionGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetMapAddrSpace__
+#define cisubscriptionGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetMapAddrSpace__
 #define cisubscriptionGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) cisubscriptionGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
-#define cisubscriptionInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresInternalControlForward__
+#define cisubscriptionInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresInternalControlForward__
 #define cisubscriptionInternalControlForward(pGpuResource, command, pParams, size) cisubscriptionInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
-#define cisubscriptionGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetInternalObjectHandle__
+#define cisubscriptionGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetInternalObjectHandle__
 #define cisubscriptionGetInternalObjectHandle(pGpuResource) cisubscriptionGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define cisubscriptionAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresAccessCallback__
+#define cisubscriptionAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
 #define cisubscriptionAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) cisubscriptionAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define cisubscriptionGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemInterMapParams__
+#define cisubscriptionGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
 #define cisubscriptionGetMemInterMapParams(pRmResource, pParams) cisubscriptionGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define cisubscriptionCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresCheckMemInterUnmap__
+#define cisubscriptionCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
 #define cisubscriptionCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) cisubscriptionCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define cisubscriptionGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemoryMappingDescriptor__
+#define cisubscriptionGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
 #define cisubscriptionGetMemoryMappingDescriptor(pRmResource, ppMemDesc) cisubscriptionGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define cisubscriptionControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControlSerialization_Prologue__
+#define cisubscriptionControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
 #define cisubscriptionControlSerialization_Prologue(pResource, pCallContext, pParams) cisubscriptionControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define cisubscriptionControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControlSerialization_Epilogue__
+#define cisubscriptionControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
 #define cisubscriptionControlSerialization_Epilogue(pResource, pCallContext, pParams) cisubscriptionControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define cisubscriptionControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControl_Prologue__
+#define cisubscriptionControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
 #define cisubscriptionControl_Prologue(pResource, pCallContext, pParams) cisubscriptionControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define cisubscriptionControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControl_Epilogue__
+#define cisubscriptionControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
 #define cisubscriptionControl_Epilogue(pResource, pCallContext, pParams) cisubscriptionControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define cisubscriptionIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsDuplicate__
+#define cisubscriptionIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
 #define cisubscriptionIsDuplicate(pResource, hMemory, pDuplicate) cisubscriptionIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define cisubscriptionPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resPreDestruct__
+#define cisubscriptionPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
 #define cisubscriptionPreDestruct(pResource) cisubscriptionPreDestruct_DISPATCH(pResource)
-#define cisubscriptionControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resControlFilter__
+#define cisubscriptionControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
 #define cisubscriptionControlFilter(pResource, pCallContext, pParams) cisubscriptionControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define cisubscriptionIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsPartialUnmapSupported__
+#define cisubscriptionIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
 #define cisubscriptionIsPartialUnmapSupported(pResource) cisubscriptionIsPartialUnmapSupported_DISPATCH(pResource)
-#define cisubscriptionMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resMapTo__
+#define cisubscriptionMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
 #define cisubscriptionMapTo(pResource, pParams) cisubscriptionMapTo_DISPATCH(pResource, pParams)
-#define cisubscriptionUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resUnmapFrom__
+#define cisubscriptionUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
 #define cisubscriptionUnmapFrom(pResource, pParams) cisubscriptionUnmapFrom_DISPATCH(pResource, pParams)
-#define cisubscriptionGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resGetRefCount__
+#define cisubscriptionGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
 #define cisubscriptionGetRefCount(pResource) cisubscriptionGetRefCount_DISPATCH(pResource)
-#define cisubscriptionAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resAddAdditionalDependants__
+#define cisubscriptionAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
 #define cisubscriptionAddAdditionalDependants(pClient, pResource, pReference) cisubscriptionAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
 static inline NvBool cisubscriptionCanCopy_DISPATCH(struct ComputeInstanceSubscription *arg_this) {
-    return arg_this->__cisubscriptionCanCopy__(arg_this);
+    return arg_this->__nvoc_vtable->__cisubscriptionCanCopy__(arg_this);
 }
 
 static inline NV_STATUS cisubscriptionCtrlCmdGetUuid_DISPATCH(struct ComputeInstanceSubscription *arg_this, NVC638_CTRL_GET_UUID_PARAMS *arg2) {
@@ -261,99 +249,99 @@ static inline NV_STATUS cisubscriptionCtrlCmdGetUuid_DISPATCH(struct ComputeInst
 }
 
 static inline NV_STATUS cisubscriptionControl_DISPATCH(struct ComputeInstanceSubscription *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__cisubscriptionControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_vtable->__cisubscriptionControl__(pGpuResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS cisubscriptionMap_DISPATCH(struct ComputeInstanceSubscription *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__cisubscriptionMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_vtable->__cisubscriptionMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS cisubscriptionUnmap_DISPATCH(struct ComputeInstanceSubscription *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__cisubscriptionUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_vtable->__cisubscriptionUnmap__(pGpuResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool cisubscriptionShareCallback_DISPATCH(struct ComputeInstanceSubscription *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__cisubscriptionShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_vtable->__cisubscriptionShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS cisubscriptionGetRegBaseOffsetAndSize_DISPATCH(struct ComputeInstanceSubscription *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__cisubscriptionGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_vtable->__cisubscriptionGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS cisubscriptionGetMapAddrSpace_DISPATCH(struct ComputeInstanceSubscription *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__cisubscriptionGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_vtable->__cisubscriptionGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS cisubscriptionInternalControlForward_DISPATCH(struct ComputeInstanceSubscription *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__cisubscriptionInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_vtable->__cisubscriptionInternalControlForward__(pGpuResource, command, pParams, size);
 }
 
 static inline NvHandle cisubscriptionGetInternalObjectHandle_DISPATCH(struct ComputeInstanceSubscription *pGpuResource) {
-    return pGpuResource->__cisubscriptionGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_vtable->__cisubscriptionGetInternalObjectHandle__(pGpuResource);
 }
 
 static inline NvBool cisubscriptionAccessCallback_DISPATCH(struct ComputeInstanceSubscription *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__cisubscriptionAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_vtable->__cisubscriptionAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS cisubscriptionGetMemInterMapParams_DISPATCH(struct ComputeInstanceSubscription *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__cisubscriptionGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_vtable->__cisubscriptionGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS cisubscriptionCheckMemInterUnmap_DISPATCH(struct ComputeInstanceSubscription *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__cisubscriptionCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_vtable->__cisubscriptionCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS cisubscriptionGetMemoryMappingDescriptor_DISPATCH(struct ComputeInstanceSubscription *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__cisubscriptionGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_vtable->__cisubscriptionGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS cisubscriptionControlSerialization_Prologue_DISPATCH(struct ComputeInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__cisubscriptionControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__cisubscriptionControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void cisubscriptionControlSerialization_Epilogue_DISPATCH(struct ComputeInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__cisubscriptionControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__cisubscriptionControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS cisubscriptionControl_Prologue_DISPATCH(struct ComputeInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__cisubscriptionControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__cisubscriptionControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void cisubscriptionControl_Epilogue_DISPATCH(struct ComputeInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__cisubscriptionControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__cisubscriptionControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS cisubscriptionIsDuplicate_DISPATCH(struct ComputeInstanceSubscription *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__cisubscriptionIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_vtable->__cisubscriptionIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void cisubscriptionPreDestruct_DISPATCH(struct ComputeInstanceSubscription *pResource) {
-    pResource->__cisubscriptionPreDestruct__(pResource);
+    pResource->__nvoc_vtable->__cisubscriptionPreDestruct__(pResource);
 }
 
 static inline NV_STATUS cisubscriptionControlFilter_DISPATCH(struct ComputeInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__cisubscriptionControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__cisubscriptionControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool cisubscriptionIsPartialUnmapSupported_DISPATCH(struct ComputeInstanceSubscription *pResource) {
-    return pResource->__cisubscriptionIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_vtable->__cisubscriptionIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS cisubscriptionMapTo_DISPATCH(struct ComputeInstanceSubscription *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__cisubscriptionMapTo__(pResource, pParams);
+    return pResource->__nvoc_vtable->__cisubscriptionMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS cisubscriptionUnmapFrom_DISPATCH(struct ComputeInstanceSubscription *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__cisubscriptionUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_vtable->__cisubscriptionUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 cisubscriptionGetRefCount_DISPATCH(struct ComputeInstanceSubscription *pResource) {
-    return pResource->__cisubscriptionGetRefCount__(pResource);
+    return pResource->__nvoc_vtable->__cisubscriptionGetRefCount__(pResource);
 }
 
 static inline void cisubscriptionAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct ComputeInstanceSubscription *pResource, RsResourceRef *pReference) {
-    pResource->__cisubscriptionAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_vtable->__cisubscriptionAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NvBool cisubscriptionCanCopy_IMPL(struct ComputeInstanceSubscription *arg1);

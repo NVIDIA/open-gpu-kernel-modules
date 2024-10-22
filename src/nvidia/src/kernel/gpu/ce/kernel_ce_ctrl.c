@@ -53,7 +53,7 @@ subdeviceCtrlCmdCeGetCaps_IMPL
     NvU32          ceNumber;
     RM_ENGINE_TYPE rmEngineType;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // sanity check array size
     if (pCeCapsParams->capsTblSize != NV2080_CTRL_CE_CAPS_TBL_SIZE)

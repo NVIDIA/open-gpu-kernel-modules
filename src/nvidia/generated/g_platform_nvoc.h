@@ -7,14 +7,14 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,19 +41,6 @@ extern "C" {
 
 #ifndef _PLATFORM_H_
 #define _PLATFORM_H_
-
-typedef struct OBJPFM *POBJPFM;
-
-#ifndef __NVOC_CLASS_OBJPFM_TYPEDEF__
-#define __NVOC_CLASS_OBJPFM_TYPEDEF__
-typedef struct OBJPFM OBJPFM;
-#endif /* __NVOC_CLASS_OBJPFM_TYPEDEF__ */
-
-#ifndef __nvoc_class_id_OBJPFM
-#define __nvoc_class_id_OBJPFM 0xb543ae
-#endif /* __nvoc_class_id_OBJPFM */
-
-
 
 #include "nvoc/runtime.h"
 #include "nvlimits.h" // NV_MAX_DEVICES

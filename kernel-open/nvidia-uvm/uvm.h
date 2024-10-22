@@ -45,20 +45,20 @@
 //     #endif
 // 3) Do the same thing for the function definition, and for any structs that
 //    are taken as arguments to these functions.
-// 4) Let this change propagate over to cuda_a and dev_a, so that the CUDA and
-//    nvidia-cfg libraries can start using the new API by bumping up the API
+// 4) Let this change propagate over to cuda_a and bugfix_main, so that the CUDA
+//    and nvidia-cfg libraries can start using the new API by bumping up the API
 //    version number it's using.
 //    Places where UVM_API_REVISION is defined are:
 //      drivers/gpgpu/cuda/cuda.nvmk (cuda_a)
-//      drivers/setup/linux/nvidia-cfg/makefile.nvmk (dev_a)
-// 5) Once the dev_a and cuda_a changes have made it back into chips_a,
+//      drivers/setup/linux/nvidia-cfg/makefile.nvmk (bugfix_main)
+// 5) Once the bugfix_main and cuda_a changes have made it back into chips_a,
 //    remove the old API declaration, definition, and any old structs that were
 //    in use.
 
 #ifndef _UVM_H_
 #define _UVM_H_
 
-#define UVM_API_LATEST_REVISION 12
+#define UVM_API_LATEST_REVISION 13
 
 #if !defined(UVM_API_REVISION)
 #error "please define UVM_API_REVISION macro to a desired version number or UVM_API_LATEST_REVISION macro"
@@ -384,36 +384,8 @@ NV_STATUS UvmIsPageableMemoryAccessSupportedOnGpu(const NvProcessorUuid *gpuUuid
 //         because it is not very informative.
 //
 //------------------------------------------------------------------------------
-#if UVM_API_REV_IS_AT_MOST(8)
-NV_STATUS UvmRegisterGpu(const NvProcessorUuid *gpuUuid);
-#else
 NV_STATUS UvmRegisterGpu(const NvProcessorUuid *gpuUuid,
                          const UvmGpuPlatformParams *platformParams);
-#endif
-
-#if UVM_API_REV_IS_AT_MOST(8)
-//------------------------------------------------------------------------------
-// UvmRegisterGpuSmc
-//
-// The same as UvmRegisterGpu, but takes additional parameters to specify the
-// GPU partition being registered if SMC is enabled.
-//
-// Arguments:
-//     gpuUuid: (INPUT)
-//         UUID of the physical GPU of the SMC partition to register.
-//
-//     platformParams: (INPUT)
-//         User handles identifying the partition to register.
-//
-// Error codes (see UvmRegisterGpu also):
-//
-//     NV_ERR_INVALID_STATE:
-//         SMC was not enabled, or the partition identified by the user
-//         handles or its configuration changed.
-//
-NV_STATUS UvmRegisterGpuSmc(const NvProcessorUuid *gpuUuid,
-                            const UvmGpuPlatformParams *platformParams);
-#endif
 
 //------------------------------------------------------------------------------
 // UvmUnregisterGpu
@@ -1363,6 +1335,86 @@ NV_STATUS UvmAllocSemaphorePool(void                          *base,
                                 NvLength                       length,
                                 const UvmGpuMappingAttributes *perGpuAttribs,
                                 NvLength                       gpuAttribsCount);
+
+//------------------------------------------------------------------------------
+// UvmAllocDeviceP2P
+//
+// Create a VA range within the process's address space reserved for use by
+// other devices to directly access GPU memory. The memory associated with the
+// RM handle is mapped into the user address space associated with the range for
+// direct access from the CPU.
+//
+// The VA range must not overlap with an existing VA range, irrespective of
+// whether the existing range corresponds to a UVM allocation or an external
+// allocation.
+//
+// Multiple VA ranges may be created mapping the same physical memory associated
+// with the RM handle. The associated GPU memory will not be freed until all VA
+// ranges have been destroyed either explicitly or implicitly and all non-UVM
+// users (eg. third party device drivers) have stopped using the associated
+// GPU memory.
+//
+// The VA range can be unmapped and freed by calling UvmFree.
+//
+// Destroying the final range mapping the RM handle may block until all third
+// party device drivers and other kernel users have stopped using the memory.
+//
+// These VA ranges are only associated with a single GPU.
+//
+// Arguments:
+//     gpuUuid: (INPUT)
+//         UUID of the physical GPU if the GPU is not SMC capable or SMC
+//         enabled, or the GPU instance UUID of the partition containing the
+//         memory to be mapped on the CPU.
+//
+//     base: (INPUT)
+//         Base address of the virtual address range.
+//
+//     length: (INPUT)
+//         Length, in bytes, of the range.
+//
+//     offset: (INPUT)
+//         Offset, in bytes, from the start of the externally allocated memory
+//         to map from.
+//
+//     platformParams: (INPUT)
+//         Platform specific parameters that identify the allocation.
+//         On Linux: RM ctrl fd, hClient and the handle (hMemory) of the
+//         externally allocated memory to map.
+//
+// Errors:
+//
+//     NV_ERR_INVALID_ADDRESS:
+//         base is NULL or length is zero or at least one of base and length is
+//         not aligned to 4K.
+//
+//     NV_ERR_INVALID_DEVICE:
+//         The gpuUuid was either not registered or has no GPU VA space
+//         registered for it.
+//
+//     NV_ERR_INVALID_ARGUMENT:
+//         base + offset + length exceeeds the end of the externally allocated
+//         memory handle or the externally allocated handle is not valid.
+//
+//     NV_ERR_UVM_ADDRESS_IN_USE:
+//         The requested virtual address range overlaps with an existing
+//         allocation.
+//
+//     NV_ERR_NO_MEMORY:
+//         Internal memory allocation failed.
+//
+//     NV_ERR_NOT_SUPPORTED:
+//         The device peer-to-peer feature is not supported by the current
+//         system configuration. This may be because the GPU doesn't support
+//         the peer-to-peer feature or the kernel was not built with the correct
+//         configuration options.
+//
+//------------------------------------------------------------------------------
+NV_STATUS UvmAllocDeviceP2P(NvProcessorUuid gpuUuid,
+                            void     *base,
+                            NvLength length,
+                            NvLength offset,
+                            const UvmDeviceP2PPlatformParams *platformParams);
 
 //------------------------------------------------------------------------------
 // UvmMigrate
@@ -3276,7 +3328,7 @@ NV_STATUS UvmEventGetGpuUuidTable(NvProcessorUuid *gpuUuidTable,
 //------------------------------------------------------------------------------
 NV_STATUS UvmEventFetch(UvmDebugSession      sessionHandle,
                         UvmEventQueueHandle  queueHandle,
-                        UvmEventEntry_V1    *pBuffer,
+                        UvmEventEntry       *pBuffer,
                         NvU64               *nEntries);
 
 //------------------------------------------------------------------------------
@@ -3472,31 +3524,20 @@ NV_STATUS UvmToolsDestroySession(UvmToolsSessionHandle session);
 // 4. Destroy event Queue using UvmToolsDestroyEventQueue
 //
 
-#if UVM_API_REV_IS_AT_MOST(10)
-// This is deprecated and replaced by sizeof(UvmToolsEventControlData).
-NvLength UvmToolsGetEventControlSize(void);
-
-// This is deprecated and replaced by sizeof(UvmEventEntry_V1) or
-// sizeof(UvmEventEntry_V2).
-NvLength UvmToolsGetEventEntrySize(void);
-#endif
-
 NvLength UvmToolsGetNumberOfCounters(void);
 
 //------------------------------------------------------------------------------
 // UvmToolsCreateEventQueue
 //
-// This call creates an event queue that can hold the given number of events.
-// All events are disabled by default. Event queue data persists lifetime of the
-// target process.
+// This function is deprecated. See UvmToolsCreateEventQueue_V2.
+//
+// This call creates an event queue that can hold the given number of
+// UvmEventEntry events. All events are disabled by default. Event queue data
+// persists lifetime of the target process.
 //
 // Arguments:
 //     session: (INPUT)
 //         Handle to the tools session.
-//
-//     version: (INPUT)
-//         Requested version for events or counters.
-//         See UvmToolsEventQueueVersion.
 //
 //     event_buffer: (INPUT)
 //         User allocated buffer. Must be page-aligned. Must be large enough to
@@ -3520,8 +3561,55 @@ NvLength UvmToolsGetNumberOfCounters(void);
 //         Session handle does not refer to a valid session
 //
 //     NV_ERR_INVALID_ARGUMENT:
-//         The version is not UvmToolsEventQueueVersion_V1 or
-//         UvmToolsEventQueueVersion_V2.
+//         One of the parameters: event_buffer, event_buffer_size, event_control
+//         is not valid
+//
+//     NV_ERR_INSUFFICIENT_RESOURCES:
+//         There could be multiple reasons for this error. One would be that
+//         it's not possible to allocate a queue of requested size. Another
+//         would be either event_buffer or event_control memory couldn't be
+//         pinned (e.g. because of OS limitation of pinnable memory). Also it
+//         could not have been possible to create UvmToolsEventQueueDescriptor.
+//
+NV_STATUS UvmToolsCreateEventQueue(UvmToolsSessionHandle        session,
+                                   void                        *event_buffer,
+                                   NvLength                     event_buffer_size,
+                                   void                        *event_control,
+                                   UvmToolsEventQueueHandle    *queue);
+
+//------------------------------------------------------------------------------
+// UvmToolsCreateEventQueue_V2
+//
+// This call creates an event queue that can hold the given number of
+// UvmEventEntry_V2 events. All events are disabled by default. Event queue data
+// persists beyond the lifetime of the target process.
+//
+// Arguments:
+//     session: (INPUT)
+//         Handle to the tools session.
+//
+//     event_buffer: (INPUT)
+//         User allocated buffer. Must be page-aligned. Must be large enough to
+//         hold at least event_buffer_size events. Gets pinned until queue is
+//         destroyed.
+//
+//     event_buffer_size: (INPUT)
+//         Size of the event queue buffer in units of UvmEventEntry_V2's. Must
+//         be a power of two, and greater than 1.
+//
+//     event_control (INPUT)
+//         User allocated buffer. Must be page-aligned. Must be large enough to
+//         hold UvmToolsEventControlData (although single page-size allocation
+//         should be more than enough). Gets pinned until queue is destroyed.
+//
+//     queue: (OUTPUT)
+//         Handle to the created queue.
+//
+// Error codes:
+//     NV_ERR_INSUFFICIENT_PERMISSIONS:
+//         Session handle does not refer to a valid session
+//
+//     NV_ERR_INVALID_ARGUMENT:
 //         One of the parameters: event_buffer, event_buffer_size, event_control
 //         is not valid
 //
@@ -3538,20 +3626,11 @@ NvLength UvmToolsGetNumberOfCounters(void);
 //         could not have been possible to create UvmToolsEventQueueDescriptor.
 //
 //------------------------------------------------------------------------------
-#if UVM_API_REV_IS_AT_MOST(10)
-NV_STATUS UvmToolsCreateEventQueue(UvmToolsSessionHandle     session,
-                                   void                     *event_buffer,
-                                   NvLength                  event_buffer_size,
-                                   void                     *event_control,
-                                   UvmToolsEventQueueHandle *queue);
-#else
-NV_STATUS UvmToolsCreateEventQueue(UvmToolsSessionHandle        session,
-                                   UvmToolsEventQueueVersion    version,
-                                   void                        *event_buffer,
-                                   NvLength                     event_buffer_size,
-                                   void                        *event_control,
-                                   UvmToolsEventQueueHandle    *queue);
-#endif
+NV_STATUS UvmToolsCreateEventQueue_V2(UvmToolsSessionHandle        session,
+                                      void                        *event_buffer,
+                                      NvLength                     event_buffer_size,
+                                      void                        *event_control,
+                                      UvmToolsEventQueueHandle    *queue);
 
 UvmToolsEventQueueDescriptor UvmToolsGetEventQueueDescriptor(UvmToolsEventQueueHandle queue);
 
@@ -3967,6 +4046,8 @@ NV_STATUS UvmToolsWriteProcessMemory(UvmToolsSessionHandle  session,
 //------------------------------------------------------------------------------
 // UvmToolsGetProcessorUuidTable
 //
+// This function is deprecated. See UvmToolsGetProcessorUuidTable_V2.
+//
 // Populate a table with the UUIDs of all the currently registered processors
 // in the target process. When a GPU is registered, it is added to the table.
 // When a GPU is unregistered, it is removed. As long as a GPU remains
@@ -3979,55 +4060,63 @@ NV_STATUS UvmToolsWriteProcessMemory(UvmToolsSessionHandle  session,
 //     session: (INPUT)
 //         Handle to the tools session.
 //
-//     version: (INPUT)
-//         Requested version for the UUID table returned. The version must
-//         match the requested version of the event queue created with
-//         UvmToolsCreateEventQueue(). See UvmToolsEventQueueVersion.
-//         If the version of the event queue does not match the version of the
-//         UUID table, the behavior is undefined.
-//
 //     table: (OUTPUT)
 //         Array of processor UUIDs, including the CPU's UUID which is always
 //         at index zero. The number of elements in the array must be greater
-//         or equal to UVM_MAX_PROCESSORS_V1 if the version is
-//         UvmToolsEventQueueVersion_V1 and UVM_MAX_PROCESSORS if the version is
-//         UvmToolsEventQueueVersion_V2.
+//         or equal to UVM_MAX_PROCESSORS_V1.
 //         The srcIndex and dstIndex fields of the UvmEventMigrationInfo struct
 //         index this array. Unused indices will have a UUID of zero.
-//         If version is UvmToolsEventQueueVersion_V1 then the reported UUID
-//         will be that of the corresponding physical GPU, even if multiple SMC
-//         partitions are registered under that physical GPU. If version is
-//         UvmToolsEventQueueVersion_V2 then the reported UUID will be the GPU
-//         instance UUID if SMC is enabled, otherwise it will be the UUID of
-//         the physical GPU.
+//         The reported UUID will be that of the corresponding physical GPU,
+//         even if multiple SMC partitions are registered under that physical
+//         GPU.
 //
 // Error codes:
 //     NV_ERR_INVALID_ADDRESS:
 //         writing to table failed.
 //
-//     NV_ERR_INVALID_ARGUMENT:
-//         The version is not UvmToolsEventQueueVersion_V1 or
-//         UvmToolsEventQueueVersion_V2.
+//     NV_ERR_NO_MEMORY:
+//         Internal memory allocation failed.
+//------------------------------------------------------------------------------
+NV_STATUS UvmToolsGetProcessorUuidTable(UvmToolsSessionHandle     session,
+                                        NvProcessorUuid          *table);
+
+//------------------------------------------------------------------------------
+// UvmToolsGetProcessorUuidTable_V2
+//
+// Populate a table with the UUIDs of all the currently registered processors
+// in the target process. When a GPU is registered, it is added to the table.
+// When a GPU is unregistered, it is removed. As long as a GPU remains
+// registered, its index in the table does not change.
+// Note that the index in the table corresponds to the processor ID reported
+// in UvmEventEntry event records and that the table is not contiguously packed
+// with non-zero UUIDs even with no GPU unregistrations.
+//
+// Arguments:
+//     session: (INPUT)
+//         Handle to the tools session.
+//
+//     table: (OUTPUT)
+//         Array of processor UUIDs, including the CPU's UUID which is always
+//         at index zero. The number of elements in the array must be greater
+//         or equal to UVM_MAX_PROCESSORS.
+//         The srcIndex and dstIndex fields of the UvmEventMigrationInfo struct
+//         index this array. Unused indices will have a UUID of zero.
+//         The reported UUID will be the GPU instance UUID if SMC is enabled,
+//         otherwise it will be the UUID of the physical GPU.
+//
+// Error codes:
+//     NV_ERR_INVALID_ADDRESS:
+//         writing to table failed.
 //
 //     NV_ERR_NOT_SUPPORTED:
-//         The kernel is not able to support the requested version
-//         (i.e., the UVM kernel driver is older and doesn't support
-//         UvmToolsEventQueueVersion_V2).
+//         The UVM kernel driver is older and doesn't support
+//         UvmToolsGetProcessorUuidTable_V2.
 //
 //     NV_ERR_NO_MEMORY:
 //         Internal memory allocation failed.
 //------------------------------------------------------------------------------
-#if UVM_API_REV_IS_AT_MOST(11)
-NV_STATUS UvmToolsGetProcessorUuidTable(UvmToolsSessionHandle      session,
-                                        UvmToolsEventQueueVersion  version,
-                                        NvProcessorUuid           *table,
-                                        NvLength                   table_size,
-                                        NvLength                  *count);
-#else
-NV_STATUS UvmToolsGetProcessorUuidTable(UvmToolsSessionHandle     session,
-                                        UvmToolsEventQueueVersion version,
-                                        NvProcessorUuid          *table);
-#endif
+NV_STATUS UvmToolsGetProcessorUuidTable_V2(UvmToolsSessionHandle     session,
+                                           NvProcessorUuid          *table);
 
 //------------------------------------------------------------------------------
 // UvmToolsFlushEvents

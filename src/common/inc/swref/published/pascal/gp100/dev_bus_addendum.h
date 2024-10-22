@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,12 +21,15 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#pragma once
+#ifndef __gp100_dev_bus_addendum_h__
+#define __gp100_dev_bus_addendum_h__
 
-#include <nvtypes.h>
 
 //
-// This file was generated with FINN, an NVIDIA coding tool.
-// Source file:      ctrl/ctrl0080/ctrl0080clk.finn
+// This bit is set by RM to indicate that GPU reset is required
 //
+#define NV_PBUS_SW_SCRATCH30_GPU_RESET_REQUIRED                    0:0
+#define NV_PBUS_SW_SCRATCH30_GPU_RESET_REQUIRED_OFF                0x00000000
+#define NV_PBUS_SW_SCRATCH30_GPU_RESET_REQUIRED_ON                 0x00000001
 
+#endif // __gp100_dev_bus_addendum_h__

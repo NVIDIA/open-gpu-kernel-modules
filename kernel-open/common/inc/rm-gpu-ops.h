@@ -85,9 +85,11 @@ NV_STATUS  NV_API_CALL rm_gpu_ops_enable_access_cntr(nvidia_stack_t *, nvgpuDevi
 NV_STATUS  NV_API_CALL rm_gpu_ops_disable_access_cntr(nvidia_stack_t *, nvgpuDeviceHandle_t, nvgpuAccessCntrInfo_t);
 NV_STATUS  NV_API_CALL  rm_gpu_ops_set_page_directory (nvidia_stack_t *, nvgpuAddressSpaceHandle_t, NvU64, unsigned, NvBool, NvU32);
 NV_STATUS  NV_API_CALL  rm_gpu_ops_unset_page_directory (nvidia_stack_t *, nvgpuAddressSpaceHandle_t);
+NV_STATUS  NV_API_CALL rm_gpu_ops_get_nvlink_info(nvidia_stack_t *, nvgpuDeviceHandle_t, nvgpuNvlinkInfo_t);
 NV_STATUS  NV_API_CALL rm_gpu_ops_p2p_object_create(nvidia_stack_t *, nvgpuDeviceHandle_t, nvgpuDeviceHandle_t, NvHandle *);
 void       NV_API_CALL rm_gpu_ops_p2p_object_destroy(nvidia_stack_t *, nvgpuSessionHandle_t, NvHandle);
 NV_STATUS  NV_API_CALL rm_gpu_ops_get_external_alloc_ptes(nvidia_stack_t*, nvgpuAddressSpaceHandle_t, NvHandle, NvU64, NvU64, nvgpuExternalMappingInfo_t);
+NV_STATUS  NV_API_CALL rm_gpu_ops_get_external_alloc_phys_addrs(nvidia_stack_t*, nvgpuAddressSpaceHandle_t, NvHandle, NvU64, NvU64, nvgpuExternalPhysAddrInfo_t);
 NV_STATUS  NV_API_CALL rm_gpu_ops_retain_channel(nvidia_stack_t *, nvgpuAddressSpaceHandle_t, NvHandle, NvHandle, void **, nvgpuChannelInstanceInfo_t);
 NV_STATUS  NV_API_CALL rm_gpu_ops_bind_channel_resources(nvidia_stack_t *, void *, nvgpuChannelResourceBindParams_t);
 void       NV_API_CALL rm_gpu_ops_release_channel(nvidia_stack_t *, void *);
@@ -100,6 +102,7 @@ void       NV_API_CALL rm_gpu_ops_paging_channel_destroy(nvidia_stack_t *, nvgpu
 NV_STATUS  NV_API_CALL rm_gpu_ops_paging_channels_map(nvidia_stack_t *, nvgpuAddressSpaceHandle_t, NvU64, nvgpuDeviceHandle_t, NvU64 *);
 void       NV_API_CALL rm_gpu_ops_paging_channels_unmap(nvidia_stack_t *, nvgpuAddressSpaceHandle_t, NvU64, nvgpuDeviceHandle_t);
 NV_STATUS  NV_API_CALL rm_gpu_ops_paging_channel_push_stream(nvidia_stack_t *, nvgpuPagingChannelHandle_t, char *, NvU32);
+void       NV_API_CALL rm_gpu_ops_report_fatal_error(nvidia_stack_t *, NV_STATUS error);
 
 NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_context_init(nvidia_stack_t *, struct ccslContext_t **, nvgpuChannelHandle_t);
 NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_context_clear(nvidia_stack_t *, struct ccslContext_t *);

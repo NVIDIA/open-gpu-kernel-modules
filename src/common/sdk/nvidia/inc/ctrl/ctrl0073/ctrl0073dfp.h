@@ -1451,4 +1451,39 @@ typedef struct NV0073_CTRL_DFP_EDP_DRIVER_UNLOAD_PARAMS {
 
 
 
+/*
+ * NV0073_CTRL_CMD_DFP_SET_FORCE_BLACK_PIXELS
+ *
+ * This command is used to force black pixels from postcomp.
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *
+ *   displayId
+ *     DisplayId of the connected display.
+ *
+ *   bForceBlackPixels
+ *     To enable or disable black pixel generation.
+ *
+ * Possible status values returned are:
+ *      NV_OK
+ *      NV_ERR_INVALID_ARGUMENT
+ *      NV_ERR_NOT_SUPPORTED
+ *
+ */
+#define NV0073_CTRL_CMD_DFP_SET_FORCE_BLACK_PIXELS (0x731179U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DFP_INTERFACE_ID << 8) | NV0073_CTRL_DFP_SET_FORCE_BLACK_PIXELS_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_DFP_SET_FORCE_BLACK_PIXELS_PARAMS_MESSAGE_ID (0x79U)
+
+typedef struct NV0073_CTRL_DFP_SET_FORCE_BLACK_PIXELS_PARAMS {
+    NvU32  subDeviceInstance;
+    NvU32  displayId;
+    NvU32  head;
+    NvBool bForceBlack;
+} NV0073_CTRL_DFP_SET_FORCE_BLACK_PIXELS_PARAMS;
+
 /* _ctrl0073dfp_h_ */

@@ -79,6 +79,10 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGPU =
     /*pExportInfo=*/        &__nvoc_export_info_OBJGPU
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+
+// Up-thunk(s) to bridge methods to ancestors (if any)
+
 const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJGPU = 
 {
     /*numEntries=*/     0,
@@ -106,216 +110,228 @@ void __nvoc_init_dataField_OBJGPU(OBJGPU *pThis) {
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
-    pThis->setProperty(pThis, PDB_PROP_GPU_IS_CONNECTED, ((NvBool)(0 == 0)));
+    pThis->setProperty(pThis, PDB_PROP_GPU_IS_CONNECTED, NV_TRUE);
 
     // NVOC Property Hal field -- PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY
     // default
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY, ((NvBool)(0 != 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY, NV_FALSE);
     }
 
     // NVOC Property Hal field -- PDB_PROP_GPU_TEGRA_SOC_IGPU
     // default
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_TEGRA_SOC_IGPU, ((NvBool)(0 != 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_TEGRA_SOC_IGPU, NV_FALSE);
     }
 
     // NVOC Property Hal field -- PDB_PROP_GPU_ATS_SUPPORTED
     // default
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_ATS_SUPPORTED, ((NvBool)(0 != 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_ATS_SUPPORTED, NV_FALSE);
     }
 
     // NVOC Property Hal field -- PDB_PROP_GPU_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE, ((NvBool)(0 == 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE, NV_TRUE);
     }
     // default
     else
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE, ((NvBool)(0 != 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE, NV_FALSE);
     }
 
     // NVOC Property Hal field -- PDB_PROP_GPU_ZERO_FB
     // default
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_ZERO_FB, ((NvBool)(0 != 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_ZERO_FB, NV_FALSE);
     }
 
     // NVOC Property Hal field -- PDB_PROP_GPU_CAN_OPTIMIZE_COMPUTE_USE_CASE
     // default
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_CAN_OPTIMIZE_COMPUTE_USE_CASE, ((NvBool)(0 != 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_CAN_OPTIMIZE_COMPUTE_USE_CASE, NV_FALSE);
     }
 
     // NVOC Property Hal field -- PDB_PROP_GPU_MIG_SUPPORTED
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000400UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 */ 
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_MIG_SUPPORTED, ((NvBool)(0 == 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_MIG_SUPPORTED, NV_TRUE);
     }
     // default
     else
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_MIG_SUPPORTED, ((NvBool)(0 != 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_MIG_SUPPORTED, NV_FALSE);
     }
 
     // NVOC Property Hal field -- PDB_PROP_GPU_VC_CAPABILITY_SUPPORTED
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_VC_CAPABILITY_SUPPORTED, ((NvBool)(0 == 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_VC_CAPABILITY_SUPPORTED, NV_TRUE);
     }
     // default
     else
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_VC_CAPABILITY_SUPPORTED, ((NvBool)(0 != 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_VC_CAPABILITY_SUPPORTED, NV_FALSE);
     }
 
     // NVOC Property Hal field -- PDB_PROP_GPU_RESETLESS_MIG_SUPPORTED
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_RESETLESS_MIG_SUPPORTED, ((NvBool)(0 == 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_RESETLESS_MIG_SUPPORTED, NV_TRUE);
     }
     // default
     else
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_RESETLESS_MIG_SUPPORTED, ((NvBool)(0 != 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_RESETLESS_MIG_SUPPORTED, NV_FALSE);
     }
 
     // NVOC Property Hal field -- PDB_PROP_GPU_IS_COT_ENABLED
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_IS_COT_ENABLED, ((NvBool)(0 == 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_IS_COT_ENABLED, NV_TRUE);
     }
     // default
     else
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_IS_COT_ENABLED, ((NvBool)(0 != 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_IS_COT_ENABLED, NV_FALSE);
     }
 
     // Hal field -- bIsFlexibleFlaSupported
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
-        pThis->bIsFlexibleFlaSupported = ((NvBool)(0 == 0));
+        pThis->bIsFlexibleFlaSupported = NV_TRUE;
     }
     // default
     else
     {
-        pThis->bIsFlexibleFlaSupported = ((NvBool)(0 != 0));
+        pThis->bIsFlexibleFlaSupported = NV_FALSE;
     }
 
     // NVOC Property Hal field -- PDB_PROP_GPU_SRIOV_SYSMEM_DIRTY_PAGE_TRACKING_ENABLED
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_SRIOV_SYSMEM_DIRTY_PAGE_TRACKING_ENABLED, ((NvBool)(0 == 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_SRIOV_SYSMEM_DIRTY_PAGE_TRACKING_ENABLED, NV_TRUE);
     }
     // default
     else
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_SRIOV_SYSMEM_DIRTY_PAGE_TRACKING_ENABLED, ((NvBool)(0 != 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_SRIOV_SYSMEM_DIRTY_PAGE_TRACKING_ENABLED, NV_FALSE);
     }
 
     // NVOC Property Hal field -- PDB_PROP_GPU_VGPU_OFFLOAD_CAPABLE
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f00000UL) )) /* ChipHal: AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_VGPU_OFFLOAD_CAPABLE, ((NvBool)(0 == 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_VGPU_OFFLOAD_CAPABLE, NV_TRUE);
     }
     // default
     else
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_VGPU_OFFLOAD_CAPABLE, ((NvBool)(0 != 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_VGPU_OFFLOAD_CAPABLE, NV_FALSE);
     }
 
     // NVOC Property Hal field -- PDB_PROP_GPU_UNIX_DYNAMIC_POWER_SUPPORTED
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_UNIX_DYNAMIC_POWER_SUPPORTED, ((NvBool)(0 == 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_UNIX_DYNAMIC_POWER_SUPPORTED, NV_TRUE);
     }
 
     // NVOC Property Hal field -- PDB_PROP_GPU_SKIP_CE_MAPPINGS_NO_NVLINK
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_SKIP_CE_MAPPINGS_NO_NVLINK, ((NvBool)(0 != 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_SKIP_CE_MAPPINGS_NO_NVLINK, NV_FALSE);
     }
     // default
     else
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_SKIP_CE_MAPPINGS_NO_NVLINK, ((NvBool)(0 == 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_SKIP_CE_MAPPINGS_NO_NVLINK, NV_TRUE);
     }
-    pThis->setProperty(pThis, PDB_PROP_GPU_OPTIMUS_GOLD_CFG_SPACE_RESTORE, ((NvBool)(0 == 0)));
+    pThis->setProperty(pThis, PDB_PROP_GPU_OPTIMUS_GOLD_CFG_SPACE_RESTORE, NV_TRUE);
 
     // NVOC Property Hal field -- PDB_PROP_GPU_CC_FEATURE_CAPABLE
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_CC_FEATURE_CAPABLE, ((NvBool)(0 == 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_CC_FEATURE_CAPABLE, NV_TRUE);
     }
     // default
     else
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_CC_FEATURE_CAPABLE, ((NvBool)(0 != 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_CC_FEATURE_CAPABLE, NV_FALSE);
     }
 
     // NVOC Property Hal field -- PDB_PROP_GPU_APM_FEATURE_CAPABLE
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_APM_FEATURE_CAPABLE, ((NvBool)(0 == 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_APM_FEATURE_CAPABLE, NV_TRUE);
     }
     // default
     else
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_APM_FEATURE_CAPABLE, ((NvBool)(0 != 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_APM_FEATURE_CAPABLE, NV_FALSE);
     }
 
     // NVOC Property Hal field -- PDB_PROP_GPU_EXTENDED_GSP_RM_INITIALIZATION_TIMEOUT_FOR_VGX
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_EXTENDED_GSP_RM_INITIALIZATION_TIMEOUT_FOR_VGX, ((NvBool)(0 == 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_EXTENDED_GSP_RM_INITIALIZATION_TIMEOUT_FOR_VGX, NV_TRUE);
     }
     // default
     else
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_EXTENDED_GSP_RM_INITIALIZATION_TIMEOUT_FOR_VGX, ((NvBool)(0 != 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_EXTENDED_GSP_RM_INITIALIZATION_TIMEOUT_FOR_VGX, NV_FALSE);
     }
 
     // NVOC Property Hal field -- PDB_PROP_GPU_CHIP_SUPPORTS_RTD3_DEF
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_CHIP_SUPPORTS_RTD3_DEF, ((NvBool)(0 == 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_CHIP_SUPPORTS_RTD3_DEF, NV_TRUE);
     }
 
     // NVOC Property Hal field -- PDB_PROP_GPU_IS_SOC_SDM
     // default
     {
-        pThis->setProperty(pThis, PDB_PROP_GPU_IS_SOC_SDM, ((NvBool)(0 != 0)));
+        pThis->setProperty(pThis, PDB_PROP_GPU_IS_SOC_SDM, NV_FALSE);
     }
 
     // NVOC Property Hal field -- PDB_PROP_GPU_DISP_PB_REQUIRES_SMMU_BYPASS
-    pThis->setProperty(pThis, PDB_PROP_GPU_DISP_PB_REQUIRES_SMMU_BYPASS, ((NvBool)(0 == 0)));
-    pThis->setProperty(pThis, PDB_PROP_GPU_FASTPATH_SEQ_ENABLED, ((NvBool)(0 != 0)));
+    pThis->setProperty(pThis, PDB_PROP_GPU_DISP_PB_REQUIRES_SMMU_BYPASS, NV_TRUE);
+    pThis->setProperty(pThis, PDB_PROP_GPU_FASTPATH_SEQ_ENABLED, NV_FALSE);
+    pThis->setProperty(pThis, PDB_PROP_GPU_RECOVERY_DRAIN_P2P_REQUIRED, NV_FALSE);
+
+    // NVOC Property Hal field -- PDB_PROP_GPU_RUSD_POLLING_SUPPORT_MONOLITHIC
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
+    {
+        pThis->setProperty(pThis, PDB_PROP_GPU_RUSD_POLLING_SUPPORT_MONOLITHIC, NV_TRUE);
+    }
+    // default
+    else
+    {
+        pThis->setProperty(pThis, PDB_PROP_GPU_RUSD_POLLING_SUPPORT_MONOLITHIC, NV_FALSE);
+    }
 
     pThis->deviceInstance = 32;
 
     // Hal field -- isVirtual
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->isVirtual = ((NvBool)(0 == 0));
+        pThis->isVirtual = NV_TRUE;
     }
     else if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
     {
-        pThis->isVirtual = ((NvBool)(0 != 0));
+        pThis->isVirtual = NV_FALSE;
     }
 
     // Hal field -- isGspClient
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
     {
-        pThis->isGspClient = ((NvBool)(0 == 0));
+        pThis->isGspClient = NV_TRUE;
     }
     else if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->isGspClient = ((NvBool)(0 != 0));
+        pThis->isGspClient = NV_FALSE;
     }
 
-    pThis->bIsDebugModeEnabled = ((NvBool)(0 != 0));
+    pThis->bIsDebugModeEnabled = NV_FALSE;
 
     pThis->numOfMclkLockRequests = 0U;
 
@@ -334,139 +350,137 @@ void __nvoc_init_dataField_OBJGPU(OBJGPU *pThis) {
         pThis->gpuGroupCount = 1;
     }
 
-    pThis->bIsMigRm = ((NvBool)(0 != 0));
+    pThis->bIsMigRm = NV_FALSE;
 
     // Hal field -- bUnifiedMemorySpaceEnabled
     // default
     {
-        pThis->bUnifiedMemorySpaceEnabled = ((NvBool)(0 != 0));
+        pThis->bUnifiedMemorySpaceEnabled = NV_FALSE;
     }
 
     // Hal field -- bWarBug200577889SriovHeavyEnabled
-    pThis->bWarBug200577889SriovHeavyEnabled = ((NvBool)(0 != 0));
+    pThis->bWarBug200577889SriovHeavyEnabled = NV_FALSE;
 
     // Hal field -- bNonPowerOf2ChannelCountSupported
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
     {
-        pThis->bNonPowerOf2ChannelCountSupported = ((NvBool)(0 == 0));
+        pThis->bNonPowerOf2ChannelCountSupported = NV_TRUE;
     }
     // default
     else
     {
-        pThis->bNonPowerOf2ChannelCountSupported = ((NvBool)(0 != 0));
+        pThis->bNonPowerOf2ChannelCountSupported = NV_FALSE;
     }
 
     // Hal field -- bWarBug4347206PowerCycleOnUnload
     // default
     {
-        pThis->bWarBug4347206PowerCycleOnUnload = ((NvBool)(0 != 0));
+        pThis->bWarBug4347206PowerCycleOnUnload = NV_FALSE;
     }
 
     // Hal field -- bNeed4kPageIsolation
     // default
     {
-        pThis->bNeed4kPageIsolation = ((NvBool)(0 != 0));
+        pThis->bNeed4kPageIsolation = NV_FALSE;
     }
 
     // Hal field -- bInstLoc47bitPaWar
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->bInstLoc47bitPaWar = ((NvBool)(0 == 0));
+        pThis->bInstLoc47bitPaWar = NV_TRUE;
     }
 
     // Hal field -- bIsBarPteInSysmemSupported
     // default
     {
-        pThis->bIsBarPteInSysmemSupported = ((NvBool)(0 != 0));
+        pThis->bIsBarPteInSysmemSupported = NV_FALSE;
     }
 
     // Hal field -- bClientRmAllocatedCtxBuffer
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->bClientRmAllocatedCtxBuffer = ((NvBool)(0 == 0));
+        pThis->bClientRmAllocatedCtxBuffer = NV_TRUE;
     }
     // default
     else
     {
-        pThis->bClientRmAllocatedCtxBuffer = ((NvBool)(0 != 0));
+        pThis->bClientRmAllocatedCtxBuffer = NV_FALSE;
     }
-
-    pThis->bIterativeMmuWalker = ((NvBool)(0 == 0));
 
     // Hal field -- bVidmemPreservationBrokenBug3172217
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
-        pThis->bVidmemPreservationBrokenBug3172217 = ((NvBool)(0 == 0));
+        pThis->bVidmemPreservationBrokenBug3172217 = NV_TRUE;
     }
     // default
     else
     {
-        pThis->bVidmemPreservationBrokenBug3172217 = ((NvBool)(0 != 0));
+        pThis->bVidmemPreservationBrokenBug3172217 = NV_FALSE;
     }
 
     // Hal field -- bInstanceMemoryAlwaysCached
     // default
     {
-        pThis->bInstanceMemoryAlwaysCached = ((NvBool)(0 != 0));
+        pThis->bInstanceMemoryAlwaysCached = NV_FALSE;
     }
 
     // Hal field -- bComputePolicyTimesliceSupported
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->bComputePolicyTimesliceSupported = ((NvBool)(0 == 0));
+        pThis->bComputePolicyTimesliceSupported = NV_TRUE;
     }
 
     // Hal field -- bSriovCapable
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->bSriovCapable = ((NvBool)(0 == 0));
+        pThis->bSriovCapable = NV_TRUE;
     }
 
     // Hal field -- bRecheckSliSupportAtResume
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->bRecheckSliSupportAtResume = ((NvBool)(0 == 0));
+        pThis->bRecheckSliSupportAtResume = NV_TRUE;
     }
 
     // Hal field -- bGpuNvEncAv1Supported
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x81f00000UL) )) /* ChipHal: AD102 | AD103 | AD104 | AD106 | AD107 | GB102 */ 
     {
-        pThis->bGpuNvEncAv1Supported = ((NvBool)(0 == 0));
+        pThis->bGpuNvEncAv1Supported = NV_TRUE;
     }
     // default
     else
     {
-        pThis->bGpuNvEncAv1Supported = ((NvBool)(0 != 0));
+        pThis->bGpuNvEncAv1Supported = NV_FALSE;
     }
 
-    pThis->bIsGspOwnedFaultBuffersEnabled = ((NvBool)(0 != 0));
+    pThis->bIsGspOwnedFaultBuffersEnabled = NV_FALSE;
 
     // Hal field -- bVfResizableBAR1Supported
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
-        pThis->bVfResizableBAR1Supported = ((NvBool)(0 == 0));
+        pThis->bVfResizableBAR1Supported = NV_TRUE;
     }
     // default
     else
     {
-        pThis->bVfResizableBAR1Supported = ((NvBool)(0 != 0));
+        pThis->bVfResizableBAR1Supported = NV_FALSE;
     }
 
     // Hal field -- bVoltaHubIntrSupported
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->bVoltaHubIntrSupported = ((NvBool)(0 == 0));
+        pThis->bVoltaHubIntrSupported = NV_TRUE;
     }
 
     // Hal field -- bUsePmcDeviceEnableForHostEngine
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->bUsePmcDeviceEnableForHostEngine = ((NvBool)(0 == 0));
+        pThis->bUsePmcDeviceEnableForHostEngine = NV_TRUE;
     }
     // default
     else
     {
-        pThis->bUsePmcDeviceEnableForHostEngine = ((NvBool)(0 != 0));
+        pThis->bUsePmcDeviceEnableForHostEngine = NV_FALSE;
     }
 }
 
@@ -522,8 +536,13 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
         pThis->__gpuGetDeviceInfoTableSectionInfos__ = &gpuGetDeviceInfoTableSectionInfos_46f6a7;
     }
 
-    // gpuParseDeviceInfoTableSection -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
+    // gpuParseDeviceInfoTableSection -- halified (3 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
+    {
+        // default
+        pThis->__gpuParseDeviceInfoTableSection__ = &gpuParseDeviceInfoTableSection_46f6a7;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
     {
         // default
         pThis->__gpuParseDeviceInfoTableSection__ = &gpuParseDeviceInfoTableSection_46f6a7;
@@ -590,6 +609,130 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
     else
     {
         pThis->__gpuGetRtd3GC6Data__ = &gpuGetRtd3GC6Data_FWCLIENT;
+    }
+
+    // gpuSetResetScratchBit -- halified (2 hals) body
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__gpuSetResetScratchBit__ = &gpuSetResetScratchBit_46f6a7;
+    }
+    else
+    {
+        pThis->__gpuSetResetScratchBit__ = &gpuSetResetScratchBit_GP100;
+    }
+
+    // gpuGetResetScratchBit -- halified (2 hals) body
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__gpuGetResetScratchBit__ = &gpuGetResetScratchBit_46f6a7;
+    }
+    else
+    {
+        pThis->__gpuGetResetScratchBit__ = &gpuGetResetScratchBit_GP100;
+    }
+
+    // gpuResetRequiredStateChanged -- halified (2 hals) body
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__gpuResetRequiredStateChanged__ = &gpuResetRequiredStateChanged_46f6a7;
+    }
+    else
+    {
+        pThis->__gpuResetRequiredStateChanged__ = &gpuResetRequiredStateChanged_FWCLIENT;
+    }
+
+    // gpuMarkDeviceForReset -- halified (2 hals) body
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__gpuMarkDeviceForReset__ = &gpuMarkDeviceForReset_46f6a7;
+    }
+    else
+    {
+        pThis->__gpuMarkDeviceForReset__ = &gpuMarkDeviceForReset_IMPL;
+    }
+
+    // gpuUnmarkDeviceForReset -- halified (2 hals) body
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__gpuUnmarkDeviceForReset__ = &gpuUnmarkDeviceForReset_46f6a7;
+    }
+    else
+    {
+        pThis->__gpuUnmarkDeviceForReset__ = &gpuUnmarkDeviceForReset_IMPL;
+    }
+
+    // gpuIsDeviceMarkedForReset -- halified (2 hals) body
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__gpuIsDeviceMarkedForReset__ = &gpuIsDeviceMarkedForReset_46f6a7;
+    }
+    else
+    {
+        pThis->__gpuIsDeviceMarkedForReset__ = &gpuIsDeviceMarkedForReset_IMPL;
+    }
+
+    // gpuSetDrainAndResetScratchBit -- halified (3 hals) body
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__gpuSetDrainAndResetScratchBit__ = &gpuSetDrainAndResetScratchBit_46f6a7;
+    }
+    else
+    {
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+        {
+            pThis->__gpuSetDrainAndResetScratchBit__ = &gpuSetDrainAndResetScratchBit_46f6a7;
+        }
+        else
+        {
+            pThis->__gpuSetDrainAndResetScratchBit__ = &gpuSetDrainAndResetScratchBit_GA100;
+        }
+    }
+
+    // gpuGetDrainAndResetScratchBit -- halified (3 hals) body
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__gpuGetDrainAndResetScratchBit__ = &gpuGetDrainAndResetScratchBit_46f6a7;
+    }
+    else
+    {
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+        {
+            pThis->__gpuGetDrainAndResetScratchBit__ = &gpuGetDrainAndResetScratchBit_46f6a7;
+        }
+        else
+        {
+            pThis->__gpuGetDrainAndResetScratchBit__ = &gpuGetDrainAndResetScratchBit_GA100;
+        }
+    }
+
+    // gpuMarkDeviceForDrainAndReset -- halified (2 hals) body
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__gpuMarkDeviceForDrainAndReset__ = &gpuMarkDeviceForDrainAndReset_46f6a7;
+    }
+    else
+    {
+        pThis->__gpuMarkDeviceForDrainAndReset__ = &gpuMarkDeviceForDrainAndReset_IMPL;
+    }
+
+    // gpuUnmarkDeviceForDrainAndReset -- halified (2 hals) body
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__gpuUnmarkDeviceForDrainAndReset__ = &gpuUnmarkDeviceForDrainAndReset_46f6a7;
+    }
+    else
+    {
+        pThis->__gpuUnmarkDeviceForDrainAndReset__ = &gpuUnmarkDeviceForDrainAndReset_IMPL;
+    }
+
+    // gpuIsDeviceMarkedForDrainAndReset -- halified (2 hals) body
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__gpuIsDeviceMarkedForDrainAndReset__ = &gpuIsDeviceMarkedForDrainAndReset_46f6a7;
+    }
+    else
+    {
+        pThis->__gpuIsDeviceMarkedForDrainAndReset__ = &gpuIsDeviceMarkedForDrainAndReset_IMPL;
     }
 
     // gpuPowerOff -- halified (2 hals) body
@@ -675,6 +818,39 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
     else
     {
         pThis->__gpuReadPassThruConfigReg__ = &gpuReadPassThruConfigReg_46f6a7;
+    }
+
+    // gpuConfigAccessSanityCheck -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
+    {
+        pThis->__gpuConfigAccessSanityCheck__ = &gpuConfigAccessSanityCheck_GB100;
+    }
+    // default
+    else
+    {
+        pThis->__gpuConfigAccessSanityCheck__ = &gpuConfigAccessSanityCheck_56cd7a;
+    }
+
+    // gpuReadBusConfigCycle -- halified (2 hals)
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
+    {
+        pThis->__gpuReadBusConfigCycle__ = &gpuReadBusConfigCycle_GB100;
+    }
+    // default
+    else
+    {
+        pThis->__gpuReadBusConfigCycle__ = &gpuReadBusConfigCycle_GM107;
+    }
+
+    // gpuWriteBusConfigCycle -- halified (2 hals)
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
+    {
+        pThis->__gpuWriteBusConfigCycle__ = &gpuWriteBusConfigCycle_GB100;
+    }
+    // default
+    else
+    {
+        pThis->__gpuWriteBusConfigCycle__ = &gpuWriteBusConfigCycle_GM107;
     }
 
     // gpuGetIdInfo -- halified (3 hals) body
@@ -906,7 +1082,7 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
     // gpuFuseSupportsDisplay -- halified (3 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000400UL) )) /* ChipHal: GA100 | GH100 | GB100 | GB102 */ 
     {
-        pThis->__gpuFuseSupportsDisplay__ = &gpuFuseSupportsDisplay_491d52;
+        pThis->__gpuFuseSupportsDisplay__ = &gpuFuseSupportsDisplay_3dd2c9;
     }
     else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
     {
@@ -935,7 +1111,7 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
     // default
     else
     {
-        pThis->__gpuIsGspToBootInInstInSysMode__ = &gpuIsGspToBootInInstInSysMode_491d52;
+        pThis->__gpuIsGspToBootInInstInSysMode__ = &gpuIsGspToBootInInstInSysMode_3dd2c9;
     }
 
     // gpuCheckPageRetirementSupport -- halified (2 hals) body
@@ -951,7 +1127,7 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
     // gpuIsInternalSku -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__gpuIsInternalSku__ = &gpuIsInternalSku_491d52;
+        pThis->__gpuIsInternalSku__ = &gpuIsInternalSku_3dd2c9;
     }
     else
     {
@@ -977,7 +1153,7 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
     // default
     else
     {
-        pThis->__gpuCheckIfFbhubPoisonIntrPending__ = &gpuCheckIfFbhubPoisonIntrPending_491d52;
+        pThis->__gpuCheckIfFbhubPoisonIntrPending__ = &gpuCheckIfFbhubPoisonIntrPending_3dd2c9;
     }
 
     // gpuGetSriovCaps -- halified (2 hals) body
@@ -995,7 +1171,7 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
     {
         if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
         {
-            pThis->__gpuCheckIsP2PAllocated__ = &gpuCheckIsP2PAllocated_108313;
+            pThis->__gpuCheckIsP2PAllocated__ = &gpuCheckIsP2PAllocated_86b752;
         }
         else
         {
@@ -1004,7 +1180,7 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
     }
     else
     {
-        pThis->__gpuCheckIsP2PAllocated__ = &gpuCheckIsP2PAllocated_491d52;
+        pThis->__gpuCheckIsP2PAllocated__ = &gpuCheckIsP2PAllocated_3dd2c9;
     }
 
     // gpuPrePowerOff -- halified (2 hals) body
@@ -1049,7 +1225,7 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
     // default
     else
     {
-        pThis->__gpuIsAtsSupportedWithSmcMemPartitioning__ = &gpuIsAtsSupportedWithSmcMemPartitioning_491d52;
+        pThis->__gpuIsAtsSupportedWithSmcMemPartitioning__ = &gpuIsAtsSupportedWithSmcMemPartitioning_3dd2c9;
     }
 
     // gpuIsGlobalPoisonFuseEnabled -- halified (2 hals)
@@ -1071,6 +1247,17 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
     else
     {
         pThis->__gpuDetermineSelfHostedMode__ = &gpuDetermineSelfHostedMode_b3696a;
+    }
+
+    // gpuDetermineSelfHostedSocType -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
+    {
+        pThis->__gpuDetermineSelfHostedSocType__ = &gpuDetermineSelfHostedSocType_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__gpuDetermineSelfHostedSocType__ = &gpuDetermineSelfHostedSocType_997682;
     }
 
     // gpuDetermineMIGSupport -- halified (3 hals) body
@@ -1114,18 +1301,18 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
     // gpuIsSliCapableWithoutDisplay -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
-        pThis->__gpuIsSliCapableWithoutDisplay__ = &gpuIsSliCapableWithoutDisplay_cbe027;
+        pThis->__gpuIsSliCapableWithoutDisplay__ = &gpuIsSliCapableWithoutDisplay_88bc07;
     }
     // default
     else
     {
-        pThis->__gpuIsSliCapableWithoutDisplay__ = &gpuIsSliCapableWithoutDisplay_491d52;
+        pThis->__gpuIsSliCapableWithoutDisplay__ = &gpuIsSliCapableWithoutDisplay_3dd2c9;
     }
 
     // gpuIsCCEnabledInHw -- halified (4 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__gpuIsCCEnabledInHw__ = &gpuIsCCEnabledInHw_491d52;
+        pThis->__gpuIsCCEnabledInHw__ = &gpuIsCCEnabledInHw_3dd2c9;
     }
     else
     {
@@ -1140,14 +1327,14 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
         // default
         else
         {
-            pThis->__gpuIsCCEnabledInHw__ = &gpuIsCCEnabledInHw_491d52;
+            pThis->__gpuIsCCEnabledInHw__ = &gpuIsCCEnabledInHw_3dd2c9;
         }
     }
 
     // gpuIsDevModeEnabledInHw -- halified (4 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__gpuIsDevModeEnabledInHw__ = &gpuIsDevModeEnabledInHw_491d52;
+        pThis->__gpuIsDevModeEnabledInHw__ = &gpuIsDevModeEnabledInHw_3dd2c9;
     }
     else
     {
@@ -1162,14 +1349,14 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
         // default
         else
         {
-            pThis->__gpuIsDevModeEnabledInHw__ = &gpuIsDevModeEnabledInHw_491d52;
+            pThis->__gpuIsDevModeEnabledInHw__ = &gpuIsDevModeEnabledInHw_3dd2c9;
         }
     }
 
     // gpuIsProtectedPcieEnabledInHw -- halified (3 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__gpuIsProtectedPcieEnabledInHw__ = &gpuIsProtectedPcieEnabledInHw_491d52;
+        pThis->__gpuIsProtectedPcieEnabledInHw__ = &gpuIsProtectedPcieEnabledInHw_3dd2c9;
     }
     else
     {
@@ -1180,7 +1367,7 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
         // default
         else
         {
-            pThis->__gpuIsProtectedPcieEnabledInHw__ = &gpuIsProtectedPcieEnabledInHw_491d52;
+            pThis->__gpuIsProtectedPcieEnabledInHw__ = &gpuIsProtectedPcieEnabledInHw_3dd2c9;
         }
     }
 
@@ -1192,24 +1379,28 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
     // default
     else
     {
-        pThis->__gpuIsCtxBufAllocInPmaSupported__ = &gpuIsCtxBufAllocInPmaSupported_491d52;
+        pThis->__gpuIsCtxBufAllocInPmaSupported__ = &gpuIsCtxBufAllocInPmaSupported_3dd2c9;
     }
 
-    // gpuUpdateErrorContainmentState -- halified (3 hals) body
-    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    // gpuUpdateErrorContainmentState -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
     {
-        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
-        {
-            pThis->__gpuUpdateErrorContainmentState__ = &gpuUpdateErrorContainmentState_f91eed;
-        }
-        else
-        {
-            pThis->__gpuUpdateErrorContainmentState__ = &gpuUpdateErrorContainmentState_GA100;
-        }
+        pThis->__gpuUpdateErrorContainmentState__ = &gpuUpdateErrorContainmentState_f91eed;
     }
     else
     {
-        pThis->__gpuUpdateErrorContainmentState__ = &gpuUpdateErrorContainmentState_c04480;
+        pThis->__gpuUpdateErrorContainmentState__ = &gpuUpdateErrorContainmentState_GA100;
+    }
+
+    // gpuSetPartitionErrorAttribution -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
+    {
+        pThis->__gpuSetPartitionErrorAttribution__ = &gpuSetPartitionErrorAttribution_KERNEL;
+    }
+    // default
+    else
+    {
+        pThis->__gpuSetPartitionErrorAttribution__ = &gpuSetPartitionErrorAttribution_c04480;
     }
 
     // gpuWaitForGfwBootComplete -- halified (3 hals) body
@@ -1230,22 +1421,33 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
         }
     }
 
+    // gpuIsFlcnRiscvParityError -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
+    {
+        pThis->__gpuIsFlcnRiscvParityError__ = &gpuIsFlcnRiscvParityError_GB100;
+    }
+    // default
+    else
+    {
+        pThis->__gpuIsFlcnRiscvParityError__ = &gpuIsFlcnRiscvParityError_3dd2c9;
+    }
+
     // gpuGetIsCmpSku -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__gpuGetIsCmpSku__ = &gpuGetIsCmpSku_491d52;
+        pThis->__gpuGetIsCmpSku__ = &gpuGetIsCmpSku_3dd2c9;
     }
     else
     {
-        pThis->__gpuGetIsCmpSku__ = &gpuGetIsCmpSku_ceaee8;
+        pThis->__gpuGetIsCmpSku__ = &gpuGetIsCmpSku_72a2e1;
     }
-} // End __nvoc_init_funcTable_OBJGPU_1 with approximately 143 basic block(s).
+} // End __nvoc_init_funcTable_OBJGPU_1 with approximately 179 basic block(s).
 
 
-// Initialize vtable(s) for 56 virtual method(s).
+// Initialize vtable(s) for 73 virtual method(s).
 void __nvoc_init_funcTable_OBJGPU(OBJGPU *pThis) {
 
-    // Initialize vtable(s) with 56 per-object function pointer(s).
+    // Initialize vtable(s) with 73 per-object function pointer(s).
     __nvoc_init_funcTable_OBJGPU_1(pThis);
 }
 

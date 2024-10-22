@@ -54,6 +54,7 @@ typedef enum
     UVM_DEFERRED_FREE_OBJECT_TYPE_CHANNEL,
     UVM_DEFERRED_FREE_OBJECT_GPU_VA_SPACE,
     UVM_DEFERRED_FREE_OBJECT_TYPE_EXTERNAL_ALLOCATION,
+    UVM_DEFERRED_FREE_OBJECT_TYPE_DEVICE_P2P_MEM,
     UVM_DEFERRED_FREE_OBJECT_TYPE_COUNT
 } uvm_deferred_free_object_type_t;
 
@@ -113,10 +114,9 @@ struct uvm_gpu_va_space_struct
     // List of all uvm_user_channel_t's under this GPU VA space
     struct list_head registered_channels;
 
-    // List of all uvm_va_range_t's under this GPU VA space with type ==
-    // UVM_VA_RANGE_TYPE_CHANNEL. Used at channel registration time to find
-    // shareable VA ranges without having to iterate through all VA ranges in
-    // the VA space.
+    // List of all channel ranges under this GPU VA space. Used at channel
+    // registration time to find shareable VA ranges without having to iterate
+    // through all VA ranges in the VA space.
     struct list_head channel_va_ranges;
 
     // Boolean which is 1 if no new channel registration is allowed. This is set
@@ -149,15 +149,6 @@ struct uvm_va_space_struct
 {
     // Mask of gpus registered with the va space
     uvm_processor_mask_t registered_gpus;
-
-    // Array of pointers to the uvm_gpu_t objects that correspond to the
-    // uvm_processor_id_t index.
-    //
-    // With SMC, GPUs can be partitioned so the number of uvm_gpu_t objects can
-    // be larger than UVM_ID_MAX_GPUS. However, each VA space can only
-    // subscribe to a single partition per GPU, so it is fine to have a regular
-    // processor mask.
-    uvm_gpu_t *registered_gpus_table[UVM_ID_MAX_GPUS];
 
     // Mask of processors registered with the va space that support replayable
     // faults.
@@ -203,7 +194,7 @@ struct uvm_va_space_struct
 
     // Peer to peer table
     // A bitmask of peer to peer pairs enabled in this va_space
-    // indexed by a peer_table_index returned by uvm_gpu_peer_table_index().
+    // indexed by a pair_index returned by uvm_gpu_pair_index().
     DECLARE_BITMAP(enabled_peers, UVM_MAX_UNIQUE_GPU_PAIRS);
 
     // Temporary copy of the above state used to avoid allocation during VA
@@ -324,7 +315,7 @@ struct uvm_va_space_struct
 
         // Lists of counters listening for events on this VA space
         struct list_head counters[UVM_TOTAL_COUNTERS];
-        struct list_head queues_v1[UvmEventNumTypesAll];
+        struct list_head queues[UvmEventNumTypesAll];
         struct list_head queues_v2[UvmEventNumTypesAll];
 
         // Node for this va_space in global subscribers list
@@ -395,48 +386,6 @@ struct uvm_va_space_struct
     // Queue item for deferred f_ops->release() handling
     nv_kthread_q_item_t deferred_release_q_item;
 };
-
-static uvm_gpu_t *uvm_va_space_get_gpu(uvm_va_space_t *va_space, uvm_gpu_id_t gpu_id)
-{
-    uvm_gpu_t *gpu;
-
-    UVM_ASSERT(uvm_processor_mask_test(&va_space->registered_gpus, gpu_id));
-
-    gpu = va_space->registered_gpus_table[uvm_id_gpu_index(gpu_id)];
-
-    UVM_ASSERT(gpu);
-    UVM_ASSERT(uvm_gpu_get(gpu->id) == gpu);
-
-    return gpu;
-}
-
-static const char *uvm_va_space_processor_name(uvm_va_space_t *va_space, uvm_processor_id_t id)
-{
-    if (UVM_ID_IS_CPU(id))
-        return "0: CPU";
-    else
-        return uvm_gpu_name(uvm_va_space_get_gpu(va_space, id));
-}
-
-static void uvm_va_space_processor_uuid(uvm_va_space_t *va_space, NvProcessorUuid *uuid, uvm_processor_id_t id)
-{
-    if (UVM_ID_IS_CPU(id)) {
-        memcpy(uuid, &NV_PROCESSOR_UUID_CPU_DEFAULT, sizeof(*uuid));
-    }
-    else {
-        uvm_gpu_t *gpu = uvm_va_space_get_gpu(va_space, id);
-        UVM_ASSERT(gpu);
-        memcpy(uuid, &gpu->uuid, sizeof(*uuid));
-    }
-}
-
-static bool uvm_va_space_processor_has_memory(uvm_va_space_t *va_space, uvm_processor_id_t id)
-{
-    if (UVM_ID_IS_CPU(id))
-        return true;
-
-    return uvm_va_space_get_gpu(va_space, id)->mem_info.size > 0;
-}
 
 NV_STATUS uvm_va_space_create(struct address_space *mapping, uvm_va_space_t **va_space_ptr, NvU64 flags);
 void uvm_va_space_destroy(uvm_va_space_t *va_space);
@@ -518,6 +467,10 @@ uvm_gpu_t *uvm_va_space_get_gpu_by_uuid_with_gpu_va_space(uvm_va_space_t *va_spa
 //
 // LOCKING: The function takes and releases the VA space lock in read mode.
 uvm_gpu_t *uvm_va_space_retain_gpu_by_uuid(uvm_va_space_t *va_space, const NvProcessorUuid *gpu_uuid);
+
+// Find and return the owning GPU for the given mem_info or NULL if not found.
+// Locking: the VA space lock must be held.
+uvm_gpu_t *uvm_va_space_get_gpu_by_mem_info(uvm_va_space_t *va_space, const UvmGpuMemoryInfo *mem_info);
 
 // Returns whether read-duplication is supported.
 // If gpu is NULL, returns the current state.
@@ -670,7 +623,7 @@ static uvm_gpu_t *uvm_processor_mask_find_first_va_space_gpu(const uvm_processor
     if (UVM_ID_IS_INVALID(gpu_id))
         return NULL;
 
-    gpu = uvm_va_space_get_gpu(va_space, gpu_id);
+    gpu = uvm_gpu_get(gpu_id);
     UVM_ASSERT_MSG(gpu, "gpu_id %u\n", uvm_id_value(gpu_id));
 
     return gpu;
@@ -698,7 +651,7 @@ static uvm_gpu_t *__uvm_processor_mask_find_next_va_space_gpu(const uvm_processo
     if (UVM_ID_IS_INVALID(gpu_id))
         return NULL;
 
-    gpu = uvm_va_space_get_gpu(va_space, gpu_id);
+    gpu = uvm_gpu_get(gpu_id);
     UVM_ASSERT_MSG(gpu, "gpu_id %u\n", uvm_id_value(gpu_id));
 
     return gpu;
@@ -731,6 +684,7 @@ static uvm_gpu_t *uvm_processor_mask_find_next_va_space_gpu(const uvm_processor_
 // Return the processor in the candidates mask that is "closest" to src, or
 // UVM_ID_MAX_PROCESSORS if candidates is empty. The order is:
 // - src itself
+// - SMC peers if src is GPU
 // - Direct NVLINK GPU peers if src is CPU or GPU (1)
 // - NVLINK CPU if src is GPU
 // - PCIe peers if src is GPU (2)
@@ -740,7 +694,7 @@ static uvm_gpu_t *uvm_processor_mask_find_next_va_space_gpu(const uvm_processor_
 // (1) When src is a GPU, NVLINK GPU peers are preferred over the CPU because in
 //     NUMA systems the CPU processor may refer to multiple CPU NUMA nodes, and
 //     the bandwidth between src and the farthest CPU node can be substantially
-//     lower than the bandwidth src and its peer GPUs.
+//     lower than the bandwidth between src and its peer GPUs.
 // (2) TODO: Bug 1764943: Is copying from a PCI peer always better than copying
 //     from CPU?
 uvm_processor_id_t uvm_processor_mask_find_closest_id(uvm_va_space_t *va_space,

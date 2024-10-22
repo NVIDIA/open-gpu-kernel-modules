@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2015,2020,2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -74,21 +74,7 @@ NV_STATUS mmuWalkFill
     // If this level is a Page Directory, we keep walking down the tree.
     if (0 != pLevel->pFmt->numSubLevels)
     {
-        if (pWalk->flags.bUseIterative)
-        {
-            return NV_ERR_MORE_PROCESSING_REQUIRED;
-        }
-        else
-        {
-            // Process all the page level entries.falling within [vaLo, vaHi]
-            NV_ASSERT_OK_OR_RETURN(
-                mmuWalkProcessPdes(pWalk,
-                                   pOpParams,
-                                   pLevel,
-                                   pLevelInst,
-                                   vaLo,
-                                   vaHi));
-        }
+        return NV_ERR_MORE_PROCESSING_REQUIRED;
     }
     // We have reached a page table
     else

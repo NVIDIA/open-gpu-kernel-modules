@@ -59,7 +59,7 @@
 #include "uvm_linux.h"
 #include "uvm_types.h"
 #include "nv_uvm_types.h"
-#if UVM_IS_CONFIG_HMM()
+#if UVM_IS_CONFIG_HMM() || defined(CONFIG_PCI_P2PDMA)
 #include <linux/memremap.h>
 #endif
 
@@ -126,6 +126,8 @@ static bool uvm_pmm_gpu_memory_type_is_kernel(uvm_pmm_gpu_memory_type_t type)
     return !uvm_pmm_gpu_memory_type_is_user(type);
 }
 
+bool uvm_pmm_gpu_memory_type_is_protected(uvm_pmm_gpu_memory_type_t type);
+
 typedef enum
 {
     // Chunk belongs to PMA. Code outside PMM should not have access to
@@ -144,11 +146,13 @@ typedef enum
 
     // Chunk is temporarily pinned.
     //
-    // This state is used for user memory chunks that have been allocated, but haven't
-    // been unpinned yet and also internally when a chunk is about to be split.
+    // This state is used for user memory chunks that have been allocated, but
+    // haven't been unpinned yet and also internally when a chunk is about to be
+    // split.
     UVM_PMM_GPU_CHUNK_STATE_TEMP_PINNED,
 
-    // Chunk is allocated. That is it is backing some VA block
+    // Chunk is allocated. In the case of a user chunk, this state implies that
+    // the chunk is backing a VA block.
     UVM_PMM_GPU_CHUNK_STATE_ALLOCATED,
 
     // Number of states - MUST BE LAST
@@ -172,7 +176,6 @@ typedef enum
 
     UVM_PMM_ALLOC_FLAGS_MASK = (1 << 2) - 1
 } uvm_pmm_alloc_flags_t;
-
 
 typedef enum
 {
@@ -227,6 +230,16 @@ unsigned long uvm_pmm_gpu_devmem_get_pfn(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *ch
 
 #endif
 
+#if defined(CONFIG_PCI_P2PDMA) && defined(NV_STRUCT_PAGE_HAS_ZONE_DEVICE_DATA)
+#include <linux/pci-p2pdma.h>
+
+void uvm_pmm_gpu_device_p2p_init(uvm_gpu_t *gpu);
+void uvm_pmm_gpu_device_p2p_deinit(uvm_gpu_t *gpu);
+#else
+static inline void uvm_pmm_gpu_device_p2p_init(uvm_gpu_t *gpu) {}
+static inline void uvm_pmm_gpu_device_p2p_deinit(uvm_gpu_t *gpu) {}
+#endif
+
 struct uvm_gpu_chunk_struct
 {
     // Physical address of GPU chunk. This may be removed to save memory
@@ -251,14 +264,16 @@ struct uvm_gpu_chunk_struct
 
         // This flag is initalized when allocating a new root chunk from PMA.
         // It is set to true, if PMA already scrubbed the chunk. The flag is
-        // only valid at allocation time (after uvm_pmm_gpu_alloc call), and
+        // only valid at allocation time (after uvm_pmm_gpu_alloc_* call), and
         // the caller is not required to clear it before freeing the chunk. The
         // VA block chunk population code can query it to skip zeroing the
         // chunk.
         bool is_zero : 1;
 
-        // This flag indicates an allocated chunk is referenced by a device
+        // This flag indicates an allocated user chunk is referenced by a device
         // private struct page PTE and therefore expects a page_free() callback.
+        //
+        // This field is always false in kernel chunks.
         bool is_referenced : 1;
 
         uvm_pmm_gpu_chunk_state_t state : order_base_2(UVM_PMM_GPU_CHUNK_STATE_COUNT + 1);
@@ -286,6 +301,8 @@ struct uvm_gpu_chunk_struct
     // The VA block using the chunk, if any.
     // User chunks that are not backed by a VA block are considered to be
     // temporarily pinned and cannot be evicted.
+    //
+    // This field is always NULL in kernel chunks.
     uvm_va_block_t *va_block;
 
     // If this is subchunk it points to the parent - in other words
@@ -403,6 +420,12 @@ static void uvm_gpu_chunk_set_size(uvm_gpu_chunk_t *chunk, uvm_chunk_size_t size
 // use it if the owning GPU is retained.
 uvm_gpu_t *uvm_gpu_chunk_get_gpu(const uvm_gpu_chunk_t *chunk);
 
+// Returns true if the memory type of the chunk is a user type.
+static bool uvm_gpu_chunk_is_user(const uvm_gpu_chunk_t *chunk)
+{
+    return uvm_pmm_gpu_memory_type_is_user(chunk->type);
+}
+
 // Return the first struct page corresponding to the physical address range
 // of the given chunk.
 //
@@ -412,7 +435,10 @@ uvm_gpu_t *uvm_gpu_chunk_get_gpu(const uvm_gpu_chunk_t *chunk);
 // page containing the chunk's starting address.
 struct page *uvm_gpu_chunk_to_page(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk);
 
-// Allocates num_chunks chunks of size chunk_size in caller-supplied array (chunks).
+// User memory allocator.
+//
+// Allocates num_chunks chunks of size chunk_size in caller-supplied array
+// (chunks).
 //
 // Returned chunks are in the TEMP_PINNED state, requiring a call to either
 // uvm_pmm_gpu_unpin_allocated, uvm_pmm_gpu_unpin_referenced, or
@@ -432,47 +458,24 @@ struct page *uvm_gpu_chunk_to_page(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk);
 // If the memory returned by the PMM allocator cannot be physically addressed,
 // the MMU interface provides user chunk mapping and unmapping functions
 // (uvm_mmu_chunk_map/unmap) that enable virtual addressing.
-NV_STATUS uvm_pmm_gpu_alloc(uvm_pmm_gpu_t *pmm,
-                            size_t num_chunks,
-                            uvm_chunk_size_t chunk_size,
-                            uvm_pmm_gpu_memory_type_t mem_type,
-                            uvm_pmm_alloc_flags_t flags,
-                            uvm_gpu_chunk_t **chunks,
-                            uvm_tracker_t *out_tracker);
+NV_STATUS uvm_pmm_gpu_alloc_user(uvm_pmm_gpu_t *pmm,
+                                 size_t num_chunks,
+                                 uvm_chunk_size_t chunk_size,
+                                 uvm_pmm_alloc_flags_t flags,
+                                 uvm_gpu_chunk_t **chunks,
+                                 uvm_tracker_t *out_tracker);
 
-// Helper for allocating kernel memory
+// Kernel memory allocator.
 //
-// Internally calls uvm_pmm_gpu_alloc() and sets the state of all chunks to
-// allocated on success.
-//
-// If Confidential Computing is enabled, this helper allocates protected kernel
-// memory.
-static NV_STATUS uvm_pmm_gpu_alloc_kernel(uvm_pmm_gpu_t *pmm,
-                                          size_t num_chunks,
-                                          uvm_chunk_size_t chunk_size,
-                                          uvm_pmm_alloc_flags_t flags,
-                                          uvm_gpu_chunk_t **chunks,
-                                          uvm_tracker_t *out_tracker)
-{
-    return uvm_pmm_gpu_alloc(pmm, num_chunks, chunk_size, UVM_PMM_GPU_MEMORY_TYPE_KERNEL, flags, chunks, out_tracker);
-}
-
-// Helper for allocating user memory
-//
-// Simple wrapper that just uses UVM_PMM_GPU_MEMORY_TYPE_USER for the memory
-// type.
-//
-// If Confidential Computing is enabled, this helper allocates protected user
-// memory.
-static NV_STATUS uvm_pmm_gpu_alloc_user(uvm_pmm_gpu_t *pmm,
-                                        size_t num_chunks,
-                                        uvm_chunk_size_t chunk_size,
-                                        uvm_pmm_alloc_flags_t flags,
-                                        uvm_gpu_chunk_t **chunks,
-                                        uvm_tracker_t *out_tracker)
-{
-    return uvm_pmm_gpu_alloc(pmm, num_chunks, chunk_size, UVM_PMM_GPU_MEMORY_TYPE_USER, flags, chunks, out_tracker);
-}
+// See uvm_pmm_gpu_alloc_user documentation for details on the behavior of this
+// function, with one exception: the returned kernel chunks are in the ALLOCATED
+// state.
+NV_STATUS uvm_pmm_gpu_alloc_kernel(uvm_pmm_gpu_t *pmm,
+                                   size_t num_chunks,
+                                   uvm_chunk_size_t chunk_size,
+                                   uvm_pmm_alloc_flags_t flags,
+                                   uvm_gpu_chunk_t **chunks,
+                                   uvm_tracker_t *out_tracker);
 
 // Unpin a temporarily pinned chunk, set its reverse map to a VA block, and
 // mark it as allocated.
@@ -486,7 +489,7 @@ void uvm_pmm_gpu_unpin_allocated(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk, uvm
 // Can only be used on user memory.
 void uvm_pmm_gpu_unpin_referenced(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk, uvm_va_block_t *va_block);
 
-// Frees the chunk. This also unpins the chunk if it is temporarily pinned.
+// Free a user or kernel chunk. Temporarily pinned chunks are unpinned.
 //
 // The tracker is optional and a NULL tracker indicates that no new operation
 // has been pushed for the chunk, but the tracker returned as part of
@@ -542,7 +545,8 @@ size_t uvm_pmm_gpu_get_subchunks(uvm_pmm_gpu_t *pmm,
 // leaf children must be allocated.
 void uvm_pmm_gpu_merge_chunk(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk);
 
-// Waits for all free chunk trackers (removing their completed entries) to complete.
+// Waits for all free chunk trackers (removing their completed entries) to
+// complete.
 //
 // This inherently races with any chunks being freed to this PMM. The assumption
 // is that the caller doesn't care about preventing new chunks from being freed,

@@ -222,7 +222,7 @@ subdeviceCtrlCmdFifoGetInfo_IMPL
     NvU32          i;
     NvU32          data;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // error checck
     if (pFifoInfoParams->fifoInfoTblSize > NV2080_CTRL_FIFO_GET_INFO_MAX_ENTRIES)
@@ -377,7 +377,7 @@ subdeviceCtrlCmdFifoGetUserdLocation_IMPL
     OBJGPU    *pGpu  = GPU_RES_GET_GPU(pSubdevice);
     KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     rmStatus = kfifoGetUserdLocation_HAL(pKernelFifo,
                                          &userdAperture,
@@ -449,7 +449,7 @@ subdeviceCtrlCmdFifoGetChannelMemInfo_IMPL
     MEMORY_DESCRIPTOR *pMemDesc = NULL;
     NV2080_CTRL_FIFO_CHANNEL_MEM_INFO chMemInfo;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     rmStatus = CliGetKernelChannelWithDevice(pClient,
                                              hDevice,
@@ -560,7 +560,8 @@ subdeviceCtrlCmdFifoUpdateChannelInfo_IMPL
     RM_API                   *pRmApi         = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
     // Bug 724186 -- Skip this check for deferred API
-    LOCK_ASSERT_AND_RETURN(pRmCtrlParams->bDeferredApi || rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(pRmCtrlParams->bDeferredApi || rmGpuLockIsOwner(),
+        NV_ERR_INVALID_LOCK_STATE);
 
     NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
                           serverGetClientUnderLock(&g_resServ,
@@ -691,7 +692,7 @@ deviceCtrlCmdFifoGetCaps_IMPL
     OBJGPU  *pGpu      = GPU_RES_GET_GPU(pDevice);
     NvU8    *pKfifoCaps = NvP64_VALUE(pKfifoCapsParams->capsTbl);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // sanity check array size
     if (pKfifoCapsParams->capsTblSize != NV0080_CTRL_FIFO_CAPS_TBL_SIZE)
@@ -722,7 +723,7 @@ deviceCtrlCmdFifoGetCapsV2_IMPL
     OBJGPU    *pGpu      = GPU_RES_GET_GPU(pDevice);
     NvU8      *pKfifoCaps = pKfifoCapsParams->capsTbl;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // now accumulate caps for entire device
     return _kfifoGetCaps(pGpu, pKfifoCaps);
@@ -1063,6 +1064,7 @@ deviceCtrlCmdFifoGetEngineContextProperties_VF
             case NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS_PAGEPOOL:
             case NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS_BETACB:
             case NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS_RTV:
+            case NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS_SETUP:
                 pParams->size = NV_MAX(pVSI->ctxBuffInfo.engineContextBuffersInfo[0].engine[engine].size, size);
                 pParams->alignment = NV_MAX(pVSI->ctxBuffInfo.engineContextBuffersInfo[0].engine[engine].alignment, alignment);
                 status = NV_OK;

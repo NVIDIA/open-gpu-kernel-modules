@@ -194,7 +194,7 @@ updateLockStressCounters
     if (DRF_VAL(0100_CTRL, _GLOBAL_RMAPI, _LOCK_STRESS_COUNTER_ACTION, action) != 0)
     {
         // Assert that we hold the RW API lock here
-        LOCK_ASSERT_AND_RETURN(rmapiLockIsWriteOwner());
+        NV_ASSERT_OR_RETURN(rmapiLockIsWriteOwner(), NV_ERR_INVALID_LOCK_STATE);
 
         if (DRF_VAL(0100_CTRL, _GLOBAL_RMAPI, _LOCK_STRESS_COUNTER_INCREMENT, action) != 0)
             g_LockStressCounter++;
@@ -206,7 +206,7 @@ updateLockStressCounters
     {
         OBJGPU *pGpu;
 
-        LOCK_ASSERT_AND_RETURN(rmGpuLockIsOwner());
+        NV_ASSERT_OR_RETURN(rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
         pGpu = GPU_RES_GET_GPU(pResource);
 
@@ -227,7 +227,7 @@ updateLockStressCounters
         // ordering issues so only assert if we aren't on the internal RM API path.
         //
         if (!serverIsClientInternal(&g_resServ, pClient->hClient))
-            LOCK_ASSERT_AND_RETURN(serverIsClientLocked(&g_resServ, pClient->hClient));
+            NV_ASSERT_OR_RETURN(serverIsClientLocked(&g_resServ, pClient->hClient), NV_ERR_INVALID_LOCK_STATE);
 
         pRmClient = dynamicCast(pClient, RmClient);
 
@@ -245,7 +245,7 @@ updateLockStressCounters
         OBJGPU *pGpu;
         RmClient *pRmInternalClient;
 
-        LOCK_ASSERT_AND_RETURN(rmGpuLockIsOwner());
+        NV_ASSERT_OR_RETURN(rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
         pGpu = GPU_RES_GET_GPU(pResource);
         pRmInternalClient = serverutilGetClientUnderLock(pGpu->hInternalLockStressClient);
@@ -387,7 +387,7 @@ updateLockStressCountersInternal
         // ordering issues so only assert if we aren't on the internal RM API path.
         //
         if (!serverIsClientInternal(&g_resServ, pClient->hClient))
-            LOCK_ASSERT_AND_RETURN(serverIsClientLocked(&g_resServ, pClient->hClient));
+            NV_ASSERT_OR_RETURN(serverIsClientLocked(&g_resServ, pClient->hClient), NV_ERR_INVALID_LOCK_STATE);
 
         if (pRmClient == NULL)
             return NV_ERR_INVALID_STATE;

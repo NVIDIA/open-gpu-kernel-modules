@@ -42,7 +42,7 @@ void nvInitFlipEvoHwState(
 
 NvBool nvUpdateFlipEvoHwState(
     const struct NvKmsPerOpenDev *pOpenDev,
-    const NVDevEvoRec *pDevEvo,
+    NVDevEvoRec *pDevEvo,
     const NvU32 sd,
     const NvU32 head,
     const struct NvKmsFlipCommonParams *pParams,

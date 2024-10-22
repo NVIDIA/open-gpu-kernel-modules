@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,7 @@
 #include "containers/multimap.h"
 #include "class/cl90cdtrace.h"
 #include "rmapi/event_buffer.h"
+#include "rmapi/rmapi.h"
 
 typedef struct
 {
@@ -36,6 +37,8 @@ typedef struct
     NvHandle     hNotifier;
     NvHandle     hEventBuffer;
     NvU64        pUserInfo;
+    NvU32       *message_buffer;
+    MEMORY_DESCRIPTOR *pMemDesc;
 } NV_EVENT_BUFFER_BIND_POINT_GSP_TRACE;
 
 MAKE_MULTIMAP(GspTraceEventBufferBindMultiMap, NV_EVENT_BUFFER_BIND_POINT_GSP_TRACE);
@@ -43,6 +46,8 @@ MAKE_MULTIMAP(GspTraceEventBufferBindMultiMap, NV_EVENT_BUFFER_BIND_POINT_GSP_TR
 void gspTraceNotifyAllConsumers(OBJGPU *pGpu, void *pArgs);
 
 void gspTraceEventBufferLogRecord(OBJGPU *pGpu, NV_RATS_GSP_TRACE_RECORD *intrTraceRecord);
+
+void gspTraceServiceVgpuEventTracing(OBJGPU *pGpu);
 
 NV_STATUS gspTraceAddBindpoint(OBJGPU *pGpu,
                                RsClient *pClient,
@@ -52,7 +57,7 @@ NV_STATUS gspTraceAddBindpoint(OBJGPU *pGpu,
                                NvU32 gspLoggingBufferSize,
                                NvU32 gspLoggingBufferWatermark);
 
-void gspTraceRemoveBindpoint(OBJGPU *pGpu, NvU64 uid, NV_EVENT_BUFFER_BIND_POINT_GSP_TRACE* pBind);
+void gspTraceRemoveBindpoint(OBJGPU *pGpu, NvU64 uid, NV_EVENT_BUFFER_BIND_POINT_GSP_TRACE *pBind);
 
 void gspTraceRemoveAllBindpoints(EventBuffer *pEventBuffer);
 

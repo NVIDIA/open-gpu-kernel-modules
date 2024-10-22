@@ -83,6 +83,15 @@ vaspaceapiConstruct_IMPL
     NvU64                             originalVaSize;
     NvU32                             gfid                  = 0;
 
+    if((!rmapiLockIsOwner()) && rmGpuLockIsOwner() && rmapiInRtd3PmPath())
+    {
+        //
+        // RTD3 exit codepath may only take the GPU lock, hence it becomes
+        // necessary to release the GPU lock here.
+        //
+        rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
+    }
+
     if (RS_IS_COPY_CTOR(pParams))
     {
         NV_ASSERT_OK_OR_RETURN(rmGpuGroupLockAcquire(pGpu->gpuInstance,
@@ -123,7 +132,7 @@ vaspaceapiConstruct_IMPL
     if (rmDeviceGpuLockIsOwner(pGpu->gpuInstance))
     {
         NV_PRINTF(LEVEL_ERROR, "VASpace alloc should be called without acquiring GPU lock\n");
-        LOCK_ASSERT_AND_RETURN(0);
+        NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_LOCK_STATE);
     }
 
     if (pNvVASpaceAllocParams->index == NV_VASPACE_ALLOCATION_INDEX_GPU_HOST)

@@ -292,7 +292,7 @@ _semsurfSetMonitoredValue
                            pShared->layout.size * index +
                            pShared->layout.monitoredFenceThresholdOffset);
 
-    NV_PRINTF(LEVEL_NOTICE,
+    NV_PRINTF(LEVEL_INFO,
               "SemMem(0x%08x, 0x%08x): "
               "Setting monitored fence value at index %" NvU64_fmtu
               " to %" NvU64_fmtu "\n",
@@ -675,6 +675,8 @@ semsurfCopyConstruct
     NV_ASSERT(pSemSurf->pShared->refCount > 0);
     pSemSurf->pShared->refCount++;
 
+    mapInitIntrusive(&pSemSurf->boundChannelMap);
+
     NV_PRINTF(LEVEL_NOTICE,
               "SemSurf(0x%08x, 0x%08x): Copied with SemMem(0x%08x, 0x%08x)\n",
               RES_GET_CLIENT_HANDLE(pSemSurf), RES_GET_HANDLE(pSemSurf),
@@ -709,6 +711,9 @@ _semsurfDestroyShared
         mapRemove(&pShared->notifierMap, notIter.pValue);
         portMemFree(notIter.pValue);
     }
+
+    mapDestroy(&pShared->notifierMap);
+    mapDestroy(&pShared->listenerMap);
 
     if (pShared->pMaxSubmittedMem)
     {
@@ -804,6 +809,7 @@ semsurfConstruct_IMPL
     pShared->memGpuIdx = gpuGetInstance(GPU_RES_GET_GPU(pSemSurf));
     mapInitIntrusive(&pShared->listenerMap);
     mapInitIntrusive(&pShared->notifierMap);
+    mapInitIntrusive(&pSemSurf->boundChannelMap);
 
     pShared->pSpinlock = portSyncSpinlockCreate(portMemAllocatorGetGlobalNonPaged());
     NV_ASSERT_TRUE_OR_GOTO(status, pShared->pSpinlock != NULL, NV_ERR_NO_MEMORY, ctorFailed);
@@ -933,7 +939,7 @@ semsurfConstruct_IMPL
     /* Any failures should have already taken the ctorFailed path */
     NV_ASSERT_OR_GOTO(status == NV_OK, ctorFailed);
 
-    NV_PRINTF(LEVEL_NOTICE,
+    NV_PRINTF(LEVEL_INFO,
               "SemSurf(0x%08x, 0x%08x): Constructed with SemMem(0x%08x, 0x%08x)\n",
               RES_GET_CLIENT_HANDLE(pSemSurf), RES_GET_HANDLE(pSemSurf),
               pShared->hClient, pShared->hSemaphoreMem);
@@ -941,6 +947,7 @@ semsurfConstruct_IMPL
     return NV_OK;
 
 ctorFailed:
+    mapDestroy(&pSemSurf->boundChannelMap);
     _semsurfDestroyShared(pShared);
 
     return status;
@@ -965,11 +972,13 @@ semsurfDestruct_IMPL
     NvHandle hSemSurf = RES_GET_HANDLE(pSemSurf);
     NvHandle hSharedClient = pShared->hClient;
     NvHandle hSharedMem = pShared->hSemaphoreMem;
+    PORT_UNREFERENCED_VARIABLE(hSharedClient);
+    PORT_UNREFERENCED_VARIABLE(hSharedMem);
 
     NV_ASSERT_OR_RETURN_VOID(pShared);
     NV_ASSERT_OR_GOTO(pShared->pSpinlock, skipRemoveListeners);
 
-    NV_PRINTF(LEVEL_NOTICE,
+    NV_PRINTF(LEVEL_INFO,
               "SemSurf(0x%08x, 0x%08x): Destructor with SemMem(0x%08x, 0x%08x)\n",
               hSemClient, hSemSurf, hSharedClient, hSharedMem);
 
@@ -1052,6 +1061,7 @@ semsurfDestruct_IMPL
     {
         (void)_semsurfUnbindChannel(pSemSurf, pChannelNode);
     }
+    mapDestroy(&pSemSurf->boundChannelMap);
 skipRemoveListeners:
     NV_ASSERT(pShared->refCount > 0);
     --pShared->refCount;

@@ -96,6 +96,10 @@
 #include <linux/cc_platform.h>
 #endif
 
+#if defined(NV_ASM_MSHYPERV_H_PRESENT) && defined(NVCPU_X86_64)
+#include <asm/mshyperv.h>
+#endif
+
 #if defined(NV_ASM_CPUFEATURE_H_PRESENT)
 #include <asm/cpufeature.h>
 #endif
@@ -184,11 +188,7 @@ struct semaphore nv_linux_devices_lock;
 
 // True if all the successfully probed devices support ATS
 // Assigned at device probe (module init) time
-NvBool nv_ats_supported = NVCPU_IS_PPC64LE
-#if defined(NV_PCI_DEV_HAS_ATS_ENABLED)
-                          || NV_TRUE
-#endif
-;
+NvBool nv_ats_supported = NV_TRUE;
 
 // allow an easy way to convert all debug printfs related to events
 // back and forth between 'info' and 'errors'
@@ -285,6 +285,17 @@ void nv_detect_conf_compute_platform(
 #if defined(NV_CC_PLATFORM_PRESENT)
     os_cc_enabled = cc_platform_has(CC_ATTR_GUEST_MEM_ENCRYPT);
 
+#if defined(NV_CC_ATTR_SEV_SNP)
+    os_cc_sev_snp_enabled = cc_platform_has(CC_ATTR_GUEST_SEV_SNP);
+#endif
+
+#if defined(NV_HV_GET_ISOLATION_TYPE) && IS_ENABLED(CONFIG_HYPERV) && defined(NVCPU_X86_64)
+    if (hv_get_isolation_type() == HV_ISOLATION_TYPE_SNP)
+    {
+        os_cc_snp_vtom_enabled = NV_TRUE;
+    }
+#endif
+
 #if defined(X86_FEATURE_TDX_GUEST)
     if (cpu_feature_enabled(X86_FEATURE_TDX_GUEST))
     {
@@ -293,8 +304,10 @@ void nv_detect_conf_compute_platform(
 #endif
 #else
     os_cc_enabled = NV_FALSE;
+    os_cc_sev_snp_enabled = NV_FALSE;
+    os_cc_snp_vtom_enabled = NV_FALSE;
     os_cc_tdx_enabled = NV_FALSE;
-#endif
+#endif //NV_CC_PLATFORM_PRESENT
 }
 
 static
@@ -1018,9 +1031,16 @@ static void nv_free_file_private(nv_linux_file_private_t *nvlfp)
         NV_KFREE(nvet, sizeof(nvidia_event_t));
     }
 
-    if (nvlfp->mmap_context.page_array != NULL)
+    if (nvlfp->mmap_context.valid)
     {
-        os_free_mem(nvlfp->mmap_context.page_array);
+        if (nvlfp->mmap_context.page_array != NULL)
+        {
+            os_free_mem(nvlfp->mmap_context.page_array);
+        }
+        if (nvlfp->mmap_context.memArea.pRanges != NULL)
+        {
+            os_free_mem(nvlfp->mmap_context.memArea.pRanges);
+        }
     }
 
     NV_KFREE(nvlfp, sizeof(nv_linux_file_private_t));
@@ -1251,17 +1271,29 @@ static int validate_numa_start_state(nv_linux_state_t *nvl)
     return rc;
 }
 
-NV_STATUS NV_API_CALL nv_get_num_dpaux_instances(nv_state_t *nv, NvU32 *num_instances)
-{
-    *num_instances = nv->num_dpaux_instance;
-    return NV_OK;
-}
-
 void NV_API_CALL
 nv_schedule_uvm_isr(nv_state_t *nv)
 {
 #if defined(NV_UVM_ENABLE)
     nv_uvm_event_interrupt(nv_get_cached_uuid(nv));
+#endif
+}
+
+NV_STATUS NV_API_CALL
+nv_schedule_uvm_drain_p2p(NvU8 *pUuid)
+{
+#if defined(NV_UVM_ENABLE)
+    return nv_uvm_drain_P2P(pUuid);
+#else
+    return NV_ERR_NOT_SUPPORTED;
+#endif
+}
+
+void NV_API_CALL
+nv_schedule_uvm_resume_p2p(NvU8 *pUuid)
+{
+#if defined(NV_UVM_ENABLE)
+    nv_uvm_resume_P2P(pUuid);
 #endif
 }
 
@@ -1623,9 +1655,6 @@ static void nv_init_mapping_revocation(nv_linux_state_t *nvl,
     address_space_init_once(&nvlfp->mapping);
     nvlfp->mapping.host = inode;
     nvlfp->mapping.a_ops = inode->i_mapping->a_ops;
-#if defined(NV_ADDRESS_SPACE_HAS_BACKING_DEV_INFO)
-    nvlfp->mapping.backing_dev_info = inode->i_mapping->backing_dev_info;
-#endif
     file->f_mapping = &nvlfp->mapping;
 
     /* Add nvlfp to list of open files in nvl for mapping revocation */
@@ -3136,6 +3165,7 @@ nv_alias_pages(
     NvU32 cache_type,
     NvU64 guest_id,
     NvU64 *pte_array,
+    NvBool carveout,
     void **priv_data
 )
 {
@@ -3167,6 +3197,7 @@ nv_alias_pages(
 #endif
 
     at->flags.guest = NV_TRUE;
+    at->flags.carveout = carveout;
 
     for (i=0; i < at->num_pages; ++i)
     {
@@ -4411,15 +4442,7 @@ nvidia_suspend(
 
     status = nv_power_management(nv, pm_action);
 
-    if (status != NV_OK)
-    {
-        nvidia_modeset_resume(nv->gpu_id);
-        goto done;
-    }
-    else
-    {
-        nv->flags |= NV_FLAG_SUSPENDED;
-    }
+    nv->flags |= NV_FLAG_SUSPENDED;
 
 pci_pm:
     /*
@@ -4606,13 +4629,17 @@ done:
         {
             if (resume_devices)
             {
-                nvidia_resume(nvl->dev, pm_action);
+                nvidia_resume(nvl->dev, NV_PM_ACTION_RESUME);
             }
 
             nv_restore_user_channels(NV_STATE_PTR(nvl));
         }
 
         UNLOCK_NV_LINUX_DEVICES();
+
+        nv_uvm_resume();
+
+        nvidia_modeset_resume(0);
     }
 
     return status;
@@ -4689,6 +4716,10 @@ int nv_pmops_suspend(
     NV_STATUS status;
 
     status = nvidia_suspend(dev, NV_PM_ACTION_STANDBY, NV_FALSE);
+
+    if (status != NV_OK)
+        nvidia_resume(dev, NV_PM_ACTION_RESUME);
+
     return (status == NV_OK) ? 0 : -EIO;
 }
 
@@ -4709,6 +4740,10 @@ int nv_pmops_freeze(
     NV_STATUS status;
 
     status = nvidia_suspend(dev, NV_PM_ACTION_HIBERNATE, NV_FALSE);
+
+    if (status != NV_OK)
+        nvidia_resume(dev, NV_PM_ACTION_RESUME);
+
     return (status == NV_OK) ? 0 : -EIO;
 }
 

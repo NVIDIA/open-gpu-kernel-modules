@@ -39,6 +39,7 @@
 #include "os/os.h"
 #include "gpuvideo/video_event.h"
 #include "gpuvideo/videoeventlist.h"
+#include "gpuvideo/rmifvideng.h"
 #include "kernel/gpu/timer/objtmr.h"
 #include "kernel/gpu/video/kernel_video_engine.h"
 #include "kernel/gpu/fifo/kernel_channel_group.h"
@@ -107,9 +108,31 @@ videoEventTraceCtxInit
         }
 
         // write kernel event buffer address
-        NvU64 dmaAddr = memdescGetPhysAddr(pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc, AT_GPU, 0);
+        MEMORY_DESCRIPTOR *pMemDesc = pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc;
+        NvU64 dmaAddr = memdescGetPhysAddr(pMemDesc, AT_GPU, 0);
+        RM_VIDENG_DMAIDX_TYPE memPhysType = RM_VIDENG_DMAIDX_END;
+        if (memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM)
+        {
+            memPhysType = RM_VIDENG_DMAIDX_PHYS_VID;
+        }
+        else if ((memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM) &&
+                 (memdescGetCpuCacheAttrib(pMemDesc) == NV_MEMORY_CACHED))
+        {
+            memPhysType = RM_VIDENG_DMAIDX_PHYS_SYS_COH;
+        }
+        else if ((memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM) &&
+                 (memdescGetCpuCacheAttrib(pMemDesc) == NV_MEMORY_UNCACHED ||
+                  memdescGetCpuCacheAttrib(pMemDesc) == NV_MEMORY_WRITECOMBINED))
+        {
+            memPhysType = RM_VIDENG_DMAIDX_PHYS_SYS_NCOH;
+        }
+
+        NV_ASSERT_OR_ELSE((memdescGetContiguity(pMemDesc, AT_GPU) && memPhysType != RM_VIDENG_DMAIDX_END),
+                dmaAddr = 0; memPhysType = 0;);
+
         MEM_WR32(pInstMem + VIDEO_ENGINE_EVENT__TRACE_ADDR__OFFSET_LO, NvU64_LO32(dmaAddr));
         MEM_WR32(pInstMem + VIDEO_ENGINE_EVENT__TRACE_ADDR__OFFSET_HI, NvU64_HI32(dmaAddr));
+        MEM_WR32(pInstMem + VIDEO_ENGINE_EVENT__TRACE_ADDR__MEM_TARGET, (NvU32)memPhysType);
 
         kbusUnmapRmAperture_HAL(pGpu, pCtxMemDesc, &pInstMem, NV_TRUE);
     }
@@ -525,7 +548,8 @@ videoAddBindpoint
     bSelectLOD = NV_TRUE;
 #endif
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance),
+        NV_ERR_INVALID_LOCK_STATE);
 
     if (!kvidengIsVideoTraceLogSupported(pGpu))
         return NV_ERR_NOT_SUPPORTED;

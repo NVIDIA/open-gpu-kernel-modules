@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -201,10 +201,15 @@ void shrnotifDestruct_IMPL(struct NotifShare *pNotifShare);
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__Event;
+
+
 struct Event {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__Event *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct RmResource __nvoc_base_RmResource;
@@ -216,7 +221,18 @@ struct Event {
     struct RmResource *__nvoc_pbase_RmResource;    // rmres super
     struct Event *__nvoc_pbase_Event;    // event
 
-    // Vtable with 21 per-object function pointers
+    // Data members
+    struct NotifShare *pNotifierShare;
+    NvHandle hNotifierClient;
+    NvHandle hNotifierResource;
+    NvHandle hEvent;
+};
+
+
+// Metadata including vtable with 21 function pointers plus superclass metadata
+struct NVOC_VTABLE__Event {
+    const struct NVOC_VTABLE__RmResource RmResource;    // (rmres) 21 function pointers
+
     NvBool (*__eventAccessCallback__)(struct Event * /*this*/, struct RsClient *, void *, RsAccessRight);  // virtual inherited (rmres) base (rmres)
     NvBool (*__eventShareCallback__)(struct Event * /*this*/, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);  // virtual inherited (rmres) base (rmres)
     NV_STATUS (*__eventGetMemInterMapParams__)(struct Event * /*this*/, RMRES_MEM_INTER_MAP_PARAMS *);  // virtual inherited (rmres) base (rmres)
@@ -238,12 +254,6 @@ struct Event {
     NV_STATUS (*__eventUnmapFrom__)(struct Event * /*this*/, RS_RES_UNMAP_FROM_PARAMS *);  // virtual inherited (res) base (rmres)
     NvU32 (*__eventGetRefCount__)(struct Event * /*this*/);  // virtual inherited (res) base (rmres)
     void (*__eventAddAdditionalDependants__)(struct RsClient *, struct Event * /*this*/, RsResourceRef *);  // virtual inherited (res) base (rmres)
-
-    // Data members
-    struct NotifShare *pNotifierShare;
-    NvHandle hNotifierClient;
-    NvHandle hNotifierResource;
-    NvHandle hEvent;
 };
 
 #ifndef __NVOC_CLASS_Event_TYPEDEF__
@@ -276,132 +286,132 @@ NV_STATUS __nvoc_objCreate_Event(Event**, Dynamic*, NvU32, struct CALL_CONTEXT *
 
 
 // Wrapper macros
-#define eventAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresAccessCallback__
+#define eventAccessCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
 #define eventAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) eventAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define eventShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresShareCallback__
+#define eventShareCallback_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresShareCallback__
 #define eventShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) eventShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
-#define eventGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__rmresGetMemInterMapParams__
+#define eventGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
 #define eventGetMemInterMapParams(pRmResource, pParams) eventGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define eventCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__rmresCheckMemInterUnmap__
+#define eventCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
 #define eventCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) eventCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define eventGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__rmresGetMemoryMappingDescriptor__
+#define eventGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
 #define eventGetMemoryMappingDescriptor(pRmResource, ppMemDesc) eventGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define eventControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresControlSerialization_Prologue__
+#define eventControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
 #define eventControlSerialization_Prologue(pResource, pCallContext, pParams) eventControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define eventControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresControlSerialization_Epilogue__
+#define eventControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
 #define eventControlSerialization_Epilogue(pResource, pCallContext, pParams) eventControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define eventControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresControl_Prologue__
+#define eventControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
 #define eventControl_Prologue(pResource, pCallContext, pParams) eventControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define eventControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__rmresControl_Epilogue__
+#define eventControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
 #define eventControl_Epilogue(pResource, pCallContext, pParams) eventControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define eventCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__
+#define eventCanCopy_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
 #define eventCanCopy(pResource) eventCanCopy_DISPATCH(pResource)
-#define eventIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsDuplicate__
+#define eventIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
 #define eventIsDuplicate(pResource, hMemory, pDuplicate) eventIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define eventPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resPreDestruct__
+#define eventPreDestruct_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
 #define eventPreDestruct(pResource) eventPreDestruct_DISPATCH(pResource)
-#define eventControl_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resControl__
+#define eventControl_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControl__
 #define eventControl(pResource, pCallContext, pParams) eventControl_DISPATCH(pResource, pCallContext, pParams)
-#define eventControlFilter_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resControlFilter__
+#define eventControlFilter_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
 #define eventControlFilter(pResource, pCallContext, pParams) eventControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define eventMap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resMap__
+#define eventMap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMap__
 #define eventMap(pResource, pCallContext, pParams, pCpuMapping) eventMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
-#define eventUnmap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resUnmap__
+#define eventUnmap_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmap__
 #define eventUnmap(pResource, pCallContext, pCpuMapping) eventUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
-#define eventIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsPartialUnmapSupported__
+#define eventIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
 #define eventIsPartialUnmapSupported(pResource) eventIsPartialUnmapSupported_DISPATCH(pResource)
-#define eventMapTo_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resMapTo__
+#define eventMapTo_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
 #define eventMapTo(pResource, pParams) eventMapTo_DISPATCH(pResource, pParams)
-#define eventUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resUnmapFrom__
+#define eventUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
 #define eventUnmapFrom(pResource, pParams) eventUnmapFrom_DISPATCH(pResource, pParams)
-#define eventGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resGetRefCount__
+#define eventGetRefCount_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
 #define eventGetRefCount(pResource) eventGetRefCount_DISPATCH(pResource)
-#define eventAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__resAddAdditionalDependants__
+#define eventAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
 #define eventAddAdditionalDependants(pClient, pResource, pReference) eventAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 
 // Dispatch functions
 static inline NvBool eventAccessCallback_DISPATCH(struct Event *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__eventAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_vtable->__eventAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NvBool eventShareCallback_DISPATCH(struct Event *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__eventShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pResource->__nvoc_vtable->__eventShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS eventGetMemInterMapParams_DISPATCH(struct Event *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__eventGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_vtable->__eventGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS eventCheckMemInterUnmap_DISPATCH(struct Event *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__eventCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_vtable->__eventCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS eventGetMemoryMappingDescriptor_DISPATCH(struct Event *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__eventGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_vtable->__eventGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS eventControlSerialization_Prologue_DISPATCH(struct Event *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__eventControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__eventControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void eventControlSerialization_Epilogue_DISPATCH(struct Event *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__eventControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__eventControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS eventControl_Prologue_DISPATCH(struct Event *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__eventControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__eventControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void eventControl_Epilogue_DISPATCH(struct Event *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__eventControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__eventControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool eventCanCopy_DISPATCH(struct Event *pResource) {
-    return pResource->__eventCanCopy__(pResource);
+    return pResource->__nvoc_vtable->__eventCanCopy__(pResource);
 }
 
 static inline NV_STATUS eventIsDuplicate_DISPATCH(struct Event *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__eventIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_vtable->__eventIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void eventPreDestruct_DISPATCH(struct Event *pResource) {
-    pResource->__eventPreDestruct__(pResource);
+    pResource->__nvoc_vtable->__eventPreDestruct__(pResource);
 }
 
 static inline NV_STATUS eventControl_DISPATCH(struct Event *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__eventControl__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__eventControl__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS eventControlFilter_DISPATCH(struct Event *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__eventControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__eventControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS eventMap_DISPATCH(struct Event *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
-    return pResource->__eventMap__(pResource, pCallContext, pParams, pCpuMapping);
+    return pResource->__nvoc_vtable->__eventMap__(pResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS eventUnmap_DISPATCH(struct Event *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__eventUnmap__(pResource, pCallContext, pCpuMapping);
+    return pResource->__nvoc_vtable->__eventUnmap__(pResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool eventIsPartialUnmapSupported_DISPATCH(struct Event *pResource) {
-    return pResource->__eventIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_vtable->__eventIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS eventMapTo_DISPATCH(struct Event *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__eventMapTo__(pResource, pParams);
+    return pResource->__nvoc_vtable->__eventMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS eventUnmapFrom_DISPATCH(struct Event *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__eventUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_vtable->__eventUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 eventGetRefCount_DISPATCH(struct Event *pResource) {
-    return pResource->__eventGetRefCount__(pResource);
+    return pResource->__nvoc_vtable->__eventGetRefCount__(pResource);
 }
 
 static inline void eventAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct Event *pResource, RsResourceRef *pReference) {
-    pResource->__eventAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_vtable->__eventAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 NV_STATUS eventConstruct_IMPL(struct Event *arg_pEvent, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
@@ -441,15 +451,23 @@ NV_STATUS eventGetByHandle_IMPL(struct RsClient *pClient, NvHandle hEvent, NvU32
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__INotifier;
+
+
 struct INotifier {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__INotifier *__nvoc_vtable;
 
     // Ancestor object pointers for `staticCast` feature
     struct INotifier *__nvoc_pbase_INotifier;    // inotify
+};
 
-    // Vtable with 5 per-object function pointers
+
+// Metadata including vtable with 5 function pointers
+struct NVOC_VTABLE__INotifier {
     PEVENTNOTIFICATION * (*__inotifyGetNotificationListPtr__)(struct INotifier * /*this*/);  // pure virtual
     void (*__inotifySetNotificationShare__)(struct INotifier * /*this*/, struct NotifShare *);  // pure virtual
     struct NotifShare * (*__inotifyGetNotificationShare__)(struct INotifier * /*this*/);  // pure virtual
@@ -487,36 +505,36 @@ NV_STATUS __nvoc_objCreate_INotifier(INotifier**, Dynamic*, NvU32, struct CALL_C
 
 
 // Wrapper macros
-#define inotifyGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__inotifyGetNotificationListPtr__
+#define inotifyGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_vtable->__inotifyGetNotificationListPtr__
 #define inotifyGetNotificationListPtr(pNotifier) inotifyGetNotificationListPtr_DISPATCH(pNotifier)
-#define inotifySetNotificationShare_FNPTR(pNotifier) pNotifier->__inotifySetNotificationShare__
+#define inotifySetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_vtable->__inotifySetNotificationShare__
 #define inotifySetNotificationShare(pNotifier, pNotifShare) inotifySetNotificationShare_DISPATCH(pNotifier, pNotifShare)
-#define inotifyGetNotificationShare_FNPTR(pNotifier) pNotifier->__inotifyGetNotificationShare__
+#define inotifyGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_vtable->__inotifyGetNotificationShare__
 #define inotifyGetNotificationShare(pNotifier) inotifyGetNotificationShare_DISPATCH(pNotifier)
-#define inotifyUnregisterEvent_FNPTR(pNotifier) pNotifier->__inotifyUnregisterEvent__
+#define inotifyUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_vtable->__inotifyUnregisterEvent__
 #define inotifyUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) inotifyUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define inotifyGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__inotifyGetOrAllocNotifShare__
+#define inotifyGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_vtable->__inotifyGetOrAllocNotifShare__
 #define inotifyGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) inotifyGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
 static inline PEVENTNOTIFICATION * inotifyGetNotificationListPtr_DISPATCH(struct INotifier *pNotifier) {
-    return pNotifier->__inotifyGetNotificationListPtr__(pNotifier);
+    return pNotifier->__nvoc_vtable->__inotifyGetNotificationListPtr__(pNotifier);
 }
 
 static inline void inotifySetNotificationShare_DISPATCH(struct INotifier *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__inotifySetNotificationShare__(pNotifier, pNotifShare);
+    pNotifier->__nvoc_vtable->__inotifySetNotificationShare__(pNotifier, pNotifShare);
 }
 
 static inline struct NotifShare * inotifyGetNotificationShare_DISPATCH(struct INotifier *pNotifier) {
-    return pNotifier->__inotifyGetNotificationShare__(pNotifier);
+    return pNotifier->__nvoc_vtable->__inotifyGetNotificationShare__(pNotifier);
 }
 
 static inline NV_STATUS inotifyUnregisterEvent_DISPATCH(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return pNotifier->__inotifyUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return pNotifier->__nvoc_vtable->__inotifyUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 static inline NV_STATUS inotifyGetOrAllocNotifShare_DISPATCH(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return pNotifier->__inotifyGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
+    return pNotifier->__nvoc_vtable->__inotifyGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 NV_STATUS inotifyConstruct_IMPL(struct INotifier *arg_pNotifier, struct CALL_CONTEXT *arg_pCallContext);
@@ -553,10 +571,15 @@ static inline PEVENTNOTIFICATION inotifyGetNotificationList(struct INotifier *pN
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__Notifier;
+
+
 struct Notifier {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__Notifier *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct INotifier __nvoc_base_INotifier;
@@ -565,15 +588,20 @@ struct Notifier {
     struct INotifier *__nvoc_pbase_INotifier;    // inotify super
     struct Notifier *__nvoc_pbase_Notifier;    // notify
 
-    // Vtable with 5 per-object function pointers
+    // Data members
+    struct NotifShare *pNotifierShare;
+};
+
+
+// Metadata including vtable with 5 function pointers plus superclass metadata
+struct NVOC_VTABLE__Notifier {
+    const struct NVOC_VTABLE__INotifier INotifier;    // (inotify) 5 function pointers
+
     PEVENTNOTIFICATION * (*__notifyGetNotificationListPtr__)(struct Notifier * /*this*/);  // virtual override (inotify) base (inotify)
     struct NotifShare * (*__notifyGetNotificationShare__)(struct Notifier * /*this*/);  // virtual override (inotify) base (inotify)
     void (*__notifySetNotificationShare__)(struct Notifier * /*this*/, struct NotifShare *);  // virtual override (inotify) base (inotify)
     NV_STATUS (*__notifyUnregisterEvent__)(struct Notifier * /*this*/, NvHandle, NvHandle, NvHandle, NvHandle);  // virtual override (inotify) base (inotify)
     NV_STATUS (*__notifyGetOrAllocNotifShare__)(struct Notifier * /*this*/, NvHandle, NvHandle, struct NotifShare **);  // virtual override (inotify) base (inotify)
-
-    // Data members
-    struct NotifShare *pNotifierShare;
 };
 
 #ifndef __NVOC_CLASS_Notifier_TYPEDEF__
@@ -606,36 +634,36 @@ NV_STATUS __nvoc_objCreate_Notifier(Notifier**, Dynamic*, NvU32, struct CALL_CON
 
 
 // Wrapper macros
-#define notifyGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__notifyGetNotificationListPtr__
+#define notifyGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_vtable->__notifyGetNotificationListPtr__
 #define notifyGetNotificationListPtr(pNotifier) notifyGetNotificationListPtr_DISPATCH(pNotifier)
-#define notifyGetNotificationShare_FNPTR(pNotifier) pNotifier->__notifyGetNotificationShare__
+#define notifyGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_vtable->__notifyGetNotificationShare__
 #define notifyGetNotificationShare(pNotifier) notifyGetNotificationShare_DISPATCH(pNotifier)
-#define notifySetNotificationShare_FNPTR(pNotifier) pNotifier->__notifySetNotificationShare__
+#define notifySetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_vtable->__notifySetNotificationShare__
 #define notifySetNotificationShare(pNotifier, pNotifShare) notifySetNotificationShare_DISPATCH(pNotifier, pNotifShare)
-#define notifyUnregisterEvent_FNPTR(pNotifier) pNotifier->__notifyUnregisterEvent__
+#define notifyUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_vtable->__notifyUnregisterEvent__
 #define notifyUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) notifyUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define notifyGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__notifyGetOrAllocNotifShare__
+#define notifyGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_vtable->__notifyGetOrAllocNotifShare__
 #define notifyGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) notifyGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
 static inline PEVENTNOTIFICATION * notifyGetNotificationListPtr_DISPATCH(struct Notifier *pNotifier) {
-    return pNotifier->__notifyGetNotificationListPtr__(pNotifier);
+    return pNotifier->__nvoc_vtable->__notifyGetNotificationListPtr__(pNotifier);
 }
 
 static inline struct NotifShare * notifyGetNotificationShare_DISPATCH(struct Notifier *pNotifier) {
-    return pNotifier->__notifyGetNotificationShare__(pNotifier);
+    return pNotifier->__nvoc_vtable->__notifyGetNotificationShare__(pNotifier);
 }
 
 static inline void notifySetNotificationShare_DISPATCH(struct Notifier *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__notifySetNotificationShare__(pNotifier, pNotifShare);
+    pNotifier->__nvoc_vtable->__notifySetNotificationShare__(pNotifier, pNotifShare);
 }
 
 static inline NV_STATUS notifyUnregisterEvent_DISPATCH(struct Notifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return pNotifier->__notifyUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return pNotifier->__nvoc_vtable->__notifyUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 static inline NV_STATUS notifyGetOrAllocNotifShare_DISPATCH(struct Notifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return pNotifier->__notifyGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
+    return pNotifier->__nvoc_vtable->__notifyGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 PEVENTNOTIFICATION *notifyGetNotificationListPtr_IMPL(struct Notifier *pNotifier);

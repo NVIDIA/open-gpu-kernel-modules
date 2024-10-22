@@ -46,7 +46,7 @@
 #include <linux/nodemask.h>
 
 // VA blocks are the leaf nodes in the uvm_va_space tree for managed allocations
-// (VA ranges with type == UVM_VA_RANGE_TYPE_MANAGED):
+// (VA ranges of type uvm_va_range_managed_t):
 //
 //  UVM: uvm_va_space -> uvm_va_range -> uvm_va_block
 //  HMM: uvm_va_space -> uvm_va_block
@@ -272,7 +272,7 @@ typedef struct
 struct uvm_va_block_struct
 {
     // Reference count for this block. References are held by:
-    // - The parent VA range for managed blocks or VA space for HMM blocks
+    // - The parent managed range for managed blocks or VA space for HMM blocks
     // - The reverse map
     // - The eviction path temporarily when attempting to evict a GPU page under
     //   this block
@@ -284,15 +284,15 @@ struct uvm_va_block_struct
     // Lock protecting the block. See the comment at the top of uvm.c.
     uvm_mutex_t lock;
 
-    // Parent VA range. Managed blocks have this set. HMM blocks will have
-    // va_range set to NULL and hmm.va_space set instead. Dead blocks that are
-    // waiting for the last ref count to be removed have va_range and
+    // Parent managed range. Managed blocks have this set. HMM blocks will have
+    // managed_range set to NULL and hmm.va_space set instead. Dead blocks that
+    // are waiting for the last ref count to be removed have managed_range and
     // hmm.va_space set to NULL (could be either type of block).
     //
     // This field can be read while holding either the block lock or just the VA
     // space lock in read mode, since it can only change when the VA space lock
     // is held in write mode.
-    uvm_va_range_t *va_range;
+    uvm_va_range_managed_t *managed_range;
 
     // Virtual address [start, end] covered by this block. These fields can be
     // read while holding either the block lock or just the VA space lock in
@@ -501,7 +501,7 @@ struct uvm_va_block_struct
         // Parent VA space pointer. It is NULL for managed blocks or if
         // the HMM block is dead. This field can be read while holding the
         // block lock and is only modified while holding the va_space write
-        // lock and va_block lock (same as the va_range pointer).
+        // lock and va_block lock (same as the managed_range pointer).
         uvm_va_space_t *va_space;
 
         // Tree of uvm_va_policy_node_t. The policy node ranges always cover
@@ -597,12 +597,10 @@ void uvm_va_block_exit(void);
 
 // Allocates and initializes the block. The block's ref count is initialized to
 // 1. The caller is responsible for inserting the block into its parent
-// va_range.
+// managed range.
 //
 // The caller must be holding the VA space lock in at least read mode.
-//
-// The va_range must have type UVM_VA_RANGE_TYPE_MANAGED.
-NV_STATUS uvm_va_block_create(uvm_va_range_t *va_range,
+NV_STATUS uvm_va_block_create(uvm_va_range_managed_t *managed_range,
                               NvU64 start,
                               NvU64 end,
                               uvm_va_block_t **out_block);
@@ -658,7 +656,7 @@ static inline bool uvm_va_block_is_hmm(uvm_va_block_t *va_block)
 // is held in write mode.
 static inline bool uvm_va_block_is_dead(uvm_va_block_t *va_block)
 {
-    if (va_block->va_range)
+    if (va_block->managed_range)
         return false;
 
 #if UVM_IS_CONFIG_HMM()
@@ -1192,10 +1190,11 @@ void uvm_va_block_unregister_gpu_locked(uvm_va_block_t *va_block, uvm_gpu_t *gpu
 // VA covered by this block to be immediately available for other page table
 // mappings upon return.
 //
-// This clears block->va_range, so only the VA range destroy path should call
-// it. Other paths with references on this block, specifically the eviction path
-// which temporarily takes a reference to the block, must always check the block
-// state after taking the block lock to see if their mapping is still in place.
+// This clears block->managed_range, so only the managed range destroy path
+// should call it. Other paths with references on this block, specifically the
+// eviction path which temporarily takes a reference to the block, must always
+// check the block state after taking the block lock to see if their mapping is
+// still in place.
 //
 // All of the unmap and state destruction steps are also performed when the ref
 // count goes to 0, so this function only needs to be called if the block's
@@ -1209,13 +1208,13 @@ void uvm_va_block_kill(uvm_va_block_t *va_block);
 // Exactly the same split semantics as uvm_va_range_split, including error
 // handling. See that function's comments for details.
 //
-// new_va_block's va_range is set to new_va_range before any reverse mapping is
-// established to the new block, but the caller is responsible for inserting the
-// new block into the range.
+// new_va_block's managed range is set to new_managed_range before any reverse
+// mapping is established to the new block, but the caller is responsible for
+// inserting the new block into the range.
 NV_STATUS uvm_va_block_split(uvm_va_block_t *existing_va_block,
                              NvU64 new_end,
                              uvm_va_block_t **new_va_block,
-                             uvm_va_range_t *new_va_range);
+                             uvm_va_range_managed_t *new_managed_range);
 
 // Exactly the same split semantics as uvm_va_block_split, including error
 // handling except the existing_va_block block lock needs to be held and
@@ -1223,8 +1222,7 @@ NV_STATUS uvm_va_block_split(uvm_va_block_t *existing_va_block,
 // Also note that the existing_va_block lock may be dropped and re-acquired.
 NV_STATUS uvm_va_block_split_locked(uvm_va_block_t *existing_va_block,
                                     NvU64 new_end,
-                                    uvm_va_block_t *new_va_block,
-                                    uvm_va_range_t *new_va_range);
+                                    uvm_va_block_t *new_va_block);
 
 // Handles a CPU fault in the given VA block, performing any operations
 // necessary to establish a coherent CPU mapping (migrations, cache invalidates,
@@ -2266,7 +2264,7 @@ NV_STATUS uvm_va_block_populate_page_cpu(uvm_va_block_t *va_block,
 // returns NV_ERR_MORE_PROCESSING_REQUIRED and this makes it clear that the
 // block's state is not locked across these calls.
 #define UVM_VA_BLOCK_LOCK_RETRY(va_block, block_retry, call) ({     \
-    NV_STATUS status;                                               \
+    NV_STATUS __status;                                             \
     uvm_va_block_t *__block = (va_block);                           \
     uvm_va_block_retry_t *__retry = (block_retry);                  \
                                                                     \
@@ -2275,14 +2273,14 @@ NV_STATUS uvm_va_block_populate_page_cpu(uvm_va_block_t *va_block,
     uvm_mutex_lock(&__block->lock);                                 \
                                                                     \
     do {                                                            \
-        status = (call);                                            \
-    } while (status == NV_ERR_MORE_PROCESSING_REQUIRED);            \
+        __status = (call);                                          \
+    } while (__status == NV_ERR_MORE_PROCESSING_REQUIRED);          \
                                                                     \
     uvm_mutex_unlock(&__block->lock);                               \
                                                                     \
     uvm_va_block_retry_deinit(__retry, __block);                    \
                                                                     \
-    status;                                                         \
+    __status;                                                       \
 })
 
 // A helper macro for handling allocation-retry
@@ -2297,7 +2295,7 @@ NV_STATUS uvm_va_block_populate_page_cpu(uvm_va_block_t *va_block,
 // to be already taken. Notably the block's lock might be unlocked and relocked
 // as part of the call.
 #define UVM_VA_BLOCK_RETRY_LOCKED(va_block, block_retry, call) ({   \
-    NV_STATUS status;                                               \
+    NV_STATUS __status;                                             \
     uvm_va_block_t *__block = (va_block);                           \
     uvm_va_block_retry_t *__retry = (block_retry);                  \
                                                                     \
@@ -2306,12 +2304,12 @@ NV_STATUS uvm_va_block_populate_page_cpu(uvm_va_block_t *va_block,
     uvm_assert_mutex_locked(&__block->lock);                        \
                                                                     \
     do {                                                            \
-        status = (call);                                            \
-    } while (status == NV_ERR_MORE_PROCESSING_REQUIRED);            \
+        __status = (call);                                          \
+    } while (__status == NV_ERR_MORE_PROCESSING_REQUIRED);          \
                                                                     \
     uvm_va_block_retry_deinit(__retry, __block);                    \
                                                                     \
-    status;                                                         \
+    __status;                                                       \
 })
 
 #endif // __UVM_VA_BLOCK_H__

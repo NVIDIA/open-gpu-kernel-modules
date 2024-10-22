@@ -235,22 +235,58 @@ kflcnWaitForResetToFinish_GA102(OBJGPU *pGpu, KernelFalcon *pKernelFlcn)
 }
 
 /*!
- * Read the IRQ status of the RISCV Falcon.
+ * Wait for RISC-V to halt.
+ *
+ * @param[in]  pGpu           OBJGPU pointer
+ * @param[in]  pKernelFlcn    KernelFalcon pointer
+ * @param[in]  timeoutUs      Timeout value
+ *
+ * @returns NV_ERR_TIMEOUT if RISC-V fails to halt.
+ */
+NV_STATUS
+kflcnWaitForHaltRiscv_GA102
+(
+    OBJGPU *pGpu,
+    KernelFalcon *pKernelFlcn,
+    NvU32 timeoutUs,
+    NvU32 flags
+)
+{
+    NV_STATUS status = NV_OK;
+    RMTIMEOUT timeout;
+
+    gpuSetTimeout(pGpu, timeoutUs, &timeout, flags);
+
+    while (!FLD_TEST_DRF_NUM(_PRISCV, _RISCV, _CPUCTL_HALTED, 0x1,
+                             kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_CPUCTL)))
+    {
+        status = gpuCheckTimeout(pGpu, &timeout);
+        if (status == NV_ERR_TIMEOUT)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Timeout waiting for RISC-V to halt\n");
+            DBG_BREAKPOINT();
+            break;
+        }
+        osSpinLoop();
+    }
+
+    return status;
+}
+
+/*!
+ * Read the IRQ status of the Falcon in RISC-V mode.
  *
  * @return IRQ status mask
  */
 NvU32
-kflcnReadIntrStatus_GA102
+kflcnRiscvReadIntrStatus_GA102
 (
     OBJGPU *pGpu,
     KernelFalcon *pKernelFlcn
 )
 {
-    return ((kflcnRegRead_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_IRQSTAT) &
-             kflcnRegRead_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_IRQMASK) &
-             kflcnRegRead_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_IRQDEST)) |
-            (kflcnRegRead_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_IRQSTAT) &
-             kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_IRQMASK) &
-             kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_IRQDEST)));
+    return (kflcnRegRead_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_IRQSTAT) &
+            kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_IRQMASK) &
+            kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, NV_PRISCV_RISCV_IRQDEST));
 }
 

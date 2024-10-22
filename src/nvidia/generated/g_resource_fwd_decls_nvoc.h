@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -418,6 +418,17 @@ typedef struct Profiler Profiler;
 #ifndef __nvoc_class_id_Profiler
 #define __nvoc_class_id_Profiler 0x65b4c7
 #endif /* __nvoc_class_id_Profiler */
+
+struct ProfilerCtx;
+
+#ifndef __NVOC_CLASS_ProfilerCtx_TYPEDEF__
+#define __NVOC_CLASS_ProfilerCtx_TYPEDEF__
+typedef struct ProfilerCtx ProfilerCtx;
+#endif /* __NVOC_CLASS_ProfilerCtx_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_ProfilerCtx
+#define __nvoc_class_id_ProfilerCtx 0xe99229
+#endif /* __nvoc_class_id_ProfilerCtx */
 
 struct ProfilerDev;
 
@@ -1281,6 +1292,7 @@ struct NVOCFwdDeclHack {
     struct KernelSMDebuggerSession *PRIVATE_FIELD(KernelSMDebuggerSession_GT200_DEBUGGER);
     struct GSyncApi *PRIVATE_FIELD(GSyncApi_NV30_GSYNC);
     struct Profiler *PRIVATE_FIELD(Profiler_GF100_PROFILER);
+    struct ProfilerCtx *PRIVATE_FIELD(ProfilerCtx_MAXWELL_PROFILER_CONTEXT);
     struct ProfilerDev *PRIVATE_FIELD(ProfilerDev_MAXWELL_PROFILER_DEVICE);
     struct PerfBuffer *PRIVATE_FIELD(PerfBuffer_G84_PERFBUFFER);
     struct VgpuApi *PRIVATE_FIELD(VgpuApi_KEPLER_DEVICE_VGPU);

@@ -56,6 +56,7 @@ extern "C" {
 #include "nvidia-push-init.h"
 
 #include "timing/nvtiming.h"
+#include "timing/dpsdp.h"
 #include "timing/nvt_dsc_pps.h"
 #include "hdmipacket/nvhdmi_frlInterface.h" // HDMI_{SRC,SINK}_CAPS
 
@@ -143,7 +144,6 @@ typedef struct _NVParsedEdidEvoRec *NVParsedEdidEvoPtr;
 typedef struct _NVVBlankCallbackRec *NVVBlankCallbackPtr;
 typedef struct _NVRgLine1CallbackRec *NVRgLine1CallbackPtr;
 typedef struct _NVDpyEvoRec *NVDpyEvoPtr;
-typedef struct _NVLutSurfaceEvo *NVLutSurfaceEvoPtr;
 typedef struct _NVFrameLockEvo *NVFrameLockEvoPtr;
 typedef struct _NVEvoInfoString *NVEvoInfoStringPtr;
 typedef struct _NVSurfaceEvoRec NVSurfaceEvoRec, *NVSurfaceEvoPtr;
@@ -292,11 +292,13 @@ typedef struct {
     NvBool usable;
     NvBool csc0MatricesPresent;
     NvBool cscLUTsPresent;
-    NvBool csc1MatricesPresent;
+    NvBool csc10MatrixPresent;
+    NvBool csc11MatrixPresent;
     NvBool tmoPresent;
     NVEvoScalerCaps scalerCaps;
 } NVEvoWindowCaps;
 #define NV_EVO_NUM_WINDOW_CAPS 32
+
 
 typedef NvU64 NVEvoChannelMask;
 
@@ -511,6 +513,7 @@ typedef struct _NVEvoChannel {
 
     struct {
         NvBool enabled;
+        NvBool clientSpecified;
         NvU32 srcMaxLum;
         NvU32 targetMaxLums[NVKMS_MAX_SUBDEVICES];
     } tmoParams;
@@ -609,7 +612,11 @@ typedef struct {
 } NVFlipSyncObjectEvoHwState;
 
 typedef struct {
-    NVLutSurfaceEvoPtr pLutSurfaceEvo;
+    NVSurfaceEvoPtr pLutSurfaceEvo;
+    NvU64 offset;
+    NvU32 vssSegments;
+    NvU32 lutEntries;
+    NvBool fromOverride;
 } NVFlipLutHwState;
 
 typedef struct {
@@ -678,6 +685,26 @@ typedef struct {
          */
         NvU16 horizontal;
     } maxDownscaleFactors;
+
+    struct {
+        struct NvKmsCscMatrix matrix;
+        NvBool enabled;
+    } csc00Override;
+
+    struct {
+        struct NvKmsCscMatrix matrix;
+        NvBool enabled;
+    } csc01Override;
+
+    struct {
+        struct NvKmsCscMatrix matrix;
+        NvBool enabled;
+    } csc10Override;
+
+    struct {
+        struct NvKmsCscMatrix matrix;
+        NvBool enabled;
+    } csc11Override;
 } NVFlipChannelEvoHwState;
 
 typedef struct {
@@ -694,6 +721,9 @@ typedef struct {
         struct NvKmsHDRStaticMetadata staticMetadata;
     } hdrInfoFrame;
 
+    NVFlipLutHwState outputLut;
+    NvU32 olutFpNormScale;
+
     NvBool skipLayerPendingFlips[NVKMS_MAX_LAYERS_PER_HEAD];
 
     struct {
@@ -702,6 +732,7 @@ typedef struct {
         NvBool cursorPosition    : 1;
         NvBool tf                : 1;
         NvBool hdrStaticMetadata : 1;
+        NvBool olut              : 1;
 
         NvBool layerPosition[NVKMS_MAX_LAYERS_PER_HEAD];
         NvBool layerSyncObjects[NVKMS_MAX_LAYERS_PER_HEAD];
@@ -724,6 +755,8 @@ typedef struct _NVEvoSubDevHeadStateRec {
     struct NvKmsPoint viewPortPointIn;
     NVFlipCursorEvoHwState cursor;
     NVFlipChannelEvoHwState layer[NVKMS_MAX_LAYERS_PER_HEAD];
+    NVFlipLutHwState outputLut;
+    NvU32 olutFpNormScale;
     // Current usage bounds programmed into the hardware.
     struct NvKmsUsageBounds usage;
     // Usage bounds required after the last scheduled flip completes.
@@ -867,6 +900,7 @@ typedef struct {
 typedef struct {
     NvBool supportsDP13                    :1;
     NvBool supportsHDMI20                  :1;
+    NvBool supportsYUV2020                 :1;
     NvBool inputLutAppliesToBase           :1;
     NvU8   validNIsoFormatMask;
     NvU32  maxPitchValue;
@@ -878,6 +912,7 @@ typedef struct {
     struct NvKmsCompositionCapabilities cursorCompositionCaps;
     NvU16  validLayerRRTransforms;
     struct NvKmsLayerCapabilities layerCaps[NVKMS_MAX_LAYERS_PER_HEAD];
+    struct NvKmsLUTCaps olut;
     NvU8 legacyNotifierFormatSizeBytes[NVKMS_MAX_LAYERS_PER_HEAD];
     NvU8 dpYCbCr422MaxBpc;
     NvU8 hdmiYCbCr422MaxBpc;
@@ -913,6 +948,12 @@ typedef struct _NVEvoSubDeviceRec {
     /* EVO2 only, TRUE if a valid base surface passed to ->Flip() */
     NvBool isBaseSurfSpecified[NVKMS_MAX_HEADS_PER_DISP];
     enum NvKmsSurfaceMemoryFormat baseSurfFormat[NVKMS_MAX_HEADS_PER_DISP];
+
+    /* EVO2 only, base and output LUT state - prevents unnecessary flip interlocking */
+    const NVSurfaceEvoRec *pBaseLutSurface[NVKMS_MAX_HEADS_PER_DISP];
+    NvU64 baseLutOffset[NVKMS_MAX_HEADS_PER_DISP];
+    const NVSurfaceEvoRec *pOutputLutSurface[NVKMS_MAX_HEADS_PER_DISP];
+    NvU64 outputLutOffset[NVKMS_MAX_HEADS_PER_DISP];
 
     /* Composition parameters considered for hardware programming by EVO2 hal */
     struct {
@@ -1202,7 +1243,7 @@ typedef struct _NVEvoDevRec {
      */
     struct {
         struct {
-            NVLutSurfaceEvoPtr   LUT[3];
+            NVSurfaceEvoPtr      LUT[3];
             struct {
                 NvBool           waitForPreviousUpdate;
                 NvBool           curBaseLutEnabled;
@@ -1211,7 +1252,7 @@ typedef struct _NVEvoDevRec {
                 nvkms_timer_handle_t *updateTimer;
             } disp[NVKMS_MAX_SUBDEVICES];
         } apiHead[NVKMS_MAX_HEADS_PER_DISP];
-        NVLutSurfaceEvoPtr defaultLut;
+        NVSurfaceEvoPtr    defaultLut;
         enum NvKmsLUTState defaultBaseLUTState[NVKMS_MAX_SUBDEVICES];
         enum NvKmsLUTState defaultOutputLUTState[NVKMS_MAX_SUBDEVICES];
 
@@ -1820,17 +1861,18 @@ typedef struct _NVDispHeadStateEvoRec {
     } hdrInfoFrame;
 
     struct {
-        NVLutSurfaceEvoPtr pCurrSurface;
+        NVSurfaceEvoPtr pCurrSurface;
         NvBool outputLutEnabled : 1;
         NvBool baseLutEnabled   : 1;
     } lut;
 
     /*
      * The api head can be mapped onto the N harware heads, a frame presented
-     * by the api head gets split horizontally into N tiles, 'tilePosition'
-     * describe the tile presented by this hardware head.
+     * by the api head gets split horizontally into N sections,
+     * 'mergeHeadSection' describe the section presented by this hardware
+     * head.
      */
-    NvU8 tilePosition;
+    NvU8 mergeHeadSection;
 
     NVEvoMergeMode mergeMode;
     /*
@@ -1897,8 +1939,20 @@ typedef struct _NVDispApiHeadStateEvoRec {
         NVDispFlipOccurredEventDataEvoRec data;
     } flipOccurredEvent[NVKMS_MAX_LAYERS_PER_HEAD];
 
+    NvU64 vblankCount;
+
     NvU32 rmVBlankCallbackHandle;
-    NVListRec vblankCallbackList;
+
+    /*
+     * All entries in vblankCallbackList[0] get called before any entries in
+     * vblankCallbackList[1].
+     */
+    NVListRec vblankCallbackList[2];
+
+    struct {
+        NVListRec list;
+        NVVBlankCallbackPtr pCallbackPtr;
+    } vblankSemControl;
 
     NvBool hs10bpcHint : 1;
 } NVDispApiHeadStateEvoRec;
@@ -2267,6 +2321,9 @@ static inline NvBool NV_EVO_LOCK_PIN_IS_INTERNAL(NvU32 n)
 #define FOR_ALL_EVO_DEVS(_pDevEvo) \
     nvListForEachEntry(_pDevEvo, &nvEvoGlobal.devList, devListEntry)
 
+#define FOR_ALL_EVO_DEVS_SAFE(_pDevEvo, _pDevEvo_tmp) \
+    nvListForEachEntry_safe(_pDevEvo, _pDevEvo_tmp, &nvEvoGlobal.devList, devListEntry)
+
 #define FOR_ALL_DEFERRED_REQUEST_FIFOS_IN_SWAP_GROUP(             \
     _pSwapGroup, _pDeferredRequestFifo)                           \
     nvListForEachEntry((_pDeferredRequestFifo),                   \
@@ -2443,24 +2500,6 @@ static inline NvBool nvIs3DVisionStereoEvo(const enum NvKmsStereoMode stereo)
         (_headMask) >> (_head);                \
         (_head)++)                             \
         if ((_headMask) & (1 << (_head)))
-
-typedef struct _NVLutSurfaceEvo {
-    NVDevEvoPtr pDevEvo;
-
-    NvU32 handle;
-    NvU32 size;
-
-    NVSurfaceDescriptor surfaceDesc;
-
-    NvU32 allocRefCnt; /* Only used for dynamically allocated LUTs */
-
-    NvU64 gpuAddress;
-    void  *subDeviceAddress[NVKMS_MAX_SUBDEVICES];
-
-    /* Keep track of prefetched surfaces. */
-    NvU32 difrLastPrefetchPass;
-
-} NVLutSurfaceEvoRec;
 
 typedef struct _NVFrameLockEvo {
     NVListRec frameLockListEntry;
@@ -2919,11 +2958,9 @@ typedef const struct _nv_evo_hal {
                                  const NvU16 *green,
                                  const NvU16 *blue,
                                  int nColorMapEntries, int depth);
-    void (*SetLUTContextDma)    (const NVDispEvoRec *pDispEvo,
-                                 const int head,
-                                 NVLutSurfaceEvoPtr pLutSurfEvo,
-                                 NvBool enableBaseLut,
-                                 NvBool enableOutputLut,
+    void (*SetOutputLut)        (NVDevEvoPtr pDevEvo, NvU32 sd, NvU32 head,
+                                 const NVFlipLutHwState *pOutputLut,
+                                 NvU32 fpNormScale,
                                  NVEvoUpdateState *updateState,
                                  NvBool bypassComposition);
     void (*SetOutputScaler)     (const NVDispEvoRec *pDispEvo, const NvU32 head,
@@ -3179,11 +3216,18 @@ static inline void nvAssignHwHeadsMaskApiHeadState(
         nvPopCount32(hwHeadsMask);
 }
 
+typedef struct _NVVblankSemControlHeadEntryRec {
+    NVListRec                                listEntry;
+    NvU32                                    previousRequestCounter;
+    NvU64                                    previousVblankCount;
+    struct NvKmsVblankSemControlDataOneHead *pDataOneHead;
+} NVVblankSemControlHeadEntry;
+
 typedef struct _NVVblankSemControl {
     NvU32 dispIndex;
-    NvU32 hwHeadMask;
-    NvU64 surfaceOffset;
+    NvU32 apiHeadMask;
     NVSurfaceEvoRec *pSurfaceEvo;
+    NVVblankSemControlHeadEntry headEntry[NV_MAX_HEADS];
 } NVVblankSemControl;
 
 #ifdef __cplusplus

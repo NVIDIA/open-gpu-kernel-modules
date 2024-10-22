@@ -290,7 +290,7 @@ void nv_destroy_dma_map_scatterlist(nv_dma_map_t *dma_map)
     os_free_mem(dma_map->mapping.discontig.submaps);
 }
 
-void nv_load_dma_map_scatterlist(
+static void nv_load_dma_map_scatterlist(
     nv_dma_map_t *dma_map,
     NvU64 *va_array
 )
@@ -486,7 +486,7 @@ NV_STATUS NV_API_CALL nv_dma_map_sgt(
     return status;
 }
 
-NV_STATUS NV_API_CALL nv_dma_unmap_sgt(
+static NV_STATUS NV_API_CALL nv_dma_unmap_sgt(
     nv_dma_device_t *dma_dev,
     void           **priv
 )
@@ -854,7 +854,7 @@ NV_STATUS NV_API_CALL nv_dma_map_peer
          * convert to a bus address.
          */
         NvU64 offset = *va - res->start;
-        *va = nv_pci_bus_address(peer_pci_dev, bar_index) + offset;
+        *va = pci_bus_address(peer_pci_dev, bar_index) + offset;
         status = NV_OK;
     }
 

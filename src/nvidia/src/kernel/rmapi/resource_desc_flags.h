@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -63,23 +63,30 @@
  * GSP_PLUGIN_FOR_* is even stricter; any admin and kernel privileged object allocated in a VF context
  *                  is required to have the flag or it will be rejected.
  */
-#define RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_VGPU_GSP    NVBIT(11)  ///< CPU-RM, SRIOV, vGPU-GSP enabled, hypervisor environment
+#define RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_SRIOV       NVBIT(11)  ///< CPU-RM, SRIOV, vGPU-GSP disabled, hypervisor environment
 
-#define RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_SRIOV       NVBIT(12)  ///< CPU-RM, SRIOV, vGPU-GSP disabled, hypervisor environment
+#define RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_LEGACY      NVBIT(12)  ///< CPU-RM, non-SRIOV or SRIOV-Heavy, hypervisor environment.
 
-#define RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_LEGACY      NVBIT(13)  ///< CPU-RM, non-SRIOV or SRIOV-Heavy, hypervisor environment.
+#define RS_FLAGS_ALLOC_GSP_PLUGIN_FOR_VGPU_GSP    NVBIT(13)  ///< GSP-RM, SRIOV, vGPU-GSP enabled, VF context.
 
-#define RS_FLAGS_ALLOC_GSP_PLUGIN_FOR_VGPU_GSP    NVBIT(14)  ///< GSP-RM, SRIOV, vGPU-GSP enabled, VF context.
+#define RS_FLAGS_ALLOC_ALL_VGPU_PLUGINS           (RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_SRIOV | RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_LEGACY | RS_FLAGS_ALLOC_GSP_PLUGIN_FOR_VGPU_GSP)
 
-#define RS_FLAGS_ALLOC_ALL_VGPU_PLUGINS           (RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_VGPU_GSP | RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_SRIOV | RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_LEGACY | RS_FLAGS_ALLOC_GSP_PLUGIN_FOR_VGPU_GSP)
+#define RS_FLAGS_DUAL_CLIENT_LOCK                 NVBIT(14)  ///< Class needs to lock two clients when being allocated, must update serverAllocLookupSecondClient in order to use
 
-#define RS_FLAGS_DUAL_CLIENT_LOCK                 NVBIT(15)  ///< Class needs to lock two clients when being allocated, must update serverAllocLookupSecondClient in order to use
+#define RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_DUP         NVBIT(15)  ///< GPUs Lock is acquired on dup
 
-#define RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_DUP         NVBIT(16)  ///< GPUs Lock is acquired on dup
-
-#define RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_DUP    NVBIT(17)  ///< GPU Group Lock is acquired for dup
+#define RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_DUP    NVBIT(16)  ///< GPU Group Lock is acquired for dup
 
 #define RS_FLAGS_ACQUIRE_GPUS_LOCK                (RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_ALLOC | RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_FREE | RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_DUP)
 #define RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK           (RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_ALLOC | RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_FREE | RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_DUP)
+
+/**
+ * Use RO API lock even if NV_REG_STR_RM_READONLY_API_LOCK_ALLOC_RESOURCE is not set.
+ *
+ *  This flag is intended to be temporary to allow explicit opt-in for RO API
+ *  lock while NV_REG_STR_RM_READONLY_API_LOCK_ALLOC/FREE_RESOURCE is not the
+ *  default. Default enablement is tracked in bug 4283710.
+ */
+#define RS_FLAGS_FORCE_ACQUIRE_RO_API_LOCK_ON_ALLOC_FREE     NVBIT(17)
 
 #endif // _RESOURCE_DESC_FLAGS_H_

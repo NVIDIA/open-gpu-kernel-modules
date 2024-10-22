@@ -1486,7 +1486,7 @@ memmgrAllocResources_IMPL
     NvBool                       bAllocedHwRes = NV_FALSE;
 
     // IRQL TEST:  must be running at equivalent of passive-level
-    IRQL_ASSERT_AND_RETURN(!osIsRaisedIRQL());
+    NV_ASSERT_OR_RETURN(!osIsRaisedIRQL(), NV_ERR_INVALID_IRQ_LEVEL);
 
     //
     // Check for valid size.

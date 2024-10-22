@@ -71,6 +71,7 @@ NvBool rmcfg_IsGB10X(POBJGPU pGpu);
 NvBool rmcfg_IsGB10XorBetter(POBJGPU pGpu);
 NvBool rmcfg_IsDISPLAYLESS_CLASSIC_GPUS(POBJGPU pGpu);
 NvBool rmcfg_IsDISPLAYLESS_CLASSIC_GPUSorBetter(POBJGPU pGpu);
+NvBool rmcfg_IsCOMPUTE(POBJGPU pGpu);
 NvBool rmcfg_IsdTURING(POBJGPU pGpu);
 NvBool rmcfg_IsTURING_CLASSIC_GPUS(POBJGPU pGpu);
 NvBool rmcfg_IsdAMPERE(POBJGPU pGpu);

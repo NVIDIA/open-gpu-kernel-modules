@@ -58,6 +58,10 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_RegisterAperture =
     /*pExportInfo=*/        &__nvoc_export_info_RegisterAperture
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+
+// Up-thunk(s) to bridge methods to ancestors (if any)
+
 const struct NVOC_EXPORT_INFO __nvoc_export_info_RegisterAperture = 
 {
     /*numEntries=*/     0,
@@ -85,37 +89,26 @@ __nvoc_ctor_RegisterAperture_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_RegisterAperture_1(RegisterAperture *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // regaprtReadReg08 -- pure virtual
-    pThis->__regaprtReadReg08__ = NULL;
-
-    // regaprtReadReg16 -- pure virtual
-    pThis->__regaprtReadReg16__ = NULL;
-
-    // regaprtReadReg32 -- pure virtual
-    pThis->__regaprtReadReg32__ = NULL;
-
-    // regaprtWriteReg08 -- pure virtual
-    pThis->__regaprtWriteReg08__ = NULL;
-
-    // regaprtWriteReg16 -- pure virtual
-    pThis->__regaprtWriteReg16__ = NULL;
-
-    // regaprtWriteReg32 -- pure virtual
-    pThis->__regaprtWriteReg32__ = NULL;
-
-    // regaprtWriteReg32Uc -- pure virtual
-    pThis->__regaprtWriteReg32Uc__ = NULL;
-
-    // regaprtIsRegValid -- pure virtual
-    pThis->__regaprtIsRegValid__ = NULL;
-} // End __nvoc_init_funcTable_RegisterAperture_1 with approximately 8 basic block(s).
+} // End __nvoc_init_funcTable_RegisterAperture_1
 
 
 // Initialize vtable(s) for 8 virtual method(s).
 void __nvoc_init_funcTable_RegisterAperture(RegisterAperture *pThis) {
 
-    // Initialize vtable(s) with 8 per-object function pointer(s).
+    // Per-class vtable definition
+    static const struct NVOC_VTABLE__RegisterAperture vtable = {
+        .__regaprtReadReg08__ = NULL,    // pure virtual
+        .__regaprtReadReg16__ = NULL,    // pure virtual
+        .__regaprtReadReg32__ = NULL,    // pure virtual
+        .__regaprtWriteReg08__ = NULL,    // pure virtual
+        .__regaprtWriteReg16__ = NULL,    // pure virtual
+        .__regaprtWriteReg32__ = NULL,    // pure virtual
+        .__regaprtWriteReg32Uc__ = NULL,    // pure virtual
+        .__regaprtIsRegValid__ = NULL,    // pure virtual
+    };
+
+    // Pointer(s) to per-class vtable(s)
+    pThis->__nvoc_vtable = &vtable;    // (regaprt) this
     __nvoc_init_funcTable_RegisterAperture_1(pThis);
 }
 

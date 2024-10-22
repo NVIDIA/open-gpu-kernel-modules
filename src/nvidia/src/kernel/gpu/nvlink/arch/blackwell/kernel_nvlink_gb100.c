@@ -25,6 +25,7 @@
 
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "kernel/diagnostics/nv_debug_dump.h"
+#include "kernel/gpu_mgr/gpu_mgr.h"
 
 NV_STATUS
 knvlinkGetSupportedCounters_GB100
@@ -168,7 +169,7 @@ knvlinkLogAliDebugMessages_GB100
 
     FOR_EACH_INDEX_IN_MASK(32, link, pKernelNvlink->postRxDetLinkMask)
     {
-        if (pParams->linkErrInfo[link].DLStatMN00 != 0x0)
+        if ((pParams->linkErrInfo[link].DLStatMN00 & 0xffff) != 0x0)
         {
             NV_PRINTF(LEVEL_ERROR, "ALI Error for GPU %d::linkId %d: 0x%x\n",
                       pGpu->gpuInstance,
@@ -232,4 +233,135 @@ knvlinkDumpCallbackRegister_GB100
                     REF_DEF(NVD_ENGINE_FLAGS_PRIORITY, _MED) |
                     REF_DEF(NVD_ENGINE_FLAGS_SOURCE,   _GSP),
                     (void *)pKernelNvlink);
+}
+
+static NvU8
+_nvlinkLinkCountToRbmMode
+(
+    NvU8 linkCount
+)
+{
+    NvU8 rbmMode = 0;
+
+    rbmMode = FLD_SET_DRF_NUM(_GPU, _NVLINK, _BW_MODE,
+                              GPU_NVLINK_BW_MODE_LINK_COUNT,
+                              rbmMode);
+    rbmMode = FLD_SET_DRF_NUM(_GPU, _NVLINK, _BW_MODE_LINK_COUNT,
+                              linkCount, rbmMode);
+    return rbmMode;
+}
+
+/*!
+ * Check if requested RBM mode is supported by GPU
+ */
+NvBool
+knvlinkIsBwModeSupported_GB100
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink,
+    NvU8    mode
+)
+{
+    NvU32 i;
+
+    // Legacy BW modes are not supported except _FULL
+    if ((DRF_VAL(_GPU, _NVLINK, _BW_MODE, mode) != GPU_NVLINK_BW_MODE_LINK_COUNT) &&
+        (DRF_VAL(_GPU, _NVLINK, _BW_MODE, mode) != GPU_NVLINK_BW_MODE_FULL))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Legacy BW modes are not supported on this platform.\n");
+        return NV_FALSE;
+    }
+
+    if (DRF_VAL(_GPU, _NVLINK, _BW_MODE, mode) == GPU_NVLINK_BW_MODE_FULL)
+    {
+        // Requesting full bandwidth on GPU
+        return NV_TRUE;
+    }
+
+    // Check if requested BW mode link count is supported by GFM
+    if (DRF_VAL(_GPU, _NVLINK, _BW_MODE_LINK_COUNT, mode) > pKernelNvlink->maxRbmLinks)
+    {
+        NV_PRINTF(LEVEL_ERROR, "RBM not supported by GFM. LinkCount: %d; MaxLinkCount: %d\n",
+                  DRF_VAL(_GPU, _NVLINK, _BW_MODE_LINK_COUNT, mode),
+                  pKernelNvlink->maxRbmLinks);
+        return NV_FALSE;
+    }
+
+    // Check if requested BW mode link count is supported by HSHUB
+    for (i = 0; i < pKernelNvlink->totalRbmModes; i++)
+    {
+        if (mode == pKernelNvlink->hshubSupportedRbmModesList[i])
+        {
+            return NV_TRUE;
+        }
+    }
+
+    NV_PRINTF(LEVEL_ERROR, "RBM requested is not supported. LinkCount: %d\n",
+              DRF_VAL(_GPU, _NVLINK, _BW_MODE_LINK_COUNT, mode));
+    return NV_FALSE;
+}
+
+/*!
+ * Retrieve list of HSHUB supported RBM Modes
+ */
+NV_STATUS
+knvlinkGetHshubSupportedRbmModes_GB100
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    NV_STATUS status = NV_OK;
+    NvU32 i;
+
+    //
+    // TODO: Update hardcoded list with list retrieved from HSHUB query rpc.
+    // Current supported link counts: 0, 4, 8, 12
+    //
+    const NvU8 gpuNvlinkHshubSupportedRbmList[] =
+    {
+        _nvlinkLinkCountToRbmMode(0),
+        _nvlinkLinkCountToRbmMode(4),
+        _nvlinkLinkCountToRbmMode(8),
+        _nvlinkLinkCountToRbmMode(12)
+    };
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(gpuNvlinkHshubSupportedRbmList); i++)
+    {
+        pKernelNvlink->hshubSupportedRbmModesList[i] = gpuNvlinkHshubSupportedRbmList[i];
+    }
+    pKernelNvlink->totalRbmModes = NV_ARRAY_ELEMENTS(gpuNvlinkHshubSupportedRbmList);
+
+    return status;
+}
+
+/*!
+ * Retrieve list of supported BW modes
+ */
+NV_STATUS
+knvlinkGetSupportedBwMode_GB100
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink,
+    NV2080_CTRL_NVLINK_GET_SUPPORTED_BW_MODE_PARAMS *pParams
+)
+{
+    NvU32 i;
+
+    for (i = 0; i < pKernelNvlink->totalRbmModes; i++)
+    {
+        // Need to filter HSHUB supported list with maxRbmLinks received from probe response
+        if (pKernelNvlink->hshubSupportedRbmModesList[i] <= _nvlinkLinkCountToRbmMode(pKernelNvlink->maxRbmLinks))
+        {
+            pParams->rbmModesList[i] = pKernelNvlink->hshubSupportedRbmModesList[i];
+        }
+        else
+        {
+            // GFM no longer supports mode in supported list. Do not copy to client.
+            break;
+        }
+    }
+    pParams->rbmTotalModes = i;
+
+    return NV_OK;
 }

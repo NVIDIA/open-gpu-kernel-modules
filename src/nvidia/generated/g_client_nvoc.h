@@ -7,14 +7,14 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -146,10 +146,15 @@ void userinfoDestruct_IMPL(struct UserInfo *pUserInfo);
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__RmClient;
+
+
 struct RmClient {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__RmClient *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct RsClient __nvoc_base_RsClient;
@@ -158,20 +163,6 @@ struct RmClient {
     struct Object *__nvoc_pbase_Object;    // obj super^2
     struct RsClient *__nvoc_pbase_RsClient;    // client super
     struct RmClient *__nvoc_pbase_RmClient;    // rmclient
-
-    // Vtable with 12 per-object function pointers
-    NV_STATUS (*__rmclientValidate__)(struct RmClient * /*this*/, const API_SECURITY_INFO *);  // virtual override (client) base (client)
-    NV_STATUS (*__rmclientValidateLocks__)(struct RmClient * /*this*/, struct RsServer *, const struct CLIENT_ENTRY *);  // virtual override (client) base (client)
-    NV_STATUS (*__rmclientFreeResource__)(struct RmClient * /*this*/, struct RsServer *, struct RS_RES_FREE_PARAMS_INTERNAL *);  // virtual override (client) base (client)
-    NV_STATUS (*__rmclientInterMap__)(struct RmClient * /*this*/, struct RsResourceRef *, struct RsResourceRef *, struct RS_INTER_MAP_PARAMS *);  // virtual override (client) base (client)
-    NV_STATUS (*__rmclientInterUnmap__)(struct RmClient * /*this*/, struct RsResourceRef *, struct RS_INTER_UNMAP_PARAMS *);  // virtual override (client) base (client)
-    NV_STATUS (*__rmclientPostProcessPendingFreeList__)(struct RmClient * /*this*/, struct RsResourceRef **);  // virtual override (client) base (client)
-    RS_PRIV_LEVEL (*__rmclientGetCachedPrivilege__)(struct RmClient * /*this*/);  // virtual override (client) base (client)
-    NvBool (*__rmclientIsAdmin__)(struct RmClient * /*this*/, RS_PRIV_LEVEL);  // virtual override (client) base (client)
-    NV_STATUS (*__rmclientDestructResourceRef__)(struct RmClient * /*this*/, RsServer *, struct RsResourceRef *);  // virtual inherited (client) base (client)
-    NV_STATUS (*__rmclientUnmapMemory__)(struct RmClient * /*this*/, struct RsResourceRef *, struct RS_LOCK_INFO *, struct RsCpuMapping **, API_SECURITY_INFO *);  // virtual inherited (client) base (client)
-    NV_STATUS (*__rmclientValidateNewResourceHandle__)(struct RmClient * /*this*/, NvHandle, NvBool);  // virtual inherited (client) base (client)
-    NV_STATUS (*__rmclientShareResource__)(struct RmClient * /*this*/, struct RsResourceRef *, RS_SHARE_POLICY *, struct CALL_CONTEXT *);  // virtual inherited (client) base (client)
 
     // Data members
     RS_PRIV_LEVEL cachedPrivilege;
@@ -192,6 +183,25 @@ struct RmClient {
     NvS32 imexChannel;
     PNODE pCliSyncGpuBoostTree;
     NvS32 lockStressCounter;
+};
+
+
+// Metadata including vtable with 12 function pointers plus superclass metadata
+struct NVOC_VTABLE__RmClient {
+    const struct NVOC_VTABLE__RsClient RsClient;    // (client) 12 function pointers
+
+    NV_STATUS (*__rmclientValidate__)(struct RmClient * /*this*/, const API_SECURITY_INFO *);  // virtual override (client) base (client)
+    NV_STATUS (*__rmclientValidateLocks__)(struct RmClient * /*this*/, struct RsServer *, const struct CLIENT_ENTRY *);  // virtual override (client) base (client)
+    NV_STATUS (*__rmclientFreeResource__)(struct RmClient * /*this*/, struct RsServer *, struct RS_RES_FREE_PARAMS_INTERNAL *);  // virtual override (client) base (client)
+    NV_STATUS (*__rmclientInterMap__)(struct RmClient * /*this*/, struct RsResourceRef *, struct RsResourceRef *, struct RS_INTER_MAP_PARAMS *);  // virtual override (client) base (client)
+    NV_STATUS (*__rmclientInterUnmap__)(struct RmClient * /*this*/, struct RsResourceRef *, struct RS_INTER_UNMAP_PARAMS *);  // virtual override (client) base (client)
+    NV_STATUS (*__rmclientPostProcessPendingFreeList__)(struct RmClient * /*this*/, struct RsResourceRef **);  // virtual override (client) base (client)
+    RS_PRIV_LEVEL (*__rmclientGetCachedPrivilege__)(struct RmClient * /*this*/);  // virtual override (client) base (client)
+    NvBool (*__rmclientIsAdmin__)(struct RmClient * /*this*/, RS_PRIV_LEVEL);  // virtual override (client) base (client)
+    NV_STATUS (*__rmclientDestructResourceRef__)(struct RmClient * /*this*/, RsServer *, struct RsResourceRef *);  // virtual inherited (client) base (client)
+    NV_STATUS (*__rmclientUnmapMemory__)(struct RmClient * /*this*/, struct RsResourceRef *, struct RS_LOCK_INFO *, struct RsCpuMapping **, API_SECURITY_INFO *);  // virtual inherited (client) base (client)
+    NV_STATUS (*__rmclientValidateNewResourceHandle__)(struct RmClient * /*this*/, NvHandle, NvBool);  // virtual inherited (client) base (client)
+    NV_STATUS (*__rmclientShareResource__)(struct RmClient * /*this*/, struct RsResourceRef *, RS_SHARE_POLICY *, struct CALL_CONTEXT *);  // virtual inherited (client) base (client)
 };
 
 #ifndef __NVOC_CLASS_RmClient_TYPEDEF__
@@ -224,78 +234,78 @@ NV_STATUS __nvoc_objCreate_RmClient(RmClient**, Dynamic*, NvU32, struct PORT_MEM
 
 
 // Wrapper macros
-#define rmclientValidate_FNPTR(pClient) pClient->__rmclientValidate__
+#define rmclientValidate_FNPTR(pClient) pClient->__nvoc_vtable->__rmclientValidate__
 #define rmclientValidate(pClient, pSecInfo) rmclientValidate_DISPATCH(pClient, pSecInfo)
-#define rmclientValidateLocks_FNPTR(pClient) pClient->__rmclientValidateLocks__
+#define rmclientValidateLocks_FNPTR(pClient) pClient->__nvoc_vtable->__rmclientValidateLocks__
 #define rmclientValidateLocks(pClient, pServer, pClientEntry) rmclientValidateLocks_DISPATCH(pClient, pServer, pClientEntry)
-#define rmclientFreeResource_FNPTR(pClient) pClient->__rmclientFreeResource__
+#define rmclientFreeResource_FNPTR(pClient) pClient->__nvoc_vtable->__rmclientFreeResource__
 #define rmclientFreeResource(pClient, pServer, pParams) rmclientFreeResource_DISPATCH(pClient, pServer, pParams)
-#define rmclientInterMap_FNPTR(pClient) pClient->__rmclientInterMap__
+#define rmclientInterMap_FNPTR(pClient) pClient->__nvoc_vtable->__rmclientInterMap__
 #define rmclientInterMap(pClient, pMapperRef, pMappableRef, pParams) rmclientInterMap_DISPATCH(pClient, pMapperRef, pMappableRef, pParams)
-#define rmclientInterUnmap_FNPTR(pClient) pClient->__rmclientInterUnmap__
+#define rmclientInterUnmap_FNPTR(pClient) pClient->__nvoc_vtable->__rmclientInterUnmap__
 #define rmclientInterUnmap(pClient, pMapperRef, pParams) rmclientInterUnmap_DISPATCH(pClient, pMapperRef, pParams)
-#define rmclientPostProcessPendingFreeList_FNPTR(pClient) pClient->__rmclientPostProcessPendingFreeList__
+#define rmclientPostProcessPendingFreeList_FNPTR(pClient) pClient->__nvoc_vtable->__rmclientPostProcessPendingFreeList__
 #define rmclientPostProcessPendingFreeList(pClient, ppFirstLowPriRef) rmclientPostProcessPendingFreeList_DISPATCH(pClient, ppFirstLowPriRef)
-#define rmclientGetCachedPrivilege_FNPTR(pClient) pClient->__rmclientGetCachedPrivilege__
+#define rmclientGetCachedPrivilege_FNPTR(pClient) pClient->__nvoc_vtable->__rmclientGetCachedPrivilege__
 #define rmclientGetCachedPrivilege(pClient) rmclientGetCachedPrivilege_DISPATCH(pClient)
-#define rmclientIsAdmin_FNPTR(pClient) pClient->__rmclientIsAdmin__
+#define rmclientIsAdmin_FNPTR(pClient) pClient->__nvoc_vtable->__rmclientIsAdmin__
 #define rmclientIsAdmin(pClient, privLevel) rmclientIsAdmin_DISPATCH(pClient, privLevel)
-#define rmclientDestructResourceRef_FNPTR(pClient) pClient->__nvoc_base_RsClient.__clientDestructResourceRef__
+#define rmclientDestructResourceRef_FNPTR(pClient) pClient->__nvoc_base_RsClient.__nvoc_vtable->__clientDestructResourceRef__
 #define rmclientDestructResourceRef(pClient, pServer, pResourceRef) rmclientDestructResourceRef_DISPATCH(pClient, pServer, pResourceRef)
-#define rmclientUnmapMemory_FNPTR(pClient) pClient->__nvoc_base_RsClient.__clientUnmapMemory__
+#define rmclientUnmapMemory_FNPTR(pClient) pClient->__nvoc_base_RsClient.__nvoc_vtable->__clientUnmapMemory__
 #define rmclientUnmapMemory(pClient, pResourceRef, pLockInfo, ppCpuMapping, pSecInfo) rmclientUnmapMemory_DISPATCH(pClient, pResourceRef, pLockInfo, ppCpuMapping, pSecInfo)
-#define rmclientValidateNewResourceHandle_FNPTR(pClient) pClient->__nvoc_base_RsClient.__clientValidateNewResourceHandle__
+#define rmclientValidateNewResourceHandle_FNPTR(pClient) pClient->__nvoc_base_RsClient.__nvoc_vtable->__clientValidateNewResourceHandle__
 #define rmclientValidateNewResourceHandle(pClient, hResource, bRestrict) rmclientValidateNewResourceHandle_DISPATCH(pClient, hResource, bRestrict)
-#define rmclientShareResource_FNPTR(pClient) pClient->__nvoc_base_RsClient.__clientShareResource__
+#define rmclientShareResource_FNPTR(pClient) pClient->__nvoc_base_RsClient.__nvoc_vtable->__clientShareResource__
 #define rmclientShareResource(pClient, pResourceRef, pSharePolicy, pCallContext) rmclientShareResource_DISPATCH(pClient, pResourceRef, pSharePolicy, pCallContext)
 
 // Dispatch functions
 static inline NV_STATUS rmclientValidate_DISPATCH(struct RmClient *pClient, const API_SECURITY_INFO *pSecInfo) {
-    return pClient->__rmclientValidate__(pClient, pSecInfo);
+    return pClient->__nvoc_vtable->__rmclientValidate__(pClient, pSecInfo);
 }
 
 static inline NV_STATUS rmclientValidateLocks_DISPATCH(struct RmClient *pClient, struct RsServer *pServer, const struct CLIENT_ENTRY *pClientEntry) {
-    return pClient->__rmclientValidateLocks__(pClient, pServer, pClientEntry);
+    return pClient->__nvoc_vtable->__rmclientValidateLocks__(pClient, pServer, pClientEntry);
 }
 
 static inline NV_STATUS rmclientFreeResource_DISPATCH(struct RmClient *pClient, struct RsServer *pServer, struct RS_RES_FREE_PARAMS_INTERNAL *pParams) {
-    return pClient->__rmclientFreeResource__(pClient, pServer, pParams);
+    return pClient->__nvoc_vtable->__rmclientFreeResource__(pClient, pServer, pParams);
 }
 
 static inline NV_STATUS rmclientInterMap_DISPATCH(struct RmClient *pClient, struct RsResourceRef *pMapperRef, struct RsResourceRef *pMappableRef, struct RS_INTER_MAP_PARAMS *pParams) {
-    return pClient->__rmclientInterMap__(pClient, pMapperRef, pMappableRef, pParams);
+    return pClient->__nvoc_vtable->__rmclientInterMap__(pClient, pMapperRef, pMappableRef, pParams);
 }
 
 static inline NV_STATUS rmclientInterUnmap_DISPATCH(struct RmClient *pClient, struct RsResourceRef *pMapperRef, struct RS_INTER_UNMAP_PARAMS *pParams) {
-    return pClient->__rmclientInterUnmap__(pClient, pMapperRef, pParams);
+    return pClient->__nvoc_vtable->__rmclientInterUnmap__(pClient, pMapperRef, pParams);
 }
 
 static inline NV_STATUS rmclientPostProcessPendingFreeList_DISPATCH(struct RmClient *pClient, struct RsResourceRef **ppFirstLowPriRef) {
-    return pClient->__rmclientPostProcessPendingFreeList__(pClient, ppFirstLowPriRef);
+    return pClient->__nvoc_vtable->__rmclientPostProcessPendingFreeList__(pClient, ppFirstLowPriRef);
 }
 
 static inline RS_PRIV_LEVEL rmclientGetCachedPrivilege_DISPATCH(struct RmClient *pClient) {
-    return pClient->__rmclientGetCachedPrivilege__(pClient);
+    return pClient->__nvoc_vtable->__rmclientGetCachedPrivilege__(pClient);
 }
 
 static inline NvBool rmclientIsAdmin_DISPATCH(struct RmClient *pClient, RS_PRIV_LEVEL privLevel) {
-    return pClient->__rmclientIsAdmin__(pClient, privLevel);
+    return pClient->__nvoc_vtable->__rmclientIsAdmin__(pClient, privLevel);
 }
 
 static inline NV_STATUS rmclientDestructResourceRef_DISPATCH(struct RmClient *pClient, RsServer *pServer, struct RsResourceRef *pResourceRef) {
-    return pClient->__rmclientDestructResourceRef__(pClient, pServer, pResourceRef);
+    return pClient->__nvoc_vtable->__rmclientDestructResourceRef__(pClient, pServer, pResourceRef);
 }
 
 static inline NV_STATUS rmclientUnmapMemory_DISPATCH(struct RmClient *pClient, struct RsResourceRef *pResourceRef, struct RS_LOCK_INFO *pLockInfo, struct RsCpuMapping **ppCpuMapping, API_SECURITY_INFO *pSecInfo) {
-    return pClient->__rmclientUnmapMemory__(pClient, pResourceRef, pLockInfo, ppCpuMapping, pSecInfo);
+    return pClient->__nvoc_vtable->__rmclientUnmapMemory__(pClient, pResourceRef, pLockInfo, ppCpuMapping, pSecInfo);
 }
 
 static inline NV_STATUS rmclientValidateNewResourceHandle_DISPATCH(struct RmClient *pClient, NvHandle hResource, NvBool bRestrict) {
-    return pClient->__rmclientValidateNewResourceHandle__(pClient, hResource, bRestrict);
+    return pClient->__nvoc_vtable->__rmclientValidateNewResourceHandle__(pClient, hResource, bRestrict);
 }
 
 static inline NV_STATUS rmclientShareResource_DISPATCH(struct RmClient *pClient, struct RsResourceRef *pResourceRef, RS_SHARE_POLICY *pSharePolicy, struct CALL_CONTEXT *pCallContext) {
-    return pClient->__rmclientShareResource__(pClient, pResourceRef, pSharePolicy, pCallContext);
+    return pClient->__nvoc_vtable->__rmclientShareResource__(pClient, pResourceRef, pSharePolicy, pCallContext);
 }
 
 NV_STATUS rmclientValidate_IMPL(struct RmClient *pClient, const API_SECURITY_INFO *pSecInfo);
@@ -387,7 +397,6 @@ void rmclientPromoteDebuggerStateByHandle(NvHandle hClient, NvU32 newMinimumStat
 void *rmclientGetSecurityTokenByHandle(NvHandle hClient);
 NV_STATUS rmclientUserClientSecurityCheckByHandle(NvHandle hClient, const API_SECURITY_INFO *pSecInfo);
 NvBool rmclientIsCapableOrAdminByHandle(NvHandle hClient, NvU32 capability, RS_PRIV_LEVEL privLevel);
-NvBool rmclientIsCapableByHandle(NvHandle hClient, NvU32 capability);
 
 #endif
 

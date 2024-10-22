@@ -242,7 +242,7 @@ subdeviceCtrlCmdMcServiceInterrupts_IMPL
     }
 
     intrServiceStallList_HAL(pGpu, pIntr, &engines, NV_TRUE);
-
+    
     return NV_OK;
 }
 
@@ -1132,7 +1132,7 @@ NvU32 intrServiceInterruptRecords_IMPL
 
     if (bShouldService)
     {
-        GSP_TRACE_RATS_ADD_RECORD(NV_RATS_GSP_TRACE_TYPE_INTR_START, pGpu, 0);
+        GSP_TRACE_RATS_ADD_RECORD(NV_RATS_GSP_TRACE_TYPE_INTR_START, pGpu, (NvU32) engineIdx);
         ret = intrservServiceInterrupt(pGpu, pIntrService, &serviceParams);
         GSP_TRACE_RATS_ADD_RECORD(NV_RATS_GSP_TRACE_TYPE_INTR_END, pGpu, (NvU32) engineIdx);
     }

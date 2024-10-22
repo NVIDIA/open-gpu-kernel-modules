@@ -42,6 +42,7 @@
 #include "nvkms-surface.h"
 #include "nvkms-3dvision.h"
 #include "nvkms-ioctl.h"
+#include "nvkms-vblank-sem-control.h"
 #include "nvkms-headsurface.h"
 #include "nvkms-headsurface-ioctl.h"
 #include "nvkms-headsurface-swapgroup.h"
@@ -1117,6 +1118,8 @@ static void RestoreConsole(NVDevEvoPtr pDevEvo)
             nvDPSetAllowMultiStreaming(pDevEvo, TRUE /* allowMST */);
             EnableAndSetupVblankSyncObjectForAllOpens(pDevEvo);
             AllocSurfaceCtxDmasForAllOpens(pDevEvo);
+        } else {
+            nvRevokeDevice(pDevEvo);
         }
     }
 }
@@ -1439,6 +1442,7 @@ static NvBool AllocDevice(struct NvKmsPerOpen *pOpen,
          layer++) {
         pParams->reply.layerCaps[layer] = pDevEvo->caps.layerCaps[layer];
     }
+    pParams->reply.olutCaps = pDevEvo->caps.olut;
 
     pParams->reply.surfaceAlignment  = NV_EVO_SURFACE_ALIGNMENT;
     pParams->reply.requiresVrrSemaphores = !pDevEvo->hal->caps.supportsDisplayRate;
@@ -4234,6 +4238,7 @@ static NvBool SwitchMux(
 {
     struct NvKmsSwitchMuxParams *pParams = pParamsVoid;
     const struct NvKmsSwitchMuxRequest *r = &pParams->request;
+    struct NvKmsPerOpenDev *pOpenDev;
     NVDpyEvoPtr pDpyEvo;
 
     pDpyEvo = GetPerOpenDpy(pOpen, r->deviceHandle, r->dispHandle, r->dpyId);
@@ -4241,7 +4246,12 @@ static NvBool SwitchMux(
         return FALSE;
     }
 
-    if (!nvKmsOpenDevHasSubOwnerPermissionOrBetter(GetPerOpenDev(pOpen, r->deviceHandle))) {
+    pOpenDev = GetPerOpenDev(pOpen, r->deviceHandle);
+    if (pOpenDev == NULL) {
+        return FALSE;
+    }
+
+    if (!nvKmsOpenDevHasSubOwnerPermissionOrBetter(pOpenDev)) {
         return FALSE;
     }
 
@@ -4652,7 +4662,8 @@ static NvBool NotifyVblank(
     pCallbackData = nvApiHeadRegisterVBlankCallback(pOpenDisp->pDispEvo,
                                                     apiHead,
                                                     NotifyVblankCallback,
-                                                    pEventOpenFd);
+                                                    pEventOpenFd,
+                                                    1 /* listIndex */);
     if (pCallbackData == NULL) {
         return NV_FALSE;
     }
@@ -4867,8 +4878,7 @@ static NvBool AccelVblankSemControls(
     struct NvKmsPerOpenDev *pOpenDev;
     struct NvKmsPerOpenDisp *pOpenDisp;
     NVDevEvoPtr pDevEvo;
-    const NVDispEvoRec *pDispEvo;
-    NvU32 apiHead, hwHeadMask = 0;
+    NVDispEvoRec *pDispEvo;
 
     if (!GetPerOpenDevAndDisp(pOpen,
                               pParams->request.deviceHandle,
@@ -4885,18 +4895,10 @@ static NvBool AccelVblankSemControls(
     pDevEvo = pOpenDev->pDevEvo;
     pDispEvo = pOpenDisp->pDispEvo;
 
-    FOR_ALL_HEADS(apiHead, pParams->request.headMask) {
-        NvU32 hwHead = nvGetPrimaryHwHead(pDispEvo, apiHead);
-
-        if (hwHead != NV_INVALID_HEAD) {
-            hwHeadMask |= NVBIT(hwHead);
-        }
-    }
-
     return nvEvoAccelVblankSemControls(
                 pDevEvo,
-                pDispEvo->displayOwner,
-                hwHeadMask);
+                pDispEvo,
+                pParams->request.headMask);
 }
 
 static NvBool VrrSignalSemaphore(
@@ -4914,6 +4916,30 @@ static NvBool VrrSignalSemaphore(
     }
 
     nvVrrSignalSemaphore(pOpenDev->pDevEvo, vrrSemaphoreIndex);
+    return TRUE;
+}
+
+static NvBool FramebufferConsoleDisabled(
+    struct NvKmsPerOpen *pOpen,
+    void *pParamsVoid)
+{
+    const struct NvKmsFramebufferConsoleDisabledParams *pParams = pParamsVoid;
+    struct NvKmsPerOpenDev *pOpenDev =
+        GetPerOpenDev(pOpen, pParams->request.deviceHandle);
+    
+    if (pOpenDev == NULL) {
+        return FALSE;
+    }
+
+    if (!nvKmsOpenDevHasSubOwnerPermissionOrBetter(pOpenDev)) {
+        return FALSE;
+    }
+
+    if (pOpen->clientType != NVKMS_CLIENT_KERNEL_SPACE) {
+        return FALSE;
+    }
+
+    nvRmUnmapFbConsoleMemory(pOpenDev->pDevEvo);
     return TRUE;
 }
 
@@ -5043,6 +5069,7 @@ NvBool nvKmsIoctl(
         ENTRY(NVKMS_IOCTL_DISABLE_VBLANK_SEM_CONTROL, DisableVblankSemControl),
         ENTRY(NVKMS_IOCTL_ACCEL_VBLANK_SEM_CONTROLS, AccelVblankSemControls),
         ENTRY(NVKMS_IOCTL_VRR_SIGNAL_SEMAPHORE, VrrSignalSemaphore),
+        ENTRY(NVKMS_IOCTL_FRAMEBUFFER_CONSOLE_DISABLED, FramebufferConsoleDisabled),
     };
 
     struct NvKmsPerOpen *pOpen = pOpenVoid;
@@ -5190,6 +5217,31 @@ void nvKmsClose(void *pOpenVoid)
     nvFree(pOpen);
 }
 
+
+/*
+Frees all references to a device
+*/
+void nvRevokeDevice(NVDevEvoPtr pDevEvo)
+{
+    if (pDevEvo == NULL) {
+        return;
+    }
+
+    struct NvKmsPerOpen *pOpen;
+
+    nvListForEachEntry(pOpen, &perOpenIoctlList, perOpenListEntry) {
+        struct NvKmsPerOpenDev *pOpenDev = DevEvoToOpenDev(pOpen, pDevEvo);
+        if (pOpenDev == NULL) {
+            continue;
+        }
+        if (pOpenDev == pDevEvo->pNvKmsOpenDev) {
+            // do not free the internal pOpenDev, as that is handled
+            // by nvFreeDevEvo
+            continue;
+        }
+        FreeDeviceReference(pOpen, pOpenDev);
+    }
+}
 
 /*!
  * Open callback.
@@ -6605,22 +6657,21 @@ void nvKmsResume(NvU32 gpuId)
     suspendCounter--;
 
     if (suspendCounter == 0) {
-        NVDevEvoPtr pDevEvo;
-
-        FOR_ALL_EVO_DEVS(pDevEvo) {
+        NVDevEvoPtr pDevEvo, pDevEvo_tmp;
+        FOR_ALL_EVO_DEVS_SAFE(pDevEvo, pDevEvo_tmp) {
             nvEvoLogDevDebug(pDevEvo, EVO_LOG_INFO, "Resuming");
 
             if (nvResumeDevEvo(pDevEvo)) {
                 nvDPSetAllowMultiStreaming(pDevEvo, TRUE /* allowMST */);
                 EnableAndSetupVblankSyncObjectForAllOpens(pDevEvo);
                 AllocSurfaceCtxDmasForAllOpens(pDevEvo);
-            }
 
-            if (pDevEvo->modesetOwner == NULL) {
-                // Hardware state was lost, so we need to force a console
-                // restore.
-                pDevEvo->skipConsoleRestore = FALSE;
-                RestoreConsole(pDevEvo);
+                if (pDevEvo->modesetOwner == NULL) {
+                    // Hardware state was lost, so we need to force a console
+                    // restore.
+                    pDevEvo->skipConsoleRestore = FALSE;
+                    RestoreConsole(pDevEvo);
+                }
             }
         }
     }
@@ -6754,4 +6805,41 @@ NvBool nvKmsOpenDevHasSubOwnerPermissionOrBetter(const struct NvKmsPerOpenDev *p
     return pOpenDev->isPrivileged ||
            pOpenDev->pDevEvo->modesetOwner == pOpenDev ||
            pOpenDev->pDevEvo->modesetSubOwner == pOpenDev;
+}
+
+void nvKmsOrphanVblankSemControlForAllOpens(NVDispEvoRec *pDispEvo)
+{
+    struct NvKmsPerOpen *pOpen;
+
+    if (!pDispEvo->pDevEvo->supportsVblankSemControl) {
+        return;
+    }
+
+    nvListForEachEntry(pOpen, &perOpenIoctlList, perOpenIoctlListEntry) {
+        struct NvKmsPerOpenDev *pOpenDev = DevEvoToOpenDev(pOpen, pDispEvo->pDevEvo);
+        struct NvKmsPerOpenDisp *pOpenDisp;
+        NvKmsGenericHandle disp;
+
+        if (pOpenDev == NULL) {
+            continue;
+        }
+
+        FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDev->dispHandles,
+                                            pOpenDisp, disp) {
+
+            NVVblankSemControl *pVblankSemControl;
+            NvKmsGenericHandle vblankSemControlHandle;
+
+            if (pOpenDisp->pDispEvo != pDispEvo) {
+                continue;
+            }
+
+            FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDisp->vblankSemControlHandles,
+                                                pVblankSemControl,
+                                                vblankSemControlHandle) {
+
+                nvEvoOrphanVblankSemControl(pDispEvo, pVblankSemControl);
+            }
+        }
+    }
 }

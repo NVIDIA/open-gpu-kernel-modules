@@ -1716,123 +1716,173 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_RmClient
 
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+PEVENTNOTIFICATION * __nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr(struct INotifier *pNotifier);    // super
+struct NotifShare * __nvoc_down_thunk_Notifier_inotifyGetNotificationShare(struct INotifier *pNotifier);    // super
+void __nvoc_down_thunk_Notifier_inotifySetNotificationShare(struct INotifier *pNotifier, struct NotifShare *pNotifShare);    // super
+NV_STATUS __nvoc_down_thunk_Notifier_inotifyUnregisterEvent(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // super
+NV_STATUS __nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // super
+NvBool __nvoc_down_thunk_RmClientResource_resAccessCallback(struct RsResource *pRmCliRes, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // this
+NvBool __nvoc_down_thunk_RmClientResource_resShareCallback(struct RsResource *pRmCliRes, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // this
+NV_STATUS __nvoc_down_thunk_RmClientResource_resControl_Prologue(struct RsResource *pRmCliRes, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+void __nvoc_down_thunk_RmClientResource_resControl_Epilogue(struct RsResource *pRmCliRes, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+
 // 4 down-thunk(s) defined to bridge methods in RmClientResource from superclasses
 
 // cliresAccessCallback: virtual override (res) base (clientres)
-static NvBool __nvoc_down_thunk_RmClientResource_resAccessCallback(struct RsResource *pRmCliRes, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+NvBool __nvoc_down_thunk_RmClientResource_resAccessCallback(struct RsResource *pRmCliRes, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return cliresAccessCallback((struct RmClientResource *)(((unsigned char *) pRmCliRes) - __nvoc_rtti_RmClientResource_RsResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
 // cliresShareCallback: virtual override (res) base (clientres)
-static NvBool __nvoc_down_thunk_RmClientResource_resShareCallback(struct RsResource *pRmCliRes, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+NvBool __nvoc_down_thunk_RmClientResource_resShareCallback(struct RsResource *pRmCliRes, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return cliresShareCallback((struct RmClientResource *)(((unsigned char *) pRmCliRes) - __nvoc_rtti_RmClientResource_RsResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 // cliresControl_Prologue: virtual override (res) base (clientres)
-static NV_STATUS __nvoc_down_thunk_RmClientResource_resControl_Prologue(struct RsResource *pRmCliRes, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_down_thunk_RmClientResource_resControl_Prologue(struct RsResource *pRmCliRes, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return cliresControl_Prologue((struct RmClientResource *)(((unsigned char *) pRmCliRes) - __nvoc_rtti_RmClientResource_RsResource.offset), pCallContext, pParams);
 }
 
 // cliresControl_Epilogue: virtual override (res) base (clientres)
-static void __nvoc_down_thunk_RmClientResource_resControl_Epilogue(struct RsResource *pRmCliRes, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+void __nvoc_down_thunk_RmClientResource_resControl_Epilogue(struct RsResource *pRmCliRes, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     cliresControl_Epilogue((struct RmClientResource *)(((unsigned char *) pRmCliRes) - __nvoc_rtti_RmClientResource_RsResource.offset), pCallContext, pParams);
 }
 
 
+// Up-thunk(s) to bridge methods to ancestors (if any)
+NvBool __nvoc_up_thunk_RsResource_clientresCanCopy(struct RsClientResource *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_clientresIsDuplicate(struct RsClientResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super
+void __nvoc_up_thunk_RsResource_clientresPreDestruct(struct RsClientResource *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_clientresControl(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_clientresControlFilter(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_clientresControlSerialization_Prologue(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+void __nvoc_up_thunk_RsResource_clientresControlSerialization_Epilogue(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_clientresControl_Prologue(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+void __nvoc_up_thunk_RsResource_clientresControl_Epilogue(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_clientresMap(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_clientresUnmap(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // super
+NvBool __nvoc_up_thunk_RsResource_clientresIsPartialUnmapSupported(struct RsClientResource *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_clientresMapTo(struct RsClientResource *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_clientresUnmapFrom(struct RsClientResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super
+NvU32 __nvoc_up_thunk_RsResource_clientresGetRefCount(struct RsClientResource *pResource);    // super
+NvBool __nvoc_up_thunk_RsResource_clientresAccessCallback(struct RsClientResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super
+NvBool __nvoc_up_thunk_RsResource_clientresShareCallback(struct RsClientResource *pResource, struct RsClient *pInvokingClient, RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super
+void __nvoc_up_thunk_RsResource_clientresAddAdditionalDependants(struct RsClient *pClient, struct RsClientResource *pResource, RsResourceRef *pReference);    // super
+NvBool __nvoc_up_thunk_RsResource_cliresCanCopy(struct RmClientResource *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_cliresIsDuplicate(struct RmClientResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // this
+void __nvoc_up_thunk_RsResource_cliresPreDestruct(struct RmClientResource *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_cliresControl(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_cliresControlFilter(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_cliresControlSerialization_Prologue(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+void __nvoc_up_thunk_RsResource_cliresControlSerialization_Epilogue(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_cliresMap(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_cliresUnmap(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // this
+NvBool __nvoc_up_thunk_RsResource_cliresIsPartialUnmapSupported(struct RmClientResource *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_cliresMapTo(struct RmClientResource *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_cliresUnmapFrom(struct RmClientResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
+NvU32 __nvoc_up_thunk_RsResource_cliresGetRefCount(struct RmClientResource *pResource);    // this
+void __nvoc_up_thunk_RsResource_cliresAddAdditionalDependants(struct RsClient *pClient, struct RmClientResource *pResource, RsResourceRef *pReference);    // this
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_cliresGetNotificationListPtr(struct RmClientResource *pNotifier);    // this
+struct NotifShare * __nvoc_up_thunk_Notifier_cliresGetNotificationShare(struct RmClientResource *pNotifier);    // this
+void __nvoc_up_thunk_Notifier_cliresSetNotificationShare(struct RmClientResource *pNotifier, struct NotifShare *pNotifShare);    // this
+NV_STATUS __nvoc_up_thunk_Notifier_cliresUnregisterEvent(struct RmClientResource *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // this
+NV_STATUS __nvoc_up_thunk_Notifier_cliresGetOrAllocNotifShare(struct RmClientResource *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // this
+
 // 19 up-thunk(s) defined to bridge methods in RmClientResource to superclasses
 
 // cliresCanCopy: virtual inherited (res) base (clientres)
-static NvBool __nvoc_up_thunk_RsResource_cliresCanCopy(struct RmClientResource *pResource) {
+NvBool __nvoc_up_thunk_RsResource_cliresCanCopy(struct RmClientResource *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmClientResource_RsResource.offset));
 }
 
 // cliresIsDuplicate: virtual inherited (res) base (clientres)
-static NV_STATUS __nvoc_up_thunk_RsResource_cliresIsDuplicate(struct RmClientResource *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+NV_STATUS __nvoc_up_thunk_RsResource_cliresIsDuplicate(struct RmClientResource *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmClientResource_RsResource.offset), hMemory, pDuplicate);
 }
 
 // cliresPreDestruct: virtual inherited (res) base (clientres)
-static void __nvoc_up_thunk_RsResource_cliresPreDestruct(struct RmClientResource *pResource) {
+void __nvoc_up_thunk_RsResource_cliresPreDestruct(struct RmClientResource *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmClientResource_RsResource.offset));
 }
 
 // cliresControl: virtual inherited (res) base (clientres)
-static NV_STATUS __nvoc_up_thunk_RsResource_cliresControl(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_cliresControl(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControl((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmClientResource_RsResource.offset), pCallContext, pParams);
 }
 
 // cliresControlFilter: virtual inherited (res) base (clientres)
-static NV_STATUS __nvoc_up_thunk_RsResource_cliresControlFilter(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_cliresControlFilter(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmClientResource_RsResource.offset), pCallContext, pParams);
 }
 
 // cliresControlSerialization_Prologue: virtual inherited (res) base (clientres)
-static NV_STATUS __nvoc_up_thunk_RsResource_cliresControlSerialization_Prologue(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_cliresControlSerialization_Prologue(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlSerialization_Prologue((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmClientResource_RsResource.offset), pCallContext, pParams);
 }
 
 // cliresControlSerialization_Epilogue: virtual inherited (res) base (clientres)
-static void __nvoc_up_thunk_RsResource_cliresControlSerialization_Epilogue(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+void __nvoc_up_thunk_RsResource_cliresControlSerialization_Epilogue(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     resControlSerialization_Epilogue((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmClientResource_RsResource.offset), pCallContext, pParams);
 }
 
 // cliresMap: virtual inherited (res) base (clientres)
-static NV_STATUS __nvoc_up_thunk_RsResource_cliresMap(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+NV_STATUS __nvoc_up_thunk_RsResource_cliresMap(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
     return resMap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmClientResource_RsResource.offset), pCallContext, pParams, pCpuMapping);
 }
 
 // cliresUnmap: virtual inherited (res) base (clientres)
-static NV_STATUS __nvoc_up_thunk_RsResource_cliresUnmap(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+NV_STATUS __nvoc_up_thunk_RsResource_cliresUnmap(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
     return resUnmap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmClientResource_RsResource.offset), pCallContext, pCpuMapping);
 }
 
 // cliresIsPartialUnmapSupported: inline virtual inherited (res) base (clientres) body
-static NvBool __nvoc_up_thunk_RsResource_cliresIsPartialUnmapSupported(struct RmClientResource *pResource) {
+NvBool __nvoc_up_thunk_RsResource_cliresIsPartialUnmapSupported(struct RmClientResource *pResource) {
     return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmClientResource_RsResource.offset));
 }
 
 // cliresMapTo: virtual inherited (res) base (clientres)
-static NV_STATUS __nvoc_up_thunk_RsResource_cliresMapTo(struct RmClientResource *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_cliresMapTo(struct RmClientResource *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
     return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmClientResource_RsResource.offset), pParams);
 }
 
 // cliresUnmapFrom: virtual inherited (res) base (clientres)
-static NV_STATUS __nvoc_up_thunk_RsResource_cliresUnmapFrom(struct RmClientResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_cliresUnmapFrom(struct RmClientResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
     return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmClientResource_RsResource.offset), pParams);
 }
 
 // cliresGetRefCount: virtual inherited (res) base (clientres)
-static NvU32 __nvoc_up_thunk_RsResource_cliresGetRefCount(struct RmClientResource *pResource) {
+NvU32 __nvoc_up_thunk_RsResource_cliresGetRefCount(struct RmClientResource *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmClientResource_RsResource.offset));
 }
 
 // cliresAddAdditionalDependants: virtual inherited (res) base (clientres)
-static void __nvoc_up_thunk_RsResource_cliresAddAdditionalDependants(struct RsClient *pClient, struct RmClientResource *pResource, RsResourceRef *pReference) {
+void __nvoc_up_thunk_RsResource_cliresAddAdditionalDependants(struct RsClient *pClient, struct RmClientResource *pResource, RsResourceRef *pReference) {
     resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_RmClientResource_RsResource.offset), pReference);
 }
 
 // cliresGetNotificationListPtr: virtual inherited (notify) base (notify)
-static PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_cliresGetNotificationListPtr(struct RmClientResource *pNotifier) {
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_cliresGetNotificationListPtr(struct RmClientResource *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_RmClientResource_Notifier.offset));
 }
 
 // cliresGetNotificationShare: virtual inherited (notify) base (notify)
-static struct NotifShare * __nvoc_up_thunk_Notifier_cliresGetNotificationShare(struct RmClientResource *pNotifier) {
+struct NotifShare * __nvoc_up_thunk_Notifier_cliresGetNotificationShare(struct RmClientResource *pNotifier) {
     return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_RmClientResource_Notifier.offset));
 }
 
 // cliresSetNotificationShare: virtual inherited (notify) base (notify)
-static void __nvoc_up_thunk_Notifier_cliresSetNotificationShare(struct RmClientResource *pNotifier, struct NotifShare *pNotifShare) {
+void __nvoc_up_thunk_Notifier_cliresSetNotificationShare(struct RmClientResource *pNotifier, struct NotifShare *pNotifShare) {
     notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_RmClientResource_Notifier.offset), pNotifShare);
 }
 
 // cliresUnregisterEvent: virtual inherited (notify) base (notify)
-static NV_STATUS __nvoc_up_thunk_Notifier_cliresUnregisterEvent(struct RmClientResource *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
+NV_STATUS __nvoc_up_thunk_Notifier_cliresUnregisterEvent(struct RmClientResource *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_RmClientResource_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 // cliresGetOrAllocNotifShare: virtual inherited (notify) base (notify)
-static NV_STATUS __nvoc_up_thunk_Notifier_cliresGetOrAllocNotifShare(struct RmClientResource *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
+NV_STATUS __nvoc_up_thunk_Notifier_cliresGetOrAllocNotifShare(struct RmClientResource *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_RmClientResource_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
@@ -1890,22 +1940,6 @@ __nvoc_ctor_RmClientResource_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_RmClientResource_1(RmClientResource *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // cliresAccessCallback -- virtual override (res) base (clientres)
-    pThis->__cliresAccessCallback__ = &cliresAccessCallback_IMPL;
-    pThis->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmClientResource_resAccessCallback;
-
-    // cliresShareCallback -- virtual override (res) base (clientres)
-    pThis->__cliresShareCallback__ = &cliresShareCallback_IMPL;
-    pThis->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmClientResource_resShareCallback;
-
-    // cliresControl_Prologue -- virtual override (res) base (clientres)
-    pThis->__cliresControl_Prologue__ = &cliresControl_Prologue_IMPL;
-    pThis->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmClientResource_resControl_Prologue;
-
-    // cliresControl_Epilogue -- virtual override (res) base (clientres)
-    pThis->__cliresControl_Epilogue__ = &cliresControl_Epilogue_IMPL;
-    pThis->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmClientResource_resControl_Epilogue;
 
     // cliresCtrlCmdSystemGetCpuInfo -- exported (id=0x102)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
@@ -2441,70 +2475,307 @@ static void __nvoc_init_funcTable_RmClientResource_1(RmClientResource *pThis) {
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
     pThis->__cliresCtrlCmdSystemPfmreqhndlrGetExtendedPerfSensorCounters__ = &cliresCtrlCmdSystemPfmreqhndlrGetExtendedPerfSensorCounters_IMPL;
 #endif
-
-    // cliresCanCopy -- virtual inherited (res) base (clientres)
-    pThis->__cliresCanCopy__ = &__nvoc_up_thunk_RsResource_cliresCanCopy;
-
-    // cliresIsDuplicate -- virtual inherited (res) base (clientres)
-    pThis->__cliresIsDuplicate__ = &__nvoc_up_thunk_RsResource_cliresIsDuplicate;
-
-    // cliresPreDestruct -- virtual inherited (res) base (clientres)
-    pThis->__cliresPreDestruct__ = &__nvoc_up_thunk_RsResource_cliresPreDestruct;
-
-    // cliresControl -- virtual inherited (res) base (clientres)
-    pThis->__cliresControl__ = &__nvoc_up_thunk_RsResource_cliresControl;
-
-    // cliresControlFilter -- virtual inherited (res) base (clientres)
-    pThis->__cliresControlFilter__ = &__nvoc_up_thunk_RsResource_cliresControlFilter;
-
-    // cliresControlSerialization_Prologue -- virtual inherited (res) base (clientres)
-    pThis->__cliresControlSerialization_Prologue__ = &__nvoc_up_thunk_RsResource_cliresControlSerialization_Prologue;
-
-    // cliresControlSerialization_Epilogue -- virtual inherited (res) base (clientres)
-    pThis->__cliresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RsResource_cliresControlSerialization_Epilogue;
-
-    // cliresMap -- virtual inherited (res) base (clientres)
-    pThis->__cliresMap__ = &__nvoc_up_thunk_RsResource_cliresMap;
-
-    // cliresUnmap -- virtual inherited (res) base (clientres)
-    pThis->__cliresUnmap__ = &__nvoc_up_thunk_RsResource_cliresUnmap;
-
-    // cliresIsPartialUnmapSupported -- inline virtual inherited (res) base (clientres) body
-    pThis->__cliresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_cliresIsPartialUnmapSupported;
-
-    // cliresMapTo -- virtual inherited (res) base (clientres)
-    pThis->__cliresMapTo__ = &__nvoc_up_thunk_RsResource_cliresMapTo;
-
-    // cliresUnmapFrom -- virtual inherited (res) base (clientres)
-    pThis->__cliresUnmapFrom__ = &__nvoc_up_thunk_RsResource_cliresUnmapFrom;
-
-    // cliresGetRefCount -- virtual inherited (res) base (clientres)
-    pThis->__cliresGetRefCount__ = &__nvoc_up_thunk_RsResource_cliresGetRefCount;
-
-    // cliresAddAdditionalDependants -- virtual inherited (res) base (clientres)
-    pThis->__cliresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_cliresAddAdditionalDependants;
-
-    // cliresGetNotificationListPtr -- virtual inherited (notify) base (notify)
-    pThis->__cliresGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_cliresGetNotificationListPtr;
-
-    // cliresGetNotificationShare -- virtual inherited (notify) base (notify)
-    pThis->__cliresGetNotificationShare__ = &__nvoc_up_thunk_Notifier_cliresGetNotificationShare;
-
-    // cliresSetNotificationShare -- virtual inherited (notify) base (notify)
-    pThis->__cliresSetNotificationShare__ = &__nvoc_up_thunk_Notifier_cliresSetNotificationShare;
-
-    // cliresUnregisterEvent -- virtual inherited (notify) base (notify)
-    pThis->__cliresUnregisterEvent__ = &__nvoc_up_thunk_Notifier_cliresUnregisterEvent;
-
-    // cliresGetOrAllocNotifShare -- virtual inherited (notify) base (notify)
-    pThis->__cliresGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_cliresGetOrAllocNotifShare;
-} // End __nvoc_init_funcTable_RmClientResource_1 with approximately 134 basic block(s).
+} // End __nvoc_init_funcTable_RmClientResource_1 with approximately 107 basic block(s).
 
 
 // Initialize vtable(s) for 130 virtual method(s).
 void __nvoc_init_funcTable_RmClientResource(RmClientResource *pThis) {
 
-    // Initialize vtable(s) with 130 per-object function pointer(s).
+    // Per-class vtable definition
+    static const struct NVOC_VTABLE__RmClientResource vtable = {
+        .__cliresAccessCallback__ = &cliresAccessCallback_IMPL,    // virtual override (res) base (clientres)
+        .RsClientResource.__clientresAccessCallback__ = &__nvoc_up_thunk_RsResource_clientresAccessCallback,    // virtual inherited (res) base (res)
+        .RsClientResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmClientResource_resAccessCallback,    // virtual
+        .__cliresShareCallback__ = &cliresShareCallback_IMPL,    // virtual override (res) base (clientres)
+        .RsClientResource.__clientresShareCallback__ = &__nvoc_up_thunk_RsResource_clientresShareCallback,    // virtual inherited (res) base (res)
+        .RsClientResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmClientResource_resShareCallback,    // virtual
+        .__cliresControl_Prologue__ = &cliresControl_Prologue_IMPL,    // virtual override (res) base (clientres)
+        .RsClientResource.__clientresControl_Prologue__ = &__nvoc_up_thunk_RsResource_clientresControl_Prologue,    // virtual inherited (res) base (res)
+        .RsClientResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmClientResource_resControl_Prologue,    // virtual
+        .__cliresControl_Epilogue__ = &cliresControl_Epilogue_IMPL,    // virtual override (res) base (clientres)
+        .RsClientResource.__clientresControl_Epilogue__ = &__nvoc_up_thunk_RsResource_clientresControl_Epilogue,    // virtual inherited (res) base (res)
+        .RsClientResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmClientResource_resControl_Epilogue,    // virtual
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x509u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x40bu)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x105u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x9u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x108u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x108u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x108u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x9u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x9u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x107u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x7u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x7u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x7u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x7u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x9u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x9u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x9u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x9u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x509u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xbu)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x9u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x108u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x9u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x9u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10bu)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x9u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x9u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x9u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x14004u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x14004u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x5u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x5u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x109u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x9u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+        .__cliresCanCopy__ = &__nvoc_up_thunk_RsResource_cliresCanCopy,    // virtual inherited (res) base (clientres)
+        .RsClientResource.__clientresCanCopy__ = &__nvoc_up_thunk_RsResource_clientresCanCopy,    // virtual inherited (res) base (res)
+        .RsClientResource.RsResource.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+        .__cliresIsDuplicate__ = &__nvoc_up_thunk_RsResource_cliresIsDuplicate,    // virtual inherited (res) base (clientres)
+        .RsClientResource.__clientresIsDuplicate__ = &__nvoc_up_thunk_RsResource_clientresIsDuplicate,    // virtual inherited (res) base (res)
+        .RsClientResource.RsResource.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+        .__cliresPreDestruct__ = &__nvoc_up_thunk_RsResource_cliresPreDestruct,    // virtual inherited (res) base (clientres)
+        .RsClientResource.__clientresPreDestruct__ = &__nvoc_up_thunk_RsResource_clientresPreDestruct,    // virtual inherited (res) base (res)
+        .RsClientResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+        .__cliresControl__ = &__nvoc_up_thunk_RsResource_cliresControl,    // virtual inherited (res) base (clientres)
+        .RsClientResource.__clientresControl__ = &__nvoc_up_thunk_RsResource_clientresControl,    // virtual inherited (res) base (res)
+        .RsClientResource.RsResource.__resControl__ = &resControl_IMPL,    // virtual
+        .__cliresControlFilter__ = &__nvoc_up_thunk_RsResource_cliresControlFilter,    // virtual inherited (res) base (clientres)
+        .RsClientResource.__clientresControlFilter__ = &__nvoc_up_thunk_RsResource_clientresControlFilter,    // virtual inherited (res) base (res)
+        .RsClientResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+        .__cliresControlSerialization_Prologue__ = &__nvoc_up_thunk_RsResource_cliresControlSerialization_Prologue,    // virtual inherited (res) base (clientres)
+        .RsClientResource.__clientresControlSerialization_Prologue__ = &__nvoc_up_thunk_RsResource_clientresControlSerialization_Prologue,    // virtual inherited (res) base (res)
+        .RsClientResource.RsResource.__resControlSerialization_Prologue__ = &resControlSerialization_Prologue_IMPL,    // virtual
+        .__cliresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RsResource_cliresControlSerialization_Epilogue,    // virtual inherited (res) base (clientres)
+        .RsClientResource.__clientresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RsResource_clientresControlSerialization_Epilogue,    // virtual inherited (res) base (res)
+        .RsClientResource.RsResource.__resControlSerialization_Epilogue__ = &resControlSerialization_Epilogue_IMPL,    // virtual
+        .__cliresMap__ = &__nvoc_up_thunk_RsResource_cliresMap,    // virtual inherited (res) base (clientres)
+        .RsClientResource.__clientresMap__ = &__nvoc_up_thunk_RsResource_clientresMap,    // virtual inherited (res) base (res)
+        .RsClientResource.RsResource.__resMap__ = &resMap_IMPL,    // virtual
+        .__cliresUnmap__ = &__nvoc_up_thunk_RsResource_cliresUnmap,    // virtual inherited (res) base (clientres)
+        .RsClientResource.__clientresUnmap__ = &__nvoc_up_thunk_RsResource_clientresUnmap,    // virtual inherited (res) base (res)
+        .RsClientResource.RsResource.__resUnmap__ = &resUnmap_IMPL,    // virtual
+        .__cliresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_cliresIsPartialUnmapSupported,    // inline virtual inherited (res) base (clientres) body
+        .RsClientResource.__clientresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_clientresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+        .RsClientResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+        .__cliresMapTo__ = &__nvoc_up_thunk_RsResource_cliresMapTo,    // virtual inherited (res) base (clientres)
+        .RsClientResource.__clientresMapTo__ = &__nvoc_up_thunk_RsResource_clientresMapTo,    // virtual inherited (res) base (res)
+        .RsClientResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
+        .__cliresUnmapFrom__ = &__nvoc_up_thunk_RsResource_cliresUnmapFrom,    // virtual inherited (res) base (clientres)
+        .RsClientResource.__clientresUnmapFrom__ = &__nvoc_up_thunk_RsResource_clientresUnmapFrom,    // virtual inherited (res) base (res)
+        .RsClientResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+        .__cliresGetRefCount__ = &__nvoc_up_thunk_RsResource_cliresGetRefCount,    // virtual inherited (res) base (clientres)
+        .RsClientResource.__clientresGetRefCount__ = &__nvoc_up_thunk_RsResource_clientresGetRefCount,    // virtual inherited (res) base (res)
+        .RsClientResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+        .__cliresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_cliresAddAdditionalDependants,    // virtual inherited (res) base (clientres)
+        .RsClientResource.__clientresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_clientresAddAdditionalDependants,    // virtual inherited (res) base (res)
+        .RsClientResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+        .__cliresGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_cliresGetNotificationListPtr,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifyGetNotificationListPtr__ = &notifyGetNotificationListPtr_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifyGetNotificationListPtr__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr,    // pure virtual
+        .__cliresGetNotificationShare__ = &__nvoc_up_thunk_Notifier_cliresGetNotificationShare,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifyGetNotificationShare__ = &notifyGetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifyGetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationShare,    // pure virtual
+        .__cliresSetNotificationShare__ = &__nvoc_up_thunk_Notifier_cliresSetNotificationShare,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifySetNotificationShare__ = &notifySetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifySetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifySetNotificationShare,    // pure virtual
+        .__cliresUnregisterEvent__ = &__nvoc_up_thunk_Notifier_cliresUnregisterEvent,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifyUnregisterEvent__ = &notifyUnregisterEvent_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifyUnregisterEvent__ = &__nvoc_down_thunk_Notifier_inotifyUnregisterEvent,    // pure virtual
+        .__cliresGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_cliresGetOrAllocNotifShare,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifyGetOrAllocNotifShare__ = &notifyGetOrAllocNotifShare_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifyGetOrAllocNotifShare__ = &__nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare,    // pure virtual
+    };
+
+    // Pointer(s) to per-class vtable(s)
+    pThis->__nvoc_base_RsClientResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.RsClientResource.RsResource;    // (res) super^2
+    pThis->__nvoc_base_RsClientResource.__nvoc_vtable = &vtable.RsClientResource;    // (clientres) super
+    pThis->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_vtable = &vtable.Notifier.INotifier;    // (inotify) super^2
+    pThis->__nvoc_base_Notifier.__nvoc_vtable = &vtable.Notifier;    // (notify) super
+    pThis->__nvoc_vtable = &vtable;    // (clires) this
+
+    // Initialize vtable(s) with 107 per-object function pointer(s).
     __nvoc_init_funcTable_RmClientResource_1(pThis);
 }
 

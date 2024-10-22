@@ -143,15 +143,16 @@ cliresAccessCallback_IMPL
     // Client resource's access callback will grant any rights here to any resource it owns
     switch (accessRight)
     {
+        case RS_ACCESS_PERFMON:
         case RS_ACCESS_NICE:
         {
-            // Grant if the caller satisfies osAllowPriorityOverride
-            return osAllowPriorityOverride();
+            return osCheckAccess(accessRight);
+        }
+        default:
+        {
+            return NV_FALSE;
         }
     }
-
-    // Delegate to superclass
-    return resAccessCallback_IMPL(staticCast(pRmCliRes, RsResource), pInvokingClient, pAllocParams, accessRight);
 }
 
 NvBool
@@ -377,11 +378,11 @@ CliGetSystemP2pCaps
     NvU32         gpuMask = 0;
     NvU32         localGpuIndex, peerGpuIndex;
     NvU32         i;
-    NvU8          p2pWriteCapStatus, p2pReadCapStatus;
+    NvU8          p2pWriteCapStatus, p2pReadCapStatus, p2pAtomicCapStatus;
     NV_STATUS     rmStatus = NV_OK;
     P2P_CONNECTIVITY connectivity;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if ((gpuCount ==  0) || (gpuCount > NV0000_CTRL_SYSTEM_MAX_ATTACHED_GPUS))
     {
@@ -455,7 +456,7 @@ CliGetSystemP2pCaps
     }
 
     rmStatus = p2pGetCapsStatus(gpuMask, &p2pWriteCapStatus,
-                                &p2pReadCapStatus, &connectivity
+                                &p2pReadCapStatus, &p2pAtomicCapStatus, &connectivity
                                 );
     if (rmStatus != NV_OK)
     {
@@ -470,7 +471,8 @@ CliGetSystemP2pCaps
         if (p2pCaps != NULL)
         {
             *p2pCaps |= REF_DEF(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_NVLINK_SUPPORTED, _TRUE);
-            *p2pCaps |= REF_DEF(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_ATOMICS_SUPPORTED, _TRUE);
+            *p2pCaps |= (p2pAtomicCapStatus == NV0000_P2P_CAPS_STATUS_OK) ?
+                REF_DEF(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_ATOMICS_SUPPORTED, _TRUE) : 0;
             *p2pCaps |= REF_DEF(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_READS_SUPPORTED, _TRUE);
             *p2pCaps |= REF_DEF(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_WRITES_SUPPORTED, _TRUE);
         }
@@ -478,7 +480,10 @@ CliGetSystemP2pCaps
         if (p2pCapsStatus != NULL)
         {
             p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_NVLINK] = NV0000_P2P_CAPS_STATUS_OK;
-            p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_ATOMICS] = NV0000_P2P_CAPS_STATUS_OK;
+            if (p2pAtomicCapStatus == NV0000_P2P_CAPS_STATUS_OK)
+            {
+                p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_ATOMICS] = NV0000_P2P_CAPS_STATUS_OK;
+            }
         }
 
         // Get the optimal CEs for P2P read/write for 1 or 2 gpu masks only
@@ -512,6 +517,8 @@ CliGetSystemP2pCaps
             *p2pCaps |= (p2pWriteCapStatus == NV0000_P2P_CAPS_STATUS_OK) ?
                 REF_DEF(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_WRITES_SUPPORTED, _TRUE) : 0;
             *p2pCaps |= REF_DEF(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PCI_SUPPORTED, _TRUE);
+            *p2pCaps |= (p2pAtomicCapStatus == NV0000_P2P_CAPS_STATUS_OK) ?
+                REF_DEF(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_ATOMICS_SUPPORTED, _TRUE) : 0;
 
             if (connectivity == P2P_CONNECTIVITY_PCIE_BAR1)
             {
@@ -526,6 +533,10 @@ CliGetSystemP2pCaps
         if (p2pCapsStatus != NULL)
         {
             p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_PCI] = NV0000_P2P_CAPS_STATUS_OK;
+            if (p2pAtomicCapStatus == NV0000_P2P_CAPS_STATUS_OK)
+            {
+                p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_ATOMICS] = NV0000_P2P_CAPS_STATUS_OK;
+            }
 
             if (connectivity == P2P_CONNECTIVITY_PCIE_BAR1)
             {
@@ -559,13 +570,17 @@ CliGetSystemP2pCaps
         {
             *p2pCaps |= REF_DEF(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_INDIRECT_READS_SUPPORTED, _TRUE);
             *p2pCaps |= REF_DEF(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_INDIRECT_WRITES_SUPPORTED, _TRUE);
-            *p2pCaps |= REF_DEF(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_INDIRECT_ATOMICS_SUPPORTED, _TRUE);
+            *p2pCaps |= (p2pAtomicCapStatus == NV0000_P2P_CAPS_STATUS_OK) ?
+                REF_DEF(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_INDIRECT_ATOMICS_SUPPORTED, _TRUE) : 0;
             *p2pCaps |= REF_DEF(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_INDIRECT_NVLINK_SUPPORTED, _TRUE);
         }
 
         if (p2pCapsStatus != NULL)
         {
-            p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_ATOMICS] = NV0000_P2P_CAPS_STATUS_OK;
+            if (p2pAtomicCapStatus == NV0000_P2P_CAPS_STATUS_OK)
+            {
+                p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_ATOMICS] = NV0000_P2P_CAPS_STATUS_OK;
+            }
             p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_NVLINK] = NV0000_P2P_CAPS_STATUS_OK;
         }
 
@@ -578,7 +593,8 @@ CliGetSystemP2pCaps
 
         if (p2pCaps != NULL)
         {
-            *p2pCaps |= REF_DEF(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_ATOMICS_SUPPORTED, _TRUE);
+            *p2pCaps |= (p2pAtomicCapStatus == NV0000_P2P_CAPS_STATUS_OK) ?
+                REF_DEF(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_ATOMICS_SUPPORTED, _TRUE) : 0;
             *p2pCaps |= (p2pReadCapStatus == NV0000_P2P_CAPS_STATUS_OK) ?
                 REF_DEF(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_READS_SUPPORTED, _TRUE) : 0;
             *p2pCaps |= (p2pWriteCapStatus == NV0000_P2P_CAPS_STATUS_OK) ?
@@ -588,7 +604,10 @@ CliGetSystemP2pCaps
 
         if (p2pCapsStatus != NULL)
         {
-            p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_ATOMICS] = NV0000_P2P_CAPS_STATUS_OK;
+            if (p2pAtomicCapStatus == NV0000_P2P_CAPS_STATUS_OK)
+            {
+                p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_ATOMICS] = NV0000_P2P_CAPS_STATUS_OK;
+            }
             p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_C2C] = NV0000_P2P_CAPS_STATUS_OK;
         }
         if (gpuCount == 1)
@@ -680,7 +699,7 @@ _configCalculateSizes
 }
 
 
-static NV_STATUS
+static void
 _configUnpackStructure
 (
     const char *pFormat,
@@ -739,7 +758,8 @@ _configUnpackStructure
                     break;
 
                 default:
-                    return NV_ERR_GENERIC;
+                    NV_ASSERT(!"Bad pFormat argument");
+                    return;
             }
             *pUnpackedData++ = data;
             fields++;
@@ -751,11 +771,9 @@ _configUnpackStructure
 
     if (pFieldsCount != NULL)
         *pFieldsCount = fields;
-
-    return NV_OK;
 }
 
-static NV_STATUS
+static void
 configReadStructure
   (
       NvU8       *pData,
@@ -772,7 +790,7 @@ configReadStructure
       _configCalculateSizes(pFormat, &packed_size, &unpacked_bytes);
       pPacked_data = &pData[offset];
 
-      return _configUnpackStructure(pFormat, pPacked_data, pStructure,
+      _configUnpackStructure(pFormat, pPacked_data, pStructure,
           &unpacked_bytes, NULL);
 }
 
@@ -803,7 +821,7 @@ cliresCtrlCmdSystemGetFeatures_IMPL
 
     NV_ASSERT_OR_RETURN(pSys != NULL, NV_ERR_INVALID_STATE);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     gpumgrGetGpuAttachInfo(NULL, &gpuMask);
     while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuIndex)) != NULL)
@@ -853,7 +871,7 @@ cliresCtrlCmdSystemGetBuildVersionV2_IMPL
     NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_V2_PARAMS *pParams
 )
 {
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     ct_assert(sizeof(NV_VERSION_STRING) <= sizeof(pParams->driverVersionBuffer));
     ct_assert(sizeof(NV_BUILD_BRANCH_VERSION) <= sizeof(pParams->versionBuffer));
@@ -1048,9 +1066,12 @@ cliresCtrlCmdSystemGetCpuInfo_IMPL
     NV0000_CTRL_SYSTEM_GET_CPU_INFO_PARAMS *pCpuInfoParams
 )
 {
-    OBJSYS    *pSys = SYS_GET_INSTANCE();
+    OBJSYS  *pSys     = SYS_GET_INSTANCE();
+    OBJGPU  *pGpuIter = NULL;
+    NvU32    gpuMask  = 0U;
+    NvU32    gpuIndex = 0U;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     pCpuInfoParams->type = pSys->cpuInfo.type;
     pCpuInfoParams->capabilities = pSys->cpuInfo.caps;
@@ -1068,6 +1089,17 @@ cliresCtrlCmdSystemGetCpuInfo_IMPL
     portMemCopy(pCpuInfoParams->name,
                 sizeof (pCpuInfoParams->name), pSys->cpuInfo.name,
                 sizeof (pCpuInfoParams->name));
+
+    pCpuInfoParams->selfHostedSocType = NV0000_CTRL_SYSTEM_SH_SOC_TYPE_NA;
+    gpumgrGetGpuAttachInfo(NULL, &gpuMask);
+    while ((pGpuIter = gpumgrGetNextGpu(gpuMask, &gpuIndex)) != NULL)
+    {
+        pCpuInfoParams->selfHostedSocType = gpuDetermineSelfHostedSocType_HAL(pGpuIter);
+        if (pCpuInfoParams->selfHostedSocType != NV0000_CTRL_SYSTEM_SH_SOC_TYPE_NA)
+        {
+            break;
+        }
+    }
 
     return NV_OK;
 }
@@ -1089,7 +1121,7 @@ cliresCtrlCmdSystemGetChipsetInfo_IMPL
     OBJSYS *pSys = SYS_GET_INSTANCE();
     OBJCL  *pCl  = SYS_GET_CL(pSys);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     pChipsetInfo->flags = 0;
 
@@ -1223,7 +1255,7 @@ cliresCtrlCmdSystemGetClassList_IMPL
 {
     NV_STATUS status;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     status = classGetSystemClasses(pParams);
 
@@ -1290,7 +1322,7 @@ cliresCtrlCmdSystemGetPlatformType_IMPL
     OBJSYS     *pSys = SYS_GET_INSTANCE();
     OBJPFM     *pPfm = SYS_GET_PFM(pSys);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (pPfm->getProperty(pPfm, PDB_PROP_PFM_IS_TOSHIBA_MOBILE))
     {
@@ -1386,7 +1418,7 @@ cliresCtrlCmdGpuGetAttachedIds_IMPL
     NV0000_CTRL_GPU_GET_ATTACHED_IDS_PARAMS *pGpuAttachedIds
 )
 {
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     return gpumgrGetAttachedGpuIds(pGpuAttachedIds);
 }
@@ -1404,7 +1436,7 @@ cliresCtrlCmdGpuGetIdInfo_IMPL
     NV0000_CTRL_GPU_GET_ID_INFO_PARAMS *pGpuIdInfoParams
 )
 {
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     return gpumgrGetGpuIdInfo(pGpuIdInfoParams);
 }
@@ -1416,7 +1448,7 @@ cliresCtrlCmdGpuGetIdInfoV2_IMPL
     NV0000_CTRL_GPU_GET_ID_INFO_V2_PARAMS *pGpuIdInfoParams
 )
 {
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     return gpumgrGetGpuIdInfoV2(pGpuIdInfoParams);
 }
@@ -1435,7 +1467,7 @@ cliresCtrlCmdGpuGetInitStatus_IMPL
     NV0000_CTRL_GPU_GET_INIT_STATUS_PARAMS *pGpuInitStatusParams
 )
 {
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     return gpumgrGetGpuInitStatus(pGpuInitStatusParams);
 }
@@ -1454,7 +1486,7 @@ cliresCtrlCmdGpuGetDeviceIds_IMPL
     NV0000_CTRL_GPU_GET_DEVICE_IDS_PARAMS *pDeviceIdsParams
 )
 {
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     pDeviceIdsParams->deviceIds = gpumgrGetDeviceInstanceMask();
 
@@ -1475,7 +1507,7 @@ cliresCtrlCmdGpuGetActiveDeviceIds_IMPL
     NV0000_CTRL_GPU_GET_ACTIVE_DEVICE_IDS_PARAMS *pActiveDeviceIdsParams
 )
 {
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     return gpumgrCacheGetActiveDeviceIds(pActiveDeviceIdsParams);
 }
@@ -1524,7 +1556,7 @@ cliresCtrlCmdGpuGetProbedIds_IMPL
     NV0000_CTRL_GPU_GET_PROBED_IDS_PARAMS *pGpuProbedIds
 )
 {
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     return gpumgrGetProbedGpuIds(pGpuProbedIds);
 }
@@ -1573,7 +1605,7 @@ cliresCtrlCmdGpuAttachIds_IMPL
     NvU32 i;
     NV_STATUS status = NV_OK;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (pGpuAttachIds->gpuIds[0] == NV0000_CTRL_GPU_ATTACH_ALL_PROBED_IDS)
     {
@@ -1632,7 +1664,7 @@ cliresCtrlCmdGpuAsyncAttachId_IMPL
     NV_STATUS status = NV_OK;
     NV0000_CTRL_GPU_GET_PROBED_IDS_PARAMS *pGpuProbedIds = NULL;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     pGpuProbedIds = portMemAllocNonPaged(sizeof(*pGpuProbedIds));
     if (pGpuProbedIds == NULL)
@@ -1705,7 +1737,7 @@ cliresCtrlCmdGpuDetachIds_IMPL
     NvU32 i, j;
     NV_STATUS status = NV_OK;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (pGpuDetachIds->gpuIds[0] == NV0000_CTRL_GPU_DETACH_ALL_ATTACHED_IDS)
     {
@@ -1839,7 +1871,7 @@ cliresCtrlCmdGpuAcctGetProcAccountingInfo_IMPL
     RmCtrlParams  *pRmCtrlParams;
     RM_API        *pRmApi;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     pGpu = gpumgrGetGpuFromId(pAcctInfoParams->gpuId);
     if (pGpu == NULL)
@@ -1892,7 +1924,7 @@ cliresCtrlCmdGpuAcctSetAccountingState_IMPL
     RmCtrlParams *pRmCtrlParams;
     RM_API       *pRmApi;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     pGpu = gpumgrGetGpuFromId(pParams->gpuId);
     if (pGpu == NULL)
@@ -1967,7 +1999,7 @@ cliresCtrlCmdGpuAcctClearAccountingData_IMPL
     NV_STATUS       status = NV_OK;
     RM_API         *pRmApi;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     pGpu = gpumgrGetGpuFromId(pParams->gpuId);
     if (pGpu == NULL)
@@ -2021,7 +2053,7 @@ cliresCtrlCmdGpuAcctGetAccountingState_IMPL
     NV_STATUS       status = NV_OK;
     RM_API         *pRmApi;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     pGpu = gpumgrGetGpuFromId(pParams->gpuId);
     if (pGpu == NULL)
@@ -2075,7 +2107,7 @@ cliresCtrlCmdGpuAcctGetAccountingPids_IMPL
     NV_STATUS       status = NV_OK;
     RM_API         *pRmApi;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     pGpu = gpumgrGetGpuFromId(pAcctPidsParams->gpuId);
     if (pGpu == NULL)
@@ -3048,6 +3080,291 @@ nvpcf2xGetStaticParams_exit:
             portMemFree(pData);
             break;
 
+        }
+        case NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_DC_SYSTEM_POWER_LIMITS_CASE:
+        {
+            NvU8 *pData = NULL;
+            NvU32 i;
+            NvU8 prevThreshold = 99;
+            NvU8 version;
+            NvU16 size = NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_1X_HEADER_SIZE_04 +
+                         (NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_VERSION_10_MAX_ENTRIES *
+                         NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_1X_ENTRY_SIZE_11);
+
+            const char *szFmtHeader = NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_1X_HEADER_FMT_SIZE_02;
+            const char *szFmtEntry;
+            DC_SYSTEM_POWER_LIMITS_HEADER_1X header1x;
+            DC_SYSTEM_POWER_LIMITS_HEADER_2X header2x;
+
+            // Allocate buffer of maximum possible size (update size above as spec changes)
+            pData = portMemAllocNonPaged(size);
+            if (pData == NULL)
+            {
+                status = NV_ERR_NO_MEMORY;
+                NV_PRINTF(LEVEL_ERROR, "ERROR: NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_DC_SYSTEM_POWER_LIMITS_CASE: mem alloc failed\n");
+                goto nvpcf2xGetSystemPowerTable_exit;
+            }
+
+            if ((rc = osCallACPI_DSM(pGpu,
+                            ACPI_DSM_FUNCTION_NVPCF_2X,
+                            NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_DC_SYSTEM_POWER_LIMITS_TABLE,
+                            (NvU32 *)pData,
+                            &size)) != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR,
+                "Unable to retrieve NVPCF System power limits table data. Possibly not supported by SBIOS"
+                "rc = %x\n", rc);
+                status =  NV_ERR_NOT_SUPPORTED;
+                goto nvpcf2xGetSystemPowerTable_exit;
+            }
+
+            // Read header version
+            configReadStructure(pData, &version, 0, "1b");
+
+            if (version >= NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_VERSION_20)
+            {
+                pParams->bIsTspSupported = NV_TRUE;
+            }
+            else
+            {
+                pParams->bIsTspSupported = NV_FALSE;
+            }
+
+            // Set the System Power Limits (Battery State of Charge) table version implemented by the SBIOS
+            pParams->sysPwrLimitsTableVersion = version;
+            pParams->type = NVPCF_CTRL_SYSPWRLIMIT_TYPE_BASE;
+
+            switch (version)
+            {
+                case NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_VERSION_10:
+                {
+                    configReadStructure(pData, &header1x, 0, NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_1X_HEADER_FMT_SIZE_02);
+
+                    // Adjust header1x format string based on header1x size
+                    if (header1x.headerSize == NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_1X_HEADER_SIZE_04)
+                    {
+                        szFmtHeader = NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_1X_HEADER_FMT_SIZE_04;
+                    }
+                    else
+                    {
+                        NV_PRINTF(LEVEL_ERROR, "Invalid Header Size.\n");
+                        NV_PRINTF(LEVEL_ERROR, "headerSize = %d\n", header1x.headerSize);
+                        status = NV_ERR_INVALID_STATE;
+                        goto nvpcf2xGetSystemPowerTable_exit;
+                    }
+
+                    // Re-read header1x using correct format string
+                    configReadStructure(pData, &header1x, 0, szFmtHeader);
+
+                    // Copy out any header1x data...
+                    // Set entry format string to match entry size
+                    if (header1x.entrySize == NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_1X_ENTRY_SIZE_11)
+                    {
+                        szFmtEntry = NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_1X_ENTRY_FMT_SIZE_11;
+                    }
+                    else
+                    {
+                        NV_PRINTF(LEVEL_ERROR, "Invalid Entry Size.\n");
+                        NV_PRINTF(LEVEL_ERROR, "entrySize = %d\n", header1x.entrySize);
+                        status = NV_ERR_INVALID_STATE;
+                        goto nvpcf2xGetSystemPowerTable_exit;
+                    }
+
+                    // Bail if invalid number of entries specified
+                    if ((header1x.entryCount > NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_VERSION_10_MAX_ENTRIES) ||
+                        (header1x.entryCount == 0))
+                    {
+                        NV_PRINTF(LEVEL_ERROR, "Invalid Entry Count.\n");
+                        NV_PRINTF(LEVEL_ERROR, "entryCount = %d\n", header1x.entryCount);
+                        status = NV_ERR_INVALID_STATE;
+                        goto nvpcf2xGetSystemPowerTable_exit;
+                    }
+
+                    // Sanity check
+                    if (header1x.entryCount > NV_ARRAY_ELEMENTS(pParams->sysPwrGetInfo))
+                    {
+                        status = NV_ERR_INVALID_STATE;
+                        goto nvpcf2xGetSystemPowerTable_exit;
+                    }
+
+                    // Read out all entries
+                    for (i = 0; i < header1x.entryCount; i++)
+                    {
+                        DC_SYSTEM_POWER_LIMITS_ENTRY_1X sbiosEntry = { 0 };
+
+                        configReadStructure(pData, &sbiosEntry,
+                                                     header1x.headerSize + (i * header1x.entrySize),
+                                                     szFmtEntry);
+
+                        // Copy out data
+                        pParams->sysPwrGetInfo[i].batteryStateOfChargePercent = (NvU8)sbiosEntry.batteryStateOfChargePercent;
+                        pParams->sysPwrGetInfo[i].batteryCurrentLimitmA = sbiosEntry.batteryCurrentLimitmA;
+                        pParams->sysPwrGetInfo[i].restOfSytemReservedPowermW = sbiosEntry.restOfSytemReservedPowermW;
+                        pParams->sysPwrGetInfo[i].minCpuTdpmW = sbiosEntry.minCpuTdpmW;
+                        pParams->sysPwrGetInfo[i].maxCpuTdpmW = sbiosEntry.maxCpuTdpmW;
+                        pParams->sysPwrGetInfo[i].shortTimescaleBatteryCurrentLimitmA = 0;
+                    }
+                    pParams->sysPwrIndex = header1x.entryCount;
+
+                    // Sanity check
+                    for (i = 0; i < header1x.entryCount; i++)
+                    {
+                        // First entry must have a threshold of 100%, assuming i 0 is first entry as we don't support skip entries in table spec
+                        if (i == 0)
+                        {
+                            if (pParams->sysPwrGetInfo[0].batteryStateOfChargePercent != 100)
+                            {
+                                NV_PRINTF(LEVEL_ERROR, "Invalid threshold for entry 0. Must be 100 percent \n");
+                                NV_PRINTF(LEVEL_ERROR, "threshold = %d \n", pParams->sysPwrGetInfo[i].batteryStateOfChargePercent);
+                                status = NV_ERR_INVALID_STATE;
+                                goto nvpcf2xGetSystemPowerTable_exit;
+                            }
+                        }
+                        // Capacity thresholds should be strictly decreasing entry to entry
+                        else if (pParams->sysPwrGetInfo[i].batteryStateOfChargePercent >= prevThreshold)
+                        {
+                            NV_PRINTF(LEVEL_ERROR, "limit[%d] has threshold not strictly smaller than limit[%d] \n", i, i-1);
+                            NV_PRINTF(LEVEL_ERROR, "%d >= %d \n", pParams->sysPwrGetInfo[i].batteryStateOfChargePercent, prevThreshold);
+                            status = NV_ERR_INVALID_STATE;
+                            goto nvpcf2xGetSystemPowerTable_exit;
+                        }
+                        prevThreshold = pParams->sysPwrGetInfo[i].batteryStateOfChargePercent;
+                    }
+                    break;
+                }
+                case NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_VERSION_20:
+                {
+                    configReadStructure(pData, &header2x, 0, NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_2X_HEADER_FMT_SIZE_02);
+
+                    // Adjust header2x format string based on header2x size
+                    if (header2x.headerSize == NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_2X_HEADER_SIZE_04)
+                    {
+                        szFmtHeader = NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_2X_HEADER_FMT_SIZE_04;
+                    }
+                    else
+                    {
+                        NV_PRINTF(LEVEL_ERROR, "Invalid Header Size.\n");
+                        NV_PRINTF(LEVEL_ERROR, "headerSize = %d\n", header2x.headerSize);
+                        status = NV_ERR_INVALID_STATE;
+                        goto nvpcf2xGetSystemPowerTable_exit;
+                    }
+
+                    // Re-read header2x using correct format string
+                    configReadStructure(pData, &header2x, 0, szFmtHeader);
+
+                    // Copy out any header2x data...
+                    // Set entry format string to match entry size
+                    if (header2x.entrySize == NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_2X_ENTRY_SIZE_09)
+                    {
+                        szFmtEntry = NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_2X_ENTRY_FMT_SIZE_09;
+                    }
+                    else
+                    {
+                        NV_PRINTF(LEVEL_ERROR, "Invalid Entry Size.\n");
+                        NV_PRINTF(LEVEL_ERROR, "entrySize = %d \n", header2x.entrySize);
+                        status = NV_ERR_INVALID_STATE;
+                        goto nvpcf2xGetSystemPowerTable_exit;
+                    }
+
+                    // Bail if invalid number of entries specified
+                    if ((header2x.entryCount > NVPCF_DC_SYSTEM_POWER_LIMITS_TABLE_VERSION_20_MAX_ENTRIES) ||
+                        (header2x.entryCount == 0))
+                    {
+                        NV_PRINTF(LEVEL_ERROR, "Invalid Entry Count.\n");
+                        NV_PRINTF(LEVEL_ERROR, "entryCount = %d\n", header2x.entryCount);
+                        status = NV_ERR_INVALID_STATE;
+                        goto nvpcf2xGetSystemPowerTable_exit;
+                    }
+
+                    // Sanity check
+                    if (header2x.entryCount > NV_ARRAY_ELEMENTS(pParams->sysPwrGetInfo))
+                    {
+                        status = NV_ERR_INVALID_STATE;
+                        goto nvpcf2xGetSystemPowerTable_exit;
+                    }
+
+                    // Read out all entries
+                    for (i = 0; i < header2x.entryCount; i++)
+                    {
+                        DC_SYSTEM_POWER_LIMITS_ENTRY_2X sbiosEntry = { 0 };
+
+                        configReadStructure(pData, &sbiosEntry,
+                                 header2x.headerSize + (i * header2x.entrySize),
+                                 szFmtEntry);
+
+                        // Copy out data
+                        pParams->sysPwrGetInfo[i].batteryStateOfChargePercent = (NvU8)sbiosEntry.batteryStateOfChargePercent;
+                        pParams->sysPwrGetInfo[i].batteryCurrentLimitmA = sbiosEntry.longTimescaleBatteryCurrentLimitmA;
+                        pParams->sysPwrGetInfo[i].restOfSytemReservedPowermW = 0;
+                        pParams->sysPwrGetInfo[i].minCpuTdpmW = 0;
+                        pParams->sysPwrGetInfo[i].maxCpuTdpmW = NV_U32_MAX;
+                        pParams->sysPwrGetInfo[i].shortTimescaleBatteryCurrentLimitmA = sbiosEntry.shortTimescaleBatteryCurrentLimitmA;
+                    }
+                    pParams->sysPwrIndex = header2x.entryCount;
+
+                    // Sanity check
+                    for (i = 0; i < header2x.entryCount; i++)
+                    {
+                        // First entry must have a threshold of 100%, assuming i 0 is first entry as we don't support skip entries in table spec
+                        if (i == 0)
+                        {
+                            if (pParams->sysPwrGetInfo[0].batteryStateOfChargePercent != 100)
+                            {
+                                NV_PRINTF(LEVEL_ERROR, "Invalid threshold for entry 0. Must be 100 percent \n");
+                                NV_PRINTF(LEVEL_ERROR, "threshold = %d \n", pParams->sysPwrGetInfo[i].batteryStateOfChargePercent);
+                                status = NV_ERR_INVALID_STATE;
+                                goto nvpcf2xGetSystemPowerTable_exit;
+                            }
+                        }
+                        // Capacity thresholds should be strictly decreasing entry to entry
+                        else if (pParams->sysPwrGetInfo[i].batteryStateOfChargePercent >= prevThreshold)
+                        {
+                            NV_PRINTF(LEVEL_ERROR, "limit[%d] has threshold not strictly smaller than limit[%d] \n", i, i-1);
+                            NV_PRINTF(LEVEL_ERROR, "%d >= %d \n", pParams->sysPwrGetInfo[i].batteryStateOfChargePercent, prevThreshold);
+                            status = NV_ERR_INVALID_STATE;
+                            goto nvpcf2xGetSystemPowerTable_exit;
+                        }
+                        prevThreshold = pParams->sysPwrGetInfo[i].batteryStateOfChargePercent;
+                    }
+                    break;
+                }
+            }
+nvpcf2xGetSystemPowerTable_exit:
+            portMemFree(pData);
+            break;
+        }
+        case NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_CPU_TDP_LIMIT_CONTROL_CASE:
+        {
+            CPU_TDP_LIMIT_CONTROL_HEADER_1X_PACKED  header   = { 0 };
+            CPU_TDP_LIMIT_CONTROL_BODY_1X_PACKED    body     = { 0 };
+            NvU16                                   dataSize;
+            NvU8                                    data[7];
+
+            ct_assert(sizeof(data) == (sizeof(header) + sizeof(body)));
+
+            header.version    = NVPCF_CPU_TDP_LIMIT_CONTROL_TABLE_1X_VERSION;
+            header.headerSize = NVPCF_CPU_TDP_LIMIT_CONTROL_TABLE_1X_HEADER_SIZE_03;
+            header.bodySize   = NVPCF_CPU_TDP_LIMIT_CONTROL_TABLE_1X_BODY_SIZE_04;
+            body.param0       = pParams->cpuTdpmw;
+
+            dataSize = sizeof(header) + sizeof(body);
+
+            portMemSet(data, 0, dataSize);
+            portMemCopy(data, sizeof(header), &header, sizeof(header));
+            portMemCopy(data + sizeof(header), sizeof(body), &body, sizeof(body));
+
+            if ((rc = osCallACPI_DSM(pGpu,
+                            ACPI_DSM_FUNCTION_NVPCF_2X,
+                            NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_CPU_TDP_LIMIT_CONTROL,
+                            (NvU32 *)&data,
+                            &dataSize)) != NV_OK)
+            {
+                NV_PRINTF(LEVEL_WARNING,
+                "Unable to set CPU TDP Limit. Possibly not supported by SBIOS"
+                "rc = %x\n", rc);
+                status =  NV_ERR_NOT_SUPPORTED;
+            }
+            break;
         }
         default:
         {
@@ -4466,7 +4783,7 @@ cliresCtrlCmdSyncGpuBoostInfo_IMPL
     OBJGPUBOOSTMGR *pBoostMgr = SYS_GET_GPUBOOSTMGR(pSys);
 
     NV_ASSERT_OR_RETURN(NULL != pParams, NV_ERR_INVALID_ARGUMENT);
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (NULL == pBoostMgr)
     {
@@ -4497,7 +4814,7 @@ cliresCtrlCmdSyncGpuBoostGroupCreate_IMPL
     OBJGPUBOOSTMGR *pBoostMgr = SYS_GET_GPUBOOSTMGR(pSys);
 
     NV_ASSERT_OR_RETURN(NULL != pParams, NV_ERR_INVALID_ARGUMENT);
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // Start off with invalid boost group ID
     pParams->boostConfig.boostGroupId = NV0000_SYNC_GPU_BOOST_INVALID_GROUP_ID;
@@ -4525,7 +4842,7 @@ cliresCtrlCmdSyncGpuBoostGroupDestroy_IMPL
     OBJGPUBOOSTMGR *pBoostMgr = SYS_GET_GPUBOOSTMGR(pSys);
 
     NV_ASSERT_OR_RETURN(NULL != pParams, NV_ERR_INVALID_ARGUMENT);
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // Destroy the boost group
     status = gpuboostmgrDestroyGroup(pBoostMgr, pParams->boostGroupId);
@@ -4549,7 +4866,7 @@ cliresCtrlCmdSyncGpuBoostGroupInfo_IMPL
     OBJGPUBOOSTMGR *pBoostMgr = SYS_GET_GPUBOOSTMGR(pSys);
 
     NV_ASSERT_OR_RETURN(NULL != pParams, NV_ERR_INVALID_ARGUMENT);
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     status = gpuboostmgrQueryGroups(pBoostMgr, pParams);
     NV_ASSERT(NV_OK == status);
@@ -4896,7 +5213,10 @@ cliresCtrlCmdClientSubscribeToImexChannel_IMPL
 
     // Same subscription
     if (pRmClient->imexChannel == channel)
+	{
+        pParams->channel = channel;
         return NV_OK;
+    }
 
     // For now, only one channel subscription is allowed per client.
     if (pRmClient->imexChannel != -1)
@@ -4976,6 +5296,7 @@ cliresCtrlCmdGpuGetNvlinkBwMode_IMPL
 )
 {
     pParams->mode = gpumgrGetGpuNvlinkBwMode();
+    pParams->bwModeScope = gpumgrGetGpuNvlinkBwModeScope();
     return NV_OK;
 }
 

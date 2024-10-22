@@ -644,7 +644,15 @@ static NV_STATUS fault_buffer_flush_locked(uvm_parent_gpu_t *parent_gpu,
 
     while (get != put) {
         // Wait until valid bit is set
-        UVM_SPIN_WHILE(!parent_gpu->fault_buffer_hal->entry_is_valid(parent_gpu, get), &spin);
+        UVM_SPIN_WHILE(!parent_gpu->fault_buffer_hal->entry_is_valid(parent_gpu, get), &spin) {
+            // Channels might be idle (e.g. in teardown) so check for errors
+            // actively. In that case the gpu pointer is valid.
+            status = gpu ? uvm_channel_manager_check_errors(gpu->channel_manager) : uvm_global_get_status();
+            if (status != NV_OK) {
+                write_get(parent_gpu, get);
+                return status;
+            }
+        }
 
         fault_buffer_skip_replayable_entry(parent_gpu, get);
         ++get;
@@ -889,6 +897,10 @@ static NV_STATUS fetch_fault_buffer_entries(uvm_parent_gpu_t *parent_gpu,
         UVM_SPIN_WHILE(!parent_gpu->fault_buffer_hal->entry_is_valid(parent_gpu, get), &spin) {
             // We have some entry to work on. Let's do the rest later.
             if (fetch_mode == FAULT_FETCH_MODE_BATCH_READY && fault_index > 0)
+                goto done;
+            
+            status = uvm_global_get_status();
+            if (status != NV_OK)
                 goto done;
         }
 
@@ -1410,7 +1422,7 @@ static NV_STATUS service_fault_batch_block_locked(uvm_gpu_t *gpu,
                                          &end);
     }
     else {
-        policy = uvm_va_range_get_policy(va_block->va_range);
+        policy = &va_block->managed_range->policy;
         end = va_block->end;
     }
 
@@ -1689,11 +1701,11 @@ static NV_STATUS service_fault_batch_ats_sub_vma(uvm_gpu_va_space_t *gpu_va_spac
     NvU32 i;
     NV_STATUS status = NV_OK;
     uvm_ats_fault_context_t *ats_context = &batch_context->ats_context;
-    const uvm_page_mask_t *read_fault_mask = &ats_context->read_fault_mask;
-    const uvm_page_mask_t *write_fault_mask = &ats_context->write_fault_mask;
-    const uvm_page_mask_t *reads_serviced_mask = &ats_context->reads_serviced_mask;
-    uvm_page_mask_t *faults_serviced_mask = &ats_context->faults_serviced_mask;
-    uvm_page_mask_t *accessed_mask = &ats_context->accessed_mask;
+    const uvm_page_mask_t *read_fault_mask = &ats_context->faults.read_fault_mask;
+    const uvm_page_mask_t *write_fault_mask = &ats_context->faults.write_fault_mask;
+    const uvm_page_mask_t *reads_serviced_mask = &ats_context->faults.reads_serviced_mask;
+    uvm_page_mask_t *faults_serviced_mask = &ats_context->faults.faults_serviced_mask;
+    uvm_page_mask_t *accessed_mask = &ats_context->faults.accessed_mask;
 
     UVM_ASSERT(vma);
 
@@ -1763,8 +1775,8 @@ static void start_new_sub_batch(NvU64 *sub_batch_base,
                                 NvU32 fault_index,
                                 uvm_ats_fault_context_t *ats_context)
 {
-    uvm_page_mask_zero(&ats_context->read_fault_mask);
-    uvm_page_mask_zero(&ats_context->write_fault_mask);
+    uvm_page_mask_zero(&ats_context->faults.read_fault_mask);
+    uvm_page_mask_zero(&ats_context->faults.write_fault_mask);
 
     *sub_batch_fault_index = fault_index;
     *sub_batch_base = UVM_VA_BLOCK_ALIGN_DOWN(address);
@@ -1784,8 +1796,8 @@ static NV_STATUS service_fault_batch_ats_sub(uvm_gpu_va_space_t *gpu_va_space,
     uvm_fault_buffer_entry_t *previous_entry = NULL;
     uvm_fault_buffer_entry_t *current_entry = batch_context->ordered_fault_cache[i];
     uvm_ats_fault_context_t *ats_context = &batch_context->ats_context;
-    uvm_page_mask_t *read_fault_mask = &ats_context->read_fault_mask;
-    uvm_page_mask_t *write_fault_mask = &ats_context->write_fault_mask;
+    uvm_page_mask_t *read_fault_mask = &ats_context->faults.read_fault_mask;
+    uvm_page_mask_t *write_fault_mask = &ats_context->faults.write_fault_mask;
     uvm_gpu_t *gpu = gpu_va_space->gpu;
     bool replay_per_va_block =
                         (gpu->parent->fault_buffer_info.replayable.replay_policy == UVM_PERF_FAULT_REPLAY_POLICY_BLOCK);

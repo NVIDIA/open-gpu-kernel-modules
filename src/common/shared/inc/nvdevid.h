@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 200-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -617,6 +617,7 @@ enum {
 ,     CS_NVIDIA_T234
 ,     CS_NVIDIA_T23x
 ,     CS_NVIDIA_TH500
+,     CS_RESERVED_1
 ,     CS_MARVELL_THUNDERX2
 ,     CS_REDHAT_QEMU
 ,     CS_AMPERE_EMAG
@@ -638,6 +639,7 @@ enum {
 ,     CS_INTEL_18DC
 ,     CS_INTEL_7A04
 ,     CS_INTEL_5795
+,     CS_RESERVED_2
 ,     CS_SIFIVE_FU740_C000
 ,     CS_PLDA_XPRESSRICH_AXI_REF
 ,     CS_AMPERE_AMPEREONE

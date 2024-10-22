@@ -96,8 +96,8 @@ performKeyRotation_WORKITEM
                 NV_ASSERT_OK(kchannelUpdateNotifierMem(pKernelChannel, NV_CHANNELGPFIFO_NOTIFICATION_TYPE_KEY_ROTATION_STATUS,
                                                        pConfCompute->keyRotationCount[h2dIndex], 0, (NvU32)pWorkItemInfo->status));
 
-                NV_PRINTF(LEVEL_INFO, "chid 0x%x was NOT disabled for key rotation, writing notifier with val 0x%x\n",
-                    kchannelGetDebugTag(pKernelChannel), (NvU32)pWorkItemInfo->status);
+                NV_PRINTF(LEVEL_INFO, "chid 0x%x (hChannel 0x%x) was NOT disabled for key rotation, writing notifier with val 0x%x\n",
+                    kchannelGetDebugTag(pKernelChannel), (NvU32)RES_GET_HANDLE(pKernelChannel), (NvU32)pWorkItemInfo->status);
                 // send events to clients if registered
                 kchannelNotifyEvent(pKernelChannel, NVC86F_NOTIFIERS_KEY_ROTATION, pConfCompute->keyRotationCount[h2dIndex],
                                     pWorkItemInfo->status, NULL, 0);
@@ -168,13 +168,18 @@ performKeyRotationByKeyPair
         if (kchannelIsDisabledForKeyRotation(pGpu, pKernelChannel))
         {
             NV_ASSERT_OK(kchannelUpdateNotifierMem(pKernelChannel, NV_CHANNELGPFIFO_NOTIFICATION_TYPE_KEY_ROTATION_STATUS,
+                                                   pConfCompute->keyRotationCount[h2dIndex] - 1, 0, (NvU32)KEY_ROTATION_STATUS_IDLE));
+
+            NV_ASSERT_OK(kchannelUpdateNotifierMem(pKernelChannel, NV_CHANNELGPFIFO_NOTIFICATION_TYPE_KEY_ROTATION_STATUS,
                                                    pConfCompute->keyRotationCount[h2dIndex], 0, (NvU32)KEY_ROTATION_STATUS_IDLE));
 
             // send events to clients if registered
             kchannelNotifyEvent(pKernelChannel, NVC86F_NOTIFIERS_KEY_ROTATION, pConfCompute->keyRotationCount[h2dIndex],
                                 (NvU16)KEY_ROTATION_STATUS_IDLE, NULL, 0);
-            NV_PRINTF(LEVEL_INFO, "chid 0x%x was disabled for key rotation, writing notifier with KEY_ROTATION_STATUS_IDLE\n",
-                kchannelGetDebugTag(pKernelChannel));
+
+            NV_PRINTF(LEVEL_SILENT,
+                      "chid 0x%x (hChannel 0x%x) was disabled for key rotation, writing notifier with KEY_ROTATION_STATUS_IDLE\n",
+                      kchannelGetDebugTag(pKernelChannel), (NvU32)RES_GET_HANDLE(pKernelChannel));
 
             // also reset channel sw state
             kchannelDisableForKeyRotation(pGpu, pKernelChannel, NV_FALSE);
@@ -185,10 +190,6 @@ performKeyRotationByKeyPair
         if (pKernelChannel->pEncStatsBuf != NULL)
             portMemSet(pKernelChannel->pEncStatsBuf, 0, sizeof(CC_CRYPTOBUNDLE_STATS));
     }
-
-    // reset KR state
-    pConfCompute->keyRotationCallbackCount[h2dIndex] = 1;
-    pConfCompute->keyRotationCallbackCount[d2hIndex] = 1;
 
     // clear aggregate and freed channel stats
     pConfCompute->aggregateStats[h2dIndex].totalBytesEncrypted = 0;
@@ -236,6 +237,10 @@ performKeyRotationByKeyPair
             }
         }
     }
+
+    NV_PRINTF(LEVEL_INFO, "Key rotation successful for key IDs 0x%x and 0x%x.\n", h2dKey, d2hKey);
+    NV_PRINTF(LEVEL_INFO, "This keypair has been rotated %u times.\n", pConfCompute->keyRotationCount[h2dIndex]);
+
     return NV_OK;
 }
 
@@ -272,7 +277,9 @@ confComputeCheckAndPerformKeyRotation_IMPL
         // check if all channels are idle
         if (!kchannelIsDisabledForKeyRotation(pGpu, pKernelChannel))
         {
-            NV_PRINTF(LEVEL_INFO, "chid 0x%x was NOT disabled for key rotation, can't start KR yet\n", kchannelGetDebugTag(pKernelChannel));
+            NV_PRINTF(LEVEL_SILENT,
+                      "chid 0x%x (hChannel 0x%x) was NOT disabled for key rotation, can't start KR yet\n",
+                      kchannelGetDebugTag(pKernelChannel), (NvU32)RES_GET_HANDLE(pKernelChannel));
             bIdle = NV_FALSE;
             break;
         }
@@ -514,17 +521,7 @@ confComputeSetKeyRotationThreshold_IMPL(ConfidentialCompute *pConfCompute,
         12148001999ull,
         8589934591ull,
         6074000999ull,
-        4294967295ull,
-        3037000499ull,
-        2147483647ull,
-        1518500249ull,
-        1073741823ull,
-        759250124ull,
-        536870911ull,
-        379625061ull,
-        268435455ull,
-        189812530ull,
-        134217727ull};
+        4294967295ull};
 
     NV_ASSERT_OR_RETURN((attackerAdvantage >= offset) &&
         (attackerAdvantage <= (offset + NV_ARRAY_ELEMENTS(keyRotationUpperThreshold) - 1)),
@@ -532,7 +529,7 @@ confComputeSetKeyRotationThreshold_IMPL(ConfidentialCompute *pConfCompute,
 
     pConfCompute->keyRotationUpperThreshold = keyRotationUpperThreshold[attackerAdvantage - offset];
     pConfCompute->keyRotationLowerThreshold = pConfCompute->keyRotationUpperThreshold -
-                                          pConfCompute->keyRotationThresholdDelta;
+                                              pConfCompute->keyRotationThresholdDelta;
 
     NV_PRINTF(LEVEL_INFO, "Setting key rotation attacker advantage to %llu.\n", attackerAdvantage);
     NV_PRINTF(LEVEL_INFO, "Key rotation lower threshold is %llu and upper threshold is %llu.\n",

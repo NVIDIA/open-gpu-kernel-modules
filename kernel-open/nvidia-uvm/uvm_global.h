@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -52,19 +52,23 @@ struct uvm_global_struct
     // Created on module load and destroyed on module unload
     uvmGpuSessionHandle rm_session_handle;
 
-    // peer-to-peer table
-    // peer info is added and removed from this table when usermode
-    // driver calls UvmEnablePeerAccess and UvmDisablePeerAccess
-    // respectively.
-    uvm_gpu_peer_t peers[UVM_MAX_UNIQUE_GPU_PAIRS];
+    // Peer-to-peer table for storing parent GPU and MIG instance peer info.
+    // Note that MIG instances can be peers within a single parent GPU or
+    // be peers in different parent GPUs if NVLINK or PCIe peers is enabled.
+    // PCIe and MIG peer info is added and removed from this table when
+    // usermode driver calls UvmEnablePeerAccess() and UvmDisablePeerAccess()
+    // respectively. NvLink and MIG peers are updated when UvmRegisterGpu() and
+    // UvmUnregisterGpu() are called. Peer to peer state for MIG instances
+    // within the same parent GPU are not stored here.
+    uvm_parent_gpu_peer_t parent_gpu_peers[UVM_MAX_UNIQUE_PARENT_GPU_PAIRS];
 
     // peer-to-peer copy mode
     // Pascal+ GPUs support virtual addresses in p2p copies.
     // Ampere+ GPUs add support for physical addresses in p2p copies.
     uvm_gpu_peer_copy_mode_t peer_copy_mode;
 
-    // Stores an NV_STATUS, once it becomes != NV_OK, the driver should refuse to
-    // do most anything other than try and clean up as much as possible.
+    // Stores an NV_STATUS, once it becomes != NV_OK, the driver should refuse
+    // to do most anything other than try and clean up as much as possible.
     // An example of a fatal error is an unrecoverable ECC error on one of the
     // GPUs.
     atomic_t fatal_error;
@@ -232,12 +236,12 @@ static uvmGpuSessionHandle uvm_global_session_handle(void)
 // suspended.
 #define UVM_GPU_WRITE_ONCE(x, val) do {         \
         UVM_ASSERT(!uvm_global_is_suspended()); \
-        UVM_WRITE_ONCE(x, val);                 \
+        WRITE_ONCE(x, val);                     \
     } while (0)
 
 #define UVM_GPU_READ_ONCE(x) ({                 \
         UVM_ASSERT(!uvm_global_is_suspended()); \
-        UVM_READ_ONCE(x);                       \
+        READ_ONCE(x);                           \
     })
 
 static bool global_is_fatal_error_assert_disabled(void)
@@ -384,7 +388,7 @@ static uvm_gpu_t *uvm_gpu_find_next_valid_gpu_in_parent(uvm_parent_gpu_t *parent
          (parent_gpu) = uvm_global_find_next_parent_gpu((parent_gpu)))
 
 // LOCKING: Must hold the global_lock
-#define for_each_gpu_in_parent(parent_gpu, gpu)                                                 \
+#define for_each_gpu_in_parent(gpu, parent_gpu)                                                 \
     for (({uvm_assert_mutex_locked(&g_uvm_global.global_lock);                                  \
          (gpu) = uvm_gpu_find_next_valid_gpu_in_parent((parent_gpu), NULL);});                  \
          (gpu) != NULL;                                                                         \

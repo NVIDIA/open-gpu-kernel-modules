@@ -135,7 +135,7 @@ struct uvm_user_channel_struct
     uvm_user_channel_subctx_info_t *subctx_info;
 
     // Number of resources reported by RM. This is the size of both the
-    // resources and va_ranges arrays.
+    // resources and channel_ranges arrays.
     size_t num_resources;
 
     // Array of all resources for this channel, shared or not. Virtual mappings
@@ -146,11 +146,11 @@ struct uvm_user_channel_struct
     // the corresponding VA ranges.
     UvmGpuChannelResourceInfo *resources;
 
-    // Array of all VA ranges associated with this channel. Entry i in this
+    // Array of all channel ranges associated with this channel. Entry i in this
     // array corresponds to resource i in the resources array above and has the
     // same descriptor. uvm_user_channel_detach will drop the ref counts for
-    // these VA ranges, potentially destroying them.
-    uvm_va_range_t **va_ranges;
+    // these channel ranges, potentially destroying them.
+    uvm_va_range_channel_t **channel_ranges;
 
     // Physical instance pointer. There is a 1:1 mapping between instance
     // pointer and channel. GPU faults report an instance pointer, and the GPU

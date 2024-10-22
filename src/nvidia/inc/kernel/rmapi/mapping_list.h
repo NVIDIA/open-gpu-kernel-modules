@@ -113,8 +113,7 @@ CliUpdateMemoryMappingInfo
     pCpuMapping->processId = osGetCurrentProcess();
     pCpuMapping->pLinearAddress = cpuAddress;
     pCpuMapping->pPrivate->pPriv = priv;
-    pCpuMapping->pPrivate->gpuAddress = -1;
-    pCpuMapping->pPrivate->gpuMapLength = -1;
+    portMemSet(&pCpuMapping->pPrivate->memArea, 0, sizeof(MemoryArea));
 
     return NV_OK;
 }
@@ -148,8 +147,15 @@ CliUpdateDeviceMemoryMapping
     pCpuMapping->processId = osGetCurrentProcess();
     pCpuMapping->pLinearAddress = cpuAddress;
     pCpuMapping->pPrivate->pPriv = priv;
-    pCpuMapping->pPrivate->gpuAddress = gpuAddress;
-    pCpuMapping->pPrivate->gpuMapLength = gpuMapLength;
+    if (gpuMapLength == 0 || gpuAddress == 0)
+    {
+        portMemSet(&pCpuMapping->pPrivate->memArea, 0, sizeof(MemoryArea));
+        return NV_OK;
+    }
+    pCpuMapping->pPrivate->memArea.numRanges = 1;
+    pCpuMapping->pPrivate->memArea.pRanges = &pCpuMapping->pPrivate->backingRangeStore;
+    pCpuMapping->pPrivate->backingRangeStore.start = gpuAddress;
+    pCpuMapping->pPrivate->backingRangeStore.size = gpuMapLength;
 
     return NV_OK;
 }

@@ -26,6 +26,7 @@
 #include "kernel/gpu/intr/intr.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "gpu/mem_mgr/mem_mgr.h"
+#include "published/ampere/ga100/dev_bus_addendum.h"
 #include "published/ampere/ga100/dev_fb.h"
 #include "published/ampere/ga100/dev_vm.h"
 #include "published/ampere/ga100/dev_fuse.h"
@@ -144,7 +145,7 @@ gpuGetFlaVasSize_GA100
 )
 {
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-    NvU64  totalFbSize = (pMemoryManager->Ram.fbTotalMemSizeMb << 20);
+    NvU64          totalFbSize    = (pMemoryManager->Ram.fbTotalMemSizeMb << 20);
 
     if (bNvswitchVirtualization || totalFbSize <= NVBIT64(36))
     {
@@ -196,7 +197,6 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GA100[] =
     GPU_CHILD_PRESENT(KernelRc, 1),
     GPU_CHILD_PRESENT(Intr, 1),
     GPU_CHILD_PRESENT(NvDebugDump, 1),
-    GPU_CHILD_PRESENT(OBJGPUMON, 1),
     GPU_CHILD_PRESENT(OBJSWENG, 1),
     GPU_CHILD_PRESENT(OBJUVM, 1),
     GPU_CHILD_PRESENT(KernelBif, 1),
@@ -247,7 +247,6 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GA102[] =
     GPU_CHILD_PRESENT(KernelRc, 1),
     GPU_CHILD_PRESENT(Intr, 1),
     GPU_CHILD_PRESENT(NvDebugDump, 1),
-    GPU_CHILD_PRESENT(OBJGPUMON, 1),
     GPU_CHILD_PRESENT(OBJSWENG, 1),
     GPU_CHILD_PRESENT(OBJUVM, 1),
     GPU_CHILD_PRESENT(KernelBif, 1),
@@ -447,7 +446,7 @@ _gpuNotifySubDeviceEventNotifier_GA100
             break;
 
         case NV_ERROR_CONT_ERR_ID_E25_FBFALCON_POISON:
-            info16 = ROBUST_CHANNEL_UNCONTAINED_ERROR;
+            info16 = ROBUST_CHANNEL_CONTAINED_ERROR;
             break;
 
         case NV_ERROR_CONT_ERR_ID_E26_NVDEC_POISON:
@@ -497,10 +496,13 @@ _gpuNotifySubDeviceEventNotifier_GA100
  */
 static
 NV_STATUS
-_gpuGenerateErrorLog_GA100(OBJGPU                           *pGpu,
-                           NV_ERROR_CONT_ERR_ID              errorCode,
-                           NV_ERROR_CONT_LOCATION            loc,
-                           NV_ERROR_CONT_SMC_DIS_EN_SETTING *pErrorContSmcSetting)
+_gpuGenerateErrorLog_GA100
+(
+    OBJGPU                           *pGpu,
+    NV_ERROR_CONT_ERR_ID              errorCode,
+    NV_ERROR_CONT_LOCATION            loc,
+    NV_ERROR_CONT_SMC_DIS_EN_SETTING *pErrorContSmcSetting
+)
 {
     RM_ENGINE_TYPE localRmEngineType;
     NvU32 rcErrorCode = pErrorContSmcSetting->rcErrorCode;
@@ -510,6 +512,7 @@ _gpuGenerateErrorLog_GA100(OBJGPU                           *pGpu,
     switch (loc.locType)
     {
         case NV_ERROR_CONT_LOCATION_TYPE_DRAM:
+        {
             nvErrorLog_va((void *)pGpu,
                           rcErrorCode,
                           "%s: %s (0x%x,0x%x). physAddr: 0x%08llx RST: %s, D-RST: %s",
@@ -523,8 +526,9 @@ _gpuGenerateErrorLog_GA100(OBJGPU                           *pGpu,
                           pErrorContSmcSetting->bGpuResetReqd ? "Yes" : "No",
                           pErrorContSmcSetting->bGpuDrainAndResetReqd ? "Yes" : "No");
             break;
-
+        }
         case NV_ERROR_CONT_LOCATION_TYPE_LTC:
+        {
             nvErrorLog_va((void *)pGpu,
                           rcErrorCode,
                           "%s: %s (0x%x,0x%x). RST: %s, D-RST: %s",
@@ -537,8 +541,9 @@ _gpuGenerateErrorLog_GA100(OBJGPU                           *pGpu,
                           pErrorContSmcSetting->bGpuResetReqd ? "Yes" : "No",
                           pErrorContSmcSetting->bGpuDrainAndResetReqd ? "Yes" : "No");
             break;
-
+        }
         case NV_ERROR_CONT_LOCATION_TYPE_ENGINE:
+        {
             //
             // If SMC is enabled, RM need to notify partition local engine ID. Convert
             // global ID to partition local if client has filled proper engine IDs
@@ -572,8 +577,9 @@ _gpuGenerateErrorLog_GA100(OBJGPU                           *pGpu,
                           pErrorContSmcSetting->bGpuResetReqd ? "Yes" : "No",
                           pErrorContSmcSetting->bGpuDrainAndResetReqd ? "Yes" : "No");
             break;
-
+        }
         case NV_ERROR_CONT_LOCATION_TYPE_VF:
+        {
             nvErrorLog_va((void *)pGpu,
                           rcErrorCode,
                           "%s: %s (0x%x). RST: %s, D-RST: %s",
@@ -585,8 +591,9 @@ _gpuGenerateErrorLog_GA100(OBJGPU                           *pGpu,
                           pErrorContSmcSetting->bGpuResetReqd ? "Yes" : "No",
                           pErrorContSmcSetting->bGpuDrainAndResetReqd ? "Yes" : "No");
             break;
-
+        }
         case NV_ERROR_CONT_LOCATION_TYPE_NONE:
+        {
             nvErrorLog_va((void *)pGpu,
                           rcErrorCode,
                           "%s: %s. RST: %s, D-RST: %s",
@@ -597,6 +604,7 @@ _gpuGenerateErrorLog_GA100(OBJGPU                           *pGpu,
                           pErrorContSmcSetting->bGpuResetReqd ? "Yes" : "No",
                           pErrorContSmcSetting->bGpuDrainAndResetReqd ? "Yes" : "No");
             break;
+        }
     }
 
     return NV_OK;
@@ -607,10 +615,10 @@ _gpuGenerateErrorLog_GA100(OBJGPU                           *pGpu,
  * mark device for reset or mark device for drain and reset as indicated in
  * error containment state table (refer gpu/error_cont.h).
  *
- * @param[in]  pGpu              OBJGPU pointer
- * @param[in]  errorCode         Error Containment error code
- * @param[in]  loc               Location, SubLocation information
- * @param[out] pRcErrorCode      RC Error code
+ * @param[in]  pGpu          OBJGPU pointer
+ * @param[in]  errorCode     Error Containment error code
+ * @param[in]  loc           Location, SubLocation information
+ * @param[out] pRcErrorCode  RC Error code
  *
  * @returns NV_STATUS
  */
@@ -623,11 +631,11 @@ gpuUpdateErrorContainmentState_GA100
     NvU32                  *pRcErrorCode
 )
 {
-    NvU32 tableIndex = 0;
-    NvBool bIsSmcEnabled = NV_FALSE;
-    NvU32 smcDisEnSettingIndex = 0;
-    NvU32 rcErrorCode = 0;
-    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    KernelMIGManager *pKernelMIGManager    = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    NvU32             tableIndex           = 0;
+    NvBool            bIsSmcEnabled        = NV_FALSE;
+    NvU32             smcDisEnSettingIndex = 0;
+    NvU32             rcErrorCode          = 0;
     NV_ERROR_CONT_SMC_DIS_EN_SETTING *pErrorContSmcSetting = NULL;
 
     if (!gpuIsGlobalPoisonFuseEnabled(pGpu))
@@ -644,13 +652,12 @@ gpuUpdateErrorContainmentState_GA100
     }
 
     // MIG Memory partitioning config entry index.
-    if (pKernelMIGManager != NULL && kmigmgrIsMIGMemPartitioningEnabled(pGpu, pKernelMIGManager))
+    if ((pKernelMIGManager != NULL) && kmigmgrIsMIGMemPartitioningEnabled(pGpu, pKernelMIGManager))
     {
         smcDisEnSettingIndex = 1;
     }
 
     pErrorContSmcSetting = &(g_errContStateTable[tableIndex].smcDisEnSetting[smcDisEnSettingIndex]);
-
     rcErrorCode = pErrorContSmcSetting->rcErrorCode;
 
     // Pass RC Error code if user requested it.
@@ -663,40 +670,33 @@ gpuUpdateErrorContainmentState_GA100
     if (pErrorContSmcSetting->bPrintSmcPartitionInfo && bIsSmcEnabled)
     {
         // Fall through on error.
-        gpuSetPartitionErrorAttribution_HAL(pGpu,
-                                            errorCode,
-                                            loc,
-                                            rcErrorCode);
+        gpuSetPartitionErrorAttribution_HAL(pGpu, errorCode, loc, rcErrorCode);
     }
 
     // Print Xid only if Ampere Error Containment XIDs printing is enabled and rcErrorCode is valid
-    if (gpuIsAmpereErrorContainmentXidEnabled(pGpu) && rcErrorCode != NO_XID)
+    if (gpuIsAmpereErrorContainmentXidEnabled(pGpu) && (rcErrorCode != NO_XID))
     {
-        NV_ASSERT_OK_OR_RETURN(_gpuGenerateErrorLog_GA100(pGpu,
-                                                          errorCode,
-                                                          loc,
-                                                          pErrorContSmcSetting));
+        NV_ASSERT_OK_OR_RETURN(_gpuGenerateErrorLog_GA100(pGpu, errorCode, loc, pErrorContSmcSetting));
     }
 
     // Send NV2080_NOTIFIER*
     if (pErrorContSmcSetting->nv2080Notifier != NO_NV2080_NOTIFIER)
     {
-        NV_ASSERT_OK(_gpuNotifySubDeviceEventNotifier_GA100(pGpu,
-                                                            errorCode,
-                                                            loc,
-                                                            pErrorContSmcSetting->nv2080Notifier));
+        NV_ASSERT_OK(
+            _gpuNotifySubDeviceEventNotifier_GA100(pGpu,
+                                                   errorCode,
+                                                   loc,
+                                                   pErrorContSmcSetting->nv2080Notifier));
     }
 
     // Set the scratch bit to indicate the GPU needs to be reset.
-    if ((pErrorContSmcSetting->bGpuResetReqd) &&
-        (gpuMarkDeviceForReset(pGpu) != NV_OK))
+    if (pErrorContSmcSetting->bGpuResetReqd && (gpuMarkDeviceForReset(pGpu) != NV_OK))
     {
         NV_PRINTF(LEVEL_ERROR, "Failed to mark GPU for pending reset");
     }
 
     // Set the scratch bit to indicate the GPU needs to be reset.
-    if (pErrorContSmcSetting->bGpuDrainAndResetReqd &&
-        gpuMarkDeviceForDrainAndReset(pGpu) != NV_OK)
+    if (pErrorContSmcSetting->bGpuDrainAndResetReqd && (gpuMarkDeviceForDrainAndReset(pGpu) != NV_OK))
     {
         NV_PRINTF(LEVEL_ERROR, "Failed to mark GPU for pending drain and reset");
     }
@@ -712,8 +712,6 @@ gpuCheckIfFbhubPoisonIntrPending_GA100
 {
     return intrIsVectorPending_HAL(pGpu, GPU_GET_INTR(pGpu), NV_PFB_FBHUB_POISON_INTR_VECTOR_HW_INIT, NULL);
 }
-
-
 
 NV_STATUS
 gpuGetDeviceInfoTableSectionInfos_GA100
@@ -741,3 +739,53 @@ gpuGetDeviceInfoTableSectionInfos_GA100
     return NV_OK;
 };
 
+/*!
+ * @brief A bit in scratch 30 is reserved to indicate GPU Drain and Reset is pending.
+ * This is useful for CSPs monitoring whether a GPU needs to be drained and reset through out of band.
+ * This function sets the bit to the requested value, indicating that a drain and reset is pending or clearing the status.
+ *
+ * @param[in] pGpu               OBJGPU pointer
+ * @param[in] bDrainRecommended  Value to set
+ *
+ * @returns NV_OK
+ */
+NV_STATUS
+gpuSetDrainAndResetScratchBit_GA100
+(
+    OBJGPU *pGpu,
+    NvBool  bDrainRecommended
+)
+{
+    NvU32 scratchRegVal = gpuReadPBusScratch_HAL(pGpu, NV_PBUS_SW_RESET_BITS_SCRATCH_REG);
+
+    scratchRegVal = bDrainRecommended ?
+                    FLD_SET_DRF(_PBUS, _SW_SCRATCH30, _GPU_DRAIN_AND_RESET_RECOMMENDED, _YES, scratchRegVal) :
+                    FLD_SET_DRF(_PBUS, _SW_SCRATCH30, _GPU_DRAIN_AND_RESET_RECOMMENDED, _NO,  scratchRegVal);
+
+    gpuWritePBusScratch_HAL(pGpu, NV_PBUS_SW_RESET_BITS_SCRATCH_REG, scratchRegVal);
+
+    return NV_OK;
+}
+
+/*!
+ * @brief A bit in scratch 30 is reserved to indicate GPU Drain and Reset is pending.
+ * This is useful for CSPs monitoring whether a GPU needs to be drained and reset through out of band.
+ * This function reads the value of the bit.
+ *
+ * @param[in]  pGpu                OBJGPU pointer
+ * @param[out] pbDrainRecommended  The value of the scratch bit
+ *
+ * @returns NV_OK
+ */
+NV_STATUS
+gpuGetDrainAndResetScratchBit_GA100
+(
+    OBJGPU *pGpu,
+    NvBool *pbDrainRecommended
+)
+{
+    NvU32 scratchRegVal = gpuReadPBusScratch_HAL(pGpu, NV_PBUS_SW_RESET_BITS_SCRATCH_REG);
+
+    *pbDrainRecommended = FLD_TEST_DRF(_PBUS, _SW_SCRATCH30, _GPU_DRAIN_AND_RESET_RECOMMENDED, _YES, scratchRegVal);
+    return NV_OK;
+}

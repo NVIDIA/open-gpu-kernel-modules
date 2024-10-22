@@ -847,7 +847,6 @@ typedef struct
     NvProcessorUuid processor;                            // IN
     NvU32           allProcessors;                        // IN
     NvU32           uvmFd;                                // IN
-    NvU32           version;                              // IN (UvmToolsEventQueueVersion)
     NV_STATUS       rmStatus;                             // OUT
 } UVM_TOOLS_INIT_EVENT_TRACKER_PARAMS;
 
@@ -934,7 +933,6 @@ typedef struct
 typedef struct
 {
     NvU64     tablePtr                 NV_ALIGN_BYTES(8); // IN
-    NvU32     version;                                    // IN (UvmToolsEventQueueVersion)
     NV_STATUS rmStatus;                                   // OUT
 } UVM_TOOLS_GET_PROCESSOR_UUID_TABLE_PARAMS;
 
@@ -1096,6 +1094,36 @@ typedef struct
     NvS32                   uvmFd;    // IN
     NV_STATUS               rmStatus; // OUT
 } UVM_MM_INITIALIZE_PARAMS;
+
+#define UVM_TOOLS_INIT_EVENT_TRACKER_V2                               UVM_IOCTL_BASE(76)
+typedef UVM_TOOLS_INIT_EVENT_TRACKER_PARAMS UVM_TOOLS_INIT_EVENT_TRACKER_V2_PARAMS;
+
+#define UVM_TOOLS_GET_PROCESSOR_UUID_TABLE_V2                         UVM_IOCTL_BASE(77)
+typedef UVM_TOOLS_GET_PROCESSOR_UUID_TABLE_PARAMS UVM_TOOLS_GET_PROCESSOR_UUID_TABLE_V2_PARAMS;
+
+//
+// UvmAllocDeviceP2P
+//
+#define UVM_ALLOC_DEVICE_P2P                                          UVM_IOCTL_BASE(78)
+typedef struct
+{
+    NvU64                   base                            NV_ALIGN_BYTES(8); // IN
+    NvU64                   length                          NV_ALIGN_BYTES(8); // IN
+    NvU64                   offset                          NV_ALIGN_BYTES(8); // IN
+    NvProcessorUuid         gpuUuid;                                           // IN
+    NvS32                   rmCtrlFd;                                          // IN
+    NvU32                   hClient;                                           // IN
+    NvU32                   hMemory;                                           // IN
+
+    NV_STATUS               rmStatus;                                          // OUT
+} UVM_ALLOC_DEVICE_P2P_PARAMS;
+
+#define UVM_CLEAR_ALL_ACCESS_COUNTERS                                 UVM_IOCTL_BASE(79)
+
+typedef struct
+{
+    NV_STATUS       rmStatus; // OUT
+} UVM_CLEAR_ALL_ACCESS_COUNTERS_PARAMS;
 
 //
 // Temporary ioctls which should be removed before UVM 8 release

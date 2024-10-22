@@ -51,7 +51,7 @@ typedef struct {
 } NVProposedModeSetStateOneApiHead;
 
 typedef struct {
-    NvU8 tilePosition;
+    NvU8 mergeHeadSection;
     NVHwModeTimingsEvo timings;
     NVConnectorEvoRec *pConnectorEvo;
     HDMI_FRL_CONFIG hdmiFrlConfig;

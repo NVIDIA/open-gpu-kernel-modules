@@ -250,7 +250,7 @@ serverutilGenResourceHandle
     // LOCK TEST: we should have the API lock here unless we're executing out of
     // the power management path.
     //
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() || rmapiInRtd3PmPath());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() || rmapiInRtd3PmPath(), NV_ERR_INVALID_LOCK_STATE);
 
     pClient = serverutilGetClientUnderLock(hClient);
 
@@ -354,7 +354,7 @@ serverutilAcquireClient
     RmClient *pClient;
 
     // LOCK TEST: we should have the API lock here
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (NV_OK != serverAcquireClient(&g_resServ, hClient, access, &pClientEntry))
         return NV_ERR_INVALID_CLIENT;

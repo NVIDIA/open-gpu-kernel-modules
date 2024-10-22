@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -40,33 +40,35 @@ typedef struct
     UvmGpuCompressionType compression_type;
 } uvm_map_rm_params_t;
 
-static uvm_ext_gpu_range_tree_t *uvm_ext_gpu_range_tree(uvm_va_range_t *va_range, uvm_gpu_t *gpu)
+static uvm_ext_gpu_range_tree_t *uvm_ext_gpu_range_tree(uvm_va_range_external_t *external_range, uvm_gpu_t *gpu)
 {
-    UVM_ASSERT(va_range->type == UVM_VA_RANGE_TYPE_EXTERNAL);
-
-    return &va_range->external.gpu_ranges[uvm_id_gpu_index(gpu->id)];
+    return &external_range->gpu_ranges[uvm_id_gpu_index(gpu->id)];
 }
 
 // Returns the first external map (if any) in the gpu's range tree.
-// va_range should be of type UVM_VA_RANGE_TYPE_EXTERNAL.
 // The caller must hold the range tree lock.
-static uvm_ext_gpu_map_t *uvm_ext_gpu_map_iter_first(uvm_va_range_t *va_range, uvm_gpu_t *gpu, NvU64 start, NvU64 end)
+static uvm_ext_gpu_map_t *uvm_ext_gpu_map_iter_first(uvm_va_range_external_t *external_range,
+                                                     uvm_gpu_t *gpu,
+                                                     NvU64 start,
+                                                     NvU64 end)
 {
     uvm_ext_gpu_range_tree_t *range_tree;
     uvm_range_tree_node_t *node;
 
-    UVM_ASSERT(start >= va_range->node.start);
-    UVM_ASSERT(end <= va_range->node.end);
+    UVM_ASSERT(start >= external_range->va_range.node.start);
+    UVM_ASSERT(end <= external_range->va_range.node.end);
 
-    range_tree = uvm_ext_gpu_range_tree(va_range, gpu);
+    range_tree = uvm_ext_gpu_range_tree(external_range, gpu);
     node = uvm_range_tree_iter_first(&range_tree->tree, start, end);
     return uvm_ext_gpu_map_container(node);
 }
 
 // Returns the external map following the provided map (if any) in address order from
-// the gpu's range tree. va_range should be of type UVM_VA_RANGE_TYPE_EXTERNAL.
+// the gpu's range tree.
 // The caller must hold the range tree lock.
-static uvm_ext_gpu_map_t *uvm_ext_gpu_map_iter_next(uvm_va_range_t *va_range, uvm_ext_gpu_map_t *ext_gpu_map, NvU64 end)
+static uvm_ext_gpu_map_t *uvm_ext_gpu_map_iter_next(uvm_va_range_external_t *external_range,
+                                                    uvm_ext_gpu_map_t *ext_gpu_map,
+                                                    NvU64 end)
 {
     uvm_ext_gpu_range_tree_t *range_tree;
     uvm_range_tree_node_t *node;
@@ -74,37 +76,41 @@ static uvm_ext_gpu_map_t *uvm_ext_gpu_map_iter_next(uvm_va_range_t *va_range, uv
     if (!ext_gpu_map)
         return NULL;
 
-    UVM_ASSERT(end <= va_range->node.end);
+    UVM_ASSERT(end <= external_range->va_range.node.end);
 
-    range_tree = uvm_ext_gpu_range_tree(va_range, ext_gpu_map->gpu);
+    range_tree = uvm_ext_gpu_range_tree(external_range, ext_gpu_map->gpu);
     node = uvm_range_tree_iter_next(&range_tree->tree, &ext_gpu_map->node, end);
     return uvm_ext_gpu_map_container(node);
 }
 
 // The four iterators below require that the caller hold the gpu's range tree
 // lock.
-#define uvm_ext_gpu_map_for_each_in(ext_gpu_map, va_range, gpu, start, end)             \
-    for ((ext_gpu_map) = uvm_ext_gpu_map_iter_first((va_range), (gpu), (start), (end)); \
-         (ext_gpu_map);                                                                 \
-         (ext_gpu_map) = uvm_ext_gpu_map_iter_next((va_range), (ext_gpu_map), (end)))
+#define uvm_ext_gpu_map_for_each_in(ext_gpu_map, external_range, gpu, start, end)               \
+    for ((ext_gpu_map) = uvm_ext_gpu_map_iter_first((external_range), (gpu), (start), (end));   \
+         (ext_gpu_map);                                                                         \
+         (ext_gpu_map) = uvm_ext_gpu_map_iter_next((external_range), (ext_gpu_map), (end)))
 
-#define uvm_ext_gpu_map_for_each_in_safe(ext_gpu_map, ext_gpu_map_next, va_range, gpu, start, end) \
-    for ((ext_gpu_map) = uvm_ext_gpu_map_iter_first((va_range), (gpu), (start), (end)),            \
-             (ext_gpu_map_next) = uvm_ext_gpu_map_iter_next((va_range), (ext_gpu_map), (end));     \
-         (ext_gpu_map);                                                                            \
-         (ext_gpu_map) = (ext_gpu_map_next),                                                       \
-             (ext_gpu_map_next) = uvm_ext_gpu_map_iter_next((va_range), (ext_gpu_map), (end)))
+#define uvm_ext_gpu_map_for_each_in_safe(ext_gpu_map, ext_gpu_map_next, external_range, gpu, start, end)    \
+    for ((ext_gpu_map) = uvm_ext_gpu_map_iter_first((external_range), (gpu), (start), (end)),               \
+             (ext_gpu_map_next) = uvm_ext_gpu_map_iter_next((external_range), (ext_gpu_map), (end));        \
+         (ext_gpu_map);                                                                                     \
+         (ext_gpu_map) = (ext_gpu_map_next),                                                                \
+             (ext_gpu_map_next) = uvm_ext_gpu_map_iter_next((external_range), (ext_gpu_map), (end)))
 
-#define uvm_ext_gpu_map_for_each(ext_gpu_map, va_range, gpu) \
-    uvm_ext_gpu_map_for_each_in(ext_gpu_map, va_range, gpu, (va_range)->node.start, (va_range)->node.end)
+#define uvm_ext_gpu_map_for_each(ext_gpu_map, external_range, gpu)      \
+    uvm_ext_gpu_map_for_each_in(ext_gpu_map,                            \
+                                external_range,                         \
+                                gpu,                                    \
+                                (external_range)->va_range.node.start,  \
+                                (external_range)->va_range.node.end)
 
-#define uvm_ext_gpu_map_for_each_safe(ext_gpu_map, ext_gpu_map_next, va_range, gpu) \
-    uvm_ext_gpu_map_for_each_in_safe(ext_gpu_map,                                   \
-                                     ext_gpu_map_next,                              \
-                                     va_range,                                      \
-                                     gpu,                                           \
-                                     (va_range)->node.start,                        \
-                                     (va_range)->node.end)
+#define uvm_ext_gpu_map_for_each_safe(ext_gpu_map, ext_gpu_map_next, external_range, gpu)   \
+    uvm_ext_gpu_map_for_each_in_safe(ext_gpu_map,                                           \
+                                     ext_gpu_map_next,                                      \
+                                     external_range,                                        \
+                                     gpu,                                                   \
+                                     (external_range)->va_range.node.start,                 \
+                                     (external_range)->va_range.node.end)
 
 // User-facing APIs (uvm_api_map_external_allocation, uvm_api_free) are declared
 // uvm_api.h.
@@ -141,7 +147,7 @@ NV_STATUS uvm_va_range_map_rm_allocation(uvm_va_range_t *va_range,
 //
 // The caller must hold the range tree lock for the mapping gpu and is
 // responsible for making sure that mapping gpu is retained across those calls.
-void uvm_ext_gpu_map_destroy(uvm_va_range_t *va_range,
+void uvm_ext_gpu_map_destroy(uvm_va_range_external_t *external_range,
                              uvm_ext_gpu_map_t *ext_gpu_map,
                              struct list_head *deferred_free_list);
 

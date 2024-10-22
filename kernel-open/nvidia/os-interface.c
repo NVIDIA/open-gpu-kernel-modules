@@ -52,6 +52,8 @@ NvU32 os_page_size  = PAGE_SIZE;
 NvU64 os_page_mask  = NV_PAGE_MASK;
 NvU8  os_page_shift = PAGE_SHIFT;
 NvBool os_cc_enabled = 0;
+NvBool os_cc_sev_snp_enabled = 0;
+NvBool os_cc_snp_vtom_enabled = 0;
 NvBool os_cc_tdx_enabled = 0;
 
 #if defined(CONFIG_DMA_SHARED_BUFFER)
@@ -370,9 +372,27 @@ NvBool NV_API_CALL os_is_administrator(void)
     return NV_IS_SUSER();
 }
 
-NvBool NV_API_CALL os_allow_priority_override(void)
+NvBool NV_API_CALL os_check_access(RsAccessRight accessRight)
 {
-    return capable(CAP_SYS_NICE);
+    switch (accessRight)
+    {
+        case RS_ACCESS_PERFMON:
+        {
+#if defined(CAP_PERFMON)
+            return capable(CAP_PERFMON);
+#else
+            return os_is_administrator();
+#endif
+        }
+        case RS_ACCESS_NICE:
+        {
+            return capable(CAP_SYS_NICE);
+        }
+        default:
+        {
+            return NV_FALSE;
+        }
+    }
 }
 
 char* NV_API_CALL os_string_copy(
@@ -400,7 +420,7 @@ NvS32 NV_API_CALL os_string_compare(const char *str1, const char *str2)
     return strcmp(str1, str2);
 }
 
-void *os_mem_copy_custom(
+static void *os_mem_copy_custom(
     void       *dstPtr,
     const void *srcPtr,
     NvU32       length
@@ -1173,7 +1193,7 @@ NV_STATUS NV_API_CALL os_queue_work_item(struct os_work_queue *queue, void *data
     return NV_OK;
 }
 
-NV_STATUS NV_API_CALL os_flush_work_queue(struct os_work_queue *queue)
+NV_STATUS NV_API_CALL os_flush_work_queue(struct os_work_queue *queue, NvBool is_unload)
 {
     nv_kthread_q_t *kthread;
 
@@ -1182,8 +1202,12 @@ NV_STATUS NV_API_CALL os_flush_work_queue(struct os_work_queue *queue)
 
     if (NV_MAY_SLEEP())
     {
+        kthread->is_unload_flush_ongoing = is_unload;
+
         if (kthread->q_kthread)
             nv_kthread_q_flush(kthread);
+
+        kthread->is_unload_flush_ongoing = NV_FALSE;
 
         return NV_OK;
     }
@@ -1194,6 +1218,13 @@ NV_STATUS NV_API_CALL os_flush_work_queue(struct os_work_queue *queue)
                   "work from an atomic or interrupt context.\n");
         return NV_ERR_ILLEGAL_ACTION;
     }
+}
+
+NvBool NV_API_CALL os_is_queue_flush_ongoing(struct os_work_queue *queue)
+{
+    nv_kthread_q_t *kthread = queue ? &queue->nvk : &nv_kthread_q;
+
+    return kthread->is_unload_flush_ongoing;
 }
 
 extern NvU32 NVreg_EnableDbgBreakpoint;

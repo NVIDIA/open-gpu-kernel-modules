@@ -72,7 +72,7 @@ typedef NV_STATUS      RpcEccNotifierWriteAck(POBJGPU, POBJRPC);
 typedef NV_STATUS      RpcAllocMemory(POBJGPU, POBJRPC, NvHandle, NvHandle, NvHandle,
                                     NvU32, NvU32, MEMORY_DESCRIPTOR*);
 typedef NV_STATUS      RpcCtrlDbgReadSingleSmErrorState(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
-typedef NV_STATUS      RpcDisableChannels(POBJGPU, POBJRPC, NvU32);
+typedef NV_STATUS      RpcDisableChannels(POBJGPU, POBJRPC, void *);
 typedef NV_STATUS      RpcGpuExecRegOps(POBJGPU, POBJRPC, NvHandle, NvHandle,
                                     NV2080_CTRL_GPU_EXEC_REG_OPS_PARAMS*, NV2080_CTRL_GPU_REG_OP*);
 typedef NV_STATUS      RpcCtrlGpuPromoteCtx(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
@@ -150,6 +150,7 @@ typedef NV_STATUS      RpcCtrlGetNvlinkStatus(POBJGPU, POBJRPC, NvHandle, NvHand
 typedef NV_STATUS      RpcGetStaticData(POBJGPU, POBJRPC);
 typedef NV_STATUS      RpcCtrlGrGetTpcPartitionMode(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
 typedef NV_STATUS      RpcCtrlStopChannel(POBJGPU, POBJRPC, NvHandle, NvHandle, void*);
+typedef NV_STATUS      RpcCtrlCmdInternalControlGspTrace(POBJGPU, POBJRPC, NV2080_CTRL_CMD_INTERNAL_CONTROL_GSP_TRACE_PARAMS*);
 typedef NV_STATUS      RpcSetSurfaceProperties(POBJGPU, POBJRPC, NvHandle,
                                     NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES*,
                                     NvBool);
@@ -300,6 +301,7 @@ typedef struct RPC_HAL_IFACES {
     RpcGetStaticData            *rpcGetStaticData;            /* GET_STATIC_DATA published for OpenRM */
     RpcCtrlGrGetTpcPartitionMode  *rpcCtrlGrGetTpcPartitionMode; /* CTRL_GR_GET_TPC_PARTITION_MODE */
     RpcCtrlStopChannel          *rpcCtrlStopChannel;          /* CTRL_STOP_CHANNEL */
+    RpcCtrlCmdInternalControlGspTrace  *rpcCtrlCmdInternalControlGspTrace; /* CTRL_CMD_INTERNAL_CONTROL_GSP_TRACE */
     RpcSetSurfaceProperties     *rpcSetSurfaceProperties;     /* SET_SURFACE_PROPERTIES */
     RpcCtrlGpfifoSetWorkSubmitTokenNotifIndex  *rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex; /* CTRL_GPFIFO_SET_WORK_SUBMIT_TOKEN_NOTIF_INDEX */
     RpcCtrlTimerSetGrTickFreq   *rpcCtrlTimerSetGrTickFreq;   /* CTRL_TIMER_SET_GR_TICK_FREQ */
@@ -378,8 +380,8 @@ typedef struct RPC_HAL_IFACES {
         (_pRpc)->_hal.rpcAllocMemory(_pGpu, _pRpc, _arg0, _arg1, _arg2, _arg3, _arg4, _pArg5)
 #define rpcCtrlDbgReadSingleSmErrorState_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlDbgReadSingleSmErrorState(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
-#define rpcDisableChannels_HAL(_pGpu, _pRpc, _arg0)  \
-        (_pRpc)->_hal.rpcDisableChannels(_pGpu, _pRpc, _arg0)
+#define rpcDisableChannels_HAL(_pGpu, _pRpc, _pArg0)  \
+        (_pRpc)->_hal.rpcDisableChannels(_pGpu, _pRpc, _pArg0)
 #define rpcGpuExecRegOps_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2, _pArg3)  \
         (_pRpc)->_hal.rpcGpuExecRegOps(_pGpu, _pRpc, _arg0, _arg1, _pArg2, _pArg3)
 #define rpcCtrlGpuPromoteCtx_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
@@ -520,6 +522,8 @@ typedef struct RPC_HAL_IFACES {
         (_pRpc)->_hal.rpcCtrlGrGetTpcPartitionMode(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
 #define rpcCtrlStopChannel_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcCtrlStopChannel(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
+#define rpcCtrlCmdInternalControlGspTrace_HAL(_pGpu, _pRpc, _pArg0)  \
+        (_pRpc)->_hal.rpcCtrlCmdInternalControlGspTrace(_pGpu, _pRpc, _pArg0)
 #define rpcSetSurfaceProperties_HAL(_pGpu, _pRpc, _arg0, _pArg1, _arg2)  \
         (_pRpc)->_hal.rpcSetSurfaceProperties(_pGpu, _pRpc, _arg0, _pArg1, _arg2)
 #define rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \

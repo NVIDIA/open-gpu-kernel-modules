@@ -39,7 +39,7 @@ NvBool ceIsCeGrce(OBJGPU *pGpu, RM_ENGINE_TYPE rmCeEngineType)
     NV2080_CTRL_GPU_GET_ENGINE_PARTNERLIST_PARAMS partnerParams = {0};
     KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
 
-    if (IsAMODEL(pGpu) || IsT234DorBetter(pGpu))
+    if (IsT234DorBetter(pGpu))
         return NV_FALSE;
 
     NV_ASSERT_OR_RETURN(RM_ENGINE_TYPE_IS_COPY(rmCeEngineType), NV_FALSE);
@@ -216,7 +216,7 @@ subdeviceCtrlCmdCeGetCapsV2_IMPL
     NvU32 ceNumber;
     RM_ENGINE_TYPE rmEngineType = gpuGetRmEngineType(pCeCapsParams->ceEngineType);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     NV_PRINTF(LEVEL_INFO, "NV2080_CTRL_CE_GET_CAPS_V2 ceEngineType = %d\n", pCeCapsParams->ceEngineType);
 
@@ -285,7 +285,6 @@ subdeviceCtrlCmdCeGetAllCaps_IMPL
 
     {
         KernelCE *pKCe;
-        KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
 
         KCE_ITER_DEVICE_BEGIN(pGpu, pKCe, pDevice)
             if (pKCe->bStubbed)
@@ -293,38 +292,9 @@ subdeviceCtrlCmdCeGetAllCaps_IMPL
 
             pCeCapsParams->present |= BIT64(kceInst);
 
-            NvU8 *pKCeCaps = pCeCapsParams->capsTbl[kceInst];
-
-            if (pKernelNvlink != NULL)
-                kceGetNvlinkCaps(pGpu, pKCe, pKCeCaps);
+            kceAssignCeCaps_HAL(pGpu, pKCe, pCeCapsParams->capsTbl[kceInst]);
         KCE_ITER_END
     }
 
     return NV_OK;
-}
-
-// removal tracking bug: 3748354
-/*!
- * Checks whether given NV2080_ENGINE_TYPE_COPYN supports decompression workloads
- *
- * @param[in]  pGpu            OBJGPU pointer
- * @param[in]  nv2080engineId  NV2080_ENGINE_TYPE_COPYN
- *
- * Returns NV_TRUE if the ceEngineType is set in the decompLceMask
- */
-NvBool ceIsDecompLce(OBJGPU *pGpu, NvU32 nv2080EngineId)
-{
-    NvBool decompCapPresent = NV_FALSE;
-    KernelCE *pKCe = NULL;
-
-    // Find 1st available pKCe to call below func
-    KCE_ITER_ALL_BEGIN(pGpu, pKCe, 0)
-        if (pKCe != NULL)
-            break;
-    KCE_ITER_END
-
-    if (pKCe != NULL)
-        decompCapPresent = kceCheckForDecompCapability_HAL(pGpu, pKCe, nv2080EngineId);
-
-    return decompCapPresent;
 }

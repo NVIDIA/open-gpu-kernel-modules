@@ -93,9 +93,7 @@ const struct
     {NV_DP_REGKEY_FORCE_EDP_ILR,                    &dpRegkeyDatabase.bBypassEDPRevCheck,              DP_REG_VAL_BOOL},
     {NV_DP_DSC_MST_CAP_BUG_3143315,                 &dpRegkeyDatabase.bDscMstCapBug3143315,            DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_POWER_DOWN_PHY,                   &dpRegkeyDatabase.bPowerDownPhyBeforeD3,           DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_REASSESS_MAX_LINK,                &dpRegkeyDatabase.bReassessMaxLink,                DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED,      &dpRegkeyDatabase.bMSTPCONCapsReadDisabled,        DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_FLUSH_TIMESLOT_INFO_WHEN_DIRTY,   &dpRegkeyDatabase.bFlushTimeslotWhenDirty,         DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_DISABLE_TUNNEL_BW_ALLOCATION,     &dpRegkeyDatabase.bForceDisableTunnelBwAllocation, DP_REG_VAL_BOOL}
 };
 
@@ -319,10 +317,14 @@ void EvoMainLink::triggerACT()
     params.subDeviceInstance = this->subdeviceIndex;
     params.displayId = this->displayId;
 
-    provider->rmControl0073(NV0073_CTRL_CMD_DP_SEND_ACT, &params, sizeof params);
+    NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_SEND_ACT, &params, sizeof params);
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        DP_PRINTF(DP_ERROR, "triggerACT failed!");
+    }
 }
 
-void EvoMainLink::configureHDCPRenegotiate(NvU64 cN, NvU64 cKSV, bool bForceReAuth, bool bRxIDMsgPending){}
+void EvoMainLink::configureHDCPRenegotiate(NvU64 cN, NvU64 cKSV, bool bForceReAuth, bool bRxIDMsgPending) {}
 void EvoMainLink::configureHDCPGetHDCPState(HDCPState &hdcpState)
 {
     // HDCP Not Supported
@@ -372,7 +374,11 @@ void EvoMainLink::configureSingleStream(NvU32 head,
     params.SST.waterMark = waterMark;
     params.SST.bEnableAudioOverRightPanel = bAudioOverRightPanel;
 
-    provider->rmControl0073(NV0073_CTRL_CMD_DP_CONFIG_STREAM, &params, sizeof params);
+    NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_CONFIG_STREAM, &params, sizeof params);
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        DP_PRINTF(DP_ERROR, "configureSingleStream failed!");
+    }
 }
 
 void EvoMainLink::configureSingleHeadMultiStreamMode(NvU32 displayIDs[],
@@ -393,9 +399,12 @@ void EvoMainLink::configureSingleHeadMultiStreamMode(NvU32 displayIDs[],
     params.numStreams = numStreams;
     params.vbiosPrimaryDispIdIndex = vbiosPrimaryDispIdIndex;
 
-    provider->rmControl0073(NV0073_CTRL_CMD_DP_CONFIG_SINGLE_HEAD_MULTI_STREAM,
-                            &params,
-                            sizeof params);
+    NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_CONFIG_SINGLE_HEAD_MULTI_STREAM,
+                                        &params, sizeof params);
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        DP_PRINTF(DP_ERROR, "configureSingleHeadMultiStreamMode failed!");
+    }
 }
 
 void EvoMainLink::configureMultiStream(NvU32 head,
@@ -431,7 +440,11 @@ void EvoMainLink::configureMultiStream(NvU32 head,
     params.MST.singleHeadMSTPipeline = streamIdentifier;
     params.MST.bEnableAudioOverRightPanel = bAudioOverRightPanel;
 
-    provider->rmControl0073(NV0073_CTRL_CMD_DP_CONFIG_STREAM, &params, sizeof params);
+    NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_CONFIG_STREAM, &params, sizeof params);
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        DP_PRINTF(DP_ERROR, "configureMultiStream failed!");
+    }
 }
 
 void EvoMainLink::configureMsScratchRegisters(NvU32 address,
@@ -447,7 +460,11 @@ void EvoMainLink::configureMsScratchRegisters(NvU32 address,
     params.hopCount = hopCount;
     params.dpMsDevAddrState = dpMsDevAddrState;
 
-    provider->rmControl0073(NV0073_CTRL_CMD_DP_CONFIG_RAD_SCRATCH_REG, &params, sizeof params);
+    NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_CONFIG_RAD_SCRATCH_REG, &params, sizeof params);
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        DP_PRINTF(DP_ERROR, "configureMsScratchRegisters failed!");
+    }
 }
 
 //
@@ -490,7 +507,8 @@ bool EvoMainLink::setDpStereoMSAParameters(bool bStereoEnable, const NV0073_CTRL
     // implement this rmcontrol.  To avoid that, this class would need to be
     // aware of which evo display HAL is in use.
     //
-    if (ret != NVOS_STATUS_SUCCESS && ret != NVOS_STATUS_ERROR_NOT_SUPPORTED) {
+    if (ret != NVOS_STATUS_SUCCESS && ret != NVOS_STATUS_ERROR_NOT_SUPPORTED)
+    {
         DP_ASSERT(!"Enabling MSA stereo override failed!");
         return false;
     }
@@ -1583,8 +1601,11 @@ bool EvoMainLink::controlRateGoverning(NvU32 head, bool enable, bool updateNow)
         params.flags |= DRF_DEF(0073_CTRL, _CMD_DP_SET_RATE_GOV_FLAGS, _TRIGGER_MODE, _LOADV);
     }
 
-    provider->rmControl0073(NV0073_CTRL_CMD_DP_SET_RATE_GOV, &params, sizeof params);
-
+    NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_SET_RATE_GOV, &params, sizeof params);
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        DP_PRINTF(DP_ERROR, "controlRateGoverning(): Set RateGov failed!");
+    }
     return true;
 }
 
@@ -1712,7 +1733,11 @@ void EvoMainLink::configureTriggerSelect(NvU32 head, DP_SINGLE_HEAD_MULTI_STREAM
     params.subDeviceInstance = subdeviceIndex;
     params.sorIndex = provider->getSorIndex();
     params.singleHeadMSTPipeline = streamIdentifier;
-    provider->rmControl0073(NV0073_CTRL_CMD_DP_SET_TRIGGER_SELECT, &params, sizeof params);
+    NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_SET_TRIGGER_SELECT, &params, sizeof params);
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        DP_PRINTF(DP_ERROR, "configureTriggerSelect(): Set Trigger Select failed!");
+    }
 }
 
 void EvoMainLink::configureTriggerAll(NvU32 head, bool enable)
@@ -1721,7 +1746,11 @@ void EvoMainLink::configureTriggerAll(NvU32 head, bool enable)
     params.head = head;
     params.subDeviceInstance = subdeviceIndex;
     params.enable = enable;
-    provider->rmControl0073(NV0073_CTRL_CMD_DP_SET_TRIGGER_ALL, &params, sizeof params);
+    NvU32 ret = provider->rmControl0073(NV0073_CTRL_CMD_DP_SET_TRIGGER_ALL, &params, sizeof params);
+    if (ret != NVOS_STATUS_SUCCESS)
+    {
+        DP_PRINTF(DP_ERROR, "configureTriggerAll(): Set Trigger All failed!");
+    }
 }
 
 MainLink * DisplayPort::MakeEvoMainLink(EvoInterface * provider, Timer * timer)
@@ -1806,9 +1835,7 @@ bool EvoMainLink::configureLinkRateTable
         }
     }
 
-    NvU32 code = provider->rmControl0073(
-                NV0073_CTRL_CMD_DP_CONFIG_INDEXED_LINK_RATES,
-                &params, sizeof(params));
+    NvU32 code = provider->rmControl0073(NV0073_CTRL_CMD_DP_CONFIG_INDEXED_LINK_RATES, &params, sizeof(params));
 
     if ((pLinkRates != NULL ) && (code == NVOS_STATUS_SUCCESS) &&
         (params.linkBwCount <= NV0073_CTRL_DP_MAX_INDEXED_LINK_RATES))
@@ -1860,9 +1887,7 @@ bool EvoMainLink::configureFec
     params.displayId = displayId;
     params.bEnableFec = bEnableFec;
 
-    NvU32 code = provider->rmControl0073(
-                NV0073_CTRL_CMD_DP_CONFIGURE_FEC,
-                &params, sizeof(params));
+    NvU32 code = provider->rmControl0073(NV0073_CTRL_CMD_DP_CONFIGURE_FEC, &params, sizeof(params));
 
     if (code == NVOS_STATUS_SUCCESS)
     {

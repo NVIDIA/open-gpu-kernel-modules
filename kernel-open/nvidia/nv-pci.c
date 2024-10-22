@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -37,8 +37,13 @@
 #include <linux/kernfs.h>
 #endif
 
+#include "detect-self-hosted.h"
+
 #if !defined(NV_BUS_TYPE_HAS_IOMMU_OPS)
 #include <linux/iommu.h>
+#endif
+#if NV_IS_EXPORT_SYMBOL_GPL_pci_ats_supported
+#include <linux/pci-ats.h>
 #endif
 
 static void
@@ -434,22 +439,28 @@ nv_init_coherent_link_info
         nvl->coherent_link_info.gpu_mem_pa =
             NV_PCI_RESOURCE_START(nvl->pci_dev, gpu_bar2_offset);
 
-        if ((NV_PCI_RESOURCE_VALID(nvl->pci_dev, gpu_bar1_offset)) &&
+        if ((pci_devid_is_self_hosted_hopper(nv->pci_info.device_id)) &&
+            (NV_PCI_RESOURCE_VALID(nvl->pci_dev, gpu_bar1_offset)) &&
             (NV_PCI_RESOURCE_FLAGS(nvl->pci_dev, gpu_bar1_offset) & PCI_BASE_ADDRESS_SPACE)
             == PCI_BASE_ADDRESS_SPACE_MEMORY)
         {
-            // Present only in passthrough case
+            // Present only in passthrough case for self-hosted hopper.
             nvl->coherent_link_info.rsvd_mem_pa = NV_PCI_RESOURCE_START(nvl->pci_dev, gpu_bar1_offset);
+
+            //
+            // Unset nv->bars[1] only for self-hosted Hopper as BAR1 in virtualization case
+            // for hopper is used to convey RM reserved memory information and doesn't contain
+            // the traditional GPU BAR2. Starting from Blackwell BAR1 will be the real BAR1.
+            //
+            memset(&nv->bars[1], 0, sizeof(nv->bars[1]));
         }
 
         //
-        // Unset nv->bars[] as the BARs in the virtualization case are used
-        // only to convey the coherent GPU memory information and doesn't
-        // contain the traditional GPU BAR1/BAR2. This is to ensure the
-        // coherent FB addresses don't inadvertently pass the IS_FB_OFFSET
-        // or IS_IMEM_OFFSET checks.
+        // Unset nv->bars[2] for all self-hosted systems as BAR2 in the virtualization case
+        // is used only to convey the coherent GPU memory information and doesn't contain
+        // the traditional GPU BAR2. This is to ensure the coherent FB addresses don't 
+        // inadvertently pass the IS_FB_OFFSET or IS_IMEM_OFFSET checks.
         //
-        memset(&nv->bars[1], 0, sizeof(nv->bars[1]));
         memset(&nv->bars[2], 0, sizeof(nv->bars[2]));
     }
 
@@ -457,8 +468,11 @@ nv_init_coherent_link_info
     NV_DEV_PRINTF(NV_DBG_INFO, nv, "DSD properties: \n");
     NV_DEV_PRINTF(NV_DBG_INFO, nv, "\tGPU memory PA: 0x%lx \n",
                   nvl->coherent_link_info.gpu_mem_pa);
-    NV_DEV_PRINTF(NV_DBG_INFO, nv, "\tGPU reserved memory PA: 0x%lx \n",
-                  nvl->coherent_link_info.rsvd_mem_pa);
+    if (pci_devid_is_self_hosted_hopper(nv->pci_info.device_id))
+    {
+        NV_DEV_PRINTF(NV_DBG_INFO, nv, "\tGPU reserved memory PA: 0x%lx \n",
+                      nvl->coherent_link_info.rsvd_mem_pa);
+    }
 
     if (!gi_found)
     {
@@ -780,8 +794,12 @@ next_bar:
     // PPC64LE platform where ATS is currently supported (IBM P9).
     nv_ats_supported &= nv_platform_supports_numa(nvl);
 #else
-#if defined(NV_PCI_DEV_HAS_ATS_ENABLED)
+#if NV_IS_EXPORT_SYMBOL_GPL_pci_ats_supported
+    nv_ats_supported &= pci_ats_supported(pci_dev);
+#elif defined(NV_PCI_DEV_HAS_ATS_ENABLED)
     nv_ats_supported &= pci_dev->ats_enabled;
+#else
+    nv_ats_supported = NV_FALSE;
 #endif
 #endif
     if (nv_ats_supported)

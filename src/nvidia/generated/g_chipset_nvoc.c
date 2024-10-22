@@ -57,6 +57,10 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJCL =
     /*pExportInfo=*/        &__nvoc_export_info_OBJCL
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+
+// Up-thunk(s) to bridge methods to ancestors (if any)
+
 const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJCL = 
 {
     /*numEntries=*/     0,
@@ -72,8 +76,8 @@ void __nvoc_dtor_OBJCL(OBJCL *pThis) {
 
 void __nvoc_init_dataField_OBJCL(OBJCL *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-    pThis->setProperty(pThis, PDB_PROP_CL_HAS_RESIZABLE_BAR_ISSUE, ((NvBool)(0 != 0)));
-    pThis->setProperty(pThis, PDB_PROP_CL_BUG_3751839_GEN_SPEED_WAR, ((NvBool)(0 != 0)));
+    pThis->setProperty(pThis, PDB_PROP_CL_HAS_RESIZABLE_BAR_ISSUE, NV_FALSE);
+    pThis->setProperty(pThis, PDB_PROP_CL_BUG_3751839_GEN_SPEED_WAR, NV_FALSE);
 }
 
 NV_STATUS __nvoc_ctor_Object(Object* );

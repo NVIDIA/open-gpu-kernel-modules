@@ -199,17 +199,17 @@ gpuInitRegistryOverrides_KERNEL
         pGpu->bBf3WarBug4040336Enabled = (data32 == NV_REG_STR_RM_DMA_ADJUST_PEER_MMIO_BF3_ENABLE);
     }
 
-    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_ITERATIVE_MMU_WALKER, &data32) == NV_OK)
-    {
-        pGpu->bIterativeMmuWalker = (data32 == NV_REG_STR_RM_ITERATIVE_MMU_WALKER_ENABLED);
-    }
-
 #if defined(GPU_LOAD_FAILURE_TEST_SUPPORTED)
     if (osReadRegistryDword(pGpu, NV_REG_STR_GPU_LOAD_FAILURE_TEST, &data32) == NV_OK)
     {
         pGpu->loadFailurePathTestControl = data32;
     }
 #endif
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_DEBUG_RUSD_POLLING, &data32) == NV_OK)
+    {
+        pGpu->userSharedData.pollingRegistryOverride = data32;
+    }
 
     return NV_OK;
 }

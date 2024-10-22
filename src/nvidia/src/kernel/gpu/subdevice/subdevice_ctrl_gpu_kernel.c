@@ -57,7 +57,7 @@
 #include "gpu/mem_sys/kern_mem_sys.h"
 #include "gpu/nvenc/nvencsession.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
-#include "gpu/ce/kernel_ce_shared.h"
+#include "gpu/ce/kernel_ce.h"
 #include "rmapi/resource_fwd_decls.h"
 #include "rmapi/client.h"
 
@@ -183,9 +183,7 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
             }
             case NV2080_CTRL_GPU_INFO_INDEX_SURPRISE_REMOVAL_POSSIBLE:
             {
-                OBJSYS *pSys = SYS_GET_INSTANCE();
-                OBJCL  *pCl  = SYS_GET_CL(pSys);
-                data = !!pCl->getProperty(pCl, PDB_PROP_CL_IS_EXTERNAL_GPU);
+                data = !!pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_EXTERNAL_GPU);
                 break;
             }
             case NV2080_CTRL_GPU_INFO_INDEX_IBMNPU_RELAXED_ORDERING:
@@ -857,7 +855,7 @@ subdeviceCtrlCmdGpuGetEncoderCapacity_IMPL
     NvHandle  hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
     NvHandle  hObject = RES_GET_HANDLE(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (pEncoderCapacityParams->queryType == NV2080_CTRL_GPU_GET_ENCODER_CAPACITY_AV1)
     {
@@ -909,7 +907,7 @@ subdeviceCtrlCmdGpuGetNvencSwSessionStats_IMPL
     NvencSession             *pNvencSession = NULL;
     PNVENC_SESSION_LIST_ITEM  pNvencSessionListItem = NULL;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     //
     // For GSP vGPU host, get the data from GSP RM for CPU RM and it's client
@@ -1035,7 +1033,7 @@ subdeviceCtrlCmdGpuGetNvencSwSessionInfo_IMPL
     OBJGPU                  *pGpu = GPU_RES_GET_GPU(pSubdevice);
     NvU32                   entryCount = 0;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if ((!IS_VIRTUAL(pGpu)) && (pGpu->encSessionStatsReportingState != NV2080_CTRL_GPU_INFO_NVENC_STATS_REPORTING_STATE_ENABLED))
     {
@@ -1070,7 +1068,7 @@ subdeviceCtrlCmdGpuGetNvencSwSessionInfoV2_IMPL
     OBJGPU                  *pGpu = GPU_RES_GET_GPU(pSubdevice);
     NvU32                   entryCount = 0;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if ((!IS_VIRTUAL(pGpu)) && (pGpu->encSessionStatsReportingState != NV2080_CTRL_GPU_INFO_NVENC_STATS_REPORTING_STATE_ENABLED))
     {
@@ -1112,7 +1110,7 @@ subdeviceCtrlCmdGpuGetNvfbcSwSessionStats_IMPL
     NvfbcSession            *pNvfbcSession = NULL;
     PNVFBC_SESSION_LIST_ITEM pNvfbcSessionListItem = NULL;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (listCount(&(pGpu->nvfbcSessionList)) == 0)
     {
@@ -1167,7 +1165,7 @@ subdeviceCtrlCmdGpuGetNvfbcSwSessionInfo_IMPL
     NvfbcSession            *pNvfbcSession = NULL;
     PNVFBC_SESSION_LIST_ITEM pNvfbcSessionListItem = NULL;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     portMemSet(pParams, 0, sizeof(NV2080_CTRL_GPU_GET_NVFBC_SW_SESSION_INFO_PARAMS));
 
@@ -1241,55 +1239,11 @@ subdeviceCtrlCmdGpuGetSdm_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     pSdmParams->subdeviceMask = gpuGetSubdeviceMask(pGpu);
 
     return NV_OK;
-}
-
-//
-// subdeviceCtrlCmdGpuSetSdm
-//
-// Lock Requirements:
-//      Assert that API lock held on entry
-//
-NV_STATUS
-subdeviceCtrlCmdGpuSetSdm_IMPL
-(
-    Subdevice* pSubdevice,
-    NV2080_CTRL_GPU_SET_SDM_PARAMS* pSdmParams
-)
-{
-    NV_STATUS status = NV_OK;
-    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
-    NvU32   subdeviceInstance;
-
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
-
-    if (!ONEBITSET(pSdmParams->subdeviceMask))
-    {
-        NV_PRINTF(LEVEL_ERROR, "Subdevice mask has none or more than one bit set");
-        return NV_ERR_INVALID_DATA;
-    }
-
-    if (gpuIsStateLoaded(pGpu))
-    {
-        NV_PRINTF(LEVEL_ERROR, "NV2080_CTRL_CMD_GPU_SET_SDM cannot be called after the GPU is loaded");
-        return NV_ERR_INVALID_STATE;
-    }
-
-    subdeviceInstance = BIT_IDX_32(pSdmParams->subdeviceMask);
-
-    if (subdeviceInstance >= NV_MAX_SUBDEVICES)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Subdevice mask exceeds the max count of subdevices");
-        return NV_ERR_INVALID_DATA;
-    }
-
-    pGpu->subdeviceInstance = subdeviceInstance;
-
-    return status;
 }
 
 //
@@ -1307,7 +1261,7 @@ subdeviceCtrlCmdGpuGetSimulationInfo_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (IS_SILICON(pGpu))
     {
@@ -1338,7 +1292,7 @@ subdeviceCtrlCmdGpuGetEngines_IMPL
     NvU32    *pKernelEngineList = NvP64_VALUE(pParams->engineList);
     NV_STATUS status = NV_OK;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     portMemSet(&getEngineParamsV2, 0, sizeof(getEngineParamsV2));
 
@@ -1376,7 +1330,7 @@ subdeviceCtrlCmdGpuGetEnginesV2_IMPL
     OBJGPU   *pGpu = GPU_RES_GET_GPU(pSubdevice);
     NV_STATUS status = NV_OK;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // Update the engine Database
     NV_ASSERT_OK_OR_RETURN(gpuUpdateEngineTable(pGpu));
@@ -1423,37 +1377,34 @@ subdeviceCtrlCmdGpuGetEnginesV2_IMPL
         }
     }
 
-// removal tracking bug: 3748354
     NvBool bOwnsLock = NV_FALSE;
+    NvU32 i;
     if (!rmDeviceGpuLockIsOwner(pGpu->gpuInstance))
     {
         status = rmDeviceGpuLocksAcquire(pGpu, GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE, RM_LOCK_MODULES_NONE);
         NV_ASSERT_OK_OR_RETURN(status);
 
         bOwnsLock = NV_TRUE;
-        NvU32 i;
-        
-        for (i = 0; i < pEngineParams->engineCount; i++)
-        {
-            NvU32 nv2080EngineId;
-            nv2080EngineId = pEngineParams->engineList[i];
+    }
 
-            if (NV2080_ENGINE_TYPE_IS_COPY(nv2080EngineId))
+    for (i = 0; i < pEngineParams->engineCount; i++)
+    {
+        NvU32 nv2080EngineId;
+        nv2080EngineId = pEngineParams->engineList[i];
+
+        if (NV2080_ENGINE_TYPE_IS_COPY(nv2080EngineId))
+        {
+            // Check if this is a decomp LCE
+            NvU32 ceInstanceId = NV2080_ENGINE_TYPE_COPY_IDX(nv2080EngineId);
+            if (kceIsDecompLce(pGpu, ceInstanceId))
             {
-                // Check if this is a decomp LCE
-                if (ceIsDecompLce(pGpu, nv2080EngineId))
-                {
-                    NvU32 ceInstanceId;
-                    ceInstanceId = NV2080_ENGINE_TYPE_COPY_IDX(nv2080EngineId);
-                    pEngineParams->engineList[i] = NV2080_ENGINE_TYPE_COMP_DECOMP_COPY(ceInstanceId);
-                }
+                pEngineParams->engineList[i] = NV2080_ENGINE_TYPE_COMP_DECOMP_COPY(ceInstanceId);
             }
         }
-        
-
-        if (bOwnsLock == NV_TRUE)
-            rmDeviceGpuLocksRelease(pGpu, GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE, NULL);
     }
+
+    if (bOwnsLock == NV_TRUE)
+        rmDeviceGpuLocksRelease(pGpu, GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE, NULL);
 
     return status;
 }
@@ -1476,7 +1427,7 @@ subdeviceCtrlCmdGpuGetEngineClasslist_IMPL
     NV_STATUS     status = NV_OK;
     RM_ENGINE_TYPE rmEngineType = gpuGetRmEngineType(pClassParams->engineType);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     {
         if (IS_MIG_IN_USE(pGpu))
@@ -1537,7 +1488,7 @@ subdeviceCtrlCmdGpuGetEnginePartnerList_IMPL
     NvU32            nv2080EngineType;
     RM_ENGINE_TYPE   rmEngineType;
     NvU32            i;
-    PCLASSDESCRIPTOR pClass;
+    CLASSDESCRIPTOR *pClass;
     NV_STATUS        status = NV_OK;
 
     pPartnerListParams->numPartners = 0;
@@ -1668,7 +1619,7 @@ subdeviceCtrlCmdGpuGetEngineFaultInfo_IMPL
     NV_STATUS   status      = NV_OK;
     RM_ENGINE_TYPE rmEngineType = gpuGetRmEngineType(pParams->engineType);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     //
     // When MIG is enabled, clients pass in their instance-specific engineId
@@ -1729,7 +1680,8 @@ subdeviceCtrlCmdGpuGetFermiGpcInfo_IMPL
     NvHandle  hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
     NvHandle  hSubdevice = RES_GET_HANDLE(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(GPU_RES_GET_GPU(pSubdevice)->gpuInstance));
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(GPU_RES_GET_GPU(pSubdevice)->gpuInstance),
+        NV_ERR_INVALID_LOCK_STATE);
 
     portMemSet(&gpcMaskParams, 0, sizeof(gpcMaskParams));
 
@@ -1764,7 +1716,8 @@ subdeviceCtrlCmdGpuGetFermiTpcInfo_IMPL
     NvHandle  hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
     NvHandle  hSubdevice = RES_GET_HANDLE(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(GPU_RES_GET_GPU(pSubdevice)->gpuInstance));
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(GPU_RES_GET_GPU(pSubdevice)->gpuInstance),
+        NV_ERR_INVALID_LOCK_STATE);
 
     portMemSet(&tpcMaskParams, 0, sizeof(tpcMaskParams));
     tpcMaskParams.gpcId = pParams->gpcId;
@@ -1802,7 +1755,8 @@ subdeviceCtrlCmdGpuGetFermiZcullInfo_IMPL
     NvHandle  hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
     NvHandle  hSubdevice = RES_GET_HANDLE(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(GPU_RES_GET_GPU(pSubdevice)->gpuInstance));
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(GPU_RES_GET_GPU(pSubdevice)->gpuInstance),
+        NV_ERR_INVALID_LOCK_STATE);
 
     portMemSet(&zcullMaskParams, 0, sizeof(zcullMaskParams));
     zcullMaskParams.gpcId = pParams->gpcId;
@@ -1847,7 +1801,7 @@ subdeviceCtrlCmdGpuGetPesInfo_IMPL
     // This ctrl call is due for deprecation and should not be used.
     //
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     NV_ASSERT_OK_OR_RETURN(
         serverGetClientUnderLock(&g_resServ, hClient, &pRsClient));
@@ -1890,7 +1844,7 @@ subdeviceCtrlCmdGpuQueryMode_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     switch (gpuGetMode(pGpu))
     {
@@ -1944,7 +1898,7 @@ subdeviceCtrlCmdGpuSetComputeModeRules_IMPL
 {
     OBJGPU           *pGpu = GPU_RES_GET_GPU(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (IS_GSP_CLIENT(pGpu))
     {
@@ -2027,7 +1981,7 @@ subdeviceCtrlCmdGpuQueryComputeModeRules_IMPL
 {
     OBJGPU           *pGpu = GPU_RES_GET_GPU(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     //
     // vGPU specific check to assign compute mode as 'Prohibited'
@@ -2056,7 +2010,7 @@ subdeviceCtrlCmdGpuAcquireComputeModeReservation_IMPL
     OBJGPU   *pGpu = GPU_RES_GET_GPU(pSubdevice);
     NvHandle  hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     //TODO Bug 2718406  will extend compute mode support for MIG
     if (IS_MIG_ENABLED(pGpu))
@@ -2119,7 +2073,7 @@ subdeviceCtrlCmdGpuReleaseComputeModeReservation_IMPL
     OBJGPU   *pGpu = GPU_RES_GET_GPU(pSubdevice);
     NvHandle  hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     //TODO Bug 2718406  will extend compute mode support for MIG
     if (IS_MIG_ENABLED(pGpu))
@@ -2156,7 +2110,7 @@ subdeviceCtrlCmdGpuGetId_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     pIdParams->gpuId = pGpu->gpuId;
 
@@ -2183,7 +2137,7 @@ subdeviceCtrlCmdGpuGetPids_IMPL
 
     NV_ASSERT_OR_RETURN(RMCFG_FEATURE_KERNEL_RM, NV_ERR_NOT_SUPPORTED);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     switch (pGetPidsParams->idType)
     {
@@ -2219,11 +2173,13 @@ subdeviceCtrlCmdGpuGetPids_IMPL
     // info
     //
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
-    NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
+    RmClient *pRmClient = dynamicCast(RES_GET_CLIENT(pSubdevice), RmClient);
+    NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
+
     MIG_INSTANCE_REF partitionRef = kmigmgrMakeNoMIGReference();
     pRef = &partitionRef;
     if (IS_MIG_IN_USE(pGpu) &&
-        !rmclientIsCapableByHandle(hClient, NV_RM_CAP_SYS_SMC_MONITOR))
+        !rmclientIsCapable(pRmClient, NV_RM_CAP_SYS_SMC_MONITOR))
     {
         Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
         //
@@ -2271,7 +2227,7 @@ subdeviceCtrlCmdGpuGetPidInfo_IMPL
 
     NV_ASSERT_OR_RETURN(RMCFG_FEATURE_KERNEL_RM, NV_ERR_NOT_SUPPORTED);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if ((pGetPidInfoParams->pidInfoListCount <= 0) ||
         (pGetPidInfoParams->pidInfoListCount >
@@ -2286,11 +2242,13 @@ subdeviceCtrlCmdGpuGetPidInfo_IMPL
     // info
     //
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
-    NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
+    RmClient *pRmClient = dynamicCast(RES_GET_CLIENT(pSubdevice), RmClient);
+    NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
+
     MIG_INSTANCE_REF ref = kmigmgrMakeNoMIGReference();
     pRef = &ref;
     if (IS_MIG_IN_USE(pGpu) &&
-        !rmclientIsCapableByHandle(hClient, NV_RM_CAP_SYS_SMC_MONITOR))
+        !rmclientIsCapable(pRmClient, NV_RM_CAP_SYS_SMC_MONITOR))
     {
         Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
         //
@@ -2353,7 +2311,7 @@ subdeviceCtrlCmdGpuGetEngineRunlistPriBase_IMPL
     OBJGPU     *pGpu        = GPU_RES_GET_GPU(pSubdevice);
     KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (!kfifoIsHostEngineExpansionSupported(pKernelFifo))
     {
@@ -2424,7 +2382,7 @@ subdeviceCtrlCmdGpuGetHwEngineId_IMPL
     OBJGPU     *pGpu        = GPU_RES_GET_GPU(pSubdevice);
     KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (!kfifoIsHostEngineExpansionSupported(pKernelFifo))
     {
@@ -2492,7 +2450,8 @@ subdeviceCtrlCmdGpuGetMaxSupportedPageSize_IMPL
     OBJGPU   *pGpu = GPU_RES_GET_GPU(pSubdevice);
     NV_STATUS status  = NV_OK;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance),
+        NV_ERR_INVALID_LOCK_STATE);
 
     // Default to minimal page size (4k)
     pParams->maxSupportedPageSize = RM_PAGE_SIZE;
@@ -2779,7 +2738,8 @@ NV_STATUS subdeviceCtrlCmdValidateMemMapRequest_IMPL
     NvU32         bar0MapSize;
     NvU64         bar0MapOffset;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(GPU_RES_GET_GPU(pSubdevice)->gpuInstance));
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(GPU_RES_GET_GPU(pSubdevice)->gpuInstance),
+        NV_ERR_INVALID_LOCK_STATE);
 
     pParams->protection = NV_PROTECT_READ_WRITE;
 
@@ -2874,7 +2834,7 @@ subdeviceCtrlCmdGpuGetGfid_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
     NvU32  pciFunction, gfid;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (!gpuIsSriovEnabled(pGpu))
         return NV_ERR_NOT_SUPPORTED;
@@ -2941,7 +2901,7 @@ gpuUpdateGfidP2pCapability
     NvBool  bSetP2PAccess = NV_FALSE;
     NvU32   idx;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (!gpuIsSriovEnabled(pGpu))
         return NV_ERR_NOT_SUPPORTED;
@@ -3046,9 +3006,9 @@ subdeviceCtrlCmdGpuGetEngineLoadTimes_IMPL
     NV2080_CTRL_GPU_GET_ENGINE_LOAD_TIMES_PARAMS *pParams
 )
 {
-    OBJGPU        *pGpu              = GPU_RES_GET_GPU(pSubdevice);
-    PENGDESCRIPTOR engDescriptorList = gpuGetInitEngineDescriptors(pGpu);
-    NvU32          numEngDescriptors = gpuGetNumEngDescriptors(pGpu);
+    OBJGPU        *pGpu               = GPU_RES_GET_GPU(pSubdevice);
+    ENGDESCRIPTOR *pEngDescriptorList = gpuGetInitEngineDescriptors(pGpu);
+    NvU32          numEngDescriptors  = gpuGetNumEngDescriptors(pGpu);
     NvU32          curEngDescIdx;
 
     NV_ASSERT_OR_RETURN(numEngDescriptors < NV2080_CTRL_GPU_MAX_ENGINE_OBJECTS, NV_ERR_BUFFER_TOO_SMALL);
@@ -3056,8 +3016,8 @@ subdeviceCtrlCmdGpuGetEngineLoadTimes_IMPL
     pParams->engineCount = numEngDescriptors;
     for (curEngDescIdx = 0; curEngDescIdx < numEngDescriptors; curEngDescIdx++)
     {
-        ENGDESCRIPTOR   curEngDescriptor = engDescriptorList[curEngDescIdx];
-        OBJENGSTATE    *pEngstate        = gpuGetEngstate(pGpu, curEngDescriptor);
+        ENGDESCRIPTOR curEngDescriptor = pEngDescriptorList[curEngDescIdx];
+        OBJENGSTATE  *pEngstate        = gpuGetEngstate(pGpu, curEngDescriptor);
 
         if (pEngstate == NULL)
         {
@@ -3093,7 +3053,7 @@ subdeviceCtrlCmdGpuSetFabricAddr_IMPL
     NV_ASSERT_OR_RETURN(RMCFG_FEATURE_KERNEL_RM, NV_ERR_NOT_SUPPORTED);
     NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (!rmclientIsCapableOrAdminByHandle(hClient,
                                           NV_RM_CAP_EXT_FABRIC_MGMT,
@@ -3164,8 +3124,9 @@ subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL
     NvUuid *pClusterUuid = (NvUuid*) pParams->clusterUuid;
     NvU32 mask = 0, healthMask = 0;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() &&
-                           rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() &&
+                           rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)),
+                           NV_ERR_INVALID_LOCK_STATE);
 
     // Probe is not supported - Ex - Direct connected etc.
     if (!gpuFabricProbeIsSupported(pGpu))
@@ -3289,7 +3250,7 @@ subdeviceCtrlCmdGpuGetNameString_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     return gpuGetNameString(pGpu,
                             pNameStringParams->gpuNameStringFlags,
@@ -3311,7 +3272,7 @@ subdeviceCtrlCmdGpuGetShortNameString_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     return gpuGetShortNameString(pGpu, (void *)&pShortNameStringParams->gpuShortNameString);
 }
@@ -3369,7 +3330,7 @@ subdeviceCtrlCmdGpuReportNonReplayableFault_IMPL
 
     ct_assert(sizeof(GMMU_FAULT_PACKET) == NV2080_CTRL_GPU_FAULT_PACKET_SIZE);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     status = kgmmuHandleNonReplayableFaultPacket_HAL(pGpu, pKernelGmmu, pFaultPacket);
 
@@ -3459,5 +3420,35 @@ subdeviceCtrlCmdGpuSetIllum_IMPL
     }
 
     return status;
+}
+
+/*!
+ * @brief   This Command is used to query the recovery action for a GPU to get
+ *          back to an operational state.
+ *
+ * @param[in,out]   pParams
+ *                  action: The GPU recovery action.
+ *
+ * @return  Returns NV_STATUS
+ *          NV_ERR_GPU_IS_LOST        The GPU has fallen off the bus
+ *          NV_OK                     Success
+ *
+ */
+NV_STATUS
+subdeviceCtrlCmdGpuGetRecoveryAction_IMPL(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_GPU_GET_RECOVERY_ACTION_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+
+    if (!API_GPU_ATTACHED_SANITY_CHECK(pGpu))
+    {
+        return NV_ERR_GPU_IS_LOST;
+    }
+
+    gpuGetRecoveryAction(pGpu, pParams);
+
+    return NV_OK;
 }
 

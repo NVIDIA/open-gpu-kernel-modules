@@ -50,9 +50,12 @@ enum {
     NVIDIA_UVM_NUM_MINOR_DEVICES
 };
 
-#define UVM_GPU_UUID_TEXT_BUFFER_LENGTH (8+16*2+4+1)
+// UUID has the format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+#define UVM_UUID_STRING_LENGTH ((8 + 1) + 3 * (4 + 1) + 12 + 1)
 
-int format_uuid_to_buffer(char *buffer, unsigned bufferLength, const NvProcessorUuid *pGpuUuid);
+// Writes UVM_UUID_STRING_LENGTH characters into buffer, including a terminating
+// NULL.
+void uvm_uuid_string(char *buffer, const NvProcessorUuid *uuid);
 
 #define UVM_PRINT_FUNC_PREFIX(func, prefix, fmt, ...) \
     func(prefix "%s:%u %s[pid:%d]" fmt,               \
@@ -98,26 +101,8 @@ bool uvm_debug_prints_enabled(void);
 #define UVM_INFO_PRINT(fmt, ...) \
     UVM_PRINT_FUNC_PREFIX_CHECK(printk, KERN_INFO NVIDIA_UVM_PRETTY_PRINTING_PREFIX, " " fmt, ##__VA_ARGS__)
 
-//
-// Please see the documentation of format_uuid_to_buffer, for details on what
-// this routine prints for you.
-//
-#define UVM_DBG_PRINT_UUID(msg, uuidPtr)                                \
-    do {                                                                \
-        char uuidBuffer[UVM_GPU_UUID_TEXT_BUFFER_LENGTH];               \
-        format_uuid_to_buffer(uuidBuffer, sizeof(uuidBuffer), uuidPtr); \
-        UVM_DBG_PRINT("%s: %s\n", msg, uuidBuffer);                     \
-    } while (0)
-
 #define UVM_ERR_PRINT_NV_STATUS(msg, rmStatus, ...)                        \
     UVM_ERR_PRINT("ERROR: %s : " msg "\n", nvstatusToString(rmStatus), ##__VA_ARGS__)
-
-#define UVM_ERR_PRINT_UUID(msg, uuidPtr, ...)                              \
-    do {                                                                   \
-        char uuidBuffer[UVM_GPU_UUID_TEXT_BUFFER_LENGTH];                  \
-        format_uuid_to_buffer(uuidBuffer, sizeof(uuidBuffer), uuidPtr);    \
-        UVM_ERR_PRINT("ERROR: %s : " msg "\n", uuidBuffer, ##__VA_ARGS__); \
-    } while (0)
 
 #define UVM_PANIC()             UVM_PRINT_FUNC(panic, "\n")
 #define UVM_PANIC_MSG(fmt, ...) UVM_PRINT_FUNC(panic, ": " fmt, ##__VA_ARGS__)
@@ -395,7 +380,7 @@ static inline void uvm_touch_page(struct page *page)
     UVM_ASSERT(page);
 
     mapping = (char *) kmap(page);
-    (void)UVM_READ_ONCE(*mapping);
+    (void)READ_ONCE(*mapping);
     kunmap(page);
 }
 

@@ -1,6 +1,6 @@
 //*****************************************************************************
 //
-//  SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+//  SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //  SPDX-License-Identifier: MIT
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
@@ -819,6 +819,15 @@ parseDisplayId20Timing10(
             return NVT_STATUS_ERR;
         }
     }
+    else if (pTiming10Block->header.payload_bytes_len == DISPLAYID_2_1_TIMING_10_PAYLOAD_BYTES_8)
+    {
+        descriptorCount = pDataBlock->data_bytes / sizeof(DISPLAYID_2_1_TIMING_10_8BYTES_DESCRIPTOR);
+
+        if (descriptorCount < 1 || descriptorCount > DISPLAYID_2_1_TIMING_10_MAX_8BYTES_DESCRIPTORS)
+        {
+            return NVT_STATUS_ERR;
+        }
+    }
 
     eachOfDescriptorsSize += pTiming10Block->header.payload_bytes_len;
 
@@ -842,7 +851,7 @@ parseDisplayId20Timing10(
                 UPDATE_BPC_FOR_COLORFORMAT(newTiming.etc.yuv420, 0, 1, 1, 1, 0, 1);
             }
 
-            if (p6bytesDescriptor->options.timing_formula == DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_STANDARD)
+            if (p6bytesDescriptor->options.timing_formula == DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_STANDARD_CRT_BASED)
             {
                 NVT_SNPRINTF((char *)newTiming.etc.name, sizeof(newTiming.etc.name), "DID20-Type10:#%3d:%dx%dx%3d.%03dHz/%s",
                                                                                      (int)NVT_GET_TIMING_STATUS_SEQ(newTiming.etc.status),
@@ -1720,14 +1729,14 @@ parseDisplayId20Timing9Descriptor(
 
     switch (pDescriptor->options.timing_formula)
     {
-    case DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_STANDARD:
+    case DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_STANDARD_CRT_BASED:
         status = NvTiming_CalcCVT(width, height, rr, NVT_PROGRESSIVE, pTiming);
     break;
     case DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_REDUCED_BLANKING_1:
         status = NvTiming_CalcCVT_RB(width, height, rr, NVT_PROGRESSIVE, pTiming);
     break;
-    case DISPLAYID_2_0_TIMING_FORMULA_CVT_2_0_REDUCED_BLANKING_2:
-        status = NvTiming_CalcCVT_RB2(width, height, rr, pDescriptor->options.rr_1000div1001_support, pTiming);
+    case DISPLAYID_2_0_TIMING_FORMULA_CVT_2_1_REDUCED_BLANKING_2:
+        status = NvTiming_CalcCVT_RB2(width, height, rr, pDescriptor->options.rr_1000div1001_support, NV_FALSE, pTiming);
     break;
     default:
     {
@@ -1742,7 +1751,7 @@ parseDisplayId20Timing9Descriptor(
         NVMISC_MEMSET(pTiming->etc.name, 0, sizeof(pTiming->etc.name));
         pTiming->etc.status = NVT_STATUS_DISPLAYID_9N(++count);
 
-        if (pDescriptor->options.timing_formula ==  DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_STANDARD)
+        if (pDescriptor->options.timing_formula ==  DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_STANDARD_CRT_BASED)
         {
             NVT_SNPRINTF((char *)pTiming->etc.name, sizeof(pTiming->etc.name), "DID20-Type9:#%3d:%dx%dx%3d.%03dHz/%s",
                                                                                 (int)NVT_GET_TIMING_STATUS_SEQ(pTiming->etc.status),
@@ -1781,6 +1790,7 @@ parseDisplayId20Timing10Descriptor(
     NVT_STATUS  status = NVT_STATUS_SUCCESS;
     const DISPLAYID_2_0_TIMING_10_6BYTES_DESCRIPTOR* p6bytesDescriptor = NULL;
     const DISPLAYID_2_0_TIMING_10_7BYTES_DESCRIPTOR* p7bytesDescriptor = NULL;
+    const DISPLAYID_2_1_TIMING_10_8BYTES_DESCRIPTOR* p8bytesDescriptor = NULL;
     NvU32 width  = 0;
     NvU32 height = 0;
     NvU32 rr     = 0;
@@ -1796,21 +1806,37 @@ parseDisplayId20Timing10Descriptor(
         p7bytesDescriptor = (const DISPLAYID_2_0_TIMING_10_7BYTES_DESCRIPTOR *)pDescriptor;
                        rr = (p7bytesDescriptor->descriptor_6_bytes.refresh_rate | p7bytesDescriptor->refresh_rate_high << 8) + 1;
     }
+    else if (payloadBytes == DISPLAYID_2_1_TIMING_10_PAYLOAD_BYTES_8)
+    {
+        p8bytesDescriptor = (const DISPLAYID_2_1_TIMING_10_8BYTES_DESCRIPTOR *)pDescriptor;
+                       rr = (p8bytesDescriptor->descriptor_7_bytes.descriptor_6_bytes.refresh_rate |
+                             p8bytesDescriptor->descriptor_7_bytes.refresh_rate_high << 8) + 1;
+    }
 
     switch (p6bytesDescriptor->options.timing_formula)
     {
-    case DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_STANDARD:
+    case DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_STANDARD_CRT_BASED:
         status = NvTiming_CalcCVT(width, height, rr, NVT_PROGRESSIVE, pTiming);
     break;
     case DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_REDUCED_BLANKING_1:
         status = NvTiming_CalcCVT_RB(width, height, rr, NVT_PROGRESSIVE, pTiming);
     break;
-    case DISPLAYID_2_0_TIMING_FORMULA_CVT_2_0_REDUCED_BLANKING_2:
-        status = NvTiming_CalcCVT_RB2(width, height, rr, p6bytesDescriptor->options.rr1000div1001_or_hblank, pTiming);
+    case DISPLAYID_2_0_TIMING_FORMULA_CVT_2_1_REDUCED_BLANKING_2:
+        if (p8bytesDescriptor != NULL)
+        {
+            status = NvTiming_CalcCVT_RB2(width, height, rr, p6bytesDescriptor->options.rr1000div1001_or_hblank, p8bytesDescriptor->additional_mini_vblank, pTiming);
+        }
+        else
+        {
+            status = NvTiming_CalcCVT_RB2(width, height, rr, p6bytesDescriptor->options.rr1000div1001_or_hblank, NV_FALSE, pTiming);
+        }
+
     break;
-    case DISPLAYID_2_0_TIMING_FORMULA_CVT_2_0_REDUCED_BLANKING_3:
+    case DISPLAYID_2_0_TIMING_FORMULA_CVT_2_1_REDUCED_BLANKING_3:
     {
         NvU32 deltaHBlank = 0;
+        NvU32 multiplier = DISPLAYID_2_0_TIMING_10_NOMINAL_MINIMUM_VBLANK;
+
         if (p7bytesDescriptor != NULL)
         {
             if (p6bytesDescriptor->options.rr1000div1001_or_hblank == 0)     // Horizontal Blank in Pixels = [Field Value] * 8 + 80
@@ -1825,14 +1851,49 @@ parseDisplayId20Timing10Descriptor(
                     deltaHBlank = (160 - ((p7bytesDescriptor->delta_hblank - 5) * 8)) - 80;
             }
 
-            status = NvTiming_CalcCVT_RB3(width, height, rr, deltaHBlank, p7bytesDescriptor->additional_vblank_timing * 35, p6bytesDescriptor->options.early_vsync, pTiming);
+            status = NvTiming_CalcCVT_RB3(width,
+                                          height,
+                                          rr,
+                                          deltaHBlank,
+                                          p7bytesDescriptor->additional_vblank_timing * multiplier,
+                                          0,
+                                          p6bytesDescriptor->options.early_vsync,
+                                          pTiming);
+
+        }
+        else if (p8bytesDescriptor != NULL)
+        {
+            if (p6bytesDescriptor->options.rr1000div1001_or_hblank == 0)     // Horizontal Blank in Pixels = [Field Value] * 8 + 80
+            {
+                deltaHBlank = p8bytesDescriptor->descriptor_7_bytes.delta_hblank * 8;
+            }
+            else if (p6bytesDescriptor->options.rr1000div1001_or_hblank == 1)
+            {
+                if (p8bytesDescriptor->descriptor_7_bytes.delta_hblank <= 5)
+                    deltaHBlank = (p8bytesDescriptor->descriptor_7_bytes.delta_hblank * 8 + 160) - 80;
+                else // if 5 < Field Value <=7
+                    deltaHBlank = (160 - ((p8bytesDescriptor->descriptor_7_bytes.delta_hblank - 5) * 8)) - 80;
+            }
+
+            if (p8bytesDescriptor->additional_mini_vblank == 1)
+                multiplier = DISPLAYID_2_1_TIMING_10_ALTERNATE_MINIMUM_VBLANK;
+
+            status = NvTiming_CalcCVT_RB3(width,
+                                          height,
+                                          rr,
+                                          deltaHBlank,
+                                          p8bytesDescriptor->descriptor_7_bytes.additional_vblank_timing * multiplier,
+                                          p8bytesDescriptor->additional_mini_vblank,
+                                          p6bytesDescriptor->options.early_vsync,
+                                          pTiming);
         }
         else // 6 bytes descriptor
         {
+            // just assign the HBlank 80pixel but actually HBlank is 160 in DisplayId2.1a spec
             if (p6bytesDescriptor->options.rr1000div1001_or_hblank == 1)
                 deltaHBlank = 80;
 
-            status = NvTiming_CalcCVT_RB3(width, height, rr, deltaHBlank, 0, p6bytesDescriptor->options.early_vsync, pTiming);
+            status = NvTiming_CalcCVT_RB3(width, height, rr, deltaHBlank, 0, 0, p6bytesDescriptor->options.early_vsync, pTiming);
         }
     }
     break;

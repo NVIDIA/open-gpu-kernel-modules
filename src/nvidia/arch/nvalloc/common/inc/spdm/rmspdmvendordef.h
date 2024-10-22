@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,11 +26,80 @@
 #include <nvtypes.h>
 
 /*!
- * Defines structures and interfaces for any SPDM Vendor-defined behavior.
+ * In NVIDIA's implementation of SPDM, we will support application messages
+ * which are payloads delivered encrypted in SPDM secured messages,
+ * sent across the SPDM channel, but do not contain SPDM messages.
+ * Instead, these messages are for NVIDIA-application purposes.
+ * These messages and relevant structs are defined here.
  */
 
-/* ------------------------- NVIDIA Export Secrets -------------------------- */
+/* ------------------------- Application Payloads ------------------------ */
+/*!
+ * All application messages will follow a simple header format in order to
+ * simplify the parsing and forwarding of application messages to the
+ * relevant recipient endpoint. This format is defined as follows:
+ *
+ * +----------------------------------+
+ * |          RM_SPDM_NV_CMD          |
+ * | Command Type |  Command Payload  |
+ * |  (4 bytes)     (n - 4 - 4 bytes) |
+ * +----------------------------------+
+ *
+ * The Command Type value defines the expected structure of the payload,
+ * and how it should be interpreted.
+ *
+ * There are two major categories of commands - requests and responses.
+ * The values of 0x00000000-0x7FFFFFFF are reserved for requests.
+ * The values of 0x80000000-0xFFFFFFFF are reserved for responses.
+ */
 
+typedef enum
+{
+    // Request commands.
+    // 0x00000000 - 0x7FFFFFFF reserved.
+
+    // Response commands.
+    RM_SPDM_NV_CMD_TYPE_RSP_SUCCESS   = 0x80000000,
+    // 0x80000001 - 0xFFFFFFFF reserved.
+    RM_SPDM_NV_CMD_TYPE_RSP_ERROR     = 0xFFFFFFFF,
+} RM_SPDM_NV_CMD_TYPE;
+
+typedef struct
+{
+    NvU32 cmdType;
+} RM_SPDM_NV_CMD_HDR;
+
+/* ------------------------- NVIDIA Requests -------------------------------- */
+
+/* ------------------------- NVIDIA Responses ------------------------------- */
+/*!
+ * Response Command: Success
+ * Command Type:     0x80000000
+ *
+ * This command is a simple payload for the responding endpoint to
+ * return success. It has no Command Payload.
+ */
+typedef struct
+{
+    RM_SPDM_NV_CMD_HDR hdr;
+} RM_SPDM_NV_CMD_RSP_SUCCESS;
+
+/*!
+ * Response Command: Error
+ * Command Type:     0xFFFFFFFF
+ *
+ * This command is a generic placeholder error response to return specific
+ * failure code to application endpoint. This is used to return an error
+ * back to the original application which sent the message, rather than
+ * suggesting that there was some SPDM or transport layer error.
+ */
+typedef struct
+{
+    RM_SPDM_NV_CMD_HDR hdr;
+    NV_STATUS          status;
+} RM_SPDM_NV_CMD_RSP_ERROR;
+
+#pragma pack()
 
 /* ------------------------- Macros ----------------------------------------- */
 #define SPDM_MAX_MEASUREMENT_BLOCK_COUNT     (64)

@@ -832,7 +832,7 @@ static NVT_STATUS parseDisplayIdTiming5Descriptor(DISPLAYID_TIMING_5_DESCRIPTOR 
     width = ((desc->horizontal_active_pixels_high << 8) | desc->horizontal_active_pixels_low) + 1;
     height = ((desc->vertical_active_pixels_high << 8) | desc->vertical_active_pixels_low) + 1;
     rr = desc->refresh_rate + 1;
-    return NvTiming_CalcCVT_RB2(width, height, rr, is1000div1001, pT);
+    return NvTiming_CalcCVT_RB2(width, height, rr, is1000div1001, NV_FALSE, pT);
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)

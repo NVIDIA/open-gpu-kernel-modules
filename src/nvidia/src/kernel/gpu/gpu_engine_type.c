@@ -105,7 +105,6 @@ RM_ENGINE_TYPE gpuGetRmEngineType_IMPL(NvU32 index)
         case NV2080_ENGINE_TYPE_NVJPEG6:                return RM_ENGINE_TYPE_NVJPEG6;
         case NV2080_ENGINE_TYPE_NVJPEG7:                return RM_ENGINE_TYPE_NVJPEG7;
         case NV2080_ENGINE_TYPE_OFA0:                   return RM_ENGINE_TYPE_OFA0;
-// removal tracking bug: 3748354
         case NV2080_ENGINE_TYPE_OFA1:                   return RM_ENGINE_TYPE_OFA1;
         case NV2080_ENGINE_TYPE_COPY10:                 return RM_ENGINE_TYPE_COPY10;
         case NV2080_ENGINE_TYPE_COPY11:                 return RM_ENGINE_TYPE_COPY11;
@@ -178,7 +177,6 @@ NvU32 gpuGetNv2080EngineType_IMPL(RM_ENGINE_TYPE index)
         case RM_ENGINE_TYPE_COPY7:      return NV2080_ENGINE_TYPE_COPY7;
         case RM_ENGINE_TYPE_COPY8:      return NV2080_ENGINE_TYPE_COPY8;
         case RM_ENGINE_TYPE_COPY9:      return NV2080_ENGINE_TYPE_COPY9;
-// removal tracking bug: 3748354
         case RM_ENGINE_TYPE_COPY10:     return NV2080_ENGINE_TYPE_COPY10;
         case RM_ENGINE_TYPE_COPY11:     return NV2080_ENGINE_TYPE_COPY11;
         case RM_ENGINE_TYPE_COPY12:     return NV2080_ENGINE_TYPE_COPY12;
@@ -222,7 +220,6 @@ NvU32 gpuGetNv2080EngineType_IMPL(RM_ENGINE_TYPE index)
         case RM_ENGINE_TYPE_NVJPEG6:    return NV2080_ENGINE_TYPE_NVJPEG6;
         case RM_ENGINE_TYPE_NVJPEG7:    return NV2080_ENGINE_TYPE_NVJPEG7;
         case RM_ENGINE_TYPE_OFA0:       return NV2080_ENGINE_TYPE_OFA0;
-// removal tracking bug: 3748354
         case RM_ENGINE_TYPE_OFA1:       return NV2080_ENGINE_TYPE_OFA1;
         default: break;
     }
@@ -321,4 +318,40 @@ NV_STATUS gpuGetRmEngineTypeCapMask_IMPL
     }
 
     return NV_OK;
+}
+
+/*!
+ *  @brief Convert RM engine type to the engine class as a string
+ *
+ *  Use ENGDESC_FIELD(engDesc, _INST) to get the engine instance
+ *
+ *  @param[in]  engineType      RM_ENGINE_TYPE number
+ *
+ *  @returns engine name as a string
+ */
+const char* gpuRmEngineTypeToString_IMPL
+(
+    RM_ENGINE_TYPE engineType
+)
+{
+    if (RM_ENGINE_TYPE_IS_GR(engineType))          return MAKE_NV_PRINTF_STR("GR");
+    else if (RM_ENGINE_TYPE_IS_COPY(engineType))   return MAKE_NV_PRINTF_STR("COPY");
+    else if (RM_ENGINE_TYPE_IS_NVDEC(engineType))  return MAKE_NV_PRINTF_STR("NVDEC");
+    else if (RM_ENGINE_TYPE_IS_NVENC(engineType))  return MAKE_NV_PRINTF_STR("NVENC");
+    else if (RM_ENGINE_TYPE_IS_NVJPEG(engineType)) return MAKE_NV_PRINTF_STR("NVJPEG");
+    else if (RM_ENGINE_TYPE_IS_OFA(engineType))    return MAKE_NV_PRINTF_STR("OFA");
+    else if (engineType == RM_ENGINE_TYPE_VP)      return MAKE_NV_PRINTF_STR("VP");
+    else if (engineType == RM_ENGINE_TYPE_ME)      return MAKE_NV_PRINTF_STR("ME");
+    else if (engineType == RM_ENGINE_TYPE_PPP)     return MAKE_NV_PRINTF_STR("PPP");
+    else if (engineType == RM_ENGINE_TYPE_MPEG)    return MAKE_NV_PRINTF_STR("MPEG");
+    else if (engineType == RM_ENGINE_TYPE_SW)      return MAKE_NV_PRINTF_STR("SW");
+    else if (engineType == RM_ENGINE_TYPE_TSEC)    return MAKE_NV_PRINTF_STR("TSEC");
+    else if (engineType == RM_ENGINE_TYPE_VIC)     return MAKE_NV_PRINTF_STR("VIC");
+    else if (engineType == RM_ENGINE_TYPE_MP)      return MAKE_NV_PRINTF_STR("MP");
+    else if (engineType == RM_ENGINE_TYPE_SEC2)    return MAKE_NV_PRINTF_STR("SEC2");
+    else if (engineType == RM_ENGINE_TYPE_HOST)    return MAKE_NV_PRINTF_STR("HOST");
+    else if (engineType == RM_ENGINE_TYPE_DPU)     return MAKE_NV_PRINTF_STR("DPU");
+    else if (engineType == RM_ENGINE_TYPE_PMU)     return MAKE_NV_PRINTF_STR("PMU");
+    else if (engineType == RM_ENGINE_TYPE_FBFLCN)  return MAKE_NV_PRINTF_STR("FBFLCN");
+    else                                           return MAKE_NV_PRINTF_STR("");
 }

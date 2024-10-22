@@ -310,6 +310,5 @@ knvlinkApplyRegkeyOverrides_IMPL
             }
         }
     }
-
     return NV_OK;
 }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,24 +21,30 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "gpu/mmu/kern_gmmu.h"
+#pragma once
 
-#include "published/ada/ad102/dev_fault.h"
+#include <nvtypes.h>
 
-/*!
- * @brief Get the engine ID associated with the max CE
- *
- * @param[in] pGpu         OBJGPU pointer
- * @param[in] pKernelGmmu  KernelGmmu pointer
- *
- * return engine ID of the max CE
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file:      class/clb1cc.finn
+//
+
+#include "clb0cc.h"
+
+#define MAXWELL_PROFILER_CONTEXT (0xb1ccU) /* finn: Evaluated from "NVB1CC_ALLOC_PARAMETERS_MESSAGE_ID" */
+
+/*
+ * Creating the MAXWELL_PROFILER_CONTEXT object:
+ * - The profiler object is instantiated as a child of either a bc channel
+ *   group or bc channel.
  */
-NvU32
-kgmmuGetMaxCeEngineId_AD102
-(
-    OBJGPU     *pGpu,
-    KernelGmmu *pKernelGmmu
-)
-{
-    return NV_PFAULT_MMU_ENG_ID_CE5;
-}
+#define NVB1CC_ALLOC_PARAMETERS_MESSAGE_ID (0xb1ccU)
+
+typedef struct NVB1CC_ALLOC_PARAMETERS {
+    /*
+     * Handle of a specific subdevice of a broadcast device.
+     */
+    NvHandle hSubDevice;
+} NVB1CC_ALLOC_PARAMETERS;
+

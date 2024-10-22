@@ -40,8 +40,13 @@
 #include <drm/drm_blend.h>
 #endif
 
-#if defined(NV_DRM_ROTATION_AVAILABLE)
-/* For DRM_MODE_ROTATE_* and DRM_MODE_REFLECT_* */
+#if defined(NV_DRM_ROTATION_AVAILABLE) || \
+    defined(NV_DRM_COLOR_CTM_3X4_PRESENT) || \
+    defined(NV_DRM_COLOR_LUT_PRESENT)
+/*
+ * For DRM_MODE_ROTATE_*, DRM_MODE_REFLECT_*, struct drm_color_ctm_3x4, and
+ * struct drm_color_lut.
+ */
 #include <uapi/drm/drm_mode.h>
 #endif
 
@@ -358,6 +363,24 @@ static inline void nv_drm_connector_put(struct drm_connector *connector)
 #endif
 }
 
+static inline void nv_drm_property_blob_put(struct drm_property_blob *blob)
+{
+#if defined(NV_DRM_PROPERTY_BLOB_PUT_PRESENT)
+    drm_property_blob_put(blob);
+#else
+    drm_property_unreference_blob(blob);
+#endif
+}
+
+static inline void nv_drm_property_blob_get(struct drm_property_blob *blob)
+{
+#if defined(NV_DRM_PROPERTY_BLOB_PUT_PRESENT)
+    drm_property_blob_get(blob);
+#else
+    drm_property_reference_blob(blob);
+#endif
+}
+
 static inline struct drm_crtc *
 nv_drm_crtc_find(struct drm_device *dev, struct drm_file *filep, uint32_t id)
 {
@@ -623,6 +646,31 @@ static inline int nv_drm_format_num_planes(uint32_t format)
  */
 #if !defined(NV_DRM_UNLOCKED_IOCTL_FLAG_PRESENT)
 #define DRM_UNLOCKED 0
+#endif
+
+/*
+ * struct drm_color_ctm_3x4 was added by commit 6872a189be50 ("drm/amd/display:
+ * Add 3x4 CTM support for plane CTM") in v6.8. For backwards compatibility,
+ * define it when not present.
+ */
+#if !defined(NV_DRM_COLOR_CTM_3X4_PRESENT)
+struct drm_color_ctm_3x4 {
+    __u64 matrix[12];
+};
+#endif
+
+/*
+ * struct drm_color_lut was added by commit 5488dc16fde7 ("drm: introduce pipe
+ * color correction properties") in v4.6. For backwards compatibility, define it
+ * when not present.
+ */
+#if !defined(NV_DRM_COLOR_LUT_PRESENT)
+struct drm_color_lut {
+    __u16 red;
+    __u16 green;
+    __u16 blue;
+    __u16 reserved;
+};
 #endif
 
 /*

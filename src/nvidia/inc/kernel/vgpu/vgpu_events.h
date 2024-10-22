@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -152,6 +152,8 @@ struct _object_vgpu
     // Shared memory format for Guest RM
     VGPU_GSP_CTRL_BUF_RM     *gspCtrlBuf;
     VGPU_GSP_RESPONSE_BUF_RM *gspResponseBuf;
+
+    VGPU_MEM_INFO debugBuff;
 
     NvBool bGspPlugin;
     NvBool bIsBar2Physical;

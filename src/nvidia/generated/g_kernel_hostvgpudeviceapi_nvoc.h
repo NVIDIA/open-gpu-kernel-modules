@@ -7,14 +7,14 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -131,10 +131,15 @@ void destroyKernelHostVgpuDeviceShare(struct OBJGPU *pGpu, struct KernelHostVgpu
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__KernelHostVgpuDeviceApi;
+
+
 struct KernelHostVgpuDeviceApi {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__KernelHostVgpuDeviceApi *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct GpuResource __nvoc_base_GpuResource;
@@ -150,8 +155,7 @@ struct KernelHostVgpuDeviceApi {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super
     struct KernelHostVgpuDeviceApi *__nvoc_pbase_KernelHostVgpuDeviceApi;    // kernelhostvgpudeviceapi
 
-    // Vtable with 40 per-object function pointers
-    NvBool (*__kernelhostvgpudeviceapiCanCopy__)(struct KernelHostVgpuDeviceApi * /*this*/);  // virtual override (res) base (gpures)
+    // Vtable with 11 per-object function pointers
     NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_VGPU_DEVICE_INFO_PARAMS *);  // exported (id=0xa0840101)
     NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdSetVgpuGuestLifeCycleState__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_VGPU_GUEST_LIFE_CYCLE_STATE_PARAMS *);  // exported (id=0xa0840102)
     NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdSetOfflinedPagePatchInfo__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_OFFLINED_PAGE_PATCHINFO_PARAMS *);  // exported (id=0xa0840103)
@@ -162,6 +166,20 @@ struct KernelHostVgpuDeviceApi {
     NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_GET_BAR_MAPPING_RANGES_PARAMS *);  // exported (id=0xa084010a)
     NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition__)(struct KernelHostVgpuDeviceApi * /*this*/);  // exported (id=0xa084010b)
     NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdFreeStates__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_FREE_STATES_PARAMS *);  // exported (id=0xa084010c)
+    NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask__)(struct KernelHostVgpuDeviceApi * /*this*/, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BOOTLOAD_VGPU_TASK_PARAMS *);  // exported (id=0xa084010d)
+
+    // Data members
+    struct KernelHostVgpuDeviceShr *pShared;
+    NvU32 notifyActions[7];
+};
+
+
+// Metadata including vtable with 30 function pointers plus superclass metadata
+struct NVOC_VTABLE__KernelHostVgpuDeviceApi {
+    const struct NVOC_VTABLE__GpuResource GpuResource;    // (gpures) 25 function pointers
+    const struct NVOC_VTABLE__Notifier Notifier;    // (notify) 5 function pointers
+
+    NvBool (*__kernelhostvgpudeviceapiCanCopy__)(struct KernelHostVgpuDeviceApi * /*this*/);  // virtual override (res) base (gpures)
     NV_STATUS (*__kernelhostvgpudeviceapiControl__)(struct KernelHostVgpuDeviceApi * /*this*/, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__kernelhostvgpudeviceapiMap__)(struct KernelHostVgpuDeviceApi * /*this*/, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
     NV_STATUS (*__kernelhostvgpudeviceapiUnmap__)(struct KernelHostVgpuDeviceApi * /*this*/, struct CALL_CONTEXT *, struct RsCpuMapping *);  // virtual inherited (gpures) base (gpures)
@@ -191,10 +209,6 @@ struct KernelHostVgpuDeviceApi {
     void (*__kernelhostvgpudeviceapiSetNotificationShare__)(struct KernelHostVgpuDeviceApi * /*this*/, struct NotifShare *);  // virtual inherited (notify) base (notify)
     NV_STATUS (*__kernelhostvgpudeviceapiUnregisterEvent__)(struct KernelHostVgpuDeviceApi * /*this*/, NvHandle, NvHandle, NvHandle, NvHandle);  // virtual inherited (notify) base (notify)
     NV_STATUS (*__kernelhostvgpudeviceapiGetOrAllocNotifShare__)(struct KernelHostVgpuDeviceApi * /*this*/, NvHandle, NvHandle, struct NotifShare **);  // virtual inherited (notify) base (notify)
-
-    // Data members
-    struct KernelHostVgpuDeviceShr *pShared;
-    NvU32 notifyActions[7];
 };
 
 #ifndef __NVOC_CLASS_KernelHostVgpuDeviceApi_TYPEDEF__
@@ -227,7 +241,7 @@ NV_STATUS __nvoc_objCreate_KernelHostVgpuDeviceApi(KernelHostVgpuDeviceApi**, Dy
 
 
 // Wrapper macros
-#define kernelhostvgpudeviceapiCanCopy_FNPTR(pKernelHostVgpuDeviceApi) pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCanCopy__
+#define kernelhostvgpudeviceapiCanCopy_FNPTR(pKernelHostVgpuDeviceApi) pKernelHostVgpuDeviceApi->__nvoc_vtable->__kernelhostvgpudeviceapiCanCopy__
 #define kernelhostvgpudeviceapiCanCopy(pKernelHostVgpuDeviceApi) kernelhostvgpudeviceapiCanCopy_DISPATCH(pKernelHostVgpuDeviceApi)
 #define kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo_FNPTR(pKernelHostVgpuDeviceApi) pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo__
 #define kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
@@ -249,68 +263,70 @@ NV_STATUS __nvoc_objCreate_KernelHostVgpuDeviceApi(KernelHostVgpuDeviceApi**, Dy
 #define kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition(pKernelHostVgpuDeviceApi) kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition_DISPATCH(pKernelHostVgpuDeviceApi)
 #define kernelhostvgpudeviceapiCtrlCmdFreeStates_FNPTR(pKernelHostVgpuDeviceApi) pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdFreeStates__
 #define kernelhostvgpudeviceapiCtrlCmdFreeStates(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdFreeStates_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
-#define kernelhostvgpudeviceapiControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresControl__
+#define kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_FNPTR(pKernelHostVgpuDeviceApi) pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask__
+#define kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
+#define kernelhostvgpudeviceapiControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresControl__
 #define kernelhostvgpudeviceapiControl(pGpuResource, pCallContext, pParams) kernelhostvgpudeviceapiControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define kernelhostvgpudeviceapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresMap__
+#define kernelhostvgpudeviceapiMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresMap__
 #define kernelhostvgpudeviceapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) kernelhostvgpudeviceapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define kernelhostvgpudeviceapiUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresUnmap__
+#define kernelhostvgpudeviceapiUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresUnmap__
 #define kernelhostvgpudeviceapiUnmap(pGpuResource, pCallContext, pCpuMapping) kernelhostvgpudeviceapiUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define kernelhostvgpudeviceapiShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresShareCallback__
+#define kernelhostvgpudeviceapiShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresShareCallback__
 #define kernelhostvgpudeviceapiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) kernelhostvgpudeviceapiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define kernelhostvgpudeviceapiGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetRegBaseOffsetAndSize__
+#define kernelhostvgpudeviceapiGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetRegBaseOffsetAndSize__
 #define kernelhostvgpudeviceapiGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) kernelhostvgpudeviceapiGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
-#define kernelhostvgpudeviceapiGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetMapAddrSpace__
+#define kernelhostvgpudeviceapiGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetMapAddrSpace__
 #define kernelhostvgpudeviceapiGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) kernelhostvgpudeviceapiGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
-#define kernelhostvgpudeviceapiInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresInternalControlForward__
+#define kernelhostvgpudeviceapiInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresInternalControlForward__
 #define kernelhostvgpudeviceapiInternalControlForward(pGpuResource, command, pParams, size) kernelhostvgpudeviceapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
-#define kernelhostvgpudeviceapiGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__gpuresGetInternalObjectHandle__
+#define kernelhostvgpudeviceapiGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetInternalObjectHandle__
 #define kernelhostvgpudeviceapiGetInternalObjectHandle(pGpuResource) kernelhostvgpudeviceapiGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define kernelhostvgpudeviceapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresAccessCallback__
+#define kernelhostvgpudeviceapiAccessCallback_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
 #define kernelhostvgpudeviceapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) kernelhostvgpudeviceapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define kernelhostvgpudeviceapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemInterMapParams__
+#define kernelhostvgpudeviceapiGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
 #define kernelhostvgpudeviceapiGetMemInterMapParams(pRmResource, pParams) kernelhostvgpudeviceapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define kernelhostvgpudeviceapiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresCheckMemInterUnmap__
+#define kernelhostvgpudeviceapiCheckMemInterUnmap_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresCheckMemInterUnmap__
 #define kernelhostvgpudeviceapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) kernelhostvgpudeviceapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define kernelhostvgpudeviceapiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemoryMappingDescriptor__
+#define kernelhostvgpudeviceapiGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
 #define kernelhostvgpudeviceapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) kernelhostvgpudeviceapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define kernelhostvgpudeviceapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControlSerialization_Prologue__
+#define kernelhostvgpudeviceapiControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
 #define kernelhostvgpudeviceapiControlSerialization_Prologue(pResource, pCallContext, pParams) kernelhostvgpudeviceapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define kernelhostvgpudeviceapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControlSerialization_Epilogue__
+#define kernelhostvgpudeviceapiControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
 #define kernelhostvgpudeviceapiControlSerialization_Epilogue(pResource, pCallContext, pParams) kernelhostvgpudeviceapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define kernelhostvgpudeviceapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControl_Prologue__
+#define kernelhostvgpudeviceapiControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
 #define kernelhostvgpudeviceapiControl_Prologue(pResource, pCallContext, pParams) kernelhostvgpudeviceapiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define kernelhostvgpudeviceapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControl_Epilogue__
+#define kernelhostvgpudeviceapiControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
 #define kernelhostvgpudeviceapiControl_Epilogue(pResource, pCallContext, pParams) kernelhostvgpudeviceapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define kernelhostvgpudeviceapiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsDuplicate__
+#define kernelhostvgpudeviceapiIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
 #define kernelhostvgpudeviceapiIsDuplicate(pResource, hMemory, pDuplicate) kernelhostvgpudeviceapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define kernelhostvgpudeviceapiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resPreDestruct__
+#define kernelhostvgpudeviceapiPreDestruct_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
 #define kernelhostvgpudeviceapiPreDestruct(pResource) kernelhostvgpudeviceapiPreDestruct_DISPATCH(pResource)
-#define kernelhostvgpudeviceapiControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resControlFilter__
+#define kernelhostvgpudeviceapiControlFilter_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
 #define kernelhostvgpudeviceapiControlFilter(pResource, pCallContext, pParams) kernelhostvgpudeviceapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define kernelhostvgpudeviceapiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsPartialUnmapSupported__
+#define kernelhostvgpudeviceapiIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
 #define kernelhostvgpudeviceapiIsPartialUnmapSupported(pResource) kernelhostvgpudeviceapiIsPartialUnmapSupported_DISPATCH(pResource)
-#define kernelhostvgpudeviceapiMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resMapTo__
+#define kernelhostvgpudeviceapiMapTo_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
 #define kernelhostvgpudeviceapiMapTo(pResource, pParams) kernelhostvgpudeviceapiMapTo_DISPATCH(pResource, pParams)
-#define kernelhostvgpudeviceapiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resUnmapFrom__
+#define kernelhostvgpudeviceapiUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
 #define kernelhostvgpudeviceapiUnmapFrom(pResource, pParams) kernelhostvgpudeviceapiUnmapFrom_DISPATCH(pResource, pParams)
-#define kernelhostvgpudeviceapiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resGetRefCount__
+#define kernelhostvgpudeviceapiGetRefCount_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
 #define kernelhostvgpudeviceapiGetRefCount(pResource) kernelhostvgpudeviceapiGetRefCount_DISPATCH(pResource)
-#define kernelhostvgpudeviceapiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resAddAdditionalDependants__
+#define kernelhostvgpudeviceapiAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
 #define kernelhostvgpudeviceapiAddAdditionalDependants(pClient, pResource, pReference) kernelhostvgpudeviceapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define kernelhostvgpudeviceapiGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__notifyGetNotificationListPtr__
+#define kernelhostvgpudeviceapiGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationListPtr__
 #define kernelhostvgpudeviceapiGetNotificationListPtr(pNotifier) kernelhostvgpudeviceapiGetNotificationListPtr_DISPATCH(pNotifier)
-#define kernelhostvgpudeviceapiGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__notifyGetNotificationShare__
+#define kernelhostvgpudeviceapiGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationShare__
 #define kernelhostvgpudeviceapiGetNotificationShare(pNotifier) kernelhostvgpudeviceapiGetNotificationShare_DISPATCH(pNotifier)
-#define kernelhostvgpudeviceapiSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__notifySetNotificationShare__
+#define kernelhostvgpudeviceapiSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifySetNotificationShare__
 #define kernelhostvgpudeviceapiSetNotificationShare(pNotifier, pNotifShare) kernelhostvgpudeviceapiSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
-#define kernelhostvgpudeviceapiUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__notifyUnregisterEvent__
+#define kernelhostvgpudeviceapiUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyUnregisterEvent__
 #define kernelhostvgpudeviceapiUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) kernelhostvgpudeviceapiUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define kernelhostvgpudeviceapiGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__notifyGetOrAllocNotifShare__
+#define kernelhostvgpudeviceapiGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_Notifier.__nvoc_vtable->__notifyGetOrAllocNotifShare__
 #define kernelhostvgpudeviceapiGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) kernelhostvgpudeviceapiGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
 static inline NvBool kernelhostvgpudeviceapiCanCopy_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi) {
-    return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCanCopy__(pKernelHostVgpuDeviceApi);
+    return pKernelHostVgpuDeviceApi->__nvoc_vtable->__kernelhostvgpudeviceapiCanCopy__(pKernelHostVgpuDeviceApi);
 }
 
 static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetVgpuDeviceInfo_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_VGPU_DEVICE_INFO_PARAMS *pParams) {
@@ -353,120 +369,124 @@ static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdFreeStates_DISPATCH(struct
     return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdFreeStates__(pKernelHostVgpuDeviceApi, pParams);
 }
 
+static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BOOTLOAD_VGPU_TASK_PARAMS *pParams) {
+    return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask__(pKernelHostVgpuDeviceApi, pParams);
+}
+
 static inline NV_STATUS kernelhostvgpudeviceapiControl_DISPATCH(struct KernelHostVgpuDeviceApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__kernelhostvgpudeviceapiControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_vtable->__kernelhostvgpudeviceapiControl__(pGpuResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS kernelhostvgpudeviceapiMap_DISPATCH(struct KernelHostVgpuDeviceApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__kernelhostvgpudeviceapiMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_vtable->__kernelhostvgpudeviceapiMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS kernelhostvgpudeviceapiUnmap_DISPATCH(struct KernelHostVgpuDeviceApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__kernelhostvgpudeviceapiUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_vtable->__kernelhostvgpudeviceapiUnmap__(pGpuResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool kernelhostvgpudeviceapiShareCallback_DISPATCH(struct KernelHostVgpuDeviceApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__kernelhostvgpudeviceapiShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_vtable->__kernelhostvgpudeviceapiShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS kernelhostvgpudeviceapiGetRegBaseOffsetAndSize_DISPATCH(struct KernelHostVgpuDeviceApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__kernelhostvgpudeviceapiGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_vtable->__kernelhostvgpudeviceapiGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS kernelhostvgpudeviceapiGetMapAddrSpace_DISPATCH(struct KernelHostVgpuDeviceApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__kernelhostvgpudeviceapiGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_vtable->__kernelhostvgpudeviceapiGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS kernelhostvgpudeviceapiInternalControlForward_DISPATCH(struct KernelHostVgpuDeviceApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__kernelhostvgpudeviceapiInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_vtable->__kernelhostvgpudeviceapiInternalControlForward__(pGpuResource, command, pParams, size);
 }
 
 static inline NvHandle kernelhostvgpudeviceapiGetInternalObjectHandle_DISPATCH(struct KernelHostVgpuDeviceApi *pGpuResource) {
-    return pGpuResource->__kernelhostvgpudeviceapiGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_vtable->__kernelhostvgpudeviceapiGetInternalObjectHandle__(pGpuResource);
 }
 
 static inline NvBool kernelhostvgpudeviceapiAccessCallback_DISPATCH(struct KernelHostVgpuDeviceApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__kernelhostvgpudeviceapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_vtable->__kernelhostvgpudeviceapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS kernelhostvgpudeviceapiGetMemInterMapParams_DISPATCH(struct KernelHostVgpuDeviceApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__kernelhostvgpudeviceapiGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_vtable->__kernelhostvgpudeviceapiGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS kernelhostvgpudeviceapiCheckMemInterUnmap_DISPATCH(struct KernelHostVgpuDeviceApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__kernelhostvgpudeviceapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+    return pRmResource->__nvoc_vtable->__kernelhostvgpudeviceapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS kernelhostvgpudeviceapiGetMemoryMappingDescriptor_DISPATCH(struct KernelHostVgpuDeviceApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__kernelhostvgpudeviceapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_vtable->__kernelhostvgpudeviceapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS kernelhostvgpudeviceapiControlSerialization_Prologue_DISPATCH(struct KernelHostVgpuDeviceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__kernelhostvgpudeviceapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__kernelhostvgpudeviceapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void kernelhostvgpudeviceapiControlSerialization_Epilogue_DISPATCH(struct KernelHostVgpuDeviceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__kernelhostvgpudeviceapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__kernelhostvgpudeviceapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS kernelhostvgpudeviceapiControl_Prologue_DISPATCH(struct KernelHostVgpuDeviceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__kernelhostvgpudeviceapiControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__kernelhostvgpudeviceapiControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void kernelhostvgpudeviceapiControl_Epilogue_DISPATCH(struct KernelHostVgpuDeviceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__kernelhostvgpudeviceapiControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__kernelhostvgpudeviceapiControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS kernelhostvgpudeviceapiIsDuplicate_DISPATCH(struct KernelHostVgpuDeviceApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__kernelhostvgpudeviceapiIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_vtable->__kernelhostvgpudeviceapiIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void kernelhostvgpudeviceapiPreDestruct_DISPATCH(struct KernelHostVgpuDeviceApi *pResource) {
-    pResource->__kernelhostvgpudeviceapiPreDestruct__(pResource);
+    pResource->__nvoc_vtable->__kernelhostvgpudeviceapiPreDestruct__(pResource);
 }
 
 static inline NV_STATUS kernelhostvgpudeviceapiControlFilter_DISPATCH(struct KernelHostVgpuDeviceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__kernelhostvgpudeviceapiControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__kernelhostvgpudeviceapiControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool kernelhostvgpudeviceapiIsPartialUnmapSupported_DISPATCH(struct KernelHostVgpuDeviceApi *pResource) {
-    return pResource->__kernelhostvgpudeviceapiIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_vtable->__kernelhostvgpudeviceapiIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS kernelhostvgpudeviceapiMapTo_DISPATCH(struct KernelHostVgpuDeviceApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__kernelhostvgpudeviceapiMapTo__(pResource, pParams);
+    return pResource->__nvoc_vtable->__kernelhostvgpudeviceapiMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS kernelhostvgpudeviceapiUnmapFrom_DISPATCH(struct KernelHostVgpuDeviceApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__kernelhostvgpudeviceapiUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_vtable->__kernelhostvgpudeviceapiUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 kernelhostvgpudeviceapiGetRefCount_DISPATCH(struct KernelHostVgpuDeviceApi *pResource) {
-    return pResource->__kernelhostvgpudeviceapiGetRefCount__(pResource);
+    return pResource->__nvoc_vtable->__kernelhostvgpudeviceapiGetRefCount__(pResource);
 }
 
 static inline void kernelhostvgpudeviceapiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct KernelHostVgpuDeviceApi *pResource, RsResourceRef *pReference) {
-    pResource->__kernelhostvgpudeviceapiAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_vtable->__kernelhostvgpudeviceapiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 static inline PEVENTNOTIFICATION * kernelhostvgpudeviceapiGetNotificationListPtr_DISPATCH(struct KernelHostVgpuDeviceApi *pNotifier) {
-    return pNotifier->__kernelhostvgpudeviceapiGetNotificationListPtr__(pNotifier);
+    return pNotifier->__nvoc_vtable->__kernelhostvgpudeviceapiGetNotificationListPtr__(pNotifier);
 }
 
 static inline struct NotifShare * kernelhostvgpudeviceapiGetNotificationShare_DISPATCH(struct KernelHostVgpuDeviceApi *pNotifier) {
-    return pNotifier->__kernelhostvgpudeviceapiGetNotificationShare__(pNotifier);
+    return pNotifier->__nvoc_vtable->__kernelhostvgpudeviceapiGetNotificationShare__(pNotifier);
 }
 
 static inline void kernelhostvgpudeviceapiSetNotificationShare_DISPATCH(struct KernelHostVgpuDeviceApi *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__kernelhostvgpudeviceapiSetNotificationShare__(pNotifier, pNotifShare);
+    pNotifier->__nvoc_vtable->__kernelhostvgpudeviceapiSetNotificationShare__(pNotifier, pNotifShare);
 }
 
 static inline NV_STATUS kernelhostvgpudeviceapiUnregisterEvent_DISPATCH(struct KernelHostVgpuDeviceApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return pNotifier->__kernelhostvgpudeviceapiUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return pNotifier->__nvoc_vtable->__kernelhostvgpudeviceapiUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 static inline NV_STATUS kernelhostvgpudeviceapiGetOrAllocNotifShare_DISPATCH(struct KernelHostVgpuDeviceApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return pNotifier->__kernelhostvgpudeviceapiGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
+    return pNotifier->__nvoc_vtable->__kernelhostvgpudeviceapiGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 NvBool kernelhostvgpudeviceapiCanCopy_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi);
@@ -490,6 +510,8 @@ NV_STATUS kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges_IMPL(struct KernelHo
 NV_STATUS kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi);
 
 NV_STATUS kernelhostvgpudeviceapiCtrlCmdFreeStates_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_FREE_STATES_PARAMS *pParams);
+
+NV_STATUS kernelhostvgpudeviceapiCtrlCmdBootloadVgpuTask_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BOOTLOAD_VGPU_TASK_PARAMS *pParams);
 
 NV_STATUS kernelhostvgpudeviceapiConstruct_IMPL(struct KernelHostVgpuDeviceApi *arg_pKernelHostVgpuDeviceApi, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 

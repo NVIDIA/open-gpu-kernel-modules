@@ -84,8 +84,7 @@ confComputeEnableInternalKeyRotationSupport_GH100
     if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENABLED) &&
         pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
     {
-        // TODO CONFCOMP-1740: Default to enabling key rotation when supported
-        // pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_INTERNAL_KEY_ROTATION_ENABLED, NV_TRUE);
+        pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_INTERNAL_KEY_ROTATION_ENABLED, NV_TRUE);
         initInternalKeyRotationRegistryOverrides(pGpu, pConfCompute);
     }
 
@@ -177,14 +176,16 @@ confComputeTriggerKeyRotation_GH100
     NV_STATUS tempStatus, status = NV_OK;
     NvU32 globalD2HKey, globalH2DKey, keySpace;
 
-    for (keySpace = 0; keySpace < CC_KEYSPACE_SIZE; keySpace++)
+    for (keySpace = 0; keySpace < CC_KEYSPACE_SIZE_GH100; keySpace++)
     {
         if (keySpace == CC_KEYSPACE_GSP)
             continue;
 
         if (!(pConfCompute->keyRotationEnableMask & NVBIT(keySpace)))
         {
-            NV_PRINTF(LEVEL_INFO, "Skipping keyspace = %d since mask = 0x%x\n", keySpace, pConfCompute->keyRotationEnableMask);
+            NV_PRINTF(LEVEL_SILENT, "Skipping keyspace = %d since mask = 0x%x\n",
+                      keySpace, pConfCompute->keyRotationEnableMask);
+
             continue;
         }
 
@@ -302,7 +303,7 @@ triggerKeyRotationByKeyPair
                 NvU32 userH2DKey;
                 KEY_ROTATION_STATUS userKRStatus;
                 NvU32 keySpace;
-                for (keySpace = 0; keySpace < CC_KEYSPACE_SIZE; keySpace++)
+                for (keySpace = 0; keySpace < CC_KEYSPACE_SIZE_GH100; keySpace++)
                 {
                     if (keySpace == CC_KEYSPACE_GSP)
                         continue;
@@ -419,11 +420,13 @@ calculateEncryptionStatsByKeyPair
         totalD2Hbytes += pEncStats->bytesEncryptedD2H;
         totalEncryptOpsH2D += pEncStats->numEncryptionsH2D;
         totalEncryptOpsD2H += pEncStats->numEncryptionsD2H;
-        NV_PRINTF(LEVEL_INFO, "Encryption stats for chid 0x%x with h2dKey 0x%x\n", kchannelGetDebugTag(pKernelChannel), h2dKey);
-        NV_PRINTF(LEVEL_INFO, "Total h2d bytes encrypted  = 0x%llx\n", pEncStats->bytesEncryptedH2D);
-        NV_PRINTF(LEVEL_INFO, "Total d2h bytes encrypted  = 0x%llx\n", pEncStats->bytesEncryptedD2H);
-        NV_PRINTF(LEVEL_INFO, "Total h2d encrypt ops  = 0x%llx\n", pEncStats->numEncryptionsH2D);
-        NV_PRINTF(LEVEL_INFO, "Total d2h encrypt ops  = 0x%llx\n", pEncStats->numEncryptionsD2H);
+
+        NV_PRINTF(LEVEL_SILENT, "Encryption stats for chid 0x%x with h2dKey 0x%x\n",
+                  kchannelGetDebugTag(pKernelChannel), h2dKey);
+        NV_PRINTF(LEVEL_SILENT, "Total h2d bytes encrypted  = 0x%llx\n", pEncStats->bytesEncryptedH2D);
+        NV_PRINTF(LEVEL_SILENT, "Total d2h bytes encrypted  = 0x%llx\n", pEncStats->bytesEncryptedD2H);
+        NV_PRINTF(LEVEL_SILENT, "Total h2d encrypt ops  = 0x%llx\n", pEncStats->numEncryptionsH2D);
+        NV_PRINTF(LEVEL_SILENT, "Total d2h encrypt ops  = 0x%llx\n", pEncStats->numEncryptionsD2H);
     }
 
     // Add stats for freed channels
@@ -440,11 +443,11 @@ calculateEncryptionStatsByKeyPair
     if ((pConfCompute->aggregateStats[h2dIndex].totalBytesEncrypted > 0) ||
         (pConfCompute->aggregateStats[d2hIndex].totalBytesEncrypted > 0))
     {
-        NV_PRINTF(LEVEL_INFO, "Aggregate stats for h2dKey 0x%x and d2hKey 0x%x\n", h2dKey, d2hKey);
-        NV_PRINTF(LEVEL_INFO, "Total h2d bytes encrypted  = 0x%llx\n", pConfCompute->aggregateStats[h2dIndex].totalBytesEncrypted);
-        NV_PRINTF(LEVEL_INFO, "Total d2h bytes encrypted  = 0x%llx\n", pConfCompute->aggregateStats[d2hIndex].totalBytesEncrypted);
-        NV_PRINTF(LEVEL_INFO, "Total h2d encrypt ops  = 0x%llx\n", pConfCompute->aggregateStats[h2dIndex].totalEncryptOps);
-        NV_PRINTF(LEVEL_INFO, "Total d2h encrypt ops  = 0x%llx\n", pConfCompute->aggregateStats[d2hIndex].totalEncryptOps);
+        NV_PRINTF(LEVEL_SILENT, "Aggregate stats for h2dKey 0x%x and d2hKey 0x%x\n", h2dKey, d2hKey);
+        NV_PRINTF(LEVEL_SILENT, "Total h2d bytes encrypted  = 0x%llx\n", pConfCompute->aggregateStats[h2dIndex].totalBytesEncrypted);
+        NV_PRINTF(LEVEL_SILENT, "Total d2h bytes encrypted  = 0x%llx\n", pConfCompute->aggregateStats[d2hIndex].totalBytesEncrypted);
+        NV_PRINTF(LEVEL_SILENT, "Total h2d encrypt ops  = 0x%llx\n", pConfCompute->aggregateStats[h2dIndex].totalEncryptOps);
+        NV_PRINTF(LEVEL_SILENT, "Total d2h encrypt ops  = 0x%llx\n", pConfCompute->aggregateStats[d2hIndex].totalEncryptOps);
     }
     return NV_OK;
 }
@@ -602,9 +605,27 @@ initKeyRotationRegistryOverrides
         }
         else
         {
-            NV_PRINTF(LEVEL_INFO, "Confidential Compute key rotation is disabled.\n");
-            pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_ENABLED, NV_FALSE);
-            pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED, NV_FALSE);
+            NvU32 gpuCnt;
+
+            if (gpumgrGetGpuAttachInfo(&gpuCnt, NULL) != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Unable to acquire GPU attach information.\n");
+            }
+            else
+            {
+                //
+                // From bug 4588046, key rotation currently does not work when there are multiple
+                // GPUs in the system, even if only one GPU is being used. Therefore key rotation
+                // will only be enabled by default if there is exactly one GPU
+                //
+                if (gpuCnt == 1)
+                {
+                    NV_PRINTF(LEVEL_INFO, "Confidential Compute key rotation is enabled.\n");
+
+                    pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_ENABLED, NV_TRUE);
+                    pConfCompute->keyRotationEnableMask = NV_REG_STR_RM_CONF_COMPUTE_KEY_ROTATION_ENABLED_ALL_YES;
+                }
+            }
         }
     }
 }
@@ -646,8 +667,7 @@ initInternalKeyRotationRegistryOverrides
             NV_PRINTF(LEVEL_ERROR, "RmKeyRotationInternalThreshold must be higher than minimum of %u!\n",
                         KEY_ROTATION_MINIMUM_INTERNAL_THRESHOLD);
         }
-        // TODO CONFCOMP-1740: For production, we must disable the ability to set threshold lower than minimum.
-        // else
+        else
         {
             NV_PRINTF(LEVEL_INFO, "Setting internal key rotation threshold to %u.\n",
                         internalThreshold);

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -241,7 +241,6 @@ subdeviceCtrlCmdEventSetSemaphoreMemory_IMPL
     pMemory->vgpuNsIntr.guestMSIAddr = 0;
     pMemory->vgpuNsIntr.guestMSIData = 0;
     pMemory->vgpuNsIntr.guestDomainId = 0;
-    pMemory->vgpuNsIntr.pVgpuVfioRef = NULL;
     pMemory->vgpuNsIntr.isSemaMemValidationEnabled = NV_TRUE;
 
     return NV_OK;
@@ -292,7 +291,8 @@ subdeviceCtrlCmdEventVideoBindEvtbuf_IMPL
     NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
     NvHandle hNotifier = RES_GET_HANDLE(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance),
+        NV_ERR_INVALID_LOCK_STATE);
 
     NV_ASSERT_OK_OR_RETURN(serverutilGetResourceRefWithType(hClient,
                                                             pParams->hEventBuffer,
@@ -325,7 +325,7 @@ subdeviceCtrlCmdEventGspTraceRatsBindEvtbuf_IMPL
     NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
     NvHandle hNotifier = RES_GET_HANDLE(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     NV_ASSERT_OK_OR_RETURN(serverutilGetResourceRefWithType(hClient,
                                                             pParams->hEventBuffer,

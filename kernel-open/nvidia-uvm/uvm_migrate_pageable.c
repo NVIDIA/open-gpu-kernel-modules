@@ -49,7 +49,7 @@ static NV_STATUS migrate_vma_page_copy_address(struct page *page,
                                                uvm_gpu_address_t *gpu_addr)
 {
     uvm_va_space_t *va_space = state->uvm_migrate_args->va_space;
-    uvm_gpu_t *owning_gpu = UVM_ID_IS_CPU(resident_id)? NULL: uvm_va_space_get_gpu(va_space, resident_id);
+    uvm_gpu_t *owning_gpu = UVM_ID_IS_CPU(resident_id)? NULL: uvm_gpu_get(resident_id);
     const bool can_copy_from = uvm_processor_mask_test(&va_space->can_copy_from[uvm_id_value(copying_gpu->id)],
                                                        resident_id);
 
@@ -111,8 +111,8 @@ static NV_STATUS migrate_vma_zero_begin_push(uvm_va_space_t *va_space,
                           channel_type,
                           push,
                           "Zero %s from %s VMA region [0x%lx, 0x%lx]",
-                          uvm_va_space_processor_name(va_space, dst_id),
-                          uvm_va_space_processor_name(va_space, gpu->id),
+                          uvm_processor_get_name(dst_id),
+                          uvm_processor_get_name(gpu->id),
                           start,
                           outer);
 }
@@ -130,20 +130,20 @@ static NV_STATUS migrate_vma_copy_begin_push(uvm_va_space_t *va_space,
 
     UVM_ASSERT_MSG(!uvm_id_equal(src_id, dst_id),
                    "Unexpected copy to self, processor %s\n",
-                   uvm_va_space_processor_name(va_space, src_id));
+                   uvm_processor_get_name(src_id));
 
     if (UVM_ID_IS_CPU(src_id)) {
-        gpu = uvm_va_space_get_gpu(va_space, dst_id);
+        gpu = uvm_gpu_get(dst_id);
         channel_type = UVM_CHANNEL_TYPE_CPU_TO_GPU;
     }
     else if (UVM_ID_IS_CPU(dst_id)) {
-        gpu = uvm_va_space_get_gpu(va_space, src_id);
+        gpu = uvm_gpu_get(src_id);
         channel_type = UVM_CHANNEL_TYPE_GPU_TO_CPU;
     }
     else {
         // For GPU to GPU copies, prefer to "push" the data from the source as
         // that works better
-        gpu = uvm_va_space_get_gpu(va_space, src_id);
+        gpu = uvm_gpu_get(src_id);
 
         channel_type = UVM_CHANNEL_TYPE_GPU_TO_GPU;
     }
@@ -154,24 +154,24 @@ static NV_STATUS migrate_vma_copy_begin_push(uvm_va_space_t *va_space,
     if (!gpu->mem_info.numa.enabled) {
         UVM_ASSERT_MSG(uvm_processor_mask_test(&va_space->can_copy_from[uvm_id_value(gpu->id)], dst_id),
                        "GPU %s dst %s src %s\n",
-                       uvm_va_space_processor_name(va_space, gpu->id),
-                       uvm_va_space_processor_name(va_space, dst_id),
-                       uvm_va_space_processor_name(va_space, src_id));
+                       uvm_processor_get_name(gpu->id),
+                       uvm_processor_get_name(dst_id),
+                       uvm_processor_get_name(src_id));
         UVM_ASSERT_MSG(uvm_processor_mask_test(&va_space->can_copy_from[uvm_id_value(gpu->id)], src_id),
                        "GPU %s dst %s src %s\n",
-                       uvm_va_space_processor_name(va_space, gpu->id),
-                       uvm_va_space_processor_name(va_space, dst_id),
-                       uvm_va_space_processor_name(va_space, src_id));
+                       uvm_processor_get_name(gpu->id),
+                       uvm_processor_get_name(dst_id),
+                       uvm_processor_get_name(src_id));
     }
 
     if (channel_type == UVM_CHANNEL_TYPE_GPU_TO_GPU) {
-        uvm_gpu_t *dst_gpu = uvm_va_space_get_gpu(va_space, dst_id);
+        uvm_gpu_t *dst_gpu = uvm_gpu_get(dst_id);
         return uvm_push_begin_gpu_to_gpu(gpu->channel_manager,
                                          dst_gpu,
                                          push,
                                          "Copy from %s to %s for VMA region [0x%lx, 0x%lx]",
-                                         uvm_va_space_processor_name(va_space, src_id),
-                                         uvm_va_space_processor_name(va_space, dst_id),
+                                         uvm_processor_get_name(src_id),
+                                         uvm_processor_get_name(dst_id),
                                          start,
                                          outer);
     }
@@ -180,8 +180,8 @@ static NV_STATUS migrate_vma_copy_begin_push(uvm_va_space_t *va_space,
                           channel_type,
                           push,
                           "Copy from %s to %s for VMA region [0x%lx, 0x%lx]",
-                          uvm_va_space_processor_name(va_space, src_id),
-                          uvm_va_space_processor_name(va_space, dst_id),
+                          uvm_processor_get_name(src_id),
+                          uvm_processor_get_name(dst_id),
                           start,
                           outer);
 }
@@ -356,7 +356,7 @@ static NV_STATUS migrate_vma_populate_anon_pages(struct vm_area_struct *vma,
                     copying_gpu = uvm_va_space_find_first_gpu(va_space);
             }
             else {
-                copying_gpu = uvm_va_space_get_gpu(va_space, dst_id);
+                copying_gpu = uvm_gpu_get(dst_id);
             }
 
             UVM_ASSERT(copying_gpu);
@@ -928,7 +928,7 @@ static NV_STATUS migrate_pageable(migrate_vma_state_t *state)
 
         status = migrate_pageable_vma(vma, start, outer, state, &next_addr);
         if (status == NV_WARN_NOTHING_TO_DO) {
-            NV_STATUS populate_status = NV_OK;
+            NV_STATUS populate_status;
             bool touch = uvm_migrate_args->touch;
             uvm_populate_permissions_t populate_permissions = uvm_migrate_args->populate_permissions;
 
@@ -948,8 +948,16 @@ static NV_STATUS migrate_pageable(migrate_vma_state_t *state)
             if (current->mm != mm && !(current->flags & PF_KTHREAD))
                 return NV_ERR_NOT_SUPPORTED;
 
-            // Populate pages with uvm_populate_pageable
-            populate_status = uvm_populate_pageable_vma(vma, start, length, 0, touch, populate_permissions);
+            // Populate pages with uvm_populate_pageable if requested.
+            if (uvm_migrate_args->populate_on_migrate_vma_failures) {
+                populate_status = uvm_populate_pageable_vma(vma, start, length, 0, touch, populate_permissions);
+            }
+            else {
+                *user_space_start = start;
+                *user_space_length = outer - start;
+                populate_status = NV_WARN_NOTHING_TO_DO;
+            }
+
             if (populate_status == NV_OK) {
                 *user_space_start = max(vma->vm_start, start);
                 *user_space_length = min(vma->vm_end, outer) - *user_space_start;
@@ -983,7 +991,6 @@ NV_STATUS uvm_migrate_pageable(uvm_migrate_args_t *uvm_migrate_args)
 {
     migrate_vma_state_t *state = NULL;
     NV_STATUS status;
-    uvm_va_space_t *va_space = uvm_migrate_args->va_space;
     uvm_processor_id_t dst_id = uvm_migrate_args->dst_id;
 
     UVM_ASSERT(PAGE_ALIGNED(uvm_migrate_args->start));
@@ -997,7 +1004,7 @@ NV_STATUS uvm_migrate_pageable(uvm_migrate_args_t *uvm_migrate_args)
     else {
         // Incoming dst_node_id is only valid if dst_id belongs to the CPU. Use
         // dst_node_id as the GPU node id if dst_id doesn't belong to the CPU.
-        uvm_migrate_args->dst_node_id = uvm_gpu_numa_node(uvm_va_space_get_gpu(va_space, dst_id));
+        uvm_migrate_args->dst_node_id = uvm_gpu_numa_node(uvm_gpu_get(dst_id));
     }
 
     state = kmem_cache_alloc(g_uvm_migrate_vma_state_cache, NV_UVM_GFP_FLAGS);

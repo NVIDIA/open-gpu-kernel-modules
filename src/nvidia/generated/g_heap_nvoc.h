@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -443,6 +443,16 @@ static inline NV_STATUS heapInfo(struct Heap *arg1, NvU64 *arg2, NvU64 *arg3, Nv
 }
 #else //__nvoc_heap_h_disabled
 #define heapInfo(arg1, arg2, arg3, arg4, arg5, arg6) heapInfo_IMPL(arg1, arg2, arg3, arg4, arg5, arg6)
+#endif //__nvoc_heap_h_disabled
+
+void heapGetClientAddrSpaceSize_IMPL(struct OBJGPU *arg1, struct Heap *arg2, NvU64 *arg3);
+
+#ifdef __nvoc_heap_h_disabled
+static inline void heapGetClientAddrSpaceSize(struct OBJGPU *arg1, struct Heap *arg2, NvU64 *arg3) {
+    NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
+}
+#else //__nvoc_heap_h_disabled
+#define heapGetClientAddrSpaceSize(arg1, arg2, arg3) heapGetClientAddrSpaceSize_IMPL(arg1, arg2, arg3)
 #endif //__nvoc_heap_h_disabled
 
 NV_STATUS heapInfoTypeAllocBlocks_IMPL(struct Heap *arg1, NvU32 arg2, NvU64 *arg3);

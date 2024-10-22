@@ -272,6 +272,7 @@ enum NvKmsIoctlCommand {
     NVKMS_IOCTL_DISABLE_VBLANK_SEM_CONTROL,
     NVKMS_IOCTL_ACCEL_VBLANK_SEM_CONTROLS,
     NVKMS_IOCTL_VRR_SIGNAL_SEMAPHORE,
+    NVKMS_IOCTL_FRAMEBUFFER_CONSOLE_DISABLED,
 };
 
 
@@ -753,6 +754,17 @@ struct NvKmsFlipCommonParams {
 
     struct {
         NvBool specified;
+        NvBool enabled;
+        struct NvKmsLUTSurfaceParams lut;
+    } olut;
+
+    struct {
+        NvBool specified;
+        NvU32 val;
+    } olutFpNormScale;
+
+    struct {
+        NvBool specified;
         /*!
          * If TRUE, override HDR static metadata for the head, instead of
          * calculating it from HDR layer(s). If FALSE, do not override.
@@ -886,6 +898,18 @@ struct NvKmsFlipCommonParams {
             NvBool specified;
         } compositionParams;
 
+        struct {
+            NvBool specified;
+            NvBool enabled;
+            struct NvKmsLUTSurfaceParams lut;
+        } ilut;
+
+        struct {
+            NvBool specified;
+            NvBool enabled;
+            struct NvKmsLUTSurfaceParams lut;
+        } tmo;
+
         /*
          * Color-space conversion matrix applied to the layer before
          * compositing.
@@ -946,6 +970,34 @@ struct NvKmsFlipCommonParams {
             enum NvKmsInputColorSpace val;
             NvBool specified;
         } colorSpace;
+
+        /* When enabled, explicitly set CSC00 with provided matrix */
+        struct {
+            struct NvKmsCscMatrix matrix;
+            NvBool enabled;
+            NvBool specified;
+        } csc00Override;
+
+        /* When enabled, explicitly set CSC01 with provided matrix */
+        struct {
+            struct NvKmsCscMatrix matrix;
+            NvBool enabled;
+            NvBool specified;
+        } csc01Override;
+
+        /* When enabled, explicitly set CSC10 with provided matrix */
+        struct {
+            struct NvKmsCscMatrix matrix;
+            NvBool enabled;
+            NvBool specified;
+        } csc10Override;
+
+        /* When enabled, explicitly set CSC11 with provided matrix */
+        struct {
+            struct NvKmsCscMatrix matrix;
+            NvBool enabled;
+            NvBool specified;
+        } csc11Override;
     } layer[NVKMS_MAX_LAYERS_PER_HEAD];
 };
 
@@ -1145,6 +1197,11 @@ struct NvKmsAllocDeviceReply {
      * Describes supported functionalities for each layer.
      */
     struct NvKmsLayerCapabilities layerCaps[NVKMS_MAX_LAYERS_PER_HEAD];
+
+    /*!
+     * Describes supported functionalities for the output LUT on each head
+     */
+    struct NvKmsLUTCaps olutCaps;
 
     /*!
      * This bitmask specifies all of the (rotation, reflectionX, reflectionY)
@@ -4133,11 +4190,74 @@ struct NvKmsSetFlipLockGroupParams {
  * NVKMS_IOCTL_DISABLE_VBLANK_SEM_CONTROL
  * NVKMS_IOCTL_ACCEL_VBLANK_SEM_CONTROLS
  *
- * Enable or disable vblank semaphore control for the given heads using the
- * specified surface and surface offset.  The memory at that location is
- * interpreted as an NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DATA.  See the
- * RMAPI documentation for NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DATA for
- * details of the semantics of that interface.
+ * The VBlank Semaphore Control API ("VBlank Sem Control") allows clients to
+ * register for a semaphore release to be performed on the specified system
+ * memory.
+ *
+ * One or more clients may register a memory allocation + offset by specifying
+ * an NvKmsSurfaceHandle and offset within that surface.  Until the
+ * vblank_sem_control is disabled, during each vblank on the specified heads,
+ * nvkms will interpret the specified memory location as an
+ * NvKmsVblankSemControlData data structure.  Each enabled head will inspect the
+ * corresponding NvKmsVblankSemControlDataOneHead at
+ * NvKmsVblankSemControlData::head[head].
+ *
+ * NvKmsEnableVblankSemControlRequest::surfaceOffset must be a multiple of 8, so
+ * that GPU semaphore releases can write to 8-byte fields within
+ * NvKmsVblankSemControlDataOneHead with natural alignment.
+ *
+ * During vblank, the NvKmsVblankSemControlDataOneHead::requestCounter field
+ * will be read, and the following pseudocode will be performed:
+ *
+ *   swapInterval      = DRF_VAL(data->flags)
+ *
+ *   if (data->requestCounter == prevRequestCounter)
+ *       return
+ *
+ *   if (currentVblankCount < (prevVBlankCount + swapInterval))
+ *       return
+ *
+ *   data->vblankCount    = currentVblankCount
+ *   data->semaphore      = data->requestCounter
+ *
+ *   prevRequestCounter   = data->requestCounter
+ *   previousVblankCount  = currentVblankCount
+ *
+ * I.e., if the client-described conditions are met, nvkms will write
+ * NvKmsVblankSemControlDataOneHead::semaphore to the client-requested
+ * 'requestCounter' along with the vblankCount.
+ *
+ * The intent is for clients to use semaphore releases to write:
+ *
+ *   NvKmsVblankSemControlDataOneHead::swapInterval
+ *   NvKmsVblankSemControlDataOneHead::requestCounter
+ *
+ * and then perform a semaphore acquire on
+ * NvKmsVblankSemControlDataOneHead::semaphore >= requestCounter (using the
+ * ACQ_GEQ semaphore operation).  This will block any following methods in the
+ * client's channel (e.g., a blit) until the requested conditions are met.  Note
+ * the ::requestCounter should be written last, because the change in value of
+ * ::requestCounter is what causes nvkms, during a vblank callback, to inspect
+ * the other fields.
+ *
+ * Additionally, clients should use the CPU (not semaphore releases in their
+ * channel) to write the field
+ * NvKmsVblankSemControlDataOneHead::requestCounterAccel at the same time that
+ * they enqueue the semaphore release to write to
+ * NvKmsVblankSemControlDataOneHead::requestCounter.  ::requestCounterAccel will
+ * be used by nvkms to "accelerate" the vblank sem control by copying the value
+ * from ::requestCounterAccel to ::semaphore.  This will be done when the vblank
+ * sem control is disabled, and when a client calls
+ * NVKMS_IOCTL_ACCEL_VBLANK_SEM_CONTROLS.  It is important for nvkms to have
+ * access to the value in ::requestCounterAccel, and not just ::requestCounter.
+ * The latter is only the last value released so far by the client's channel
+ * (further releases to ::requestCounter may still be inflight, perhaps blocked
+ * on pending semaphore acquires).  The former should be the most recent value
+ * enqueued in the channel.  This is also why it is important for clients to
+ * acquire with ACQ_GEQ (greater-than-or-equal-to), rather than just ACQUIRE.
+ *
+ * The same NvKmsSurfaceHandle (with different surfaceOffsets) may be used by
+ * multiple VBlank Sem Controls.
  *
  * It is the responsibility of the nvkms client(s) to coordinate at modeset
  * time: the mapping of nvkms apiHeads to underlying hwHeads may change during a
@@ -4150,7 +4270,7 @@ struct NvKmsSetFlipLockGroupParams {
  * NVKMS_IOCTL_ACCEL_VBLANK_SEM_CONTROLS can be used, specifying a particular
  * set of heads, to set all vblank sem controls on those heads to have their
  * semaphore set to the value in their respective
- * NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DATA::requestCounterAccel fields.
+ * NvKmsVblankSemControlDataOneHead::requestCounterAccel fields.
  *
  * These ioctls are only available when
  * NvKmsAllocDeviceReply::supportsVblankSemControl is true.
@@ -4222,6 +4342,29 @@ struct NvKmsVrrSignalSemaphoreReply {
 struct NvKmsVrrSignalSemaphoreParams {
     struct NvKmsVrrSignalSemaphoreRequest request; /*! in */
     struct NvKmsVrrSignalSemaphoreReply reply;     /*! out */
+};
+
+/*
+ * NVKMS_IOCTL_FRAMEBUFFER_CONSOLE_DISABLED
+ *
+ * Notify NVKMS that the calling client has disabled the framebuffer console.
+ * NVKMS will free the framebuffer console reserved memory and disable
+ * NVKMS-based console restore.
+ *
+ * This IOCTL can only be used by kernel-mode clients.
+ */
+
+struct NvKmsFramebufferConsoleDisabledRequest {
+    NvKmsDeviceHandle deviceHandle;
+};
+
+struct NvKmsFramebufferConsoleDisabledReply {
+    NvU32 padding;
+};
+
+struct NvKmsFramebufferConsoleDisabledParams {
+    struct NvKmsFramebufferConsoleDisabledRequest request;
+    struct NvKmsFramebufferConsoleDisabledReply reply;
 };
 
 #endif /* NVKMS_API_H */

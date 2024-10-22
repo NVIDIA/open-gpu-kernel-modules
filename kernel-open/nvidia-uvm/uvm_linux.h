@@ -49,6 +49,7 @@
 #include <linux/jhash.h>
 #include <linux/rwsem.h>
 #include <linux/rbtree.h>
+#include <linux/mm.h>
 
 #if defined(NV_ASM_BARRIER_H_PRESENT)
 #include <asm/barrier.h>
@@ -147,21 +148,8 @@ static inline const struct cpumask *uvm_cpumask_of_node(int node)
     #endif
 
 // See bug 1707453 for further details about setting the minimum kernel version.
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
-#  error This driver does not support kernels older than 3.10!
-#endif
-
-#if !defined(VM_RESERVED)
-#define VM_RESERVED    0x00000000
-#endif
-#if !defined(VM_DONTEXPAND)
-#define VM_DONTEXPAND  0x00000000
-#endif
-#if !defined(VM_DONTDUMP)
-#define VM_DONTDUMP    0x00000000
-#endif
-#if !defined(VM_MIXEDMAP)
-#define VM_MIXEDMAP    0x00000000
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 4, 0)
+#  error This driver does not support kernels older than 4.4!
 #endif
 
 //
@@ -185,93 +173,7 @@ static inline const struct cpumask *uvm_cpumask_of_node(int node)
             printk(fmt, ##__VA_ARGS__); \
     } while (0)
 
-// printk_ratelimited was added in 2.6.33 via commit
-// 8a64f336bc1d4aa203b138d29d5a9c414a9fbb47. If not available, we prefer not
-// printing anything since it's supposed to be rate-limited.
-#if !defined(printk_ratelimited)
-    #define printk_ratelimited UVM_NO_PRINT
-#endif
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
-    // Just too much compilation trouble with the rate-limiting printk feature
-    // until about k3.8. Because the non-rate-limited printing will cause
-    // surprises and problems, just turn it off entirely in this situation.
-    //
-    #undef pr_debug_ratelimited
-    #define pr_debug_ratelimited UVM_NO_PRINT
-#endif
-
-#if defined(NVCPU_X86) || defined(NVCPU_X86_64)
-#if !defined(pmd_large)
-#define pmd_large(_pmd) \
-    ((pmd_val(_pmd) & (_PAGE_PSE|_PAGE_PRESENT)) == (_PAGE_PSE|_PAGE_PRESENT))
-#endif
-#endif /* defined(NVCPU_X86) || defined(NVCPU_X86_64) */
-
-#if !defined(GFP_DMA32)
-/*
- * GFP_DMA32 is similar to GFP_DMA, but instructs the Linux zone
- * allocator to allocate memory from the first 4GB on platforms
- * such as Linux/x86-64; the alternative is to use an IOMMU such
- * as the one implemented with the K8 GART, if available.
- */
-#define GFP_DMA32 0
-#endif
-
-#if !defined(__GFP_NOWARN)
-#define __GFP_NOWARN 0
-#endif
-
-#if !defined(__GFP_NORETRY)
-#define __GFP_NORETRY 0
-#endif
-
 #define NV_UVM_GFP_FLAGS (GFP_KERNEL)
-
-// Develop builds define DEBUG but enable optimization
-#if defined(DEBUG) && !defined(NVIDIA_UVM_DEVELOP)
-  // Wrappers for functions not building correctly without optimizations on,
-  // implemented in uvm_debug_optimized.c. Notably the file is only built for
-  // debug builds, not develop or release builds.
-
-  // Unoptimized builds of atomic_xchg() hit a BUILD_BUG() on arm64 as it relies
-  // on __xchg being completely inlined:
-  //   /usr/src/linux-3.12.19/arch/arm64/include/asm/cmpxchg.h:67:3: note: in expansion of macro 'BUILD_BUG'
-  //
-  // Powerppc hits a similar issue, but ends up with an undefined symbol:
-  //   WARNING: "__xchg_called_with_bad_pointer" [...] undefined!
-  int nv_atomic_xchg(atomic_t *val, int new);
-
-  // Same problem as atomic_xchg() on powerppc:
-  //   WARNING: "__cmpxchg_called_with_bad_pointer" [...] undefined!
-  int nv_atomic_cmpxchg(atomic_t *val, int old, int new);
-
-  // Same problem as atomic_xchg() on powerppc:
-  //   WARNING: "__cmpxchg_called_with_bad_pointer" [...] undefined!
-  long nv_atomic_long_cmpxchg(atomic_long_t *val, long old, long new);
-
-  // This Linux kernel commit:
-  // 2016-08-30  0d025d271e55f3de21f0aaaf54b42d20404d2b23
-  // leads to build failures on x86_64, when compiling without optimization. Avoid
-  // that problem, by providing our own builds of copy_from_user / copy_to_user,
-  // for debug (non-optimized) UVM builds. Those are accessed via these
-  // nv_copy_to/from_user wrapper functions.
-  //
-  // Bug 1849583 has further details.
-  unsigned long nv_copy_from_user(void *to, const void __user *from, unsigned long n);
-  unsigned long nv_copy_to_user(void __user *to, const void *from, unsigned long n);
-
-#else
-  #define nv_atomic_xchg            atomic_xchg
-  #define nv_atomic_cmpxchg         atomic_cmpxchg
-  #define nv_atomic_long_cmpxchg    atomic_long_cmpxchg
-  #define nv_copy_to_user           copy_to_user
-  #define nv_copy_from_user         copy_from_user
-#endif
-
-#ifndef NV_ALIGN_DOWN
-#define NV_ALIGN_DOWN(v,g) ((v) & ~((g) - 1))
-#endif
 
 #if defined(NVCPU_X86)
 /* Some old IA32 kernels don't have 64/64 division routines,
@@ -295,7 +197,6 @@ static inline uint64_t NV_DIV64(uint64_t dividend, uint64_t divisor, uint64_t *r
 }
 #endif
 
-#if defined(CLOCK_MONOTONIC_RAW)
 /* Return a nanosecond-precise value */
 static inline NvU64 NV_GETTIME(void)
 {
@@ -304,60 +205,6 @@ static inline NvU64 NV_GETTIME(void)
     ktime_get_raw_ts64(&tm);
     return (NvU64) timespec64_to_ns(&tm);
 }
-#else
-/* We can only return a microsecond-precise value with the
- * available non-GPL symbols. */
-static inline NvU64 NV_GETTIME(void)
-{
-    struct timespec64 tm;
-
-    ktime_get_real_ts64(&tm);
-    return (NvU64) timespec64_to_ns(&tm);
-}
-#endif
-
-#if !defined(ilog2)
-    static inline int NV_ILOG2_U32(u32 n)
-    {
-        return fls(n) - 1;
-    }
-    static inline int NV_ILOG2_U64(u64 n)
-    {
-        return fls64(n) - 1;
-    }
-    #define ilog2(n) (sizeof(n) <= 4 ? NV_ILOG2_U32(n) : NV_ILOG2_U64(n))
-#endif
-
-// for_each_bit added in 2.6.24 via commit 3e037454bcfa4b187e8293d2121bd8c0f5a5c31c
-// later renamed in 2.6.34 via commit 984b3f5746ed2cde3d184651dabf26980f2b66e5
-#if !defined(for_each_set_bit)
-    #define for_each_set_bit(bit, addr, size) for_each_bit((bit), (addr), (size))
-#endif
-
-// for_each_set_bit_cont was added in 3.2 via 1e2ad28f80b4e155678259238f51edebc19e4014
-// It was renamed to for_each_set_bit_from in 3.3 via 307b1cd7ecd7f3dc5ce3d3860957f034f0abe4df
-#if !defined(for_each_set_bit_from)
-    #define for_each_set_bit_from(bit, addr, size)              \
-        for ((bit) = find_next_bit((addr), (size), (bit));      \
-             (bit) < (size);                                    \
-             (bit) = find_next_bit((addr), (size), (bit) + 1))
-#endif
-
-// for_each_clear_bit and for_each_clear_bit_from were added in 3.10 via
-// 03f4a8226c2f9c14361f75848d1e93139bab90c4
-#if !defined(for_each_clear_bit)
-    #define for_each_clear_bit(bit, addr, size)                     \
-        for ((bit) = find_first_zero_bit((addr), (size));           \
-             (bit) < (size);                                        \
-             (bit) = find_next_zero_bit((addr), (size), (bit) + 1))
-#endif
-
-#if !defined(for_each_clear_bit_from)
-    #define for_each_clear_bit_from(bit, addr, size)                \
-        for ((bit) = find_next_zero_bit((addr), (size), (bit));     \
-             (bit) < (size);                                        \
-             (bit) = find_next_zero_bit((addr), (size), (bit) + 1))
-#endif
 
 #if !defined(NV_FIND_NEXT_BIT_WRAP_PRESENT)
     static inline unsigned long find_next_bit_wrap(const unsigned long *addr, unsigned long size, unsigned long offset)
@@ -400,71 +247,6 @@ static inline unsigned long __for_each_wrap(const unsigned long *bitmap,
          (bit) = __for_each_wrap((addr), (size), (start), (bit) + 1))
 #endif
 
-// Added in 2.6.24
-#ifndef ACCESS_ONCE
-  #define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
-#endif
-
-// WRITE_ONCE/READ_ONCE have incompatible definitions across versions, which produces warnings.
-// Therefore, we define our own macros
-#define UVM_WRITE_ONCE(x, val) (ACCESS_ONCE(x) = (val))
-#define UVM_READ_ONCE(x) ACCESS_ONCE(x)
-
-// smp_mb__before_atomic was added in 3.16, provide a fallback
-#ifndef smp_mb__before_atomic
-  #if NVCPU_IS_X86 || NVCPU_IS_X86_64
-    // That's what the kernel does for x86
-    #define smp_mb__before_atomic() barrier()
-  #else
-    // That's what the kernel does for at least arm32, arm64 and powerpc as of 4.3
-    #define smp_mb__before_atomic() smp_mb()
-  #endif
-#endif
-
-// smp_mb__after_atomic was added in 3.16, provide a fallback
-#ifndef smp_mb__after_atomic
-  #if NVCPU_IS_X86 || NVCPU_IS_X86_64
-    // That's what the kernel does for x86
-    #define smp_mb__after_atomic() barrier()
-  #else
-    // That's what the kernel does for at least arm32, arm64 and powerpc as of 4.3
-    #define smp_mb__after_atomic() smp_mb()
-  #endif
-#endif
-
-// smp_load_acquire and smp_store_release were added in commit
-// 47933ad41a86a4a9b50bed7c9b9bd2ba242aac63 ("arch: Introduce
-// smp_load_acquire(), smp_store_release()") in v3.14 (2013-11-06).
-#ifndef smp_load_acquire
-    #define smp_load_acquire(p)                     \
-        ({                                          \
-            typeof(*(p)) __v = UVM_READ_ONCE(*(p)); \
-            smp_mb();                               \
-            __v;                                    \
-        })
-#endif
-
-#ifndef smp_store_release
-    #define smp_store_release(p, v)     \
-        do {                            \
-            smp_mb();                   \
-            UVM_WRITE_ONCE(*(p), v);    \
-        } while (0)
-#endif
-
-// atomic_read_acquire and atomic_set_release were added in commit
-// 654672d4ba1a6001c365833be895f9477c4d5eab ("locking/atomics:
-// Add _{acquire|release|relaxed}() variants of some atomic operations") in v4.3
-// (2015-08-06).
-// TODO: Bug 3849079: We always use this definition on newer kernels.
-#ifndef atomic_read_acquire
-    #define atomic_read_acquire(p) smp_load_acquire(&(p)->counter)
-#endif
-
-#ifndef atomic_set_release
-    #define atomic_set_release(p, v) smp_store_release(&(p)->counter, v)
-#endif
-
 // atomic_long_read_acquire and atomic_long_set_release were added in commit
 // b5d47ef9ea5c5fe31d7eabeb79f697629bd9e2cb ("locking/atomics: Switch to
 // generated atomic-long") in v5.1 (2019-05-05).
@@ -483,29 +265,6 @@ static inline void uvm_atomic_long_set_release(atomic_long_t *p, long v)
     smp_mb();
     atomic_long_set(p, v);
 }
-
-// Added in 3.11
-#ifndef PAGE_ALIGNED
-    #define PAGE_ALIGNED(addr) (((addr) & (PAGE_SIZE - 1)) == 0)
-#endif
-
-// Changed in 3.17 via commit 743162013d40ca612b4cb53d3a200dff2d9ab26e
-#if (NV_WAIT_ON_BIT_LOCK_ARGUMENT_COUNT == 3)
-    #define UVM_WAIT_ON_BIT_LOCK(word, bit, mode) \
-        wait_on_bit_lock(word, bit, mode)
-#elif (NV_WAIT_ON_BIT_LOCK_ARGUMENT_COUNT == 4)
-    static __sched int uvm_bit_wait(void *word)
-    {
-        if (signal_pending_state(current->state, current))
-            return 1;
-        schedule();
-        return 0;
-    }
-    #define UVM_WAIT_ON_BIT_LOCK(word, bit, mode) \
-        wait_on_bit_lock(word, bit, uvm_bit_wait, mode)
-#else
-#error "Unknown number of arguments"
-#endif
 
 static void uvm_init_radix_tree_preloadable(struct radix_tree_root *tree)
 {
@@ -596,6 +355,8 @@ typedef struct
   #include <asm/pgtable_types.h>
 #endif
 
+// Added in 57bd1905b228f (acpi, x86/mm: Remove encryption mask from ACPI page
+// protection type), v4.13
 #if !defined(PAGE_KERNEL_NOENC)
   #define PAGE_KERNEL_NOENC PAGE_KERNEL
 #endif
@@ -620,16 +381,5 @@ static inline pgprot_t uvm_pgprot_decrypted(pgprot_t prot)
 
    return prot;
 }
-
-// Commit 1dff8083a024650c75a9c961c38082473ceae8cf (v4.7).
-//
-// Archs with CONFIG_MMU should have their own page.h, and can't include
-// asm-generic/page.h. However, x86, powerpc, arm64 don't define page_to_virt()
-// macro in their version of page.h.
-#include <linux/mm.h>
-#ifndef page_to_virt
-  #include <asm/page.h>
-  #define page_to_virt(x)    __va(PFN_PHYS(page_to_pfn(x)))
-#endif
 
 #endif // _UVM_LINUX_H

@@ -109,12 +109,20 @@ enum {
 
 typedef struct RUSD_BAR1_MEMORY_INFO {
     volatile NvU64 lastModifiedTimestamp;
+    //
+    // Non-polled data, not tied to any specific RM API
+    // Total size and available memory in Bar1
+    //
     NvU32 bar1Size;
     NvU32 bar1AvailSize;
 } RUSD_BAR1_MEMORY_INFO;
 
 typedef struct RUSD_PMA_MEMORY_INFO {
     volatile NvU64 lastModifiedTimestamp;
+    //
+    // Non-polled data, not tied to any specific RM API
+    // Total size and available memory in PMA
+    //
     NvU64 totalPmaMemory;
     NvU64 freePmaMemory;
 } RUSD_PMA_MEMORY_INFO;
@@ -152,12 +160,13 @@ typedef struct RUSD_PERF_DEVICE_UTILIZATION {
 
 typedef struct RUSD_PERF_CURRENT_PSTATE {
     volatile NvU64 lastModifiedTimestamp;
+    // Provided from NV2080_CTRL_CMD_PERF_GET_CURRENT_PSTATE
     NvU32 currentPstate;
 } RUSD_PERF_CURRENT_PSTATE;
 
 typedef struct RUSD_CLK_THROTTLE_REASON {
     volatile NvU64 lastModifiedTimestamp;
-    NvU32 reasonMask; // Bitmask of RUSD_CLK_THROTTLE_REASON
+    NvU32 reasonMask; // Bitmask of RUSD_CLK_THROTTLE_REASON_*
 } RUSD_CLK_THROTTLE_REASON;
 
 typedef struct RUSD_MEM_ERROR_COUNTS {
@@ -174,6 +183,7 @@ typedef struct RUSD_MEM_ERROR_COUNTS {
 
 typedef struct RUSD_MEM_ECC {
     volatile NvU64 lastModifiedTimestamp;
+    // Provided from NV2080_CTRL_CMD_GPU_QUERY_ECC_STATUS
     RUSD_MEM_ERROR_COUNTS count[RUSD_MEMORY_ERROR_TYPE_COUNT];
 } RUSD_MEM_ECC;
 
@@ -198,6 +208,7 @@ typedef struct RUSD_TEMPERATURE {
 } RUSD_TEMPERATURE;
 
 typedef struct RUSD_MEM_ROW_REMAP_INFO {
+    // Provided from NV2080_CTRL_CMD_FB_GET_ROW_REMAPPER_HISTOGRAM
     NvU32 histogramMax;     // No remapped row is used.
     NvU32 histogramHigh;    // One remapped row is used.
     NvU32 histogramPartial; // More than one remapped rows are used.
@@ -229,6 +240,7 @@ typedef struct RUSD_AVG_POWER_USAGE {
 typedef struct RUSD_INST_POWER_INFO {
     NvU32 instGpuPower;         // mW
     NvU32 instModulePower;      // mW
+    NvU32 instCpuPower;         // mW
 } RUSD_INST_POWER_INFO;
 
 typedef struct RUSD_INST_POWER_USAGE {
@@ -238,21 +250,49 @@ typedef struct RUSD_INST_POWER_USAGE {
 
 typedef struct RUSD_SHADOW_ERR_CONT {
     volatile NvU64 lastModifiedTimestamp;
+    //
+    // Non-polled data, not tied to any specific RM API
+    // Shadowed ERR_CONT register value
+    //
     NvU32 shadowErrContVal;
 } RUSD_SHADOW_ERR_CONT;
 
+// Each RUSD_BUS_DATA_* define corresponds to the equivalent NV2080_CTRL_BUS_INFO_INDEX_*
+#define RUSD_BUS_DATA_PCIE_GEN_INFO                              0
+#define RUSD_BUS_DATA_PCIE_GPU_LINK_LINECODE_ERRORS              1
+#define RUSD_BUS_DATA_PCIE_GPU_LINK_CRC_ERRORS                   2
+#define RUSD_BUS_DATA_PCIE_GPU_LINK_NAKS_RECEIVED                3
+#define RUSD_BUS_DATA_PCIE_GPU_LINK_FAILED_L0S_EXITS             4
+#define RUSD_BUS_DATA_PCIE_GPU_LINK_CORRECTABLE_ERRORS           5
+#define RUSD_BUS_DATA_PCIE_GPU_LINK_NONFATAL_ERRORS              6
+#define RUSD_BUS_DATA_PCIE_GPU_LINK_FATAL_ERRORS                 7
+#define RUSD_BUS_DATA_PCIE_GPU_LINK_UNSUPPORTED_REQUESTS         8
+#define RUSD_BUS_DATA_COUNT                                      9
+
+typedef struct RUSD_PCIE_DATA_INFO {
+    // Provided from NV2080_CTRL_CMD_BUS_GET_INFO_V2
+    NvU32 data[RUSD_BUS_DATA_COUNT];
+} RUSD_PCIE_DATA_INFO;
+
+typedef struct RUSD_PCIE_DATA {
+    volatile NvU64 lastModifiedTimestamp;
+    RUSD_PCIE_DATA_INFO info;
+} RUSD_PCIE_DATA;
+
+typedef struct RUSD_GR_INFO
+{
+    volatile NvU64 lastModifiedTimestamp;
+    NvBool bCtxswLoggingEnabled;
+} RUSD_GR_INFO;
+
 typedef struct NV00DE_SHARED_DATA {
-    // Temporarily duplicated - to be removed by nested structs below
-    volatile NvU64 seq;
-
-    NvU32 bar1Size;
-    NvU32 bar1AvailSize;
-
     NV_DECLARE_ALIGNED(RUSD_BAR1_MEMORY_INFO bar1MemoryInfo, 8);
 
     NV_DECLARE_ALIGNED(RUSD_PMA_MEMORY_INFO pmaMemoryInfo, 8);
 
     NV_DECLARE_ALIGNED(RUSD_SHADOW_ERR_CONT shadowErrCont, 8);
+
+    NV_DECLARE_ALIGNED(RUSD_GR_INFO grInfo, 8);
 
     // gpuUpdateUserSharedData is sensitive to these two sections being contiguous
 
@@ -295,6 +335,9 @@ typedef struct NV00DE_SHARED_DATA {
 
     // POLL_POWER
     NV_DECLARE_ALIGNED(RUSD_INST_POWER_USAGE instPowerUsage, 8);
+
+    // POLL_PCI
+    NV_DECLARE_ALIGNED(RUSD_PCIE_DATA pciBusData, 8);
 } NV00DE_SHARED_DATA;
 
 //
@@ -306,6 +349,7 @@ typedef struct NV00DE_SHARED_DATA {
 #define NV00DE_RUSD_POLL_MEMORY    0x4
 #define NV00DE_RUSD_POLL_POWER     0x8
 #define NV00DE_RUSD_POLL_THERMAL   0x10
+#define NV00DE_RUSD_POLL_PCI       0x20
 
 typedef struct NV00DE_ALLOC_PARAMETERS {
     NvU64 polledDataMask; // Bitmask of data to request polling at alloc time, 0 if not needed

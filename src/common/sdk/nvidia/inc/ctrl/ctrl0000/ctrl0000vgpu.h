@@ -37,6 +37,15 @@
 #include "class/cl0000.h"
 #include "nv_vgpu_types.h"
 
+/* DRF macros for OBJGPU::gpuId */
+#define NV0000_BUSDEVICE_DOMAIN      31:16
+#define NV0000_BUSDEVICE_BUS         15:8
+#define NV0000_BUSDEVICE_DEVICE       7:0
+
+#define GPU_32_BIT_ID_DECODE_DOMAIN(gpuId)      (NvU16)DRF_VAL(0000, _BUSDEVICE, _DOMAIN, gpuId);
+#define GPU_32_BIT_ID_DECODE_BUS(gpuId)         (NvU8) DRF_VAL(0000, _BUSDEVICE, _BUS,    gpuId);
+#define GPU_32_BIT_ID_DECODE_DEVICE(gpuId)      (NvU8) DRF_VAL(0000, _BUSDEVICE, _DEVICE, gpuId);
+
 /*
  * NV0000_CTRL_CMD_VGPU_CREATE_DEVICE
  *

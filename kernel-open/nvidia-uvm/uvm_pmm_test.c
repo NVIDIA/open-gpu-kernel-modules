@@ -112,6 +112,15 @@ static uvm_pmm_gpu_memory_type_t pmm_squash_memory_type(uvm_pmm_gpu_memory_type_
     return UVM_PMM_GPU_MEMORY_TYPE_KERNEL;
 }
 
+// Validate the chunk state upon allocation.
+static bool gpu_chunk_allocation_state_is_valid(uvm_gpu_chunk_t *chunk)
+{
+    if (uvm_gpu_chunk_is_user(chunk))
+        return chunk->state == UVM_PMM_GPU_CHUNK_STATE_TEMP_PINNED;
+    else
+        return chunk->state == UVM_PMM_GPU_CHUNK_STATE_ALLOCATED;
+}
+
 // Verify that the input chunks are in the correct state following alloc
 static NV_STATUS check_chunks(uvm_gpu_chunk_t **chunks,
                               size_t num_chunks,
@@ -121,12 +130,13 @@ static NV_STATUS check_chunks(uvm_gpu_chunk_t **chunks,
     size_t i;
 
     mem_type = pmm_squash_memory_type(mem_type);
+
     for (i = 0; i < num_chunks; i++) {
         TEST_CHECK_RET(chunks[i]);
         TEST_CHECK_RET(chunks[i]->suballoc == NULL);
-        TEST_CHECK_RET(chunks[i]->type  == mem_type);
-        TEST_CHECK_RET(chunks[i]->state == UVM_PMM_GPU_CHUNK_STATE_TEMP_PINNED);
-        TEST_CHECK_RET(uvm_gpu_chunk_get_size(chunks[i])  == chunk_size);
+        TEST_CHECK_RET(chunks[i]->type == mem_type);
+        TEST_CHECK_RET(gpu_chunk_allocation_state_is_valid(chunks[i]));
+        TEST_CHECK_RET(uvm_gpu_chunk_get_size(chunks[i]) == chunk_size);
         TEST_CHECK_RET(IS_ALIGNED(chunks[i]->address, chunk_size));
     }
 
@@ -198,7 +208,18 @@ static NV_STATUS chunk_alloc_check(uvm_pmm_gpu_t *pmm,
     if (gpu->mem_info.size == 0)
         return NV_ERR_NO_MEMORY;
 
-    status = uvm_pmm_gpu_alloc(pmm, num_chunks, chunk_size, mem_type, flags, chunks, &local_tracker);
+    // TODO: Bug 4287430: the calls to uvm_pmm_gpu_alloc_* request protected
+    // memory, ignoring the protection type in mem_type. But unprotected memory
+    // is currently not used in UVM, so the default protection (protected) is
+    // correct.
+    mem_type = pmm_squash_memory_type(mem_type);
+    TEST_CHECK_RET(uvm_pmm_gpu_memory_type_is_protected(mem_type));
+
+    if (uvm_pmm_gpu_memory_type_is_user(mem_type))
+        status = uvm_pmm_gpu_alloc_user(pmm, num_chunks, chunk_size, flags, chunks, &local_tracker);
+    else
+        status = uvm_pmm_gpu_alloc_kernel(pmm, num_chunks, chunk_size, flags, chunks, &local_tracker);
+
     if (status != NV_OK)
         return status;
 
@@ -216,14 +237,25 @@ static NV_STATUS chunk_alloc_user_check(uvm_pmm_gpu_t *pmm,
     NV_STATUS status;
     uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
 
-    status = uvm_pmm_gpu_alloc(pmm, num_chunks, chunk_size, mem_type, flags, chunks, &local_tracker);
+    // TODO: Bug 4287430: the call to uvm_pmm_gpu_alloc_user requests protected
+    // memory, ignoring the protection type in mem_type. But unprotected memory
+    // is currently not used in UVM, so the default protection (protected) is
+    // correct.
+    mem_type = pmm_squash_memory_type(mem_type);
+    TEST_CHECK_RET(uvm_pmm_gpu_memory_type_is_protected(mem_type));
+
+    status = uvm_pmm_gpu_alloc_user(pmm, num_chunks, chunk_size, flags, chunks, &local_tracker);
     if (status != NV_OK)
         return status;
 
     return chunk_alloc_check_common(pmm, num_chunks, chunk_size, mem_type, flags, chunks, &local_tracker, tracker);
 }
 
-static NV_STATUS check_leak(uvm_gpu_t *gpu, uvm_chunk_size_t chunk_size, uvm_pmm_gpu_memory_type_t type, NvS64 limit, NvU64 *chunks)
+static NV_STATUS check_leak(uvm_gpu_t *gpu,
+                            uvm_chunk_size_t chunk_size,
+                            uvm_pmm_gpu_memory_type_t type,
+                            NvS64 limit,
+                            NvU64 *chunks)
 {
     NV_STATUS status = NV_OK;
     pmm_leak_bucket_t *bucket, *next;
@@ -702,9 +734,9 @@ static NV_STATUS split_test_single(uvm_pmm_gpu_t *pmm,
             TEST_CHECK_GOTO(split_chunks[i], error);
             TEST_CHECK_GOTO(split_chunks[i]->address == parent_addr + i * child_size, error);
             TEST_CHECK_GOTO(split_chunks[i]->suballoc == NULL, error);
-            TEST_CHECK_GOTO(split_chunks[i]->type  == parent_type, error);
-            TEST_CHECK_GOTO(split_chunks[i]->state == UVM_PMM_GPU_CHUNK_STATE_TEMP_PINNED, error);
-            TEST_CHECK_GOTO(uvm_gpu_chunk_get_size(split_chunks[i])  == child_size, error);
+            TEST_CHECK_GOTO(split_chunks[i]->type == parent_type, error);
+            TEST_CHECK_GOTO(gpu_chunk_allocation_state_is_valid(split_chunks[i]), error);
+            TEST_CHECK_GOTO(uvm_gpu_chunk_get_size(split_chunks[i]) == child_size, error);
         }
 
         status = get_subchunks_test(pmm, temp_chunk, split_chunks, num_children);
@@ -714,9 +746,11 @@ static NV_STATUS split_test_single(uvm_pmm_gpu_t *pmm,
         if (mode == SPLIT_TEST_MODE_MERGE) {
             parent->chunk = temp_chunk;
             uvm_pmm_gpu_merge_chunk(pmm, parent->chunk);
+
             TEST_CHECK_GOTO(parent->chunk->address == parent_addr, error);
             TEST_CHECK_GOTO(parent->chunk->suballoc == NULL, error);
-            TEST_CHECK_GOTO(parent->chunk->state == UVM_PMM_GPU_CHUNK_STATE_TEMP_PINNED, error);
+            TEST_CHECK_GOTO(gpu_chunk_allocation_state_is_valid(parent->chunk), error);
+
             status = destroy_test_chunk(pmm, parent, verif_mem);
         }
         else {
@@ -1080,7 +1114,7 @@ static NV_STATUS test_pmm_reverse_map_single(uvm_gpu_t *gpu, uvm_va_space_t *va_
 
 static NV_STATUS test_pmm_reverse_map_many_blocks(uvm_gpu_t *gpu, uvm_va_space_t *va_space, NvU64 addr, NvU64 size)
 {
-    uvm_va_range_t *va_range;
+    uvm_va_range_managed_t *managed_range;
     uvm_va_block_t *va_block = NULL;
     uvm_va_block_context_t *va_block_context = NULL;
     NvU32 num_blocks;
@@ -1089,12 +1123,12 @@ static NV_STATUS test_pmm_reverse_map_many_blocks(uvm_gpu_t *gpu, uvm_va_space_t
     bool is_resident;
 
     // In this test, the [addr:addr + size) VA region contains
-    // several VA ranges with different sizes.
+    // several managed ranges with different sizes.
 
     // Find the first block to compute the base physical address of the root
     // chunk
-    uvm_for_each_va_range_in(va_range, va_space, addr, addr + size - 1) {
-        va_block = uvm_va_range_block(va_range, 0);
+    uvm_for_each_va_range_managed_in(managed_range, va_space, addr, addr + size - 1) {
+        va_block = uvm_va_range_block(managed_range, 0);
         if (va_block)
             break;
     }
@@ -1121,15 +1155,13 @@ static NV_STATUS test_pmm_reverse_map_many_blocks(uvm_gpu_t *gpu, uvm_va_space_t
     num_blocks = uvm_pmm_gpu_phys_to_virt(&gpu->pmm, phys_addr.address, size, g_reverse_map_entries);
     TEST_CHECK_RET(num_blocks != 0);
 
-    // Iterate over all VA ranges and their VA blocks within the 2MB VA region.
-    // Some blocks are not populated. However, we assume that blocks have been
-    // populated in order so they have been assigned physical addresses
-    // incrementally. Therefore, the reverse translations will show them in
-    // order.
-    uvm_for_each_va_range_in(va_range, va_space, addr, addr + size - 1) {
-        uvm_va_block_t *va_block;
-
-        for_each_va_block_in_va_range(va_range, va_block) {
+    // Iterate over all managed ranges and their VA blocks within the 2MB VA
+    // region. Some blocks are not populated. However, we assume that blocks
+    // have been populated in order so they have been assigned physical
+    // addresses incrementally. Therefore, the reverse translations will show
+    // them in order.
+    uvm_for_each_va_range_managed_in(managed_range, va_space, addr, addr + size - 1) {
+        for_each_va_block_in_va_range(managed_range, va_block) {
             NvU32 num_va_block_pages = 0;
 
             // Iterate over all the translations for the current VA block. One

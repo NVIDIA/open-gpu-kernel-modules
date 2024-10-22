@@ -31,6 +31,8 @@
 #include "gpu/uvm/uvm.h"
 #include "os/os.h"
 
+#include "published/volta/gv100/dev_ram.h"
+
 // @ref busMigrateBarMapping_GV100 to see how FB region is organized
 #define COHERENT_CPU_MAPPING_WPR            COHERENT_CPU_MAPPING_REGION_0
 
@@ -72,7 +74,7 @@ kbusSetupCpuPointerForBusFlush_GV100
     NV_ASSERT_OR_GOTO(status == NV_OK, cleanup);
 
     // Allocate memory from reserved heap for flush
-    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_54, 
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_54,
                     pKernelBus->pFlushMemDesc);
     NV_ASSERT_OR_GOTO(status == NV_OK, cleanup);
 
@@ -372,24 +374,24 @@ kbusFlushSingle_GV100
 
     if (kbusIsBarAccessBlocked(pKernelBus))
     {
-        // If BAR has been blocked, there's nothing to flush for vidmem
+        // If BAR1/2 has been blocked, there's nothing to flush for vidmem
         return NV_OK;
     }
 
     if ((flags & BUS_FLUSH_VIDEO_MEMORY) && kbusIsReadCpuPointerToFlushEnabled(pKernelBus))
     {
-        volatile NvU32 data;
-
         //
         // Read the FB address 0 in order to trigger a flush.
         // This will not work with reflected mappings so only enable on VOLTA+
         // Note SRIOV guest does not have access to uflush register.
         //
-        NV_ASSERT(pKernelBus->pReadToFlush != NULL || pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping != NULL);
+        NV_ASSERT_OR_RETURN(
+            (pKernelBus->pReadToFlush != NULL || pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping != NULL),
+            NV_ERR_INVALID_STATE);
 
         if (pKernelBus->pReadToFlush != NULL)
         {
-            data = MEM_RD32(pKernelBus->pReadToFlush);
+            (void)MEM_RD32(pKernelBus->pReadToFlush);
         }
         else if (pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping != NULL)
         {
@@ -398,9 +400,22 @@ kbusFlushSingle_GV100
             // instead which should already be mapped to FB addr 0 as
             // BAR2 is in physical mode right now.
             //
-            data = MEM_RD32(pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping);
+            (void)MEM_RD32(pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping);
         }
-        (void) data;
+    }
+
+    if (flags & BUS_FLUSH_VIDEO_MEMORY_VIA_PRAMIN_WINDOW)
+    {
+        //
+        // Read the PRAMIN pseudo-bar0-register window to flush writes in it to FB.
+        // Note that despite being "register" writes, these transactions are snooped
+        // at GPU before hitting BAR0 master, and get redirected to BAR1.
+        //
+        // This flush option REQUIRES a valid window to be mapped for PRAMIN prior
+        // to the call! Note that it doesn't have to be the same window that contains
+        // prior writes you might want to flush.
+        //
+        (void)GPU_REG_RD32(pGpu, DRF_BASE(NV_PRAMIN));
     }
 
     return NV_OK;

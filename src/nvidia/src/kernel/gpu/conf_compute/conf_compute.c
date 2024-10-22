@@ -51,8 +51,8 @@
 static NV_STATUS _confComputeInitRegistryOverrides(OBJGPU *, ConfidentialCompute*);
 static NvU32 _confComputeGetKeyspaceSize(NvU16 keyspace);
 
-#define KEY_ROTATION_THRESHOLD_DELTA 20000000ull
-#define KEY_ROTATION_TIMEOUT         10
+#define KEY_ROTATION_THRESHOLD_DELTA 1000000000ull
+#define KEY_ROTATION_TIMEOUT         5
 
 NV_STATUS
 confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
@@ -168,7 +168,6 @@ confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
     {
         pConfCompute->keyRotationState[i] = KEY_ROTATION_STATUS_IDLE;
         pConfCompute->keyRotationTimeoutInfo[i].pTimer = NULL;
-        pConfCompute->keyRotationCallbackCount[i] = 0;
         pConfCompute->keyRotationCount[i] = 0;
     }
     portMemSet(pConfCompute->aggregateStats, 0, sizeof(pConfCompute->aggregateStats));
@@ -857,6 +856,14 @@ _confComputeGetKeyspaceSize
         case CC_KEYSPACE_LCE5:
         case CC_KEYSPACE_LCE6:
         case CC_KEYSPACE_LCE7:
+        case CC_KEYSPACE_LCE10:
+        case CC_KEYSPACE_LCE11:
+        case CC_KEYSPACE_LCE12:
+        case CC_KEYSPACE_LCE13:
+        case CC_KEYSPACE_LCE14:
+        case CC_KEYSPACE_LCE15:
+        case CC_KEYSPACE_LCE16:
+        case CC_KEYSPACE_LCE17:
             return CC_KEYSPACE_LCE_SIZE;
         default:
             NV_ASSERT_OR_RETURN(NV_FALSE, 0);

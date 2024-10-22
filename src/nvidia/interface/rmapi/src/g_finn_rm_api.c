@@ -460,11 +460,6 @@ static NV_STATUS finnSerializeMessage_NV0080_CTRL_FIFO_GET_CAPS_PARAMS(const NV0
 static NV_STATUS finnDeserializeMessage_NV0080_CTRL_FIFO_GET_CAPS_PARAMS(finn_bit_pump_for_read *bp, NV0080_CTRL_FIFO_GET_CAPS_PARAMS *api, NvLength api_size, NvBool deser_up);
 static NV_STATUS finnSerializeMessage_NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS(const NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeMessage_NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS(finn_bit_pump_for_read *bp, NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *api, NvLength api_size, NvBool deser_up);
-#endif // (defined(NVRM))
-
-static NV_STATUS finnSerializeMessage_NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS(const NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up);
-static NV_STATUS finnDeserializeMessage_NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS(finn_bit_pump_for_read *bp, NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *api, NvLength api_size, NvBool deser_up);
-#if (defined(NVRM))
 static NV_STATUS finnSerializeMessage_NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS(const NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeMessage_NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS(finn_bit_pump_for_read *bp, NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *api, NvLength api_size, NvBool deser_up);
 static NV_STATUS finnSerializeMessage_NV0080_CTRL_GR_GET_CAPS_PARAMS(const NV0080_CTRL_GR_GET_CAPS_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up);
@@ -509,11 +504,6 @@ static NV_STATUS finnSerializeMessage_NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS(co
 static NV_STATUS finnDeserializeMessage_NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS(finn_bit_pump_for_read *bp, NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS *api, NvLength api_size, NvBool deser_up);
 static NV_STATUS finnSerializeRecord_NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_PARAMS(const NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeRecord_NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_PARAMS(finn_bit_pump_for_read *bp, NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_PARAMS *api, NvLength api_size, NvBool deser_up);
-#endif // (defined(NVRM))
-
-static NV_STATUS finnSerializeRecord_NV0080_CTRL_FIFO_CHANNEL(const NV0080_CTRL_FIFO_CHANNEL *api, finn_bit_pump_for_write *bp, NvBool seri_up);
-static NV_STATUS finnDeserializeRecord_NV0080_CTRL_FIFO_CHANNEL(finn_bit_pump_for_read *bp, NV0080_CTRL_FIFO_CHANNEL *api, NvLength api_size, NvBool deser_up);
-#if (defined(NVRM))
 static NV_STATUS finnSerializeRecord_NV2080_CTRL_GPUMON_SAMPLES(const NV2080_CTRL_GPUMON_SAMPLES *api, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeRecord_NV2080_CTRL_GPUMON_SAMPLES(finn_bit_pump_for_read *bp, NV2080_CTRL_GPUMON_SAMPLES *api, NvLength api_size, NvBool deser_up);
 #endif // (defined(NVRM))
@@ -1152,17 +1142,12 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV01_DEVICE_0_FB(NvU64 message)
 // Serialize this interface.
 static NV_STATUS finnSerializeInterface_FINN_NV01_DEVICE_0_FIFO(NvU64 message, const char *api_intf, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Serialize one of 3 messages in this interface.
+    // Serialize one of 2 messages in this interface.
     switch (message)
     {
 #if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_GET_CAPS_PARAMS):
             return finnSerializeMessage_NV0080_CTRL_FIFO_GET_CAPS_PARAMS((const NV0080_CTRL_FIFO_GET_CAPS_PARAMS *) api_intf, bp, seri_up);
-#endif // (defined(NVRM))
-
-        case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS):
-            return finnSerializeMessage_NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS((const NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *) api_intf, bp, seri_up);
-#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS):
             return finnSerializeMessage_NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS((const NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *) api_intf, bp, seri_up);
 #endif // (defined(NVRM))
@@ -1181,17 +1166,12 @@ static NV_STATUS finnSerializeInterface_FINN_NV01_DEVICE_0_FIFO(NvU64 message, c
 // Deserialize this interface.
 static NV_STATUS finnDeserializeInterface_FINN_NV01_DEVICE_0_FIFO(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_DEVICE_0_FIFO *api_intf, NvLength api_size, NvBool deser_up)
 {
-    // Deerialize one of 3 messages in this interface.
+    // Deerialize one of 2 messages in this interface.
     switch (message)
     {
 #if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_GET_CAPS_PARAMS):
             return finnDeserializeMessage_NV0080_CTRL_FIFO_GET_CAPS_PARAMS(bp, (NV0080_CTRL_FIFO_GET_CAPS_PARAMS *) api_intf, api_size, deser_up);
-#endif // (defined(NVRM))
-
-        case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS):
-            return finnDeserializeMessage_NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS(bp, (NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *) api_intf, api_size, deser_up);
-#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS):
             return finnDeserializeMessage_NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS(bp, (NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *) api_intf, api_size, deser_up);
 #endif // (defined(NVRM))
@@ -1216,11 +1196,6 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV01_DEVICE_0_FIFO(NvU64 message
 #if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_GET_CAPS_PARAMS):
             return sizeof(NV0080_CTRL_FIFO_GET_CAPS_PARAMS);
-#endif // (defined(NVRM))
-
-        case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS):
-            return sizeof(NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS);
-#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS):
             return sizeof(NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS);
 #endif // (defined(NVRM))
@@ -3106,197 +3081,6 @@ static NV_STATUS finnDeserializeMessage_NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS(
     return NV_OK;
 }
 
-#endif // (defined(NVRM))
-
-
-// Serialize each of the 3 field(s).
-static NV_STATUS finnSerializeMessage_NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS(const NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up)
-{
-    // Serialize field-presence indicator for `fifoStartChannelListCount`.
-    if (finn_write_buffer(bp, 1, 1))
-    {
-        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    // Serialize 32-bit NvU32 primitive.
-    if (finn_write_buffer(bp, api->fifoStartChannelListCount, 32))
-    {
-        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    // Serialize each element in `channelHandle`.
-    {
-        NvLength i;
-        for (i = 0; i < 8; ++i)
-        {
-            // Serialize field-presence indicator for `channelHandle[i]`.
-            if (finn_write_buffer(bp, 1, 1))
-            {
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
-                return NV_ERR_BUFFER_TOO_SMALL;
-            }
-
-            // Serialize 32-bit NvU32 primitive.
-            if (finn_write_buffer(bp, (api->channelHandle)[i], 32))
-            {
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
-                return NV_ERR_BUFFER_TOO_SMALL;
-            }
-
-        }
-    }
-
-    // Serialize data-presence (nonnull pointer) indicator.
-    if (finn_write_buffer(bp, !!(api->fifoStartChannelList), 1))
-    {
-        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    // Skip if pointer is null.
-    if (api->fifoStartChannelList)
-    {
-        // Serialize each element in `fifoStartChannelList`.
-        {
-            NvLength i;
-            for (i = 0; i < (api->fifoStartChannelListCount); ++i)
-            {
-                // Serialize field-presence indicator for `fifoStartChannelList[i]`.
-                if (finn_write_buffer(bp, 1, 1))
-                {
-                    FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
-                    return NV_ERR_BUFFER_TOO_SMALL;
-                }
-
-                // Record has 1 field(s) to be serialized.
-                {
-                    NV_STATUS status = finnSerializeRecord_NV0080_CTRL_FIFO_CHANNEL(((NV0080_CTRL_FIFO_CHANNEL *)(NvP64_VALUE(api->fifoStartChannelList))+(i)), bp, seri_up);
-                    if (status != NV_OK)
-                        return status;
-                }
-
-            }
-        }
-
-        // Free memory that was allocated during downward deserialization.
-        if (seri_up && api->fifoStartChannelList)
-            FINN_FREE(NvP64_VALUE(api->fifoStartChannelList));
-    }
-
-
-    // Done
-    return NV_OK;
-}
-
-
-// Deserialize each of the 3 field(s).
-static NV_STATUS finnDeserializeMessage_NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS(finn_bit_pump_for_read *bp, NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *api, NvLength api_size, NvBool deser_up)
-{
-    // Check that the destination struct fits within the destination buffer.
-    if (sizeof(NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS) > api_size)
-    {
-        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    // Check field-presence indicator for `fifoStartChannelListCount`.
-    if (!finn_read_buffer(bp, 1))
-    {
-        FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
-        return NV_ERR_LIB_RM_VERSION_MISMATCH;
-    }
-
-    // Deserialize 32-bit NvU32 primitive.
-    api->fifoStartChannelListCount = (NvU32) finn_read_buffer(bp, 32);
-
-    // Deserialize each element in `channelHandle`.
-    {
-        NvLength i;
-        for (i = 0; i < 8; ++i)
-        {
-            // Check field-presence indicator for `channelHandle[i]`.
-            if (!finn_read_buffer(bp, 1))
-            {
-                FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
-                return NV_ERR_LIB_RM_VERSION_MISMATCH;
-            }
-
-            // Deserialize 32-bit NvU32 primitive.
-            (api->channelHandle)[i] = (NvU32) finn_read_buffer(bp, 32);
-
-        }
-    }
-
-    // Check data-presence (nonnull pointer) indicator for `fifoStartChannelList`.
-    if (finn_read_buffer(bp, 1))
-    {
-        // Allocate memory and set pointer when deserializing down.
-        // (Calling code is expected to do so when deserializing up.)
-        if (!deser_up)
-        {
-            // The data-presence indicator would have been false
-            // if there were no data to deserialize.
-            if ((api->fifoStartChannelListCount) * (sizeof(NV0080_CTRL_FIFO_CHANNEL) /*fifoStartChannelList[i]*/) /*fifoStartChannelList*/ < 1)
-            {
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
-                return NV_ERR_BUFFER_TOO_SMALL;
-            }
-
-            api->fifoStartChannelList = NV_PTR_TO_NvP64(FINN_MALLOC((api->fifoStartChannelListCount) * (sizeof(NV0080_CTRL_FIFO_CHANNEL) /*fifoStartChannelList[i]*/) /*fifoStartChannelList*/));
-            if (!api->fifoStartChannelList)
-            {
-                FINN_ERROR(NV_ERR_NO_MEMORY);
-                return NV_ERR_NO_MEMORY;
-            }
-
-            FINN_MEMZERO(NvP64_VALUE(api->fifoStartChannelList), (api->fifoStartChannelListCount) * (sizeof(NV0080_CTRL_FIFO_CHANNEL) /*fifoStartChannelList[i]*/) /*fifoStartChannelList*/);
-        }
-
-        // Otherwise the pointer must be provided by caller.
-        else if (!api->fifoStartChannelList)
-        {
-            FINN_ERROR(NV_ERR_INVALID_POINTER);
-            return NV_ERR_INVALID_POINTER;
-        }
-
-        // Deserialize each element in `fifoStartChannelList`.
-        {
-            NvLength i;
-            for (i = 0; i < (api->fifoStartChannelListCount); ++i)
-            {
-                // Check field-presence indicator for `fifoStartChannelList[i]`.
-                if (!finn_read_buffer(bp, 1))
-                {
-                    FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
-                    return NV_ERR_LIB_RM_VERSION_MISMATCH;
-                }
-
-                // Record has 1 field(s) to be deserialized.
-                {
-                    NV_STATUS status = finnDeserializeRecord_NV0080_CTRL_FIFO_CHANNEL(bp, ((NV0080_CTRL_FIFO_CHANNEL *)(NvP64_VALUE(api->fifoStartChannelList))+(i)), sizeof(NV0080_CTRL_FIFO_CHANNEL), deser_up);
-                    if (status != NV_OK)
-                        return status;
-                }
-
-            }
-        }
-
-    }
-
-    // Nullify pointer only if FINN manages memory allocation.
-    else
-    {
-        if (!deser_up)
-            api->fifoStartChannelList = NV_PTR_TO_NvP64(NULL);
-    }
-
-    // Done
-    return NV_OK;
-}
-
-#if (defined(NVRM))
 
 // Serialize each of the 2 field(s).
 static NV_STATUS finnSerializeMessage_NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS(const NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up)
@@ -6677,57 +6461,6 @@ static NV_STATUS finnDeserializeRecord_NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_P
     return NV_OK;
 }
 
-#endif // (defined(NVRM))
-
-
-// Serialize each of the 1 field(s).
-static NV_STATUS finnSerializeRecord_NV0080_CTRL_FIFO_CHANNEL(const NV0080_CTRL_FIFO_CHANNEL *api, finn_bit_pump_for_write *bp, NvBool seri_up)
-{
-    // Serialize field-presence indicator for `hChannel`.
-    if (finn_write_buffer(bp, 1, 1))
-    {
-        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    // Serialize 32-bit NvU32 primitive.
-    if (finn_write_buffer(bp, api->hChannel, 32))
-    {
-        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-
-    // Done
-    return NV_OK;
-}
-
-
-// Deserialize each of the 1 field(s).
-static NV_STATUS finnDeserializeRecord_NV0080_CTRL_FIFO_CHANNEL(finn_bit_pump_for_read *bp, NV0080_CTRL_FIFO_CHANNEL *api, NvLength api_size, NvBool deser_up)
-{
-    // Check that the destination struct fits within the destination buffer.
-    if (sizeof(NV0080_CTRL_FIFO_CHANNEL) > api_size)
-    {
-        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    // Check field-presence indicator for `hChannel`.
-    if (!finn_read_buffer(bp, 1))
-    {
-        FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
-        return NV_ERR_LIB_RM_VERSION_MISMATCH;
-    }
-
-    // Deserialize 32-bit NvU32 primitive.
-    api->hChannel = (NvU32) finn_read_buffer(bp, 32);
-
-    // Done
-    return NV_OK;
-}
-
-#if (defined(NVRM))
 
 // Serialize each of the 5 field(s).
 static NV_STATUS finnSerializeRecord_NV2080_CTRL_GPUMON_SAMPLES(const NV2080_CTRL_GPUMON_SAMPLES *api, finn_bit_pump_for_write *bp, NvBool seri_up)

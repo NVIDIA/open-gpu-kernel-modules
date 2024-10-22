@@ -58,6 +58,7 @@
  * hPluginHeapMemory -> plugin heap memory handle, the client handle is hPluginClient
  * hMigRmHeapMemory -> MIG-RM heap memory handle
  * bDeviceProfilingEnabled -> If set to true, profiling is allowed
+ * bGpupLiveMigrationEnabled -> True if GPUP LM is supported
  */
 #define NVA084_ALLOC_PARAMETERS_MESSAGE_ID (0xa084U)
 
@@ -88,4 +89,5 @@ typedef struct NVA084_ALLOC_PARAMETERS {
     NV_DECLARE_ALIGNED(NvU64 kernelLogBuffOffset, 8);
     NV_DECLARE_ALIGNED(NvU64 kernelLogBuffSize, 8);
     NvBool     bDeviceProfilingEnabled;
+    NvBool     bGpupLiveMigrationEnabled;
 } NVA084_ALLOC_PARAMETERS;

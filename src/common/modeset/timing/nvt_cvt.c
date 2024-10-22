@@ -1,6 +1,6 @@
 //*****************************************************************************
 //
-//  SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+//  SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //  SPDX-License-Identifier: MIT
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,7 +38,7 @@ CONS_SEGMENT(PAGE_CONS)
 
 const NvU32 NVT_MAX_NVU32= (NvU32)(-1);
 
-const NvU32 NVT_CVT_CELL_GRAN        = 8;  // Character cell width. 
+const NvU32 NVT_CVT_CELL_GRAN        = 8;  // Character cell width.
 const NvU32 NVT_CVT_MIN_VSYNCBP      = 11; // in 550us (!!) [1000000:550 = 20000:11]
 const NvU32 NVT_CVT_V_PORCH          = 3;  // in pixels
 const NvU32 NVT_CVT_C_PRIME          = 30; // value of (C' * 10)
@@ -54,16 +54,17 @@ const NvU32 NVT_CVT_MIN_V_BPORCH     = 6;  // Minimum vertical back porch.
 
 
 // VESA CVT spec ver1.2:
-// 
+//
 // Page 24 : Table 5-4 : Delta between Original Reduced Blank Timing and Reduced Blanking Timing V2
-#define NVT_CVT_RB2_CLOCK_STEP_KHZ         1 
+#define NVT_CVT_RB2_CLOCK_STEP_KHZ         1
 #define NVT_CVT_RB2_H_BLANK_PIXELS         80
 #define NVT_CVT_RB2_H_SYNC_PIXELS          32
 #define NVT_CVT_RB2_MIN_VBLANK_MICROSEC    460
+#define NVT_CVT_RB2_MIN_ALT_VBLANK_MICROSEC 300
 #define NVT_CVT_RB2_MIN_V_FPORCH           1
 #define NVT_CVT_RB2_MIN_V_BPORCH           6
 // Page 16 : Table 3-2 : Vertical Sync Duration
-#define NVT_CVT_RB2_V_SYNC_WIDTH           8    
+#define NVT_CVT_RB2_V_SYNC_WIDTH           8
 // Page 22: RB_MIN_VBI = RB_V_FPORCH + V_SYNC_RND + MIN_V_BPORCH
 #define NVT_CVT_RB2_MIN_VBI  NVT_CVT_RB2_V_SYNC_WIDTH + NVT_CVT_RB2_MIN_V_FPORCH + NVT_CVT_RB2_MIN_V_BPORCH
 // Page 15 : The Horizontal Sync Pulse duration will in all cases be 32 pixel clocks in duration, with the position
@@ -81,6 +82,7 @@ const NvU32 NVT_CVT_MIN_V_BPORCH     = 6;  // Minimum vertical back porch.
 #define NVT_CVT_RB3_H_SYNC_PIXELS         NVT_CVT_RB2_H_SYNC_PIXELS
 #define NVT_CVT_RB3_H_FPORCH              NVT_CVT_RB2_H_FPORCH
 #define NVT_CVT_RB3_MIN_VBLANK_MICROSEC   NVT_CVT_RB2_MIN_VBLANK_MICROSEC
+#define NVT_CVT_RB3_MIN_ALT_VBLANK_MICROSEC    NVT_CVT_RB2_MIN_ALT_VBLANK_MICROSEC
 #define NVT_CVT_RB3_V_FIELD_RATE_PPM_ADJ  350
 #define NVT_CVT_RB3_V_SYNC_WIDTH          NVT_CVT_RB2_V_SYNC_WIDTH
 #define NVT_CVT_RB3_MIN_V_FPORCH          NVT_CVT_RB2_MIN_V_FPORCH
@@ -92,11 +94,11 @@ CODE_SEGMENT(PAGE_DD_CODE)
 static NvU16 getCVTVSync(NvU32 XRes, NvU32 YRes)
 {
     // 4:3 modes
-    if(XRes * 3 == YRes * 4) 
+    if(XRes * 3 == YRes * 4)
         return 4;
 
     // 16:9 modes
-    //if((XRes * 9 == YRes * 16) || 
+    //if((XRes * 9 == YRes * 16) ||
     //   (XRes == 848 && YRes == 480) ||      // 53:30   = 1.76666
     //   (XRes == 1064 && YRes == 600) ||     // 133:75  = 1.77333
     //   (XRes == 1360 && YRes == 768) ||     // 85:48   = 1.77083
@@ -108,7 +110,7 @@ static NvU16 getCVTVSync(NvU32 XRes, NvU32 YRes)
     //   (XRes == 4264 && YRes == 2400))      // 533:300 = 1.77666
     //    return 5;
     // NOTE: Because 16:9 modes are really a collection of mode of
-    //       aspect ratio between 16:9 and 53:30, we will include 
+    //       aspect ratio between 16:9 and 53:30, we will include
     //       all generic mode within this aspect ration range
     if((XRes * 9 <= YRes * 16) && (XRes * 30 >= YRes * 53))
         return 5;
@@ -116,7 +118,7 @@ static NvU16 getCVTVSync(NvU32 XRes, NvU32 YRes)
     // 16:10 modes
     if((XRes * 5 == YRes * 8) ||
        (XRes == 1224 && YRes == 768) ||
-       (XRes == 2456 && YRes == 1536)) 
+       (XRes == 2456 && YRes == 1536))
         return 6;
 
     // Special 1280 modes
@@ -125,7 +127,7 @@ static NvU16 getCVTVSync(NvU32 XRes, NvU32 YRes)
         return 7;
 
     // Failure value, for identification
-    return 10; 
+    return 10;
 }
 
 
@@ -137,17 +139,17 @@ NVT_STATUS NvTiming_CalcCVT(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, NVT
     NvU32 dwHPeriodEstimate_NUM, dwHPeroidEstimate_DEN;
     NvU32 dwIdealDutyCycle_NUM, dwIdealDutyCycle_DEN;
 
-    // parameter check 
+    // parameter check
     if (pT == NULL)
         return NVT_STATUS_ERR;
 
     if (width == 0 || height == 0 || rr == 0 )
         return NVT_STATUS_ERR;
 
-    // Check for valid input parameter   
+    // Check for valid input parameter
     if (width < 300 || height < 200 || rr < 10)
         return NVT_STATUS_ERR;//return NVT_STATUS_ERR_BACKOFF | NVT_STATUS_ERR_OUTOFRANGE;
-    
+
     NVMISC_MEMSET(pT, 0, sizeof(NVT_TIMING));
 
     pT->etc.status = NVT_STATUS_CVT;
@@ -222,7 +224,7 @@ NVT_STATUS NvTiming_CalcCVT(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, NVT
     pT->etc.rr = (NvU16)rr;
     pT->etc.rrx1k = axb_div_c((NvU32)pT->pclk, (NvU32)10000*(NvU32)1000, (NvU32)pT->HTotal*(NvU32)pT->VTotal);
     pT->etc.aspect = 0;
-    pT->etc.rep = 0x1; 
+    pT->etc.rep = 0x1;
     NVT_SNPRINTF((char *)pT->etc.name, 40, "CVT:%dx%dx%dHz",width, height, rr);
     pT->etc.name[39] = '\0';
 
@@ -249,20 +251,20 @@ NVT_STATUS NvTiming_CalcCVT_RB(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, 
 {
     NvU32 dwXCells, dwPClk, dwVBILines, dwVSyncWidth;
 
-    // parameter check 
+    // parameter check
     if (pT == NULL)
         return NVT_STATUS_ERR;
 
     if (width == 0 || height == 0 || rr == 0 )
         return NVT_STATUS_ERR;
 
-    // Check for valid input parameter   
+    // Check for valid input parameter
     if (width < 300 || height < 200 || rr < 10)
         return NVT_STATUS_ERR;//NVT_STATUS_ERR_BACKOFF | NVT_STATUS_ERR_OUTOFRANGE;
 
     NVMISC_MEMSET(pT, 0, sizeof(NVT_TIMING));
-    pT->etc.status = NVT_STATUS_CVT_RB;   
-    
+    pT->etc.status = NVT_STATUS_CVT_RB;
+
     // H_PIXELS_RND = ROUNDDOWN(H_PIXELS / CELL_GRAN_RND,0) * CELL_GRAN_RND
     if ((width % NVT_CVT_CELL_GRAN)!=0)
     {
@@ -307,7 +309,7 @@ NVT_STATUS NvTiming_CalcCVT_RB(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, 
     pT->etc.rr = (NvU16)rr;
     pT->etc.rrx1k = axb_div_c((NvU32)pT->pclk, (NvU32)10000*(NvU32)1000, (NvU32)pT->HTotal*(NvU32)pT->VTotal);
     pT->etc.aspect = 0;
-    pT->etc.rep = 0x1; 
+    pT->etc.rep = 0x1;
     NVT_SNPRINTF((char *)pT->etc.name, 40, "CVT-RB:%dx%dx%dHz",width, height, rr);
     pT->etc.name[39] = '\0';
 
@@ -329,15 +331,15 @@ NVT_STATUS NvTiming_CalcCVT_RB(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, 
 
 // CVT-RB2 timing calculation
 CODE_SEGMENT(PAGE_DD_CODE)
-NVT_STATUS NvTiming_CalcCVT_RB2(NvU32 width, NvU32 height, NvU32 rr, NvBool is1000div1001, NVT_TIMING *pT)
+NVT_STATUS NvTiming_CalcCVT_RB2(NvU32 width, NvU32 height, NvU32 rr, NvBool is1000div1001, NvBool isAltMiniVblankTiming, NVT_TIMING *pT)
 {
     NvU32 vbi, act_vbi_lines, total_v_lines, total_pixels, act_pixel_freq_khz;
 
-    // parameter check 
+    // parameter check
     if (pT == NULL || width == 0 || height == 0 || rr == 0)
         return NVT_STATUS_ERR;
 
-    // Check for valid input parameter   
+    // Check for valid input parameter
     if (width < 300 || height < 200 || rr < 10)
         return NVT_STATUS_ERR;
 
@@ -355,7 +357,16 @@ NVT_STATUS NvTiming_CalcCVT_RB2(NvU32 width, NvU32 height, NvU32 rr, NvBool is10
     // vbi = NVT_CVT_RB2_MIN_VBLANK / h_period_est + 1;
 
     // combining step 8, 9,
-    vbi = height * NVT_CVT_RB2_MIN_VBLANK_MICROSEC * rr / (1000000 - NVT_CVT_RB2_MIN_VBLANK_MICROSEC * rr) + 1;
+    if (isAltMiniVblankTiming)
+    {
+       // CVT spec2.1 - page 11 6. VBlank Period
+       // an alternate minimum VBlank duration of 300 us may be used under conditions defined by the interface specification on which the timing is used
+        vbi = height * NVT_CVT_RB2_MIN_ALT_VBLANK_MICROSEC * rr / (1000000 - NVT_CVT_RB2_MIN_ALT_VBLANK_MICROSEC * rr) + 1;
+    }
+    else
+    {
+        vbi = height * NVT_CVT_RB2_MIN_VBLANK_MICROSEC * rr / (1000000 - NVT_CVT_RB2_MIN_VBLANK_MICROSEC * rr) + 1;
+    }
 
     // 10. Check Vertical Blanking is Sufficient :
     // RB_MIN_VBI = RB_V_FPORCH + V_SYNC_RND + MIN_V_BPORCH
@@ -380,7 +391,7 @@ NVT_STATUS NvTiming_CalcCVT_RB2(NvU32 width, NvU32 height, NvU32 rr, NvBool is10
     // TOTAL_PIXELS / 1000000 * REFRESH_MULTIPLIER) / CLOCK_STEP, 0)
     if (is1000div1001)
         act_pixel_freq_khz = NVT_CVT_RB2_CLOCK_STEP_KHZ * (rr * total_v_lines * total_pixels / 1001 / NVT_CVT_RB2_CLOCK_STEP_KHZ);
-    else 
+    else
         act_pixel_freq_khz = NVT_CVT_RB2_CLOCK_STEP_KHZ * (rr * total_v_lines * total_pixels / 1000 / NVT_CVT_RB2_CLOCK_STEP_KHZ);
 
     // 14. Find actual Horizontal Frequency(kHz) :
@@ -393,7 +404,7 @@ NVT_STATUS NvTiming_CalcCVT_RB2(NvU32 width, NvU32 height, NvU32 rr, NvBool is10
     // fill in the essential timing info for output
     pT->HVisible    = (NvU16)width;
     pT->HTotal      = (NvU16)(total_pixels);
-    pT->HFrontPorch = NVT_CVT_RB2_H_FPORCH; 
+    pT->HFrontPorch = NVT_CVT_RB2_H_FPORCH;
     pT->HSyncWidth  = NVT_CVT_RB2_H_SYNC_PIXELS;
     pT->VVisible    = (NvU16)height;
     pT->VTotal      = (NvU16)total_v_lines;
@@ -408,7 +419,7 @@ NVT_STATUS NvTiming_CalcCVT_RB2(NvU32 width, NvU32 height, NvU32 rr, NvBool is10
     // fill in the extra timing info
     pT->etc.flag   = 0;
     pT->etc.rr     = (NvU16)rr;
-    pT->etc.rrx1k  = (NvU32)axb_div_c_64((NvU64)pT->pclk, (NvU64)10000 * (NvU64)1000, (NvU64)pT->HTotal*(NvU64)pT->VTotal);
+    pT->etc.rrx1k  = (NvU32)axb_div_c_64((NvU64)act_pixel_freq_khz, (NvU64)1000 * (NvU64)1000, (NvU64)pT->HTotal*(NvU64)pT->VTotal);
     pT->etc.aspect = 0;
     pT->etc.rep    = 0x1;
     NVT_SNPRINTF((char *)pT->etc.name, 40, "CVT-RB2:%dx%dx%dHz", width, height, rr);
@@ -421,20 +432,30 @@ NVT_STATUS NvTiming_CalcCVT_RB2(NvU32 width, NvU32 height, NvU32 rr, NvBool is10
 // CVT-RB3 timing calculation
 // This is intended to work in conjunction with VESA Adaptive-Sync operation (or other similar VRR methodology)
 CODE_SEGMENT(PAGE_DD_CODE)
-NVT_STATUS NvTiming_CalcCVT_RB3(NvU32 width, NvU32 height, NvU32 rr, NvU32 deltaHBlank, NvU32 vBlankMicroSec, NvBool isEarlyVSync, NVT_TIMING *pT)
+NVT_STATUS NvTiming_CalcCVT_RB3(NvU32  width,
+                                NvU32  height,
+                                NvU32  rr,
+                                NvU32  deltaHBlank,
+                                NvU32  vBlankMicroSec,
+                                NvBool isAltMiniVblankTiming,
+                                NvBool isEarlyVSync,
+                                NVT_TIMING *pT)
 {
-    NvU32 vbi, act_v_blank_time, act_v_blank_lines, v_back_porch, total_v_lines, total_pixels, adj_rr_x1M, act_pixel_freq_khz;
-    NvU64 act_pixel_freq_hz = 0xFFFFFFFFFFFFFFFFULL;    
+    NvU32 vbi, act_v_blank_time, act_v_blank_lines, v_back_porch_est, v_back_porch, total_v_lines, total_pixels, adj_rr_x1M, act_pixel_freq_khz;
+    NvU64 act_pixel_freq_hz = 0xFFFFFFFFFFFFFFFFULL;
 
-    // parameter check 
+    // parameter check
     if (pT == NULL)
         return NVT_STATUS_ERR;
 
     if (width == 0 || height == 0 || rr == 0)
         return NVT_STATUS_ERR;
 
-    // Check for valid input parameter   
-    if ( (height % 8 != 0) || (deltaHBlank % 8 != 0) || deltaHBlank > 120 || vBlankMicroSec > 245)
+    // Check for valid input parameter
+    if ((height % 8 != 0) || (deltaHBlank % 8 != 0) || deltaHBlank > 120)
+        return NVT_STATUS_INVALID_PARAMETER;
+
+    if ((isAltMiniVblankTiming && vBlankMicroSec > 140) || (!isAltMiniVblankTiming && vBlankMicroSec > 245))
         return NVT_STATUS_INVALID_PARAMETER;
 
     NVMISC_MEMSET(pT, 0, sizeof(NVT_TIMING));
@@ -462,93 +483,112 @@ NVT_STATUS NvTiming_CalcCVT_RB3(NvU32 width, NvU32 height, NvU32 rr, NvU32 delta
         NVT_SET_TIMING_STATUS_MISMATCH(pT->etc.status, NVT_STATUS_TIMING_MISMATCH_ALIGNMENT);
     }
 
-    // 3 Round the number of vertical lines down to the nearest integer:    
+    // 3 Round the number of vertical lines down to the nearest integer:
     // V_LINES_RND = ROUNDDOWN(I_V_LINES, 0)
 
     // Parameters mapping:
     // - V_LINES_RND == "height"
 
-    // 4 Calculate the estimated Horizontal Period (kHz):
-    // H_PERIOD_EST = ((1000000 / (V_FIELD_RATE_RQD)) - C_RB_MIN_V_BLANK) / V_LINES_RND
-    
+    // 4 Calculate the minimum allowed VBlank duration:
+    // MIN_V_BLANK = IF(I_ALTERNATE_VBLANK_MIN?="N", C_RB_MIN_V_BLANK, C_RB_ALT_MIN_V_BLANK)
+
+    // 5 Calculate the estimated Horizontal Period (kHz):
+    // H_PERIOD_EST = ((1,000,000 / (V_FIELD_RATE_RQD)) – MIN_V_BLANK) / V_LINES_RND
+
     // Parameters mapping:
     // - H_PERIOD_EST     == "h_period_est"
-    // - C_RB_MIN_V_BLANK == "NVT_CVT_RB3_MIN_VBLANK_MICROSEC"
-    // h_period_est = ((1000000000000 / adj_rr_x1M) - NVT_CVT_RB3_MIN_VBLANK_MICROSEC) / height
-    
-    // 5 Calculate the total VBlank time:
-    // ACT_V_BLANK_TIME = IF(I_VBLANK < C_RB_MIN_V_BLANK, C_RB_MIN_V_BLANK, I_VBLANK)
-    
+    // - C_RB_MIN_V_BLANK == "NVT_CVT_RB3_MIN_VBLANK_MICROSEC" == 460
+    // - C_RB_ALT_MIN_V_BLANK == "NVT_CVT_RB3_MIN_ALT_VBLANK_MICROSEC" == 300
+    // h_period_est = ((1000000000000 / adj_rr_x1M) - MIN_V_BLANK) / height
+
+    // 6 Calculate the total VBlank time:
+    // ACT_V_BLANK_TIME = IF(I_VBLANK < MIN_V_BLANK, MIN_V_BLANK, I_VBLANK)
+
     // Parameters mapping:
     // - ACT_V_BLANK_TIME == "act_v_blank_time"
     // - I_VBLANK         == "vBlankMicroSec"
-    act_v_blank_time = MAX(vBlankMicroSec + 460, NVT_CVT_RB3_MIN_VBLANK_MICROSEC);
+    if (isAltMiniVblankTiming)
+        act_v_blank_time = MAX(vBlankMicroSec + NVT_CVT_RB3_MIN_ALT_VBLANK_MICROSEC, NVT_CVT_RB3_MIN_ALT_VBLANK_MICROSEC);
+    else
+        act_v_blank_time = MAX(vBlankMicroSec + NVT_CVT_RB3_MIN_VBLANK_MICROSEC, NVT_CVT_RB3_MIN_VBLANK_MICROSEC);
 
-    // 6 Calculate the number of idealized lines in the VBlank interval:
+    // 7 Calculate the number of idealized lines in the VBlank interval:
     // VBI_LINES = ROUNDUP(ACT_V_BLANK_TIME / H_PERIOD_EST, 0)
-    
+
     // Parameters mapping:
-    // - VBI_LINES == vbi"
-    // below formula are combining step 4, 5, 6 togerther. i.e. both numerator and denominator multiple by height and addj_rr_x1M.    
+    // - VBI_LINES == "vbi"
+    // below formula are combining step 4, 5, 6 together. i.e. both numerator and denominator multiple by height and addj_rr_x1M.
     vbi = (NvU32)(((NvU64)height * (NvU64)act_v_blank_time * (NvU64)adj_rr_x1M) / ((NvU64)1000000000000 - (NvU64)act_v_blank_time * (NvU64)adj_rr_x1M));
     // ROUNDUP
     if (((NvU64)height * (NvU64)act_v_blank_time * (NvU64)adj_rr_x1M) % ((NvU64)1000000000000 - (NvU64)act_v_blank_time * (NvU64)adj_rr_x1M) !=0)
         vbi += 1;
 
-    // 7 Determine whether idealized VBlank is sufficient and calculate the actual number of lines in the VBlank period:
-    // RB_MIN_VBI = C_RB_V_FPORCH + C_V_SYNC_RND + C_MIN_V_BPORCH
+    // 8 Determine whether idealized VBlank is sufficient and calculate the actual number of lines in the VBlank period:
+    // RB_MIN_VBI = C_RB_MIN_V_FPORCH + C_V_SYNC_RND + C_MIN_V_BPORCH
     // V_BLANK = IF(VBI_LINES < RB_MIN_VBI, RB_MIN_VBI, VBI_LINES)
 
-    // Paameters mapping:
-    // - C_RB_V_FPORCH  == 1
-    // - C_V_SYNC_RND   == 8
-    // - C_MIN_V_BPORCH == 6
-    // - V_BLANK        == "act_v_blank_lines"
+    // Parameters mapping:
+    // - C_RB_MIN_V_FPORCH == 1
+    // - C_V_SYNC_RND      == 8
+    // - C_MIN_V_BPORCH    == 6
+    // - V_BLANK           == "act_v_blank_lines"
     // NVT_CVT_RB3_MIN_VBI ==  1 + 8 + 6 = 15
     act_v_blank_lines = MAX(vbi, NVT_CVT_RB3_MIN_VBI);
 
-    // 8 Calculate the total number of vertical lines:
+    // 9 Calculate the total number of vertical lines:
     // TOTAL_V_LINES = V_BLANK + V_LINES_RND
     total_v_lines = act_v_blank_lines + height;
 
-    // 9 Calculate the vertical back porch:
-    // V_BACK_PORCH = IF(AND(I_RED_BLANK_VER=3, I_EARLY_VSYNC_RQD?="Y"), ROUNDDOWN(VBI_LINES / 2, 0), C_MIN_V_BPORCH)
-    
-    // Paameters mapping:
-    // - V_BACK_PORCH      == "v_back_porch"
-    // - I_RED_BLANK_VER   == "3" this is for RB3 function so the value is 3 
-    // - I_EARLY_VSYNC_RQD == "isEarlyVSync"
-    // - C_MIN_V_BPORCH    == 6
-    if (isEarlyVSync)
-        v_back_porch = vbi / 2;
-        // v_back_porch = act_v_blank_lines /2 ;
-    else 
-        v_back_porch = NVT_CVT_RB3_MIN_V_BPROCH;
-
-    // 10 Calculate the vertical front porch: 
-    // V_FRONT_PORCH = V_BLANK – V_BACK_PORCH – C_V_SYNC_RND
-    // we directly use this to assign as pT->VFrontPorch value in NVT_TIMING 
-
-    // 11 Calculate the total number of pixels per line:
-    // TOTAL_PIXELS = TOTAL_ACTIVE_PIXELS + C_RB_H_BLANK + IF(I_RED_BLANK_VER=3, I_ADDITIONAL_HBLANK, 0)
+    // 10 Calculate the estimated vertical back porch, determine whether the remaining vertical front porch is greater than the
+    // minimum vertical front porch (C_RB_MIN_V_FPORCH), and if not, reduce the estimated vertical back porch to reserve VBlank lines for the vertical front porch:
+    // V_BACK_PORCH_EST = IF(AND(I_RED_BLANK_VER=3,I_EARLY_VSYNC_RQD?="Y"), ROUNDDOWN(VBI_LINES / 2, 0), C_MIN_V_BPORCH)
+    // V_BACK_PORCH = IF(AND(I_RED_BLANK_VER=3, I_EARLY_VSYNC_RQD?="Y"),
+    //                   IF(VBLANK – V_BACK_PORCH_EST – C_V_SYNC_RND < C_RB_MIN_V_FPORCH, V_BLANK – C_V_SYNC_RND – C_RB_MIN_V_FPORCH, V_BACK_PORCH_EST),
+    //                   V_BACK_PORCH_EST)
 
     // Parameters mapping:
-    // - C_RB_H_BLANK        == 80 
-    // - I_ADDITIONAL_HBLANK == deltaHBlank scopes are defined in the TypeX in displayId2.1 
-    // 80 <= HBlank <=200 is a valid scope 
-    total_pixels  = width + deltaHBlank + 80;
+    // - V_BACK_PORCH_EST  == "(VBI_LINES / 2)
+    // - V_BACK_PORCH      == "v_back_porch"
+    // - I_RED_BLANK_VER   == "3" this is for RB3 function so the value is 3
+    // - I_EARLY_VSYNC_RQD == "isEarlyVSync"
+    // - C_V_SYNC_RND      == NVT_CVT_RB3_V_SYNC_WIDTH == 8
+    // - C_RB_MIN_V_FPORCH == NVT_CVT_RB3_MIN_V_FPORCH == 1
+    // - C_MIN_V_BPORCH    == NVT_CVT_RB3_MIN_V_BPROCH == 6
+    if (isEarlyVSync)
+    {
+        v_back_porch_est = vbi / 2;
+        if ((act_v_blank_lines - v_back_porch_est - NVT_CVT_RB3_V_SYNC_WIDTH) < NVT_CVT_RB3_MIN_V_FPORCH)
+            v_back_porch = act_v_blank_lines - NVT_CVT_RB3_V_SYNC_WIDTH - NVT_CVT_RB3_MIN_V_FPORCH;
+        else
+            v_back_porch = v_back_porch_est;
+    }
+    else
+        v_back_porch = NVT_CVT_RB3_MIN_V_BPROCH;
 
-    // 12 Calculate the horizontal back porch:
-    // H_BACK_PORCH = C_RB_H_BLANK + IF(I_RED_BLANK_VER=3, I_ADDITIONAL_HBLANK, 0) – C_H_FRONT_PORCH – C_RB_H_SYNC
+    // 11 Calculate the vertical front porch:
+    // V_FRONT_PORCH = V_BLANK – V_BACK_PORCH – C_V_SYNC_RND
+    // pT->VFrontPorch  = (NvU16)(act_v_blank_lines - NVT_CVT_RB3_V_SYNC_WIDTH - v_back_porch);
+
+    // 12 Calculate the total number of pixels per line:
+    // TOTAL_PIXELS = TOTAL_ACTIVE_PIXELS + C_RB_MIN_H_BLANK + IF(I_RED_BLANK_VER=3, I_ADDITIONAL_HBLANK, 0)
+
+    // Parameters mapping:
+    // - C_RB_MIN_H_BLANK    == NVT_CVT_RB3_H_BLANK_PIXELS == 80
+    // - I_ADDITIONAL_HBLANK == deltaHBlank scopes are defined in the TypeX in displayId2.1a
+    // 80 <= HBlank <= 200 is a valid scope
+    total_pixels = width + NVT_CVT_RB3_H_BLANK_PIXELS + deltaHBlank;
+
+    // 13 Calculate the horizontal back porch:
+    // H_BACK_PORCH = C_RB_MIN_H_BLANK + IF(I_RED_BLANK_VER=3, I_ADDITIONAL_HBLANK, 0) – C_H_FRONT_PORCH – C_RB_H_SYNC
     // NVT_TIMING did not need to store H_BACK_PORCH
-    
+
     // sanity check just in case of bad edid where the timing value could exceed the limit of NVT_TIMING structure which unfortunately is defined in NvU16
     if (total_pixels > (NvU16)-1 || total_v_lines > (NvU16)-1)
         return NVT_STATUS_INVALID_PARAMETER;
-    
-    // 13 Calculate the pixel clock frequency to the nearest C_CLOCK_STEP (MHz):
+
+    // 14 Calculate the pixel clock frequency to the nearest C_CLOCK_STEP (MHz):
     // ACT_PIXEL_FREQ = C_CLOCK_STEP * ROUNDUP((V_FIELD_RATE_RQD * TOTAL_V_LINES * TOTAL_PIXELS / 1000000 * 1) / C_CLOCK_STEP, 0))
-    
+
     // Parameters mapping:
     // - ACT_PIXEL_FREQ == "act_pixel_freq_hz"
     // - C_CLOCK_STEP   == "NVT_CVT_RB3_CLOCK_STEP_KHZ" == 1000
@@ -558,17 +598,17 @@ NVT_STATUS NvTiming_CalcCVT_RB3(NvU32 width, NvU32 height, NvU32 rr, NvU32 delta
     act_pixel_freq_khz = (NvU32)(act_pixel_freq_hz / NVT_CVT_RB3_CLOCK_STEP_KHZ);
 
     // kHz ROUNDUP
-    if ((act_pixel_freq_hz  % 1000) != 0)       
+    if ((act_pixel_freq_hz  % 1000) != 0)
         act_pixel_freq_khz += 1;
 
     pT->HVisible     = (NvU16)width;
     pT->HTotal       = (NvU16)total_pixels;
-    pT->HFrontPorch  = NVT_CVT_RB3_H_FPORCH; 
+    pT->HFrontPorch  = NVT_CVT_RB3_H_FPORCH;
     pT->HSyncWidth   = NVT_CVT_RB3_H_SYNC_PIXELS;
     pT->VVisible     = (NvU16)height;
     pT->VTotal       = (NvU16)total_v_lines;
     pT->VSyncWidth   = NVT_CVT_RB3_V_SYNC_WIDTH;
-    pT->VFrontPorch  = (NvU16)(act_v_blank_lines - NVT_CVT_RB2_V_SYNC_WIDTH - v_back_porch);
+    pT->VFrontPorch  = (NvU16)(act_v_blank_lines - NVT_CVT_RB3_V_SYNC_WIDTH - v_back_porch);
     pT->pclk         = ((NvU32)act_pixel_freq_khz + 5) / 10; //convert to 10Khz
     pT->HSyncPol     = NVT_H_SYNC_POSITIVE;
     pT->VSyncPol     = NVT_V_SYNC_NEGATIVE;
@@ -578,7 +618,7 @@ NVT_STATUS NvTiming_CalcCVT_RB3(NvU32 width, NvU32 height, NvU32 rr, NvU32 delta
     // fill in the extra timing info
     pT->etc.flag     = 0;
     pT->etc.rr       = (NvU16)rr;
-    pT->etc.rrx1k    = (NvU32)axb_div_c_64((NvU64)pT->pclk, (NvU64)10000 * (NvU64)1000, (NvU64)pT->HTotal*(NvU64)pT->VTotal);
+    pT->etc.rrx1k    = (NvU32)axb_div_c_64((NvU64)act_pixel_freq_khz, (NvU64)1000 * (NvU64)1000, (NvU64)pT->HTotal*(NvU64)pT->VTotal);
     pT->etc.aspect   = 0;
     pT->etc.rep      = 0x1;
     NVT_SNPRINTF((char *)pT->etc.name, 40, "CVT-RB3:%dx%dx%dHz", width, height, rr);

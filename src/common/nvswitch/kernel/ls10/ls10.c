@@ -293,7 +293,7 @@ nvswitch_destroy_device_state_ls10
 {
     ls10_device *chip_device = NVSWITCH_GET_CHIP_DEVICE_LS10(device);
 
-    if (nvswitch_is_soe_supported(device))
+    if (NVSWITCH_ENG_VALID_LS10(device, SOE, 0) && nvswitch_is_soe_supported(device))
     {
         nvswitch_soe_unregister_events(device);
         nvswitch_unload_soe_ls10(device);
@@ -3089,13 +3089,6 @@ nvswitch_is_soe_supported_ls10
         NVSWITCH_PRINT(device, WARN, "SOE can not be disabled via regkey.\n");
     }
 
-    if (nvswitch_is_tnvl_mode_locked(device))
-    {
-        NVSWITCH_PRINT(device, INFO,
-            "SOE is not supported when TNVL mode is locked\n");
-        return NV_FALSE;
-    }
-
     return NV_TRUE;
 }
 
@@ -3141,13 +3134,6 @@ nvswitch_is_inforom_supported_ls10
         NVSWITCH_PRINT(device, INFO,
             "INFOROM is not supported on non-silicon platform\n");
         return NV_FALSE;
-    }
-
-    if (nvswitch_is_tnvl_mode_enabled(device))
-    {
-        NVSWITCH_PRINT(device, INFO,
-            "INFOROM is not supported when TNVL mode is enabled\n");
-        return NV_FALSE; 
     }
 
     if (!nvswitch_is_soe_supported(device))
@@ -4637,7 +4623,14 @@ nvswitch_eng_wr_ls10
         return;
     }
 
-    nvswitch_reg_write_32(device, base_addr + offset,  data);
+    if (nvswitch_is_tnvl_mode_enabled(device))
+    {
+        nvswitch_tnvl_reg_wr_32_ls10(device, eng_id, eng_bcast, eng_instance, base_addr, offset,  data);
+    }
+    else
+    {
+        nvswitch_reg_write_32(device, base_addr + offset,  data);
+    }
 
 #if defined(DEVELOP) || defined(DEBUG) || defined(NV_MODS)
     {

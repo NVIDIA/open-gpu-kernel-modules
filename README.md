@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 560.35.03.
+version 565.57.01.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-560.35.03 driver release.  This can be achieved by installing
+565.57.01 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -185,7 +185,7 @@ table below).
 For details on feature support and limitations, see the NVIDIA GPU driver
 end user README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/560.35.03/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/565.57.01/README/kernel_open.html
 
 For vGPU support, please refer to the README.vgpu packaged in the vGPU Host
 Package for more details.
@@ -199,6 +199,7 @@ Subsystem Device ID.
 | NVIDIA TITAN RTX                                | 1E02           |
 | NVIDIA GeForce RTX 2080 Ti                      | 1E04           |
 | NVIDIA GeForce RTX 2080 Ti                      | 1E07           |
+| NVIDIA CMP 50HX                                 | 1E09           |
 | Quadro RTX 6000                                 | 1E30           |
 | Quadro RTX 8000                                 | 1E30 1028 129E |
 | Quadro RTX 8000                                 | 1E30 103C 129E |
@@ -391,6 +392,7 @@ Subsystem Device ID.
 | NVIDIA GeForce RTX 2070                         | 1F07           |
 | NVIDIA GeForce RTX 2060                         | 1F08           |
 | NVIDIA GeForce GTX 1650                         | 1F0A           |
+| NVIDIA CMP 40HX                                 | 1F0B           |
 | NVIDIA GeForce RTX 2070                         | 1F10           |
 | NVIDIA GeForce RTX 2070 with Max-Q Design       | 1F10 1025 132D |
 | NVIDIA GeForce RTX 2070 with Max-Q Design       | 1F10 1025 1342 |
@@ -691,6 +693,7 @@ Subsystem Device ID.
 | NVIDIA GeForce GTX 1660                         | 2184           |
 | NVIDIA GeForce GTX 1650 SUPER                   | 2187           |
 | NVIDIA GeForce GTX 1650                         | 2188           |
+| NVIDIA CMP 30HX                                 | 2189           |
 | NVIDIA GeForce GTX 1660 Ti                      | 2191           |
 | NVIDIA GeForce GTX 1660 Ti with Max-Q Design    | 2191 1028 0949 |
 | NVIDIA GeForce GTX 1660 Ti with Max-Q Design    | 2191 103C 85FB |
@@ -758,9 +761,11 @@ Subsystem Device ID.
 | NVIDIA H200                                     | 2335 10DE 18BF |
 | NVIDIA H100                                     | 2339 10DE 17FC |
 | NVIDIA H800 NVL                                 | 233A 10DE 183A |
+| NVIDIA H200 NVL                                 | 233B 10DE 1996 |
 | NVIDIA GH200 120GB                              | 2342 10DE 16EB |
 | NVIDIA GH200 120GB                              | 2342 10DE 1805 |
 | NVIDIA GH200 480GB                              | 2342 10DE 1809 |
+| NVIDIA GH200 144G HBM3e                         | 2348 10DE 18D2 |
 | NVIDIA GeForce RTX 3060 Ti                      | 2414           |
 | NVIDIA GeForce RTX 3080 Ti Laptop GPU           | 2420           |
 | NVIDIA RTX A5500 Laptop GPU                     | 2438           |
@@ -831,12 +836,10 @@ Subsystem Device ID.
 | NVIDIA GeForce RTX 2050                         | 25AD           |
 | NVIDIA RTX A1000                                | 25B0 1028 1878 |
 | NVIDIA RTX A1000                                | 25B0 103C 1878 |
-| NVIDIA RTX A1000                                | 25B0 103C 8D96 |
 | NVIDIA RTX A1000                                | 25B0 10DE 1878 |
 | NVIDIA RTX A1000                                | 25B0 17AA 1878 |
 | NVIDIA RTX A400                                 | 25B2 1028 1879 |
 | NVIDIA RTX A400                                 | 25B2 103C 1879 |
-| NVIDIA RTX A400                                 | 25B2 103C 8D95 |
 | NVIDIA RTX A400                                 | 25B2 10DE 1879 |
 | NVIDIA RTX A400                                 | 25B2 17AA 1879 |
 | NVIDIA A16                                      | 25B6 10DE 14A9 |

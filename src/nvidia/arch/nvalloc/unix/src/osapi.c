@@ -610,7 +610,7 @@ static void RmExecuteWorkItem(
 )
 {
     nv_work_item_t *pWi = (nv_work_item_t *)pWorkItem;
-    NvU32 gpuMask;
+    NvU32 gpuMask = 0;
     NvU32 releaseLocks = 0;
 
     if (!(pWi->flags & NV_WORK_ITEM_FLAGS_REQUIRES_GPU) &&
@@ -637,18 +637,27 @@ static void RmExecuteWorkItem(
         // Make sure that pGpu is present
         OBJGPU *pGpu = gpumgrGetGpu(pWi->gpuInstance);
         if (pGpu != NULL)
-        { 
-            pWi->func.pGpuFunction(pWi->gpuInstance, pWi->pData);
+        {
+            nv_state_t *nv = NV_GET_NV_STATE(pGpu);
+
+            NV_ASSERT_OR_GOTO(nv != NULL, done);
+
+            if (!((pWi->flags & OS_QUEUE_WORKITEM_FLAGS_DROP_ON_UNLOAD_QUEUE_FLUSH) && os_is_queue_flush_ongoing(nv->queue)))
+            {
+                pWi->func.pGpuFunction(pWi->gpuInstance, pWi->pData);
+            }
         }
         else
         {
             NV_PRINTF(LEVEL_ERROR, "Invalid GPU instance for workitem\n");
-            goto done;
         }
     }
     else
     {
-        pWi->func.pSystemFunction(pWi->pData);
+        if (!((pWi->flags & OS_QUEUE_WORKITEM_FLAGS_DROP_ON_UNLOAD_QUEUE_FLUSH) && os_is_queue_flush_ongoing(NULL)))
+        {
+            pWi->func.pSystemFunction(pWi->pData);
+        }
     }
 
 done:
@@ -1320,8 +1329,9 @@ RmDmabufVerifyMemHandle(
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    // Only supported for vidmem handles
-    if (memdescGetAddressSpace(pMemDesc) != ADDR_FBMEM)
+    // Only supported for vidmem and sysmem(only for 0FB) handles
+    if ((memdescGetAddressSpace(pMemDesc) != ADDR_FBMEM) &&
+        (!pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB)))
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
@@ -1609,7 +1619,7 @@ void NV_API_CALL rm_disable_adapter(
     NV_ENTER_RM_RUNTIME(sp,fp);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
-    NV_ASSERT_OK(os_flush_work_queue(pNv->queue));
+    NV_ASSERT_OK(os_flush_work_queue(pNv->queue, NV_TRUE));
 
     // LOCK: acquire API lock
     if (rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DESTROY) == NV_OK)
@@ -1627,7 +1637,7 @@ void NV_API_CALL rm_disable_adapter(
         rmapiLockRelease();
     }
 
-    NV_ASSERT_OK(os_flush_work_queue(pNv->queue));
+    NV_ASSERT_OK(os_flush_work_queue(pNv->queue, NV_TRUE));
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
     NV_EXIT_RM_RUNTIME(sp,fp);
 }
@@ -1904,8 +1914,9 @@ static void nv_align_mmap_offset_length(
     NvU64 page_size = os_page_size;
     NvU64 end = nvuap->size + (nvuap->addr & (page_size - 1));
 
-    nvuap->mmap_start = NV_ALIGN_DOWN(nvuap->addr, page_size);
-    nvuap->mmap_size = NV_ALIGN_UP(end, page_size);
+    nvuap->memArea.numRanges = 1;
+    nvuap->memArea.pRanges[0].start = NV_ALIGN_DOWN(nvuap->addr, page_size);
+    nvuap->memArea.pRanges[0].size = NV_ALIGN_UP(end, page_size);
     nvuap->offset = NV_ALIGN_DOWN(nvuap->offset, page_size);
 }
 
@@ -1941,6 +1952,42 @@ static inline NV_STATUS RmGetArrayMinMax(
     return NV_OK;
 }
 
+static NV_STATUS RmGetAllocPrivate(RmClient *, NvU32, NvU64, NvU64, NvU32 *, void **,
+                                   NvU64 *);
+
+static NV_STATUS RmValidateMmapRequest(
+    nv_state_t *pNv,
+    NvU64       offset,
+    NvU64       length,
+    NvU32      *pProtection
+)
+{
+    NV2080_CTRL_GPU_VALIDATE_MEM_MAP_REQUEST_PARAMS params = { 0 };
+    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    NV_STATUS status;
+
+    if (osIsAdministrator())
+    {
+        *pProtection = NV_PROTECT_READ_WRITE;
+        return NV_OK;
+    }
+
+    params.addressStart = offset;
+    params.addressLength = length;
+
+    status = pRmApi->Control(pRmApi, pNv->rmapi.hClient,
+                             pNv->rmapi.hSubDevice,
+                             NV2080_CTRL_CMD_GPU_VALIDATE_MEM_MAP_REQUEST,
+                             &params, sizeof(params));
+
+    if (status == NV_OK)
+    {
+        *pProtection = params.protection;
+    }
+
+    return status;
+}
+
 static NV_STATUS RmSetUserMapAccessRange(
     nv_usermap_access_params_t *nvuap
 )
@@ -1949,8 +1996,8 @@ static NV_STATUS RmSetUserMapAccessRange(
 
     if (nvuap->contig)
     {
-         nvuap->access_start = nvuap->mmap_start;
-         nvuap->access_size = nvuap->mmap_size;
+         nvuap->access_start = nvuap->memArea.pRanges[0].start;
+         nvuap->access_size = nvuap->memArea.pRanges[0].size;
     }
     else
     {
@@ -1971,10 +2018,6 @@ static NV_STATUS RmSetUserMapAccessRange(
 
     return status;
 }
-
-static NV_STATUS RmGetAllocPrivate(RmClient *, NvU32, NvU64, NvU64, NvU32 *, void **,
-                                   NvU64 *);
-static NV_STATUS RmValidateMmapRequest(nv_state_t *, NvU64, NvU64, NvU32 *);
 
 static NV_STATUS RmGetMmapPteArray(
     KernelMemorySystem         *pKernelMemorySystem,
@@ -2019,11 +2062,11 @@ static NV_STATUS RmGetMmapPteArray(
     //
     if (nvuap->contig)
     {
-        pages = nvuap->mmap_size / os_page_size;
+        pages = nvuap->memArea.pRanges[0].size / os_page_size;
     }
     else
     {
-        pages = nvuap->mmap_size / NV_RM_PAGE_SIZE;
+        pages = nvuap->memArea.pRanges[0].size / NV_RM_PAGE_SIZE;
     }
 
     NV_ASSERT_OR_RETURN(pages != 0, NV_ERR_INVALID_ARGUMENT);
@@ -2064,8 +2107,8 @@ static NV_STATUS RmGetMmapPteArray(
     }
     else
     {
-        // Offset is accounted in nvuap->mmap_start.start.
-        for (nvuap->page_array[0] = nvuap->mmap_start, i = 1;
+        // Offset is accounted in nvuap->memArea.pRanges[0].start.
+        for (nvuap->page_array[0] = nvuap->memArea.pRanges[0].start, i = 1;
              i < pages; i++)
         {
             nvuap->page_array[i] = nvuap->page_array[i-1] + os_page_size;
@@ -2118,14 +2161,24 @@ static NV_STATUS RmCreateMmapContextLocked(
             GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
         }
     }
-
-    status = os_alloc_mem((void**)&nvuap, sizeof(nv_usermap_access_params_t));
-    if (status != NV_OK)
+    nvuap = tlsEntryGet(TLS_ENTRY_ID_MAPPING_CONTEXT);
+    if (nvuap != NULL)
     {
-        return status;
+        NV_ASSERT(tlsEntryRelease(TLS_ENTRY_ID_MAPPING_CONTEXT) == 0);
+        prot = NV_PROTECT_READ_WRITE;
+        //
+        // TODO: Add this to the mapping context so we don't need to do gymnastics
+        // to figure out what the correct pNv is
+        //
+        pNv = NV_GET_NV_STATE(pGpu);
+        goto add_ctx_to_file;
     }
 
+    NV_ASSERT_OK_OR_RETURN(os_alloc_mem((void**)&nvuap, sizeof(nv_usermap_access_params_t)));
     portMemSet(nvuap, 0, sizeof(nv_usermap_access_params_t));
+
+    NV_ASSERT_OK_OR_GOTO(status, os_alloc_mem((void**)&(nvuap->memArea.pRanges), sizeof(MemoryRange)), free_nvuap);
+
     nvuap->addr = addr;
     nvuap->size = size;
     nvuap->offset = offset;
@@ -2146,7 +2199,6 @@ static NV_STATUS RmCreateMmapContextLocked(
         bSriovHostCoherentFbOffset = os_is_vgx_hyper() &&
             IS_COHERENT_FB_OFFSET(pKernelMemorySystem, addr, size);
     }
-
     //
     // If no device is given, or the address isn't in the given device's BARs,
     // validate this as a system memory mapping and associate it with the
@@ -2218,10 +2270,7 @@ static NV_STATUS RmCreateMmapContextLocked(
             }
         }
 
-        if (RmSetUserMapAccessRange(nvuap) != NV_OK)
-        {
-            goto done;
-        }
+        NV_ASSERT_OK_OR_GOTO(status, RmSetUserMapAccessRange(nvuap), done);
 
         status = nv_get_usermap_access_params(pNv, nvuap);
         if (status != NV_OK)
@@ -2238,10 +2287,13 @@ static NV_STATUS RmCreateMmapContextLocked(
         }
     }
 
+add_ctx_to_file:
     status = nv_add_mapping_context_to_file(pNv, nvuap, prot, pAllocPriv,
                                             pageIndex, fd);
 
 done:
+    os_free_mem(nvuap->memArea.pRanges);
+free_nvuap:
     os_free_mem(nvuap);
     return status;
 }
@@ -2343,7 +2395,8 @@ static NV_STATUS RmGetAllocPrivate(
     bReadOnlyMem = memdescGetFlag(pMemDesc, MEMDESC_FLAGS_USER_READ_ONLY);
     bPeerIoMem = memdescGetFlag(pMemDesc, MEMDESC_FLAGS_PEER_IO_MEM);
 
-    if (!(pMemDesc->Allocated || bPeerIoMem))
+    if (!(pMemDesc->Allocated || bPeerIoMem ||
+        memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_FROM_SCANOUT_CARVEOUT)))
     {
         rmStatus = NV_ERR_OBJECT_NOT_FOUND;
         goto done;
@@ -2398,39 +2451,6 @@ static NV_STATUS RmGetAllocPrivate(
 
 done:
     return rmStatus;
-}
-
-static NV_STATUS RmValidateMmapRequest(
-    nv_state_t *pNv,
-    NvU64       offset,
-    NvU64       length,
-    NvU32      *pProtection
-)
-{
-    NV2080_CTRL_GPU_VALIDATE_MEM_MAP_REQUEST_PARAMS params = { 0 };
-    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    NV_STATUS status;
-
-    if (osIsAdministrator())
-    {
-        *pProtection = NV_PROTECT_READ_WRITE;
-        return NV_OK;
-    }
-
-    params.addressStart = offset;
-    params.addressLength = length;
-
-    status = pRmApi->Control(pRmApi, pNv->rmapi.hClient,
-                             pNv->rmapi.hSubDevice,
-                             NV2080_CTRL_CMD_GPU_VALIDATE_MEM_MAP_REQUEST,
-                             &params, sizeof(params));
-
-    if (status == NV_OK)
-    {
-        *pProtection = params.protection;
-    }
-
-    return status;
 }
 
 NV_STATUS rm_get_adapter_status(
@@ -4958,8 +4978,22 @@ void  NV_API_CALL  rm_kernel_rmapi_op(nvidia_stack_t *sp, void *ops_cmd)
             break;
 
         case NV04_MAP_MEMORY:
+        {
+            //
+            // We need to free NVUAP for MEM_SPACE_USER mappings,
+            // since we're not going through the regular path
+            //
+            nv_usermap_access_params_t *pNvuap = NULL;
             Nv04MapMemoryKernel(&ops->params.mapMemory);
+            pNvuap = (nv_usermap_access_params_t *) tlsEntryGet(TLS_ENTRY_ID_MAPPING_CONTEXT);
+            if (pNvuap != NULL)
+            {
+                NV_ASSERT(tlsEntryRelease(TLS_ENTRY_ID_MAPPING_CONTEXT) == 0);
+                os_free_mem(pNvuap->memArea.pRanges);
+                os_free_mem(pNvuap);
+            }
             break;
+        }
 
         case NV04_UNMAP_MEMORY:
             Nv04UnmapMemoryKernel(&ops->params.unmapMemory);
@@ -5438,7 +5472,7 @@ NV_STATUS NV_API_CALL rm_dma_buf_dup_mem_handle(
     NvU64            offset,
     NvU64            size,
     NvHandle        *phMemoryDuped,
-    void           **ppStaticMemInfo
+    void           **ppMemInfo
 )
 {
     MEMORY_DESCRIPTOR *pMemDesc;
@@ -5492,7 +5526,7 @@ NV_STATUS NV_API_CALL rm_dma_buf_dup_mem_handle(
                 *phMemoryDuped = hMemoryDuped;
             }
         }
-        *ppStaticMemInfo = (void *) pMemDesc;
+        *ppMemInfo = (void *) pMemDesc;
     }
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
@@ -5534,167 +5568,130 @@ void NV_API_CALL rm_dma_buf_undup_mem_handle(
     NV_EXIT_RM_RUNTIME(sp,fp);
 }
 
+//
+// Maps a handle to system physical addresses:
+//   C2C for coherent platforms
+//   BAR1(static & dynamic) for non-coherent platforms
+// Must be called with API lock and GPU lock held for dynamic BAR1.
+//
 NV_STATUS NV_API_CALL rm_dma_buf_map_mem_handle(
     nvidia_stack_t        *sp,
     nv_state_t            *nv,
     NvHandle               hClient,
     NvHandle               hMemory,
-    NvU64                  offset,
-    NvU64                  size,
-    void                  *pStaticMemInfo,
-    nv_phys_addr_range_t **ppRanges,
-    NvU32                 *pRangeCount
+    MemoryRange            memRange,
+    void                  *pMemInfo,
+    NvBool                 bStaticPhysAddrs,
+    MemoryArea            *pMemArea
 )
 {
     THREAD_STATE_NODE threadState;
     NV_STATUS rmStatus = NV_ERR_INVALID_ARGUMENT;
     OBJGPU *pGpu;
+    MEMORY_DESCRIPTOR *pMemDesc;
     void *fp;
 
     NV_ENTER_RM_RUNTIME(sp,fp);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
-    NV_ASSERT_OR_GOTO(((ppRanges != NULL) &&
-                       (pRangeCount != NULL) &&
-                       (pStaticMemInfo != NULL)), Done);
+    NV_ASSERT_OR_GOTO(((pMemArea != NULL) &&
+                       (pMemInfo != NULL)) &&
+                       (memRange.size != 0), Done);
 
     pGpu = NV_GET_NV_PRIV_PGPU(nv);
+    pMemDesc = (MEMORY_DESCRIPTOR *) pMemInfo;
 
-    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING))
+    if ((pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING)) ||
+        (pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB)))
     {
         KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
-        MEMORY_DESCRIPTOR *pMemDesc = (MEMORY_DESCRIPTOR *) pStaticMemInfo;
-        NvU32 memdescPageSize = memdescGetPageSize(pMemDesc, AT_GPU);
-        NvU64 prologueOffset = offset;
-        NvU64 prologueSize = 0;
-        NvU64 epilogueOffset = offset;
-        NvU64 epilogueSize = 0;
-        NvU64 mainOffset = offset;
-        NvU64 mainSize = 0;
-        NvU32 mainPageCount = 0;
-        NvU64 alignedOffset;
-        NvU32 pageCount = 0;
-        NvU32 index = 0;
+        NvBool contiguity = memdescCheckContiguity(pMemDesc, AT_CPU);
 
-        alignedOffset = NV_ALIGN_UP64(offset, memdescPageSize);
-
-        if ((size > 0) && offset != alignedOffset)
+        if (contiguity)
         {
-            prologueOffset = offset;
-            prologueSize = NV_MIN(alignedOffset - offset, size);
-            pageCount++;
+            NvU64 physAddr = memdescGetPhysAddr(pMemDesc, AT_CPU, memRange.start);
 
-            size -= prologueSize;
+            NV_ASSERT_OK_OR_GOTO(rmStatus, os_alloc_mem((void **) &pMemArea->pRanges,
+                sizeof(MemoryRange)), Done);
+
+            pMemArea->pRanges[0].start = pKernelMemorySystem->coherentCpuFbBase + physAddr;
+            pMemArea->pRanges[0].size  = memRange.size;
+            pMemArea->numRanges = 1;
         }
-
-        if (size > 0)
+        else
         {
-            mainOffset = prologueOffset + prologueSize;
-            mainSize = NV_ALIGN_DOWN64(size, memdescPageSize);
-            mainPageCount = mainSize / memdescPageSize;
-            pageCount += mainPageCount;
+            NvU64 idx = 0;
+            NvU64 memdescPageSize = memdescGetPageSize(pMemDesc, AT_CPU);
+            NvU64 origEnd = memRange.start + memRange.size;
+            NvU64 realStart = NV_ALIGN_DOWN64(memRange.start, memdescPageSize);
+            NvU64 realEnd = NV_ALIGN_UP64(memRange.start + memRange.size, memdescPageSize);
+            NvU64 realSize = realEnd - realStart;
+            NvU64 pageCount = realSize / memdescPageSize;
 
-            size -= mainSize;
+            NV_ASSERT_OK_OR_GOTO(rmStatus, os_alloc_mem((void **) &pMemArea->pRanges,
+                pageCount * sizeof(MemoryRange)), Done);
+
+            for(idx = 0; idx < pageCount; idx++)
+            {
+                NvU64 physAddr = memdescGetPhysAddr(pMemDesc, AT_CPU,
+                    realStart + (idx * memdescPageSize));
+                pMemArea->pRanges[idx].start = pKernelMemorySystem->coherentCpuFbBase + physAddr;
+                pMemArea->pRanges[idx].size  = memdescPageSize;
+            }
+
+            pMemArea->pRanges[0].start += (memRange.start - realStart);
+            pMemArea->pRanges[0].size -= (memRange.start - realStart);
+            pMemArea->pRanges[pageCount - 1llu].size -= (realEnd - origEnd);
+
+            pMemArea->numRanges = pageCount;
         }
-
-        if (size > 0)
-        {
-            epilogueOffset = mainOffset + mainSize;
-            epilogueSize = size;
-            pageCount++;
-
-            size -= epilogueSize;
-        }
-
-        if ((pageCount == 0) || (size != 0))
-        {
-            NV_ASSERT(0);
-            rmStatus = NV_ERR_INVALID_STATE;
-            goto Done;
-        }
-
-        rmStatus = os_alloc_mem((void **) ppRanges,
-                                pageCount * sizeof(nv_phys_addr_range_t));
-        if (rmStatus != NV_OK)
-        {
-            goto Done;
-        }
-
-        // Fill the first unaligned segment
-        if (prologueSize > 0)
-        {
-            NvU64 physAddr = memdescGetPhysAddr(pMemDesc, AT_CPU, prologueOffset);
-            (*ppRanges)[0].addr = pKernelMemorySystem->coherentCpuFbBase + physAddr;
-            (*ppRanges)[0].len  = prologueSize;
-
-            index = 1;
-        }
-
-        // Fill the aligned segments between first and last entries
-        while (mainPageCount != 0)
-        {
-            NvU64 physAddr = memdescGetPhysAddr(pMemDesc, AT_CPU, alignedOffset);
-            (*ppRanges)[index].addr = pKernelMemorySystem->coherentCpuFbBase + physAddr;
-            (*ppRanges)[index].len  = memdescPageSize;
-            index++;
-
-            alignedOffset += memdescPageSize;
-            mainPageCount--;
-        }
-
-        // Fill the last unaligned segment
-        if (epilogueSize > 0)
-        {
-            NvU64 physAddr = memdescGetPhysAddr(pMemDesc, AT_CPU, epilogueOffset);
-            (*ppRanges)[index].addr = pKernelMemorySystem->coherentCpuFbBase + physAddr;
-            (*ppRanges)[index].len  = epilogueSize;
-            index++;
-        }
-
-        NV_ASSERT(index == pageCount);
-
-        *pRangeCount = pageCount;
     }
     else
     {
-        Device *pDevice;
+        Device *pDevice = NULL;
         RsClient *pClient;
+        NvU64 idx;
+        NvU64 barOffset;
         KernelBus *pKernelBus;
-        NvU64 bar1Va;
-
-        NV_ASSERT(rmapiLockIsOwner());
-        NV_ASSERT(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
-
-        NV_ASSERT_OK_OR_GOTO(rmStatus,
-            serverGetClientUnderLock(&g_resServ, hClient, &pClient),
-            Done);
-
-        NV_ASSERT_OK_OR_GOTO(rmStatus,
-            deviceGetByGpu(pClient, pGpu, NV_TRUE, &pDevice),
-            Done);
 
         pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
 
-        rmStatus = kbusMapFbApertureByHandle(pGpu, pKernelBus, hClient,
-                                             hMemory, offset, size, &bar1Va,
-                                             pDevice);
-        if (rmStatus != NV_OK)
+        if (!bStaticPhysAddrs)
         {
-            goto Done;
+            // Dynamic BAR1 requires RMAPI and GPU lock to be held
+            NV_ASSERT(rmapiLockIsOwner());
+            NV_ASSERT(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
+
+            NV_ASSERT_OK_OR_GOTO(rmStatus,
+                serverGetClientUnderLock(&g_resServ, hClient, &pClient),
+                Done);
+
+            NV_ASSERT_OK_OR_GOTO(rmStatus,
+                deviceGetByGpu(pClient, pGpu, NV_TRUE, &pDevice),
+                Done);
         }
 
-        // Adjust this alloc when discontiguous BAR1 is supported
-        rmStatus = os_alloc_mem((void **) ppRanges,
-                                sizeof(nv_phys_addr_range_t));
-        if (rmStatus != NV_OK)
+        NV_CHECK_OR_GOTO(LEVEL_ERROR,
+                         memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM,
+                         Done);
+
+        //
+        // We don't take locks for static BAR1.
+        // Thus, we operate directly on the memdesc passed to
+        // bypass the client lookup which requires client locks.
+        //
+        NV_ASSERT_OK_OR_GOTO(rmStatus,
+            kbusMapFbAperture_HAL(pGpu, pKernelBus, pMemDesc, memRange, pMemArea,
+                    (BUS_MAP_FB_FLAGS_MAP_UNICAST | BUS_MAP_FB_FLAGS_ALLOW_DISCONTIG),
+                    pDevice),
+            Done);
+
+        barOffset = gpumgrGetGpuPhysFbAddr(pGpu);
+
+        for (idx = 0; idx < pMemArea->numRanges; idx++)
         {
-            kbusUnmapFbApertureByHandle(pGpu, pKernelBus, hClient,
-                                        hMemory, bar1Va);
-            goto Done;
+            pMemArea->pRanges[idx].start += barOffset;
         }
-        (*ppRanges)[0].addr = bar1Va;
-        (*ppRanges)[0].len = size;
-        *pRangeCount = 1;
     }
 
 Done:
@@ -5705,53 +5702,64 @@ Done:
 }
 
 //
-// Unmaps a handle from BAR1.
-// Must be called with API lock and GPU lock held.
+// Unmaps a handle that was mapped to system physical addresses.
+// Must be called with API lock and GPU lock held for dynamic BAR1.
 //
 void NV_API_CALL rm_dma_buf_unmap_mem_handle(
     nvidia_stack_t        *sp,
     nv_state_t            *nv,
     NvHandle               hClient,
     NvHandle               hMemory,
-    NvU64                  size,
-    nv_phys_addr_range_t **ppRanges,
-    NvU32                  rangeCount
+    void                  *pMemInfo,
+    NvBool                 bStaticPhysAddrs,
+    MemoryArea             memArea
 )
 {
     THREAD_STATE_NODE threadState;
-    NV_STATUS rmStatus = NV_OK;
     OBJGPU *pGpu;
-    NvU32 i;
     void *fp;
 
     NV_ENTER_RM_RUNTIME(sp,fp);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
-    NV_ASSERT_OR_GOTO(((ppRanges != NULL) && (rangeCount != 0)), Done);
-
     pGpu = NV_GET_NV_PRIV_PGPU(nv);
 
-    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING))
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) ||
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB))
+    {
+        os_free_mem(memArea.pRanges);
+    }
+    else
     {
         KernelBus *pKernelBus;
-
-        NV_ASSERT(rmapiLockIsOwner());
-        NV_ASSERT(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
+        NvU64 idx;
+        NvU64 barOffset;
+        MEMORY_DESCRIPTOR *pMemDesc = (MEMORY_DESCRIPTOR *) pMemInfo;
 
         pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+        barOffset = gpumgrGetGpuPhysFbAddr(pGpu);
 
-        for (i = 0; i < rangeCount; i++)
+        for (idx = 0; idx < memArea.numRanges; idx++)
         {
-            rmStatus = kbusUnmapFbApertureByHandle(pGpu, pKernelBus, hClient,
-                                               hMemory, (*ppRanges)[i].addr);
-            NV_ASSERT_OK(rmStatus);
+            memArea.pRanges[idx].start -= barOffset;
         }
+
+        if (!bStaticPhysAddrs)
+        {
+            // Dynamic BAR1 requires RMAPI and GPU lock to be held
+            NV_ASSERT(rmapiLockIsOwner());
+            NV_ASSERT(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
+        }
+
+        //
+        // We don't take locks for static BAR1.
+        // Thus, we operate directly on the memdesc passed to
+        // bypass the client lookup which requires client locks.
+        //
+        NV_ASSERT_OK(kbusUnmapFbAperture_HAL(pGpu, pKernelBus, pMemDesc, memArea,
+                                             BUS_MAP_FB_FLAGS_MAP_UNICAST));
     }
 
-    os_free_mem(*ppRanges);
-    *ppRanges = NULL;
-
-Done:
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
     NV_EXIT_RM_RUNTIME(sp,fp);
 }
@@ -5789,9 +5797,10 @@ NV_STATUS NV_API_CALL rm_dma_buf_get_client_and_device(
                                                   phSubdevice, ppGpuInstanceInfo);
             if (rmStatus == NV_OK)
             {
-                // Note: revisit this when BAR1 static map is supported.
-                *pbStaticPhysAddrs = pGpu->getProperty(pGpu,
-                                        PDB_PROP_GPU_COHERENT_CPU_MAPPING);
+                *pbStaticPhysAddrs = ((pGpu->getProperty(pGpu,
+                                        PDB_PROP_GPU_COHERENT_CPU_MAPPING)) ||
+                                      kbusIsStaticBar1Enabled(pGpu, GPU_GET_KERNEL_BUS(pGpu)) ||
+                                      (pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB)));
             }
 
             rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);

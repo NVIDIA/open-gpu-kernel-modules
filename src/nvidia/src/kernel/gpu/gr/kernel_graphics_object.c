@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -410,6 +410,7 @@ kgrobjSetComputeMmio_IMPL
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     NvU32 classNum = pChanDes->resourceDesc.externalClassId;
     NvU32 objType;
+    NV_ADDRESS_SPACE addrSpace;
 
     kgrmgrGetGrObjectType(classNum, &objType);
 
@@ -421,24 +422,50 @@ kgrobjSetComputeMmio_IMPL
     if (pKernelGraphicsObject->pMmioMemDesc != NULL)
         return NV_OK;
 
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB))
+    {
+        addrSpace = ADDR_SYSMEM;
+    }
+    else
+    {
+        addrSpace = ADDR_FBMEM;
+    }
+
     // Set up MMIO memDesc to allow GPU mappings of compute object
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         memdescCreate(&pKernelGraphicsObject->pMmioMemDesc, pGpu, RM_PAGE_SIZE, 0,
-                      NV_TRUE, ADDR_FBMEM, NV_MEMORY_UNCACHED,
-                      MEMDESC_FLAGS_NONE));
+                    NV_TRUE, addrSpace, NV_MEMORY_UNCACHED,
+                    MEMDESC_FLAGS_NONE));
 
     //
     // The address field is completely ignored for these mappings.  We use the
     // chid as the address strictly for debug purposes.
     //
-    memdescDescribe(pKernelGraphicsObject->pMmioMemDesc, ADDR_FBMEM /* Ignored */,
+    memdescDescribe(pKernelGraphicsObject->pMmioMemDesc, addrSpace /* Ignored */,
                     RM_PAGE_SIZE * pChanDes->pKernelChannel->ChID,
                     RM_PAGE_SIZE);
+
     memdescSetPteKind(pKernelGraphicsObject->pMmioMemDesc,
                       memmgrGetMessageKind_HAL(pGpu, pMemoryManager));
 
     memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, pKernelGraphicsObject->pMmioMemDesc, AT_GPU,
                                  RM_ATTR_PAGE_SIZE_4KB);
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB))
+    {
+        //
+        // DMA mapping path in RM checks to make sure the sysmem page is actually allocated before allowing
+        // the mapping
+        //
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, memdescAlloc(pKernelGraphicsObject->pMmioMemDesc));
+
+        //
+        // Flag needed to differentiate between SKED and internal MMIO
+        // - SKED reflected surface is encoded with aperture = sysncoh and KIND = SKED
+        // - MMIO surface is encoded with aperture = syscoh and KIND = SKED
+        //
+        memdescSetFlag(pKernelGraphicsObject->pMmioMemDesc, MEMDESC_FLAGS_ALLOC_SKED_REFLECTED, NV_TRUE);
+    }
 
     return NV_OK;
 }

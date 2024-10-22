@@ -97,7 +97,8 @@ static NV_STATUS check_accessible_from_gpu(uvm_gpu_t *gpu, uvm_mem_t *mem)
         }
 
         uvm_push_set_description(&push,
-                                 "Memcopy %zd bytes from virtual sys_mem 0x%llx to %s mem 0x%llx [mem loc: %s, page size: %u]",
+                                 "Memcopy %zu bytes from virtual sys_mem 0x%llx to %s mem 0x%llx [mem loc: %s, page "
+                                 "size: %llu]",
                                  size_this_time,
                                  sys_mem_gpu_address.address,
                                  mem_gpu_address.is_virtual ? "virtual" : "physical",

@@ -144,10 +144,7 @@ ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Co
     this->applyRegkeyOverrides(dpRegkeyDatabase);
     hal->applyRegkeyOverrides(dpRegkeyDatabase);
 
-    highestAssessedLC = getMaxLinkConfig();
-    highestAssessedLC.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(highestAssessedLC.peakRate);
-    highestAssessedLC.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(highestAssessedLC.peakRatePossible);
-
+    highestAssessedLC = initMaxLinkConfig();
 }
 
 void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatabase)
@@ -175,13 +172,11 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
     this->bEnableFastLT                    = dpRegkeyDatabase.bFastLinkTrainingEnabled;
     this->bDscMstCapBug3143315             = dpRegkeyDatabase.bDscMstCapBug3143315;
     this->bPowerDownPhyBeforeD3            = dpRegkeyDatabase.bPowerDownPhyBeforeD3;
-    this->bReassessMaxLink                 = dpRegkeyDatabase.bReassessMaxLink;
     if (dpRegkeyDatabase.applyMaxLinkRateOverrides)
     {
         this->maxLinkRateFromRegkey        = hal->mapLinkBandiwdthToLinkrate(dpRegkeyDatabase.applyMaxLinkRateOverrides); // BW to linkrate
     }
     this->bForceDisableTunnelBwAllocation  = dpRegkeyDatabase.bForceDisableTunnelBwAllocation;
-    this->bFlushTimeslotWhenDirty          = dpRegkeyDatabase.bFlushTimeslotWhenDirty;
 }
 
 void ConnectorImpl::setPolicyModesetOrderMitigation(bool enabled)
@@ -531,30 +526,6 @@ create:
     if (newDev->isOptimalLinkConfigOverridden())
     {
         this->assessLink();
-    }
-
-    // Panel has issues with LQA, reassess link
-    if (processedEdid.WARFlags.reassessMaxLink)
-    {
-        //
-        // If the highest assessed LC is not equal to max possible link config and
-        // panel is branch device which GPU is link training, re-assess link
-        //
-        int retries = 0;
-
-    LinkConfiguration maxLinkConfig = getMaxLinkConfig();
-    maxLinkConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRate);
-    maxLinkConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRatePossible);
-
-        while((retries < WAR_MAX_REASSESS_ATTEMPT) && (highestAssessedLC != maxLinkConfig))
-        {
-            DP_PRINTF(DP_WARNING, "DP> Assessed link is not equal to highest possible config. Reassess link.");
-            this->assessLink();
-            maxLinkConfig = getMaxLinkConfig();
-            maxLinkConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRate);
-            maxLinkConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(maxLinkConfig.peakRatePossible);
-            retries++;
-        }
     }
 
     // Postpone the remote HDCPCap read for Dongles
@@ -1061,7 +1032,19 @@ LinkConfiguration ConnectorImpl::getActiveLinkConfig()
                               activeLinkConfig.multistream,
                               false,  /* disablePostLTRequest */
                               activeLinkConfig.bEnableFEC);
-    return activeLinkConfig;
+}
+
+LinkConfiguration ConnectorImpl::initMaxLinkConfig()
+{
+    LinkRate linkRate = dp2LinkRate_8_10Gbps;
+    unsigned laneCount = 4;
+
+    return LinkConfiguration (&this->linkPolicy,
+                              laneCount, linkRate,
+                              this->hal->getEnhancedFraming(),
+                              linkUseMultistream(),
+                              false,  /* disablePostLTRequest */
+                              this->bFECEnable);
 }
 
 void ConnectorImpl::beginCompoundQuery(const bool bForceEnableFEC)
@@ -2586,15 +2569,14 @@ bool ConnectorImpl::isHeadShutDownNeeded(Group * target,               // Group 
     }
 
     bool bHeadShutdownNeeded = true;
-    LinkConfiguration lowestSelected;
+    LinkConfiguration lowestSelected = getMaxLinkConfig();
 
     // Force highestLink config in SST
     bool bSkipLowestConfigCheck = false;
     bool bIsModeSupported = false;
-    LinkConfiguration maxLc = getMaxLinkConfig();
-    maxLc.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(maxLc.peakRate);
-    maxLc.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(maxLc.peakRatePossible);
-    lowestSelected = maxLc;
+
+    lowestSelected.peakRate         = DATA_RATE_8B_10B_TO_LINK_RATE(lowestSelected.peakRate);
+    lowestSelected.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(lowestSelected.peakRatePossible);
     GroupImpl* targetImpl = (GroupImpl*)target;
 
     // Certain panels only work when link train to highest linkConfig in SST mode.
@@ -4106,7 +4088,9 @@ bool ConnectorImpl::allocateMaxDpTunnelBw()
 void ConnectorImpl::assessLink(LinkTrainingType trainType)
 {
     this->bSkipLt = false;  // Assesslink should never skip LT, so let's reset it in case it was set.
-    bool bLinkStateToggle = false;
+    bool  bLinkStateToggle = false;
+    NvU32 retryCount = 0;
+
     LinkConfiguration _maxLinkConfig = getMaxLinkConfig();
     _maxLinkConfig.peakRate = DATA_RATE_8B_10B_TO_LINK_RATE(_maxLinkConfig.peakRate);
     _maxLinkConfig.peakRatePossible = DATA_RATE_8B_10B_TO_LINK_RATE(_maxLinkConfig.peakRatePossible);
@@ -4307,14 +4291,18 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
     {
         goto done;
     }
-
-    //
-    // if dpcd is offline; avoid assessing. Just consider max.
-    // keep lowering lane/rate config till train succeeds
-    //
-    hal->updateDPCDOffline();
-    if (!hal->isDpcdOffline())
+    do
     {
+        //
+        // if dpcd is offline; avoid assessing. Just consider max.
+        // keep lowering lane/rate config till train succeeds
+        //
+        hal->updateDPCDOffline();
+        if (hal->isDpcdOffline())
+        {
+            lConfig = _maxLinkConfig;
+            break;
+        }
         if (!train(lConfig, false /* do not force LT */))
         {
             //
@@ -4323,20 +4311,37 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
             //
             lConfig = activeLinkConfig;
         }
-
-        if (!this->linkUseMultistream() && this->policyAssessLinkSafely)
+        if (lConfig == _maxLinkConfig || lConfig.lanes == 0)
         {
-            GroupImpl * groupAttached = this->getActiveGroupForSST();
+            break;
+        }
+        timer->sleep(40);
+    } while (retryCount++ < WAR_MAX_REASSESS_ATTEMPT);
 
-            if (groupAttached && groupAttached->isHeadAttached() &&
-                !willLinkSupportModeSST(lConfig, groupAttached->lastModesetInfo))
-            {
-                DP_ASSERT(0 && "DP> Maximum assessed link configuration is not capable to driver existing raster!");
+    if (lConfig != _maxLinkConfig)
+    {
+        if (lConfig.lanes == 0)
+        {
+            DP_PRINTF(DP_NOTICE, "DP> assessLink(): Device unplugged or offline.");
+        }
+        else
+        {
+            DP_PRINTF(DP_WARNING,
+                      "DP> assessLink(): Failed to reach max link configuration (%d x %d).",
+                      lConfig.lanes, lConfig.peakRate);
+        }
+    }
 
-                train(preFlushModeActiveLinkConfig, true);
-                linkGuessed = true;
-                goto done;
-            }
+    if (!hal->isDpcdOffline() && !this->linkUseMultistream() && this->policyAssessLinkSafely)
+    {
+        GroupImpl * groupAttached = this->getActiveGroupForSST();
+        if (groupAttached && groupAttached->isHeadAttached() &&
+            !willLinkSupportModeSST(lConfig, groupAttached->lastModesetInfo))
+        {
+            DP_ASSERT(0 && "DP> Maximum assessed link configuration is not capable driving existing raster!");
+            train(preFlushModeActiveLinkConfig, true);
+            linkGuessed = true;
+            goto done;
         }
     }
 
@@ -4732,7 +4737,7 @@ bool ConnectorImpl::isNoActiveStreamAndPowerdown()
             (!bIsDiscoveryDetectActive) &&
             (pendingRemoteHdcpDetections == 0) &&
             (!main->isInternalPanelDynamicMuxCapable())
-            )
+           )
         {
             powerdownLink();
 
@@ -5917,8 +5922,7 @@ void ConnectorImpl::beforeDeleteStream(GroupImpl * group, bool forFlushMode)
         }
     }
 
-    if (linkUseMultistream() && group && group->isHeadAttached() &&
-        (group->timeslot.count || (this->bFlushTimeslotWhenDirty && group->timeslot.hardwareDirty)))
+    if (linkUseMultistream() && group && group->isHeadAttached() && (group->timeslot.count || group->timeslot.hardwareDirty))
     {
         // Detach all the panels from payload
         for (Device * d = group->enumDevices(0); d; d = group->enumDevices(d))
@@ -6346,7 +6350,7 @@ void ConnectorImpl::notifyLongPulse(bool statusConnected)
     if (previousPlugged && statusConnected)
     {
         if (main->isInternalPanelDynamicMuxCapable()
-            )
+           )
         {
             return;
         }
@@ -6799,22 +6803,6 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
                     hal->setPowerState(PowerStateD0);
                 }
                 this->assessLink();
-
-                if (this->bReassessMaxLink)
-                {
-                    //
-                    // If the highest assessed LC is not equal to
-                    // max possible link config, re-assess link
-                    //
-                    NvU8 retries = 0U;
-
-                    while((retries < WAR_MAX_REASSESS_ATTEMPT) && (highestAssessedLC != maxLinkConfig))
-                    {
-                        DP_PRINTF(DP_WARNING, "DP> Assessed link is not equal to highest possible config. Reassess link.");
-                        this->assessLink();
-                        retries++;
-                    }
-                }
             }
 
             if (hal->getLegacyPortCount() != 0)
@@ -7125,7 +7113,6 @@ void ConnectorImpl::notifyShortPulse()
                 }
             }
         }
-
         else if (hal->getPendingTestRequestPhyCompliance())
         {
             hal->setTestResponse(handlePhyPatternRequest());
@@ -7462,8 +7449,10 @@ void ConnectorImpl::createFakeMuxDevice(const NvU8 *buffer, NvU32 bufferSize)
     // Initialize DSC state
     newDev->dscCaps.bDSCSupported = true;
     newDev->dscCaps.bDSCDecompressionSupported = true;
-    newDev->parseDscCaps(buffer, bufferSize);
-    dpMemCopy(newDev->rawDscCaps, buffer, DP_MIN(bufferSize, 16));
+    if (!(newDev->setRawDscCaps(buffer, DP_MIN(bufferSize, DSC_CAPS_SIZE))))
+    {
+        DP_ASSERT(0 && "Faking DSC caps failed!");
+    }
     newDev->bDSCPossible = true;
     newDev->devDoingDscDecompression = newDev;
 
@@ -7802,7 +7791,7 @@ bool ConnectorImpl::handlePhyPatternRequest()
 
     if (pattern_info.lqsPattern == LINK_QUAL_80BIT_CUST)
     {
-        hal->getCustomTestPattern((NvU8 *)&pattern_info.ctsmLower);
+        hal->get80BitsCustomTestPattern((NvU8 *)&pattern_info.ctsmLower);
     }
 
     // send control call to rm for the pattern

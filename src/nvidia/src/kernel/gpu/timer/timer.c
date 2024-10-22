@@ -436,21 +436,22 @@ tmrEventTimeUntilNextCallback_IMPL
     NvU64 currentTime;
     NvU64 nextAlarmTime;
 
-    NV_ASSERT_OK_OR_RETURN(tmrGetCurrentTime(pTmr, &currentTime));
     TMR_EVENT_PVT *pEvent = (TMR_EVENT_PVT*)pEventPublic;
 
     if (tmrIsOSTimer(pTmr, pEventPublic))
     {
-        // timens corresponds to  relative time for OS timer 
+        osGetCurrentTick(&currentTime);
+        // timens corresponds to relative time for OS timer
         NV_CHECK_OR_RETURN(LEVEL_ERROR, portSafeAddU64(pEvent->timens, pEvent->startTimeNs, &nextAlarmTime),
                            NV_ERR_INVALID_ARGUMENT);
     }
     else
     {
+        NV_ASSERT_OK_OR_RETURN(tmrGetCurrentTime(pTmr, &currentTime));
         // timens corresponds to abs time in case of ptimer
         nextAlarmTime = pEvent->timens;
     }
-    if (currentTime >= nextAlarmTime)
+    if (currentTime > nextAlarmTime)
         return NV_ERR_INVALID_STATE;
 
     *pTimeUntilCallbackNs = nextAlarmTime - currentTime;

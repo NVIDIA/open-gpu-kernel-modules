@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -113,6 +113,8 @@ typedef enum
 #define BUS_MAP_FB_FLAGS_MAP_UNICAST           NVBIT(5)
 #define BUS_MAP_FB_FLAGS_MAP_OFFSET_FIXED      NVBIT(6)
 #define BUS_MAP_FB_FLAGS_PRE_INIT              NVBIT(7)
+#define BUS_MAP_FB_FLAGS_ALLOW_DISCONTIG       NVBIT(8)
+#define BUS_MAP_FB_FLAGS_UNMANAGED_MEM_AREA    NVBIT(9)
 
 #define BUS_MAP_FB_FLAGS_FERMI_INVALID         ~(BUS_MAP_FB_FLAGS_MAP_DOWNWARDS      | \
                                                  BUS_MAP_FB_FLAGS_DISABLE_ENCRYPTION | \
@@ -120,7 +122,9 @@ typedef enum
                                                  BUS_MAP_FB_FLAGS_WRITE_ONLY         | \
                                                  BUS_MAP_FB_FLAGS_MAP_UNICAST        | \
                                                  BUS_MAP_FB_FLAGS_MAP_OFFSET_FIXED   | \
-                                                 BUS_MAP_FB_FLAGS_PRE_INIT)
+                                                 BUS_MAP_FB_FLAGS_PRE_INIT           | \
+                                                 BUS_MAP_FB_FLAGS_ALLOW_DISCONTIG    | \
+                                                 BUS_MAP_FB_FLAGS_UNMANAGED_MEM_AREA)
 
 #define BUS_MAP_FB_FLAGS_NV5X_INVALID          ~(BUS_MAP_FB_FLAGS_MAP_RSVD_BAR1 | BUS_MAP_FB_FLAGS_DISABLE_ENCRYPTION)
 
@@ -131,8 +135,9 @@ typedef enum
 //
 // kbusFlush flags
 //
-#define BUS_FLUSH_VIDEO_MEMORY  NVBIT(0)
-#define BUS_FLUSH_SYSTEM_MEMORY NVBIT(1)
+#define BUS_FLUSH_VIDEO_MEMORY                   NVBIT(0)
+#define BUS_FLUSH_SYSTEM_MEMORY                  NVBIT(1)
+#define BUS_FLUSH_VIDEO_MEMORY_VIA_PRAMIN_WINDOW NVBIT(2)
 
 //
 // Peer to peer (P2P) defines
@@ -163,6 +168,9 @@ typedef enum
 #define COHERENT_CPU_MAPPING_REGION_1       0x1
 #define COHERENT_CPU_MAPPING_REGION_2       0x2
 #define COHERENT_CPU_MAPPING_TOTAL_REGIONS  0x3   // Should change it when num of regions changed
+
+#define ALIGN_64K(addr)                   (NV_ALIGN_DOWN64(addr, 0x10000))
+#define ALIGN_64K_OFFSET(addr)            (addr & 0xFFFF)
 
 typedef struct
 {
@@ -210,9 +218,14 @@ typedef struct Device Device;
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 
+
+// Metadata including vtable
+struct NVOC_VTABLE__KernelBus;
+
 struct __nvoc_inner_struc_KernelBus_1__ {
     RmPhysAddr physAddr;
     NvU64 apertureLength;
+    NvU64 mappableLength;
     struct OBJVASPACE *pVAS;
     NvU64 instBlockBase;
     MEMORY_DESCRIPTOR *pInstBlkMemDesc;
@@ -335,6 +348,7 @@ struct KernelBus {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__KernelBus *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -344,18 +358,8 @@ struct KernelBus {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;    // engstate super
     struct KernelBus *__nvoc_pbase_KernelBus;    // kbus
 
-    // Vtable with 107 per-object function pointers
+    // Vtable with 89 per-object function pointers
     NV_STATUS (*__kbusInitBarsSize__)(struct OBJGPU *, struct KernelBus * /*this*/);  // halified (2 hals)
-    NV_STATUS (*__kbusConstructEngine__)(struct OBJGPU *, struct KernelBus * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__kbusStatePreInitLocked__)(struct OBJGPU *, struct KernelBus * /*this*/);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
-    NV_STATUS (*__kbusStateInitLocked__)(struct OBJGPU *, struct KernelBus * /*this*/);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__kbusStatePreLoad__)(struct OBJGPU *, struct KernelBus * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
-    NV_STATUS (*__kbusStateLoad__)(struct OBJGPU *, struct KernelBus * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
-    NV_STATUS (*__kbusStatePostLoad__)(struct OBJGPU *, struct KernelBus * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
-    NV_STATUS (*__kbusStatePreUnload__)(struct OBJGPU *, struct KernelBus * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
-    NV_STATUS (*__kbusStateUnload__)(struct OBJGPU *, struct KernelBus * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
-    NV_STATUS (*__kbusStatePostUnload__)(struct OBJGPU *, struct KernelBus * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
-    void (*__kbusStateDestroy__)(struct OBJGPU *, struct KernelBus * /*this*/);  // virtual halified (singleton optimized) override (engstate) base (engstate)
     NvBool (*__kbusBar2IsReady__)(struct OBJGPU *, struct KernelBus * /*this*/);  // halified (2 hals) body
     NvU8 * (*__kbusMapBar2Aperture__)(struct OBJGPU *, struct KernelBus * /*this*/, MEMORY_DESCRIPTOR *, NvU32);  // halified (2 hals) body
     NvU8 * (*__kbusValidateBar2ApertureMapping__)(struct OBJGPU *, struct KernelBus * /*this*/, MEMORY_DESCRIPTOR *, NvU8 *);  // halified (2 hals) body
@@ -388,12 +392,7 @@ struct KernelBus {
     NV_STATUS (*__kbusCreateP2PMappingForC2C__)(struct OBJGPU *, struct KernelBus * /*this*/, struct OBJGPU *, struct KernelBus *, NvU32 *, NvU32 *, NvU32);  // halified (2 hals) body
     NV_STATUS (*__kbusRemoveP2PMappingForC2C__)(struct OBJGPU *, struct KernelBus * /*this*/, struct OBJGPU *, struct KernelBus *, NvU32, NvU32, NvU32);  // halified (2 hals) body
     NV_STATUS (*__kbusUnreserveP2PPeerIds__)(struct OBJGPU *, struct KernelBus * /*this*/, NvU32);  // halified (2 hals) body
-    NvBool (*__kbusIsBar1P2PCapable__)(struct OBJGPU *, struct KernelBus * /*this*/, NvU32);  // halified (2 hals) body
-    NV_STATUS (*__kbusEnableStaticBar1Mapping__)(struct OBJGPU *, struct KernelBus * /*this*/, NvU32);  // halified (2 hals) body
-    void (*__kbusDisableStaticBar1Mapping__)(struct OBJGPU *, struct KernelBus * /*this*/, NvU32);  // halified (2 hals) body
     NV_STATUS (*__kbusGetBar1P2PDmaInfo__)(struct OBJGPU *, struct OBJGPU *, struct KernelBus * /*this*/, NvU64 *, NvU64 *);  // halified (2 hals) body
-    NV_STATUS (*__kbusUpdateStaticBar1VAMapping__)(struct OBJGPU *, struct KernelBus * /*this*/, MEMORY_DESCRIPTOR *, NvU64, NvU64, NvBool);  // halified (2 hals) body
-    NV_STATUS (*__kbusGetStaticFbAperture__)(struct OBJGPU *, struct KernelBus * /*this*/, MEMORY_DESCRIPTOR *, NvU64, NvU64 *, NvU64 *, NvU32);  // halified (2 hals) body
     NV_STATUS (*__kbusCreateP2PMappingForBar1P2P__)(struct OBJGPU *, struct KernelBus * /*this*/, struct OBJGPU *, struct KernelBus *, NvU32);  // halified (2 hals) body
     NV_STATUS (*__kbusRemoveP2PMappingForBar1P2P__)(struct OBJGPU *, struct KernelBus * /*this*/, struct OBJGPU *, struct KernelBus *, NvU32);  // halified (2 hals) body
     NvBool (*__kbusHasPcieBar1P2PMapping__)(struct OBJGPU *, struct KernelBus * /*this*/, struct OBJGPU *, struct KernelBus *);  // halified (2 hals) body
@@ -448,10 +447,7 @@ struct KernelBus {
     void (*__kbusTeardownCoherentCpuMapping__)(struct OBJGPU *, struct KernelBus * /*this*/, NvBool);  // halified (2 hals) body
     NV_STATUS (*__kbusBar1InstBlkBind__)(struct OBJGPU *, struct KernelBus * /*this*/);  // halified (3 hals) body
     NvU32 (*__kbusGetEccCounts__)(struct OBJGPU *, struct KernelBus * /*this*/);  // halified (2 hals) body
-    void (*__kbusInitMissing__)(struct OBJGPU *, struct KernelBus * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kbusStatePreInitUnlocked__)(struct OBJGPU *, struct KernelBus * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kbusStateInitUnlocked__)(struct OBJGPU *, struct KernelBus * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NvBool (*__kbusIsPresent__)(struct OBJGPU *, struct KernelBus * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kbusGetPFBar1Spa__)(struct OBJGPU *, struct KernelBus * /*this*/, NvU64 *);  // halified (3 hals) body
 
     // 3 PDB properties
     NvBool PDB_PROP_KBUS_NVLINK_DECONFIG_HSHUB_ON_NO_MAPPING;
@@ -518,6 +514,28 @@ struct KernelBus {
     NvBool bCpuVisibleBar2Disabled;
     NvBool bForceBarAccessOnHcc;
     NvBool bBar1DiscontigEnabled;
+    NvU32 staticBar1ForceType;
+};
+
+
+// Metadata including vtable with 14 function pointers plus superclass metadata
+struct NVOC_VTABLE__KernelBus {
+    const struct NVOC_VTABLE__OBJENGSTATE OBJENGSTATE;    // (engstate) 14 function pointers
+
+    NV_STATUS (*__kbusConstructEngine__)(struct OBJGPU *, struct KernelBus * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__kbusStatePreInitLocked__)(struct OBJGPU *, struct KernelBus * /*this*/);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
+    NV_STATUS (*__kbusStateInitLocked__)(struct OBJGPU *, struct KernelBus * /*this*/);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__kbusStatePreLoad__)(struct OBJGPU *, struct KernelBus * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
+    NV_STATUS (*__kbusStateLoad__)(struct OBJGPU *, struct KernelBus * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
+    NV_STATUS (*__kbusStatePostLoad__)(struct OBJGPU *, struct KernelBus * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
+    NV_STATUS (*__kbusStatePreUnload__)(struct OBJGPU *, struct KernelBus * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
+    NV_STATUS (*__kbusStateUnload__)(struct OBJGPU *, struct KernelBus * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
+    NV_STATUS (*__kbusStatePostUnload__)(struct OBJGPU *, struct KernelBus * /*this*/, NvU32);  // virtual halified (singleton optimized) override (engstate) base (engstate) body
+    void (*__kbusStateDestroy__)(struct OBJGPU *, struct KernelBus * /*this*/);  // virtual halified (singleton optimized) override (engstate) base (engstate)
+    void (*__kbusInitMissing__)(struct OBJGPU *, struct KernelBus * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kbusStatePreInitUnlocked__)(struct OBJGPU *, struct KernelBus * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kbusStateInitUnlocked__)(struct OBJGPU *, struct KernelBus * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__kbusIsPresent__)(struct OBJGPU *, struct KernelBus * /*this*/);  // virtual inherited (engstate) base (engstate)
 };
 
 #ifndef __NVOC_CLASS_KernelBus_TYPEDEF__
@@ -561,32 +579,32 @@ NV_STATUS __nvoc_objCreate_KernelBus(KernelBus**, Dynamic*, NvU32);
 #define kbusInitBarsSize_FNPTR(pKernelBus) pKernelBus->__kbusInitBarsSize__
 #define kbusInitBarsSize(pGpu, pKernelBus) kbusInitBarsSize_DISPATCH(pGpu, pKernelBus)
 #define kbusInitBarsSize_HAL(pGpu, pKernelBus) kbusInitBarsSize_DISPATCH(pGpu, pKernelBus)
-#define kbusConstructEngine_FNPTR(pKernelBus) pKernelBus->__kbusConstructEngine__
+#define kbusConstructEngine_FNPTR(pKernelBus) pKernelBus->__nvoc_vtable->__kbusConstructEngine__
 #define kbusConstructEngine(pGpu, pKernelBus, arg3) kbusConstructEngine_DISPATCH(pGpu, pKernelBus, arg3)
-#define kbusStatePreInitLocked_FNPTR(pKernelBus) pKernelBus->__kbusStatePreInitLocked__
+#define kbusStatePreInitLocked_FNPTR(pKernelBus) pKernelBus->__nvoc_vtable->__kbusStatePreInitLocked__
 #define kbusStatePreInitLocked(pGpu, pKernelBus) kbusStatePreInitLocked_DISPATCH(pGpu, pKernelBus)
 #define kbusStatePreInitLocked_HAL(pGpu, pKernelBus) kbusStatePreInitLocked_DISPATCH(pGpu, pKernelBus)
-#define kbusStateInitLocked_FNPTR(pKernelBus) pKernelBus->__kbusStateInitLocked__
+#define kbusStateInitLocked_FNPTR(pKernelBus) pKernelBus->__nvoc_vtable->__kbusStateInitLocked__
 #define kbusStateInitLocked(pGpu, pKernelBus) kbusStateInitLocked_DISPATCH(pGpu, pKernelBus)
-#define kbusStatePreLoad_FNPTR(pKernelBus) pKernelBus->__kbusStatePreLoad__
+#define kbusStatePreLoad_FNPTR(pKernelBus) pKernelBus->__nvoc_vtable->__kbusStatePreLoad__
 #define kbusStatePreLoad(pGpu, pKernelBus, arg3) kbusStatePreLoad_DISPATCH(pGpu, pKernelBus, arg3)
 #define kbusStatePreLoad_HAL(pGpu, pKernelBus, arg3) kbusStatePreLoad_DISPATCH(pGpu, pKernelBus, arg3)
-#define kbusStateLoad_FNPTR(pKernelBus) pKernelBus->__kbusStateLoad__
+#define kbusStateLoad_FNPTR(pKernelBus) pKernelBus->__nvoc_vtable->__kbusStateLoad__
 #define kbusStateLoad(pGpu, pKernelBus, arg3) kbusStateLoad_DISPATCH(pGpu, pKernelBus, arg3)
 #define kbusStateLoad_HAL(pGpu, pKernelBus, arg3) kbusStateLoad_DISPATCH(pGpu, pKernelBus, arg3)
-#define kbusStatePostLoad_FNPTR(pKernelBus) pKernelBus->__kbusStatePostLoad__
+#define kbusStatePostLoad_FNPTR(pKernelBus) pKernelBus->__nvoc_vtable->__kbusStatePostLoad__
 #define kbusStatePostLoad(pGpu, pKernelBus, arg3) kbusStatePostLoad_DISPATCH(pGpu, pKernelBus, arg3)
 #define kbusStatePostLoad_HAL(pGpu, pKernelBus, arg3) kbusStatePostLoad_DISPATCH(pGpu, pKernelBus, arg3)
-#define kbusStatePreUnload_FNPTR(pKernelBus) pKernelBus->__kbusStatePreUnload__
+#define kbusStatePreUnload_FNPTR(pKernelBus) pKernelBus->__nvoc_vtable->__kbusStatePreUnload__
 #define kbusStatePreUnload(pGpu, pKernelBus, arg3) kbusStatePreUnload_DISPATCH(pGpu, pKernelBus, arg3)
 #define kbusStatePreUnload_HAL(pGpu, pKernelBus, arg3) kbusStatePreUnload_DISPATCH(pGpu, pKernelBus, arg3)
-#define kbusStateUnload_FNPTR(pKernelBus) pKernelBus->__kbusStateUnload__
+#define kbusStateUnload_FNPTR(pKernelBus) pKernelBus->__nvoc_vtable->__kbusStateUnload__
 #define kbusStateUnload(pGpu, pKernelBus, flags) kbusStateUnload_DISPATCH(pGpu, pKernelBus, flags)
 #define kbusStateUnload_HAL(pGpu, pKernelBus, flags) kbusStateUnload_DISPATCH(pGpu, pKernelBus, flags)
-#define kbusStatePostUnload_FNPTR(pKernelBus) pKernelBus->__kbusStatePostUnload__
+#define kbusStatePostUnload_FNPTR(pKernelBus) pKernelBus->__nvoc_vtable->__kbusStatePostUnload__
 #define kbusStatePostUnload(pGpu, pKernelBus, flags) kbusStatePostUnload_DISPATCH(pGpu, pKernelBus, flags)
 #define kbusStatePostUnload_HAL(pGpu, pKernelBus, flags) kbusStatePostUnload_DISPATCH(pGpu, pKernelBus, flags)
-#define kbusStateDestroy_FNPTR(pKernelBus) pKernelBus->__kbusStateDestroy__
+#define kbusStateDestroy_FNPTR(pKernelBus) pKernelBus->__nvoc_vtable->__kbusStateDestroy__
 #define kbusStateDestroy(pGpu, pKernelBus) kbusStateDestroy_DISPATCH(pGpu, pKernelBus)
 #define kbusStateDestroy_HAL(pGpu, pKernelBus) kbusStateDestroy_DISPATCH(pGpu, pKernelBus)
 #define kbusBar2IsReady_FNPTR(pKernelBus) pKernelBus->__kbusBar2IsReady__
@@ -687,24 +705,9 @@ NV_STATUS __nvoc_objCreate_KernelBus(KernelBus**, Dynamic*, NvU32);
 #define kbusUnreserveP2PPeerIds_FNPTR(pKernelBus) pKernelBus->__kbusUnreserveP2PPeerIds__
 #define kbusUnreserveP2PPeerIds(pGpu, pKernelBus, peerMask) kbusUnreserveP2PPeerIds_DISPATCH(pGpu, pKernelBus, peerMask)
 #define kbusUnreserveP2PPeerIds_HAL(pGpu, pKernelBus, peerMask) kbusUnreserveP2PPeerIds_DISPATCH(pGpu, pKernelBus, peerMask)
-#define kbusIsBar1P2PCapable_FNPTR(pKernelBus) pKernelBus->__kbusIsBar1P2PCapable__
-#define kbusIsBar1P2PCapable(pGpu, pKernelBus, gfid) kbusIsBar1P2PCapable_DISPATCH(pGpu, pKernelBus, gfid)
-#define kbusIsBar1P2PCapable_HAL(pGpu, pKernelBus, gfid) kbusIsBar1P2PCapable_DISPATCH(pGpu, pKernelBus, gfid)
-#define kbusEnableStaticBar1Mapping_FNPTR(pKernelBus) pKernelBus->__kbusEnableStaticBar1Mapping__
-#define kbusEnableStaticBar1Mapping(pGpu, pKernelBus, gfid) kbusEnableStaticBar1Mapping_DISPATCH(pGpu, pKernelBus, gfid)
-#define kbusEnableStaticBar1Mapping_HAL(pGpu, pKernelBus, gfid) kbusEnableStaticBar1Mapping_DISPATCH(pGpu, pKernelBus, gfid)
-#define kbusDisableStaticBar1Mapping_FNPTR(pKernelBus) pKernelBus->__kbusDisableStaticBar1Mapping__
-#define kbusDisableStaticBar1Mapping(pGpu, pKernelBus, gfid) kbusDisableStaticBar1Mapping_DISPATCH(pGpu, pKernelBus, gfid)
-#define kbusDisableStaticBar1Mapping_HAL(pGpu, pKernelBus, gfid) kbusDisableStaticBar1Mapping_DISPATCH(pGpu, pKernelBus, gfid)
 #define kbusGetBar1P2PDmaInfo_FNPTR(pPeerKernelBus) pPeerKernelBus->__kbusGetBar1P2PDmaInfo__
 #define kbusGetBar1P2PDmaInfo(pSrcGpu, pPeerGpu, pPeerKernelBus, dma_addr, dma_size) kbusGetBar1P2PDmaInfo_DISPATCH(pSrcGpu, pPeerGpu, pPeerKernelBus, dma_addr, dma_size)
 #define kbusGetBar1P2PDmaInfo_HAL(pSrcGpu, pPeerGpu, pPeerKernelBus, dma_addr, dma_size) kbusGetBar1P2PDmaInfo_DISPATCH(pSrcGpu, pPeerGpu, pPeerKernelBus, dma_addr, dma_size)
-#define kbusUpdateStaticBar1VAMapping_FNPTR(pKernelBus) pKernelBus->__kbusUpdateStaticBar1VAMapping__
-#define kbusUpdateStaticBar1VAMapping(pGpu, pKernelBus, pMemDesc, offset, length, bRelease) kbusUpdateStaticBar1VAMapping_DISPATCH(pGpu, pKernelBus, pMemDesc, offset, length, bRelease)
-#define kbusUpdateStaticBar1VAMapping_HAL(pGpu, pKernelBus, pMemDesc, offset, length, bRelease) kbusUpdateStaticBar1VAMapping_DISPATCH(pGpu, pKernelBus, pMemDesc, offset, length, bRelease)
-#define kbusGetStaticFbAperture_FNPTR(pKernelBus) pKernelBus->__kbusGetStaticFbAperture__
-#define kbusGetStaticFbAperture(pGpu, pKernelBus, pMemDesc, offset, pAperOffset, pLength, gfid) kbusGetStaticFbAperture_DISPATCH(pGpu, pKernelBus, pMemDesc, offset, pAperOffset, pLength, gfid)
-#define kbusGetStaticFbAperture_HAL(pGpu, pKernelBus, pMemDesc, offset, pAperOffset, pLength, gfid) kbusGetStaticFbAperture_DISPATCH(pGpu, pKernelBus, pMemDesc, offset, pAperOffset, pLength, gfid)
 #define kbusCreateP2PMappingForBar1P2P_FNPTR(pKernelBus0) pKernelBus0->__kbusCreateP2PMappingForBar1P2P__
 #define kbusCreateP2PMappingForBar1P2P(pGpu0, pKernelBus0, pGpu1, pKernelBus1, attributes) kbusCreateP2PMappingForBar1P2P_DISPATCH(pGpu0, pKernelBus0, pGpu1, pKernelBus1, attributes)
 #define kbusCreateP2PMappingForBar1P2P_HAL(pGpu0, pKernelBus0, pGpu1, pKernelBus1, attributes) kbusCreateP2PMappingForBar1P2P_DISPATCH(pGpu0, pKernelBus0, pGpu1, pKernelBus1, attributes)
@@ -867,13 +870,16 @@ NV_STATUS __nvoc_objCreate_KernelBus(KernelBus**, Dynamic*, NvU32);
 #define kbusGetEccCounts_FNPTR(pKernelBus) pKernelBus->__kbusGetEccCounts__
 #define kbusGetEccCounts(pGpu, pKernelBus) kbusGetEccCounts_DISPATCH(pGpu, pKernelBus)
 #define kbusGetEccCounts_HAL(pGpu, pKernelBus) kbusGetEccCounts_DISPATCH(pGpu, pKernelBus)
-#define kbusInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateInitMissing__
+#define kbusGetPFBar1Spa_FNPTR(pKernelBus) pKernelBus->__kbusGetPFBar1Spa__
+#define kbusGetPFBar1Spa(pGpu, pKernelBus, pSpaValue) kbusGetPFBar1Spa_DISPATCH(pGpu, pKernelBus, pSpaValue)
+#define kbusGetPFBar1Spa_HAL(pGpu, pKernelBus, pSpaValue) kbusGetPFBar1Spa_DISPATCH(pGpu, pKernelBus, pSpaValue)
+#define kbusInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateInitMissing__
 #define kbusInitMissing(pGpu, pEngstate) kbusInitMissing_DISPATCH(pGpu, pEngstate)
-#define kbusStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreInitUnlocked__
+#define kbusStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreInitUnlocked__
 #define kbusStatePreInitUnlocked(pGpu, pEngstate) kbusStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define kbusStateInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStateInitUnlocked__
+#define kbusStateInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStateInitUnlocked__
 #define kbusStateInitUnlocked(pGpu, pEngstate) kbusStateInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define kbusIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateIsPresent__
+#define kbusIsPresent_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateIsPresent__
 #define kbusIsPresent(pGpu, pEngstate) kbusIsPresent_DISPATCH(pGpu, pEngstate)
 
 // Dispatch functions
@@ -882,43 +888,43 @@ static inline NV_STATUS kbusInitBarsSize_DISPATCH(struct OBJGPU *pGpu, struct Ke
 }
 
 static inline NV_STATUS kbusConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, ENGDESCRIPTOR arg3) {
-    return pKernelBus->__kbusConstructEngine__(pGpu, pKernelBus, arg3);
+    return pKernelBus->__nvoc_vtable->__kbusConstructEngine__(pGpu, pKernelBus, arg3);
 }
 
 static inline NV_STATUS kbusStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelBus *pKernelBus) {
-    return pKernelBus->__kbusStatePreInitLocked__(pGpu, pKernelBus);
+    return pKernelBus->__nvoc_vtable->__kbusStatePreInitLocked__(pGpu, pKernelBus);
 }
 
 static inline NV_STATUS kbusStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelBus *pKernelBus) {
-    return pKernelBus->__kbusStateInitLocked__(pGpu, pKernelBus);
+    return pKernelBus->__nvoc_vtable->__kbusStateInitLocked__(pGpu, pKernelBus);
 }
 
 static inline NV_STATUS kbusStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 arg3) {
-    return pKernelBus->__kbusStatePreLoad__(pGpu, pKernelBus, arg3);
+    return pKernelBus->__nvoc_vtable->__kbusStatePreLoad__(pGpu, pKernelBus, arg3);
 }
 
 static inline NV_STATUS kbusStateLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 arg3) {
-    return pKernelBus->__kbusStateLoad__(pGpu, pKernelBus, arg3);
+    return pKernelBus->__nvoc_vtable->__kbusStateLoad__(pGpu, pKernelBus, arg3);
 }
 
 static inline NV_STATUS kbusStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 arg3) {
-    return pKernelBus->__kbusStatePostLoad__(pGpu, pKernelBus, arg3);
+    return pKernelBus->__nvoc_vtable->__kbusStatePostLoad__(pGpu, pKernelBus, arg3);
 }
 
 static inline NV_STATUS kbusStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 arg3) {
-    return pKernelBus->__kbusStatePreUnload__(pGpu, pKernelBus, arg3);
+    return pKernelBus->__nvoc_vtable->__kbusStatePreUnload__(pGpu, pKernelBus, arg3);
 }
 
 static inline NV_STATUS kbusStateUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 flags) {
-    return pKernelBus->__kbusStateUnload__(pGpu, pKernelBus, flags);
+    return pKernelBus->__nvoc_vtable->__kbusStateUnload__(pGpu, pKernelBus, flags);
 }
 
 static inline NV_STATUS kbusStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 flags) {
-    return pKernelBus->__kbusStatePostUnload__(pGpu, pKernelBus, flags);
+    return pKernelBus->__nvoc_vtable->__kbusStatePostUnload__(pGpu, pKernelBus, flags);
 }
 
 static inline void kbusStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct KernelBus *pKernelBus) {
-    pKernelBus->__kbusStateDestroy__(pGpu, pKernelBus);
+    pKernelBus->__nvoc_vtable->__kbusStateDestroy__(pGpu, pKernelBus);
 }
 
 static inline NvBool kbusBar2IsReady_DISPATCH(struct OBJGPU *pGpu, struct KernelBus *pKernelBus) {
@@ -1049,28 +1055,8 @@ static inline NV_STATUS kbusUnreserveP2PPeerIds_DISPATCH(struct OBJGPU *pGpu, st
     return pKernelBus->__kbusUnreserveP2PPeerIds__(pGpu, pKernelBus, peerMask);
 }
 
-static inline NvBool kbusIsBar1P2PCapable_DISPATCH(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 gfid) {
-    return pKernelBus->__kbusIsBar1P2PCapable__(pGpu, pKernelBus, gfid);
-}
-
-static inline NV_STATUS kbusEnableStaticBar1Mapping_DISPATCH(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 gfid) {
-    return pKernelBus->__kbusEnableStaticBar1Mapping__(pGpu, pKernelBus, gfid);
-}
-
-static inline void kbusDisableStaticBar1Mapping_DISPATCH(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 gfid) {
-    pKernelBus->__kbusDisableStaticBar1Mapping__(pGpu, pKernelBus, gfid);
-}
-
 static inline NV_STATUS kbusGetBar1P2PDmaInfo_DISPATCH(struct OBJGPU *pSrcGpu, struct OBJGPU *pPeerGpu, struct KernelBus *pPeerKernelBus, NvU64 *dma_addr, NvU64 *dma_size) {
     return pPeerKernelBus->__kbusGetBar1P2PDmaInfo__(pSrcGpu, pPeerGpu, pPeerKernelBus, dma_addr, dma_size);
-}
-
-static inline NV_STATUS kbusUpdateStaticBar1VAMapping_DISPATCH(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, MEMORY_DESCRIPTOR *pMemDesc, NvU64 offset, NvU64 length, NvBool bRelease) {
-    return pKernelBus->__kbusUpdateStaticBar1VAMapping__(pGpu, pKernelBus, pMemDesc, offset, length, bRelease);
-}
-
-static inline NV_STATUS kbusGetStaticFbAperture_DISPATCH(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, MEMORY_DESCRIPTOR *pMemDesc, NvU64 offset, NvU64 *pAperOffset, NvU64 *pLength, NvU32 gfid) {
-    return pKernelBus->__kbusGetStaticFbAperture__(pGpu, pKernelBus, pMemDesc, offset, pAperOffset, pLength, gfid);
 }
 
 static inline NV_STATUS kbusCreateP2PMappingForBar1P2P_DISPATCH(struct OBJGPU *pGpu0, struct KernelBus *pKernelBus0, struct OBJGPU *pGpu1, struct KernelBus *pKernelBus1, NvU32 attributes) {
@@ -1289,20 +1275,24 @@ static inline NvU32 kbusGetEccCounts_DISPATCH(struct OBJGPU *pGpu, struct Kernel
     return pKernelBus->__kbusGetEccCounts__(pGpu, pKernelBus);
 }
 
+static inline NV_STATUS kbusGetPFBar1Spa_DISPATCH(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU64 *pSpaValue) {
+    return pKernelBus->__kbusGetPFBar1Spa__(pGpu, pKernelBus, pSpaValue);
+}
+
 static inline void kbusInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelBus *pEngstate) {
-    pEngstate->__kbusInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_vtable->__kbusInitMissing__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kbusStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelBus *pEngstate) {
-    return pEngstate->__kbusStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_vtable->__kbusStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kbusStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelBus *pEngstate) {
-    return pEngstate->__kbusStateInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_vtable->__kbusStateInitUnlocked__(pGpu, pEngstate);
 }
 
 static inline NvBool kbusIsPresent_DISPATCH(struct OBJGPU *pGpu, struct KernelBus *pEngstate) {
-    return pEngstate->__kbusIsPresent__(pGpu, pEngstate);
+    return pEngstate->__nvoc_vtable->__kbusIsPresent__(pGpu, pEngstate);
 }
 
 NV_STATUS kbusConstructHal_GM107(struct OBJGPU *pGpu, struct KernelBus *pKernelBus);
@@ -1854,6 +1844,75 @@ static inline void kbusUnlinkP2P(struct OBJGPU *pGpu, struct KernelBus *pKernelB
 
 #define kbusUnlinkP2P_HAL(pGpu, pKernelBu) kbusUnlinkP2P(pGpu, pKernelBu)
 
+NvBool kbusIsStaticBar1Supported_TU102(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 gfid);
+
+
+#ifdef __nvoc_kern_bus_h_disabled
+static inline NvBool kbusIsStaticBar1Supported(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 gfid) {
+    NV_ASSERT_FAILED_PRECOMP("KernelBus was disabled!");
+    return NV_FALSE;
+}
+#else //__nvoc_kern_bus_h_disabled
+#define kbusIsStaticBar1Supported(pGpu, pKernelBus, gfid) kbusIsStaticBar1Supported_TU102(pGpu, pKernelBus, gfid)
+#endif //__nvoc_kern_bus_h_disabled
+
+#define kbusIsStaticBar1Supported_HAL(pGpu, pKernelBus, gfid) kbusIsStaticBar1Supported(pGpu, pKernelBus, gfid)
+
+NV_STATUS kbusEnableStaticBar1Mapping_TU102(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 gfid);
+
+
+#ifdef __nvoc_kern_bus_h_disabled
+static inline NV_STATUS kbusEnableStaticBar1Mapping(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 gfid) {
+    NV_ASSERT_FAILED_PRECOMP("KernelBus was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kern_bus_h_disabled
+#define kbusEnableStaticBar1Mapping(pGpu, pKernelBus, gfid) kbusEnableStaticBar1Mapping_TU102(pGpu, pKernelBus, gfid)
+#endif //__nvoc_kern_bus_h_disabled
+
+#define kbusEnableStaticBar1Mapping_HAL(pGpu, pKernelBus, gfid) kbusEnableStaticBar1Mapping(pGpu, pKernelBus, gfid)
+
+void kbusDisableStaticBar1Mapping_TU102(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 gfid);
+
+
+#ifdef __nvoc_kern_bus_h_disabled
+static inline void kbusDisableStaticBar1Mapping(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 gfid) {
+    NV_ASSERT_FAILED_PRECOMP("KernelBus was disabled!");
+}
+#else //__nvoc_kern_bus_h_disabled
+#define kbusDisableStaticBar1Mapping(pGpu, pKernelBus, gfid) kbusDisableStaticBar1Mapping_TU102(pGpu, pKernelBus, gfid)
+#endif //__nvoc_kern_bus_h_disabled
+
+#define kbusDisableStaticBar1Mapping_HAL(pGpu, pKernelBus, gfid) kbusDisableStaticBar1Mapping(pGpu, pKernelBus, gfid)
+
+NV_STATUS kbusUpdateStaticBar1VAMapping_TU102(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, MEMORY_DESCRIPTOR *pMemDesc, NvBool bRelease);
+
+
+#ifdef __nvoc_kern_bus_h_disabled
+static inline NV_STATUS kbusUpdateStaticBar1VAMapping(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, MEMORY_DESCRIPTOR *pMemDesc, NvBool bRelease) {
+    NV_ASSERT_FAILED_PRECOMP("KernelBus was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kern_bus_h_disabled
+#define kbusUpdateStaticBar1VAMapping(pGpu, pKernelBus, pMemDesc, bRelease) kbusUpdateStaticBar1VAMapping_TU102(pGpu, pKernelBus, pMemDesc, bRelease)
+#endif //__nvoc_kern_bus_h_disabled
+
+#define kbusUpdateStaticBar1VAMapping_HAL(pGpu, pKernelBus, pMemDesc, bRelease) kbusUpdateStaticBar1VAMapping(pGpu, pKernelBus, pMemDesc, bRelease)
+
+NV_STATUS kbusGetStaticFbAperture_TU102(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, MEMORY_DESCRIPTOR *pMemDesc, MemoryRange mapRange, MemoryArea *pMemArea, NvU32 flags);
+
+
+#ifdef __nvoc_kern_bus_h_disabled
+static inline NV_STATUS kbusGetStaticFbAperture(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, MEMORY_DESCRIPTOR *pMemDesc, MemoryRange mapRange, MemoryArea *pMemArea, NvU32 flags) {
+    NV_ASSERT_FAILED_PRECOMP("KernelBus was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kern_bus_h_disabled
+#define kbusGetStaticFbAperture(pGpu, pKernelBus, pMemDesc, mapRange, pMemArea, flags) kbusGetStaticFbAperture_TU102(pGpu, pKernelBus, pMemDesc, mapRange, pMemArea, flags)
+#endif //__nvoc_kern_bus_h_disabled
+
+#define kbusGetStaticFbAperture_HAL(pGpu, pKernelBus, pMemDesc, mapRange, pMemArea, flags) kbusGetStaticFbAperture(pGpu, pKernelBus, pMemDesc, mapRange, pMemArea, flags)
+
 NV_STATUS kbusFlushSingle_GV100(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 flags);
 
 
@@ -1965,6 +2024,19 @@ static inline NV_STATUS kbusDestroyBar2(struct OBJGPU *pGpu, struct KernelBus *p
 
 #define kbusDestroyBar2_HAL(pGpu, pKernelBus, gfid) kbusDestroyBar2(pGpu, pKernelBus, gfid)
 
+void kbusUnmapPreservedConsole_GM107(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 gfid);
+
+
+#ifdef __nvoc_kern_bus_h_disabled
+static inline void kbusUnmapPreservedConsole(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 gfid) {
+    NV_ASSERT_FAILED_PRECOMP("KernelBus was disabled!");
+}
+#else //__nvoc_kern_bus_h_disabled
+#define kbusUnmapPreservedConsole(pGpu, pKernelBus, gfid) kbusUnmapPreservedConsole_GM107(pGpu, pKernelBus, gfid)
+#endif //__nvoc_kern_bus_h_disabled
+
+#define kbusUnmapPreservedConsole_HAL(pGpu, pKernelBus, gfid) kbusUnmapPreservedConsole(pGpu, pKernelBus, gfid)
+
 NV_STATUS kbusInitBar1_GM107(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 gfid);
 
 
@@ -1993,33 +2065,33 @@ static inline NV_STATUS kbusDestroyBar1(struct OBJGPU *pGpu, struct KernelBus *p
 
 #define kbusDestroyBar1_HAL(pGpu, pKernelBus, gfid) kbusDestroyBar1(pGpu, pKernelBus, gfid)
 
-NV_STATUS kbusMapFbAperture_GM107(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, PMEMORY_DESCRIPTOR arg3, NvU64 offset, NvU64 *pAperOffset, NvU64 *pLength, NvU32 flags, struct Device *pDevice);
+NV_STATUS kbusMapFbAperture_GM107(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, MEMORY_DESCRIPTOR *pMemDesc, MemoryRange mapRange, MemoryArea *pMemoryArea, NvU32 flags, struct Device *pDevice);
 
 
 #ifdef __nvoc_kern_bus_h_disabled
-static inline NV_STATUS kbusMapFbAperture(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, PMEMORY_DESCRIPTOR arg3, NvU64 offset, NvU64 *pAperOffset, NvU64 *pLength, NvU32 flags, struct Device *pDevice) {
+static inline NV_STATUS kbusMapFbAperture(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, MEMORY_DESCRIPTOR *pMemDesc, MemoryRange mapRange, MemoryArea *pMemoryArea, NvU32 flags, struct Device *pDevice) {
     NV_ASSERT_FAILED_PRECOMP("KernelBus was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kern_bus_h_disabled
-#define kbusMapFbAperture(pGpu, pKernelBus, arg3, offset, pAperOffset, pLength, flags, pDevice) kbusMapFbAperture_GM107(pGpu, pKernelBus, arg3, offset, pAperOffset, pLength, flags, pDevice)
+#define kbusMapFbAperture(pGpu, pKernelBus, pMemDesc, mapRange, pMemoryArea, flags, pDevice) kbusMapFbAperture_GM107(pGpu, pKernelBus, pMemDesc, mapRange, pMemoryArea, flags, pDevice)
 #endif //__nvoc_kern_bus_h_disabled
 
-#define kbusMapFbAperture_HAL(pGpu, pKernelBus, arg3, offset, pAperOffset, pLength, flags, pDevice) kbusMapFbAperture(pGpu, pKernelBus, arg3, offset, pAperOffset, pLength, flags, pDevice)
+#define kbusMapFbAperture_HAL(pGpu, pKernelBus, pMemDesc, mapRange, pMemoryArea, flags, pDevice) kbusMapFbAperture(pGpu, pKernelBus, pMemDesc, mapRange, pMemoryArea, flags, pDevice)
 
-NV_STATUS kbusUnmapFbAperture_GM107(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, PMEMORY_DESCRIPTOR arg3, NvU64 aperOffset, NvU64 length, NvU32 flags);
+NV_STATUS kbusUnmapFbAperture_GM107(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, PMEMORY_DESCRIPTOR arg3, MemoryArea memArea, NvU32 flags);
 
 
 #ifdef __nvoc_kern_bus_h_disabled
-static inline NV_STATUS kbusUnmapFbAperture(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, PMEMORY_DESCRIPTOR arg3, NvU64 aperOffset, NvU64 length, NvU32 flags) {
+static inline NV_STATUS kbusUnmapFbAperture(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, PMEMORY_DESCRIPTOR arg3, MemoryArea memArea, NvU32 flags) {
     NV_ASSERT_FAILED_PRECOMP("KernelBus was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kern_bus_h_disabled
-#define kbusUnmapFbAperture(pGpu, pKernelBus, arg3, aperOffset, length, flags) kbusUnmapFbAperture_GM107(pGpu, pKernelBus, arg3, aperOffset, length, flags)
+#define kbusUnmapFbAperture(pGpu, pKernelBus, arg3, memArea, flags) kbusUnmapFbAperture_GM107(pGpu, pKernelBus, arg3, memArea, flags)
 #endif //__nvoc_kern_bus_h_disabled
 
-#define kbusUnmapFbAperture_HAL(pGpu, pKernelBus, arg3, aperOffset, length, flags) kbusUnmapFbAperture(pGpu, pKernelBus, arg3, aperOffset, length, flags)
+#define kbusUnmapFbAperture_HAL(pGpu, pKernelBus, arg3, memArea, flags) kbusUnmapFbAperture(pGpu, pKernelBus, arg3, memArea, flags)
 
 void kbusReleaseRmAperture_VBAR2(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, PMEMORY_DESCRIPTOR arg3);
 
@@ -2283,8 +2355,8 @@ RmPhysAddr kbusSetupP2PDomainAccess_GH100(struct OBJGPU *pGpu0, struct KernelBus
 
 NvBool kbusNeedWarForBug999673_GM200(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, struct OBJGPU *pRemoteGpu);
 
-static inline NvBool kbusNeedWarForBug999673_491d52(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, struct OBJGPU *pRemoteGpu) {
-    return ((NvBool)(0 != 0));
+static inline NvBool kbusNeedWarForBug999673_3dd2c9(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, struct OBJGPU *pRemoteGpu) {
+    return NV_FALSE;
 }
 
 NV_STATUS kbusCreateP2PMappingForC2C_GH100(struct OBJGPU *pGpu0, struct KernelBus *pKernelBus0, struct OBJGPU *pGpu1, struct KernelBus *pKernelBus1, NvU32 *peer0, NvU32 *peer1, NvU32 attributes);
@@ -2305,39 +2377,9 @@ static inline NV_STATUS kbusUnreserveP2PPeerIds_46f6a7(struct OBJGPU *pGpu, stru
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NvBool kbusIsBar1P2PCapable_GH100(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 gfid);
-
-static inline NvBool kbusIsBar1P2PCapable_bf6dfa(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 gfid) {
-    return ((NvBool)(0 != 0));
-}
-
-NV_STATUS kbusEnableStaticBar1Mapping_GH100(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 gfid);
-
-static inline NV_STATUS kbusEnableStaticBar1Mapping_395e98(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 gfid) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-static inline void kbusDisableStaticBar1Mapping_d44104(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 gfid) {
-    return;
-}
-
-void kbusDisableStaticBar1Mapping_GH100(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 gfid);
-
 NV_STATUS kbusGetBar1P2PDmaInfo_GH100(struct OBJGPU *pSrcGpu, struct OBJGPU *pPeerGpu, struct KernelBus *pPeerKernelBus, NvU64 *dma_addr, NvU64 *dma_size);
 
 static inline NV_STATUS kbusGetBar1P2PDmaInfo_395e98(struct OBJGPU *pSrcGpu, struct OBJGPU *pPeerGpu, struct KernelBus *pPeerKernelBus, NvU64 *dma_addr, NvU64 *dma_size) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS kbusUpdateStaticBar1VAMapping_GH100(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, MEMORY_DESCRIPTOR *pMemDesc, NvU64 offset, NvU64 length, NvBool bRelease);
-
-static inline NV_STATUS kbusUpdateStaticBar1VAMapping_395e98(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, MEMORY_DESCRIPTOR *pMemDesc, NvU64 offset, NvU64 length, NvBool bRelease) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS kbusGetStaticFbAperture_GH100(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, MEMORY_DESCRIPTOR *pMemDesc, NvU64 offset, NvU64 *pAperOffset, NvU64 *pLength, NvU32 gfid);
-
-static inline NV_STATUS kbusGetStaticFbAperture_395e98(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, MEMORY_DESCRIPTOR *pMemDesc, NvU64 offset, NvU64 *pAperOffset, NvU64 *pLength, NvU32 gfid) {
     return NV_ERR_NOT_SUPPORTED;
 }
 
@@ -2355,14 +2397,14 @@ static inline NV_STATUS kbusRemoveP2PMappingForBar1P2P_395e98(struct OBJGPU *pGp
 
 NvBool kbusHasPcieBar1P2PMapping_GH100(struct OBJGPU *pGpu0, struct KernelBus *pKernelBus0, struct OBJGPU *pGpu1, struct KernelBus *pKernelBus1);
 
-static inline NvBool kbusHasPcieBar1P2PMapping_bf6dfa(struct OBJGPU *pGpu0, struct KernelBus *pKernelBus0, struct OBJGPU *pGpu1, struct KernelBus *pKernelBus1) {
-    return ((NvBool)(0 != 0));
+static inline NvBool kbusHasPcieBar1P2PMapping_d69453(struct OBJGPU *pGpu0, struct KernelBus *pKernelBus0, struct OBJGPU *pGpu1, struct KernelBus *pKernelBus1) {
+    return NV_FALSE;
 }
 
 NvBool kbusIsPcieBar1P2PMappingSupported_GH100(struct OBJGPU *pGpu0, struct KernelBus *pKernelBus0, struct OBJGPU *pGpu1, struct KernelBus *pKernelBus1);
 
-static inline NvBool kbusIsPcieBar1P2PMappingSupported_bf6dfa(struct OBJGPU *pGpu0, struct KernelBus *pKernelBus0, struct OBJGPU *pGpu1, struct KernelBus *pKernelBus1) {
-    return ((NvBool)(0 != 0));
+static inline NvBool kbusIsPcieBar1P2PMappingSupported_d69453(struct OBJGPU *pGpu0, struct KernelBus *pKernelBus0, struct OBJGPU *pGpu1, struct KernelBus *pKernelBus1) {
+    return NV_FALSE;
 }
 
 NV_STATUS kbusCheckFlaSupportedAndInit_GA100(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU64 base, NvU64 size);
@@ -2429,8 +2471,8 @@ static inline void kbusDestroyHostManagedFlaVaspace_d44104(struct OBJGPU *pGpu, 
 
 NvBool kbusVerifyFlaRange_GA100(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU64 arg3, NvU64 arg4);
 
-static inline NvBool kbusVerifyFlaRange_bf6dfa(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU64 arg3, NvU64 arg4) {
-    return ((NvBool)(0 != 0));
+static inline NvBool kbusVerifyFlaRange_d69453(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU64 arg3, NvU64 arg4) {
+    return NV_FALSE;
 }
 
 NV_STATUS kbusConstructFlaInstBlk_GA100(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 arg3);
@@ -2528,9 +2570,9 @@ NvBool kbusValidateBAR0WindowBase_GH100(struct OBJGPU *pGpu, struct KernelBus *p
 
 NvBool kbusValidateBAR0WindowBase_GB100(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 base);
 
-static inline NvBool kbusValidateBAR0WindowBase_ceaee8(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 base) {
+static inline NvBool kbusValidateBAR0WindowBase_72a2e1(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 base) {
     NV_ASSERT_PRECOMP(0);
-    return ((NvBool)(0 != 0));
+    return NV_FALSE;
 }
 
 static inline NV_STATUS kbusSetBAR0WindowVidOffset_56cd7a(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU64 vidOffset) {
@@ -2716,6 +2758,12 @@ static inline NvU32 kbusGetEccCounts_4a4dee(struct OBJGPU *pGpu, struct KernelBu
     return 0;
 }
 
+NV_STATUS kbusGetPFBar1Spa_GB100(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU64 *pSpaValue);
+
+static inline NV_STATUS kbusGetPFBar1Spa_46f6a7(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU64 *pSpaValue) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
 static inline NvBool kbusIsBar1Force64KBMappingEnabled(struct KernelBus *pKernelBus) {
     return pKernelBus->bBar1Force64KBMapping;
 }
@@ -2789,11 +2837,11 @@ static inline void kbusSetFlaSupported(struct KernelBus *pKernelBus, NvBool bSup
 }
 
 static inline NvBool kbusIsBar1Disabled(struct KernelBus *pKernelBus) {
-    return pKernelBus->bBar1Disabled;
+    return (pKernelBus == ((void *)0)) ? NV_FALSE : pKernelBus->bBar1Disabled;
 }
 
 static inline NvBool kbusIsCpuVisibleBar2Disabled(struct KernelBus *pKernelBus) {
-    return pKernelBus->bCpuVisibleBar2Disabled;
+    return (pKernelBus == ((void *)0)) ? NV_FALSE : pKernelBus->bCpuVisibleBar2Disabled;
 }
 
 void kbusDestruct_IMPL(struct KernelBus *pKernelBus);
@@ -2933,28 +2981,6 @@ static inline NV_STATUS kbusUnmapFbApertureSingle(struct OBJGPU *pGpu, struct Ke
 }
 #else //__nvoc_kern_bus_h_disabled
 #define kbusUnmapFbApertureSingle(pGpu, pKernelBus, arg3, aperOffset, length, flags) kbusUnmapFbApertureSingle_IMPL(pGpu, pKernelBus, arg3, aperOffset, length, flags)
-#endif //__nvoc_kern_bus_h_disabled
-
-NV_STATUS kbusMapFbApertureByHandle_IMPL(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvHandle hClient, NvHandle hMemory, NvU64 offset, NvU64 size, NvU64 *pBar1Va, struct Device *pDevice);
-
-#ifdef __nvoc_kern_bus_h_disabled
-static inline NV_STATUS kbusMapFbApertureByHandle(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvHandle hClient, NvHandle hMemory, NvU64 offset, NvU64 size, NvU64 *pBar1Va, struct Device *pDevice) {
-    NV_ASSERT_FAILED_PRECOMP("KernelBus was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kern_bus_h_disabled
-#define kbusMapFbApertureByHandle(pGpu, pKernelBus, hClient, hMemory, offset, size, pBar1Va, pDevice) kbusMapFbApertureByHandle_IMPL(pGpu, pKernelBus, hClient, hMemory, offset, size, pBar1Va, pDevice)
-#endif //__nvoc_kern_bus_h_disabled
-
-NV_STATUS kbusUnmapFbApertureByHandle_IMPL(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvHandle hClient, NvHandle hMemory, NvU64 bar1Va);
-
-#ifdef __nvoc_kern_bus_h_disabled
-static inline NV_STATUS kbusUnmapFbApertureByHandle(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, NvHandle hClient, NvHandle hMemory, NvU64 bar1Va) {
-    NV_ASSERT_FAILED_PRECOMP("KernelBus was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kern_bus_h_disabled
-#define kbusUnmapFbApertureByHandle(pGpu, pKernelBus, hClient, hMemory, bar1Va) kbusUnmapFbApertureByHandle_IMPL(pGpu, pKernelBus, hClient, hMemory, bar1Va)
 #endif //__nvoc_kern_bus_h_disabled
 
 NV_STATUS kbusGetBar1VARangeForDevice_IMPL(struct OBJGPU *pGpu, struct KernelBus *pKernelBus, struct Device *pDevice, struct NV_RANGE *arg4);

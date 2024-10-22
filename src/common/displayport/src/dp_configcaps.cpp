@@ -1457,7 +1457,7 @@ bool DPCDHALImpl::parseTestRequestPhy()
 
         for (unsigned i = 0; i < NV_DPCD_TEST_80BIT_CUSTOM_PATTERN__SIZE; i++)
         {
-            interrupts.eightyBitCustomPat[i] = buffer[i];
+            interrupts.cstm80Bits[i] = buffer[i];
         }
     }
 

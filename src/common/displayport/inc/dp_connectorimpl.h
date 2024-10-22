@@ -317,7 +317,6 @@ namespace DisplayPort
         bool        bDisableSSC;
         bool        bEnableFastLT;
         NvU32       maxLinkRateFromRegkey;
-        bool        bFlushTimeslotWhenDirty;
 
         //
         // Latency(ms) to apply between link-train and FEC enable for bug
@@ -401,10 +400,12 @@ namespace DisplayPort
         virtual LinkConfiguration getMaxLinkConfig();
         virtual LinkConfiguration getActiveLinkConfig();
         virtual void powerdownLink(bool bPowerdownPanel = false);
+        LinkConfiguration initMaxLinkConfig();
 
         GroupImpl * getActiveGroupForSST();
         bool detectSinkCountChange();
-        bool handlePhyPatternRequest();
+
+        virtual bool handlePhyPatternRequest();
         void applyOuiWARs();
         bool linkUseMultistream()
         {

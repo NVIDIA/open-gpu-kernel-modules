@@ -306,8 +306,10 @@ typedef struct NV208F_CTRL_CMD_FB_ECC_GET_FORWARD_MAP_ADDRESS_PARAMS {
     NvU32 col;
     NvU32 extBank;
     NvU32 rank;
-    NvU32 sublocation;
-    NvU32 partition;
+    NvU32 physicalSublocation;
+    NvU32 physicalPartition;
+    NvU32 logicalSublocation;
+    NvU32 logicalPartition;
     NvU32 writeKillPtr0;
     NvU32 injectionAddr;
     NvU32 injectionAddrExt;
@@ -462,11 +464,20 @@ typedef struct NV208F_CTRL_FB_ECC_SET_WRITE_KILL_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 address, 8);
 } NV208F_CTRL_FB_ECC_SET_WRITE_KILL_PARAMS;
 
+typedef struct NV208F_CTRL_FB_REMAPPING_RBC_ADDRESS_INFO {
+    NvU32 bank;
+    NvU32 stackId;
+    NvU32 row;
+    NvU32 partition;
+    NvU32 sublocation;
+} NV208F_CTRL_FB_REMAPPING_RBC_ADDRESS_INFO;
+
+#define NV208F_CTRL_FB_REMAP_ROW_ADDRESS_TYPE_PHYSICAL 0x0
+#define NV208F_CTRL_FB_REMAP_ROW_ADDRESS_TYPE_RBC      0x1
+
 /*
  * NV208F_CTRL_FB_REMAPPING_ADDRESS_INFO
  *
- *   physicalAddress
- *     Physical address to be remapped
  *   source
  *     The reason for retirement. Valid values for this parameter are
  *     from NV2080_CTRL_FB_REMAPPED_ROW_SOURCE_*
@@ -482,11 +493,23 @@ typedef struct NV208F_CTRL_FB_ECC_SET_WRITE_KILL_PARAMS {
  *         Attempting to remap a reserved row
  *       NV208F_CTRL_FB_REMAP_ROW_STATUS_INTERNAL_ERROR
  *         Some other RM failure
+ *   addressType
+ *     Type of address passed. Valid values are:
+ *       NV208F_CTRL_FB_REMAP_ROW_ADDRESS_TYPE_PHYSICAL
+ *         The specified address is physical address.
+ *       NV208F_CTRL_FB_REMAP_ROW_ADDRESS_TYPE_RBC
+ *         The specified address is DRAM Row Bank Column address.
+ *   address
+ *     Union of physicalAddress and rbcAddress. Set the appropriate one based on the address type.
  */
 typedef struct NV208F_CTRL_FB_REMAPPING_ADDRESS_INFO {
-    NV_DECLARE_ALIGNED(NvU64 physicalAddress, 8);
     NvU8  source;
     NvU32 status;
+    NvU8  addressType;
+    union {
+        NV_DECLARE_ALIGNED(NvU64 physicalAddress, 8);
+        NV208F_CTRL_FB_REMAPPING_RBC_ADDRESS_INFO rbcAddress;
+    } address;
 } NV208F_CTRL_FB_REMAPPING_ADDRESS_INFO;
 
 /* valid values for status */
@@ -654,4 +677,51 @@ typedef struct NV208F_CTRL_FB_INJECT_SYSLTC_ECC_ERROR_PARAMS {
     NV208F_CTRL_FB_ERROR_TYPE errorType;
 } NV208F_CTRL_FB_INJECT_SYSLTC_ECC_ERROR_PARAMS;
 
+/*
+ * NV208F_CTRL_CMD_FB_GET_FBPA_PAC_MASKS
+ *
+ * This API returns the PAC mask for an FBPA. The format is an array where the
+ * index is the physical FBPA value and the value at the index is the channel
+ * mask at the corresponding FBPA. At this time there can only be max 4
+ * channels per FBPA. A floorswept FBPA will have a value of 0x0, vs a
+ * non-floorswept FBPA with no floorswept channels will have a value of 0xf
+ *
+ */
+#define NV208F_CTRL_FB_GET_FBPA_PAC_MASKS_MAX_FBPAS 64
+
+#define NV208F_CTRL_CMD_FB_GET_FBPA_PAC_MASKS       (0x208f0518) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_FB_INTERFACE_ID << 8) | NV208F_CTRL_FB_GET_FBPA_PAC_MASKS_PARAMS_MESSAGE_ID" */
+
+#define NV208F_CTRL_FB_GET_FBPA_PAC_MASKS_PARAMS_MESSAGE_ID (0x18U)
+
+typedef struct NV208F_CTRL_FB_GET_FBPA_PAC_MASKS_PARAMS {
+    NvU8 fbpas[NV208F_CTRL_FB_GET_FBPA_PAC_MASKS_MAX_FBPAS];
+} NV208F_CTRL_FB_GET_FBPA_PAC_MASKS_PARAMS;
+
+/*
+ * NV208F_CTRL_CMD_FB_CONVERT_CHANNEL
+ *
+ * This API converts either a channel from physical to logical or vice-versa
+ *
+ *   conversionType:
+ *      See NV208F_CTRL_FB_CHANNEL_CONVERSION_TYPE
+ *   fbpa:
+ *      The physical fbpa the channel resides
+ *   input:
+ *      Input channel
+ *   output:
+ *      Output channel
+ */
+#define NV208F_CTRL_CMD_FB_CONVERT_CHANNEL (0x208f0519) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_FB_INTERFACE_ID << 8) | NV208F_CTRL_FB_CONVERT_CHANNEL_PARAMS_MESSAGE_ID" */
+
+#define NV208F_CTRL_FB_CONVERT_CHANNEL_PARAMS_MESSAGE_ID (0x19U)
+
+typedef struct NV208F_CTRL_FB_CONVERT_CHANNEL_PARAMS {
+    NvU32 conversionType;
+    NvU32 fbpa;
+    NvU32 input;
+    NvU32 output;
+} NV208F_CTRL_FB_CONVERT_CHANNEL_PARAMS;
+
+#define NV208F_CTRL_FB_CHANNEL_CONVERSION_TYPE_LOGICAL_TO_PHYSICAL (0x00000000U)
+#define NV208F_CTRL_FB_CHANNEL_CONVERSION_TYPE_PHYSICAL_TO_LOGICAL (0x00000001U)
 /* _ctrl208ffb_h_ */

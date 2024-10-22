@@ -86,6 +86,9 @@ module_param_named(vblank_sem_control, vblank_sem_control, bool, 0400);
 static bool opportunistic_display_sync = true;
 module_param_named(opportunistic_display_sync, opportunistic_display_sync, bool, 0400);
 
+static enum NvKmsDebugForceColorSpace debug_force_color_space = NVKMS_DEBUG_FORCE_COLOR_SPACE_NONE;
+module_param_named(debug_force_color_space, debug_force_color_space, uint, 0400);
+
 /* These parameters are used for fault injection tests.  Normally the defaults
  * should be used. */
 MODULE_PARM_DESC(fail_malloc, "Fail the Nth call to nvkms_alloc");
@@ -137,6 +140,14 @@ NvBool nvkms_vblank_sem_control(void)
 NvBool nvkms_opportunistic_display_sync(void)
 {
     return opportunistic_display_sync;
+}
+
+enum NvKmsDebugForceColorSpace nvkms_debug_force_color_space(void)
+{
+    if (debug_force_color_space >= NVKMS_DEBUG_FORCE_COLOR_SPACE_MAX) {
+        return NVKMS_DEBUG_FORCE_COLOR_SPACE_NONE;
+    }
+    return debug_force_color_space;
 }
 
 NvBool nvkms_kernel_supports_syncpts(void)
@@ -1084,7 +1095,7 @@ static void nvkms_kapi_event_kthread_q_callback(void *arg)
     nvKmsKapiHandleEventQueueChange(device);
 }
 
-struct nvkms_per_open *nvkms_open_common(enum NvKmsClientType type,
+static struct nvkms_per_open *nvkms_open_common(enum NvKmsClientType type,
                                          struct NvKmsKapiDevice *device,
                                          int *status)
 {
@@ -1136,7 +1147,7 @@ failed:
     return NULL;
 }
 
-void nvkms_close_pm_locked(struct nvkms_per_open *popen)
+static void nvkms_close_pm_locked(struct nvkms_per_open *popen)
 {
     /*
      * Don't use down_interruptible(): we need to free resources
@@ -1199,7 +1210,7 @@ static void nvkms_close_popen(struct nvkms_per_open *popen)
     }
 }
 
-int nvkms_ioctl_common
+static int nvkms_ioctl_common
 (
     struct nvkms_per_open *popen,
     NvU32 cmd, NvU64 address, const size_t size
@@ -1557,6 +1568,48 @@ NvBool nvKmsKapiGetFunctionsTable
     return nvKmsKapiGetFunctionsTableInternal(funcsTable);
 }
 EXPORT_SYMBOL(nvKmsKapiGetFunctionsTable);
+
+NvU32 nvKmsKapiF16ToF32(NvU16 a)
+{
+    return nvKmsKapiF16ToF32Internal(a);
+}
+EXPORT_SYMBOL(nvKmsKapiF16ToF32);
+
+NvU16 nvKmsKapiF32ToF16(NvU32 a)
+{
+    return nvKmsKapiF32ToF16Internal(a);
+}
+EXPORT_SYMBOL(nvKmsKapiF32ToF16);
+
+NvU32 nvKmsKapiF32Mul(NvU32 a, NvU32 b)
+{
+    return nvKmsKapiF32MulInternal(a, b);
+}
+EXPORT_SYMBOL(nvKmsKapiF32Mul);
+
+NvU32 nvKmsKapiF32Div(NvU32 a, NvU32 b)
+{
+    return nvKmsKapiF32DivInternal(a, b);
+}
+EXPORT_SYMBOL(nvKmsKapiF32Div);
+
+NvU32 nvKmsKapiF32Add(NvU32 a, NvU32 b)
+{
+    return nvKmsKapiF32AddInternal(a, b);
+}
+EXPORT_SYMBOL(nvKmsKapiF32Add);
+
+NvU32 nvKmsKapiF32ToUI32RMinMag(NvU32 a, NvBool exact)
+{
+    return nvKmsKapiF32ToUI32RMinMagInternal(a, exact);
+}
+EXPORT_SYMBOL(nvKmsKapiF32ToUI32RMinMag);
+
+NvU32 nvKmsKapiUI32ToF32(NvU32 a)
+{
+    return nvKmsKapiUI32ToF32Internal(a);
+}
+EXPORT_SYMBOL(nvKmsKapiUI32ToF32);
 
 /*************************************************************************
  * File operation callback functions.

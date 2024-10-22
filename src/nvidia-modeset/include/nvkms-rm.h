@@ -112,6 +112,7 @@ NvBool nvRmIsPossibleToActivateDpyIdList(NVDispEvoPtr pDispEvo,
 NvBool nvRmVTSwitch(NVDevEvoPtr pDevEvo, NvU32 cmd);
 NvBool nvRmGetVTFBInfo(NVDevEvoPtr pDevEvo);
 void nvRmImportFbConsoleMemory(NVDevEvoPtr pDevEvo);
+void nvRmUnmapFbConsoleMemory(NVDevEvoPtr pDevEvo);
 NvBool nvRmAllocEvoDma(NVDevEvoPtr pDevEvo,
                        NVEvoDmaPtr pDma,
                        NvU64 limit,

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -219,7 +219,7 @@ deviceCtrlCmdFbGetCaps_IMPL
     OBJGPU   *pGpu = GPU_RES_GET_GPU(pDevice);
     NvU8     *pFbCaps = NvP64_VALUE(pFbCapsParams->capsTbl);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // sanity check array size
     if (pFbCapsParams->capsTblSize != NV0080_CTRL_FB_CAPS_TBL_SIZE)
@@ -250,7 +250,7 @@ deviceCtrlCmdFbGetCapsV2_IMPL
     NvU8     *pFbCaps  = pFbCapsParams->capsTbl;
     NV_STATUS rmStatus;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // now accumulate caps for entire device
     rmStatus = memmgrGetFbCaps(pGpu, pFbCaps);
@@ -271,7 +271,7 @@ deviceCtrlCmdSetDefaultVidmemPhysicality_IMPL
     NV0080_CTRL_FB_SET_DEFAULT_VIDMEM_PHYSICALITY_PARAMS *pParams
 )
 {
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
     NvU32 override;
 
     switch (pParams->value)
@@ -314,14 +314,16 @@ subdeviceCtrlCmdFbGetBar1Offset_IMPL
     NvU64         offset;
     RsCpuMapping *pCpuMapping = NULL;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     pCpuMapping = CliFindMappingInClient(hClient, hDevice, pFbMemParams->cpuVirtAddress);
     if (pCpuMapping == NULL)
         return NV_ERR_INVALID_ARGUMENT;
 
+    NV_ASSERT_OR_RETURN(pCpuMapping->pPrivate->memArea.numRanges == 1, NV_ERR_INVALID_ARGUMENT);
+
     offset = (NvU64)pFbMemParams->cpuVirtAddress - (NvU64)pCpuMapping->pLinearAddress;
-    pFbMemParams->gpuVirtAddress = pCpuMapping->pPrivate->gpuAddress + offset;
+    pFbMemParams->gpuVirtAddress = pCpuMapping->pPrivate->memArea.pRanges[0].start + offset;
 
     return NV_OK;
 }
@@ -344,7 +346,7 @@ subdeviceCtrlCmdFbIsKind_IMPL
     NV_STATUS      status         = NV_OK;
     NvBool         rmResult;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // perform appropriate RM operation based on the supported sdk operations
     switch (pIsKindParams->operation)
@@ -677,7 +679,7 @@ subdeviceCtrlCmdFbGetFBRegionInfo_IMPL
     ct_assert(NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_MEM_TYPES >= NVOS32_NUM_MEM_TYPES);
     ct_assert(NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_MAX_ENTRIES >= MAX_FB_REGIONS);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     pGFBRIParams->numFBRegions = 0;
 

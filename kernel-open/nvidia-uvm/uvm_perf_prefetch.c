@@ -260,7 +260,7 @@ static void update_bitmap_tree_from_va_block(uvm_perf_prefetch_bitmap_tree_t *bi
     // registered in the current process for this GPU.
     if (UVM_ID_IS_GPU(new_residency) &&
         uvm_processor_mask_test(&va_space->registered_gpu_va_spaces, new_residency)) {
-        uvm_gpu_t *gpu = uvm_va_space_get_gpu(va_space, new_residency);
+        uvm_gpu_t *gpu = uvm_gpu_get(new_residency);
 
         big_page_size = uvm_va_block_gpu_big_page_size(va_block, gpu);
     }

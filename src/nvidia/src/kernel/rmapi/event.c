@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -135,7 +135,7 @@ eventConstruct_IMPL
         //
         if (pGpu != NULL)
         {
-            RsResourceRef *pSourceRef;
+            RsResourceRef *pSourceRef = NULL;
 
             if (IS_GSP_CLIENT(pGpu))
             {

@@ -188,7 +188,6 @@ sec2utilsConstruct_IMPL
 
     // Allocate channel with RM internal client
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    RmClient *pClient = NULL;
 
     OBJCHANNEL *pChannel = (OBJCHANNEL *) portMemAllocNonPaged(sizeof(OBJCHANNEL));
     NV_ASSERT_OR_RETURN(pChannel != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
@@ -200,12 +199,10 @@ sec2utilsConstruct_IMPL
                                                          sizeof(pSec2Utils->hClient)), cleanup);
 
     pChannel->hClient = pSec2Utils->hClient;
-    pClient = serverutilGetClientUnderLock(pChannel->hClient);
-    NV_ASSERT_OR_GOTO(pClient != NULL, free_client);
 
     NV_ASSERT_OK_OR_GOTO(status, serverGetClientUnderLock(&g_resServ, pChannel->hClient, &pChannel->pRsClient), free_client);
 
-    NV_ASSERT_OK_OR_GOTO(status, clientSetHandleGenerator(staticCast(pClient, RsClient), 1U, ~0U - 1U), free_client);
+    NV_ASSERT_OK_OR_GOTO(status, clientSetHandleGenerator(pChannel->pRsClient, 1U, ~0U - 1U), free_client);
 
     pChannel->bClientAllocated = NV_TRUE;
     pChannel->pGpu = pGpu;

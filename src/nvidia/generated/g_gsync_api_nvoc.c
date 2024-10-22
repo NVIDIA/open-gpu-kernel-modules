@@ -546,138 +546,191 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_GSyncApi
 
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super
+NvBool __nvoc_down_thunk_RmResource_resShareCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super
+NV_STATUS __nvoc_down_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+void __nvoc_down_thunk_RmResource_resControlSerialization_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_down_thunk_RmResource_resControl_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+void __nvoc_down_thunk_RmResource_resControl_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+PEVENTNOTIFICATION * __nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr(struct INotifier *pNotifier);    // super
+struct NotifShare * __nvoc_down_thunk_Notifier_inotifyGetNotificationShare(struct INotifier *pNotifier);    // super
+void __nvoc_down_thunk_Notifier_inotifySetNotificationShare(struct INotifier *pNotifier, struct NotifShare *pNotifShare);    // super
+NV_STATUS __nvoc_down_thunk_Notifier_inotifyUnregisterEvent(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // super
+NV_STATUS __nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // super
+NV_STATUS __nvoc_down_thunk_GSyncApi_resControl(struct RsResource *pGsyncApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+
 // 1 down-thunk(s) defined to bridge methods in GSyncApi from superclasses
 
 // gsyncapiControl: virtual override (res) base (rmres)
-static NV_STATUS __nvoc_down_thunk_GSyncApi_resControl(struct RsResource *pGsyncApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_down_thunk_GSyncApi_resControl(struct RsResource *pGsyncApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return gsyncapiControl((struct GSyncApi *)(((unsigned char *) pGsyncApi) - __nvoc_rtti_GSyncApi_RsResource.offset), pCallContext, pParams);
 }
 
 
+// Up-thunk(s) to bridge methods to ancestors (if any)
+NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super
+void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_rmresControl(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_rmresControlFilter(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_rmresMap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // super
+NvBool __nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported(struct RmResource *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_rmresMapTo(struct RmResource *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmapFrom(struct RmResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super
+NvU32 __nvoc_up_thunk_RsResource_rmresGetRefCount(struct RmResource *pResource);    // super
+void __nvoc_up_thunk_RsResource_rmresAddAdditionalDependants(struct RsClient *pClient, struct RmResource *pResource, RsResourceRef *pReference);    // super
+NvBool __nvoc_up_thunk_RmResource_gsyncapiAccessCallback(struct GSyncApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // this
+NvBool __nvoc_up_thunk_RmResource_gsyncapiShareCallback(struct GSyncApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_gsyncapiGetMemInterMapParams(struct GSyncApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_gsyncapiCheckMemInterUnmap(struct GSyncApi *pRmResource, NvBool bSubdeviceHandleProvided);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_gsyncapiGetMemoryMappingDescriptor(struct GSyncApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_gsyncapiControlSerialization_Prologue(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+void __nvoc_up_thunk_RmResource_gsyncapiControlSerialization_Epilogue(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_gsyncapiControl_Prologue(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+void __nvoc_up_thunk_RmResource_gsyncapiControl_Epilogue(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NvBool __nvoc_up_thunk_RsResource_gsyncapiCanCopy(struct GSyncApi *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_gsyncapiIsDuplicate(struct GSyncApi *pResource, NvHandle hMemory, NvBool *pDuplicate);    // this
+void __nvoc_up_thunk_RsResource_gsyncapiPreDestruct(struct GSyncApi *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_gsyncapiControlFilter(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_gsyncapiMap(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_gsyncapiUnmap(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // this
+NvBool __nvoc_up_thunk_RsResource_gsyncapiIsPartialUnmapSupported(struct GSyncApi *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_gsyncapiMapTo(struct GSyncApi *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_gsyncapiUnmapFrom(struct GSyncApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
+NvU32 __nvoc_up_thunk_RsResource_gsyncapiGetRefCount(struct GSyncApi *pResource);    // this
+void __nvoc_up_thunk_RsResource_gsyncapiAddAdditionalDependants(struct RsClient *pClient, struct GSyncApi *pResource, RsResourceRef *pReference);    // this
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_gsyncapiGetNotificationListPtr(struct GSyncApi *pNotifier);    // this
+struct NotifShare * __nvoc_up_thunk_Notifier_gsyncapiGetNotificationShare(struct GSyncApi *pNotifier);    // this
+void __nvoc_up_thunk_Notifier_gsyncapiSetNotificationShare(struct GSyncApi *pNotifier, struct NotifShare *pNotifShare);    // this
+NV_STATUS __nvoc_up_thunk_Notifier_gsyncapiUnregisterEvent(struct GSyncApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // this
+NV_STATUS __nvoc_up_thunk_Notifier_gsyncapiGetOrAllocNotifShare(struct GSyncApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // this
+
 // 25 up-thunk(s) defined to bridge methods in GSyncApi to superclasses
 
 // gsyncapiAccessCallback: virtual inherited (rmres) base (rmres)
-static NvBool __nvoc_up_thunk_RmResource_gsyncapiAccessCallback(struct GSyncApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+NvBool __nvoc_up_thunk_RmResource_gsyncapiAccessCallback(struct GSyncApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_GSyncApi_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
 // gsyncapiShareCallback: virtual inherited (rmres) base (rmres)
-static NvBool __nvoc_up_thunk_RmResource_gsyncapiShareCallback(struct GSyncApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+NvBool __nvoc_up_thunk_RmResource_gsyncapiShareCallback(struct GSyncApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return rmresShareCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_GSyncApi_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 // gsyncapiGetMemInterMapParams: virtual inherited (rmres) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RmResource_gsyncapiGetMemInterMapParams(struct GSyncApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_gsyncapiGetMemInterMapParams(struct GSyncApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
     return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_GSyncApi_RmResource.offset), pParams);
 }
 
 // gsyncapiCheckMemInterUnmap: virtual inherited (rmres) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RmResource_gsyncapiCheckMemInterUnmap(struct GSyncApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+NV_STATUS __nvoc_up_thunk_RmResource_gsyncapiCheckMemInterUnmap(struct GSyncApi *pRmResource, NvBool bSubdeviceHandleProvided) {
     return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_GSyncApi_RmResource.offset), bSubdeviceHandleProvided);
 }
 
 // gsyncapiGetMemoryMappingDescriptor: virtual inherited (rmres) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RmResource_gsyncapiGetMemoryMappingDescriptor(struct GSyncApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+NV_STATUS __nvoc_up_thunk_RmResource_gsyncapiGetMemoryMappingDescriptor(struct GSyncApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
     return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_GSyncApi_RmResource.offset), ppMemDesc);
 }
 
 // gsyncapiControlSerialization_Prologue: virtual inherited (rmres) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RmResource_gsyncapiControlSerialization_Prologue(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_gsyncapiControlSerialization_Prologue(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_GSyncApi_RmResource.offset), pCallContext, pParams);
 }
 
 // gsyncapiControlSerialization_Epilogue: virtual inherited (rmres) base (rmres)
-static void __nvoc_up_thunk_RmResource_gsyncapiControlSerialization_Epilogue(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+void __nvoc_up_thunk_RmResource_gsyncapiControlSerialization_Epilogue(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_GSyncApi_RmResource.offset), pCallContext, pParams);
 }
 
 // gsyncapiControl_Prologue: virtual inherited (rmres) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RmResource_gsyncapiControl_Prologue(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_gsyncapiControl_Prologue(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_GSyncApi_RmResource.offset), pCallContext, pParams);
 }
 
 // gsyncapiControl_Epilogue: virtual inherited (rmres) base (rmres)
-static void __nvoc_up_thunk_RmResource_gsyncapiControl_Epilogue(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+void __nvoc_up_thunk_RmResource_gsyncapiControl_Epilogue(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_GSyncApi_RmResource.offset), pCallContext, pParams);
 }
 
 // gsyncapiCanCopy: virtual inherited (res) base (rmres)
-static NvBool __nvoc_up_thunk_RsResource_gsyncapiCanCopy(struct GSyncApi *pResource) {
+NvBool __nvoc_up_thunk_RsResource_gsyncapiCanCopy(struct GSyncApi *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GSyncApi_RsResource.offset));
 }
 
 // gsyncapiIsDuplicate: virtual inherited (res) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RsResource_gsyncapiIsDuplicate(struct GSyncApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+NV_STATUS __nvoc_up_thunk_RsResource_gsyncapiIsDuplicate(struct GSyncApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GSyncApi_RsResource.offset), hMemory, pDuplicate);
 }
 
 // gsyncapiPreDestruct: virtual inherited (res) base (rmres)
-static void __nvoc_up_thunk_RsResource_gsyncapiPreDestruct(struct GSyncApi *pResource) {
+void __nvoc_up_thunk_RsResource_gsyncapiPreDestruct(struct GSyncApi *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GSyncApi_RsResource.offset));
 }
 
 // gsyncapiControlFilter: virtual inherited (res) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RsResource_gsyncapiControlFilter(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_gsyncapiControlFilter(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GSyncApi_RsResource.offset), pCallContext, pParams);
 }
 
 // gsyncapiMap: virtual inherited (res) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RsResource_gsyncapiMap(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+NV_STATUS __nvoc_up_thunk_RsResource_gsyncapiMap(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
     return resMap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GSyncApi_RsResource.offset), pCallContext, pParams, pCpuMapping);
 }
 
 // gsyncapiUnmap: virtual inherited (res) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RsResource_gsyncapiUnmap(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+NV_STATUS __nvoc_up_thunk_RsResource_gsyncapiUnmap(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
     return resUnmap((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GSyncApi_RsResource.offset), pCallContext, pCpuMapping);
 }
 
 // gsyncapiIsPartialUnmapSupported: inline virtual inherited (res) base (rmres) body
-static NvBool __nvoc_up_thunk_RsResource_gsyncapiIsPartialUnmapSupported(struct GSyncApi *pResource) {
+NvBool __nvoc_up_thunk_RsResource_gsyncapiIsPartialUnmapSupported(struct GSyncApi *pResource) {
     return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GSyncApi_RsResource.offset));
 }
 
 // gsyncapiMapTo: virtual inherited (res) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RsResource_gsyncapiMapTo(struct GSyncApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_gsyncapiMapTo(struct GSyncApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
     return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GSyncApi_RsResource.offset), pParams);
 }
 
 // gsyncapiUnmapFrom: virtual inherited (res) base (rmres)
-static NV_STATUS __nvoc_up_thunk_RsResource_gsyncapiUnmapFrom(struct GSyncApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_gsyncapiUnmapFrom(struct GSyncApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
     return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GSyncApi_RsResource.offset), pParams);
 }
 
 // gsyncapiGetRefCount: virtual inherited (res) base (rmres)
-static NvU32 __nvoc_up_thunk_RsResource_gsyncapiGetRefCount(struct GSyncApi *pResource) {
+NvU32 __nvoc_up_thunk_RsResource_gsyncapiGetRefCount(struct GSyncApi *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GSyncApi_RsResource.offset));
 }
 
 // gsyncapiAddAdditionalDependants: virtual inherited (res) base (rmres)
-static void __nvoc_up_thunk_RsResource_gsyncapiAddAdditionalDependants(struct RsClient *pClient, struct GSyncApi *pResource, RsResourceRef *pReference) {
+void __nvoc_up_thunk_RsResource_gsyncapiAddAdditionalDependants(struct RsClient *pClient, struct GSyncApi *pResource, RsResourceRef *pReference) {
     resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_GSyncApi_RsResource.offset), pReference);
 }
 
 // gsyncapiGetNotificationListPtr: virtual inherited (notify) base (notify)
-static PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_gsyncapiGetNotificationListPtr(struct GSyncApi *pNotifier) {
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_gsyncapiGetNotificationListPtr(struct GSyncApi *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_GSyncApi_Notifier.offset));
 }
 
 // gsyncapiGetNotificationShare: virtual inherited (notify) base (notify)
-static struct NotifShare * __nvoc_up_thunk_Notifier_gsyncapiGetNotificationShare(struct GSyncApi *pNotifier) {
+struct NotifShare * __nvoc_up_thunk_Notifier_gsyncapiGetNotificationShare(struct GSyncApi *pNotifier) {
     return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_GSyncApi_Notifier.offset));
 }
 
 // gsyncapiSetNotificationShare: virtual inherited (notify) base (notify)
-static void __nvoc_up_thunk_Notifier_gsyncapiSetNotificationShare(struct GSyncApi *pNotifier, struct NotifShare *pNotifShare) {
+void __nvoc_up_thunk_Notifier_gsyncapiSetNotificationShare(struct GSyncApi *pNotifier, struct NotifShare *pNotifShare) {
     notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_GSyncApi_Notifier.offset), pNotifShare);
 }
 
 // gsyncapiUnregisterEvent: virtual inherited (notify) base (notify)
-static NV_STATUS __nvoc_up_thunk_Notifier_gsyncapiUnregisterEvent(struct GSyncApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
+NV_STATUS __nvoc_up_thunk_Notifier_gsyncapiUnregisterEvent(struct GSyncApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_GSyncApi_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 // gsyncapiGetOrAllocNotifShare: virtual inherited (notify) base (notify)
-static NV_STATUS __nvoc_up_thunk_Notifier_gsyncapiGetOrAllocNotifShare(struct GSyncApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
+NV_STATUS __nvoc_up_thunk_Notifier_gsyncapiGetOrAllocNotifShare(struct GSyncApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_GSyncApi_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
@@ -727,10 +780,6 @@ __nvoc_ctor_GSyncApi_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_GSyncApi_1(GSyncApi *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // gsyncapiControl -- virtual override (res) base (rmres)
-    pThis->__gsyncapiControl__ = &gsyncapiControl_IMPL;
-    pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__resControl__ = &__nvoc_down_thunk_GSyncApi_resControl;
 
     // gsyncapiCtrlCmdGsyncGetVersion -- exported (id=0x30f10101)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
@@ -876,88 +925,157 @@ static void __nvoc_init_funcTable_GSyncApi_1(GSyncApi *pThis) {
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
     pThis->__gsyncapiCtrlCmdGsyncSetHouseSyncMode__ = &gsyncapiCtrlCmdGsyncSetHouseSyncMode_IMPL;
 #endif
-
-    // gsyncapiAccessCallback -- virtual inherited (rmres) base (rmres)
-    pThis->__gsyncapiAccessCallback__ = &__nvoc_up_thunk_RmResource_gsyncapiAccessCallback;
-
-    // gsyncapiShareCallback -- virtual inherited (rmres) base (rmres)
-    pThis->__gsyncapiShareCallback__ = &__nvoc_up_thunk_RmResource_gsyncapiShareCallback;
-
-    // gsyncapiGetMemInterMapParams -- virtual inherited (rmres) base (rmres)
-    pThis->__gsyncapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gsyncapiGetMemInterMapParams;
-
-    // gsyncapiCheckMemInterUnmap -- virtual inherited (rmres) base (rmres)
-    pThis->__gsyncapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gsyncapiCheckMemInterUnmap;
-
-    // gsyncapiGetMemoryMappingDescriptor -- virtual inherited (rmres) base (rmres)
-    pThis->__gsyncapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gsyncapiGetMemoryMappingDescriptor;
-
-    // gsyncapiControlSerialization_Prologue -- virtual inherited (rmres) base (rmres)
-    pThis->__gsyncapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gsyncapiControlSerialization_Prologue;
-
-    // gsyncapiControlSerialization_Epilogue -- virtual inherited (rmres) base (rmres)
-    pThis->__gsyncapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gsyncapiControlSerialization_Epilogue;
-
-    // gsyncapiControl_Prologue -- virtual inherited (rmres) base (rmres)
-    pThis->__gsyncapiControl_Prologue__ = &__nvoc_up_thunk_RmResource_gsyncapiControl_Prologue;
-
-    // gsyncapiControl_Epilogue -- virtual inherited (rmres) base (rmres)
-    pThis->__gsyncapiControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gsyncapiControl_Epilogue;
-
-    // gsyncapiCanCopy -- virtual inherited (res) base (rmres)
-    pThis->__gsyncapiCanCopy__ = &__nvoc_up_thunk_RsResource_gsyncapiCanCopy;
-
-    // gsyncapiIsDuplicate -- virtual inherited (res) base (rmres)
-    pThis->__gsyncapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_gsyncapiIsDuplicate;
-
-    // gsyncapiPreDestruct -- virtual inherited (res) base (rmres)
-    pThis->__gsyncapiPreDestruct__ = &__nvoc_up_thunk_RsResource_gsyncapiPreDestruct;
-
-    // gsyncapiControlFilter -- virtual inherited (res) base (rmres)
-    pThis->__gsyncapiControlFilter__ = &__nvoc_up_thunk_RsResource_gsyncapiControlFilter;
-
-    // gsyncapiMap -- virtual inherited (res) base (rmres)
-    pThis->__gsyncapiMap__ = &__nvoc_up_thunk_RsResource_gsyncapiMap;
-
-    // gsyncapiUnmap -- virtual inherited (res) base (rmres)
-    pThis->__gsyncapiUnmap__ = &__nvoc_up_thunk_RsResource_gsyncapiUnmap;
-
-    // gsyncapiIsPartialUnmapSupported -- inline virtual inherited (res) base (rmres) body
-    pThis->__gsyncapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gsyncapiIsPartialUnmapSupported;
-
-    // gsyncapiMapTo -- virtual inherited (res) base (rmres)
-    pThis->__gsyncapiMapTo__ = &__nvoc_up_thunk_RsResource_gsyncapiMapTo;
-
-    // gsyncapiUnmapFrom -- virtual inherited (res) base (rmres)
-    pThis->__gsyncapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_gsyncapiUnmapFrom;
-
-    // gsyncapiGetRefCount -- virtual inherited (res) base (rmres)
-    pThis->__gsyncapiGetRefCount__ = &__nvoc_up_thunk_RsResource_gsyncapiGetRefCount;
-
-    // gsyncapiAddAdditionalDependants -- virtual inherited (res) base (rmres)
-    pThis->__gsyncapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gsyncapiAddAdditionalDependants;
-
-    // gsyncapiGetNotificationListPtr -- virtual inherited (notify) base (notify)
-    pThis->__gsyncapiGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_gsyncapiGetNotificationListPtr;
-
-    // gsyncapiGetNotificationShare -- virtual inherited (notify) base (notify)
-    pThis->__gsyncapiGetNotificationShare__ = &__nvoc_up_thunk_Notifier_gsyncapiGetNotificationShare;
-
-    // gsyncapiSetNotificationShare -- virtual inherited (notify) base (notify)
-    pThis->__gsyncapiSetNotificationShare__ = &__nvoc_up_thunk_Notifier_gsyncapiSetNotificationShare;
-
-    // gsyncapiUnregisterEvent -- virtual inherited (notify) base (notify)
-    pThis->__gsyncapiUnregisterEvent__ = &__nvoc_up_thunk_Notifier_gsyncapiUnregisterEvent;
-
-    // gsyncapiGetOrAllocNotifShare -- virtual inherited (notify) base (notify)
-    pThis->__gsyncapiGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_gsyncapiGetOrAllocNotifShare;
-} // End __nvoc_init_funcTable_GSyncApi_1 with approximately 56 basic block(s).
+} // End __nvoc_init_funcTable_GSyncApi_1 with approximately 29 basic block(s).
 
 
 // Initialize vtable(s) for 55 virtual method(s).
 void __nvoc_init_funcTable_GSyncApi(GSyncApi *pThis) {
 
-    // Initialize vtable(s) with 55 per-object function pointer(s).
+    // Per-class vtable definition
+    static const struct NVOC_VTABLE__GSyncApi vtable = {
+        .__gsyncapiControl__ = &gsyncapiControl_IMPL,    // virtual override (res) base (rmres)
+        .RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resControl__ = &__nvoc_down_thunk_GSyncApi_resControl,    // virtual
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+#endif
+        .__gsyncapiAccessCallback__ = &__nvoc_up_thunk_RmResource_gsyncapiAccessCallback,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+        .RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+        .__gsyncapiShareCallback__ = &__nvoc_up_thunk_RmResource_gsyncapiShareCallback,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresShareCallback__ = &rmresShareCallback_IMPL,    // virtual override (res) base (res)
+        .RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+        .__gsyncapiGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gsyncapiGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresGetMemInterMapParams__ = &rmresGetMemInterMapParams_IMPL,    // virtual
+        .__gsyncapiCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gsyncapiCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresCheckMemInterUnmap__ = &rmresCheckMemInterUnmap_IMPL,    // virtual
+        .__gsyncapiGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gsyncapiGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
+        .__gsyncapiControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gsyncapiControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+        .RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+        .__gsyncapiControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gsyncapiControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+        .RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+        .__gsyncapiControl_Prologue__ = &__nvoc_up_thunk_RmResource_gsyncapiControl_Prologue,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
+        .RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+        .__gsyncapiControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gsyncapiControl_Epilogue,    // virtual inherited (rmres) base (rmres)
+        .RmResource.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
+        .RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+        .__gsyncapiCanCopy__ = &__nvoc_up_thunk_RsResource_gsyncapiCanCopy,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+        .__gsyncapiIsDuplicate__ = &__nvoc_up_thunk_RsResource_gsyncapiIsDuplicate,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+        .__gsyncapiPreDestruct__ = &__nvoc_up_thunk_RsResource_gsyncapiPreDestruct,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+        .__gsyncapiControlFilter__ = &__nvoc_up_thunk_RsResource_gsyncapiControlFilter,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+        .__gsyncapiMap__ = &__nvoc_up_thunk_RsResource_gsyncapiMap,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resMap__ = &resMap_IMPL,    // virtual
+        .__gsyncapiUnmap__ = &__nvoc_up_thunk_RsResource_gsyncapiUnmap,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resUnmap__ = &resUnmap_IMPL,    // virtual
+        .__gsyncapiIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gsyncapiIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+        .RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+        .RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+        .__gsyncapiMapTo__ = &__nvoc_up_thunk_RsResource_gsyncapiMapTo,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
+        .__gsyncapiUnmapFrom__ = &__nvoc_up_thunk_RsResource_gsyncapiUnmapFrom,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+        .__gsyncapiGetRefCount__ = &__nvoc_up_thunk_RsResource_gsyncapiGetRefCount,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+        .__gsyncapiAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gsyncapiAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+        .RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+        .RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+        .__gsyncapiGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_gsyncapiGetNotificationListPtr,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifyGetNotificationListPtr__ = &notifyGetNotificationListPtr_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifyGetNotificationListPtr__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr,    // pure virtual
+        .__gsyncapiGetNotificationShare__ = &__nvoc_up_thunk_Notifier_gsyncapiGetNotificationShare,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifyGetNotificationShare__ = &notifyGetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifyGetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationShare,    // pure virtual
+        .__gsyncapiSetNotificationShare__ = &__nvoc_up_thunk_Notifier_gsyncapiSetNotificationShare,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifySetNotificationShare__ = &notifySetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifySetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifySetNotificationShare,    // pure virtual
+        .__gsyncapiUnregisterEvent__ = &__nvoc_up_thunk_Notifier_gsyncapiUnregisterEvent,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifyUnregisterEvent__ = &notifyUnregisterEvent_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifyUnregisterEvent__ = &__nvoc_down_thunk_Notifier_inotifyUnregisterEvent,    // pure virtual
+        .__gsyncapiGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_gsyncapiGetOrAllocNotifShare,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifyGetOrAllocNotifShare__ = &notifyGetOrAllocNotifShare_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifyGetOrAllocNotifShare__ = &__nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare,    // pure virtual
+    };
+
+    // Pointer(s) to per-class vtable(s)
+    pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.RmResource.RsResource;    // (res) super^2
+    pThis->__nvoc_base_RmResource.__nvoc_vtable = &vtable.RmResource;    // (rmres) super
+    pThis->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_vtable = &vtable.Notifier.INotifier;    // (inotify) super^2
+    pThis->__nvoc_base_Notifier.__nvoc_vtable = &vtable.Notifier;    // (notify) super
+    pThis->__nvoc_vtable = &vtable;    // (gsyncapi) this
+
+    // Initialize vtable(s) with 29 per-object function pointer(s).
     __nvoc_init_funcTable_GSyncApi_1(pThis);
 }
 

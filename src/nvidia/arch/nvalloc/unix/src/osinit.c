@@ -59,6 +59,7 @@
 #include <gpu/gsp/kernel_gsp.h>
 #include "liblogdecode.h"
 #include <gpu/fsp/kern_fsp.h>
+#include  <gpu/gsp/kernel_gsp.h>
 
 #include <mem_mgr/virt_mem_mgr.h>
 #include <virtualization/kernel_vgpu_mgr.h>
@@ -364,7 +365,8 @@ osHandleGpuLost
         nvErrorLog_va((void *)pGpu, ROBUST_CHANNEL_GPU_HAS_FALLEN_OFF_THE_BUS,
                       "GPU has fallen off the bus.");
 
-        gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_RC_ERROR, NULL, 0, ROBUST_CHANNEL_GPU_HAS_FALLEN_OFF_THE_BUS, 0);
+        gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_GPU_UNAVAILABLE, NULL,
+                                0, ROBUST_CHANNEL_GPU_HAS_FALLEN_OFF_THE_BUS, 0);
 
         NV_DEV_PRINTF(NV_DBG_ERRORS, nv, "GPU has fallen off the bus.\n");
 
@@ -376,6 +378,13 @@ osHandleGpuLost
         }
 
         gpuSetDisconnectedProperties(pGpu);
+
+        if (IS_GSP_CLIENT(pGpu))
+        {
+            // Notify all channels of the error so that UVM can fail gracefully
+            KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
+            kgspRcAndNotifyAllChannels(pGpu, pKernelGsp, ROBUST_CHANNEL_GPU_HAS_FALLEN_OFF_THE_BUS, NV_FALSE);
+        }
 
         // Trigger the OS's PCI recovery mechanism
         if (nv_pci_trigger_recovery(nv) != NV_OK)
@@ -398,14 +407,12 @@ osHandleGpuLost
             osModifyGpuSwStatePersistence(pGpu->pOsGpuInfo, NV_TRUE);
         }
 
-        OBJSYS *pSys = SYS_GET_INSTANCE();
-        OBJCL  *pCl  = SYS_GET_CL(pSys);
         // Set SURPRISE_REMOVAL flag for eGPU to help in device removal.
-        if ((pCl != NULL) &&
-            pCl->getProperty(pCl, PDB_PROP_CL_IS_EXTERNAL_GPU))
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_EXTERNAL_GPU))
         {
             nv->flags |= NV_FLAG_IN_SURPRISE_REMOVAL;
         }
+
         DBG_BREAKPOINT();
     }
 
@@ -590,7 +597,9 @@ RmInitGpuInfoWithRmApi
              NV2080_CTRL_GPU_INFO_INDEX_DMABUF_CAPABILITY_YES);
     }
 
-    nv->coherent = pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING);
+    nv->coherent =
+        (pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) ||
+         pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB));
 
     portMemFree(pGpuInfoParams);
 
@@ -1088,7 +1097,7 @@ RmInitNvDevice(
     // Configure eGPU setting
     if (RmCheckForExternalGpu(pGpu, pCl))
     {
-        pCl->setProperty(pCl, PDB_PROP_CL_IS_EXTERNAL_GPU, NV_TRUE);
+        pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_EXTERNAL_GPU, NV_TRUE);
         nv->is_external_gpu = NV_TRUE;
     }
     status->rmStatus = gpumgrStateInitGpu(pGpu);
@@ -1416,6 +1425,7 @@ void RmClearPrivateState(
     nv_dynamic_power_t dynamicPowerCopy;
     NvU32 x = 0;
     NvU32 pmc_boot_0, pmc_boot_1, pmc_boot_42;
+    NvBool pr3_acpi_method_present = 0;
 
     //
     // Do not clear private state after GPU resets, it is used while
@@ -1435,6 +1445,7 @@ void RmClearPrivateState(
     pmc_boot_0 = nvp->pmc_boot_0;
     pmc_boot_1 = nvp->pmc_boot_1;
     pmc_boot_42 = nvp->pmc_boot_42;
+    pr3_acpi_method_present = nvp->pr3_acpi_method_present;
 
     for (x = 0; x < MAX_I2C_ADAPTERS; x++)
     {
@@ -1451,6 +1462,7 @@ void RmClearPrivateState(
     nvp->pmc_boot_0 = pmc_boot_0;
     nvp->pmc_boot_1 = pmc_boot_1;
     nvp->pmc_boot_42 = pmc_boot_42;
+    nvp->pr3_acpi_method_present = pr3_acpi_method_present;
 
     for (x = 0; x < MAX_I2C_ADAPTERS; x++)
     {
@@ -1663,7 +1675,7 @@ static NV_STATUS RmFetchGspRmImages
 {
     nv_firmware_chip_family_t chipFamily;
     nv_priv_t *nvp = NV_GET_NV_PRIV(nv);
-    NvU32 gpuArch = (gpuGetArchitectureFromPmcBoot42(nvp->pmc_boot_42) <<
+    NvU32 gpuArch = (decodePmcBoot42Architecture(nvp->pmc_boot_42) <<
                      GPU_ARCH_SHIFT);
     NvU32 gpuImpl = DRF_VAL(_PMC, _BOOT_42, _IMPLEMENTATION, nvp->pmc_boot_42);
 
@@ -2132,8 +2144,6 @@ void RmShutdownAdapter(
                 RmDestroyPowerManagement(nv);
 
                 freeNbsiTable(pGpu);
-
-                gpuFreeEventHandle(pGpu);
 
                 OBJCL          *pCl  = SYS_GET_CL(pSys);
                 OBJOS          *pOS  = GPU_GET_OS(pGpu);

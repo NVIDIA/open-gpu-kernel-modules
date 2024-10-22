@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -70,7 +70,8 @@ struct CLIENT_ENTRY
     PORT_RWLOCK    *pLock;
     struct RsClient       *pClient;
     NvHandle        hClient;
-    NvU64           lockOwnerTid; ///< Thread id of the lock owner
+    NvU64           lockOwnerTid; ///< Thread id of the write lock owner
+    volatile NvU32  lockReadOwnerCnt;
     NvU32           refCount;
     NvBool          bPendingFree;
     ListNode        node;
@@ -174,10 +175,15 @@ MAKE_INTRUSIVE_MAP(RsSharedMap, RsShared, node);
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__RsSession;
+
+
 struct RsSession {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__RsSession *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct RsShared __nvoc_base_RsShared;
@@ -187,15 +193,19 @@ struct RsSession {
     struct RsShared *__nvoc_pbase_RsShared;    // shr super
     struct RsSession *__nvoc_pbase_RsSession;    // session
 
-    // Vtable with 2 per-object function pointers
-    void (*__sessionRemoveDependant__)(struct RsSession * /*this*/, struct RsResourceRef *);  // virtual
-    void (*__sessionRemoveDependency__)(struct RsSession * /*this*/, struct RsResourceRef *);  // virtual
-
     // Data members
     PORT_RWLOCK *pLock;
     NvBool bValid;
     RsResourceRefList dependencies;
     RsResourceRefList dependants;
+};
+
+
+// Metadata including vtable with 2 function pointers plus superclass metadata
+struct NVOC_VTABLE__RsSession {
+
+    void (*__sessionRemoveDependant__)(struct RsSession * /*this*/, struct RsResourceRef *);  // virtual
+    void (*__sessionRemoveDependency__)(struct RsSession * /*this*/, struct RsResourceRef *);  // virtual
 };
 
 #ifndef __NVOC_CLASS_RsSession_TYPEDEF__
@@ -228,18 +238,18 @@ NV_STATUS __nvoc_objCreate_RsSession(RsSession**, Dynamic*, NvU32);
 
 
 // Wrapper macros
-#define sessionRemoveDependant_FNPTR(pSession) pSession->__sessionRemoveDependant__
+#define sessionRemoveDependant_FNPTR(pSession) pSession->__nvoc_vtable->__sessionRemoveDependant__
 #define sessionRemoveDependant(pSession, pResourceRef) sessionRemoveDependant_DISPATCH(pSession, pResourceRef)
-#define sessionRemoveDependency_FNPTR(pSession) pSession->__sessionRemoveDependency__
+#define sessionRemoveDependency_FNPTR(pSession) pSession->__nvoc_vtable->__sessionRemoveDependency__
 #define sessionRemoveDependency(pSession, pResourceRef) sessionRemoveDependency_DISPATCH(pSession, pResourceRef)
 
 // Dispatch functions
 static inline void sessionRemoveDependant_DISPATCH(struct RsSession *pSession, struct RsResourceRef *pResourceRef) {
-    pSession->__sessionRemoveDependant__(pSession, pResourceRef);
+    pSession->__nvoc_vtable->__sessionRemoveDependant__(pSession, pResourceRef);
 }
 
 static inline void sessionRemoveDependency_DISPATCH(struct RsSession *pSession, struct RsResourceRef *pResourceRef) {
-    pSession->__sessionRemoveDependency__(pSession, pResourceRef);
+    pSession->__nvoc_vtable->__sessionRemoveDependency__(pSession, pResourceRef);
 }
 
 void sessionRemoveDependant_IMPL(struct RsSession *pSession, struct RsResourceRef *pResourceRef);
@@ -988,7 +998,8 @@ extern NV_STATUS serverAllocResourceLookupLockFlags(RsServer *pServer,
 extern NV_STATUS serverFreeResourceLookupLockFlags(RsServer *pServer,
                                                    RS_LOCK_ENUM lock,
                                                    RS_RES_FREE_PARAMS_INTERNAL *pParams,
-                                                   LOCK_ACCESS_TYPE *pAccess);
+                                                   LOCK_ACCESS_TYPE *pAccess,
+                                                   NvBool *pbSupportForceROLock);
 
 /**
  * Lookup locking flags for a resource copy
@@ -1363,6 +1374,15 @@ NV_STATUS resservRestoreTlsCallContext(CALL_CONTEXT *pOldCallContext);
  * @param[in]   bSearchAncestors Search parents of the call context resource ref
  */
 RsResourceRef *resservGetContextRefByType(NvU32 internalClassId, NvBool bSearchAncestors);
+
+/**
+ * Test if a client handle is currently locked for LOCK_ACCESS_READ or not.
+ * The caller must hold the client lock in either mode to acquire an accurate
+ * result. Callers without the client list lock are subject to race conditions.
+ *
+ * @param[out]  pClientEntry Pointer to the CLIENT_ENTRY
+ */
+NvBool serverIsClientLockedForRead(CLIENT_ENTRY* pClientEntry);
 
 #ifdef __cplusplus
 }

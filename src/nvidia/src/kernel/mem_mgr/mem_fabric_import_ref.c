@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -50,12 +50,14 @@ memoryfabricimportedrefConstruct_IMPL
 )
 {
     NV00FB_ALLOCATION_PARAMETERS *pAllocParams = pParams->pAllocParams;
-    NvHandle hClient = pParams->hClient;
 
     NV_ASSERT_OR_RETURN(RMCFG_FEATURE_KERNEL_RM, NV_ERR_NOT_SUPPORTED);
 
-    if (!rmclientIsCapableByHandle(hClient, NV_RM_CAP_SYS_FABRIC_IMEX_MGMT) &&
-        !rmclientIsCapableByHandle(hClient, NV_RM_CAP_EXT_FABRIC_MGMT))
+    RmClient *pRmClient = dynamicCast(pParams->pClient, RmClient);
+    NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
+
+    if (!rmclientIsCapable(pRmClient, NV_RM_CAP_SYS_FABRIC_IMEX_MGMT) &&
+        !rmclientIsCapable(pRmClient, NV_RM_CAP_EXT_FABRIC_MGMT))
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
 
     if (pAllocParams->flags != 0)

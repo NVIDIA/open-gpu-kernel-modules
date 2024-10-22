@@ -1334,6 +1334,7 @@ kmigmgrLoadStaticInfo_VF
         pPartitionDesc->nvJpgCount      = pVSI->gpuPartitionInfo.nvJpgCount;
         pPartitionDesc->nvOfaCount      = pVSI->gpuPartitionInfo.nvOfaCount;
         pPartitionDesc->validCTSIdMask  = pVSI->gpuPartitionInfo.validCTSIdMask;
+        pPartitionDesc->validGfxCTSIdMask     = pVSI->gpuPartitionInfo.validGfxCTSIdMask;
         pPrivate->staticInfo.pProfiles->count = 1;
     }
 
@@ -3778,7 +3779,7 @@ kmigmgrGetMIGReferenceFromEngineType_IMPL
 )
 {
     KERNEL_MIG_GPU_INSTANCE *pKernelMIGGPUInstance;
-    MIG_COMPUTE_INSTANCE *pMIGComputeInstance;
+    MIG_COMPUTE_INSTANCE *pMIGComputeInstance = NULL;
     NvU32 CIIdx;
 
     NV_ASSERT_OR_RETURN(pRef != NULL, NV_ERR_INVALID_ARGUMENT);
@@ -4207,7 +4208,7 @@ kmigmgrGenerateComputeInstanceUuid_VF
 )
 {
     VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
-    NvU16 chipId = gpuGetChipIdFromPmcBoot42(pGpu->chipId1);
+    NvU16 chipId = decodePmcBoot42ChipId(pGpu->chipId1);
     NvU64 gid;
 
     NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
@@ -6295,17 +6296,17 @@ kmigmgrSetMIGState_FWCLIENT
                 //TODO: Remove below code once a more robust SRT is available to test for this condition
                 FOR_EACH_INDEX_IN_MASK(32, linkId, knvlinkGetEnabledLinkMask(pGpu, pKernelNvlink))
                 {
-                    NV2080_CTRL_NVLINK_CORE_CALLBACK_PARAMS params;
+                    NV2080_CTRL_INTERNAL_NVLINK_CORE_CALLBACK_PARAMS params;
 
                     params.linkId = linkId;
-                    params.callbackType.type = NV2080_CTRL_NVLINK_CALLBACK_TYPE_GET_DL_LINK_MODE;
+                    params.callbackType.type = NV2080_CTRL_INTERNAL_NVLINK_CALLBACK_TYPE_GET_DL_LINK_MODE;
                     NV_CHECK_OK(rmStatus, LEVEL_ERROR,
                         knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
-                                            NV2080_CTRL_CMD_NVLINK_CORE_CALLBACK,
+                                            NV2080_CTRL_CMD_INTERNAL_NVLINK_CORE_CALLBACK,
                                             (void *)&params, sizeof(params)));
 
-                    if ((params.callbackType.callbackParams.getDlLinkMode.mode != NV2080_NVLINK_CORE_LINK_STATE_SLEEP) ||
-                        (params.callbackType.callbackParams.getDlLinkMode.mode != NV2080_NVLINK_CORE_LINK_STATE_OFF))
+                    if ((params.callbackType.callbackParams.getDlLinkMode.mode != NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_SLEEP) ||
+                        (params.callbackType.callbackParams.getDlLinkMode.mode != NV2080_INTERNAL_NVLINK_CORE_LINK_STATE_OFF))
                     {
                         NV_PRINTF(LEVEL_ERROR, "Nvlink %d is not asleep upon enteing MIG mode!\n", linkId);
                     }
@@ -7103,7 +7104,8 @@ subdeviceCtrlCmdGpuGetActivePartitionIds_IMPL
 
     ct_assert(NV2080_CTRL_GPU_MAX_PARTITIONS == KMIGMGR_MAX_GPU_INSTANCES);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance),
+        NV_ERR_INVALID_LOCK_STATE);
 
     if ((pKernelMIGManager == NULL) || !pGpu->getProperty(pGpu, PDB_PROP_GPU_MIG_SUPPORTED))
     {
@@ -7151,7 +7153,7 @@ subdeviceCtrlCmdGpuGetPartitionCapacity_IMPL
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     NvHandle          hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     NV_CHECK_OR_RETURN(LEVEL_INFO, kmigmgrIsMIGSupported(pGpu, pKernelMIGManager), NV_ERR_NOT_SUPPORTED);
 
@@ -7234,7 +7236,7 @@ subdeviceCtrlCmdGpuDescribePartitions_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_MIG_SUPPORTED))
     {
@@ -7261,7 +7263,7 @@ subdeviceCtrlCmdGpuSetPartitioningMode_IMPL
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (IS_VIRTUAL(pGpu))
     {
@@ -7448,7 +7450,7 @@ subdeviceCtrlCmdGpuSetPartitions_IMPL
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     CALL_CONTEXT     *pCallContext = resservGetTlsCallContext();
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
 
@@ -7538,7 +7540,8 @@ subdeviceCtrlCmdGpuGetPartitions_IMPL
     ct_assert(NV2080_CTRL_GPU_MAX_PARTITIONS == KMIGMGR_MAX_GPU_INSTANCES);
     ct_assert(NV2080_CTRL_GPU_MAX_GPC_PER_SMC == KGRMGR_MAX_GPC);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance),
+        NV_ERR_INVALID_LOCK_STATE);
 
     pRpcParams = portMemAllocNonPaged(sizeof(*pRpcParams));
     NV_CHECK_OR_RETURN(LEVEL_INFO, pRpcParams != NULL, NV_ERR_NO_MEMORY);
@@ -7960,6 +7963,8 @@ subdeviceCtrlCmdGpuGetComputeProfiles_IMPL
 NvU32
 kmigmgrGetNextComputeSize_IMPL
 (
+    OBJGPU *pGpu,
+    KernelMIGManager *pKernelMIGManager,
     NvBool bGetNextSmallest,
     NvU32 computeSize
 )
@@ -8231,7 +8236,7 @@ kmigmgrGetComputeProfileFromCTSId_IMPL
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pStaticInfo != NULL, NV_ERR_OBJECT_NOT_FOUND);
     NV_CHECK_OR_RETURN(LEVEL_WARNING, pStaticInfo->pCIProfiles != NULL, NV_ERR_OBJECT_NOT_FOUND);
 
-    computeSize = kmigmgrGetComputeSizeFromCTSId(ctsId);
+    computeSize = kmigmgrGetComputeSizeFromCTSId(pGpu, ctsId);
     return kmigmgrGetComputeProfileFromSize(pGpu, pKernelMIGManager, computeSize, pProfile);
 }
 
@@ -8324,6 +8329,7 @@ kmigmgrComputeProfileSizeToCTSIdRange_IMPL
             return rangeMake(9,12);
 
         case NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_EIGHTH:
+
             return rangeMake(13,20);
 
         default:
@@ -8545,17 +8551,19 @@ kmigmgrIsCTSAlignmentRequired_VF
 NvU32
 kmigmgrGetComputeSizeFromCTSId_IMPL
 (
+    OBJGPU *pGpu,
     NvU32 ctsId
 )
 {
-    NvU32 computeSize = kmigmgrGetNextComputeSize(NV_TRUE, KMIGMGR_COMPUTE_SIZE_INVALID);
+    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    NvU32 computeSize = kmigmgrGetNextComputeSize_HAL(pGpu, pKernelMIGManager, NV_TRUE, KMIGMGR_COMPUTE_SIZE_INVALID);
 
     while (computeSize != KMIGMGR_COMPUTE_SIZE_INVALID)
     {
         NV_RANGE range = kmigmgrComputeProfileSizeToCTSIdRange(computeSize);
         if ((range.lo <= ctsId) && (ctsId <= range.hi))
             break;
-        computeSize = kmigmgrGetNextComputeSize(NV_TRUE, computeSize);
+        computeSize = kmigmgrGetNextComputeSize_HAL(pGpu, pKernelMIGManager, NV_TRUE, computeSize);
     }
 
     return computeSize;
@@ -8571,14 +8579,14 @@ kmigmgrSmallestComputeProfileSize_IMPL
     KernelMIGManager *pKernelMIGManager
 )
 {
-    NvU32 computeSize = kmigmgrGetNextComputeSize(NV_FALSE, KMIGMGR_COMPUTE_SIZE_INVALID);
+    NvU32 computeSize = kmigmgrGetNextComputeSize_HAL(pGpu, pKernelMIGManager, NV_FALSE, KMIGMGR_COMPUTE_SIZE_INVALID);
 
     while (computeSize != KMIGMGR_COMPUTE_SIZE_INVALID)
     {
         NV2080_CTRL_INTERNAL_MIGMGR_COMPUTE_PROFILE unused;
         if (kmigmgrGetComputeProfileFromSize(pGpu, pKernelMIGManager, computeSize, &unused) == NV_OK)
             break;
-        computeSize = kmigmgrGetNextComputeSize(NV_FALSE, computeSize);
+        computeSize = kmigmgrGetNextComputeSize_HAL(pGpu, pKernelMIGManager, NV_FALSE, computeSize);
     }
 
     return computeSize;
@@ -8740,7 +8748,7 @@ kmigmgrGetSpanStartFromCTSId_IMPL
     NvU32 ctsId
 )
 {
-    NvU32 computeSize = kmigmgrGetComputeSizeFromCTSId(ctsId);
+    NvU32 computeSize = kmigmgrGetComputeSizeFromCTSId(pGpu, ctsId);
     NV_RANGE computeSizeIdRange;
     NvU64 computeSizeIdMask;
     NvU64 slotBasisMask;
@@ -9177,7 +9185,8 @@ kmigmgrGetComputeProfileForRequest_IMPL
             return NV_OK;
     }
 
-    if (kmigmgrGetComputeProfileFromSmCount(pGpu, pKernelMIGManager, smCountRequest, pProfile) == NV_OK)
+    if ((smCountRequest != 0) &&
+        kmigmgrGetComputeProfileFromSmCount(pGpu, pKernelMIGManager, smCountRequest, pProfile) == NV_OK)
     {
         return NV_OK;
     }

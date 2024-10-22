@@ -90,18 +90,19 @@ static NV_STATUS service_ats_requests(uvm_gpu_va_space_t *gpu_va_space,
 
     uvm_migrate_args_t uvm_migrate_args =
     {
-        .va_space                       = va_space,
-        .mm                             = mm,
-        .dst_id                         = ats_context->residency_id,
-        .dst_node_id                    = ats_context->residency_node,
-        .start                          = start,
-        .length                         = length,
-        .populate_permissions           = populate_permissions,
-        .touch                          = fault_service_type,
-        .skip_mapped                    = fault_service_type,
-        .populate_on_cpu_alloc_failures = fault_service_type,
-        .user_space_start               = &user_space_start,
-        .user_space_length              = &user_space_length,
+        .va_space                           = va_space,
+        .mm                                 = mm,
+        .dst_id                             = ats_context->residency_id,
+        .dst_node_id                        = ats_context->residency_node,
+        .start                              = start,
+        .length                             = length,
+        .populate_permissions               = populate_permissions,
+        .touch                              = fault_service_type,
+        .skip_mapped                        = fault_service_type,
+        .populate_on_cpu_alloc_failures     = fault_service_type,
+        .populate_on_migrate_vma_failures   = fault_service_type,
+        .user_space_start                   = &user_space_start,
+        .user_space_length                  = &user_space_length,
     };
 
     UVM_ASSERT(uvm_ats_can_service_faults(gpu_va_space, mm));
@@ -112,7 +113,7 @@ static NV_STATUS service_ats_requests(uvm_gpu_va_space_t *gpu_va_space,
     // set skip_mapped to true. For pages already mapped, this will only handle
     // PTE upgrades if needed.
     status = uvm_migrate_pageable(&uvm_migrate_args);
-    if (status == NV_WARN_NOTHING_TO_DO)
+    if (fault_service_type && (status == NV_WARN_NOTHING_TO_DO))
         status = NV_OK;
 
     UVM_ASSERT(status != NV_ERR_MORE_PROCESSING_REQUIRED);
@@ -379,13 +380,19 @@ static NV_STATUS ats_compute_residency_mask(uvm_gpu_va_space_t *gpu_va_space,
 
 static void ats_compute_prefetch_mask(uvm_gpu_va_space_t *gpu_va_space,
                                       struct vm_area_struct *vma,
+                                      uvm_ats_service_type_t service_type,
                                       uvm_ats_fault_context_t *ats_context,
                                       uvm_va_block_region_t max_prefetch_region)
 {
-    uvm_page_mask_t *accessed_mask = &ats_context->accessed_mask;
+    uvm_page_mask_t *accessed_mask;
     uvm_page_mask_t *residency_mask = &ats_context->prefetch_state.residency_mask;
     uvm_page_mask_t *prefetch_mask = &ats_context->prefetch_state.prefetch_pages_mask;
     uvm_perf_prefetch_bitmap_tree_t *bitmap_tree = &ats_context->prefetch_state.bitmap_tree;
+
+    if (service_type == UVM_ATS_SERVICE_TYPE_FAULTS)
+        accessed_mask = &ats_context->faults.accessed_mask;
+    else
+        accessed_mask = &ats_context->access_counters.accessed_mask;
 
     if (uvm_page_mask_empty(accessed_mask))
         return;
@@ -406,7 +413,7 @@ static NV_STATUS ats_compute_prefetch(uvm_gpu_va_space_t *gpu_va_space,
                                       uvm_ats_fault_context_t *ats_context)
 {
     NV_STATUS status;
-    uvm_page_mask_t *accessed_mask = &ats_context->accessed_mask;
+    uvm_page_mask_t *accessed_mask;
     uvm_page_mask_t *prefetch_mask = &ats_context->prefetch_state.prefetch_pages_mask;
     uvm_va_block_region_t max_prefetch_region = uvm_ats_region_from_vma(vma, base);
 
@@ -420,6 +427,11 @@ static NV_STATUS ats_compute_prefetch(uvm_gpu_va_space_t *gpu_va_space,
     if (!uvm_perf_prefetch_enabled(gpu_va_space->va_space))
         return status;
 
+    if (service_type == UVM_ATS_SERVICE_TYPE_FAULTS)
+        accessed_mask = &ats_context->faults.accessed_mask;
+    else
+        accessed_mask = &ats_context->access_counters.accessed_mask;
+
     if (uvm_page_mask_empty(accessed_mask))
         return status;
 
@@ -432,12 +444,12 @@ static NV_STATUS ats_compute_prefetch(uvm_gpu_va_space_t *gpu_va_space,
         uvm_page_mask_init_from_region(prefetch_mask, max_prefetch_region, NULL);
     }
     else {
-        ats_compute_prefetch_mask(gpu_va_space, vma, ats_context, max_prefetch_region);
+        ats_compute_prefetch_mask(gpu_va_space, vma, service_type, ats_context, max_prefetch_region);
     }
 
     if (service_type == UVM_ATS_SERVICE_TYPE_FAULTS) {
-        uvm_page_mask_t *read_fault_mask = &ats_context->read_fault_mask;
-        uvm_page_mask_t *write_fault_mask = &ats_context->write_fault_mask;
+        uvm_page_mask_t *read_fault_mask = &ats_context->faults.read_fault_mask;
+        uvm_page_mask_t *write_fault_mask = &ats_context->faults.write_fault_mask;
 
         uvm_page_mask_or(read_fault_mask, read_fault_mask, prefetch_mask);
 
@@ -459,10 +471,10 @@ NV_STATUS uvm_ats_service_faults(uvm_gpu_va_space_t *gpu_va_space,
     NV_STATUS status = NV_OK;
     uvm_va_block_region_t subregion;
     uvm_va_block_region_t region = uvm_va_block_region(0, PAGES_PER_UVM_VA_BLOCK);
-    uvm_page_mask_t *read_fault_mask = &ats_context->read_fault_mask;
-    uvm_page_mask_t *write_fault_mask = &ats_context->write_fault_mask;
-    uvm_page_mask_t *faults_serviced_mask = &ats_context->faults_serviced_mask;
-    uvm_page_mask_t *reads_serviced_mask = &ats_context->reads_serviced_mask;
+    uvm_page_mask_t *read_fault_mask = &ats_context->faults.read_fault_mask;
+    uvm_page_mask_t *write_fault_mask = &ats_context->faults.write_fault_mask;
+    uvm_page_mask_t *faults_serviced_mask = &ats_context->faults.faults_serviced_mask;
+    uvm_page_mask_t *reads_serviced_mask = &ats_context->faults.reads_serviced_mask;
     uvm_fault_client_type_t client_type = ats_context->client_type;
     uvm_ats_service_type_t service_type = UVM_ATS_SERVICE_TYPE_FAULTS;
 
@@ -637,6 +649,8 @@ NV_STATUS uvm_ats_service_access_counters(uvm_gpu_va_space_t *gpu_va_space,
     UVM_ASSERT(gpu_va_space->ats.enabled);
     UVM_ASSERT(uvm_gpu_va_space_state(gpu_va_space) == UVM_GPU_VA_SPACE_STATE_ACTIVE);
 
+    uvm_page_mask_zero(&ats_context->access_counters.migrated_mask);
+
     uvm_assert_mmap_lock_locked(vma->vm_mm);
     uvm_assert_rwsem_locked(&gpu_va_space->va_space->lock);
 
@@ -650,21 +664,24 @@ NV_STATUS uvm_ats_service_access_counters(uvm_gpu_va_space_t *gpu_va_space,
 
     // Remove pages which are already resident at the intended destination from
     // the accessed_mask.
-    uvm_page_mask_andnot(&ats_context->accessed_mask,
-                         &ats_context->accessed_mask,
+    uvm_page_mask_andnot(&ats_context->access_counters.accessed_mask,
+                         &ats_context->access_counters.accessed_mask,
                          &ats_context->prefetch_state.residency_mask);
 
-    for_each_va_block_subregion_in_mask(subregion, &ats_context->accessed_mask, region) {
+    for_each_va_block_subregion_in_mask(subregion, &ats_context->access_counters.accessed_mask, region) {
         NV_STATUS status;
         NvU64 start = base + (subregion.first * PAGE_SIZE);
         size_t length = uvm_va_block_region_num_pages(subregion) * PAGE_SIZE;
         uvm_fault_access_type_t access_type = UVM_FAULT_ACCESS_TYPE_COUNT;
+        uvm_page_mask_t *migrated_mask = &ats_context->access_counters.migrated_mask;
 
         UVM_ASSERT(start >= vma->vm_start);
         UVM_ASSERT((start + length) <= vma->vm_end);
 
         status = service_ats_requests(gpu_va_space, vma, start, length, access_type, service_type, ats_context);
-        if (status != NV_OK)
+        if (status == NV_OK)
+            uvm_page_mask_region_fill(migrated_mask, subregion);
+        else if (status != NV_WARN_NOTHING_TO_DO)
             return status;
     }
 

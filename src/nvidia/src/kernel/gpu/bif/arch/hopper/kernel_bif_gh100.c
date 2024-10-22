@@ -68,6 +68,12 @@ kbifIsMSIEnabledInHW_GH100
 {
     NvU32 data32;
 
+    if (IS_VIRTUAL(pGpu))
+    {
+        // SR-IOV guests only support MSI-X
+        return !IS_VIRTUAL_WITH_SRIOV(pGpu);
+    }
+
     if (GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_EP_PCFG_GPU_MSI_64_HEADER,
                              &data32) != NV_OK)
     {

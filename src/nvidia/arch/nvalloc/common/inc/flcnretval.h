@@ -183,6 +183,8 @@ typedef NvU8 FLCN_STATUS;
 #define FLCN_ERR_NVRNG_INIT_CRYPTO_DEVICE_FAILED                           (0x95U)
 #define FLCN_ERR_NVRNG_SELECT_ENGINE_FAILED                                (0x96U)
 #define FLCN_ERR_NVRNG_GENERATE_FAILED                                     (0x97U)
+#define FLCN_ERR_NVPKA_ECDSA_INIT_FAILED                                   (0x98U)
+#define FLCN_ERR_NVPKA_ECDSA_SIGN_FAILED                                   (0x99U)
 
 // Heavy Secure Errors
 #define FLCN_ERR_HS_CHK_INVALID_INPUT                                      (0xA0U)

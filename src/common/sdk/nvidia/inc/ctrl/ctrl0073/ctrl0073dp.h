@@ -804,39 +804,33 @@ typedef struct NV0073_CTRL_DP_CSTM {
 #define NV0073_CTRL_DP_SET_TESTPATTERN_PARAMS_CSTM2    15:0
 #define NV0073_CTRL_DP_SET_TESTPATTERN_PARAMS_CSTM8     7:0
 
-
 /*
  * NV0073_CTRL_DP_TESTPATTERN
  *
- * This structure specifies the possible test patterns available in display port.
+ * This structure specifies the possible test patterns available in display port, 
+ * and parameters for Square pattern.
+ *
  */
 
 typedef struct NV0073_CTRL_DP_TESTPATTERN {
     NvU32 testPattern;
 } NV0073_CTRL_DP_TESTPATTERN;
 
-#define NV0073_CTRL_DP_TESTPATTERN_DATA                              4:0
-#define NV0073_CTRL_DP_TESTPATTERN_DATA_NONE           (0x00000000U)
-#define NV0073_CTRL_DP_TESTPATTERN_DATA_D10_2          (0x00000001U)
-#define NV0073_CTRL_DP_TESTPATTERN_DATA_SERMP          (0x00000002U)
-#define NV0073_CTRL_DP_TESTPATTERN_DATA_PRBS_7         (0x00000003U)
-#define NV0073_CTRL_DP_TESTPATTERN_DATA_CSTM           (0x00000004U)
-#define NV0073_CTRL_DP_TESTPATTERN_DATA_HBR2COMPLIANCE (0x00000005U)
-#define NV0073_CTRL_DP_TESTPATTERN_DATA_CP2520PAT3     (0x00000006U)
-#define NV0073_CTRL_DP_TESTPATTERN_DATA_TRAINING1      (0x00000007U)
-#define NV0073_CTRL_DP_TESTPATTERN_DATA_TRAINING2      (0x00000008U)
-#define NV0073_CTRL_DP_TESTPATTERN_DATA_TRAINING3      (0x00000009U)
-#define NV0073_CTRL_DP_TESTPATTERN_DATA_TRAINING4      (0x0000000AU)
-#define NV0073_CTRL_DP_TESTPATTERN_DATA_CP2520PAT1     (0x0000000BU)
-#define NV0073_CTRL_DP_TESTPATTERN_DATA_128B132B_TPS1  (0x0000000CU)
-#define NV0073_CTRL_DP_TESTPATTERN_DATA_128B132B_TPS2  (0x0000000DU)
-#define NV0073_CTRL_DP_TESTPATTERN_DATA_PRBS_9         (0x0000000EU)
-#define NV0073_CTRL_DP_TESTPATTERN_DATA_PRBS_11        (0x0000000FU)
-#define NV0073_CTRL_DP_TESTPATTERN_DATA_PRBS_15        (0x00000010U)
-#define NV0073_CTRL_DP_TESTPATTERN_DATA_PRBS_23        (0x00000011U)
-#define NV0073_CTRL_DP_TESTPATTERN_DATA_PRBS_31        (0x00000012U)
-#define NV0073_CTRL_DP_TESTPATTERN_DATA_SQNUM          (0x00000013U)
-#define NV0073_CTRL_DP_TESTPATTERN_DATA_CSTM_264       (0x00000014U)
+#define NV0073_CTRL_DP_TESTPATTERN_DATA                                               4:0
+#define NV0073_CTRL_DP_TESTPATTERN_DATA_NONE                       (0x00000000U)
+#define NV0073_CTRL_DP_TESTPATTERN_DATA_D10_2                      (0x00000001U)
+#define NV0073_CTRL_DP_TESTPATTERN_DATA_SERMP                      (0x00000002U)
+#define NV0073_CTRL_DP_TESTPATTERN_DATA_PRBS_7                     (0x00000003U)
+#define NV0073_CTRL_DP_TESTPATTERN_DATA_CSTM                       (0x00000004U)
+#define NV0073_CTRL_DP_TESTPATTERN_DATA_HBR2COMPLIANCE             (0x00000005U)
+#define NV0073_CTRL_DP_TESTPATTERN_DATA_CP2520PAT3                 (0x00000006U)
+#define NV0073_CTRL_DP_TESTPATTERN_DATA_TRAINING1                  (0x00000007U)
+#define NV0073_CTRL_DP_TESTPATTERN_DATA_TRAINING2                  (0x00000008U)
+#define NV0073_CTRL_DP_TESTPATTERN_DATA_TRAINING3                  (0x00000009U)
+#define NV0073_CTRL_DP_TESTPATTERN_DATA_TRAINING4                  (0x0000000AU)
+#define NV0073_CTRL_DP_TESTPATTERN_DATA_CP2520PAT1                 (0x0000000BU)
+
+
 
 /*
  * NV0073_CTRL_CMD_DP_SET_TESTPATTERN
@@ -868,10 +862,8 @@ typedef struct NV0073_CTRL_DP_TESTPATTERN {
  *   laneMask
  *     This parameter specifies the bit mask of DP lanes on which test
  *     pattern is to be applied.
- *   lower
- *     This parameter specifies the lower 64 bits of the CSTM test pattern
- *   upper
- *     This parameter specifies the upper 16 bits of the CSTM test pattern
+ *   cstm
+ *     This parameter specifies the all the bits for CSTM test pattern.
  *   bIsHBR2
  *     This Boolean parameter is set to TRUE if HBR2 compliance test is
  *     being performed.
@@ -2774,8 +2766,8 @@ typedef struct NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2_PARAMS {
 #define NV0073_CTRL_CMD_DP_AUXCH_SET_VBL_CTL             0x00000002
 
 /* valid state values */
-#define NV0073_CTRL_CMD_DP_AUXCH_SET_VBL_CTL_DISABLE     0x00000000
-#define NV0073_CTRL_CMD_DP_AUXCH_SET_VBL_CTL_ENABLE      0x00000001
+#define NV0073_CTRL_CMD_DP_AUXCH_SET_VBL_CTL_DISABLE     0x00000001
+#define NV0073_CTRL_CMD_DP_AUXCH_SET_VBL_CTL_AUTONOMOUS  0x00000000
 
 #define NV0073_CTRL_CMD_DP_AUXCH_VBL_CTRL_PARAMS_MESSAGE_ID (0x86U)
 

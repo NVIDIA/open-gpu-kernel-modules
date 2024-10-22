@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -173,7 +173,7 @@ void uvm_range_group_radix_tree_destroy(uvm_va_space_t *va_space);
 //
 // This does not wait for the migration to complete. The work is added to the
 // output tracker.
-NV_STATUS uvm_range_group_va_range_migrate(uvm_va_range_t *va_range,
+NV_STATUS uvm_range_group_va_range_migrate(uvm_va_range_managed_t *managed_range,
                                            NvU64 start,
                                            NvU64 end,
                                            uvm_tracker_t *out_tracker);

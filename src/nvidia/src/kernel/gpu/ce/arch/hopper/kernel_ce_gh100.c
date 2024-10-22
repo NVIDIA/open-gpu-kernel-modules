@@ -1159,7 +1159,7 @@ NV_STATUS kceGetP2PCes_GH100(KernelCE *pKCe, OBJGPU *pGpu, NvU32 gpuMask, NvU32 
         //
         KCE_ITER_BEGIN(pGpu, pKCe, pKCeLoop, minP2PLce)
             NvU32 localMaxPcePerHshub = 0;
-            KernelCE *localMaxLcePerHshub;
+            KernelCE *localMaxLcePerHshub = NULL;
             NvU32 localMaxHshub = NV_CE_MAX_HSHUBS;
 
             // if LCE is stubbed or LCE is already assigned to another peer
@@ -1245,3 +1245,18 @@ NV_STATUS kceGetP2PCes_GH100(KernelCE *pKCe, OBJGPU *pGpu, NvU32 gpuMask, NvU32 
 
     return NV_OK;
 }
+
+/*! Determine if CE support confidential compute secure copy */
+NvBool kceIsSecureCe_GH100(OBJGPU *pGpu, KernelCE *pKCe)
+{
+    NV_STATUS status;
+    NvU8 ceCaps[NV2080_CTRL_CE_CAPS_TBL_SIZE];
+
+    NV_ASSERT_OK_OR_ELSE(status,
+        kceGetDeviceCaps(pGpu, pKCe, RM_ENGINE_TYPE_COPY(pKCe->publicID), ceCaps),
+        return NV_FALSE);
+
+    return (NV2080_CTRL_CE_GET_CAP(ceCaps, NV2080_CTRL_CE_CAPS_CE_CC_SECURE) != 0) ?
+               NV_TRUE : NV_FALSE;
+};
+

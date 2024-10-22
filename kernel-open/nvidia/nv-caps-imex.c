@@ -22,6 +22,7 @@
  */
 
 #include "nv-linux.h"
+#include "nv-caps-imex.h"
 
 extern int NVreg_ImexChannelCount;
 extern int NVreg_CreateImexChannel0;

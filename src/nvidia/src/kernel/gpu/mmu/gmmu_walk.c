@@ -24,6 +24,7 @@
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "mem_mgr/gpu_vaspace.h"
+#include "mem_mgr/fabric_vaspace.h"
 #include "gpu/mmu/kern_gmmu.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
@@ -688,8 +689,23 @@ _gmmuWalkCBUpdatePde
     KernelGmmu        *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
     const GMMU_FMT    *pFmt        = pUserCtx->pGpuState->pFmt;
     MEMORY_DESCRIPTOR *pMemDesc[GMMU_MAX_PAGE_DIR_INDEX_COUNT] = {NULL};
-    NvU32                      recipExp  = NV_U32_MAX;
-    const GMMU_FMT_PDE_MULTI  *pPdeMulti = pFmt->pPdeMulti;
+    NvU32                      recipExp      = NV_U32_MAX;
+    const GMMU_FMT_PDE_MULTI  *pPdeMulti     = pFmt->pPdeMulti;
+    NvU32                      transferFlags = TRANSFER_FLAGS_NONE;
+
+    // FABRIC_VASPACE object of pGpu.
+    FABRIC_VASPACE *pFabricVAS = (pGpu->pFabricVAS != NULL) ? (dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE)) : NULL;
+
+    // GVASPACE object associated with this fabric vaspace.
+    OBJGVASPACE *pGVAS_FLA = (pFabricVAS != NULL) ? (dynamicCast(pFabricVAS->pGVAS, OBJGVASPACE)) : NULL;
+
+    // Apply the WAR to flush CPU cache if the VA space is of BAR1/FLA.
+    if (((pUserCtx->pGVAS->flags & VASPACE_FLAGS_BAR_BAR1) ||
+         (pGVAS == pGVAS_FLA)) &&
+        pKernelGmmu->bBug4686457WAR)
+    {
+        transferFlags |= TRANSFER_FLAGS_FLUSH_CPU_CACHE_WAR_BUG4686457;
+    }
 
     pMemDesc[GMMU_USER_PAGE_DIR_INDEX] = (MEMORY_DESCRIPTOR*)pLevelMem;
     if (bMirror)
@@ -796,7 +812,7 @@ _gmmuWalkCBUpdatePde
         dest.offset = entryIndex * pLevelFmt->entrySize;
         NV_ASSERT_OK(memmgrMemWrite(GPU_GET_MEMORY_MANAGER(pGpu), &dest,
                                     entry.v8, pLevelFmt->entrySize,
-                                    TRANSFER_FLAGS_NONE));
+                                    transferFlags));
     }
 
     return NV_TRUE;
@@ -984,11 +1000,27 @@ _gmmuWalkCBCopyEntries
     NvU32                     *pProgress
 )
 {
-    MEMORY_DESCRIPTOR *pSrcDesc = (MEMORY_DESCRIPTOR *)pSrcMem;
-    MEMORY_DESCRIPTOR *pDstDesc = (MEMORY_DESCRIPTOR *)pDstMem;
-    TRANSFER_SURFACE   src      = {0};
-    TRANSFER_SURFACE   dest     = {0};
+    OBJGPU            *pGpu          = pUserCtx->pGpu;
+    KernelGmmu        *pKernelGmmu   = GPU_GET_KERNEL_GMMU(pGpu);
+    MEMORY_DESCRIPTOR *pSrcDesc      = (MEMORY_DESCRIPTOR *)pSrcMem;
+    MEMORY_DESCRIPTOR *pDstDesc      = (MEMORY_DESCRIPTOR *)pDstMem;
+    TRANSFER_SURFACE   src           = {0};
+    TRANSFER_SURFACE   dest          = {0};
+    NvU32              transferFlags = TRANSFER_FLAGS_NONE;
 
+    // FABRIC_VASPACE object of pGpu.
+    FABRIC_VASPACE *pFabricVAS = (pGpu->pFabricVAS != NULL) ? (dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE)) : NULL;
+
+    // GVASPACE object associated with this fabric vaspace.
+    OBJGVASPACE *pGVAS_FLA = (pFabricVAS != NULL) ? (dynamicCast(pFabricVAS->pGVAS, OBJGVASPACE)) : NULL;
+
+    // Apply the WAR to flush CPU cache if the VA space is of BAR1/FLA
+    if (((pUserCtx->pGVAS->flags & VASPACE_FLAGS_BAR_BAR1) ||
+         (pUserCtx->pGVAS == pGVAS_FLA)) &&
+        pKernelGmmu->bBug4686457WAR)
+    {
+        transferFlags |= TRANSFER_FLAGS_FLUSH_CPU_CACHE_WAR_BUG4686457;
+    }
     src.pMemDesc = pSrcDesc;
     src.offset = entryIndexLo * pLevelFmt->entrySize;
     dest.pMemDesc = pDstDesc;
@@ -1009,7 +1041,7 @@ _gmmuWalkCBCopyEntries
                   entryIndexHi);
 
         NV_ASSERT_OK(memmgrMemCopy(GPU_GET_MEMORY_MANAGER(pGpu), &dest, &src,
-                                   sizeOfEntries, TRANSFER_FLAGS_NONE));
+                                   sizeOfEntries, transferFlags));
     }
 
     // Report full range complete.

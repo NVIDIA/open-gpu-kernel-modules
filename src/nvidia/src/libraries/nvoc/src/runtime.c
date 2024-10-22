@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -180,7 +180,7 @@ void __nvoc_objDelete(Dynamic *pDynamic)
         return;
     }
 
-    pDynamic->__nvoc_rtti->dtor(pDynamic);
+    __nvoc_destructFromBase(pDynamic);
 
     pObj = dynamicCast(pDynamic, Object);
     if (pObj->pParent != NULL)

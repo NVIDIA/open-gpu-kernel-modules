@@ -453,7 +453,7 @@ typedef enum _NVLOG_ARGTYPE
             ))                                                      |          \
         DRF_DEF(_REG_STR_RM, _NVLOG, _BUFFER_SIZE,   _DEFAULT)      |          \
         DRF_NUM(_REG_STR_RM, _NVLOG, _RUNTIME_LEVEL, 0)             |          \
-        DRF_DEF(_REG_STR_RM, _NVLOG, _TIMESTAMP,     _32)           |          \
+        DRF_DEF(_REG_STR_RM, _NVLOG, _TIMESTAMP,     _64)           |          \
         DRF_DEF(_REG_STR_RM, _NVLOG, _INITED,        _YES)                     \
     )
 #endif // NVLOG_DEFAULT_FLAGS

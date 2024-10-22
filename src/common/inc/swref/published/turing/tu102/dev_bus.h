@@ -25,6 +25,7 @@
 #define __tu102_dev_bus_h__
 
 #define NV_PBUS_VBIOS_SCRATCH(i)                  (0x00001400+(i)*4) /*       */
+#define NV_PBUS_SW_SCRATCH(i)                     (0x00001400+(i)*4) /* RW-4A */
 
 #define NV_PBUS_IFR_FMT_FIXED0                        0x00000000 /*       */
 #define NV_PBUS_IFR_FMT_FIXED0_SIGNATURE                    31:0 /*       */

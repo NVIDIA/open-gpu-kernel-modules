@@ -29,18 +29,18 @@
 
 // Service ATS faults in the range (base, base + UVM_VA_BLOCK_SIZE) with service
 // type for individual pages in the range requested by page masks set in
-// ats_context->read_fault_mask/write_fault_mask. base must be aligned to
+// ats_context->fault.read_fault_mask/write_fault_mask. base must be aligned to
 // UVM_VA_BLOCK_SIZE. The caller is responsible for ensuring that faulting
 // addresses fall completely within the VMA. The caller is also responsible for
 // ensuring that the faulting addresses don't overlap a GMMU region. (See
 // uvm_ats_check_in_gmmu_region). The caller is also responsible for handling
 // any errors returned by this function (fault cancellations etc.).
 //
-// Returns the fault service status in ats_context->faults_serviced_mask. In
-// addition, ats_context->reads_serviced_mask returns whether read servicing
-// worked on write faults iff the read service was also requested in the
-// corresponding bit in read_fault_mask. These returned masks are only valid if
-// the return status is NV_OK. Status other than NV_OK indicate system global
+// Returns the fault service status in ats_context->fault.faults_serviced_mask.
+// In addition, ats_context->fault.reads_serviced_mask returns whether read
+// servicing worked on write faults iff the read service was also requested in
+// the corresponding bit in read_fault_mask. These returned masks are only valid
+// if the return status is NV_OK. Status other than NV_OK indicate system global
 // fault servicing failures.
 //
 // LOCKING: The caller must retain and hold the mmap_lock and hold the va_space
@@ -52,9 +52,9 @@ NV_STATUS uvm_ats_service_faults(uvm_gpu_va_space_t *gpu_va_space,
 
 // Service access counter notifications on ATS regions in the range (base, base
 // + UVM_VA_BLOCK_SIZE) for individual pages in the range requested by page_mask
-// set in ats_context->accessed_mask. base must be aligned to UVM_VA_BLOCK_SIZE.
-// The caller is responsible for ensuring that the addresses in the
-// accessed_mask is completely covered by the VMA. The caller is also
+// set in ats_context->access_counters.accessed_mask. base must be aligned to
+// UVM_VA_BLOCK_SIZE. The caller is responsible for ensuring that the addresses
+// in the accessed_mask is completely covered by the VMA. The caller is also
 // responsible for handling any errors returned by this function.
 //
 // Returns NV_OK if servicing was successful. Any other error indicates an error

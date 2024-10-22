@@ -179,11 +179,6 @@ void       rmIntrMaskLockFree(NvU32 gpuInst);
 NvU64      rmIntrMaskLockAcquire(OBJGPU *pGpu);
 void       rmIntrMaskLockRelease(OBJGPU *pGpu, NvU64 oldIrql);
 
-// wrappers for handling lock-related NV_ASSERT_OR_RETURNs
-#define LOCK_ASSERT_AND_RETURN(cond)                    NV_ASSERT_OR_ELSE_STR((cond), #cond, return NV_ERR_INVALID_LOCK_STATE)
-#define IRQL_ASSERT_AND_RETURN(cond)                    NV_ASSERT_OR_ELSE_STR((cond), #cond, return NV_ERR_INVALID_IRQ_LEVEL)
-#define LOCK_ASSERT_AND_RETURN_BOOL(cond, bRet)         NV_ASSERT_OR_ELSE_STR((cond), #cond, return (bRet))
-
 #define LOCK_METER_OP(f,l,t,d0,d1,d2)
 #define LOCK_METER_DATA(t,d0,d1,d2)
 

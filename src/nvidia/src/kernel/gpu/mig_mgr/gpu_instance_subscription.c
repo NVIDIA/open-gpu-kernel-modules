@@ -388,7 +388,7 @@ gisubscriptionCtrlCmdExecPartitionsCreate_IMPL
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance = pGPUInstanceSubscription->pKernelMIGGpuInstance;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
 {
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
@@ -536,7 +536,7 @@ gisubscriptionCtrlCmdExecPartitionsDelete_IMPL
     KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance = pGPUInstanceSubscription->pKernelMIGGpuInstance;
     NvU32 execPartIdx;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
 {
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
@@ -649,7 +649,7 @@ gisubscriptionCtrlCmdExecPartitionsGet_IMPL
 
     MIG_COMPUTE_INSTANCE *pTargetComputeInstanceInfo = NULL;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     NV_ASSERT_OR_RETURN(pGpu->getProperty(pGpu, PDB_PROP_GPU_MIG_SUPPORTED),
                         NV_ERR_NOT_SUPPORTED);
@@ -727,7 +727,7 @@ gisubscriptionCtrlCmdExecPartitionsGetActiveIds_IMPL
     KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance = pGPUInstanceSubscription->pKernelMIGGpuInstance;
     NvU32 ciIdx;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     NV_ASSERT_OR_RETURN(pGpu->getProperty(pGpu, PDB_PROP_GPU_MIG_SUPPORTED),
                         NV_ERR_NOT_SUPPORTED);

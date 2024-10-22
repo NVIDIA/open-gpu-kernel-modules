@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -248,8 +248,8 @@ static inline NvU32 instmemGetHashTableBaseAddr_4a4dee(OBJGPU *pGpu, struct Disp
 
 NvBool instmemIsValid_v03_00(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, NvU32 offset);
 
-static inline NvBool instmemIsValid_491d52(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, NvU32 offset) {
-    return ((NvBool)(0 != 0));
+static inline NvBool instmemIsValid_3dd2c9(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, NvU32 offset) {
+    return NV_FALSE;
 }
 
 NvU32 instmemGenerateHashTableData_v03_00(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, NvU32 hClient, NvU32 offset, NvU32 dispChannelNum);

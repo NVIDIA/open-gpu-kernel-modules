@@ -60,7 +60,7 @@ gpuWriteBusConfigReg_GH100
     NvU32      value
 )
 {
-    return gpuWriteBusConfigCycle(pGpu, index, value);
+    return gpuWriteBusConfigCycle_HAL(pGpu, index, value);
 }
 
 /*!
@@ -80,7 +80,7 @@ gpuReadBusConfigReg_GH100
     NvU32     *pData
 )
 {
-    return gpuReadBusConfigCycle(pGpu, index, pData);
+    return gpuReadBusConfigCycle_HAL(pGpu, index, pData);
 }
 
 /*!
@@ -371,7 +371,6 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GH100[] =
     GPU_CHILD_PRESENT(KernelRc, 1),
     GPU_CHILD_PRESENT(Intr, 1),
     GPU_CHILD_PRESENT(NvDebugDump, 1),
-    GPU_CHILD_PRESENT(OBJGPUMON, 1),
     GPU_CHILD_PRESENT(OBJSWENG, 1),
     GPU_CHILD_PRESENT(OBJUVM, 1),
     GPU_CHILD_PRESENT(KernelBif, 1),
@@ -440,6 +439,26 @@ gpuDetermineSelfHostedMode_KERNEL_GH100
 }
 
 /*!
+ * @brief Determine SoC type if GPU is configured in Self Hosted mode.
+ *
+ * @param[in]      pGpu           OBJGPU pointer
+ *
+ * @return SoC type
+ */
+NvU32
+gpuDetermineSelfHostedSocType_GH100
+(
+    OBJGPU *pGpu
+)
+{
+    if (!gpuIsSelfHosted(pGpu))
+    {
+        return NV0000_CTRL_SYSTEM_SH_SOC_TYPE_NA;
+    }
+    return NV0000_CTRL_SYSTEM_SH_SOC_TYPE_NV_GRACE;
+}
+
+/*!
  * @brief Determine if MIG can be supported.
  * In self hosted hopper, MIG can be supported only from specific
  * GH100 revisions.
@@ -504,9 +523,8 @@ gpuIsProtectedPcieEnabledInHw_GH100
     OBJGPU *pGpu
 )
 {
-    NvU32 val = GPU_REG_RD32(pGpu, NV_PGC6_AON_SECURE_SCRATCH_GROUP_20_CC);
-    return FLD_TEST_DRF(_PGC6, _AON_SECURE_SCRATCH_GROUP_20_CC, _MULTI_GPU_MODE,
-                        _PROTECTED_PCIE, val);
+    // Bug 4870925: Disabled PPCIE
+    return NV_FALSE;
 }
 
 /*!

@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -251,9 +251,9 @@ static inline void kchangrpSetSubcontextZombieState(struct OBJGPU *pGpu, struct 
 
 #define kchangrpSetSubcontextZombieState_HAL(pGpu, arg2, arg3, arg4) kchangrpSetSubcontextZombieState(pGpu, arg2, arg3, arg4)
 
-static inline NvBool kchangrpGetSubcontextZombieState_ceaee8(struct OBJGPU *pGpu, struct KernelChannelGroup *arg2, NvU32 arg3) {
+static inline NvBool kchangrpGetSubcontextZombieState_72a2e1(struct OBJGPU *pGpu, struct KernelChannelGroup *arg2, NvU32 arg3) {
     NV_ASSERT_PRECOMP(0);
-    return ((NvBool)(0 != 0));
+    return NV_FALSE;
 }
 
 
@@ -263,7 +263,7 @@ static inline NvBool kchangrpGetSubcontextZombieState(struct OBJGPU *pGpu, struc
     return NV_FALSE;
 }
 #else //__nvoc_kernel_channel_group_h_disabled
-#define kchangrpGetSubcontextZombieState(pGpu, arg2, arg3) kchangrpGetSubcontextZombieState_ceaee8(pGpu, arg2, arg3)
+#define kchangrpGetSubcontextZombieState(pGpu, arg2, arg3) kchangrpGetSubcontextZombieState_72a2e1(pGpu, arg2, arg3)
 #endif //__nvoc_kernel_channel_group_h_disabled
 
 #define kchangrpGetSubcontextZombieState_HAL(pGpu, arg2, arg3) kchangrpGetSubcontextZombieState(pGpu, arg2, arg3)

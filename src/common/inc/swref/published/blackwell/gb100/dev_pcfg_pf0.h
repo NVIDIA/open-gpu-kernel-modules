@@ -24,6 +24,93 @@
 #ifndef __gb100_dev_pcfg_pf0_h__
 #define __gb100_dev_pcfg_pf0_h__
 
+#define NV_PF0_INTERRUPT_AND_LATENCY                                                                 0x0000003c          /* RW-4R */
+#define NV_PF0_PCI_EXPRESS_CAPABILITIES                                                              0x00000040          /* R--4R */
+#define NV_PF0_LINK_CONTROL_AND_STATUS_2                                                             0x00000070          /* RW-4R */
+#define NV_PF0_PBA_OFFSET_PBA_BIR                                                                    0x00000084          /* R--4R */
+#define NV_PF0_POWER_MANAGEMENT_CAPABILITIES                                                         0x00000088          /* R--4R */
+#define NV_PF0_POWER_MANAGEMENT_CONTROL_STATUS                                                       0x0000008c          /* RW-4R */
+#define NV_PF0_VENDOR_SPECIFIC_HEADER_CAP                                                            0x00000090          /* R--4R */
+#define NV_PF0_VENDOR_SPECIFIC_CAP_MSG_BOX_MUTEX                                                     0x000000a0          /* RW-4R */
+#define NV_PF0_VENDOR_SPECIFIC_HEADER_CAP_MSG_BOX_ENABLED_DEFAULT                                    0x00000001          /* R-I-V */
+#define NV_PF0_VENDOR_SPECIFIC2_HEADER_CAP                                                           0x000000a4          /* R--4R */
+#define NV_PF0_VENDOR_SPECIFIC2_HEADER_CAP_DWORD5                                                    0x000000b8          /* R--4R */
+#define NV_PF0_VENDOR_SPECIFIC2_HEADER_CAP_MSG_BOX_ENABLED_DEFAULT                                   0x00000000          /* R-I-V */
+#define NV_PF0_DSN_CAP_HEADER                                                                        0x00000100          /* R--4R */
+#define NV_PF0_DSN_SERIAL_NUMBER_HIGH                                                                0x00000108          /* R--4R */
+#define NV_PF0_ADVANCED_ERROR_REPORTING_EXTENDED_CAPABILITY_HEADER                                   0x00000148          /* R--4R */
+#define NV_PF0_TLP_PREFIX_LOG_REGISTER_3                                                             0x0000018c          /* R--4R */
+#define NV_PF0_POWER_BUDGETING_EXTENDED_CAPABILITY_HEADER                                            0x00000368          /* R--4R */
+#define NV_PF0_POWER_BUDGETING_CAPABILITY                                                            0x00000374          /* R--4R */
+#define NV_PF0_ARI_EXTENDED_CAPABILITY_HEADER                                                        0x000002f8          /* R--4R */
+#define NV_PF0_ARI_CAPABILITY_AND_CONTROL                                                            0x000002fc          /* R--4R */
+#define NV_PF0_ATS_EXTENDED_CAP_HEADER                                                               0x000003a8          /* R--4R */
+#define NV_PF0_ATS_CAP_AND_CONTROL                                                                   0x000003ac          /* RW-4R */
+#define NV_PF0_SR_IOV_EXTENDED_CAPABILITY_HEADER                                                     0x00000300          /* R--4R */
+#define NV_PF0_VF_MIGRATION_STATE_ARRAY_OFFSET                                                       0x0000033c          /* R--4R */
+#define NV_PF0_PF_RESIZABLE_BAR_EXTENDED_CAPABILITY_HEADER                                           0x00000198          /* R--4R */
+#define NV_PF0_LTR_EXTENDED_CAPABILITY_HEADER                                                        0x00000190          /* R--4R */
+#define NV_PF0_MAX_SNOOP_AND_NO_SNOOP_LATENCY                                                        0x00000194          /* RW-4R */
+#define NV_PF0_SECONDARY_PCI_EXPRESS_EXTENDED_CAPABILITY_HEADER                                      0x00000244          /* R--4R */
+#define NV_PF0_LANE_EQUALIZATION_CONTROL_0_1(i)                                                      (0x00000250+(i)*4)  /* R--4A */
+#define NV_PF0_LANE_EQUALIZATION_CONTROL_0_1__SIZE_1                                                 8                   /*       */
+#define NV_PF0_PASID_CAP_HEADER                                                                      0x000003b0          /* R--4R */
+#define NV_PF0_PASID_CAP_AND_CONTROL                                                                 0x000003b4          /* RW-4R */
+#define NV_PF0_L1_PM_SUBSTATE_EXTENDED_CAPABILITY_HEADER                                             0x00000340          /* R--4R */
+#define NV_PF0_L1_PM_SUBSTATES_STATUS                                                                0x00000350          /* R--4R */
+#define NV_PF0_VF_RESIZABLE_BAR_EXTENDED_CAPABILITY_HEADER                                           0x000001a4          /* R--4R */
+#define NV_PF0_VF_RESIZABLE_BAR_CONTROL                                                              0x000001ac          /* RW-4R */
+#define NV_PF0_DATA_LINK_FEATURE_EXTENDED_CAPABILITY_HEADER                                          0x000001d8          /* R--4R */
+#define NV_PF0_DATA_LINK_FEATURE_STATUS_REGISTER                                                     0x000001e0          /* R--4R */
+#define NV_PF0_X16P0_GTS_CAPABILITY_HEADER                                                           0x000001e4          /* R--4R */
+#define NV_PF0_X16P0_GTS_LANE_EQUALIZATION_CONTROL_0_3(i)                                            (0x00000204+(i)*4)  /* R--4A */
+#define NV_PF0_X16P0_GTS_LANE_EQUALIZATION_CONTROL_0_3__SIZE_1                                       4                   /*       */
+#define NV_PF0_LANE_MARGINING_AT_THE_RECEIVER_EXTENDED_CAPABILITY_HEADER                             0x00000270          /* R--4R */
+#define NV_PF0_LANE_MARGINING_CONTROL_STATUS_0(i)                                                    (0x00000278+(i)*4)  /* RW-4A */
+#define NV_PF0_LANE_MARGINING_CONTROL_STATUS_0__SIZE_1                                               16                  /*       */
+#define NV_PF0_PL_32P0_GTS_CAPABILITY_HEADER                                                         0x00000214          /* R--4R */
+#define NV_PF0_PL_32P0_GTS_LANE_EQUALIZATION_CONTROL_0_3(i)                                          (0x00000234+(i)*4)  /* R--4A */
+#define NV_PF0_PL_32P0_GTS_LANE_EQUALIZATION_CONTROL_0_3__SIZE_1                                     4                   /*       */
+#define NV_PF0_ALTERNATE_PROTOCOL_CAP_HEADER                                                         0x00000a7c          /* R--4R */
+#define NV_PF0_ALTERNATE_PROTOCOL_SELECTIVE_ENABLE_MASK                                              0x00000a90          /* R--4R */
+#define NV_PF0_DOE_CAP_HEADER                                                                        0x00000378          /* R--4R */
+#define NV_PF0_DOE_READ_DATA_MAILBOX                                                                 0x0000038c          /* RW-4R */
+#define NV_PF0_DEVICE3_EXTENDED_CAP_HEADER                                                           0x00000ae0          /* R--4R */
+#define NV_PF0_DEVICE3_STATUS_3                                                                      0x00000aec          /* R--4R */
+#define NV_PF0_IDE_CAP_HEADER                                                                        0x000003e8          /* R--4R */
+#define NV_PF0_IDE_ADDRESS_ASSOCIATION_3_6(i)                                                        (0x00000460+(i)*104) /* RW-4A */
+#define NV_PF0_IDE_ADDRESS_ASSOCIATION_3_6__SIZE_1                                                   16                  /*       */
+#define NV_PF0_PHYSICAL_LAYER_64P0_GTS_EXTENDED_CAPABILITY_HEADER                                    0x00000ac0          /* R--4R */
+#define NV_PF0_64P0_GTS_LANE_EQUALIZATION_CONTROL_0_3(i)                                             (0x00000ad0+(i)*4)  /* R--4A */
+#define NV_PF0_64P0_GTS_LANE_EQUALIZATION_CONTROL_0_3__SIZE_1                                        4                   /*       */
+#define NV_PF0_FLIT_LOGGING_EXTENDED_CAPABILITY_HEADER                                               0x00000b1c          /* R--4R */
+#define NV_PF0_FBER_MEASUREMENT_STATUS_10                                                            0x00000b54          /* R--4R */
+#define NV_PF0_DVSEC0_CAP_HEADER                                                                     0x0000010c          /* R--4R */
+#define NV_PF0_NV_CXL_DVSEC0_CXL_LOCK_CAP_3                                                          0x00000144          /* R--4R */
+#define NV_PF0_DVSEC0_CXL_HEADER_1_DVSEC_VENDOR_ID_DEFAULT                                           0x00001e98          /* R-I-V */
+#define NV_PF0_DVSEC0_CXL_HEADER_1_DVSEC_LENGTH_DEFAULT                                              0x0000003c          /* R-I-V */
+#define NV_PF0_DVSEC0_CAPABILITY_HEADER                                                              0x00000af0          /* R--4R */
+#define NV_PF0_DESIGNATED_VENDOR_SPECIFIC_0_HEADER_1_NV_DVSEC0_LENGTH_DEFAULT                        0x0000001c          /* R-I-V */
+#define NV_PF0_DVSEC8_CAP_HEADER                                                                     0x000003b8          /* R--4R */
+#define NV_PF0_DVSEC8_REGISTER_BLOCK_3_REGISTER_OFFSET_HIGH                                          0x000003d8          /* R--4R */
+#define NV_PF0_DVSEC8_HEADER_1_DVSEC_VENDOR_ID_DEFAULT                                               0x00001e98          /* R-I-V */
+#define NV_PF0_DVSEC8_HEADER_1_DVSEC_LENGTH_DEFAULT                                                  0x00000024          /* R-I-V */
+#define NV_PF0_DVSEC1_CAPABILITY_HEADER                                                              0x00000b0c          /* R--4R */
+#define NV_PF0_DESIGNATED_VENDOR_SPECIFIC_1_HEADER_2                                                 0x00000b14          /* R--4R */
+#define NV_PF0_DESIGNATED_VENDOR_SPECIFIC_1_HEADER_1_NV_DVSEC1_VENDOR_ID_DEFAULT                     0x000010de          /* R-I-V */
+#define NV_PF0_DESIGNATED_VENDOR_SPECIFIC_1_HEADER_1_NV_DVSEC1_LENGTH_DEFAULT                        0x00000010          /* R-I-V */
+#define NV_PF0_DVSEC2_CAP_HEADER                                                                     0x00000b58          /* R--4R */
+#define NV_PF0_NON_CXL_FUNCTION_REGISTER_8                                                           0x00000b80          /* R--4R */
+#define NV_PF0_DVSEC2_HEADER_1_DVSEC_VENDOR_ID_DEFAULT                                               0x00001e98          /* R-I-V */
+#define NV_PF0_DVSEC2_HEADER_1_DVSEC_LENGTH_DEFAULT                                                  0x0000002c          /* R-I-V */
+#define NV_PF0_DVSEC7_CAP_HEADER                                                                     0x00000b84          /* R--4R */
+#define NV_PF0_DVSEC7_FLEX_BUS_PORT_STATUS_2                                                         0x00000ba0          /* R--4R */
+#define NV_PF0_DVSEC7_HEADER_1_DVSEC_VENDOR_ID_DEFAULT                                               0x00001e98          /* R-I-V */
+#define NV_PF0_DVSEC7_HEADER_1_DVSEC_LENGTH_DEFAULT                                                  0x00000020          /* R-I-V */
+#define NV_PF0_DVSEC2_CAPABILITY_HEADER                                                              0x00000ba4          /* R--4R */
+#define NV_PF0_DESIGNATED_VENDOR_SPECIFIC_2_HEADER_2_AND_GENERAL                                     0x00000bac          /* R--4R */
+#define NV_PF0_DESIGNATED_VENDOR_SPECIFIC_2_HEADER_1_NV_DVSEC2_VENDOR_ID_DEFAULT                     0x000010de          /* R-I-V */
+#define NV_PF0_DESIGNATED_VENDOR_SPECIFIC_2_HEADER_1_NV_DVSEC2_LENGTH_DEFAULT                        0x00000010          /* R-I-V */
 #define NV_PF0_CORRECTABLE_ERROR_STATUS_REPLAY_TIMER_TIMEOUT_STATUS                                  12:12               /* RWCVF */
 #define NV_PF0_STATUS_COMMAND_IO_SPACE_ENABLE                                                        0:0                 /* RWIVF */
 #define NV_PF0_SUBSYSTEM_ID_AND_VENDOR_ID                                                            0x0000002c          /* R--4R */
@@ -36,7 +123,7 @@
 #define NV_PF0_BASE_ADDRESS_REGISTERS_0                                                              0x00000010          /* RW-4R */
 #define NV_PF0_DEVICE_CONTROL_AND_STATUS                                                             0x00000048          /* RW-4R */
 #define NV_PF0_BASE_ADDRESS_REGISTERS_0_ADDR_TYPE                                                    2:1                 /* R-IVF */
-#define NV_PF0_MSIX_CAPABILITY_HEADR_AND_CONTROL                                                    0x0000007c          /* RW-4R */
+#define NV_PF0_MSIX_CAPABILITY_HEADR_AND_CONTROL                                                     0x0000007c          /* RW-4R */
 #define NV_PF0_DEVICE_CONTROL_2_ATOMICOP_REQUESTER_ENABLE                                            6:6                 /* RWIVF */
 #define NV_PF0_DEVICE_CONTROL_AND_STATUS_CORRECTABLE_ERROR_DETECTED                                  16:16               /* RWIVF */
 #define NV_PF0_DEVICE_CONTROL_AND_STATUS_UNSUPPORTED_REQUEST_DETECTED                                19:19               /* RWIVF */

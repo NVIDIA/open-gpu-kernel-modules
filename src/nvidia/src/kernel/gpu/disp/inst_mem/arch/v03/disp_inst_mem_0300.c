@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -152,7 +152,7 @@ instmemCommitContextDma_v03_00
     MemoryManager      *pMemoryManager  = GPU_GET_MEMORY_MANAGER(pGpu);
     RmPhysAddr          FrameAddr, Limit;
     RmPhysAddr          FrameAddr256Align;
-    RmPhysAddr          Limit256Align;
+    RmPhysAddr          LimitAlign;
     NvU32               ctxDMAFlag;
     NvU32               instoffset;
     NvU8               *pInstMemCpuVA;
@@ -250,11 +250,11 @@ instmemCommitContextDma_v03_00
     MEM_WR32(pInstMemCpuVA + SF_OFFSET(NV_DMA_ADDRESS_BASE_HI),             // word 2
              NvU64_HI32(FrameAddr256Align));
 
-    Limit256Align = Limit >> 8;
+    LimitAlign = Limit >> 8;
     MEM_WR32(pInstMemCpuVA + SF_OFFSET(NV_DMA_ADDRESS_LIMIT_LO),            // word 3
-             NvU64_LO32(Limit256Align));
+             NvU64_LO32(LimitAlign));
     MEM_WR32(pInstMemCpuVA + SF_OFFSET(NV_DMA_ADDRESS_LIMIT_HI),            // word 4
-             NvU64_HI32(Limit256Align));
+             NvU64_HI32(LimitAlign));
 
     memmgrMemEndTransfer(pMemoryManager, &dest, NV_DMA_SIZE,
         TRANSFER_FLAGS_SHADOW_ALLOC);
@@ -314,11 +314,11 @@ instmemUpdateContextDma_v03_00
 
     if (pNewLimit != NULL)
     {
-        NvU64 newLimit256Align = (*pNewLimit) >> 8;
+        NvU64 newLimitAlign = (*pNewLimit) >> 8;
         MEM_WR32(pInst + SF_OFFSET(NV_DMA_ADDRESS_LIMIT_LO),
-                 NvU64_LO32(newLimit256Align));
+                 NvU64_LO32(newLimitAlign));
         MEM_WR32(pInst + SF_OFFSET(NV_DMA_ADDRESS_LIMIT_HI),
-                 NvU64_HI32(newLimit256Align));
+                 NvU64_HI32(newLimitAlign));
     }
 
     if (comprInfo != NV0002_CTRL_CMD_UPDATE_CONTEXTDMA_FLAGS_USE_COMPR_INFO_NONE)

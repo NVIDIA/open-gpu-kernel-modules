@@ -242,6 +242,8 @@ typedef struct NVA081_GUEST_VM_INFO {
  * placementId [OUT]
  *  This param specifies the placement ID of heterogeneous timesliced vGPU instance.
  *  Otherwise it is NVA081_PLACEMENT_ID_INVALID.
+ * vgpuDevName [OUT]
+ *  This param specifies the VF BDF of the virtual GPU.
  *
  */
 typedef struct NVA081_HOST_VGPU_DEVICE {
@@ -249,7 +251,7 @@ typedef struct NVA081_HOST_VGPU_DEVICE {
     NvU32  vgpuDeviceInstanceId;
     NV_DECLARE_ALIGNED(NvU64 vgpuPciId, 8);
     NvU8   vgpuUuid[VM_UUID_SIZE];
-    NvU8   mdevUuid[VM_UUID_SIZE];
+    NvU8   vgpuDevName[VM_UUID_SIZE];
     NvU32  encoderCapacity;
     NV_DECLARE_ALIGNED(NvU64 fbUsed, 8);
     NvU32  eccState;
@@ -737,16 +739,25 @@ typedef struct NVA081_CTRL_VGPU_CONFIG_VALIDATE_SWIZZID_PARAMS {
  *  This param specific whether timesliced heterogeneous vGPU is enabled
  *  for different FB sized profiles.
  *
- * vgpuTypeId [IN]
- *  This param specifies the Type ID for VGPU profile
- *
  * placementId [IN / OUT]
  *  This param specifies the input placement ID provided by hypervisor
  *  or output placement ID reserved by RM for vGPU type ID.
  *
- * TODO : This same RmCtrl will be also be used to provide GSP heap offset
- *        to CPU plugin when vGPU-GSP is enabled.
- *        (As guest fb and gsp heap is allocated before A084 object)
+ * vgpuTypeId [IN]
+ *  This param specifies the Type ID for VGPU profile
+ *
+ * guestFbLength [OUT]
+ *  This param specifies the FB size assigned to the VM.
+ *
+ * guestFbOffset [OUT]
+ *  This param specifies the starting FB offset assigned to the VM.
+ *
+ * gspHeapOffset [OUT]
+ *  This param specifies the heap offset of gsp vgpu task.
+ *
+ * guestBar1PFOffset [OUT]
+ *  This param specifies the starting PF BAR1 offset assigned to the VM.
+ *  Only applicable for the legacy GPUs. 
  *
  * Possible status values returned are:
  *   NV_OK
@@ -765,6 +776,7 @@ typedef struct NVA081_CTRL_VGPU_CONFIG_UPDATE_HETEROGENEOUS_INFO_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 guestFbLength, 8);
     NV_DECLARE_ALIGNED(NvU64 guestFbOffset, 8);
     NV_DECLARE_ALIGNED(NvU64 gspHeapOffset, 8);
+    NV_DECLARE_ALIGNED(NvU64 guestBar1PFOffset, 8);
 } NVA081_CTRL_VGPU_CONFIG_UPDATE_HETEROGENEOUS_INFO_PARAMS;
 
 /*
@@ -825,9 +837,15 @@ typedef struct NVA081_CTRL_PGPU_GET_VGPU_STREAMING_CAPABILITY_PARAMS {
 } NVA081_CTRL_PGPU_GET_VGPU_STREAMING_CAPABILITY_PARAMS;
 
 /* vGPU capabilities */
-#define NVA081_CTRL_VGPU_CAPABILITY_MINI_QUARTER_GPU         0
-#define NVA081_CTRL_VGPU_CAPABILITY_COMPUTE_MEDIA_ENGINE_GPU 1
-#define NVA081_CTRL_VGPU_CAPABILITY_WARM_UPDATE              2
+#define NVA081_CTRL_VGPU_CAPABILITY_MINI_QUARTER_GPU                 0
+#define NVA081_CTRL_VGPU_CAPABILITY_COMPUTE_MEDIA_ENGINE_GPU         1
+#define NVA081_CTRL_VGPU_CAPABILITY_WARM_UPDATE                      2
+#define NVA081_CTRL_VGPU_CAPABILITY_DEVICE_STREAMING                 3
+#define NVA081_CTRL_VGPU_CAPABILITY_READ_DEVICE_BUFFER_BW            4
+#define NVA081_CTRL_VGPU_CAPABILITY_WRITE_DEVICE_BUFFER_BW           5
+#define NVA081_CTRL_VGPU_CAPABILITY_HETEROGENEOUS_TIMESLICE_SIZES    6
+#define NVA081_CTRL_VGPU_CAPABILITY_HETEROGENEOUS_TIMESLICE_PROFILES 7
+#define NVA081_CTRL_VGPU_CAPABILITY_FRACTIONAL_MULTI_VGPU            8
 
 /*
  * NVA081_CTRL_CMD_VGPU_SET_CAPABILITY
@@ -846,7 +864,7 @@ typedef struct NVA081_CTRL_PGPU_GET_VGPU_STREAMING_CAPABILITY_PARAMS {
  *   NV_ERR_OBJECT_NOT_FOUND
  *   NV_ERR_INVALID_ARGUMENT
  */
-#define NVA081_CTRL_CMD_VGPU_SET_CAPABILITY                  (0xa081011e) /* finn: Evaluated from "(FINN_NVA081_VGPU_CONFIG_VGPU_CONFIG_INTERFACE_ID << 8) | NVA081_CTRL_VGPU_SET_CAPABILITY_PARAMS_MESSAGE_ID" */
+#define NVA081_CTRL_CMD_VGPU_SET_CAPABILITY                          (0xa081011e) /* finn: Evaluated from "(FINN_NVA081_VGPU_CONFIG_VGPU_CONFIG_INTERFACE_ID << 8) | NVA081_CTRL_VGPU_SET_CAPABILITY_PARAMS_MESSAGE_ID" */
 
 #define NVA081_CTRL_VGPU_SET_CAPABILITY_PARAMS_MESSAGE_ID (0x1eU)
 
@@ -877,20 +895,24 @@ typedef struct NVA081_CTRL_VGPU_SET_CAPABILITY_PARAMS {
 #define NVA081_CTRL_VGPU_GET_CAPABILITY_PARAMS_MESSAGE_ID (0x1fU)
 
 typedef struct NVA081_CTRL_VGPU_GET_CAPABILITY_PARAMS {
-    NvU32  capability;
-    NvBool state;
+    NvU32 capability;
+    NvU32 state;
 } NVA081_CTRL_VGPU_GET_CAPABILITY_PARAMS;
 
 /*
  * NVA081_CTRL_CMD_VGPU_SET_VM_NAME
  *
- * This command is to set VM name for KVM.
+ * This command is to set VM name for the host.
  *
- * vgpuName [IN]
- *  This param provides the vGPU device name to RM.
+ * vmIdType [IN]
+ *  This param provides the guest VM ID type based on the host.
+ *
+ * guestVmId [IN]
+ *  This param provides the guest VM indentifier to RM based on the host.
  *
  * vmName [IN]
- *  This param provides the VM name of the vGPU device attached.
+ *  This param provides the VM name of the vGPU device attached
+ *  to the above mentioned host VM.
  *
  * Possible status values returned are:
  *   NV_OK
@@ -903,8 +925,9 @@ typedef struct NVA081_CTRL_VGPU_GET_CAPABILITY_PARAMS {
 #define NVA081_CTRL_VGPU_SET_VM_NAME_PARAMS_MESSAGE_ID (0x20U)
 
 typedef struct NVA081_CTRL_VGPU_SET_VM_NAME_PARAMS {
-    NvU8 vgpuName[VM_UUID_SIZE];
-    NvU8 vmName[NVA081_VM_NAME_SIZE];
+    VM_ID_TYPE vmIdType;
+    NV_DECLARE_ALIGNED(VM_ID guestVmId, 8);
+    NvU8       vmName[NVA081_VM_NAME_SIZE];
 } NVA081_CTRL_VGPU_SET_VM_NAME_PARAMS;
 
 /*
@@ -956,5 +979,27 @@ typedef struct NVA081_CTRL_VGPU_GET_BAR_INFO_PARAMS {
     NvU32  sparseCount;
     NvBool isBar064bit;
 } NVA081_CTRL_VGPU_GET_BAR_INFO_PARAMS;
+
+/*
+ * NVA081_CTRL_CMD_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH
+ *
+ * This command is to get the migration bandwidth of the physical GPU.
+ *
+ * migrationBandwidth [OUT]
+ *  This param specifies the migration bandwidth of GPU
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_REQUEST
+ *   NV_ERR_INVALID_STATE
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+#define NVA081_CTRL_CMD_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH (0xa0810122) /* finn: Evaluated from "(FINN_NVA081_VGPU_CONFIG_VGPU_CONFIG_INTERFACE_ID << 8) | NVA081_CTRL_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH_PARAMS_MESSAGE_ID" */
+
+#define NVA081_CTRL_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH_PARAMS_MESSAGE_ID (0x22U)
+
+typedef struct NVA081_CTRL_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH_PARAMS {
+    NvU32 migrationBandwidth;
+} NVA081_CTRL_VGPU_CONFIG_GET_MIGRATION_BANDWIDTH_PARAMS;
 
 /* _ctrlA081vgpuconfig_h_ */

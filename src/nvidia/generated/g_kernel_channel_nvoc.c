@@ -553,6 +553,21 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
 #endif
     },
     {               /*  [29] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc0u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) kchannelCtrlCmdInternalGpFifoGetWorkSubmitToken_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc0u)
+        /*flags=*/      0xc0u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0xc36f0301u,
+        /*paramSize=*/  sizeof(NVC36F_CTRL_INTERNAL_GPFIFO_GET_WORK_SUBMIT_TOKEN_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_KernelChannel.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "kchannelCtrlCmdInternalGpFifoGetWorkSubmitToken"
+#endif
+    },
+    {               /*  [30] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -567,7 +582,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdGetKmb"
 #endif
     },
-    {               /*  [30] */
+    {               /*  [31] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -585,165 +600,243 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
 
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+NvBool __nvoc_down_thunk_RmResource_resAccessCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super^2
+NvBool __nvoc_down_thunk_RmResource_resShareCallback(struct RsResource *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super^2
+NV_STATUS __nvoc_down_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+void __nvoc_down_thunk_RmResource_resControlSerialization_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_down_thunk_RmResource_resControl_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+void __nvoc_down_thunk_RmResource_resControl_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_down_thunk_GpuResource_resControl(struct RsResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_down_thunk_GpuResource_resMap(struct RsResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping);    // super
+NV_STATUS __nvoc_down_thunk_GpuResource_resUnmap(struct RsResource *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping);    // super
+NvBool __nvoc_down_thunk_GpuResource_rmresShareCallback(struct RmResource *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // super
+PEVENTNOTIFICATION * __nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr(struct INotifier *pNotifier);    // super
+struct NotifShare * __nvoc_down_thunk_Notifier_inotifyGetNotificationShare(struct INotifier *pNotifier);    // super
+void __nvoc_down_thunk_Notifier_inotifySetNotificationShare(struct INotifier *pNotifier, struct NotifShare *pNotifShare);    // super
+NV_STATUS __nvoc_down_thunk_Notifier_inotifyUnregisterEvent(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // super
+NV_STATUS __nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare(struct INotifier *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // super
+NV_STATUS __nvoc_down_thunk_KernelChannel_gpuresMap(struct GpuResource *pKernelChannel, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // this
+NV_STATUS __nvoc_down_thunk_KernelChannel_gpuresUnmap(struct GpuResource *pKernelChannel, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // this
+NV_STATUS __nvoc_down_thunk_KernelChannel_gpuresGetMapAddrSpace(struct GpuResource *pKernelChannel, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace);    // this
+NV_STATUS __nvoc_down_thunk_KernelChannel_rmresGetMemInterMapParams(struct RmResource *pKernelChannel, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // this
+NV_STATUS __nvoc_down_thunk_KernelChannel_rmresCheckMemInterUnmap(struct RmResource *pKernelChannel, NvBool bSubdeviceHandleProvided);    // this
+
 // 5 down-thunk(s) defined to bridge methods in KernelChannel from superclasses
 
 // kchannelMap: virtual override (res) base (gpures)
-static NV_STATUS __nvoc_down_thunk_KernelChannel_gpuresMap(struct GpuResource *pKernelChannel, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+NV_STATUS __nvoc_down_thunk_KernelChannel_gpuresMap(struct GpuResource *pKernelChannel, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
     return kchannelMap((struct KernelChannel *)(((unsigned char *) pKernelChannel) - __nvoc_rtti_KernelChannel_GpuResource.offset), pCallContext, pParams, pCpuMapping);
 }
 
 // kchannelUnmap: virtual override (res) base (gpures)
-static NV_STATUS __nvoc_down_thunk_KernelChannel_gpuresUnmap(struct GpuResource *pKernelChannel, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+NV_STATUS __nvoc_down_thunk_KernelChannel_gpuresUnmap(struct GpuResource *pKernelChannel, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
     return kchannelUnmap((struct KernelChannel *)(((unsigned char *) pKernelChannel) - __nvoc_rtti_KernelChannel_GpuResource.offset), pCallContext, pCpuMapping);
 }
 
 // kchannelGetMapAddrSpace: virtual override (gpures) base (gpures)
-static NV_STATUS __nvoc_down_thunk_KernelChannel_gpuresGetMapAddrSpace(struct GpuResource *pKernelChannel, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+NV_STATUS __nvoc_down_thunk_KernelChannel_gpuresGetMapAddrSpace(struct GpuResource *pKernelChannel, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return kchannelGetMapAddrSpace((struct KernelChannel *)(((unsigned char *) pKernelChannel) - __nvoc_rtti_KernelChannel_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
 // kchannelGetMemInterMapParams: virtual override (rmres) base (gpures)
-static NV_STATUS __nvoc_down_thunk_KernelChannel_rmresGetMemInterMapParams(struct RmResource *pKernelChannel, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+NV_STATUS __nvoc_down_thunk_KernelChannel_rmresGetMemInterMapParams(struct RmResource *pKernelChannel, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
     return kchannelGetMemInterMapParams((struct KernelChannel *)(((unsigned char *) pKernelChannel) - __nvoc_rtti_KernelChannel_RmResource.offset), pParams);
 }
 
 // kchannelCheckMemInterUnmap: virtual override (rmres) base (gpures)
-static NV_STATUS __nvoc_down_thunk_KernelChannel_rmresCheckMemInterUnmap(struct RmResource *pKernelChannel, NvBool bSubdeviceHandleProvided) {
+NV_STATUS __nvoc_down_thunk_KernelChannel_rmresCheckMemInterUnmap(struct RmResource *pKernelChannel, NvBool bSubdeviceHandleProvided) {
     return kchannelCheckMemInterUnmap((struct KernelChannel *)(((unsigned char *) pKernelChannel) - __nvoc_rtti_KernelChannel_RmResource.offset), bSubdeviceHandleProvided);
 }
 
 
+// Up-thunk(s) to bridge methods to ancestors (if any)
+NvBool __nvoc_up_thunk_RsResource_rmresCanCopy(struct RmResource *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super^2
+void __nvoc_up_thunk_RsResource_rmresPreDestruct(struct RmResource *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresControl(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresControlFilter(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresMap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmap(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);    // super^2
+NvBool __nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported(struct RmResource *pResource);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresMapTo(struct RmResource *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super^2
+NV_STATUS __nvoc_up_thunk_RsResource_rmresUnmapFrom(struct RmResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super^2
+NvU32 __nvoc_up_thunk_RsResource_rmresGetRefCount(struct RmResource *pResource);    // super^2
+void __nvoc_up_thunk_RsResource_rmresAddAdditionalDependants(struct RsClient *pClient, struct RmResource *pResource, RsResourceRef *pReference);    // super^2
+NvBool __nvoc_up_thunk_RmResource_gpuresAccessCallback(struct GpuResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams(struct GpuResource *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap(struct GpuResource *pRmResource, NvBool bSubdeviceHandleProvided);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor(struct GpuResource *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+void __nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RmResource_gpuresControl_Prologue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+void __nvoc_up_thunk_RmResource_gpuresControl_Epilogue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NvBool __nvoc_up_thunk_RsResource_gpuresCanCopy(struct GpuResource *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_gpuresIsDuplicate(struct GpuResource *pResource, NvHandle hMemory, NvBool *pDuplicate);    // super
+void __nvoc_up_thunk_RsResource_gpuresPreDestruct(struct GpuResource *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_gpuresControlFilter(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // super
+NvBool __nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported(struct GpuResource *pResource);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_gpuresMapTo(struct GpuResource *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // super
+NV_STATUS __nvoc_up_thunk_RsResource_gpuresUnmapFrom(struct GpuResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // super
+NvU32 __nvoc_up_thunk_RsResource_gpuresGetRefCount(struct GpuResource *pResource);    // super
+void __nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants(struct RsClient *pClient, struct GpuResource *pResource, RsResourceRef *pReference);    // super
+NV_STATUS __nvoc_up_thunk_GpuResource_kchannelControl(struct KernelChannel *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NvBool __nvoc_up_thunk_GpuResource_kchannelShareCallback(struct KernelChannel *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy);    // this
+NV_STATUS __nvoc_up_thunk_GpuResource_kchannelGetRegBaseOffsetAndSize(struct KernelChannel *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize);    // this
+NV_STATUS __nvoc_up_thunk_GpuResource_kchannelInternalControlForward(struct KernelChannel *pGpuResource, NvU32 command, void *pParams, NvU32 size);    // this
+NvHandle __nvoc_up_thunk_GpuResource_kchannelGetInternalObjectHandle(struct KernelChannel *pGpuResource);    // this
+NvBool __nvoc_up_thunk_RmResource_kchannelAccessCallback(struct KernelChannel *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_kchannelGetMemoryMappingDescriptor(struct KernelChannel *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_kchannelControlSerialization_Prologue(struct KernelChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+void __nvoc_up_thunk_RmResource_kchannelControlSerialization_Epilogue(struct KernelChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RmResource_kchannelControl_Prologue(struct KernelChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+void __nvoc_up_thunk_RmResource_kchannelControl_Epilogue(struct KernelChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NvBool __nvoc_up_thunk_RsResource_kchannelCanCopy(struct KernelChannel *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_kchannelIsDuplicate(struct KernelChannel *pResource, NvHandle hMemory, NvBool *pDuplicate);    // this
+void __nvoc_up_thunk_RsResource_kchannelPreDestruct(struct KernelChannel *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_kchannelControlFilter(struct KernelChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);    // this
+NvBool __nvoc_up_thunk_RsResource_kchannelIsPartialUnmapSupported(struct KernelChannel *pResource);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_kchannelMapTo(struct KernelChannel *pResource, RS_RES_MAP_TO_PARAMS *pParams);    // this
+NV_STATUS __nvoc_up_thunk_RsResource_kchannelUnmapFrom(struct KernelChannel *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams);    // this
+NvU32 __nvoc_up_thunk_RsResource_kchannelGetRefCount(struct KernelChannel *pResource);    // this
+void __nvoc_up_thunk_RsResource_kchannelAddAdditionalDependants(struct RsClient *pClient, struct KernelChannel *pResource, RsResourceRef *pReference);    // this
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_kchannelGetNotificationListPtr(struct KernelChannel *pNotifier);    // this
+struct NotifShare * __nvoc_up_thunk_Notifier_kchannelGetNotificationShare(struct KernelChannel *pNotifier);    // this
+void __nvoc_up_thunk_Notifier_kchannelSetNotificationShare(struct KernelChannel *pNotifier, struct NotifShare *pNotifShare);    // this
+NV_STATUS __nvoc_up_thunk_Notifier_kchannelUnregisterEvent(struct KernelChannel *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent);    // this
+NV_STATUS __nvoc_up_thunk_Notifier_kchannelGetOrAllocNotifShare(struct KernelChannel *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare);    // this
+
 // 25 up-thunk(s) defined to bridge methods in KernelChannel to superclasses
 
 // kchannelControl: virtual inherited (gpures) base (gpures)
-static NV_STATUS __nvoc_up_thunk_GpuResource_kchannelControl(struct KernelChannel *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_GpuResource_kchannelControl(struct KernelChannel *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return gpuresControl((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelChannel_GpuResource.offset), pCallContext, pParams);
 }
 
 // kchannelShareCallback: virtual inherited (gpures) base (gpures)
-static NvBool __nvoc_up_thunk_GpuResource_kchannelShareCallback(struct KernelChannel *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+NvBool __nvoc_up_thunk_GpuResource_kchannelShareCallback(struct KernelChannel *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelChannel_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
 // kchannelGetRegBaseOffsetAndSize: virtual inherited (gpures) base (gpures)
-static NV_STATUS __nvoc_up_thunk_GpuResource_kchannelGetRegBaseOffsetAndSize(struct KernelChannel *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+NV_STATUS __nvoc_up_thunk_GpuResource_kchannelGetRegBaseOffsetAndSize(struct KernelChannel *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
     return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelChannel_GpuResource.offset), pGpu, pOffset, pSize);
 }
 
 // kchannelInternalControlForward: virtual inherited (gpures) base (gpures)
-static NV_STATUS __nvoc_up_thunk_GpuResource_kchannelInternalControlForward(struct KernelChannel *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+NV_STATUS __nvoc_up_thunk_GpuResource_kchannelInternalControlForward(struct KernelChannel *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
     return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelChannel_GpuResource.offset), command, pParams, size);
 }
 
 // kchannelGetInternalObjectHandle: virtual inherited (gpures) base (gpures)
-static NvHandle __nvoc_up_thunk_GpuResource_kchannelGetInternalObjectHandle(struct KernelChannel *pGpuResource) {
+NvHandle __nvoc_up_thunk_GpuResource_kchannelGetInternalObjectHandle(struct KernelChannel *pGpuResource) {
     return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *) pGpuResource) + __nvoc_rtti_KernelChannel_GpuResource.offset));
 }
 
 // kchannelAccessCallback: virtual inherited (rmres) base (gpures)
-static NvBool __nvoc_up_thunk_RmResource_kchannelAccessCallback(struct KernelChannel *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+NvBool __nvoc_up_thunk_RmResource_kchannelAccessCallback(struct KernelChannel *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return rmresAccessCallback((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelChannel_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
 // kchannelGetMemoryMappingDescriptor: virtual inherited (rmres) base (gpures)
-static NV_STATUS __nvoc_up_thunk_RmResource_kchannelGetMemoryMappingDescriptor(struct KernelChannel *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+NV_STATUS __nvoc_up_thunk_RmResource_kchannelGetMemoryMappingDescriptor(struct KernelChannel *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
     return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *) pRmResource) + __nvoc_rtti_KernelChannel_RmResource.offset), ppMemDesc);
 }
 
 // kchannelControlSerialization_Prologue: virtual inherited (rmres) base (gpures)
-static NV_STATUS __nvoc_up_thunk_RmResource_kchannelControlSerialization_Prologue(struct KernelChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_kchannelControlSerialization_Prologue(struct KernelChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelChannel_RmResource.offset), pCallContext, pParams);
 }
 
 // kchannelControlSerialization_Epilogue: virtual inherited (rmres) base (gpures)
-static void __nvoc_up_thunk_RmResource_kchannelControlSerialization_Epilogue(struct KernelChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+void __nvoc_up_thunk_RmResource_kchannelControlSerialization_Epilogue(struct KernelChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelChannel_RmResource.offset), pCallContext, pParams);
 }
 
 // kchannelControl_Prologue: virtual inherited (rmres) base (gpures)
-static NV_STATUS __nvoc_up_thunk_RmResource_kchannelControl_Prologue(struct KernelChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RmResource_kchannelControl_Prologue(struct KernelChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControl_Prologue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelChannel_RmResource.offset), pCallContext, pParams);
 }
 
 // kchannelControl_Epilogue: virtual inherited (rmres) base (gpures)
-static void __nvoc_up_thunk_RmResource_kchannelControl_Epilogue(struct KernelChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+void __nvoc_up_thunk_RmResource_kchannelControl_Epilogue(struct KernelChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelChannel_RmResource.offset), pCallContext, pParams);
 }
 
 // kchannelCanCopy: virtual inherited (res) base (gpures)
-static NvBool __nvoc_up_thunk_RsResource_kchannelCanCopy(struct KernelChannel *pResource) {
+NvBool __nvoc_up_thunk_RsResource_kchannelCanCopy(struct KernelChannel *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelChannel_RsResource.offset));
 }
 
 // kchannelIsDuplicate: virtual inherited (res) base (gpures)
-static NV_STATUS __nvoc_up_thunk_RsResource_kchannelIsDuplicate(struct KernelChannel *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+NV_STATUS __nvoc_up_thunk_RsResource_kchannelIsDuplicate(struct KernelChannel *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelChannel_RsResource.offset), hMemory, pDuplicate);
 }
 
 // kchannelPreDestruct: virtual inherited (res) base (gpures)
-static void __nvoc_up_thunk_RsResource_kchannelPreDestruct(struct KernelChannel *pResource) {
+void __nvoc_up_thunk_RsResource_kchannelPreDestruct(struct KernelChannel *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelChannel_RsResource.offset));
 }
 
 // kchannelControlFilter: virtual inherited (res) base (gpures)
-static NV_STATUS __nvoc_up_thunk_RsResource_kchannelControlFilter(struct KernelChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_kchannelControlFilter(struct KernelChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlFilter((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelChannel_RsResource.offset), pCallContext, pParams);
 }
 
 // kchannelIsPartialUnmapSupported: inline virtual inherited (res) base (gpures) body
-static NvBool __nvoc_up_thunk_RsResource_kchannelIsPartialUnmapSupported(struct KernelChannel *pResource) {
+NvBool __nvoc_up_thunk_RsResource_kchannelIsPartialUnmapSupported(struct KernelChannel *pResource) {
     return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelChannel_RsResource.offset));
 }
 
 // kchannelMapTo: virtual inherited (res) base (gpures)
-static NV_STATUS __nvoc_up_thunk_RsResource_kchannelMapTo(struct KernelChannel *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_kchannelMapTo(struct KernelChannel *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
     return resMapTo((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelChannel_RsResource.offset), pParams);
 }
 
 // kchannelUnmapFrom: virtual inherited (res) base (gpures)
-static NV_STATUS __nvoc_up_thunk_RsResource_kchannelUnmapFrom(struct KernelChannel *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+NV_STATUS __nvoc_up_thunk_RsResource_kchannelUnmapFrom(struct KernelChannel *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
     return resUnmapFrom((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelChannel_RsResource.offset), pParams);
 }
 
 // kchannelGetRefCount: virtual inherited (res) base (gpures)
-static NvU32 __nvoc_up_thunk_RsResource_kchannelGetRefCount(struct KernelChannel *pResource) {
+NvU32 __nvoc_up_thunk_RsResource_kchannelGetRefCount(struct KernelChannel *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelChannel_RsResource.offset));
 }
 
 // kchannelAddAdditionalDependants: virtual inherited (res) base (gpures)
-static void __nvoc_up_thunk_RsResource_kchannelAddAdditionalDependants(struct RsClient *pClient, struct KernelChannel *pResource, RsResourceRef *pReference) {
+void __nvoc_up_thunk_RsResource_kchannelAddAdditionalDependants(struct RsClient *pClient, struct KernelChannel *pResource, RsResourceRef *pReference) {
     resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *) pResource) + __nvoc_rtti_KernelChannel_RsResource.offset), pReference);
 }
 
 // kchannelGetNotificationListPtr: virtual inherited (notify) base (notify)
-static PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_kchannelGetNotificationListPtr(struct KernelChannel *pNotifier) {
+PEVENTNOTIFICATION * __nvoc_up_thunk_Notifier_kchannelGetNotificationListPtr(struct KernelChannel *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_KernelChannel_Notifier.offset));
 }
 
 // kchannelGetNotificationShare: virtual inherited (notify) base (notify)
-static struct NotifShare * __nvoc_up_thunk_Notifier_kchannelGetNotificationShare(struct KernelChannel *pNotifier) {
+struct NotifShare * __nvoc_up_thunk_Notifier_kchannelGetNotificationShare(struct KernelChannel *pNotifier) {
     return notifyGetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_KernelChannel_Notifier.offset));
 }
 
 // kchannelSetNotificationShare: virtual inherited (notify) base (notify)
-static void __nvoc_up_thunk_Notifier_kchannelSetNotificationShare(struct KernelChannel *pNotifier, struct NotifShare *pNotifShare) {
+void __nvoc_up_thunk_Notifier_kchannelSetNotificationShare(struct KernelChannel *pNotifier, struct NotifShare *pNotifShare) {
     notifySetNotificationShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_KernelChannel_Notifier.offset), pNotifShare);
 }
 
 // kchannelUnregisterEvent: virtual inherited (notify) base (notify)
-static NV_STATUS __nvoc_up_thunk_Notifier_kchannelUnregisterEvent(struct KernelChannel *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
+NV_STATUS __nvoc_up_thunk_Notifier_kchannelUnregisterEvent(struct KernelChannel *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_KernelChannel_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 // kchannelGetOrAllocNotifShare: virtual inherited (notify) base (notify)
-static NV_STATUS __nvoc_up_thunk_Notifier_kchannelGetOrAllocNotifShare(struct KernelChannel *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
+NV_STATUS __nvoc_up_thunk_Notifier_kchannelGetOrAllocNotifShare(struct KernelChannel *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *) pNotifier) + __nvoc_rtti_KernelChannel_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelChannel = 
 {
-    /*numEntries=*/     31,
+    /*numEntries=*/     32,
     /*pExportEntries=*/ __nvoc_exported_method_def_KernelChannel
 };
 
@@ -805,26 +898,6 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspe
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
-
-    // kchannelMap -- virtual override (res) base (gpures)
-    pThis->__kchannelMap__ = &kchannelMap_IMPL;
-    pThis->__nvoc_base_GpuResource.__gpuresMap__ = &__nvoc_down_thunk_KernelChannel_gpuresMap;
-
-    // kchannelUnmap -- virtual override (res) base (gpures)
-    pThis->__kchannelUnmap__ = &kchannelUnmap_IMPL;
-    pThis->__nvoc_base_GpuResource.__gpuresUnmap__ = &__nvoc_down_thunk_KernelChannel_gpuresUnmap;
-
-    // kchannelGetMapAddrSpace -- virtual override (gpures) base (gpures)
-    pThis->__kchannelGetMapAddrSpace__ = &kchannelGetMapAddrSpace_IMPL;
-    pThis->__nvoc_base_GpuResource.__gpuresGetMapAddrSpace__ = &__nvoc_down_thunk_KernelChannel_gpuresGetMapAddrSpace;
-
-    // kchannelGetMemInterMapParams -- virtual override (rmres) base (gpures)
-    pThis->__kchannelGetMemInterMapParams__ = &kchannelGetMemInterMapParams_IMPL;
-    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemInterMapParams__ = &__nvoc_down_thunk_KernelChannel_rmresGetMemInterMapParams;
-
-    // kchannelCheckMemInterUnmap -- virtual override (rmres) base (gpures)
-    pThis->__kchannelCheckMemInterUnmap__ = &kchannelCheckMemInterUnmap_IMPL;
-    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresCheckMemInterUnmap__ = &__nvoc_down_thunk_KernelChannel_rmresCheckMemInterUnmap;
 
     // kchannelCreateUserMemDesc -- halified (2 hals)
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
@@ -960,6 +1033,11 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspe
     pThis->__kchannelCtrlCmdGpfifoGetWorkSubmitToken__ = &kchannelCtrlCmdGpfifoGetWorkSubmitToken_IMPL;
 #endif
 
+    // kchannelCtrlCmdInternalGpFifoGetWorkSubmitToken -- exported (id=0xc36f0301)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc0u)
+    pThis->__kchannelCtrlCmdInternalGpFifoGetWorkSubmitToken__ = &kchannelCtrlCmdInternalGpFifoGetWorkSubmitToken_IMPL;
+#endif
+
     // kchannelCtrlCmdGpfifoUpdateFaultMethodBuffer -- exported (id=0xc36f0109)
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x244u)
     pThis->__kchannelCtrlCmdGpfifoUpdateFaultMethodBuffer__ = &kchannelCtrlCmdGpfifoUpdateFaultMethodBuffer_IMPL;
@@ -1044,88 +1122,189 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspe
     {
         pThis->__kchannelSetKeyRotationNotifier__ = &kchannelSetKeyRotationNotifier_KERNEL;
     }
-
-    // kchannelControl -- virtual inherited (gpures) base (gpures)
-    pThis->__kchannelControl__ = &__nvoc_up_thunk_GpuResource_kchannelControl;
-
-    // kchannelShareCallback -- virtual inherited (gpures) base (gpures)
-    pThis->__kchannelShareCallback__ = &__nvoc_up_thunk_GpuResource_kchannelShareCallback;
-
-    // kchannelGetRegBaseOffsetAndSize -- virtual inherited (gpures) base (gpures)
-    pThis->__kchannelGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_kchannelGetRegBaseOffsetAndSize;
-
-    // kchannelInternalControlForward -- virtual inherited (gpures) base (gpures)
-    pThis->__kchannelInternalControlForward__ = &__nvoc_up_thunk_GpuResource_kchannelInternalControlForward;
-
-    // kchannelGetInternalObjectHandle -- virtual inherited (gpures) base (gpures)
-    pThis->__kchannelGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_kchannelGetInternalObjectHandle;
-
-    // kchannelAccessCallback -- virtual inherited (rmres) base (gpures)
-    pThis->__kchannelAccessCallback__ = &__nvoc_up_thunk_RmResource_kchannelAccessCallback;
-
-    // kchannelGetMemoryMappingDescriptor -- virtual inherited (rmres) base (gpures)
-    pThis->__kchannelGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_kchannelGetMemoryMappingDescriptor;
-
-    // kchannelControlSerialization_Prologue -- virtual inherited (rmres) base (gpures)
-    pThis->__kchannelControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_kchannelControlSerialization_Prologue;
-
-    // kchannelControlSerialization_Epilogue -- virtual inherited (rmres) base (gpures)
-    pThis->__kchannelControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_kchannelControlSerialization_Epilogue;
-
-    // kchannelControl_Prologue -- virtual inherited (rmres) base (gpures)
-    pThis->__kchannelControl_Prologue__ = &__nvoc_up_thunk_RmResource_kchannelControl_Prologue;
-
-    // kchannelControl_Epilogue -- virtual inherited (rmres) base (gpures)
-    pThis->__kchannelControl_Epilogue__ = &__nvoc_up_thunk_RmResource_kchannelControl_Epilogue;
-
-    // kchannelCanCopy -- virtual inherited (res) base (gpures)
-    pThis->__kchannelCanCopy__ = &__nvoc_up_thunk_RsResource_kchannelCanCopy;
-
-    // kchannelIsDuplicate -- virtual inherited (res) base (gpures)
-    pThis->__kchannelIsDuplicate__ = &__nvoc_up_thunk_RsResource_kchannelIsDuplicate;
-
-    // kchannelPreDestruct -- virtual inherited (res) base (gpures)
-    pThis->__kchannelPreDestruct__ = &__nvoc_up_thunk_RsResource_kchannelPreDestruct;
-
-    // kchannelControlFilter -- virtual inherited (res) base (gpures)
-    pThis->__kchannelControlFilter__ = &__nvoc_up_thunk_RsResource_kchannelControlFilter;
-
-    // kchannelIsPartialUnmapSupported -- inline virtual inherited (res) base (gpures) body
-    pThis->__kchannelIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_kchannelIsPartialUnmapSupported;
-
-    // kchannelMapTo -- virtual inherited (res) base (gpures)
-    pThis->__kchannelMapTo__ = &__nvoc_up_thunk_RsResource_kchannelMapTo;
-
-    // kchannelUnmapFrom -- virtual inherited (res) base (gpures)
-    pThis->__kchannelUnmapFrom__ = &__nvoc_up_thunk_RsResource_kchannelUnmapFrom;
-
-    // kchannelGetRefCount -- virtual inherited (res) base (gpures)
-    pThis->__kchannelGetRefCount__ = &__nvoc_up_thunk_RsResource_kchannelGetRefCount;
-
-    // kchannelAddAdditionalDependants -- virtual inherited (res) base (gpures)
-    pThis->__kchannelAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_kchannelAddAdditionalDependants;
-
-    // kchannelGetNotificationListPtr -- virtual inherited (notify) base (notify)
-    pThis->__kchannelGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_kchannelGetNotificationListPtr;
-
-    // kchannelGetNotificationShare -- virtual inherited (notify) base (notify)
-    pThis->__kchannelGetNotificationShare__ = &__nvoc_up_thunk_Notifier_kchannelGetNotificationShare;
-
-    // kchannelSetNotificationShare -- virtual inherited (notify) base (notify)
-    pThis->__kchannelSetNotificationShare__ = &__nvoc_up_thunk_Notifier_kchannelSetNotificationShare;
-
-    // kchannelUnregisterEvent -- virtual inherited (notify) base (notify)
-    pThis->__kchannelUnregisterEvent__ = &__nvoc_up_thunk_Notifier_kchannelUnregisterEvent;
-
-    // kchannelGetOrAllocNotifShare -- virtual inherited (notify) base (notify)
-    pThis->__kchannelGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_kchannelGetOrAllocNotifShare;
-} // End __nvoc_init_funcTable_KernelChannel_1 with approximately 79 basic block(s).
+} // End __nvoc_init_funcTable_KernelChannel_1 with approximately 45 basic block(s).
 
 
-// Initialize vtable(s) for 66 virtual method(s).
+// Initialize vtable(s) for 67 virtual method(s).
 void __nvoc_init_funcTable_KernelChannel(KernelChannel *pThis, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 66 per-object function pointer(s).
+    // Per-class vtable definition
+    static const struct NVOC_VTABLE__KernelChannel vtable = {
+        .__kchannelMap__ = &kchannelMap_IMPL,    // virtual override (res) base (gpures)
+        .GpuResource.__gpuresMap__ = &__nvoc_down_thunk_KernelChannel_gpuresMap,    // virtual override (res) base (rmres)
+        .GpuResource.RmResource.__rmresMap__ = &__nvoc_up_thunk_RsResource_rmresMap,    // virtual inherited (res) base (res)
+        .GpuResource.RmResource.RsResource.__resMap__ = &__nvoc_down_thunk_GpuResource_resMap,    // virtual
+        .__kchannelUnmap__ = &kchannelUnmap_IMPL,    // virtual override (res) base (gpures)
+        .GpuResource.__gpuresUnmap__ = &__nvoc_down_thunk_KernelChannel_gpuresUnmap,    // virtual override (res) base (rmres)
+        .GpuResource.RmResource.__rmresUnmap__ = &__nvoc_up_thunk_RsResource_rmresUnmap,    // virtual inherited (res) base (res)
+        .GpuResource.RmResource.RsResource.__resUnmap__ = &__nvoc_down_thunk_GpuResource_resUnmap,    // virtual
+        .__kchannelGetMapAddrSpace__ = &kchannelGetMapAddrSpace_IMPL,    // virtual override (gpures) base (gpures)
+        .GpuResource.__gpuresGetMapAddrSpace__ = &__nvoc_down_thunk_KernelChannel_gpuresGetMapAddrSpace,    // virtual
+        .__kchannelGetMemInterMapParams__ = &kchannelGetMemInterMapParams_IMPL,    // virtual override (rmres) base (gpures)
+        .GpuResource.__gpuresGetMemInterMapParams__ = &__nvoc_up_thunk_RmResource_gpuresGetMemInterMapParams,    // virtual inherited (rmres) base (rmres)
+        .GpuResource.RmResource.__rmresGetMemInterMapParams__ = &__nvoc_down_thunk_KernelChannel_rmresGetMemInterMapParams,    // virtual
+        .__kchannelCheckMemInterUnmap__ = &kchannelCheckMemInterUnmap_IMPL,    // virtual override (rmres) base (gpures)
+        .GpuResource.__gpuresCheckMemInterUnmap__ = &__nvoc_up_thunk_RmResource_gpuresCheckMemInterUnmap,    // virtual inherited (rmres) base (rmres)
+        .GpuResource.RmResource.__rmresCheckMemInterUnmap__ = &__nvoc_down_thunk_KernelChannel_rmresCheckMemInterUnmap,    // virtual
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x28u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4044u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x14044u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x48u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x14044u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xc0u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x244u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+        .__kchannelControl__ = &__nvoc_up_thunk_GpuResource_kchannelControl,    // virtual inherited (gpures) base (gpures)
+        .GpuResource.__gpuresControl__ = &gpuresControl_IMPL,    // virtual override (res) base (rmres)
+        .GpuResource.RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
+        .GpuResource.RmResource.RsResource.__resControl__ = &__nvoc_down_thunk_GpuResource_resControl,    // virtual
+        .__kchannelShareCallback__ = &__nvoc_up_thunk_GpuResource_kchannelShareCallback,    // virtual inherited (gpures) base (gpures)
+        .GpuResource.__gpuresShareCallback__ = &gpuresShareCallback_IMPL,    // virtual override (res) base (rmres)
+        .GpuResource.RmResource.__rmresShareCallback__ = &__nvoc_down_thunk_GpuResource_rmresShareCallback,    // virtual override (res) base (res)
+        .GpuResource.RmResource.RsResource.__resShareCallback__ = &__nvoc_down_thunk_RmResource_resShareCallback,    // virtual
+        .__kchannelGetRegBaseOffsetAndSize__ = &__nvoc_up_thunk_GpuResource_kchannelGetRegBaseOffsetAndSize,    // virtual inherited (gpures) base (gpures)
+        .GpuResource.__gpuresGetRegBaseOffsetAndSize__ = &gpuresGetRegBaseOffsetAndSize_IMPL,    // virtual
+        .__kchannelInternalControlForward__ = &__nvoc_up_thunk_GpuResource_kchannelInternalControlForward,    // virtual inherited (gpures) base (gpures)
+        .GpuResource.__gpuresInternalControlForward__ = &gpuresInternalControlForward_IMPL,    // virtual
+        .__kchannelGetInternalObjectHandle__ = &__nvoc_up_thunk_GpuResource_kchannelGetInternalObjectHandle,    // virtual inherited (gpures) base (gpures)
+        .GpuResource.__gpuresGetInternalObjectHandle__ = &gpuresGetInternalObjectHandle_IMPL,    // virtual
+        .__kchannelAccessCallback__ = &__nvoc_up_thunk_RmResource_kchannelAccessCallback,    // virtual inherited (rmres) base (gpures)
+        .GpuResource.__gpuresAccessCallback__ = &__nvoc_up_thunk_RmResource_gpuresAccessCallback,    // virtual inherited (rmres) base (rmres)
+        .GpuResource.RmResource.__rmresAccessCallback__ = &rmresAccessCallback_IMPL,    // virtual override (res) base (res)
+        .GpuResource.RmResource.RsResource.__resAccessCallback__ = &__nvoc_down_thunk_RmResource_resAccessCallback,    // virtual
+        .__kchannelGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_kchannelGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (gpures)
+        .GpuResource.__gpuresGetMemoryMappingDescriptor__ = &__nvoc_up_thunk_RmResource_gpuresGetMemoryMappingDescriptor,    // virtual inherited (rmres) base (rmres)
+        .GpuResource.RmResource.__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL,    // virtual
+        .__kchannelControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_kchannelControlSerialization_Prologue,    // virtual inherited (rmres) base (gpures)
+        .GpuResource.__gpuresControlSerialization_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Prologue,    // virtual inherited (rmres) base (rmres)
+        .GpuResource.RmResource.__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL,    // virtual override (res) base (res)
+        .GpuResource.RmResource.RsResource.__resControlSerialization_Prologue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Prologue,    // virtual
+        .__kchannelControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_kchannelControlSerialization_Epilogue,    // virtual inherited (rmres) base (gpures)
+        .GpuResource.__gpuresControlSerialization_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControlSerialization_Epilogue,    // virtual inherited (rmres) base (rmres)
+        .GpuResource.RmResource.__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL,    // virtual override (res) base (res)
+        .GpuResource.RmResource.RsResource.__resControlSerialization_Epilogue__ = &__nvoc_down_thunk_RmResource_resControlSerialization_Epilogue,    // virtual
+        .__kchannelControl_Prologue__ = &__nvoc_up_thunk_RmResource_kchannelControl_Prologue,    // virtual inherited (rmres) base (gpures)
+        .GpuResource.__gpuresControl_Prologue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Prologue,    // virtual inherited (rmres) base (rmres)
+        .GpuResource.RmResource.__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL,    // virtual override (res) base (res)
+        .GpuResource.RmResource.RsResource.__resControl_Prologue__ = &__nvoc_down_thunk_RmResource_resControl_Prologue,    // virtual
+        .__kchannelControl_Epilogue__ = &__nvoc_up_thunk_RmResource_kchannelControl_Epilogue,    // virtual inherited (rmres) base (gpures)
+        .GpuResource.__gpuresControl_Epilogue__ = &__nvoc_up_thunk_RmResource_gpuresControl_Epilogue,    // virtual inherited (rmres) base (rmres)
+        .GpuResource.RmResource.__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL,    // virtual override (res) base (res)
+        .GpuResource.RmResource.RsResource.__resControl_Epilogue__ = &__nvoc_down_thunk_RmResource_resControl_Epilogue,    // virtual
+        .__kchannelCanCopy__ = &__nvoc_up_thunk_RsResource_kchannelCanCopy,    // virtual inherited (res) base (gpures)
+        .GpuResource.__gpuresCanCopy__ = &__nvoc_up_thunk_RsResource_gpuresCanCopy,    // virtual inherited (res) base (rmres)
+        .GpuResource.RmResource.__rmresCanCopy__ = &__nvoc_up_thunk_RsResource_rmresCanCopy,    // virtual inherited (res) base (res)
+        .GpuResource.RmResource.RsResource.__resCanCopy__ = &resCanCopy_IMPL,    // virtual
+        .__kchannelIsDuplicate__ = &__nvoc_up_thunk_RsResource_kchannelIsDuplicate,    // virtual inherited (res) base (gpures)
+        .GpuResource.__gpuresIsDuplicate__ = &__nvoc_up_thunk_RsResource_gpuresIsDuplicate,    // virtual inherited (res) base (rmres)
+        .GpuResource.RmResource.__rmresIsDuplicate__ = &__nvoc_up_thunk_RsResource_rmresIsDuplicate,    // virtual inherited (res) base (res)
+        .GpuResource.RmResource.RsResource.__resIsDuplicate__ = &resIsDuplicate_IMPL,    // virtual
+        .__kchannelPreDestruct__ = &__nvoc_up_thunk_RsResource_kchannelPreDestruct,    // virtual inherited (res) base (gpures)
+        .GpuResource.__gpuresPreDestruct__ = &__nvoc_up_thunk_RsResource_gpuresPreDestruct,    // virtual inherited (res) base (rmres)
+        .GpuResource.RmResource.__rmresPreDestruct__ = &__nvoc_up_thunk_RsResource_rmresPreDestruct,    // virtual inherited (res) base (res)
+        .GpuResource.RmResource.RsResource.__resPreDestruct__ = &resPreDestruct_IMPL,    // virtual
+        .__kchannelControlFilter__ = &__nvoc_up_thunk_RsResource_kchannelControlFilter,    // virtual inherited (res) base (gpures)
+        .GpuResource.__gpuresControlFilter__ = &__nvoc_up_thunk_RsResource_gpuresControlFilter,    // virtual inherited (res) base (rmres)
+        .GpuResource.RmResource.__rmresControlFilter__ = &__nvoc_up_thunk_RsResource_rmresControlFilter,    // virtual inherited (res) base (res)
+        .GpuResource.RmResource.RsResource.__resControlFilter__ = &resControlFilter_IMPL,    // virtual
+        .__kchannelIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_kchannelIsPartialUnmapSupported,    // inline virtual inherited (res) base (gpures) body
+        .GpuResource.__gpuresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_gpuresIsPartialUnmapSupported,    // inline virtual inherited (res) base (rmres) body
+        .GpuResource.RmResource.__rmresIsPartialUnmapSupported__ = &__nvoc_up_thunk_RsResource_rmresIsPartialUnmapSupported,    // inline virtual inherited (res) base (res) body
+        .GpuResource.RmResource.RsResource.__resIsPartialUnmapSupported__ = &resIsPartialUnmapSupported_d69453,    // inline virtual body
+        .__kchannelMapTo__ = &__nvoc_up_thunk_RsResource_kchannelMapTo,    // virtual inherited (res) base (gpures)
+        .GpuResource.__gpuresMapTo__ = &__nvoc_up_thunk_RsResource_gpuresMapTo,    // virtual inherited (res) base (rmres)
+        .GpuResource.RmResource.__rmresMapTo__ = &__nvoc_up_thunk_RsResource_rmresMapTo,    // virtual inherited (res) base (res)
+        .GpuResource.RmResource.RsResource.__resMapTo__ = &resMapTo_IMPL,    // virtual
+        .__kchannelUnmapFrom__ = &__nvoc_up_thunk_RsResource_kchannelUnmapFrom,    // virtual inherited (res) base (gpures)
+        .GpuResource.__gpuresUnmapFrom__ = &__nvoc_up_thunk_RsResource_gpuresUnmapFrom,    // virtual inherited (res) base (rmres)
+        .GpuResource.RmResource.__rmresUnmapFrom__ = &__nvoc_up_thunk_RsResource_rmresUnmapFrom,    // virtual inherited (res) base (res)
+        .GpuResource.RmResource.RsResource.__resUnmapFrom__ = &resUnmapFrom_IMPL,    // virtual
+        .__kchannelGetRefCount__ = &__nvoc_up_thunk_RsResource_kchannelGetRefCount,    // virtual inherited (res) base (gpures)
+        .GpuResource.__gpuresGetRefCount__ = &__nvoc_up_thunk_RsResource_gpuresGetRefCount,    // virtual inherited (res) base (rmres)
+        .GpuResource.RmResource.__rmresGetRefCount__ = &__nvoc_up_thunk_RsResource_rmresGetRefCount,    // virtual inherited (res) base (res)
+        .GpuResource.RmResource.RsResource.__resGetRefCount__ = &resGetRefCount_IMPL,    // virtual
+        .__kchannelAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_kchannelAddAdditionalDependants,    // virtual inherited (res) base (gpures)
+        .GpuResource.__gpuresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_gpuresAddAdditionalDependants,    // virtual inherited (res) base (rmres)
+        .GpuResource.RmResource.__rmresAddAdditionalDependants__ = &__nvoc_up_thunk_RsResource_rmresAddAdditionalDependants,    // virtual inherited (res) base (res)
+        .GpuResource.RmResource.RsResource.__resAddAdditionalDependants__ = &resAddAdditionalDependants_IMPL,    // virtual
+        .__kchannelGetNotificationListPtr__ = &__nvoc_up_thunk_Notifier_kchannelGetNotificationListPtr,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifyGetNotificationListPtr__ = &notifyGetNotificationListPtr_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifyGetNotificationListPtr__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationListPtr,    // pure virtual
+        .__kchannelGetNotificationShare__ = &__nvoc_up_thunk_Notifier_kchannelGetNotificationShare,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifyGetNotificationShare__ = &notifyGetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifyGetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifyGetNotificationShare,    // pure virtual
+        .__kchannelSetNotificationShare__ = &__nvoc_up_thunk_Notifier_kchannelSetNotificationShare,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifySetNotificationShare__ = &notifySetNotificationShare_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifySetNotificationShare__ = &__nvoc_down_thunk_Notifier_inotifySetNotificationShare,    // pure virtual
+        .__kchannelUnregisterEvent__ = &__nvoc_up_thunk_Notifier_kchannelUnregisterEvent,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifyUnregisterEvent__ = &notifyUnregisterEvent_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifyUnregisterEvent__ = &__nvoc_down_thunk_Notifier_inotifyUnregisterEvent,    // pure virtual
+        .__kchannelGetOrAllocNotifShare__ = &__nvoc_up_thunk_Notifier_kchannelGetOrAllocNotifShare,    // virtual inherited (notify) base (notify)
+        .Notifier.__notifyGetOrAllocNotifShare__ = &notifyGetOrAllocNotifShare_IMPL,    // virtual override (inotify) base (inotify)
+        .Notifier.INotifier.__inotifyGetOrAllocNotifShare__ = &__nvoc_down_thunk_Notifier_inotifyGetOrAllocNotifShare,    // pure virtual
+    };
+
+    // Pointer(s) to per-class vtable(s)
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable = &vtable.GpuResource.RmResource.RsResource;    // (res) super^3
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable = &vtable.GpuResource.RmResource;    // (rmres) super^2
+    pThis->__nvoc_base_GpuResource.__nvoc_vtable = &vtable.GpuResource;    // (gpures) super
+    pThis->__nvoc_base_Notifier.__nvoc_base_INotifier.__nvoc_vtable = &vtable.Notifier.INotifier;    // (inotify) super^2
+    pThis->__nvoc_base_Notifier.__nvoc_vtable = &vtable.Notifier;    // (notify) super
+    pThis->__nvoc_vtable = &vtable;    // (kchannel) this
+
+    // Initialize vtable(s) with 37 per-object function pointer(s).
     __nvoc_init_funcTable_KernelChannel_1(pThis, pRmhalspecowner);
 }
 

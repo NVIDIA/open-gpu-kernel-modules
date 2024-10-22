@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,9 +35,9 @@ typedef enum
 } P2P_CONNECTIVITY;
 
 NV_STATUS p2pGetCaps       (NvU32 gpuMask, NvBool *pP2PWriteCapable, NvBool *pP2PReadCapable,
-                            P2P_CONNECTIVITY *pConnectivity);
+                            NvBool *pP2PAtomicsCapable, P2P_CONNECTIVITY *pConnectivity);
 NV_STATUS p2pGetCapsStatus (NvU32 gpuMask, NvU8 *pP2PWriteCapStatus, NvU8 *pP2PReadCapStatus,
-                            P2P_CONNECTIVITY *pConnectivity
+                            NvBool *pP2PAtomicsCapable, P2P_CONNECTIVITY *pConnectivity
                             );
 
 #endif // P2P_CAPS_H

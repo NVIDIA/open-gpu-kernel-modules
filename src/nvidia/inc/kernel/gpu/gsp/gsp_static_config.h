@@ -30,7 +30,6 @@
 // CPU RM (aka GSP client) via NV_RM_RPC_GET_GSP_STATIC_INFO() call.
 
 #include "ctrl/ctrl0080/ctrl0080gpu.h"
-#include "ctrl/ctrl0080/ctrl0080gr.h"
 #include "ctrl/ctrl2080/ctrl2080bios.h"
 #include "ctrl/ctrl2080/ctrl2080fb.h"
 #include "ctrl/ctrl2080/ctrl2080gpu.h"
@@ -40,6 +39,7 @@
 #include "vgpu/rpc_headers.h" // MAX_GPC_COUNT
 #include "platform/chipset/chipset.h" // BUSINFO
 #include "gpu/nvbitmask.h" // NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX
+
 
 // VF related info for GSP-RM
 typedef struct GSP_VF_INFO
@@ -61,19 +61,6 @@ typedef struct
     NvU32 linkCap;
 } GSP_PCIE_CONFIG_REG;
 
-typedef struct GspSMInfo_t
-{
-    NvU32 version;
-    NvU32 regBankCount;
-    NvU32 regBankRegCount;
-    NvU32 maxWarpsPerSM;
-    NvU32 maxThreadsPerWarp;
-    NvU32 geomGsObufEntries;
-    NvU32 geomXbufEntries;
-    NvU32 maxSPPerSM;
-    NvU32 rtCoreCount;
-} GspSMInfo;
-
 typedef struct
 {
     NvU32 ecidLow;
@@ -86,9 +73,6 @@ typedef struct GspStaticConfigInfo_t
 {
     NvU8 grCapsBits[NV0080_CTRL_GR_CAPS_TBL_SIZE];
     NV2080_CTRL_GPU_GET_GID_INFO_PARAMS gidInfo;
-    NV2080_CTRL_GPU_GET_FERMI_GPC_INFO_PARAMS gpcInfo;
-    NV2080_CTRL_GPU_GET_FERMI_TPC_INFO_PARAMS tpcInfo[MAX_GPC_COUNT];
-    NV2080_CTRL_GPU_GET_FERMI_ZCULL_INFO_PARAMS zcullInfo[MAX_GPC_COUNT];
     NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS SKUInfo;
     NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_PARAMS fbRegionInfoParams;
 
@@ -96,8 +80,6 @@ typedef struct GspStaticConfigInfo_t
     NvU32 sriovMaxGfid;
 
     NvU32 engineCaps[NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX];
-
-    GspSMInfo SM_info;
 
     NvBool poisonFuseEnabled;
 
@@ -107,9 +89,6 @@ typedef struct GspStaticConfigInfo_t
     NvU32 fb_ram_type;
     NvU64 fbp_mask;
     NvU32 l2_cache_size;
-
-    NvU32 gfxpBufferSize[NV2080_CTRL_CMD_GR_CTXSW_PREEMPTION_BIND_BUFFERS_CONTEXT_POOL];
-    NvU32 gfxpBufferAlignment[NV2080_CTRL_CMD_GR_CTXSW_PREEMPTION_BIND_BUFFERS_CONTEXT_POOL];
 
     NvU8 gpuNameString[NV2080_GPU_MAX_NAME_STRING_LENGTH];
     NvU8 gpuShortNameString[NV2080_GPU_MAX_NAME_STRING_LENGTH];
@@ -174,7 +153,7 @@ typedef struct GspStaticConfigInfo_t
     NvBool bIsGpuUefi;
     NvBool bIsEfiInit;
 
-    EcidManufacturingInfo ecidInfo[2];
+    EcidManufacturingInfo ecidInfo[MAX_GROUP_COUNT];
 } GspStaticConfigInfo;
 
 // Pushed from CPU-RM to GSP-RM
@@ -207,6 +186,7 @@ typedef struct GspSystemInfo
     NvBool bUpstreamL1Unsupported;
     NvBool bUpstreamL1PorSupported;
     NvBool bUpstreamL1PorMobileOnly;
+    NvBool bSystemHasMux;
     NvU8   upstreamAddressValid;
     BUSINFO FHBBusInfo;
     BUSINFO chipsetIDInfo;
@@ -222,6 +202,7 @@ typedef struct GspSystemInfo
     NvBool bPreserveVideoMemoryAllocations;
     NvBool bTdrEventSupported;
     NvBool bFeatureStretchVblankCapable;
+    NvBool bEnableDynamicGranularityPageArrays;
     NvBool bClockBoostSupported;
 } GspSystemInfo;
 

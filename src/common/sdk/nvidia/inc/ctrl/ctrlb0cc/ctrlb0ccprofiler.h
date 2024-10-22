@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -558,7 +558,7 @@ typedef struct NVB0CC_CTRL_RELEASE_HES_PARAMS {
 
 /*!
  * Defines the maximum count of output credit pools.
- * 30 is estimate based on the # of PMAs (2) and chiplet types(3), 
+ * 30 is estimate based on the # of PMAs (2) and chiplet types(3),
  * which should be big enough to accommodate the required number of credit pools
  */
 #define NVB0CC_CREDIT_POOL_MAX_COUNT 30
@@ -566,7 +566,7 @@ typedef struct NVB0CC_CTRL_RELEASE_HES_PARAMS {
 /*!
  * NVB0CC_CTRL_CMD_GET_CHIPLET_HS_CREDIT_POOL
  *
- * Gets the total high speed streaming credits available for the client 
+ * Gets the total high speed streaming credits available for the client
  * in each chiplet pool.
  *
  * This command is similar to @ref NVB0CC_CTRL_CMD_GET_TOTAL_HS_CREDITS but
@@ -606,25 +606,25 @@ typedef struct NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL {
 } NVB0CC_CTRL_GET_CHIPLET_HS_CREDIT_POOL;
 
 typedef struct NVB0CC_CTRL_PMA_STREAM_HS_CREDITS_MAPPING_INFO {
-    /*! 
-     * [in] Specifies the chiplet type @ref NVB0CC_CHIPLET_TYPE. 
+    /*!
+     * [in] Specifies the chiplet type @ref NVB0CC_CHIPLET_TYPE.
      */
     NvU8 chipletType;
 
-    /*! 
-     * [in] Specifies the logical index of the chiplet. 
+    /*!
+     * [in] Specifies the logical index of the chiplet.
      */
     NvU8 chipletIndex;
 
-    /*! 
-     * [out] Specifies the index of credits pool for the chiplet. 
+    /*!
+     * [out] Specifies the index of credits pool for the chiplet.
      */
     NvU8 poolIndex;
 } NVB0CC_CTRL_PMA_STREAM_HS_CREDITS_MAPPING_INFO;
 
 /*!
  * NVB0CC_CTRL_CMD_GET_HS_CREDITS_MAPPING
- * 
+ *
  * Query the associated PMA credit pool index for given chiplet.
  *
  */
@@ -648,12 +648,10 @@ typedef struct NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS {
     NVB0CC_CTRL_PMA_STREAM_HS_CREDITS_MAPPING_INFO queries[NVB0CC_MAX_CREDIT_INFO_ENTRIES];
 } NVB0CC_CTRL_GET_HS_CREDITS_POOL_MAPPING_PARAMS;
 
- /* End of extension construct */
-
 
 /*!
  * NVB0CC_CTRL_CMD_DISABLE_DYNAMIC_MMA_BOOST
- * 
+ *
  * Disable the Dynamic MMA clock boost during profiler lifetime.
  *
  */
@@ -669,7 +667,7 @@ typedef struct NVB0CC_CTRL_DISABLE_DYNAMIC_MMA_BOOST_PARAMS {
 
 /*!
  * NVB0CC_CTRL_CMD_GET_DYNAMIC_MMA_BOOST_STATUS
- * 
+ *
  * Request the Dynamic MMA clock boost feature enablement status.
  *
  */

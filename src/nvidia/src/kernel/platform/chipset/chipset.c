@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -278,10 +278,15 @@ clFindFHBAndGetChipsetInfoIndex_IMPL
     //
     // PC motherboards have a host bridge to connect PCIE root complex to rest of the system.
     // However, Tegra devices only have a PCI-to-PCI bridge.
-    // So allow Tegra chipset initialization, even if a host bridge is not found.
-    // See bug 1547160 comment#17 for more details.
+    // So allow Tegra chipset initialization, even if a host bridge is not found (SUBBASECLASS_P2P).
+    // See bug 1547160 comment#17 for more details (dGPU connected with Tegra device through PCIe).
+    // There is no host bridge or PCI-to-PCI bridge present in between
+    // Tegra iGPUs and PCIe-RC. Tegra iGPUs are directly connected to endpoint.
+    // PCI config for Sub Base Class code will always be programmed as
+    // PCI_COMMON_CLASS_SUBBASECLASS_3DCTRL for Tegra iGPUs.
     //
-    NvU16    pciSubBaseClass[2] = {PCI_COMMON_CLASS_SUBBASECLASS_HOST, PCI_COMMON_CLASS_SUBBASECLASS_P2P};
+    NvU16    pciSubBaseClass[] = {PCI_COMMON_CLASS_SUBBASECLASS_HOST,
+        PCI_COMMON_CLASS_SUBBASECLASS_P2P, PCI_COMMON_CLASS_SUBBASECLASS_3DCTRL};
 
     // return it, if we've got it already
     if (pCl->chipsetIDBusAddr.valid)
@@ -398,65 +403,72 @@ clFindFHBAndGetChipsetInfoIndex_IMPL
     // match with Host Bridge ID. In that case we need to find FHB either in
     // cached bus topology or need to loop through PCI bus to find the FHB.
     //
-    for (i = 0; i < 2; i++)
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pciSubBaseClass); i++)
     {
-    pBusTopologyInfo = pCl->pBusTopologyInfo;
-    while (pBusTopologyInfo)
-    {
-        if (pBusTopologyInfo->pciSubBaseClass == pciSubBaseClass[i])
+        pBusTopologyInfo = pCl->pBusTopologyInfo;
+        while (pBusTopologyInfo)
         {
-            pCl->FHBAddr.domain = pBusTopologyInfo->domain;
-            pCl->FHBAddr.bus    = pBusTopologyInfo->bus;
-            pCl->FHBAddr.device = pBusTopologyInfo->device;
-            pCl->FHBAddr.func   = pBusTopologyInfo->func;
-            pCl->FHBAddr.valid  = 0x1;
-            pCl->FHBAddr.handle = pBusTopologyInfo->handle;
-
-            // Store a copy of deviceID,  vendorID, subdeviceID and subvendorID;
-            pCl->FHBBusInfo.deviceID    = pBusTopologyInfo->busInfo.deviceID;
-            pCl->FHBBusInfo.vendorID    = pBusTopologyInfo->busInfo.vendorID;
-            pCl->FHBBusInfo.subdeviceID = pBusTopologyInfo->busInfo.subdeviceID;
-            pCl->FHBBusInfo.subvendorID = pBusTopologyInfo->busInfo.subvendorID;
-            pCl->FHBBusInfo.revisionID  = pBusTopologyInfo->busInfo.revisionID;
-
-            if (!matchFound)
+            if (pBusTopologyInfo->pciSubBaseClass == pciSubBaseClass[i])
             {
-                pCl->chipsetIDBusAddr.domain = pBusTopologyInfo->domain;
-                pCl->chipsetIDBusAddr.bus    = pBusTopologyInfo->bus;
-                pCl->chipsetIDBusAddr.device = pBusTopologyInfo->device;
-                pCl->chipsetIDBusAddr.func   = pBusTopologyInfo->func;
-                pCl->chipsetIDBusAddr.valid  = 0x1;
-                pCl->chipsetIDBusAddr.handle = pBusTopologyInfo->handle;
+                pCl->FHBAddr.domain = pBusTopologyInfo->domain;
+                pCl->FHBAddr.bus    = pBusTopologyInfo->bus;
+                pCl->FHBAddr.device = pBusTopologyInfo->device;
+                pCl->FHBAddr.func   = pBusTopologyInfo->func;
+                pCl->FHBAddr.valid  = 0x1;
+                pCl->FHBAddr.handle = pBusTopologyInfo->handle;
 
                 // Store a copy of deviceID,  vendorID, subdeviceID and subvendorID;
-                pCl->chipsetIDInfo.deviceID    = pBusTopologyInfo->busInfo.deviceID;
-                pCl->chipsetIDInfo.vendorID    = pBusTopologyInfo->busInfo.vendorID;
-                pCl->chipsetIDInfo.subdeviceID = pBusTopologyInfo->busInfo.subdeviceID;
-                pCl->chipsetIDInfo.subvendorID = pBusTopologyInfo->busInfo.subvendorID;
+                pCl->FHBBusInfo.deviceID    = pBusTopologyInfo->busInfo.deviceID;
+                pCl->FHBBusInfo.vendorID    = pBusTopologyInfo->busInfo.vendorID;
+                pCl->FHBBusInfo.subdeviceID = pBusTopologyInfo->busInfo.subdeviceID;
+                pCl->FHBBusInfo.subvendorID = pBusTopologyInfo->busInfo.subvendorID;
+                pCl->FHBBusInfo.revisionID  = pBusTopologyInfo->busInfo.revisionID;
 
-                if (pCl->chipsetIDInfo.subvendorID == 0)
+                if (!matchFound)
                 {
-                    getSubsystemFromPCIECapabilities(pCl->chipsetIDBusAddr.domain,
-                                                     pCl->chipsetIDBusAddr.bus,
-                                                     pCl->chipsetIDBusAddr.device,
-                                                     pCl->chipsetIDBusAddr.func,
-                                                     &pCl->chipsetIDInfo.subvendorID,
-                                                     &pCl->chipsetIDInfo.subdeviceID);
-                }
-            }
-            return NV_OK;
-        }
-        pBusTopologyInfo = pBusTopologyInfo->next;
-    }
+                    pCl->chipsetIDBusAddr.domain = pBusTopologyInfo->domain;
+                    pCl->chipsetIDBusAddr.bus    = pBusTopologyInfo->bus;
+                    pCl->chipsetIDBusAddr.device = pBusTopologyInfo->device;
+                    pCl->chipsetIDBusAddr.func   = pBusTopologyInfo->func;
+                    pCl->chipsetIDBusAddr.valid  = 0x1;
+                    pCl->chipsetIDBusAddr.handle = pBusTopologyInfo->handle;
 
-        NV_PRINTF(LEVEL_INFO,
-                  "NVRM : Host bridge device not found. Looking for a PCI-to-PCI bridge device!!!\n");
+                    // Store a copy of deviceID,  vendorID, subdeviceID and subvendorID;
+                    pCl->chipsetIDInfo.deviceID    = pBusTopologyInfo->busInfo.deviceID;
+                    pCl->chipsetIDInfo.vendorID    = pBusTopologyInfo->busInfo.vendorID;
+                    pCl->chipsetIDInfo.subdeviceID = pBusTopologyInfo->busInfo.subdeviceID;
+                    pCl->chipsetIDInfo.subvendorID = pBusTopologyInfo->busInfo.subvendorID;
+
+                    if (pCl->chipsetIDInfo.subvendorID == 0)
+                    {
+                        getSubsystemFromPCIECapabilities(pCl->chipsetIDBusAddr.domain,
+                                                         pCl->chipsetIDBusAddr.bus,
+                                                         pCl->chipsetIDBusAddr.device,
+                                                         pCl->chipsetIDBusAddr.func,
+                                                         &pCl->chipsetIDInfo.subvendorID,
+                                                         &pCl->chipsetIDInfo.subdeviceID);
+                    }
+                }
+
+                NV_PRINTF(LEVEL_INFO,
+                          "DeviceId[%x] VendorID[%x] BDF[%x:%x:%x] SubClassId[%x] device found.\n",
+                          pBusTopologyInfo->busInfo.deviceID,
+                          pBusTopologyInfo->busInfo.vendorID,
+                          pBusTopologyInfo->bus,
+                          pBusTopologyInfo->device,
+                          pBusTopologyInfo->func,
+                          pciSubBaseClass[i]);
+
+                return NV_OK;
+            }
+            pBusTopologyInfo = pBusTopologyInfo->next;
+        }
     }
 
     NV_PRINTF(LEVEL_ERROR,
-              "NVRM : This is Bad. FHB not found in cached bus topology!!!\n");
+              "NVRM : This is Bad. FHB/P2P/3DCTRL not found in cached bus topology!!!\n");
 
-    // HB is not present in cached bus topology.
+    // HB/P2P/3DCTRL is not present in cached bus topology.
     NV_ASSERT(0);
 
     //
@@ -813,7 +825,6 @@ void clSyncWithGsp_IMPL(OBJCL *pCl, GspSystemInfo *pGSI)
     CL_SYNC_PDB(PDB_PROP_CL_IS_CHIPSET_IO_COHERENT);
     CL_SYNC_PDB(PDB_PROP_CL_DISABLE_IOMAP_WC);
     CL_SYNC_PDB(PDB_PROP_CL_HAS_RESIZABLE_BAR_ISSUE);
-    CL_SYNC_PDB(PDB_PROP_CL_IS_EXTERNAL_GPU);
     CL_SYNC_PDB(PDB_PROP_CL_BUG_3751839_GEN_SPEED_WAR);
     CL_SYNC_PDB(PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS);
 

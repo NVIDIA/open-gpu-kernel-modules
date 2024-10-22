@@ -44,6 +44,7 @@
 #include <nv-ioctl.h>
 #include <nv-ioctl-numa.h>
 #include <nvmisc.h>
+#include <os/nv_memory_area.h>
 
 extern nv_cap_t *nvidia_caps_root;
 
@@ -279,8 +280,7 @@ typedef struct nv_usermap_access_params_s
     NvU64    offset;
     NvU64   *page_array;
     NvU64    num_pages;
-    NvU64    mmap_start;
-    NvU64    mmap_size;
+    MemoryArea memArea;
     NvU64    access_start;
     NvU64    access_size;
     NvU64    remap_prot_extra;
@@ -296,8 +296,7 @@ typedef struct nv_alloc_mapping_context_s {
     NvU64  page_index;
     NvU64 *page_array;
     NvU64  num_pages;
-    NvU64  mmap_start;
-    NvU64  mmap_size;
+    MemoryArea memArea;
     NvU64  access_start;
     NvU64  access_size;
     NvU64  remap_prot_extra;
@@ -330,7 +329,7 @@ typedef struct nv_soc_irq_info_s {
     NvS32 ref_count;
 } nv_soc_irq_info_t;
 
-#define NV_MAX_SOC_IRQS              6
+#define NV_MAX_SOC_IRQS              10
 #define NV_MAX_DPAUX_NUM_DEVICES     4
 
 #define NV_MAX_SOC_DPAUX_NUM_DEVICES 2
@@ -535,6 +534,7 @@ typedef struct UvmGpuAddressSpaceInfo_tag           *nvgpuAddressSpaceInfo_t;
 typedef struct UvmGpuAllocInfo_tag                  *nvgpuAllocInfo_t;
 typedef struct UvmGpuP2PCapsParams_tag              *nvgpuP2PCapsParams_t;
 typedef struct UvmGpuFbInfo_tag                     *nvgpuFbInfo_t;
+typedef struct UvmGpuNvlinkInfo_tag                 *nvgpuNvlinkInfo_t;
 typedef struct UvmGpuEccInfo_tag                    *nvgpuEccInfo_t;
 typedef struct UvmGpuFaultInfo_tag                  *nvgpuFaultInfo_t;
 typedef struct UvmGpuAccessCntrInfo_tag             *nvgpuAccessCntrInfo_t;
@@ -545,6 +545,7 @@ typedef struct UvmPmaAllocationOptions_tag          *nvgpuPmaAllocationOptions_t
 typedef struct UvmPmaStatistics_tag                 *nvgpuPmaStatistics_t;
 typedef struct UvmGpuMemoryInfo_tag                 *nvgpuMemoryInfo_t;
 typedef struct UvmGpuExternalMappingInfo_tag        *nvgpuExternalMappingInfo_t;
+typedef struct UvmGpuExternalPhysAddrInfo_tag       *nvgpuExternalPhysAddrInfo_t;
 typedef struct UvmGpuChannelResourceInfo_tag        *nvgpuChannelResourceInfo_t;
 typedef struct UvmGpuChannelInstanceInfo_tag        *nvgpuChannelInstanceInfo_t;
 typedef struct UvmGpuChannelResourceBindParams_tag  *nvgpuChannelResourceBindParams_t;
@@ -783,7 +784,7 @@ nv_state_t*  NV_API_CALL  nv_get_ctl_state       (void);
 
 void   NV_API_CALL  nv_set_dma_address_size      (nv_state_t *, NvU32 );
 
-NV_STATUS  NV_API_CALL  nv_alias_pages           (nv_state_t *, NvU32, NvU64, NvU32, NvU32, NvU64, NvU64 *, void **);
+NV_STATUS  NV_API_CALL  nv_alias_pages           (nv_state_t *, NvU32, NvU64, NvU32, NvU32, NvU64, NvU64 *, NvBool, void **);
 NV_STATUS  NV_API_CALL  nv_alloc_pages           (nv_state_t *, NvU32, NvU64, NvBool, NvU32, NvBool, NvBool, NvS32, NvU64 *, void **);
 NV_STATUS  NV_API_CALL  nv_free_pages            (nv_state_t *, NvU32, NvBool, NvU32, void *);
 
@@ -904,6 +905,9 @@ void      NV_API_CALL nv_dma_release_dma_buf     (nv_dma_buf_t *);
 
 void      NV_API_CALL nv_schedule_uvm_isr        (nv_state_t *);
 
+NV_STATUS NV_API_CALL nv_schedule_uvm_drain_p2p  (NvU8 *);
+void      NV_API_CALL nv_schedule_uvm_resume_p2p (NvU8 *);
+
 NvBool    NV_API_CALL nv_platform_supports_s0ix  (void);
 NvBool    NV_API_CALL nv_s2idle_pm_configured    (void);
 
@@ -1001,8 +1005,8 @@ NV_STATUS  NV_API_CALL  rm_p2p_put_pages_persistent(nvidia_stack_t *, void *, vo
 NV_STATUS  NV_API_CALL  rm_p2p_dma_map_pages      (nvidia_stack_t *, nv_dma_device_t *, NvU8 *, NvU64, NvU32, NvU64 *, void **);
 NV_STATUS  NV_API_CALL  rm_dma_buf_dup_mem_handle (nvidia_stack_t *, nv_state_t *, NvHandle, NvHandle, NvHandle, NvHandle, void *, NvHandle, NvU64, NvU64, NvHandle *, void **);
 void       NV_API_CALL  rm_dma_buf_undup_mem_handle(nvidia_stack_t *, nv_state_t *, NvHandle, NvHandle);
-NV_STATUS  NV_API_CALL  rm_dma_buf_map_mem_handle (nvidia_stack_t *, nv_state_t *, NvHandle, NvHandle, NvU64, NvU64, void *, nv_phys_addr_range_t **, NvU32 *);
-void       NV_API_CALL  rm_dma_buf_unmap_mem_handle(nvidia_stack_t *, nv_state_t *, NvHandle, NvHandle, NvU64, nv_phys_addr_range_t **, NvU32);
+NV_STATUS  NV_API_CALL  rm_dma_buf_map_mem_handle (nvidia_stack_t *, nv_state_t *, NvHandle, NvHandle, MemoryRange, void *, NvBool, MemoryArea *);
+void       NV_API_CALL  rm_dma_buf_unmap_mem_handle(nvidia_stack_t *, nv_state_t *, NvHandle, NvHandle, void *, NvBool, MemoryArea);
 NV_STATUS  NV_API_CALL  rm_dma_buf_get_client_and_device(nvidia_stack_t *, nv_state_t *, NvHandle, NvHandle, NvHandle *, NvHandle *, NvHandle *, void **, NvBool *);
 void       NV_API_CALL  rm_dma_buf_put_client_and_device(nvidia_stack_t *, nv_state_t *, NvHandle, NvHandle, NvHandle, void *);
 NV_STATUS  NV_API_CALL  rm_log_gpu_crash          (nv_stack_t *, nv_state_t *);

@@ -23,6 +23,8 @@
 
 #include "uvm_linux.h"
 #include "uvm_processors.h"
+#include "uvm_global.h"
+#include "uvm_gpu.h"
 
 static struct kmem_cache *g_uvm_processor_mask_cache __read_mostly;
 const uvm_processor_mask_t g_uvm_processor_mask_cpu = { .bitmap = { 1 << UVM_PARENT_ID_CPU_VALUE }};
@@ -106,4 +108,32 @@ bool uvm_numa_id_eq(int nid0, int nid1)
     UVM_ASSERT(nid1 >= NUMA_NO_NODE && nid1 < MAX_NUMNODES);
 
     return nid0 == nid1;
+}
+
+const char *uvm_processor_get_name(uvm_processor_id_t id)
+{
+    if (UVM_ID_IS_CPU(id))
+        return "0: CPU";
+    else
+        return uvm_gpu_name(uvm_gpu_get(id));
+}
+
+void uvm_processor_get_uuid(uvm_processor_id_t id, NvProcessorUuid *out_uuid)
+{
+    if (UVM_ID_IS_CPU(id)) {
+        memcpy(out_uuid, &NV_PROCESSOR_UUID_CPU_DEFAULT, sizeof(*out_uuid));
+    }
+    else {
+        uvm_gpu_t *gpu = uvm_gpu_get(id);
+        UVM_ASSERT(gpu);
+        memcpy(out_uuid, &gpu->uuid, sizeof(*out_uuid));
+    }
+}
+
+bool uvm_processor_has_memory(uvm_processor_id_t id)
+{
+    if (UVM_ID_IS_CPU(id))
+        return true;
+
+    return uvm_gpu_get(id)->mem_info.size > 0;
 }

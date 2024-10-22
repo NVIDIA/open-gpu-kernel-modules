@@ -390,15 +390,6 @@ gpuIsOnTheBus_IMPL(OBJGPU *pGpu)
 
     if (RMCFG_FEATURE_PLATFORM_GSP)
     {
-        //
-        // TODO: This is a temporary WAR. GSP-RM should not be doing any config access,
-        //       especially for Blackwell where config mirror is no longer available.
-        //       This functionality is just to verify if GPU is on the bus,
-        //       so we can either assume that in case of physical RM calling this function,
-        //       GPU will always be on the bus or we need to figure out a different way
-        //       to verify the same. To reach to any conclusion we need further discussion and
-        //       analysis, hence adding this WAR temporarily. Bug 4315004.
-        //
         return NV_TRUE;
     }
 

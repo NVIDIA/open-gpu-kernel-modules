@@ -186,19 +186,19 @@ static NV_STATUS test_semaphore_acquire(uvm_gpu_t *gpu)
     uvm_push_end(&push);
 
     // Wait for sema_A release.
-    UVM_SPIN_WHILE(UVM_READ_ONCE(*cpu_sema_A) != 1, &spin);
+    UVM_SPIN_WHILE(READ_ONCE(*cpu_sema_A) != 1, &spin);
 
     // Sleep for 10ms, the GPU waits while sema_B is held by us.
     msleep(10);
 
-    check_sema_C = UVM_READ_ONCE(*cpu_sema_C) == 0;
+    check_sema_C = READ_ONCE(*cpu_sema_C) == 0;
 
     // memory fence/barrier, check comment in
     // uvm_gpu_semaphore.c:uvm_gpu_semaphore_set_payload() for details.
     mb();
 
     // Release sema_B.
-    UVM_WRITE_ONCE(*cpu_sema_B, 1);
+    WRITE_ONCE(*cpu_sema_B, 1);
 
     // Wait for the GPU to release sema_C, i.e., the end of the push.
     status = uvm_push_wait(&push);
@@ -207,7 +207,7 @@ static NV_STATUS test_semaphore_acquire(uvm_gpu_t *gpu)
     // check_sema_C is validated here to ensure the push has ended and was not
     // interrupted in the middle, had the check failed.
     TEST_CHECK_GOTO(check_sema_C, done);
-    TEST_CHECK_GOTO(UVM_READ_ONCE(*cpu_sema_C) == 1, done);
+    TEST_CHECK_GOTO(READ_ONCE(*cpu_sema_C) == 1, done);
 
 done:
     test_semaphore_free_sem(gpu, &mem);

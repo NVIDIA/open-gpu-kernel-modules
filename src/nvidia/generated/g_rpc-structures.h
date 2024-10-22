@@ -565,7 +565,14 @@ typedef struct rpc_ctrl_gr_ctxsw_preemption_bind_v1A_0E
     NV2080_CTRL_GR_CTXSW_PREEMPTION_BIND_PARAMS_v12_01 ctrlParams;
 } rpc_ctrl_gr_ctxsw_preemption_bind_v1A_0E;
 
-typedef rpc_ctrl_gr_ctxsw_preemption_bind_v1A_0E rpc_ctrl_gr_ctxsw_preemption_bind_v;
+typedef struct rpc_ctrl_gr_ctxsw_preemption_bind_v28_07
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_GR_CTXSW_PREEMPTION_BIND_PARAMS_v28_07 ctrlParams;
+} rpc_ctrl_gr_ctxsw_preemption_bind_v28_07;
+
+typedef rpc_ctrl_gr_ctxsw_preemption_bind_v28_07 rpc_ctrl_gr_ctxsw_preemption_bind_v;
 
 typedef struct rpc_ctrl_gr_set_ctxsw_preemption_mode_v1A_0E
 {
@@ -1312,6 +1319,7 @@ typedef struct rpc_rc_triggered_v17_02
 {
     NvU32      nv2080EngineType;
     NvU32      chid;
+    NvU32      gfid;
     NvU32      exceptLevel;
     NvU32      exceptType;
     NvU32      scope;
@@ -1507,6 +1515,13 @@ typedef struct rpc_nvlink_is_gpu_degraded_v17_00
 
 typedef rpc_nvlink_is_gpu_degraded_v17_00 rpc_nvlink_is_gpu_degraded_v;
 
+typedef struct rpc_nvlink_fatal_error_recovery_v17_00
+{
+    NV2080_CTRL_NVLINK_FATAL_ERROR_RECOVERY_PARAMS_v17_00 params;
+} rpc_nvlink_fatal_error_recovery_v17_00;
+
+typedef rpc_nvlink_fatal_error_recovery_v17_00 rpc_nvlink_fatal_error_recovery_v;
+
 typedef struct rpc_update_gsp_trace_v01_00
 {
     NvU32      records;
@@ -1612,6 +1627,25 @@ typedef struct rpc_ctrl_cmd_nvlink_inband_send_data_v26_05
 } rpc_ctrl_cmd_nvlink_inband_send_data_v26_05;
 
 typedef rpc_ctrl_cmd_nvlink_inband_send_data_v26_05 rpc_ctrl_cmd_nvlink_inband_send_data_v;
+
+typedef struct rpc_ctrl_cmd_internal_control_gsp_trace_v28_00
+{
+    NvU32      bufferSize;
+    NvU32      tracepointMask;
+    NvU32      bufferWatermark;
+    NvU64      bufferAddr NV_ALIGN_BYTES(8);
+    NvU8       flag;
+} rpc_ctrl_cmd_internal_control_gsp_trace_v28_00;
+
+typedef rpc_ctrl_cmd_internal_control_gsp_trace_v28_00 rpc_ctrl_cmd_internal_control_gsp_trace_v;
+
+typedef struct rpc_recovery_action_v28_01
+{
+    NvU32      type;
+    NvBool     value;
+} rpc_recovery_action_v28_01;
+
+typedef rpc_recovery_action_v28_01 rpc_recovery_action_v;
 
 
 #endif
@@ -3977,6 +4011,43 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_set_channel_interleave_level_v1A_0
     #endif
     .header_length = sizeof(rpc_ctrl_set_channel_interleave_level_v1A_0A),
     .fdesc = vmiopd_fdesc_t_rpc_ctrl_set_channel_interleave_level_v1A_0A
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gr_ctxsw_preemption_bind_v28_07
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_gr_ctxsw_preemption_bind_v28_07[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gr_ctxsw_preemption_bind_v28_07, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gr_ctxsw_preemption_bind_v28_07, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_GR_CTXSW_PREEMPTION_BIND_PARAMS_v28_07,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gr_ctxsw_preemption_bind_v28_07, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_gr_ctxsw_preemption_bind_v28_07 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_gr_ctxsw_preemption_bind",
+    #endif
+    .header_length = sizeof(rpc_ctrl_gr_ctxsw_preemption_bind_v28_07),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_gr_ctxsw_preemption_bind_v28_07
 };
 #endif
 
@@ -7186,6 +7257,13 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rc_triggered_v17_02[] = {
     },
     {
         .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_rc_triggered_v17_02, gfid),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "gfid"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_rc_triggered_v17_02, exceptLevel),
         #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "exceptLevel"
@@ -7968,6 +8046,29 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_is_gpu_degraded_v17_00 = {
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_nvlink_fatal_error_recovery_v17_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_fatal_error_recovery_v17_00[] = {
+    {
+        .vtype                = vtype_NV2080_CTRL_NVLINK_FATAL_ERROR_RECOVERY_PARAMS_v17_00,
+        .offset               = NV_OFFSETOF(rpc_nvlink_fatal_error_recovery_v17_00, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_fatal_error_recovery_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_nvlink_fatal_error_recovery",
+    #endif
+    .header_length = sizeof(rpc_nvlink_fatal_error_recovery_v17_00),
+    .fdesc = vmiopd_fdesc_t_rpc_nvlink_fatal_error_recovery_v17_00
+};
+#endif
+
 #ifndef SKIP_PRINT_rpc_update_gsp_trace_v01_00
 static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_update_gsp_trace_v01_00[] = {
     {
@@ -8385,6 +8486,87 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_cmd_nvlink_inband_send_data_v26_05
     #endif
     .header_length = sizeof(rpc_ctrl_cmd_nvlink_inband_send_data_v26_05),
     .fdesc = vmiopd_fdesc_t_rpc_ctrl_cmd_nvlink_inband_send_data_v26_05
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_cmd_internal_control_gsp_trace_v28_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_cmd_internal_control_gsp_trace_v28_00[] = {
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_ctrl_cmd_internal_control_gsp_trace_v28_00, bufferSize),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "bufferSize"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_ctrl_cmd_internal_control_gsp_trace_v28_00, tracepointMask),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "tracepointMask"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_ctrl_cmd_internal_control_gsp_trace_v28_00, bufferWatermark),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "bufferWatermark"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU64,
+        .offset               = NV_OFFSETOF(rpc_ctrl_cmd_internal_control_gsp_trace_v28_00, bufferAddr),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "bufferAddr"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU8,
+        .offset               = NV_OFFSETOF(rpc_ctrl_cmd_internal_control_gsp_trace_v28_00, flag),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "flag"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_cmd_internal_control_gsp_trace_v28_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_cmd_internal_control_gsp_trace",
+    #endif
+    .header_length = sizeof(rpc_ctrl_cmd_internal_control_gsp_trace_v28_00),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_cmd_internal_control_gsp_trace_v28_00
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_recovery_action_v28_01
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_recovery_action_v28_01[] = {
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_recovery_action_v28_01, type),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "type"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvBool,
+        .offset               = NV_OFFSETOF(rpc_recovery_action_v28_01, value),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "value"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_recovery_action_v28_01 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_recovery_action",
+    #endif
+    .header_length = sizeof(rpc_recovery_action_v28_01),
+    .fdesc = vmiopd_fdesc_t_rpc_recovery_action_v28_01
 };
 #endif
 
@@ -8826,6 +9008,13 @@ vmiopd_mdesc_t *rpcdebugCtrlSetTsgInterleaveLevel_v1A_0A(void)
 vmiopd_mdesc_t *rpcdebugCtrlSetChannelInterleaveLevel_v1A_0A(void)
 {
     return &vmiopd_mdesc_t_rpc_ctrl_set_channel_interleave_level_v1A_0A;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gr_ctxsw_preemption_bind_v28_07
+vmiopd_mdesc_t *rpcdebugCtrlGrCtxswPreemptionBind_v28_07(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_gr_ctxsw_preemption_bind_v28_07;
 }
 #endif
 
@@ -9578,6 +9767,13 @@ vmiopd_mdesc_t *rpcdebugNvlinkIsGpuDegraded_v17_00(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_nvlink_fatal_error_recovery_v17_00
+vmiopd_mdesc_t *rpcdebugNvlinkFatalErrorRecovery_v17_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_nvlink_fatal_error_recovery_v17_00;
+}
+#endif
+
 #ifndef SKIP_PRINT_rpc_update_gsp_trace_v01_00
 vmiopd_mdesc_t *rpcdebugUpdateGspTrace_v01_00(void)
 {
@@ -9666,6 +9862,20 @@ vmiopd_mdesc_t *rpcdebugFecsError_v26_02(void)
 vmiopd_mdesc_t *rpcdebugCtrlCmdNvlinkInbandSendData_v26_05(void)
 {
     return &vmiopd_mdesc_t_rpc_ctrl_cmd_nvlink_inband_send_data_v26_05;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_cmd_internal_control_gsp_trace_v28_00
+vmiopd_mdesc_t *rpcdebugCtrlCmdInternalControlGspTrace_v28_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_cmd_internal_control_gsp_trace_v28_00;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_recovery_action_v28_01
+vmiopd_mdesc_t *rpcdebugRecoveryAction_v28_01(void)
+{
+    return &vmiopd_mdesc_t_rpc_recovery_action_v28_01;
 }
 #endif
 
@@ -9781,6 +9991,7 @@ typedef union rpc_generic_union {
     rpc_ctrl_set_tsg_interleave_level_v ctrl_set_tsg_interleave_level_v;
     rpc_ctrl_set_channel_interleave_level_v1A_0A ctrl_set_channel_interleave_level_v1A_0A;
     rpc_ctrl_set_channel_interleave_level_v ctrl_set_channel_interleave_level_v;
+    rpc_ctrl_gr_ctxsw_preemption_bind_v28_07 ctrl_gr_ctxsw_preemption_bind_v28_07;
     rpc_ctrl_gr_ctxsw_preemption_bind_v1A_0E ctrl_gr_ctxsw_preemption_bind_v1A_0E;
     rpc_ctrl_gr_ctxsw_preemption_bind_v ctrl_gr_ctxsw_preemption_bind_v;
     rpc_ctrl_gr_set_ctxsw_preemption_mode_v1A_0E ctrl_gr_set_ctxsw_preemption_mode_v1A_0E;
@@ -9989,6 +10200,8 @@ typedef union rpc_generic_union {
     rpc_nvlink_inband_received_data_4096_v nvlink_inband_received_data_4096_v;
     rpc_nvlink_is_gpu_degraded_v17_00 nvlink_is_gpu_degraded_v17_00;
     rpc_nvlink_is_gpu_degraded_v nvlink_is_gpu_degraded_v;
+    rpc_nvlink_fatal_error_recovery_v17_00 nvlink_fatal_error_recovery_v17_00;
+    rpc_nvlink_fatal_error_recovery_v nvlink_fatal_error_recovery_v;
     rpc_update_gsp_trace_v01_00 update_gsp_trace_v01_00;
     rpc_update_gsp_trace_v update_gsp_trace_v;
     rpc_gsp_post_nocat_record_v01_00 gsp_post_nocat_record_v01_00;
@@ -10014,6 +10227,10 @@ typedef union rpc_generic_union {
     rpc_fecs_error_v fecs_error_v;
     rpc_ctrl_cmd_nvlink_inband_send_data_v26_05 ctrl_cmd_nvlink_inband_send_data_v26_05;
     rpc_ctrl_cmd_nvlink_inband_send_data_v ctrl_cmd_nvlink_inband_send_data_v;
+    rpc_ctrl_cmd_internal_control_gsp_trace_v28_00 ctrl_cmd_internal_control_gsp_trace_v28_00;
+    rpc_ctrl_cmd_internal_control_gsp_trace_v ctrl_cmd_internal_control_gsp_trace_v;
+    rpc_recovery_action_v28_01 recovery_action_v28_01;
+    rpc_recovery_action_v recovery_action_v;
 } rpc_generic_union;
 
 #endif

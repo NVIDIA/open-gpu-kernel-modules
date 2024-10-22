@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,9 +29,9 @@
 #include "export_nvswitch.h"
 #include "common_nvswitch.h"
 
+#include "nvswitch/ls10/dev_boot.h"
 #include "ctrl_dev_nvswitch.h"
 
-#include "nvswitch/ls10/dev_master.h"
 
 #define NVSWITCH_NUM_LINKS_LS10                 64
 #define NVSWITCH_NUM_LANES_LS10                 2
@@ -189,6 +189,8 @@
 #define SOE_VBIOS_VERSION_MASK                        0xFF0000
 #define SOE_VBIOS_REVLOCK_DISABLE_NPORT_FATAL_INTR    0x370000
 #define SOE_VBIOS_REVLOCK_ISSUE_INGRESS_STOP          0x4C0000
+#define SOE_VBIOS_REVLOCK_ISSUE_REGISTER_WRITE        0x580000
+#define SOE_VBIOS_REVLOCK_TNVL_PRELOCK_COMMAND        0x600000
 
 // LS10 Saved LED state
 #define ACCESS_LINK_LED_STATE CPLD_MACHXO3_ACCESS_LINK_LED_CTL_NVL_CABLE_LED
@@ -1053,6 +1055,9 @@ NvlStatus nvswitch_tnvl_get_attestation_certificate_chain_ls10(nvswitch_device *
 NvlStatus nvswitch_tnvl_get_attestation_report_ls10(nvswitch_device *device, NVSWITCH_GET_ATTESTATION_REPORT_PARAMS *params);
 NvlStatus nvswitch_tnvl_send_fsp_lock_config_ls10(nvswitch_device *device);
 NvlStatus nvswitch_tnvl_get_status_ls10(nvswitch_device *device, NVSWITCH_GET_TNVL_STATUS_PARAMS *params);
+void      nvswitch_tnvl_reg_wr_32_ls10(nvswitch_device *device, NVSWITCH_ENGINE_ID eng_id, NvU32 eng_bcast, NvU32 eng_instance, NvU32 base_addr, NvU32 offset, NvU32 data);
+NvlStatus nvswitch_send_tnvl_prelock_cmd_ls10(nvswitch_device *device);
+void      nvswitch_tnvl_disable_interrupts_ls10(nvswitch_device *device);
 
 NvlStatus nvswitch_ctrl_get_soe_heartbeat_ls10(nvswitch_device *device, NVSWITCH_GET_SOE_HEARTBEAT_PARAMS *p);
 NvlStatus nvswitch_cci_enable_iobist_ls10(nvswitch_device *device, NvU32 linkNumber, NvBool bEnable);

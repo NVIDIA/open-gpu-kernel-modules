@@ -56,7 +56,7 @@ kgraphicsSetFecsTraceHwEnable_GA100
     GPU_VREG_WR32(pGpu,
         NV_VIRTUAL_FUNCTION_PRIV_MAILBOX_SCRATCH(NV_VF_SCRATCH_REGISTER_FECS_TRACE_RD_RD_OFFSET), data);
 
-    pKernelGraphics->bCtxswLoggingEnabled = bEnable;
+    kgraphicsSetCtxswLoggingEnabled(pGpu, pKernelGraphics, bEnable);
 }
 
 /*!
@@ -93,7 +93,7 @@ kgraphicsSetFecsTraceRdOffset_GA100
     NvU32 data = 0;
     data = FLD_SET_DRF_NUM(_CTXSW, _TIMESTAMP_BUFFER, _RD_WR_POINTER, rdOffset, data);
 
-    if (pKernelGraphics->bCtxswLoggingEnabled)
+    if (kgraphicsIsCtxswLoggingEnabled(pGpu, pKernelGraphics))
         data = FLD_SET_DRF(_CTXSW, _TIMESTAMP_BUFFER, _MAILBOX1_TRACE_FEATURE, _ENABLED, data);
 
     GPU_VREG_WR32(pGpu,

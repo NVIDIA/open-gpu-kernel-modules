@@ -29,6 +29,7 @@
 #include "resserv/rs_resource.h"
 #include "tls/tls.h"
 #include "nv_speculation_barrier.h"
+
 #if !RS_STANDALONE
 #include "os/os.h"
 #endif
@@ -781,6 +782,9 @@ serverAllocResource
                 if (status != NV_OK)
                     goto done;
 
+                NV_ASSERT_OR_ELSE(!serverIsClientLockedForRead(pClientEntry),
+                                  status = NV_ERR_INVALID_LOCK_STATE; goto done);
+
                 if (!pClientEntry->pClient->bActive)
                 {
                     status = NV_ERR_INVALID_STATE;
@@ -798,6 +802,11 @@ serverAllocResource
 
                 if (status != NV_OK)
                     goto done;
+
+                NV_ASSERT_OR_ELSE(
+                    (!serverIsClientLockedForRead((pClientEntry)) &&
+                    !serverIsClientLockedForRead((pSecondClientEntry))),
+                    status = NV_ERR_INVALID_LOCK_STATE; goto done);
 
                 if (!pClientEntry->pClient->bActive ||
                     !pSecondClientEntry->pClient->bActive)
@@ -1105,6 +1114,59 @@ NV_STATUS serverFreeDisabledClients
     return status;
 }
 
+//
+// Helper that validates the client and looks up the resource
+//
+// It acquires the top lock (RM API lock) in the desired mode (topLockAccess)
+// and client lock always as exclusive.
+//
+static NV_STATUS
+serverFreeResourceTreeLockAndFindResource
+(
+    RsServer            *pServer,
+    RS_RES_FREE_PARAMS  *pParams,
+    LOCK_ACCESS_TYPE     topLockAccess,
+    NvU32               *pReleaseFlags,
+    CLIENT_ENTRY       **ppClientEntry,
+    RsResourceRef      **ppResourceRef
+)
+{
+    NV_STATUS status;
+    RS_LOCK_INFO *pLockInfo = pParams->pLockInfo;
+    CLIENT_ENTRY *pClientEntry;
+
+    status = serverTopLock_Prologue(pServer, topLockAccess, pLockInfo, pReleaseFlags);
+    if (status != NV_OK)
+        return status;
+
+    status = _serverLockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pParams->hClient,
+        NV_TRUE, pLockInfo, pReleaseFlags, &pClientEntry);
+    if (status != NV_OK)
+        return status;
+
+    NV_ASSERT_OR_RETURN(!serverIsClientLockedForRead(pClientEntry),
+                        NV_ERR_INVALID_LOCK_STATE);
+
+    *ppClientEntry = pClientEntry;
+
+    status = clientValidate(pClientEntry->pClient, pParams->pSecInfo);
+    if (status != NV_OK)
+        return status;
+
+    status = clientGetResourceRef(pClientEntry->pClient, pParams->hResource, ppResourceRef);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_INFO, "hObject 0x%x not found for client 0x%x\n",
+                pParams->hResource,
+                pParams->hClient);
+#if (RS_COMPATABILITY_MODE)
+        status = NV_OK;
+#endif
+        return status;
+    }
+
+    return NV_OK;
+}
 
 NV_STATUS
 serverFreeResourceTree
@@ -1127,6 +1189,8 @@ serverFreeResourceTree
     NvU32               initialLockState;
     NvU32               releaseFlags = 0;
     LOCK_ACCESS_TYPE    topLockAccess;
+    LOCK_ACCESS_TYPE    firstTopLockAccess;
+    NvBool              bSupportForceROLock;
 
     if (!pServer->bConstructed)
         return NV_ERR_NOT_READY;
@@ -1138,41 +1202,64 @@ serverFreeResourceTree
 
     portMemSet(&freeStack, 0, sizeof(freeStack));
 
-    status = serverFreeResourceLookupLockFlags(pServer, RS_LOCK_TOP, pParams, &topLockAccess);
+    // Reset pResourceRef since it's used as bookkeeping in this function.
+    pParams->pResourceRef = NULL;
+
+    status = serverFreeResourceLookupLockFlags(pServer, RS_LOCK_TOP, pParams,
+                                               &topLockAccess, &bSupportForceROLock);
     if (status != NV_OK)
         goto done;
 
-    status = serverTopLock_Prologue(pServer, topLockAccess, pLockInfo, &releaseFlags);
-    if (status != NV_OK)
+    //
+    // If force RO lock is enabled, always lock as RO first to look up the
+    // resource and check its flags (see handling below)
+    //
+    firstTopLockAccess = bSupportForceROLock ? LOCK_ACCESS_READ : topLockAccess;
+    status = serverFreeResourceTreeLockAndFindResource(pServer, pParams, firstTopLockAccess,
+                                                       &releaseFlags, &pClientEntry, &pResourceRef);
+    if ((status != NV_OK) || (pResourceRef == NULL))
+    {
+        //
+        // Check for pResourceRef == NULL to cover the compatibility case where
+        // we return NV_OK for resources that don't exist.
+        //
         goto done;
+    }
 
-    status = _serverLockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pParams->hClient,
-        NV_TRUE, pLockInfo, &releaseFlags, &pClientEntry);
-    if (status != NV_OK)
-        goto done;
+    if (topLockAccess != firstTopLockAccess)
+    {
+        //
+        // RO locking has not been enabled across the board, but some resources
+        // explicitly opt-in after having been verified to be safe. Query the
+        // lock flags again now that we know the resource.
+        //
+        pParams->pResourceRef = pResourceRef;
+        status = serverFreeResourceLookupLockFlags(pServer, RS_LOCK_TOP, pParams,
+                                                   &topLockAccess, &bSupportForceROLock);
+        if (status != NV_OK)
+            goto done;
+
+        if (topLockAccess != firstTopLockAccess)
+        {
+            // Resource requires RW locking so need to re-lock and look up the resource again
+            pParams->pResourceRef = NULL;
+            _serverUnlockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pClientEntry, pLockInfo, &releaseFlags);
+            pClientEntry = NULL;
+            serverTopLock_Epilogue(pServer, firstTopLockAccess, pLockInfo, &releaseFlags);
+
+            status = serverFreeResourceTreeLockAndFindResource(pServer, pParams, topLockAccess,
+                                                               &releaseFlags, &pClientEntry, &pResourceRef);
+            if ((status != NV_OK) || (pResourceRef == NULL))
+                goto done;
+        }
+    }
 
     pClient = pClientEntry->pClient;
-
-    status = clientValidate(pClient, pParams->pSecInfo);
-    if (status != NV_OK)
-        goto done;
-
     if (pClient->pFreeStack != NULL)
         freeStack.pPrev = pClient->pFreeStack;
     pClient->pFreeStack = &freeStack;
     bPopFreeStack = NV_TRUE;
 
-    status = clientGetResourceRef(pClient, pParams->hResource, &pResourceRef);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_INFO, "hObject 0x%x not found for client 0x%x\n",
-                pParams->hResource,
-                pParams->hClient);
-#if (RS_COMPATABILITY_MODE)
-        status = NV_OK;
-#endif
-        goto done;
-    }
     pParams->pResourceRef = pResourceRef;
     freeStack.pResourceRef = pResourceRef;
 
@@ -1590,6 +1677,11 @@ serverCopyResource
     if (status != NV_OK)
         goto done;
 
+    NV_ASSERT_OR_ELSE(
+        (!serverIsClientLockedForRead((pClientEntrySrc)) &&
+        !serverIsClientLockedForRead((pClientEntryDst))),
+        status = NV_ERR_INVALID_LOCK_STATE; goto done);
+
     pClientSrc = pClientEntrySrc->pClient;
     pClientDst = pClientEntryDst->pClient;
 
@@ -1701,6 +1793,11 @@ _serverShareResourceAccessClient
                                                &pClientEntryOwner, &pClientEntryTarget);
     if (status != NV_OK)
         goto done;
+
+    NV_ASSERT_OR_ELSE(
+        (!serverIsClientLockedForRead((pClientEntryOwner)) &&
+        !serverIsClientLockedForRead((pClientEntryTarget))),
+        status = NV_ERR_INVALID_LOCK_STATE; goto done);
 
     pClientOwner = pClientEntryOwner->pClient;
     pClientTarget = pClientEntryTarget->pClient;
@@ -1816,6 +1913,9 @@ serverShareResourceAccess
     if (status != NV_OK)
         goto done;
 
+    NV_ASSERT_OR_ELSE(!serverIsClientLockedForRead(pClientEntry),
+                      status = NV_ERR_INVALID_LOCK_STATE; goto done);
+
     pClient = pClientEntry->pClient;
 
     status = clientValidate(pClient, pParams->pSecInfo);
@@ -1875,7 +1975,7 @@ serverMap
     CALL_CONTEXT       *pOldContext = NULL;
     CLIENT_ENTRY       *pClientEntry = NULL;
     RsClient           *pClient;
-    RsResourceRef      *pResourceRef;
+    RsResourceRef      *pResourceRef = NULL;
     RsResourceRef      *pContextRef = NULL;
     RsResource         *pResource;
     RsCpuMapping       *pCpuMapping = NULL;
@@ -2077,7 +2177,7 @@ serverInterMap
 {
     CLIENT_ENTRY       *pClientEntry = NULL;
     RsClient           *pClient;
-    RsResourceRef      *pMapperRef;
+    RsResourceRef      *pMapperRef = NULL;
     RsResourceRef      *pMappableRef;
     RsResourceRef      *pContextRef;
     RsInterMapping     *pMapping = NULL;
@@ -3239,6 +3339,7 @@ _serverLockClient
     if (access == LOCK_ACCESS_READ)
     {
         RS_RWLOCK_ACQUIRE_READ(pClientEntry->pLock, &pClientEntry->lockVal);
+        portAtomicIncrementU32(&pClientEntry->lockReadOwnerCnt);
     }
     else
     {
@@ -3518,6 +3619,7 @@ _serverUnlockClient
 {
     if (access == LOCK_ACCESS_READ)
     {
+        portAtomicDecrementU32(&pClientEntry->lockReadOwnerCnt);
         RS_RWLOCK_RELEASE_READ(pClientEntry->pLock, &pClientEntry->lockVal);
     }
     else
@@ -3525,6 +3627,16 @@ _serverUnlockClient
         pClientEntry->lockOwnerTid = ~0;
         RS_RWLOCK_RELEASE_WRITE(pClientEntry->pLock, &pClientEntry->lockVal);
     }
+}
+
+NvBool
+serverIsClientLockedForRead
+(
+    CLIENT_ENTRY* pClientEntry
+)
+{
+    NV_ASSERT_OR_RETURN(pClientEntry != NULL, NV_FALSE);
+    return  pClientEntry->lockReadOwnerCnt != 0;
 }
 
 static
@@ -4535,12 +4647,15 @@ serverFreeResourceLookupLockFlags
     RsServer *pServer,
     RS_LOCK_ENUM lock,
     RS_RES_FREE_PARAMS_INTERNAL *pParams,
-    LOCK_ACCESS_TYPE *pAccess
+    LOCK_ACCESS_TYPE *pAccess,
+    NvBool *pbSupportForceROLock
 )
 {
     *pAccess = (serverSupportsReadOnlyLock(pServer, lock, RS_API_FREE_RESOURCE))
         ? LOCK_ACCESS_READ
         : LOCK_ACCESS_WRITE;
+    *pbSupportForceROLock = NV_TRUE;
+
     return NV_OK;
 }
 

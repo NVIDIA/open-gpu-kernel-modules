@@ -1086,29 +1086,8 @@ nvEventBufferFecsCallback
 
         if (pFecsTraceInfo->fecsTraceCounter > 0)
         {
-            NvHandle hClient;
-            NvHandle hSubdevice;
-            NV2080_CTRL_INTERNAL_GR_SET_FECS_TRACE_RD_OFFSET_PARAMS params;
+            kgraphicsSetFecsTraceRdOffset_HAL(pGpu, pKernelGraphics, fecsReadOffset);
 
-            params.offset = fecsReadOffset;
-            NV_ASSERT_OK_OR_ELSE(
-                status,
-                _fecsLoadInternalRoutingInfo(pGpu,
-                                             pKernelGraphics,
-                                             &hClient,
-                                             &hSubdevice,
-                                             &params.grRouteInfo),
-                return);
-
-            NV_ASSERT_OK_OR_ELSE(
-                status,
-                pRmApi->Control(pRmApi,
-                                hClient,
-                                hSubdevice,
-                                NV2080_CTRL_CMD_INTERNAL_GR_SET_FECS_TRACE_RD_OFFSET,
-                                &params,
-                                sizeof(params)),
-                return);
             pFecsTraceInfo->fecsTraceCounter = 0;
         }
         pFecsTraceInfo->fecsTraceRdOffset = fecsReadOffset;
@@ -1169,7 +1148,8 @@ fecsAddBindpoint
     bSelectLOD = NV_TRUE;
 #endif
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance),
+        NV_ERR_INVALID_LOCK_STATE);
 
     // Early bail-out if profiling capability is not enabled on vGPU
     if (IS_VIRTUAL(pGpu))
@@ -1187,7 +1167,7 @@ fecsAddBindpoint
     // On a hypervisor or VM: bail-out early if admin is required
     if (IS_VIRTUAL(pGpu) || hypervisorIsVgxHyper())
     {
-        if (pGpu->bRmProfilingPrivileged && !bAdmin)
+        if (pGpu->bRmProfilingPrivileged && !(bAdmin || osCheckAccess(RS_ACCESS_PERFMON)))
         {
             if (pReasonCode != NULL)
                 *pReasonCode = NV2080_CTRL_GR_FECS_BIND_REASON_CODE_NEED_ADMIN;

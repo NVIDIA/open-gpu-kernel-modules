@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,6 +31,7 @@
 #include "nverror.h"
 
 #include "published/ampere/ga100/dev_fault.h"
+#include "published/ampere/ga100/dev_top.h"
 #include "published/ampere/ga100/dev_vm.h"
 
 
@@ -251,6 +252,50 @@ failed:
     return status;
 }
 
+
+NV_STATUS
+kgmmuInitCeMmuFaultIdRange_GA100
+(
+    OBJGPU     *pGpu,
+    KernelGmmu *pKernelGmmu
+)
+{
+    NvU32 i;
+    NvU32 minMmuFaultId = (NvU32)-1;
+    NvU32 maxMmuFaultId = 0;
+
+    // Init the value in case the function fails
+    pKernelGmmu->minCeMmuFaultId = 0;
+    pKernelGmmu->maxCeMmuFaultId = 0;
+
+    NV_ASSERT_OK_OR_RETURN(gpuConstructDeviceInfoTable_HAL(pGpu));
+
+    for (i = 0; i < pGpu->numDeviceInfoEntries; i++)
+    {
+        if (pGpu->pDeviceInfoTable[i].typeEnum == NV_PTOP_DEVICE_INFO2_DEV_TYPE_ENUM_LCE)
+        {
+            minMmuFaultId = NV_MIN(minMmuFaultId, pGpu->pDeviceInfoTable[i].faultId);
+            maxMmuFaultId = NV_MAX(maxMmuFaultId, pGpu->pDeviceInfoTable[i].faultId);
+        }
+    }
+
+    if ((minMmuFaultId == (NvU32)-1 || maxMmuFaultId == 0))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to find any MMU Fault ID\n");
+        NV_ASSERT(0);
+        return NV_ERR_OBJECT_NOT_FOUND;
+    }
+
+    pKernelGmmu->minCeMmuFaultId = minMmuFaultId;
+    pKernelGmmu->maxCeMmuFaultId = maxMmuFaultId;
+
+    NV_PRINTF(LEVEL_INFO, "CE MMU Fault ID range [0x%x - 0x%x]\n",
+                           pKernelGmmu->minCeMmuFaultId, pKernelGmmu->maxCeMmuFaultId);
+
+    return NV_OK;
+}
+
+
 NV_STATUS
 kgmmuSetupWarForBug2720120_GA100
 (
@@ -278,23 +323,6 @@ kgmmuSetupWarForBug2720120_GA100
     return NV_OK;
 }
 
-/*!
- * @brief Get the engine ID associated with the max CE
- *
- * @param[in] pGpu         GPU object
- * @param[in] pKernelGmmu  KernelGmmu object
- *
- * return engine ID of the max CE
- */
-NvU32
-kgmmuGetMaxCeEngineId_GA100
-(
-    OBJGPU     *pGpu,
-    KernelGmmu *pKernelGmmu
-)
-{
-    return NV_PFAULT_MMU_ENG_ID_CE9;
-}
 
 /**
  * @brief   Determine if the fault is P2P unbound Instance Fault

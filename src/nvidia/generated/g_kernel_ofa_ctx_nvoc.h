@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,10 +60,15 @@ ENGDESCRIPTOR ofaGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClassI
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__OfaContext;
+
+
 struct OfaContext {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__OfaContext *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct ChannelDescendant __nvoc_base_ChannelDescendant;
@@ -78,8 +83,13 @@ struct OfaContext {
     struct Notifier *__nvoc_pbase_Notifier;    // notify super^2
     struct ChannelDescendant *__nvoc_pbase_ChannelDescendant;    // chandes super
     struct OfaContext *__nvoc_pbase_OfaContext;    // ofactx
+};
 
-    // Vtable with 32 per-object function pointers
+
+// Metadata including vtable with 32 function pointers plus superclass metadata
+struct NVOC_VTABLE__OfaContext {
+    const struct NVOC_VTABLE__ChannelDescendant ChannelDescendant;    // (chandes) 32 function pointers
+
     NV_STATUS (*__ofactxGetSwMethods__)(struct OfaContext * /*this*/, const METHOD **, NvU32 *);  // virtual inherited (chandes) base (chandes)
     NvBool (*__ofactxIsSwMethodStalling__)(struct OfaContext * /*this*/, NvU32);  // virtual inherited (chandes) base (chandes)
     NV_STATUS (*__ofactxCheckMemInterUnmap__)(struct OfaContext * /*this*/, NvBool);  // virtual inherited (chandes) base (chandes)
@@ -144,198 +154,198 @@ NV_STATUS __nvoc_objCreate_OfaContext(OfaContext**, Dynamic*, NvU32, struct CALL
 
 
 // Wrapper macros
-#define ofactxGetSwMethods_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__chandesGetSwMethods__
+#define ofactxGetSwMethods_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_vtable->__chandesGetSwMethods__
 #define ofactxGetSwMethods(pChannelDescendant, ppMethods, pNumMethods) ofactxGetSwMethods_DISPATCH(pChannelDescendant, ppMethods, pNumMethods)
-#define ofactxIsSwMethodStalling_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__chandesIsSwMethodStalling__
+#define ofactxIsSwMethodStalling_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_vtable->__chandesIsSwMethodStalling__
 #define ofactxIsSwMethodStalling(pChannelDescendant, hHandle) ofactxIsSwMethodStalling_DISPATCH(pChannelDescendant, hHandle)
-#define ofactxCheckMemInterUnmap_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__chandesCheckMemInterUnmap__
+#define ofactxCheckMemInterUnmap_FNPTR(pChannelDescendant) pChannelDescendant->__nvoc_base_ChannelDescendant.__nvoc_vtable->__chandesCheckMemInterUnmap__
 #define ofactxCheckMemInterUnmap(pChannelDescendant, bSubdeviceHandleProvided) ofactxCheckMemInterUnmap_DISPATCH(pChannelDescendant, bSubdeviceHandleProvided)
-#define ofactxControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__gpuresControl__
+#define ofactxControl_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresControl__
 #define ofactxControl(pGpuResource, pCallContext, pParams) ofactxControl_DISPATCH(pGpuResource, pCallContext, pParams)
-#define ofactxMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__gpuresMap__
+#define ofactxMap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresMap__
 #define ofactxMap(pGpuResource, pCallContext, pParams, pCpuMapping) ofactxMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
-#define ofactxUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__gpuresUnmap__
+#define ofactxUnmap_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresUnmap__
 #define ofactxUnmap(pGpuResource, pCallContext, pCpuMapping) ofactxUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define ofactxShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__gpuresShareCallback__
+#define ofactxShareCallback_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresShareCallback__
 #define ofactxShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) ofactxShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define ofactxGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__gpuresGetRegBaseOffsetAndSize__
+#define ofactxGetRegBaseOffsetAndSize_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetRegBaseOffsetAndSize__
 #define ofactxGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) ofactxGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
-#define ofactxGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__gpuresGetMapAddrSpace__
+#define ofactxGetMapAddrSpace_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetMapAddrSpace__
 #define ofactxGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) ofactxGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
-#define ofactxInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__gpuresInternalControlForward__
+#define ofactxInternalControlForward_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresInternalControlForward__
 #define ofactxInternalControlForward(pGpuResource, command, pParams, size) ofactxInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
-#define ofactxGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__gpuresGetInternalObjectHandle__
+#define ofactxGetInternalObjectHandle_FNPTR(pGpuResource) pGpuResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_vtable->__gpuresGetInternalObjectHandle__
 #define ofactxGetInternalObjectHandle(pGpuResource) ofactxGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define ofactxAccessCallback_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresAccessCallback__
+#define ofactxAccessCallback_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresAccessCallback__
 #define ofactxAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) ofactxAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-#define ofactxGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemInterMapParams__
+#define ofactxGetMemInterMapParams_FNPTR(pRmResource) pRmResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemInterMapParams__
 #define ofactxGetMemInterMapParams(pRmResource, pParams) ofactxGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define ofactxGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresGetMemoryMappingDescriptor__
+#define ofactxGetMemoryMappingDescriptor_FNPTR(pRmResource) pRmResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresGetMemoryMappingDescriptor__
 #define ofactxGetMemoryMappingDescriptor(pRmResource, ppMemDesc) ofactxGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define ofactxControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControlSerialization_Prologue__
+#define ofactxControlSerialization_Prologue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Prologue__
 #define ofactxControlSerialization_Prologue(pResource, pCallContext, pParams) ofactxControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define ofactxControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControlSerialization_Epilogue__
+#define ofactxControlSerialization_Epilogue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControlSerialization_Epilogue__
 #define ofactxControlSerialization_Epilogue(pResource, pCallContext, pParams) ofactxControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define ofactxControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControl_Prologue__
+#define ofactxControl_Prologue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Prologue__
 #define ofactxControl_Prologue(pResource, pCallContext, pParams) ofactxControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define ofactxControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__rmresControl_Epilogue__
+#define ofactxControl_Epilogue_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_vtable->__rmresControl_Epilogue__
 #define ofactxControl_Epilogue(pResource, pCallContext, pParams) ofactxControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define ofactxCanCopy_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__
+#define ofactxCanCopy_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resCanCopy__
 #define ofactxCanCopy(pResource) ofactxCanCopy_DISPATCH(pResource)
-#define ofactxIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsDuplicate__
+#define ofactxIsDuplicate_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsDuplicate__
 #define ofactxIsDuplicate(pResource, hMemory, pDuplicate) ofactxIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define ofactxPreDestruct_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resPreDestruct__
+#define ofactxPreDestruct_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resPreDestruct__
 #define ofactxPreDestruct(pResource) ofactxPreDestruct_DISPATCH(pResource)
-#define ofactxControlFilter_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resControlFilter__
+#define ofactxControlFilter_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resControlFilter__
 #define ofactxControlFilter(pResource, pCallContext, pParams) ofactxControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define ofactxIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsPartialUnmapSupported__
+#define ofactxIsPartialUnmapSupported_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resIsPartialUnmapSupported__
 #define ofactxIsPartialUnmapSupported(pResource) ofactxIsPartialUnmapSupported_DISPATCH(pResource)
-#define ofactxMapTo_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resMapTo__
+#define ofactxMapTo_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resMapTo__
 #define ofactxMapTo(pResource, pParams) ofactxMapTo_DISPATCH(pResource, pParams)
-#define ofactxUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resUnmapFrom__
+#define ofactxUnmapFrom_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resUnmapFrom__
 #define ofactxUnmapFrom(pResource, pParams) ofactxUnmapFrom_DISPATCH(pResource, pParams)
-#define ofactxGetRefCount_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resGetRefCount__
+#define ofactxGetRefCount_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resGetRefCount__
 #define ofactxGetRefCount(pResource) ofactxGetRefCount_DISPATCH(pResource)
-#define ofactxAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resAddAdditionalDependants__
+#define ofactxAddAdditionalDependants_FNPTR(pResource) pResource->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_vtable->__resAddAdditionalDependants__
 #define ofactxAddAdditionalDependants(pClient, pResource, pReference) ofactxAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define ofactxGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__notifyGetNotificationListPtr__
+#define ofactxGetNotificationListPtr_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationListPtr__
 #define ofactxGetNotificationListPtr(pNotifier) ofactxGetNotificationListPtr_DISPATCH(pNotifier)
-#define ofactxGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__notifyGetNotificationShare__
+#define ofactxGetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_vtable->__notifyGetNotificationShare__
 #define ofactxGetNotificationShare(pNotifier) ofactxGetNotificationShare_DISPATCH(pNotifier)
-#define ofactxSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__notifySetNotificationShare__
+#define ofactxSetNotificationShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_vtable->__notifySetNotificationShare__
 #define ofactxSetNotificationShare(pNotifier, pNotifShare) ofactxSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
-#define ofactxUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__notifyUnregisterEvent__
+#define ofactxUnregisterEvent_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_vtable->__notifyUnregisterEvent__
 #define ofactxUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) ofactxUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define ofactxGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__notifyGetOrAllocNotifShare__
+#define ofactxGetOrAllocNotifShare_FNPTR(pNotifier) pNotifier->__nvoc_base_ChannelDescendant.__nvoc_base_Notifier.__nvoc_vtable->__notifyGetOrAllocNotifShare__
 #define ofactxGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) ofactxGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 
 // Dispatch functions
 static inline NV_STATUS ofactxGetSwMethods_DISPATCH(struct OfaContext *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
-    return pChannelDescendant->__ofactxGetSwMethods__(pChannelDescendant, ppMethods, pNumMethods);
+    return pChannelDescendant->__nvoc_vtable->__ofactxGetSwMethods__(pChannelDescendant, ppMethods, pNumMethods);
 }
 
 static inline NvBool ofactxIsSwMethodStalling_DISPATCH(struct OfaContext *pChannelDescendant, NvU32 hHandle) {
-    return pChannelDescendant->__ofactxIsSwMethodStalling__(pChannelDescendant, hHandle);
+    return pChannelDescendant->__nvoc_vtable->__ofactxIsSwMethodStalling__(pChannelDescendant, hHandle);
 }
 
 static inline NV_STATUS ofactxCheckMemInterUnmap_DISPATCH(struct OfaContext *pChannelDescendant, NvBool bSubdeviceHandleProvided) {
-    return pChannelDescendant->__ofactxCheckMemInterUnmap__(pChannelDescendant, bSubdeviceHandleProvided);
+    return pChannelDescendant->__nvoc_vtable->__ofactxCheckMemInterUnmap__(pChannelDescendant, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS ofactxControl_DISPATCH(struct OfaContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pGpuResource->__ofactxControl__(pGpuResource, pCallContext, pParams);
+    return pGpuResource->__nvoc_vtable->__ofactxControl__(pGpuResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS ofactxMap_DISPATCH(struct OfaContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__ofactxMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+    return pGpuResource->__nvoc_vtable->__ofactxMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
 }
 
 static inline NV_STATUS ofactxUnmap_DISPATCH(struct OfaContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__ofactxUnmap__(pGpuResource, pCallContext, pCpuMapping);
+    return pGpuResource->__nvoc_vtable->__ofactxUnmap__(pGpuResource, pCallContext, pCpuMapping);
 }
 
 static inline NvBool ofactxShareCallback_DISPATCH(struct OfaContext *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pGpuResource->__ofactxShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+    return pGpuResource->__nvoc_vtable->__ofactxShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
 static inline NV_STATUS ofactxGetRegBaseOffsetAndSize_DISPATCH(struct OfaContext *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__ofactxGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+    return pGpuResource->__nvoc_vtable->__ofactxGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
 }
 
 static inline NV_STATUS ofactxGetMapAddrSpace_DISPATCH(struct OfaContext *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__ofactxGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+    return pGpuResource->__nvoc_vtable->__ofactxGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
 }
 
 static inline NV_STATUS ofactxInternalControlForward_DISPATCH(struct OfaContext *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__ofactxInternalControlForward__(pGpuResource, command, pParams, size);
+    return pGpuResource->__nvoc_vtable->__ofactxInternalControlForward__(pGpuResource, command, pParams, size);
 }
 
 static inline NvHandle ofactxGetInternalObjectHandle_DISPATCH(struct OfaContext *pGpuResource) {
-    return pGpuResource->__ofactxGetInternalObjectHandle__(pGpuResource);
+    return pGpuResource->__nvoc_vtable->__ofactxGetInternalObjectHandle__(pGpuResource);
 }
 
 static inline NvBool ofactxAccessCallback_DISPATCH(struct OfaContext *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
-    return pResource->__ofactxAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+    return pResource->__nvoc_vtable->__ofactxAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
 static inline NV_STATUS ofactxGetMemInterMapParams_DISPATCH(struct OfaContext *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__ofactxGetMemInterMapParams__(pRmResource, pParams);
+    return pRmResource->__nvoc_vtable->__ofactxGetMemInterMapParams__(pRmResource, pParams);
 }
 
 static inline NV_STATUS ofactxGetMemoryMappingDescriptor_DISPATCH(struct OfaContext *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__ofactxGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+    return pRmResource->__nvoc_vtable->__ofactxGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
 static inline NV_STATUS ofactxControlSerialization_Prologue_DISPATCH(struct OfaContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__ofactxControlSerialization_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__ofactxControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void ofactxControlSerialization_Epilogue_DISPATCH(struct OfaContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__ofactxControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__ofactxControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS ofactxControl_Prologue_DISPATCH(struct OfaContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__ofactxControl_Prologue__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__ofactxControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void ofactxControl_Epilogue_DISPATCH(struct OfaContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__ofactxControl_Epilogue__(pResource, pCallContext, pParams);
+    pResource->__nvoc_vtable->__ofactxControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool ofactxCanCopy_DISPATCH(struct OfaContext *pResource) {
-    return pResource->__ofactxCanCopy__(pResource);
+    return pResource->__nvoc_vtable->__ofactxCanCopy__(pResource);
 }
 
 static inline NV_STATUS ofactxIsDuplicate_DISPATCH(struct OfaContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__ofactxIsDuplicate__(pResource, hMemory, pDuplicate);
+    return pResource->__nvoc_vtable->__ofactxIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void ofactxPreDestruct_DISPATCH(struct OfaContext *pResource) {
-    pResource->__ofactxPreDestruct__(pResource);
+    pResource->__nvoc_vtable->__ofactxPreDestruct__(pResource);
 }
 
 static inline NV_STATUS ofactxControlFilter_DISPATCH(struct OfaContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__ofactxControlFilter__(pResource, pCallContext, pParams);
+    return pResource->__nvoc_vtable->__ofactxControlFilter__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool ofactxIsPartialUnmapSupported_DISPATCH(struct OfaContext *pResource) {
-    return pResource->__ofactxIsPartialUnmapSupported__(pResource);
+    return pResource->__nvoc_vtable->__ofactxIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS ofactxMapTo_DISPATCH(struct OfaContext *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__ofactxMapTo__(pResource, pParams);
+    return pResource->__nvoc_vtable->__ofactxMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS ofactxUnmapFrom_DISPATCH(struct OfaContext *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__ofactxUnmapFrom__(pResource, pParams);
+    return pResource->__nvoc_vtable->__ofactxUnmapFrom__(pResource, pParams);
 }
 
 static inline NvU32 ofactxGetRefCount_DISPATCH(struct OfaContext *pResource) {
-    return pResource->__ofactxGetRefCount__(pResource);
+    return pResource->__nvoc_vtable->__ofactxGetRefCount__(pResource);
 }
 
 static inline void ofactxAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct OfaContext *pResource, RsResourceRef *pReference) {
-    pResource->__ofactxAddAdditionalDependants__(pClient, pResource, pReference);
+    pResource->__nvoc_vtable->__ofactxAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 static inline PEVENTNOTIFICATION * ofactxGetNotificationListPtr_DISPATCH(struct OfaContext *pNotifier) {
-    return pNotifier->__ofactxGetNotificationListPtr__(pNotifier);
+    return pNotifier->__nvoc_vtable->__ofactxGetNotificationListPtr__(pNotifier);
 }
 
 static inline struct NotifShare * ofactxGetNotificationShare_DISPATCH(struct OfaContext *pNotifier) {
-    return pNotifier->__ofactxGetNotificationShare__(pNotifier);
+    return pNotifier->__nvoc_vtable->__ofactxGetNotificationShare__(pNotifier);
 }
 
 static inline void ofactxSetNotificationShare_DISPATCH(struct OfaContext *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__ofactxSetNotificationShare__(pNotifier, pNotifShare);
+    pNotifier->__nvoc_vtable->__ofactxSetNotificationShare__(pNotifier, pNotifShare);
 }
 
 static inline NV_STATUS ofactxUnregisterEvent_DISPATCH(struct OfaContext *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
-    return pNotifier->__ofactxUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
+    return pNotifier->__nvoc_vtable->__ofactxUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
 static inline NV_STATUS ofactxGetOrAllocNotifShare_DISPATCH(struct OfaContext *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
-    return pNotifier->__ofactxGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
+    return pNotifier->__nvoc_vtable->__ofactxGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
 NV_STATUS ofactxConstructHal_KERNEL(struct OfaContext *pOfaContext, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);

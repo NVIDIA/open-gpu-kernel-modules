@@ -65,6 +65,7 @@ NvBool gpuFabricProbeIsSuccess(GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfo
 NV_STATUS gpuFabricProbeGetFmStatus(GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel);
 NvBool gpuFabricProbeIsSupported(OBJGPU *pGpu);
 NV_STATUS gpuFabricProbeSetBwMode(NvU8 mode);
+NV_STATUS gpuFabricProbeSetBwModePerGpu(OBJGPU *pGpu, NvU8 mode);
 NV_STATUS gpuFabricProbeGetlinkMaskToBeReduced(GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel,
                                                NvU32 *linkMaskToBeReduced);
 NV_STATUS gpuFabricProbeReceiveUpdateKernelCallback(NvU32 gpuInstance, NvU64 *pNotifyGfIdMask,

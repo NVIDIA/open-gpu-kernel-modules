@@ -473,6 +473,15 @@ bool DeviceImpl::getRawDscCaps(NvU8 *buffer, NvU32 bufferSize)
     return true;
 }
 
+bool DeviceImpl::setRawDscCaps(const NvU8 *buffer, NvU32 bufferSize)
+{
+    if (bufferSize < sizeof(rawDscCaps))
+        return false;
+
+    dpMemCopy(&rawDscCaps, buffer, sizeof(rawDscCaps));
+    return parseDscCaps(&rawDscCaps[0], sizeof(rawDscCaps));
+}
+
 AuxBus::status DeviceImpl::transaction(Action action, Type type, int address,
                                        NvU8 * buffer, unsigned sizeRequested,
                                        unsigned * sizeCompleted,

@@ -38,6 +38,13 @@
 #include "nvtypes.h"
 #include "nvkms-kapi.h"
 
+enum nv_drm_transfer_function {
+    NV_DRM_TRANSFER_FUNCTION_DEFAULT,
+    NV_DRM_TRANSFER_FUNCTION_LINEAR,
+    NV_DRM_TRANSFER_FUNCTION_PQ,
+    NV_DRM_TRANSFER_FUNCTION_MAX,
+};
+
 struct nv_drm_crtc {
     NvU32 head;
 
@@ -62,6 +69,8 @@ struct nv_drm_crtc {
      * The filep using this crtc with DRM_IOCTL_NVIDIA_GRANT_PERMISSIONS.
      */
     struct drm_file *modeset_permission_filep;
+
+    struct NvKmsLUTCaps olut_caps;
 
     struct drm_crtc base;
 };
@@ -142,9 +151,20 @@ struct nv_drm_crtc_state {
      * nv_drm_atomic_crtc_destroy_state().
      */
     struct nv_drm_flip *nv_flip;
+
+    enum nv_drm_transfer_function regamma_tf;
+    struct drm_property_blob *regamma_lut;
+    uint64_t regamma_divisor;
+    struct nv_drm_lut_surface *regamma_drm_lut_surface;
+    NvBool regamma_changed;
 };
 
 static inline struct nv_drm_crtc_state *to_nv_crtc_state(struct drm_crtc_state *state)
+{
+    return container_of(state, struct nv_drm_crtc_state, base);
+}
+
+static inline const struct nv_drm_crtc_state *to_nv_crtc_state_const(const struct drm_crtc_state *state)
 {
     return container_of(state, struct nv_drm_crtc_state, base);
 }
@@ -170,6 +190,9 @@ struct nv_drm_plane {
      * Index of this plane in the per head array of layers.
      */
     uint32_t layer_idx;
+
+    struct NvKmsLUTCaps ilut_caps;
+    struct NvKmsLUTCaps tmo_caps;
 };
 
 static inline struct nv_drm_plane *to_nv_plane(struct drm_plane *plane)
@@ -180,6 +203,22 @@ static inline struct nv_drm_plane *to_nv_plane(struct drm_plane *plane)
     return container_of(plane, struct nv_drm_plane, base);
 }
 
+struct nv_drm_lut_surface {
+    struct NvKmsKapiDevice *pDevice;
+    struct NvKmsKapiMemory *nvkms_memory;
+    struct NvKmsKapiSurface *nvkms_surface;
+    struct {
+        NvU32 vssSegments;
+        enum NvKmsLUTVssType vssType;
+
+        NvU32 lutEntries;
+        enum NvKmsLUTFormat entryFormat;
+
+    } properties;
+    void *buffer;
+    struct kref refcount;
+};
+
 struct nv_drm_plane_state {
     struct drm_plane_state base;
     s32 __user *fd_user_ptr;
@@ -187,6 +226,20 @@ struct nv_drm_plane_state {
 #if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
     struct drm_property_blob *hdr_output_metadata;
 #endif
+    struct drm_property_blob *lms_ctm;
+    struct drm_property_blob *lms_to_itp_ctm;
+    struct drm_property_blob *itp_to_lms_ctm;
+    struct drm_property_blob *blend_ctm;
+
+    enum nv_drm_transfer_function degamma_tf;
+    struct drm_property_blob *degamma_lut;
+    uint64_t degamma_multiplier; /* S31.32 Sign-Magnitude Format */
+    struct nv_drm_lut_surface *degamma_drm_lut_surface;
+    NvBool degamma_changed;
+
+    struct drm_property_blob *tmo_lut;
+    struct nv_drm_lut_surface *tmo_drm_lut_surface;
+    NvBool tmo_changed;
 };
 
 static inline struct nv_drm_plane_state *to_nv_drm_plane_state(struct drm_plane_state *state)

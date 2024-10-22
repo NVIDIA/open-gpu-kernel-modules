@@ -168,10 +168,6 @@ static NvBool PrefetchHelperSurfaceEvo(NVDIFRStateEvoPtr pDifr,
                                        size_t *cacheRemaining,
                                        NVSurfaceEvoPtr pSurfaceEvo,
                                        NvU32 *status);
-static NvBool PrefetchHelperLutSurface(NVDIFRStateEvoPtr pDifr,
-                                       size_t *cacheRemaining,
-                                       NVLutSurfaceEvoPtr pLutSurface,
-                                       NvU32 *status);
 
 static NvBool SetDisabledState(NVDIFRStateEvoPtr pDifr,
                                NvBool shouldDisable);
@@ -332,14 +328,14 @@ NvU32 nvDIFRPrefetchSurfaces(NVDIFRStateEvoPtr pDifr, size_t l2CacheSize)
              * Prefetch per-layer LUTs, if any, but skip null LUTs and
              * duplicates already prefetched.
              */
-            if (!PrefetchHelperLutSurface(pDifr,
+            if (!PrefetchHelperSurfaceEvo(pDifr,
                                           &cacheRemaining,
                                           pHeadState->layer[layer].inputLut.pLutSurfaceEvo,
                                           &status)) {
                 goto out;
             }
 
-            if (!PrefetchHelperLutSurface(pDifr,
+            if (!PrefetchHelperSurfaceEvo(pDifr,
                                           &cacheRemaining,
                                           pHeadState->layer[layer].tmoLut.pLutSurfaceEvo,
                                           &status)) {
@@ -351,7 +347,7 @@ NvU32 nvDIFRPrefetchSurfaces(NVDIFRStateEvoPtr pDifr, size_t l2CacheSize)
     /*
      * Finally prefetch the known main LUTs.
      */
-    if (!PrefetchHelperLutSurface(pDifr,
+    if (!PrefetchHelperSurfaceEvo(pDifr,
                                   &cacheRemaining,
                                   pDevEvo->lut.defaultLut,
                                   &status)) {
@@ -360,7 +356,7 @@ NvU32 nvDIFRPrefetchSurfaces(NVDIFRStateEvoPtr pDifr, size_t l2CacheSize)
 
     for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
         for (i = 0; i < ARRAY_LEN(pDevEvo->lut.apiHead[apiHead].LUT); i++) {
-            if (!PrefetchHelperLutSurface(pDifr,
+            if (!PrefetchHelperSurfaceEvo(pDifr,
                                           &cacheRemaining,
                                           pDevEvo->lut.apiHead[apiHead].LUT[i],
                                           &status)) {
@@ -707,40 +703,6 @@ static NvBool PrefetchHelperSurfaceEvo(NVDIFRStateEvoPtr pDifr,
     if (pSurfaceEvo->layout == NvKmsSurfaceMemoryLayoutBlockLinear) {
         params.surfPitchBytes *= NVKMS_BLOCK_LINEAR_GOB_WIDTH;
     }
-
-    *status = PrefetchSingleSurface(pDifr, &params, cacheRemaining);
-
-    return *status == NV2080_CTRL_LPWR_DIFR_PREFETCH_SUCCESS;
-}
-
-static NvBool PrefetchHelperLutSurface(NVDIFRStateEvoPtr pDifr,
-                                       size_t *cacheRemaining,
-                                       NVLutSurfaceEvoPtr pLutSurface,
-                                       NvU32 *status)
-{
-    NVDIFRPrefetchParams params;
-
-    nvAssert(*status == NV2080_CTRL_LPWR_DIFR_PREFETCH_SUCCESS);
-
-    if (!pLutSurface) {
-        return TRUE;
-    }
-
-    /*
-     * LUTs are often shared so we only want to prefetch (or consider) each
-     * LUT at most once during the prefetch process.
-     */
-    if (pLutSurface->difrLastPrefetchPass == pDifr->prefetchPass) {
-        return TRUE;
-    }
-
-    pLutSurface->difrLastPrefetchPass = pDifr->prefetchPass;
-
-    /* Collect copy parameters and do the prefetch. */
-    params.surfGpuAddress = (NvUPtr)pLutSurface->gpuAddress;
-    params.surfSizeBytes = pLutSurface->size;
-    params.surfPitchBytes = pLutSurface->size;
-    params.surfFormat = NvKmsSurfaceMemoryFormatI8;
 
     *status = PrefetchSingleSurface(pDifr, &params, cacheRemaining);
 

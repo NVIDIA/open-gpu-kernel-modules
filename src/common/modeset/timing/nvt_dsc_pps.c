@@ -101,6 +101,7 @@ typedef struct
     NvU32  native_420;            // 420 native mode
     NvU32  native_422;            // 422 native mode
     NvU32  drop_mode;             // 0 - normal mode, 1 - drop mode.
+    NvU32  multi_tile;            // 1 = Multi-tile architecture, 0 = dsc single or dual mode without multi-tile
     NvU32  peak_throughput_mode0; // peak throughput supported by the sink for 444 and simple 422 modes. 
     NvU32  peak_throughput_mode1; // peak throughput supported by the sink for native 422 and 420 modes.
 } DSC_INPUT_PARAMS;
@@ -996,19 +997,27 @@ DSC_PpsCalcBase
     out->block_pred_enable = in->block_pred_enable ? 1 : 0;
     ENUM2_CHECK("convert_rgb", in->convert_rgb, 0, 1);
     out->convert_rgb = in->convert_rgb ? 1 : 0;
-    RANGE_CHECK("pic_height", in->pic_height, 8, 8192);
-    out->pic_height = in->pic_height;
 
-    if (in->dual_mode)
+    if (in->multi_tile)
     {
-        RANGE_CHECK("pic_width", in->pic_width, 64, 8192);
+        RANGE_CHECK("pic_width", in->pic_width, 64, 16384);
+        RANGE_CHECK("pic_height", in->pic_height, 8, 16384);
     }
     else
     {
-        RANGE_CHECK("pic_width", in->pic_width, 32, 5120);
+        RANGE_CHECK("pic_height", in->pic_height, 8, 8192);
+        if (in->dual_mode)
+        {
+            RANGE_CHECK("pic_width", in->pic_width, 64, 8192);
+        }
+        else
+        {
+            RANGE_CHECK("pic_width", in->pic_width, 32, 5120);
+        }
     }
-    out->pic_width = in->pic_width;
 
+    out->pic_height = in->pic_height;
+    out->pic_width = in->pic_width;
     out->simple_422 = in->simple_422;
     out->vbr_enable = 0;
     out->native_420 = in->native_420;
@@ -2353,6 +2362,7 @@ DSC_GeneratePPS
             NvU32 minSliceCount = (NvU32)NV_CEIL(pModesetInfo->pixelClockHz, (MAX_PCLK_PER_SLICE_KHZ * 1000U)); 
             NvU32 sliceWidth;
             NvU32 i;
+            NvU64 dataRate;
 
             if ((minSliceCount > 2U) &&(minSliceCount < 4U))
             {
@@ -2380,7 +2390,8 @@ DSC_GeneratePPS
 
             dscOverhead = minSliceCount * 2U;
 
-            if ((pWARData->dpData.hBlank * pWARData->dpData.linkRateHz / pModesetInfo->pixelClockHz) <
+            dataRate = pWARData->dpData.linkRateHz;
+            if ((pWARData->dpData.hBlank * dataRate / pModesetInfo->pixelClockHz) <
                 (protocolOverhead + dscOverhead + 3U))
             {
                 //
@@ -2501,6 +2512,7 @@ DSC_GeneratePPS
     in->pixel_clkMHz = (NvU32)(pModesetInfo->pixelClockHz / 1000000L);
     in->dual_mode = pModesetInfo->bDualMode;
     in->drop_mode = pModesetInfo->bDropMode;
+    in->multi_tile = (pDscInfo->gpuCaps.maxNumHztSlices > 4U) ? 1 : 0;
     in->slice_count_mask = pDscInfo->sinkCaps.sliceCountSupportedMask;
     in->peak_throughput_mode0 = pDscInfo->sinkCaps.peakThroughputMode0;
     in->peak_throughput_mode1 = pDscInfo->sinkCaps.peakThroughputMode1;

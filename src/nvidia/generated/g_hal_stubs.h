@@ -140,7 +140,7 @@ NV_STATUS rpcCtrlDbgReadSingleSmErrorState_STUB(
 NV_STATUS rpcDisableChannels_STUB(
     POBJGPU       pGpu,
     POBJRPC       pRpc,
-    NvU32         arg3
+    void         *pArg3
 )
 {
     return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
@@ -956,6 +956,16 @@ NV_STATUS rpcCtrlStopChannel_STUB(
     NvHandle      arg3,
     NvHandle      arg4,
     void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_CMD_INTERNAL_CONTROL_GSP_TRACE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X, GB100, GB102
+NV_STATUS rpcCtrlCmdInternalControlGspTrace_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NV2080_CTRL_CMD_INTERNAL_CONTROL_GSP_TRACE_PARAMS *pArg3
 )
 {
     return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;

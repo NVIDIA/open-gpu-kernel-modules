@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -196,12 +196,14 @@ static inline LibosPrintfArgument LibosPrintfArgumentS64(NvS64 i) {
 
 // Defines for clients that cannot include nvprintf.h
 #define LOG_LEVEL_INFO    1
+#define LOG_LEVEL_NOTICE  2
 #define LOG_LEVEL_WARNING 3
 #define LOG_LEVEL_ERROR   4
 
 #if defined(NVRM) && !defined(NVOC)
 // Verify log levels are in sync with RM
 ct_assert(LOG_LEVEL_INFO == LEVEL_INFO);
+ct_assert(LOG_LEVEL_NOTICE == LEVEL_NOTICE);
 ct_assert(LOG_LEVEL_WARNING == LEVEL_WARNING);
 ct_assert(LOG_LEVEL_ERROR == LEVEL_ERROR);
 #endif
@@ -260,9 +262,8 @@ void LibosLogTokens(const libosLogMetadata * metadata, const LibosPrintfArgument
         LibosLogTokens(&libos_pvt_meta, &tokens[0], sizeof(tokens) / sizeof(*tokens));                         \
     } while (0)
 
-#ifdef LIBOS_LOGGING_METADATA_SPLIT
 /*!
- * When the METADATA_SPLIT feature is enabled, libos print data is split between 4 input sections (all of which
+ * Libos print data is split between 4 input sections (all of which
  * must be dropped from the final image). The default .logging is used for str literals and custom strings which
  * are directly referenced by pointer (for %s substitution); .logging_const is used for format strings and the
  * aux metadata; and .logging_metadata is used for metadata vars.
@@ -278,15 +279,10 @@ void LibosLogTokens(const libosLogMetadata * metadata, const LibosPrintfArgument
  * flags with entsize=1 so that strings get merged by LD. Comment character # works around GCC
  * appending its own default flags.
  */
-#    define LIBOS_SECTION_LOGGING_CONST    __attribute__((section(".logging_const, \"MSa\", @progbits, 1 #")))
-#    define LIBOS_SECTION_LOGGING_METADATA __attribute__((section(".logging_metadata")))
-#    define LIBOS_LOGGING_AUX_METADATA_DUMP \
+#define LIBOS_SECTION_LOGGING_CONST    __attribute__((section(".logging_const, \"MSa\", @progbits, 1 #")))
+#define LIBOS_SECTION_LOGGING_METADATA __attribute__((section(".logging_metadata")))
+#define LIBOS_LOGGING_AUX_METADATA_DUMP \
     static const LIBOS_SECTION_LOGGING_CONST int  libos_dummy_line[] LIBOS_ATTR_USED = {__LINE__};
-#else // LIBOS_LOGGING_VOLATILE_METADATA_SPLIT
-#    define LIBOS_SECTION_LOGGING_CONST  LIBOS_SECTION_LOGGING
-#    define LIBOS_SECTION_LOGGING_METADATA  LIBOS_SECTION_LOGGING
-#    define LIBOS_LOGGING_AUX_METADATA_DUMP
-#endif // LIBOS_LOGGING_VOLATILE_METADATA_SPLIT
 
 /*!
  *  Used for log variables which we want to dump; clients may want to pick these up to check for metadata changes

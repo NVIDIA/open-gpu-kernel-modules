@@ -1,6 +1,6 @@
 //*****************************************************************************
 //
-//  SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+//  SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //  SPDX-License-Identifier: MIT
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
@@ -4035,7 +4035,7 @@ void parseCta861DIDType10VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, voi
                                                pInfo->hdmiForumInfo.dc_48bit_420);
                 }
 
-                if (p6bytesDescriptor->options.timing_formula == DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_STANDARD)
+                if (p6bytesDescriptor->options.timing_formula == DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_STANDARD_CRT_BASED)
                 {
                     NVT_SNPRINTF((char *)newTiming.etc.name, sizeof(newTiming.etc.name), "CTA861-T10:#%3d:%dx%dx%3d.%03dHz/%s",
                                                                                          (int)NVT_GET_TIMING_STATUS_SEQ(newTiming.etc.status),

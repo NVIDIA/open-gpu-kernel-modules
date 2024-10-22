@@ -253,6 +253,8 @@ gpuIsGlobalPoisonFuseEnabled_VF
 )
 {
     VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+    NV_ASSERT_OR_RETURN(pVSI != NULL, NV_FALSE);
+
     return pVSI->poisonFuseEnabled;
 }
 

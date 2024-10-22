@@ -43,6 +43,22 @@
 #include "nvRmReg.h"
 #include "nverror.h"
 
+static NvBool _kfspWaitBootCond_GB100(OBJGPU *pGpu, void *pArg);
+
+static NvBool
+_kfspWaitBootCond_GB100
+(
+    OBJGPU *pGpu,
+    void   *pArg
+)
+{
+    //
+    // In GB100, Bootfsm triggers FSP execution out of chip reset.
+    // FSP writes 0xFF value in NV_THERM_I2CS_SCRATCH register after completion of boot
+    //
+    return GPU_FLD_TEST_DRF_DEF(pGpu, _THERM_I2CS_SCRATCH, _FSP_BOOT_COMPLETE, _STATUS, _SUCCESS);
+}
+
 NV_STATUS
 kfspWaitForSecureBoot_GB100
 (
@@ -55,31 +71,26 @@ kfspWaitForSecureBoot_GB100
 
     //
     // Polling for FSP boot complete
-    // In Hopper, Bootfsm triggers FSP execution out of chip reset.
-    // FSP writes 0xFF value in NV_THERM_I2CS_SCRATCH register after completion of boot
     // FBFalcon training during devinit alone takes 2 seconds, up to 3 on HBM3,
     // but the default threadstate timeout on windows is 1800 ms. Increase to 4 seconds
     // for this wait to match MODS GetGFWBootTimeoutMs.
-    // For flags, this must not timeout due to aforementioned threadstate timeout,
-    // and we must not use the GPU TMR since it is inaccessible.
+    // For flags, we must not use the GPU TMR since it is inaccessible.
     //
     gpuSetTimeout(pGpu, NV_MAX(gpuScaleTimeout(pGpu, 4000000), pGpu->timeoutData.defaultus),
-                  &timeout, GPU_TIMEOUT_FLAGS_OSTIMER | GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
+                  &timeout, GPU_TIMEOUT_FLAGS_OSTIMER);
 
-    while(!GPU_FLD_TEST_DRF_DEF(pGpu, _THERM_I2CS_SCRATCH, _FSP_BOOT_COMPLETE, _STATUS, _SUCCESS))
+    status = gpuTimeoutCondWait(pGpu, _kfspWaitBootCond_GB100, NULL, &timeout);
+
+    if (status != NV_OK)
     {
-        status = gpuCheckTimeout(pGpu, &timeout);
-        if (status == NV_ERR_TIMEOUT)
-        {
-            NV_ERROR_LOG((void*) pGpu, GPU_INIT_ERROR, "Timeout while polling for FSP boot complete, "
-                         "0x%x, 0x%x, 0x%x, 0x%x, 0x%x",
-                         GPU_REG_RD32(pGpu, NV_THERM_I2CS_SCRATCH_FSP_BOOT_COMPLETE),
-                         GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(0)),
-                         GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(1)),
-                         GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(2)),
-                         GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(3)));
-            break;
-        }
+        NV_ERROR_LOG((void*) pGpu, GPU_INIT_ERROR, "Error status 0x%x while polling for FSP boot complete, "
+                     "0x%x, 0x%x, 0x%x, 0x%x, 0x%x",
+                     status,
+                     GPU_REG_RD32(pGpu, NV_THERM_I2CS_SCRATCH_FSP_BOOT_COMPLETE),
+                     GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(0)),
+                     GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(1)),
+                     GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(2)),
+                     GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(3)));
     }
 
     if (GPU_FLD_TEST_DRF_DEF(pGpu, _PFSP, _FUSE_ERROR_CHECK, _STATUS, _SUCCESS))
@@ -92,7 +103,7 @@ kfspWaitForSecureBoot_GB100
         NV_PRINTF(LEVEL_ERROR,
                   "****************************************** FSP Fuse Check Failure ************************************************\n");
         NV_ERROR_LOG((void*) pGpu, GPU_INIT_ERROR, "FSP fuse error check has failed. Status = 0x%x.",
-                      GPU_REG_RD32(pGpu, NV_PFSP_FUSE_ERROR_CHECK)); 
+                      GPU_REG_RD32(pGpu, NV_PFSP_FUSE_ERROR_CHECK));
         NV_PRINTF(LEVEL_ERROR,
                     "** FSP fuse error check has failed. Status = 0x%x.                                                               **\n",
                     GPU_REG_RD32(pGpu, NV_PFSP_FUSE_ERROR_CHECK));

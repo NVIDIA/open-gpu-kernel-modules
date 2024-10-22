@@ -75,98 +75,120 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelGmmu =
     /*pExportInfo=*/        &__nvoc_export_info_KernelGmmu
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+NV_STATUS __nvoc_down_thunk_KernelGmmu_engstateConstructEngine(OBJGPU *pGpu, struct OBJENGSTATE *pKernelGmmu, ENGDESCRIPTOR arg3);    // this
+NV_STATUS __nvoc_down_thunk_KernelGmmu_engstateStateInitLocked(OBJGPU *pGpu, struct OBJENGSTATE *pKernelGmmu);    // this
+NV_STATUS __nvoc_down_thunk_KernelGmmu_engstateStateLoad(OBJGPU *pGpu, struct OBJENGSTATE *pKernelGmmu, NvU32 arg3);    // this
+NV_STATUS __nvoc_down_thunk_KernelGmmu_engstateStateUnload(OBJGPU *pGpu, struct OBJENGSTATE *pKernelGmmu, NvU32 arg3);    // this
+NV_STATUS __nvoc_down_thunk_KernelGmmu_engstateStatePostLoad(OBJGPU *pGpu, struct OBJENGSTATE *pKernelGmmu, NvU32 arg3);    // this
+NV_STATUS __nvoc_down_thunk_KernelGmmu_engstateStatePreUnload(OBJGPU *pGpu, struct OBJENGSTATE *pKernelGmmu, NvU32 arg3);    // this
+void __nvoc_down_thunk_KernelGmmu_engstateStateDestroy(OBJGPU *pGpu, struct OBJENGSTATE *pKernelGmmu);    // this
+void __nvoc_down_thunk_KernelGmmu_intrservRegisterIntrService(OBJGPU *pGpu, struct IntrService *pKernelGmmu, IntrServiceRecord arg3[175]);    // this
+NvBool __nvoc_down_thunk_KernelGmmu_intrservClearInterrupt(OBJGPU *pGpu, struct IntrService *pKernelGmmu, IntrServiceClearInterruptArguments *pParams);    // this
+NvU32 __nvoc_down_thunk_KernelGmmu_intrservServiceInterrupt(OBJGPU *pGpu, struct IntrService *pKernelGmmu, IntrServiceServiceInterruptArguments *pParams);    // this
+NV_STATUS __nvoc_down_thunk_KernelGmmu_intrservServiceNotificationInterrupt(OBJGPU *pGpu, struct IntrService *pKernelGmmu, IntrServiceServiceNotificationInterruptArguments *pParams);    // this
+
 // 11 down-thunk(s) defined to bridge methods in KernelGmmu from superclasses
 
 // kgmmuConstructEngine: virtual override (engstate) base (engstate)
-static NV_STATUS __nvoc_down_thunk_KernelGmmu_engstateConstructEngine(OBJGPU *pGpu, struct OBJENGSTATE *pKernelGmmu, ENGDESCRIPTOR arg3) {
+NV_STATUS __nvoc_down_thunk_KernelGmmu_engstateConstructEngine(OBJGPU *pGpu, struct OBJENGSTATE *pKernelGmmu, ENGDESCRIPTOR arg3) {
     return kgmmuConstructEngine(pGpu, (struct KernelGmmu *)(((unsigned char *) pKernelGmmu) - __nvoc_rtti_KernelGmmu_OBJENGSTATE.offset), arg3);
 }
 
 // kgmmuStateInitLocked: virtual override (engstate) base (engstate)
-static NV_STATUS __nvoc_down_thunk_KernelGmmu_engstateStateInitLocked(OBJGPU *pGpu, struct OBJENGSTATE *pKernelGmmu) {
+NV_STATUS __nvoc_down_thunk_KernelGmmu_engstateStateInitLocked(OBJGPU *pGpu, struct OBJENGSTATE *pKernelGmmu) {
     return kgmmuStateInitLocked(pGpu, (struct KernelGmmu *)(((unsigned char *) pKernelGmmu) - __nvoc_rtti_KernelGmmu_OBJENGSTATE.offset));
 }
 
 // kgmmuStateLoad: virtual override (engstate) base (engstate)
-static NV_STATUS __nvoc_down_thunk_KernelGmmu_engstateStateLoad(OBJGPU *pGpu, struct OBJENGSTATE *pKernelGmmu, NvU32 arg3) {
+NV_STATUS __nvoc_down_thunk_KernelGmmu_engstateStateLoad(OBJGPU *pGpu, struct OBJENGSTATE *pKernelGmmu, NvU32 arg3) {
     return kgmmuStateLoad(pGpu, (struct KernelGmmu *)(((unsigned char *) pKernelGmmu) - __nvoc_rtti_KernelGmmu_OBJENGSTATE.offset), arg3);
 }
 
 // kgmmuStateUnload: virtual override (engstate) base (engstate)
-static NV_STATUS __nvoc_down_thunk_KernelGmmu_engstateStateUnload(OBJGPU *pGpu, struct OBJENGSTATE *pKernelGmmu, NvU32 arg3) {
+NV_STATUS __nvoc_down_thunk_KernelGmmu_engstateStateUnload(OBJGPU *pGpu, struct OBJENGSTATE *pKernelGmmu, NvU32 arg3) {
     return kgmmuStateUnload(pGpu, (struct KernelGmmu *)(((unsigned char *) pKernelGmmu) - __nvoc_rtti_KernelGmmu_OBJENGSTATE.offset), arg3);
 }
 
 // kgmmuStatePostLoad: virtual halified (singleton optimized) override (engstate) base (engstate) body
-static NV_STATUS __nvoc_down_thunk_KernelGmmu_engstateStatePostLoad(OBJGPU *pGpu, struct OBJENGSTATE *pKernelGmmu, NvU32 arg3) {
+NV_STATUS __nvoc_down_thunk_KernelGmmu_engstateStatePostLoad(OBJGPU *pGpu, struct OBJENGSTATE *pKernelGmmu, NvU32 arg3) {
     return kgmmuStatePostLoad(pGpu, (struct KernelGmmu *)(((unsigned char *) pKernelGmmu) - __nvoc_rtti_KernelGmmu_OBJENGSTATE.offset), arg3);
 }
 
 // kgmmuStatePreUnload: virtual halified (singleton optimized) override (engstate) base (engstate) body
-static NV_STATUS __nvoc_down_thunk_KernelGmmu_engstateStatePreUnload(OBJGPU *pGpu, struct OBJENGSTATE *pKernelGmmu, NvU32 arg3) {
+NV_STATUS __nvoc_down_thunk_KernelGmmu_engstateStatePreUnload(OBJGPU *pGpu, struct OBJENGSTATE *pKernelGmmu, NvU32 arg3) {
     return kgmmuStatePreUnload(pGpu, (struct KernelGmmu *)(((unsigned char *) pKernelGmmu) - __nvoc_rtti_KernelGmmu_OBJENGSTATE.offset), arg3);
 }
 
 // kgmmuStateDestroy: virtual override (engstate) base (engstate)
-static void __nvoc_down_thunk_KernelGmmu_engstateStateDestroy(OBJGPU *pGpu, struct OBJENGSTATE *pKernelGmmu) {
+void __nvoc_down_thunk_KernelGmmu_engstateStateDestroy(OBJGPU *pGpu, struct OBJENGSTATE *pKernelGmmu) {
     kgmmuStateDestroy(pGpu, (struct KernelGmmu *)(((unsigned char *) pKernelGmmu) - __nvoc_rtti_KernelGmmu_OBJENGSTATE.offset));
 }
 
 // kgmmuRegisterIntrService: virtual override (intrserv) base (intrserv)
-static void __nvoc_down_thunk_KernelGmmu_intrservRegisterIntrService(OBJGPU *pGpu, struct IntrService *pKernelGmmu, IntrServiceRecord arg3[175]) {
+void __nvoc_down_thunk_KernelGmmu_intrservRegisterIntrService(OBJGPU *pGpu, struct IntrService *pKernelGmmu, IntrServiceRecord arg3[175]) {
     kgmmuRegisterIntrService(pGpu, (struct KernelGmmu *)(((unsigned char *) pKernelGmmu) - __nvoc_rtti_KernelGmmu_IntrService.offset), arg3);
 }
 
 // kgmmuClearInterrupt: virtual override (intrserv) base (intrserv)
-static NvBool __nvoc_down_thunk_KernelGmmu_intrservClearInterrupt(OBJGPU *pGpu, struct IntrService *pKernelGmmu, IntrServiceClearInterruptArguments *pParams) {
+NvBool __nvoc_down_thunk_KernelGmmu_intrservClearInterrupt(OBJGPU *pGpu, struct IntrService *pKernelGmmu, IntrServiceClearInterruptArguments *pParams) {
     return kgmmuClearInterrupt(pGpu, (struct KernelGmmu *)(((unsigned char *) pKernelGmmu) - __nvoc_rtti_KernelGmmu_IntrService.offset), pParams);
 }
 
 // kgmmuServiceInterrupt: virtual override (intrserv) base (intrserv)
-static NvU32 __nvoc_down_thunk_KernelGmmu_intrservServiceInterrupt(OBJGPU *pGpu, struct IntrService *pKernelGmmu, IntrServiceServiceInterruptArguments *pParams) {
+NvU32 __nvoc_down_thunk_KernelGmmu_intrservServiceInterrupt(OBJGPU *pGpu, struct IntrService *pKernelGmmu, IntrServiceServiceInterruptArguments *pParams) {
     return kgmmuServiceInterrupt(pGpu, (struct KernelGmmu *)(((unsigned char *) pKernelGmmu) - __nvoc_rtti_KernelGmmu_IntrService.offset), pParams);
 }
 
 // kgmmuServiceNotificationInterrupt: virtual halified (singleton optimized) override (intrserv) base (intrserv) body
-static NV_STATUS __nvoc_down_thunk_KernelGmmu_intrservServiceNotificationInterrupt(OBJGPU *pGpu, struct IntrService *pKernelGmmu, IntrServiceServiceNotificationInterruptArguments *pParams) {
+NV_STATUS __nvoc_down_thunk_KernelGmmu_intrservServiceNotificationInterrupt(OBJGPU *pGpu, struct IntrService *pKernelGmmu, IntrServiceServiceNotificationInterruptArguments *pParams) {
     return kgmmuServiceNotificationInterrupt(pGpu, (struct KernelGmmu *)(((unsigned char *) pKernelGmmu) - __nvoc_rtti_KernelGmmu_IntrService.offset), pParams);
 }
 
 
+// Up-thunk(s) to bridge methods to ancestors (if any)
+void __nvoc_up_thunk_OBJENGSTATE_kgmmuInitMissing(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate);    // this
+NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgmmuStatePreInitLocked(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate);    // this
+NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgmmuStatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate);    // this
+NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgmmuStateInitUnlocked(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate);    // this
+NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgmmuStatePreLoad(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate, NvU32 arg3);    // this
+NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgmmuStatePostUnload(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate, NvU32 arg3);    // this
+NvBool __nvoc_up_thunk_OBJENGSTATE_kgmmuIsPresent(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate);    // this
+
 // 7 up-thunk(s) defined to bridge methods in KernelGmmu to superclasses
 
 // kgmmuInitMissing: virtual inherited (engstate) base (engstate)
-static void __nvoc_up_thunk_OBJENGSTATE_kgmmuInitMissing(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate) {
+void __nvoc_up_thunk_OBJENGSTATE_kgmmuInitMissing(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate) {
     engstateInitMissing(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelGmmu_OBJENGSTATE.offset));
 }
 
 // kgmmuStatePreInitLocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgmmuStatePreInitLocked(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate) {
+NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgmmuStatePreInitLocked(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate) {
     return engstateStatePreInitLocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelGmmu_OBJENGSTATE.offset));
 }
 
 // kgmmuStatePreInitUnlocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgmmuStatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate) {
+NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgmmuStatePreInitUnlocked(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate) {
     return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelGmmu_OBJENGSTATE.offset));
 }
 
 // kgmmuStateInitUnlocked: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgmmuStateInitUnlocked(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate) {
+NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgmmuStateInitUnlocked(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate) {
     return engstateStateInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelGmmu_OBJENGSTATE.offset));
 }
 
 // kgmmuStatePreLoad: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgmmuStatePreLoad(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate, NvU32 arg3) {
+NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgmmuStatePreLoad(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate, NvU32 arg3) {
     return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelGmmu_OBJENGSTATE.offset), arg3);
 }
 
 // kgmmuStatePostUnload: virtual inherited (engstate) base (engstate)
-static NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgmmuStatePostUnload(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate, NvU32 arg3) {
+NV_STATUS __nvoc_up_thunk_OBJENGSTATE_kgmmuStatePostUnload(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate, NvU32 arg3) {
     return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelGmmu_OBJENGSTATE.offset), arg3);
 }
 
 // kgmmuIsPresent: virtual inherited (engstate) base (engstate)
-static NvBool __nvoc_up_thunk_OBJENGSTATE_kgmmuIsPresent(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate) {
+NvBool __nvoc_up_thunk_OBJENGSTATE_kgmmuIsPresent(struct OBJGPU *pGpu, struct KernelGmmu *pEngstate) {
     return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *) pEngstate) + __nvoc_rtti_KernelGmmu_OBJENGSTATE.offset));
 }
 
@@ -201,9 +223,9 @@ void __nvoc_init_dataField_KernelGmmu(KernelGmmu *pThis, RmHalspecOwner *pRmhals
     // NVOC Property Hal field -- PDB_PROP_KGMMU_SYSMEM_FAULT_BUFFER_GPU_UNCACHED
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->setProperty(pThis, PDB_PROP_KGMMU_SYSMEM_FAULT_BUFFER_GPU_UNCACHED, ((NvBool)(0 == 0)));
+        pThis->setProperty(pThis, PDB_PROP_KGMMU_SYSMEM_FAULT_BUFFER_GPU_UNCACHED, NV_TRUE);
     }
-    pThis->setProperty(pThis, PDB_PROP_KGMMU_REDUCE_NR_FAULT_BUFFER_SIZE, ((NvBool)(0 != 0)));
+    pThis->setProperty(pThis, PDB_PROP_KGMMU_REDUCE_NR_FAULT_BUFFER_SIZE, NV_FALSE);
 
     // Hal field -- defaultBigPageSize
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
@@ -214,46 +236,46 @@ void __nvoc_init_dataField_KernelGmmu(KernelGmmu *pThis, RmHalspecOwner *pRmhals
     // Hal field -- bHugePageSupported
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->bHugePageSupported = ((NvBool)(0 == 0));
+        pThis->bHugePageSupported = NV_TRUE;
     }
 
     // Hal field -- bPageSize512mbSupported
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->bPageSize512mbSupported = ((NvBool)(0 == 0));
+        pThis->bPageSize512mbSupported = NV_TRUE;
     }
     // default
     else
     {
-        pThis->bPageSize512mbSupported = ((NvBool)(0 != 0));
+        pThis->bPageSize512mbSupported = NV_FALSE;
     }
 
     // Hal field -- bPageSize256gbSupported
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
     {
-        pThis->bPageSize256gbSupported = ((NvBool)(0 == 0));
+        pThis->bPageSize256gbSupported = NV_TRUE;
     }
     // default
     else
     {
-        pThis->bPageSize256gbSupported = ((NvBool)(0 != 0));
+        pThis->bPageSize256gbSupported = NV_FALSE;
     }
 
     // Hal field -- bBug2720120WarEnabled
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GA100 */ 
     {
-        pThis->bBug2720120WarEnabled = ((NvBool)(0 == 0));
+        pThis->bBug2720120WarEnabled = NV_TRUE;
     }
     // default
     else
     {
-        pThis->bBug2720120WarEnabled = ((NvBool)(0 != 0));
+        pThis->bBug2720120WarEnabled = NV_FALSE;
     }
 
     // Hal field -- bVaspaceInteropSupported
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd1f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 | GB100 | GB102 */ 
     {
-        pThis->bVaspaceInteropSupported = ((NvBool)(0 == 0));
+        pThis->bVaspaceInteropSupported = NV_TRUE;
     }
 }
 
@@ -289,50 +311,6 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, RmHalspecOwner
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
-    // kgmmuConstructEngine -- virtual override (engstate) base (engstate)
-    pThis->__kgmmuConstructEngine__ = &kgmmuConstructEngine_IMPL;
-    pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_down_thunk_KernelGmmu_engstateConstructEngine;
-
-    // kgmmuStateInitLocked -- virtual override (engstate) base (engstate)
-    pThis->__kgmmuStateInitLocked__ = &kgmmuStateInitLocked_IMPL;
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__ = &__nvoc_down_thunk_KernelGmmu_engstateStateInitLocked;
-
-    // kgmmuStateLoad -- virtual override (engstate) base (engstate)
-    pThis->__kgmmuStateLoad__ = &kgmmuStateLoad_IMPL;
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStateLoad__ = &__nvoc_down_thunk_KernelGmmu_engstateStateLoad;
-
-    // kgmmuStateUnload -- virtual override (engstate) base (engstate)
-    pThis->__kgmmuStateUnload__ = &kgmmuStateUnload_IMPL;
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStateUnload__ = &__nvoc_down_thunk_KernelGmmu_engstateStateUnload;
-
-    // kgmmuStatePostLoad -- virtual halified (singleton optimized) override (engstate) base (engstate) body
-    pThis->__kgmmuStatePostLoad__ = &kgmmuStatePostLoad_IMPL;
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStatePostLoad__ = &__nvoc_down_thunk_KernelGmmu_engstateStatePostLoad;
-
-    // kgmmuStatePreUnload -- virtual halified (singleton optimized) override (engstate) base (engstate) body
-    pThis->__kgmmuStatePreUnload__ = &kgmmuStatePreUnload_IMPL;
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStatePreUnload__ = &__nvoc_down_thunk_KernelGmmu_engstateStatePreUnload;
-
-    // kgmmuStateDestroy -- virtual override (engstate) base (engstate)
-    pThis->__kgmmuStateDestroy__ = &kgmmuStateDestroy_IMPL;
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStateDestroy__ = &__nvoc_down_thunk_KernelGmmu_engstateStateDestroy;
-
-    // kgmmuRegisterIntrService -- virtual override (intrserv) base (intrserv)
-    pThis->__kgmmuRegisterIntrService__ = &kgmmuRegisterIntrService_IMPL;
-    pThis->__nvoc_base_IntrService.__intrservRegisterIntrService__ = &__nvoc_down_thunk_KernelGmmu_intrservRegisterIntrService;
-
-    // kgmmuClearInterrupt -- virtual override (intrserv) base (intrserv)
-    pThis->__kgmmuClearInterrupt__ = &kgmmuClearInterrupt_IMPL;
-    pThis->__nvoc_base_IntrService.__intrservClearInterrupt__ = &__nvoc_down_thunk_KernelGmmu_intrservClearInterrupt;
-
-    // kgmmuServiceInterrupt -- virtual override (intrserv) base (intrserv)
-    pThis->__kgmmuServiceInterrupt__ = &kgmmuServiceInterrupt_IMPL;
-    pThis->__nvoc_base_IntrService.__intrservServiceInterrupt__ = &__nvoc_down_thunk_KernelGmmu_intrservServiceInterrupt;
-
-    // kgmmuServiceNotificationInterrupt -- virtual halified (singleton optimized) override (intrserv) base (intrserv) body
-    pThis->__kgmmuServiceNotificationInterrupt__ = &kgmmuServiceNotificationInterrupt_56cd7a;
-    pThis->__nvoc_base_IntrService.__intrservServiceNotificationInterrupt__ = &__nvoc_down_thunk_KernelGmmu_intrservServiceNotificationInterrupt;
-
     // kgmmuInstBlkVaLimitGet -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
     {
@@ -343,6 +321,16 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, RmHalspecOwner
         pThis->__kgmmuInstBlkVaLimitGet__ = &kgmmuInstBlkVaLimitGet_f03539;
     }
 
+    // kgmmuCheckPendingInvalidates -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
+    {
+        pThis->__kgmmuCheckPendingInvalidates__ = &kgmmuCheckPendingInvalidates_TU102;
+    }
+    else
+    {
+        pThis->__kgmmuCheckPendingInvalidates__ = &kgmmuCheckPendingInvalidates_TU102;
+    }
+
     // kgmmuCommitTlbInvalidate -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
     {
@@ -351,6 +339,16 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, RmHalspecOwner
     else
     {
         pThis->__kgmmuCommitTlbInvalidate__ = &kgmmuCommitTlbInvalidate_TU102;
+    }
+
+    // kgmmuSetPdbToInvalidate -- halified (2 hals) body
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
+    {
+        pThis->__kgmmuSetPdbToInvalidate__ = &kgmmuSetPdbToInvalidate_TU102;
+    }
+    else
+    {
+        pThis->__kgmmuSetPdbToInvalidate__ = &kgmmuSetPdbToInvalidate_TU102;
     }
 
     // kgmmuSetTlbInvalidateMembarWarParameters -- halified (2 hals) body
@@ -689,12 +687,12 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, RmHalspecOwner
         // default
         else
         {
-            pThis->__kgmmuIsReplayableShadowFaultBufferFull__ = &kgmmuIsReplayableShadowFaultBufferFull_491d52;
+            pThis->__kgmmuIsReplayableShadowFaultBufferFull__ = &kgmmuIsReplayableShadowFaultBufferFull_3dd2c9;
         }
     }
     else
     {
-        pThis->__kgmmuIsReplayableShadowFaultBufferFull__ = &kgmmuIsReplayableShadowFaultBufferFull_ceaee8;
+        pThis->__kgmmuIsReplayableShadowFaultBufferFull__ = &kgmmuIsReplayableShadowFaultBufferFull_72a2e1;
     }
 
     // kgmmuReadClientShadowBufPutIndex -- halified (4 hals) body
@@ -742,50 +740,13 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, RmHalspecOwner
     }
 
     // kgmmuInitCeMmuFaultIdRange -- halified (2 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
     {
-        pThis->__kgmmuInitCeMmuFaultIdRange__ = &kgmmuInitCeMmuFaultIdRange_GB100;
-    }
-    // default
-    else
-    {
-        pThis->__kgmmuInitCeMmuFaultIdRange__ = &kgmmuInitCeMmuFaultIdRange_56cd7a;
-    }
-
-    // kgmmuGetMinCeEngineId -- halified (3 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
-    {
-        pThis->__kgmmuGetMinCeEngineId__ = &kgmmuGetMinCeEngineId_GH100;
-    }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
-    {
-        pThis->__kgmmuGetMinCeEngineId__ = &kgmmuGetMinCeEngineId_GB100;
+        pThis->__kgmmuInitCeMmuFaultIdRange__ = &kgmmuInitCeMmuFaultIdRange_GV100;
     }
     else
     {
-        pThis->__kgmmuGetMinCeEngineId__ = &kgmmuGetMinCeEngineId_GV100;
-    }
-
-    // kgmmuGetMaxCeEngineId -- halified (5 hals) body
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
-    {
-        pThis->__kgmmuGetMaxCeEngineId__ = &kgmmuGetMaxCeEngineId_GH100;
-    }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xc0000000UL) )) /* ChipHal: GB100 | GB102 */ 
-    {
-        pThis->__kgmmuGetMaxCeEngineId__ = &kgmmuGetMaxCeEngineId_GB100;
-    }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
-    {
-        pThis->__kgmmuGetMaxCeEngineId__ = &kgmmuGetMaxCeEngineId_GV100;
-    }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f00000UL) )) /* ChipHal: AD102 | AD103 | AD104 | AD106 | AD107 */ 
-    {
-        pThis->__kgmmuGetMaxCeEngineId__ = &kgmmuGetMaxCeEngineId_AD102;
-    }
-    else
-    {
-        pThis->__kgmmuGetMaxCeEngineId__ = &kgmmuGetMaxCeEngineId_GA100;
+        pThis->__kgmmuInitCeMmuFaultIdRange__ = &kgmmuInitCeMmuFaultIdRange_GA100;
     }
 
     // kgmmuFaultBufferMap -- halified (2 hals) body
@@ -997,7 +958,7 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, RmHalspecOwner
     {
         if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
         {
-            pThis->__kgmmuIsP2PUnboundInstFault__ = &kgmmuIsP2PUnboundInstFault_491d52;
+            pThis->__kgmmuIsP2PUnboundInstFault__ = &kgmmuIsP2PUnboundInstFault_3dd2c9;
         }
         else
         {
@@ -1022,11 +983,11 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, RmHalspecOwner
     // kgmmuTestVidmemAccessBitBufferError -- halified (2 hals) body
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kgmmuTestVidmemAccessBitBufferError__ = &kgmmuTestVidmemAccessBitBufferError_491d52;
+        pThis->__kgmmuTestVidmemAccessBitBufferError__ = &kgmmuTestVidmemAccessBitBufferError_3dd2c9;
     }
     else
     {
-        pThis->__kgmmuTestVidmemAccessBitBufferError__ = &kgmmuTestVidmemAccessBitBufferError_ceaee8;
+        pThis->__kgmmuTestVidmemAccessBitBufferError__ = &kgmmuTestVidmemAccessBitBufferError_72a2e1;
     }
 
     // kgmmuDisableVidmemAccessBitBuf -- halified (2 hals) body
@@ -1141,34 +1102,58 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, RmHalspecOwner
     {
         pThis->__kgmmuGetFakeSparseEntry__ = &kgmmuGetFakeSparseEntry_fa6e19;
     }
-
-    // kgmmuInitMissing -- virtual inherited (engstate) base (engstate)
-    pThis->__kgmmuInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_kgmmuInitMissing;
-
-    // kgmmuStatePreInitLocked -- virtual inherited (engstate) base (engstate)
-    pThis->__kgmmuStatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_kgmmuStatePreInitLocked;
-
-    // kgmmuStatePreInitUnlocked -- virtual inherited (engstate) base (engstate)
-    pThis->__kgmmuStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kgmmuStatePreInitUnlocked;
-
-    // kgmmuStateInitUnlocked -- virtual inherited (engstate) base (engstate)
-    pThis->__kgmmuStateInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kgmmuStateInitUnlocked;
-
-    // kgmmuStatePreLoad -- virtual inherited (engstate) base (engstate)
-    pThis->__kgmmuStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kgmmuStatePreLoad;
-
-    // kgmmuStatePostUnload -- virtual inherited (engstate) base (engstate)
-    pThis->__kgmmuStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kgmmuStatePostUnload;
-
-    // kgmmuIsPresent -- virtual inherited (engstate) base (engstate)
-    pThis->__kgmmuIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_kgmmuIsPresent;
-} // End __nvoc_init_funcTable_KernelGmmu_1 with approximately 188 basic block(s).
+} // End __nvoc_init_funcTable_KernelGmmu_1 with approximately 155 basic block(s).
 
 
 // Initialize vtable(s) for 90 virtual method(s).
 void __nvoc_init_funcTable_KernelGmmu(KernelGmmu *pThis, RmHalspecOwner *pRmhalspecowner) {
 
-    // Initialize vtable(s) with 90 per-object function pointer(s).
+    // Per-class vtable definition
+    static const struct NVOC_VTABLE__KernelGmmu vtable = {
+        .__kgmmuConstructEngine__ = &kgmmuConstructEngine_IMPL,    // virtual override (engstate) base (engstate)
+        .OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_down_thunk_KernelGmmu_engstateConstructEngine,    // virtual
+        .__kgmmuStateInitLocked__ = &kgmmuStateInitLocked_IMPL,    // virtual override (engstate) base (engstate)
+        .OBJENGSTATE.__engstateStateInitLocked__ = &__nvoc_down_thunk_KernelGmmu_engstateStateInitLocked,    // virtual
+        .__kgmmuStateLoad__ = &kgmmuStateLoad_IMPL,    // virtual override (engstate) base (engstate)
+        .OBJENGSTATE.__engstateStateLoad__ = &__nvoc_down_thunk_KernelGmmu_engstateStateLoad,    // virtual
+        .__kgmmuStateUnload__ = &kgmmuStateUnload_IMPL,    // virtual override (engstate) base (engstate)
+        .OBJENGSTATE.__engstateStateUnload__ = &__nvoc_down_thunk_KernelGmmu_engstateStateUnload,    // virtual
+        .__kgmmuStatePostLoad__ = &kgmmuStatePostLoad_IMPL,    // virtual halified (singleton optimized) override (engstate) base (engstate) body
+        .OBJENGSTATE.__engstateStatePostLoad__ = &__nvoc_down_thunk_KernelGmmu_engstateStatePostLoad,    // virtual
+        .__kgmmuStatePreUnload__ = &kgmmuStatePreUnload_IMPL,    // virtual halified (singleton optimized) override (engstate) base (engstate) body
+        .OBJENGSTATE.__engstateStatePreUnload__ = &__nvoc_down_thunk_KernelGmmu_engstateStatePreUnload,    // virtual
+        .__kgmmuStateDestroy__ = &kgmmuStateDestroy_IMPL,    // virtual override (engstate) base (engstate)
+        .OBJENGSTATE.__engstateStateDestroy__ = &__nvoc_down_thunk_KernelGmmu_engstateStateDestroy,    // virtual
+        .__kgmmuRegisterIntrService__ = &kgmmuRegisterIntrService_IMPL,    // virtual override (intrserv) base (intrserv)
+        .IntrService.__intrservRegisterIntrService__ = &__nvoc_down_thunk_KernelGmmu_intrservRegisterIntrService,    // virtual
+        .__kgmmuClearInterrupt__ = &kgmmuClearInterrupt_IMPL,    // virtual override (intrserv) base (intrserv)
+        .IntrService.__intrservClearInterrupt__ = &__nvoc_down_thunk_KernelGmmu_intrservClearInterrupt,    // virtual
+        .__kgmmuServiceInterrupt__ = &kgmmuServiceInterrupt_IMPL,    // virtual override (intrserv) base (intrserv)
+        .IntrService.__intrservServiceInterrupt__ = &__nvoc_down_thunk_KernelGmmu_intrservServiceInterrupt,    // virtual
+        .__kgmmuServiceNotificationInterrupt__ = &kgmmuServiceNotificationInterrupt_56cd7a,    // virtual halified (singleton optimized) override (intrserv) base (intrserv) body
+        .IntrService.__intrservServiceNotificationInterrupt__ = &__nvoc_down_thunk_KernelGmmu_intrservServiceNotificationInterrupt,    // virtual
+        .__kgmmuInitMissing__ = &__nvoc_up_thunk_OBJENGSTATE_kgmmuInitMissing,    // virtual inherited (engstate) base (engstate)
+        .OBJENGSTATE.__engstateInitMissing__ = &engstateInitMissing_IMPL,    // virtual
+        .__kgmmuStatePreInitLocked__ = &__nvoc_up_thunk_OBJENGSTATE_kgmmuStatePreInitLocked,    // virtual inherited (engstate) base (engstate)
+        .OBJENGSTATE.__engstateStatePreInitLocked__ = &engstateStatePreInitLocked_IMPL,    // virtual
+        .__kgmmuStatePreInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kgmmuStatePreInitUnlocked,    // virtual inherited (engstate) base (engstate)
+        .OBJENGSTATE.__engstateStatePreInitUnlocked__ = &engstateStatePreInitUnlocked_IMPL,    // virtual
+        .__kgmmuStateInitUnlocked__ = &__nvoc_up_thunk_OBJENGSTATE_kgmmuStateInitUnlocked,    // virtual inherited (engstate) base (engstate)
+        .OBJENGSTATE.__engstateStateInitUnlocked__ = &engstateStateInitUnlocked_IMPL,    // virtual
+        .__kgmmuStatePreLoad__ = &__nvoc_up_thunk_OBJENGSTATE_kgmmuStatePreLoad,    // virtual inherited (engstate) base (engstate)
+        .OBJENGSTATE.__engstateStatePreLoad__ = &engstateStatePreLoad_IMPL,    // virtual
+        .__kgmmuStatePostUnload__ = &__nvoc_up_thunk_OBJENGSTATE_kgmmuStatePostUnload,    // virtual inherited (engstate) base (engstate)
+        .OBJENGSTATE.__engstateStatePostUnload__ = &engstateStatePostUnload_IMPL,    // virtual
+        .__kgmmuIsPresent__ = &__nvoc_up_thunk_OBJENGSTATE_kgmmuIsPresent,    // virtual inherited (engstate) base (engstate)
+        .OBJENGSTATE.__engstateIsPresent__ = &engstateIsPresent_IMPL,    // virtual
+    };
+
+    // Pointer(s) to per-class vtable(s)
+    pThis->__nvoc_base_OBJENGSTATE.__nvoc_vtable = &vtable.OBJENGSTATE;    // (engstate) super
+    pThis->__nvoc_base_IntrService.__nvoc_vtable = &vtable.IntrService;    // (intrserv) super
+    pThis->__nvoc_vtable = &vtable;    // (kgmmu) this
+
+    // Initialize vtable(s) with 72 per-object function pointer(s).
     __nvoc_init_funcTable_KernelGmmu_1(pThis, pRmhalspecowner);
 }
 

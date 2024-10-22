@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -78,7 +78,7 @@ error:
 void uvm_perf_module_unload(uvm_perf_module_t *module, uvm_va_space_t *va_space)
 {
     uvm_perf_event_data_t event_data;
-    uvm_va_range_t *va_range;
+    uvm_va_range_managed_t *managed_range;
     uvm_va_block_t *block;
     size_t i;
 
@@ -89,12 +89,10 @@ void uvm_perf_module_unload(uvm_perf_module_t *module, uvm_va_space_t *va_space)
 
     event_data.module_unload.module = module;
 
-    // Iterate over all va_range/va_blocks in the va_space
-    uvm_for_each_va_range(va_range, va_space) {
-        if (va_range->type != UVM_VA_RANGE_TYPE_MANAGED)
-            continue;
+    // Iterate over all managed ranges/va_blocks in the va_space
+    uvm_for_each_va_range_managed(managed_range, va_space) {
 
-        for_each_va_block_in_va_range(va_range, block) {
+        for_each_va_block_in_va_range(managed_range, block) {
             uvm_mutex_lock(&block->lock);
 
             // Notify a fake va_block destruction to destroy the module-allocated data
@@ -106,7 +104,7 @@ void uvm_perf_module_unload(uvm_perf_module_t *module, uvm_va_space_t *va_space)
         }
         // Notify a fake va_range destruction to destroy the module-allocated data
         event_data.module_unload.block = NULL;
-        event_data.module_unload.range = va_range;
+        event_data.module_unload.range = managed_range;
         uvm_perf_event_notify(&va_space->perf_events, UVM_PERF_EVENT_MODULE_UNLOAD, &event_data);
     }
 

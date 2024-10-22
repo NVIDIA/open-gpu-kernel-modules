@@ -560,19 +560,20 @@ rmapiLockAcquire(NvU32 flags, NvU32 module)
     // Make sure lock has been created
     NV_CHECK_OR_RETURN(LEVEL_ERROR, g_RmApiLock.pLock != NULL, NV_ERR_NOT_READY);
 
-    LOCK_ASSERT_AND_RETURN(!rmapiLockIsOwner());
-
+    NV_ASSERT_OR_RETURN(!rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     // Ensure that GPU locks are NEVER acquired before the API lock
-    LOCK_ASSERT_AND_RETURN(rmGpuLocksGetOwnedMask() == 0);
+    NV_ASSERT_OR_RETURN(rmGpuLocksGetOwnedMask() == 0, NV_ERR_INVALID_LOCK_STATE);
 
     //
     // If a read-only lock was requested, check to see if the module is allowed
-    // to take read-only locks
+    // to take read-only locks or the _FORCE flag was enabled and set.
     //
     if ((flags & RMAPI_LOCK_FLAGS_READ) && (module != RM_LOCK_MODULES_NONE))
     {
-        if ((pSys->apiLockModuleMask & RM_LOCK_MODULE_GRP(module)) == 0)
+        if ((((flags & RMAPI_LOCK_FLAGS_READ_FORCE) == 0) ||
+                !pSys->getProperty(pSys, PDB_PROP_SYS_ENABLE_FORCE_SHARED_LOCK)) &&
+            ((pSys->apiLockModuleMask & RM_LOCK_MODULE_GRP(module)) == 0))
         {
             flags &= ~RMAPI_LOCK_FLAGS_READ;
         }

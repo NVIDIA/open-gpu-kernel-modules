@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,19 +21,16 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "core/core.h"
-#include "os/os.h"
-#include "gpu/mmu/vidmem_access_bit_buffer.h"
-#include "gpu/gpu.h"
+#ifndef __NVKMS_SETLUT_WORKAREA_H__
+#define __NVKMS_SETLUT_WORKAREA_H__
 
-NV_STATUS
-vidmemAccessBitBufConstructHelper_KERNEL
-(
-    VidmemAccessBitBuffer  *pVidmemAccessBitBuffer,
-    CALL_CONTEXT           *pCallContext,
-    RS_RES_ALLOC_PARAMS_INTERNAL *pParams
-)
-{
-    OBJGPU *pGpu = GPU_RES_GET_GPU(pVidmemAccessBitBuffer);
-    return IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) && !IS_VIRTUAL(pGpu)? NV_OK : NV_ERR_NOT_SUPPORTED;
-}
+#include "nvkms-types.h"
+
+struct NvKmsSetLutWorkArea {
+    struct {
+        NVFlipEvoHwState newState;
+        NVFlipEvoHwState oldState;
+    } head[NVKMS_MAX_HEADS_PER_DISP];
+};
+
+#endif

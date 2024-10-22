@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -191,7 +191,6 @@ typedef struct
 #define NVOS02_FLAGS_PHYSICALITY_NONCONTIGUOUS                     (0x00000001)
 #define NVOS02_FLAGS_LOCATION                                      11:8
 #define NVOS02_FLAGS_LOCATION_PCI                                  (0x00000000)
-#define NVOS02_FLAGS_LOCATION_AGP                                  (0x00000001)
 #define NVOS02_FLAGS_LOCATION_VIDMEM                               (0x00000002)
 #define NVOS02_FLAGS_COHERENCY                                     15:12
 #define NVOS02_FLAGS_COHERENCY_UNCACHED                            (0x00000000)
@@ -1106,7 +1105,6 @@ typedef struct
 #define NVOS32_ATTR_LOCATION                                 26:25
 #define NVOS32_ATTR_LOCATION_VIDMEM                     0x00000000
 #define NVOS32_ATTR_LOCATION_PCI                        0x00000001
-#define NVOS32_ATTR_LOCATION_AGP                        0x00000002
 #define NVOS32_ATTR_LOCATION_ANY                        0x00000003
 
 //
@@ -1196,10 +1194,15 @@ typedef struct
 // SMMU mapping for GPU physical allocation decided internally by RM
 // This attribute provide an override to RM policy for verification purposes.
 //
-#define NVOS32_ATTR2_SMMU_ON_GPU                               10:8
+#define NVOS32_ATTR2_SMMU_ON_GPU                               9:8
 #define NVOS32_ATTR2_SMMU_ON_GPU_DEFAULT                 0x00000000
 #define NVOS32_ATTR2_SMMU_ON_GPU_DISABLE                 0x00000001
 #define NVOS32_ATTR2_SMMU_ON_GPU_ENABLE                  0x00000002
+
+// Used for allocating the memory from scanout carveout.
+#define NVOS32_ATTR2_USE_SCANOUT_CARVEOUT                    10:10 
+#define NVOS32_ATTR2_USE_SCANOUT_CARVEOUT_FALSE              0x00000000
+#define NVOS32_ATTR2_USE_SCANOUT_CARVEOUT_TRUE               0x00000001
 
 //
 // Make comptag allocation aligned to compression cacheline size.
@@ -1749,7 +1752,7 @@ typedef struct
 
 // Mappings can have restricted permissions (read-only, write-only).  Some
 // RM implementations may choose to ignore these flags, or they may work
-// only for certain memory spaces (system, AGP, video memory); in such cases,
+// only for certain memory spaces (system, video memory); in such cases,
 // you may get a read/write mapping even if you asked for a read-only or
 // write-only mapping.
 #define NVOS33_FLAGS_ACCESS                                        1:0
@@ -2305,6 +2308,8 @@ typedef struct
     NvU8  bForcePowerStateFail;
     NvU32 errorStatus;           // [OUT] To tell client if there is bubble up errors
     NvU32 fastBootPowerState;
+    NvU8  reserved;
+    NvU8  reserved2;
 } NVPOWERSTATE_PARAMETERS, *PNVPOWERSTATE_PARAMETERS;
 
  /***************************************************************************\
@@ -2463,21 +2468,32 @@ typedef struct {
 #define NV_CHANNELGPFIFO_NOTIFICATION_STATUS_IN_PROGRESS_TRUE   0x1
 #define NV_CHANNELGPFIFO_NOTIFICATION_STATUS_IN_PROGRESS_FALSE  0x0
 
+typedef enum
+{
+    PB_SIZE_4KB = 0,
+    PB_SIZE_8KB,
+    PB_SIZE_16KB,
+    PB_SIZE_32KB,
+    PB_SIZE_64KB
+} ChannelPBSize;
+
 typedef struct
 {
-    NvV32    channelInstance;            // One of the n channel instances of a given channel type.
-                                         // Note that core channel has only one instance
-                                         // while all others have two (one per head).
-    NvHandle hObjectBuffer;              // ctx dma handle for DMA push buffer
-    NvHandle hObjectNotify;              // ctx dma handle for an area (of type NvNotification defined in sdk/nvidia/inc/nvtypes.h) where RM can write errors/notifications
-    NvU32    offset;                     // Initial offset for put/get, usually zero.
-    NvP64    pControl NV_ALIGN_BYTES(8); // pControl gives virt addr of UDISP GET/PUT regs
+    NvV32         channelInstance;            // One of the n channel instances of a given channel type.
+                                              // Note that core channel has only one instance
+                                              // while all others have two (one per head).
+    NvHandle      hObjectBuffer;              // ctx dma handle for DMA push buffer
+    NvHandle      hObjectNotify;              // ctx dma handle for an area (of type NvNotification defined in sdk/nvidia/inc/nvtypes.h) where RM can write errors/notifications
+    NvU32         offset;                     // Initial offset for put/get, usually zero.
+    NvP64         pControl NV_ALIGN_BYTES(8); // pControl gives virt addr of UDISP GET/PUT regs
 
-    NvU32    flags;
+    NvU32         flags;
+    ChannelPBSize channelPBSize;              // Size of Push Buffer requested by client (allowed values in enum)
 #define NV50VAIO_CHANNELDMA_ALLOCATION_FLAGS_CONNECT_PB_AT_GRAB                1:1
 #define NV50VAIO_CHANNELDMA_ALLOCATION_FLAGS_CONNECT_PB_AT_GRAB_YES            0x00000000
 #define NV50VAIO_CHANNELDMA_ALLOCATION_FLAGS_CONNECT_PB_AT_GRAB_NO             0x00000001
 
+    NvU32    subDeviceId;                // One-hot encoded subDeviceId (i.e. SDM) that will be used to address the channel in the pushbuffer stream (via SSDM method)
 } NV50VAIO_CHANNELDMA_ALLOCATION_PARAMETERS;
 
 typedef struct

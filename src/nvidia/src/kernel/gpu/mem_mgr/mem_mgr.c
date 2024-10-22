@@ -48,9 +48,11 @@
 #include "class/cl0040.h" // NV01_MEMORY_LOCAL_USER
 #include "class/cl503c.h"
 #include "class/cl906f.h" // GF100_CHANNEL_GPFIFO
+#include "class/cl0005.h" // NV01_EVENT_KERNEL_CALLBACK_EX
 #include "os/os.h"
 #include "gpu/gsp/kernel_gsp.h"
 #include "gpu/conf_compute/conf_compute.h"
+#include "gpu/mem_mgr/mem_mapper.h"
 #include "platform/sli/sli.h"
 #include "virtualization/hypervisor/hypervisor.h"
 
@@ -204,18 +206,13 @@ _memmgrInitRegistryOverrides(OBJGPU *pGpu, MemoryManager *pMemoryManager)
         pMemoryManager->bAllowSysmemHugePages = NV_FALSE;
     }
 
-    // This key should not be used on physical (GSP) RM.
-    if (!RMCFG_FEATURE_PLATFORM_GSP)
+    // Allow user to increase size of RM reserved heap via a regkey
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_INCREASE_RSVD_MEMORY_SIZE_MB,
+                            &data32) == NV_OK)
     {
-        // Allow user to increase size of RM reserved heap via a regkey
-        if (osReadRegistryDword(pGpu, NV_REG_STR_RM_INCREASE_RSVD_MEMORY_SIZE_MB,
-                                &data32) == NV_OK)
-        {
-            pMemoryManager->rsvdMemorySizeIncrement = (NvU64)data32 << 20;
-            NV_PRINTF(LEVEL_ERROR,
-                      "User specified increase in reserved size = %d MBs\n",
-                      data32);
-        }
+        pMemoryManager->rsvdMemorySizeIncrement = (NvU64)data32 << 20;
+        NV_PRINTF(LEVEL_ERROR,
+                  "User specified increase in reserved size = %d MBs\n", data32);
     }
 
     if (osReadRegistryDword(pGpu,
@@ -453,6 +450,75 @@ memmgrPreSchedulingDisableHandler
     return memmgrDestroyInternalChannels(pGpu, GPU_GET_MEMORY_MANAGER(pGpu));
 }
 
+static void
+memmgrSuspendResumeCallback
+(
+    void        *pArg,
+    void        *pData,
+    NvHandle     hEvent,
+    NvU32        data,
+    NvU32        status
+)
+{
+    RmClient **ppClient = serverutilGetFirstClientUnderLock();
+
+    NV_ASSERT_OR_RETURN_VOID(rmapiLockIsOwner());
+
+    while (ppClient != NULL)
+    {
+        RsClient    *pClient = staticCast(*ppClient, RsClient);
+        RS_ITERATOR  it      = clientRefIter(pClient, NULL, classId(MemoryMapper), RS_ITERATE_DESCENDANTS, NV_TRUE);
+
+        while (clientRefIterNext(pClient, &it))
+        {
+            MemoryMapper *pMemoryMapper = dynamicCast(it.pResourceRef->pResource, MemoryMapper);
+
+            //
+            // All MemoryMapper work is stopped if it affects a suspended GPU
+            // Requeue all workers on resume, regardless of owner GPU
+            //
+            memmapperQueueWork(pMemoryMapper);
+        }
+
+        ppClient = serverutilGetNextClientUnderLock(ppClient);
+    }
+}
+
+static NV_STATUS
+memmgrRegisterSuspendCallbacks(MemoryManager *pMemoryManager)
+{
+    static NVOS10_EVENT_KERNEL_CALLBACK_EX    resumeCallback          = { .func = memmgrSuspendResumeCallback };
+    RM_API                                   *pRmApi                  = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    NV0005_ALLOC_PARAMETERS                   eventParams             = { 0 };
+    NV2080_CTRL_EVENT_SET_NOTIFICATION_PARAMS eventNotificationParams = { 0 };
+    NvHandle                                  hEvent;
+
+    eventParams.hParentClient = pMemoryManager->hClient;
+    eventParams.hClass        = NV01_EVENT_KERNEL_CALLBACK_EX;
+    eventParams.notifyIndex   = NV2080_NOTIFIERS_POWER_RESUME;
+    eventParams.data          = NV_PTR_TO_NvP64(&resumeCallback);
+    NV_ASSERT_OK_OR_RETURN(
+        pRmApi->Alloc(pRmApi,
+                      pMemoryManager->hClient,
+                      pMemoryManager->hSubdevice,
+                      &hEvent,
+                      NV01_EVENT_KERNEL_CALLBACK_EX,
+                      &eventParams,
+                      sizeof(eventParams)));
+
+    eventNotificationParams.event  = NV2080_NOTIFIERS_POWER_RESUME;
+    eventNotificationParams.action = NV2080_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT;
+    NV_ASSERT_OK_OR_RETURN(
+        pRmApi->Control(pRmApi,
+                        pMemoryManager->hClient,
+                        pMemoryManager->hSubdevice,
+                        NV2080_CTRL_CMD_EVENT_SET_NOTIFICATION,
+                        &eventNotificationParams,
+                        sizeof(eventNotificationParams)));
+
+    return NV_OK;
+}
+
 NV_STATUS
 memmgrStateInitLocked_IMPL
 (
@@ -568,7 +634,14 @@ memmgrStateInitLocked_IMPL
         _memmgrInitRUSDHeapSize(pGpu, pMemoryManager);
     }
 
-    status = _memmgrAllocInternalClientObjects(pGpu, pMemoryManager);
+    NV_ASSERT_OK_OR_GOTO(status, _memmgrAllocInternalClientObjects(pGpu, pMemoryManager), failed);
+
+    if (!RMCFG_FEATURE_PLATFORM_GSP)
+    {
+        NV_ASSERT_OK_OR_GOTO(status, memmgrRegisterSuspendCallbacks(pMemoryManager), failed);
+    }
+
+failed:
     if (status != NV_OK)
     {
         //
@@ -1992,7 +2065,7 @@ NV_STATUS memmgrFree_IMPL
     NvU32       pmaFreeFlag       = 0;
 
     // IRQL TEST:  must be running at equivalent of passive-level
-    IRQL_ASSERT_AND_RETURN(!osIsRaisedIRQL());
+    NV_ASSERT_OR_RETURN(!osIsRaisedIRQL(), NV_ERR_INVALID_IRQ_LEVEL);
 
     if (pMemDesc == NULL)
         return NV_ERR_INVALID_ARGUMENT;
@@ -2992,13 +3065,40 @@ _memmgrPmaStatsUpdateCb
 )
 {
     OBJGPU *pGpu = (OBJGPU *) pCtx;
+    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     RUSD_PMA_MEMORY_INFO *pSharedData;
+    RUSD_BAR1_MEMORY_INFO *pBar1Info;
+    NvU64 freeMem = freeFrames << PMA_PAGE_SHIFT;
+    NvU64 totalMem = 0;
 
     NV_ASSERT_OR_RETURN_VOID(pGpu != NULL);
 
     pSharedData = gpushareddataWriteStart(pGpu, pmaMemoryInfo);
-    pSharedData->freePmaMemory = freeFrames << PMA_PAGE_SHIFT;
+    MEM_WR64(&pSharedData->freePmaMemory, freeMem);
     gpushareddataWriteFinish(pGpu, pmaMemoryInfo);
+
+    if (pKernelBus == NULL)
+    {
+        return;
+    }
+
+    //
+    // VGPU GFID check just accesses calling context, and the TLS database mantains its own global lock.
+    // Thus, following call to kbusIsStaticBar1Enabled should be thread-safe even when RM lock not held.
+    //
+    if ((!kbusIsStaticBar1Enabled(pGpu, pKernelBus)) || kbusIsBar1Disabled(pKernelBus))
+    {
+        return;
+    }
+
+    totalMem = MEM_RD64(&pSharedData->totalPmaMemory);
+
+    pBar1Info = gpushareddataWriteStart(pGpu, bar1MemoryInfo);
+
+    MEM_WR32(&pBar1Info->bar1AvailSize, MEM_RD32(&pBar1Info->bar1Size) -
+        ((totalMem - freeMem) >> 10)); // Available size in KB
+
+    gpushareddataWriteFinish(pGpu, bar1MemoryInfo);
 }
 
 static void
@@ -3020,7 +3120,7 @@ _memmgrInitRUSDHeapSize
     bytesTotal -= ((NvU64)pKernelMemorySystem->fbOverrideStartKb << 10);
 
     pSharedData = gpushareddataWriteStart(pGpu, pmaMemoryInfo);
-    pSharedData->totalPmaMemory = bytesTotal;
+    MEM_WR64(&pSharedData->totalPmaMemory, bytesTotal);
     gpushareddataWriteFinish(pGpu, pmaMemoryInfo);
 }
 
@@ -3366,6 +3466,38 @@ _pmaInitFailed:
     }
 
     return status;
+}
+
+
+/*!
+ * @brief Retrieve the size of the client FB address space
+ *
+ * @param       pGpu
+ * @param       pMemoryManager
+ *
+ * @returns size of client FB address space
+ */
+NvU64
+memmgrGetClientFbAddrSpaceSize_IMPL
+(
+    OBJGPU        *pGpu,
+    MemoryManager *pMemoryManager
+)
+{
+    NvBool bIsPmaEnabled = memmgrIsPmaInitialized(pMemoryManager);
+    Heap *pHeap = GPU_GET_HEAP(pGpu);
+    NvU64 size;
+
+    if (bIsPmaEnabled)
+    {
+        pmaGetClientAddrSpaceSize(&pHeap->pmaObject, &size);
+    }
+    else
+    {
+        heapGetClientAddrSpaceSize(pGpu, pHeap, &size);
+    }
+
+    return size;
 }
 
 /*!

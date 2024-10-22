@@ -48,7 +48,7 @@ memmgrIsKind_TU102
     switch (op)
     {
         case FB_IS_KIND_Z:
-            return KIND_Z(kind);
+            return PTEKIND_Z(kind);
         case FB_IS_KIND_ZBC:
             return PTEKIND_COMPRESSIBLE(kind);
         case FB_IS_KIND_COMPRESSIBLE:
@@ -63,6 +63,8 @@ memmgrIsKind_TU102
             return (PTEKIND_SUPPORTED(kind) && !(KIND_INVALID(kind)));
         case FB_IS_KIND_DISALLOW_PLC:
             return PTEKIND_DISALLOWS_PLC(kind);
+        case FB_IS_KIND_SWIZZLED:
+            return !PTEKIND_GENERIC_MEMORY(kind) && !PTEKIND_PITCH(kind);
         default:
             NV_PRINTF(LEVEL_ERROR, "Bad op (%08x) passed in\n", op);
             DBG_BREAKPOINT();

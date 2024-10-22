@@ -68,7 +68,7 @@ vaspaceFillAllocParams_IMPL
     OBJGPU             *pGpu     = gpumgrGetGpu(gpumgrGetDefaultPrimaryGpu(pVAS->gpuMask));
     VirtMemAllocator   *pDma     = GPU_GET_DMA(pGpu);
     bRestrictedVaRange           = pDma->bDmaRestrictVaRange;
-    bEnforce32bitPtr             = !!(pDma->getProperty(pDma, PDB_PROP_DMA_ENFORCE_32BIT_POINTER));
+    bEnforce32bitPtr             = pDma->bDmaEnforce32BitPointer;
 
     // Apply default alignment policies to offset alignment and size.
     NV_ASSERT_OK_OR_RETURN(
@@ -191,7 +191,7 @@ vaspaceGetByHandleOrDeviceDefault_IMPL
     NV_STATUS      status = NV_OK;
     NvHandle       _hDeviceOrSubDevice;
     Device        *pDevice    = NULL;
-    RsResourceRef *pResourceRef;
+    RsResourceRef *pResourceRef = NULL;
 
     if (hVASpace == NV01_NULL_OBJECT)
     {

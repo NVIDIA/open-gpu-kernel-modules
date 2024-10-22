@@ -47,7 +47,7 @@ chandesConstruct_IMPL
     RsResource       *pParent = NULL;
     KernelChannel    *pKernelChannel;
     CLASSDESCRIPTOR   internalClassDescriptor;
-    PCLASSDESCRIPTOR  pClassDescriptor;
+    CLASSDESCRIPTOR  *pClassDescriptor;
     KernelFifo       *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
     NvBool            bMIGInUse = IS_MIG_IN_USE(pGpu);
 

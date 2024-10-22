@@ -120,7 +120,8 @@ subdeviceCtrlCmdGpuExecRegOps_cmn
     RmCtrlParams     *pRmCtrlParams = pCallContext->pControlParams;
     NvBool            bUseMigratableOps;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(GPU_RES_GET_GPU(pSubdevice)->gpuInstance));
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(GPU_RES_GET_GPU(pSubdevice)->gpuInstance),
+        NV_ERR_INVALID_LOCK_STATE);
 
     NV_PRINTF(LEVEL_INFO, "client 0x%x channel 0x%x\n", hClientTarget,
               hChannelTarget);

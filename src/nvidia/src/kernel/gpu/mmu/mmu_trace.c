@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -170,15 +170,6 @@ mmuTrace
     NvBool             verbose;
     NvBool             modeValid;
     MMU_TRACE_MODE     traceMode;
-
-    if (RMCFG_FEATURE_PLATFORM_GSP)
-    {
-        //
-        // All client vaspace is managed by CPU-RM, so MMU_TRACER is not needed
-        // in GSP-RM
-        //
-        return NV_ERR_NOT_SUPPORTED;
-    }
 
     NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(pVAS != NULL, NV_ERR_INVALID_ARGUMENT);
@@ -475,6 +466,7 @@ _mmuTraceWalk
     NvBool                     isPt           = NV_FALSE;
     NvU8                      *pBase          = NULL;
     MEMORY_DESCRIPTOR         *pTempMemDesc   = NULL;
+    MEMORY_DESCRIPTOR          nextMemDesc    = {0};
     MemoryManager             *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
     if (pMemDesc == NULL)
@@ -551,6 +543,7 @@ _mmuTraceWalk
         {
 
             NvU32    memSize = 0;
+            NvBool   destroyMemDesc = NV_FALSE;
 
             const void *pFmtPde  = pTraceCb->getFmtPde(pFmt, pFmtLevel, i);
             NvU64       nextBase = pTraceCb->getPdePa(pGpu, pFmtPde, &entry);
@@ -578,12 +571,27 @@ _mmuTraceWalk
                 // Continue to next sub-level, still assuming a PDE fault so far.
                 continue;
             }
+            // When on GSP, read from the physical address to get the next entry.
+            if (RMCFG_FEATURE_PLATFORM_GSP)
+            {
+                NvU32 nextSpace = pTraceCb->pdeAddrSpace(pFmtPde, &entry);
 
-            NV_ASSERT_OK_OR_GOTO(status,
-                mmuWalkGetPageLevelInfo(pWalk, &pFmtLevel->subLevels[i], entryVa,
-                                (const MMU_WALK_MEMDESC**)&pTempMemDesc, &memSize),
-                unmap_and_exit);
-
+                memSize = mmuFmtLevelSize((const MMU_FMT_LEVEL*)&pFmtLevel->subLevels[i]);
+                memdescCreateExisting(&nextMemDesc, pGpu, memSize, nextSpace,
+                    NV_MEMORY_UNCACHED, MEMDESC_FLAGS_NONE);
+                memdescDescribe(&nextMemDesc, nextSpace, nextBase, memSize);
+                pTempMemDesc = &nextMemDesc;
+                destroyMemDesc = NV_TRUE;
+            }
+            // Otherwise we use the SW maintained MMU table since we don't want to rely on
+            // HW for kernel SW behavior.
+            else
+            {
+                NV_ASSERT_OK_OR_GOTO(status,
+                    mmuWalkGetPageLevelInfo(pWalk, &pFmtLevel->subLevels[i], entryVa,
+                        (const MMU_WALK_MEMDESC**)&pTempMemDesc, &memSize),
+                    unmap_and_exit);
+            }
             // Only print out the PDE the first time we know it's a valid PDE
             if (!valid)
             {
@@ -611,6 +619,10 @@ _mmuTraceWalk
             }
 
 destroy_mem:
+            if (destroyMemDesc)
+            {
+                memdescDestroy(&nextMemDesc);
+            }
             if (*pDone)
             {
                 goto unmap_and_exit;

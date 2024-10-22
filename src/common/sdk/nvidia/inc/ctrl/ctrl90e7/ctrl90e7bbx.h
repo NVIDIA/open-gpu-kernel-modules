@@ -63,3 +63,30 @@ typedef struct NV90E7_CTRL_BBX_GET_LAST_FLUSH_TIME_PARAMS {
 
 
 
+/*
+ * NV90E7_CTRL_CMD_BBX_IS_NVM_FLUSH_ENABLED
+ *
+ * This command is used to query whether BBX flushing to non-volatile memory is enabled.
+ *
+ *   bIsEnabled
+ *     Whether BBX flushing to non-volatile memory is enabled.
+ *   bPeriodicFlush
+ *     Whether BBX periodically flushes to non-volatile memory.
+ *   periodicFlushIntervalSec
+ *     The minimum interval (in seconds) between two consecutive periodic BBX flushes
+ *     if periodic flush is enabled.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_NOT_SUPPORTED
+ */
+#define NV90E7_CTRL_CMD_BBX_IS_NVM_FLUSH_ENABLED (0x90e70119) /* finn: Evaluated from "(FINN_GF100_SUBDEVICE_INFOROM_BBX_INTERFACE_ID << 8) | NV90E7_CTRL_BBX_IS_NVM_FLUSH_ENABLED_PARAMS_MESSAGE_ID" */
+
+#define NV90E7_CTRL_BBX_IS_NVM_FLUSH_ENABLED_PARAMS_MESSAGE_ID (0x19U)
+
+typedef struct NV90E7_CTRL_BBX_IS_NVM_FLUSH_ENABLED_PARAMS {
+    NvBool bIsEnabled;
+    NvBool bPeriodicFlush;
+    NvU32  periodicFlushIntervalSec;
+} NV90E7_CTRL_BBX_IS_NVM_FLUSH_ENABLED_PARAMS;
+

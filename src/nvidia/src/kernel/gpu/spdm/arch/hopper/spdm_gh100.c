@@ -315,8 +315,8 @@ _spdmEncodeMessageGsp
         return LIBSPDM_STATUS_INVALID_PARAMETER;
     }
 
-    // Only support sending requester SPDM/Secured messages.
-    if (!is_requester || is_app_message)
+    // Only support sending requester messages. Application messages must only be sent in session.
+    if (!is_requester || (is_app_message && session_id == NULL))
     {
         return LIBSPDM_STATUS_INVALID_PARAMETER;
     }
@@ -350,7 +350,8 @@ _spdmEncodeMessageGsp
     // Determine whether message is secured.
     if (session_id != NULL)
     {
-        pNvSpdmDescHdr->msgType = NV_SPDM_MESSAGE_TYPE_SECURED;
+        pNvSpdmDescHdr->msgType = is_app_message ? NV_SPDM_MESSAGE_TYPE_APPLICATION :
+                                                   NV_SPDM_MESSAGE_TYPE_SECURED;
 
         pSecuredMessageContext =
             libspdm_get_secured_message_context_via_session_id(spdm_context, *session_id);
@@ -501,8 +502,11 @@ _spdmDecodeMessageGsp
     // Decode message, based on type.
     switch (pNvSpdmDescHdr->msgType)
     {
+        case NV_SPDM_MESSAGE_TYPE_APPLICATION:
         case NV_SPDM_MESSAGE_TYPE_SECURED:
         {
+            *is_app_message = (pNvSpdmDescHdr->msgType == NV_SPDM_MESSAGE_TYPE_APPLICATION);
+
             //
             // Double-check the payload fits a secured message header.
             // Our implementation of a secure message header only includes
@@ -548,8 +552,9 @@ _spdmDecodeMessageGsp
 
         case NV_SPDM_MESSAGE_TYPE_NORMAL:
         {
-            // Indicate the message is unsecured.
-            *session_id = NULL;
+            // Indicate the message is an unsecured SPDM message.
+            *session_id     = NULL;
+            *is_app_message = NV_FALSE;
 
             //
             // We both check that the buffer is large enough, and that the
@@ -572,9 +577,6 @@ _spdmDecodeMessageGsp
             return LIBSPDM_STATUS_INVALID_MSG_FIELD;
         }
     }
-
-    // We don't expect app message for any scenario.
-    *is_app_message = NV_FALSE;
 
     return LIBSPDM_STATUS_SUCCESS;
 }

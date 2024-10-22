@@ -63,6 +63,10 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJVASPACE =
     /*pExportInfo=*/        &__nvoc_export_info_OBJVASPACE
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+
+// Up-thunk(s) to bridge methods to ancestors (if any)
+
 const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJVASPACE = 
 {
     /*numEntries=*/     0,
@@ -96,100 +100,47 @@ __nvoc_ctor_OBJVASPACE_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_OBJVASPACE_1(OBJVASPACE *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // vaspaceConstruct_ -- pure virtual
-    pThis->__vaspaceConstruct___ = NULL;
-
-    // vaspaceAlloc -- pure virtual
-    pThis->__vaspaceAlloc__ = NULL;
-
-    // vaspaceFree -- pure virtual
-    pThis->__vaspaceFree__ = NULL;
-
-    // vaspaceApplyDefaultAlignment -- pure virtual
-    pThis->__vaspaceApplyDefaultAlignment__ = NULL;
-
-    // vaspaceIncAllocRefCnt -- inline virtual body
-    pThis->__vaspaceIncAllocRefCnt__ = &vaspaceIncAllocRefCnt_b7902c;
-
-    // vaspaceGetVaStart -- virtual
-    pThis->__vaspaceGetVaStart__ = &vaspaceGetVaStart_IMPL;
-
-    // vaspaceGetVaLimit -- virtual
-    pThis->__vaspaceGetVaLimit__ = &vaspaceGetVaLimit_IMPL;
-
-    // vaspaceGetVasInfo -- pure virtual
-    pThis->__vaspaceGetVasInfo__ = NULL;
-
-    // vaspaceGetFlags -- inline virtual body
-    pThis->__vaspaceGetFlags__ = &vaspaceGetFlags_edd98b;
-
-    // vaspaceMap -- inline virtual body
-    pThis->__vaspaceMap__ = &vaspaceMap_b7902c;
-
-    // vaspaceUnmap -- inline virtual body
-    pThis->__vaspaceUnmap__ = &vaspaceUnmap_8b86a5;
-
-    // vaspaceReserveMempool -- inline virtual body
-    pThis->__vaspaceReserveMempool__ = &vaspaceReserveMempool_ac1694;
-
-    // vaspaceGetHeap -- inline virtual body
-    pThis->__vaspaceGetHeap__ = &vaspaceGetHeap_128d6d;
-
-    // vaspaceGetMapPageSize -- inline virtual body
-    pThis->__vaspaceGetMapPageSize__ = &vaspaceGetMapPageSize_07238a;
-
-    // vaspaceGetBigPageSize -- inline virtual body
-    pThis->__vaspaceGetBigPageSize__ = &vaspaceGetBigPageSize_07238a;
-
-    // vaspaceIsMirrored -- inline virtual body
-    pThis->__vaspaceIsMirrored__ = &vaspaceIsMirrored_814c13;
-
-    // vaspaceIsFaultCapable -- inline virtual body
-    pThis->__vaspaceIsFaultCapable__ = &vaspaceIsFaultCapable_814c13;
-
-    // vaspaceIsExternallyOwned -- inline virtual body
-    pThis->__vaspaceIsExternallyOwned__ = &vaspaceIsExternallyOwned_814c13;
-
-    // vaspaceIsAtsEnabled -- inline virtual body
-    pThis->__vaspaceIsAtsEnabled__ = &vaspaceIsAtsEnabled_814c13;
-
-    // vaspaceGetPasid -- inline virtual body
-    pThis->__vaspaceGetPasid__ = &vaspaceGetPasid_b7902c;
-
-    // vaspaceGetPageDirBase -- inline virtual body
-    pThis->__vaspaceGetPageDirBase__ = &vaspaceGetPageDirBase_128d6d;
-
-    // vaspaceGetKernelPageDirBase -- inline virtual body
-    pThis->__vaspaceGetKernelPageDirBase__ = &vaspaceGetKernelPageDirBase_128d6d;
-
-    // vaspacePinRootPageDir -- inline virtual body
-    pThis->__vaspacePinRootPageDir__ = &vaspacePinRootPageDir_b7902c;
-
-    // vaspaceUnpinRootPageDir -- inline virtual body
-    pThis->__vaspaceUnpinRootPageDir__ = &vaspaceUnpinRootPageDir_8b86a5;
-
-    // vaspaceInvalidateTlb -- virtual
-    pThis->__vaspaceInvalidateTlb__ = &vaspaceInvalidateTlb_IMPL;
-
-    // vaspaceGetPageTableInfo -- inline virtual body
-    pThis->__vaspaceGetPageTableInfo__ = &vaspaceGetPageTableInfo_b7902c;
-
-    // vaspaceGetPteInfo -- inline virtual body
-    pThis->__vaspaceGetPteInfo__ = &vaspaceGetPteInfo_b7902c;
-
-    // vaspaceSetPteInfo -- inline virtual body
-    pThis->__vaspaceSetPteInfo__ = &vaspaceSetPteInfo_b7902c;
-
-    // vaspaceFreeV2 -- inline virtual body
-    pThis->__vaspaceFreeV2__ = &vaspaceFreeV2_b7902c;
-} // End __nvoc_init_funcTable_OBJVASPACE_1 with approximately 29 basic block(s).
+} // End __nvoc_init_funcTable_OBJVASPACE_1
 
 
 // Initialize vtable(s) for 29 virtual method(s).
 void __nvoc_init_funcTable_OBJVASPACE(OBJVASPACE *pThis) {
 
-    // Initialize vtable(s) with 29 per-object function pointer(s).
+    // Per-class vtable definition
+    static const struct NVOC_VTABLE__OBJVASPACE vtable = {
+        .__vaspaceConstruct___ = NULL,    // pure virtual
+        .__vaspaceAlloc__ = NULL,    // pure virtual
+        .__vaspaceFree__ = NULL,    // pure virtual
+        .__vaspaceApplyDefaultAlignment__ = NULL,    // pure virtual
+        .__vaspaceIncAllocRefCnt__ = &vaspaceIncAllocRefCnt_14ee5e,    // inline virtual body
+        .__vaspaceGetVaStart__ = &vaspaceGetVaStart_IMPL,    // virtual
+        .__vaspaceGetVaLimit__ = &vaspaceGetVaLimit_IMPL,    // virtual
+        .__vaspaceGetVasInfo__ = NULL,    // pure virtual
+        .__vaspaceGetFlags__ = &vaspaceGetFlags_edd98b,    // inline virtual body
+        .__vaspaceMap__ = &vaspaceMap_14ee5e,    // inline virtual body
+        .__vaspaceUnmap__ = &vaspaceUnmap_af5be7,    // inline virtual body
+        .__vaspaceReserveMempool__ = &vaspaceReserveMempool_ac1694,    // inline virtual body
+        .__vaspaceGetHeap__ = &vaspaceGetHeap_9451a7,    // inline virtual body
+        .__vaspaceGetMapPageSize__ = &vaspaceGetMapPageSize_c26fae,    // inline virtual body
+        .__vaspaceGetBigPageSize__ = &vaspaceGetBigPageSize_c26fae,    // inline virtual body
+        .__vaspaceIsMirrored__ = &vaspaceIsMirrored_2fa1ff,    // inline virtual body
+        .__vaspaceIsFaultCapable__ = &vaspaceIsFaultCapable_2fa1ff,    // inline virtual body
+        .__vaspaceIsExternallyOwned__ = &vaspaceIsExternallyOwned_2fa1ff,    // inline virtual body
+        .__vaspaceIsAtsEnabled__ = &vaspaceIsAtsEnabled_2fa1ff,    // inline virtual body
+        .__vaspaceGetPasid__ = &vaspaceGetPasid_14ee5e,    // inline virtual body
+        .__vaspaceGetPageDirBase__ = &vaspaceGetPageDirBase_9451a7,    // inline virtual body
+        .__vaspaceGetKernelPageDirBase__ = &vaspaceGetKernelPageDirBase_9451a7,    // inline virtual body
+        .__vaspacePinRootPageDir__ = &vaspacePinRootPageDir_14ee5e,    // inline virtual body
+        .__vaspaceUnpinRootPageDir__ = &vaspaceUnpinRootPageDir_af5be7,    // inline virtual body
+        .__vaspaceInvalidateTlb__ = &vaspaceInvalidateTlb_IMPL,    // virtual
+        .__vaspaceGetPageTableInfo__ = &vaspaceGetPageTableInfo_14ee5e,    // inline virtual body
+        .__vaspaceGetPteInfo__ = &vaspaceGetPteInfo_14ee5e,    // inline virtual body
+        .__vaspaceSetPteInfo__ = &vaspaceSetPteInfo_14ee5e,    // inline virtual body
+        .__vaspaceFreeV2__ = &vaspaceFreeV2_14ee5e,    // inline virtual body
+    };
+
+    // Pointer(s) to per-class vtable(s)
+    pThis->__nvoc_vtable = &vtable;    // (vaspace) this
     __nvoc_init_funcTable_OBJVASPACE_1(pThis);
 }
 

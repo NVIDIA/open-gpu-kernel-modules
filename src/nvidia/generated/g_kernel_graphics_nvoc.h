@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -184,10 +184,15 @@ typedef struct KGRAPHICS_FECS_TRACE_INFO KGRAPHICS_FECS_TRACE_INFO;
 #endif
 
 
+// Metadata including vtable
+struct NVOC_VTABLE__KernelGraphics;
+
+
 struct KernelGraphics {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__KernelGraphics *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -199,34 +204,17 @@ struct KernelGraphics {
     struct IntrService *__nvoc_pbase_IntrService;    // intrserv super
     struct KernelGraphics *__nvoc_pbase_KernelGraphics;    // kgraphics
 
-    // Vtable with 27 per-object function pointers
-    NV_STATUS (*__kgraphicsConstructEngine__)(OBJGPU *, struct KernelGraphics * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__kgraphicsStateInitLocked__)(OBJGPU *, struct KernelGraphics * /*this*/);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__kgraphicsStateLoad__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__kgraphicsStatePreUnload__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__kgraphicsStateUnload__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
-    void (*__kgraphicsStateDestroy__)(OBJGPU *, struct KernelGraphics * /*this*/);  // virtual override (engstate) base (engstate)
-    NvBool (*__kgraphicsIsPresent__)(OBJGPU *, struct KernelGraphics * /*this*/);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__kgraphicsStatePostLoad__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
-    void (*__kgraphicsRegisterIntrService__)(OBJGPU *, struct KernelGraphics * /*this*/, IntrServiceRecord *);  // virtual override (intrserv) base (intrserv)
-    NV_STATUS (*__kgraphicsServiceNotificationInterrupt__)(OBJGPU *, struct KernelGraphics * /*this*/, IntrServiceServiceNotificationInterruptArguments *);  // virtual override (intrserv) base (intrserv)
+    // Vtable with 10 per-object function pointers
     NV_STATUS (*__kgraphicsCreateBug4208224Channel__)(OBJGPU *, struct KernelGraphics * /*this*/);  // halified (2 hals)
     NV_STATUS (*__kgraphicsInitializeBug4208224WAR__)(OBJGPU *, struct KernelGraphics * /*this*/);  // halified (3 hals)
     NvBool (*__kgraphicsIsBug4208224WARNeeded__)(OBJGPU *, struct KernelGraphics * /*this*/);  // halified (3 hals)
     NV_STATUS (*__kgraphicsLoadStaticInfo__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // halified (2 hals)
-    NvBool (*__kgraphicsClearInterrupt__)(OBJGPU *, struct KernelGraphics * /*this*/, IntrServiceClearInterruptArguments *);  // virtual halified (singleton optimized) override (intrserv) base (intrserv)
-    NvU32 (*__kgraphicsServiceInterrupt__)(OBJGPU *, struct KernelGraphics * /*this*/, IntrServiceServiceInterruptArguments *);  // virtual halified (singleton optimized) override (intrserv) base (intrserv)
     NvBool (*__kgraphicsIsUnrestrictedAccessMapSupported__)(OBJGPU *, struct KernelGraphics * /*this*/);  // halified (2 hals)
     NvU32 (*__kgraphicsGetFecsTraceRdOffset__)(OBJGPU *, struct KernelGraphics * /*this*/);  // halified (2 hals)
     void (*__kgraphicsSetFecsTraceRdOffset__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // halified (3 hals)
     void (*__kgraphicsSetFecsTraceWrOffset__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // halified (3 hals)
     void (*__kgraphicsSetFecsTraceHwEnable__)(OBJGPU *, struct KernelGraphics * /*this*/, NvBool);  // halified (3 hals)
-    void (*__kgraphicsInitMissing__)(struct OBJGPU *, struct KernelGraphics * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgraphicsStatePreInitLocked__)(struct OBJGPU *, struct KernelGraphics * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgraphicsStatePreInitUnlocked__)(struct OBJGPU *, struct KernelGraphics * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgraphicsStateInitUnlocked__)(struct OBJGPU *, struct KernelGraphics * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgraphicsStatePreLoad__)(struct OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgraphicsStatePostUnload__)(struct OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__kgraphicsIsCtxswLoggingEnabled__)(OBJGPU *, struct KernelGraphics * /*this*/);  // halified (2 hals) body
 
     // Data members
     NvBool PRIVATE_FIELD(bCtxswLoggingSupported);
@@ -234,6 +222,7 @@ struct KernelGraphics {
     NvBool PRIVATE_FIELD(bIntrDrivenCtxswLoggingEnabled);
     NvBool PRIVATE_FIELD(bBottomHalfCtxswLoggingEnabled);
     NvBool PRIVATE_FIELD(bOverrideContextBuffersToGpuCached);
+    NvBool PRIVATE_FIELD(bPeFiroBufferEnabled);
     NvBool PRIVATE_FIELD(bDeferContextInit);
     NvBool PRIVATE_FIELD(bPerSubcontextContextHeaderSupported);
     NvBool PRIVATE_FIELD(bSetContextBuffersGPUPrivileged);
@@ -257,6 +246,7 @@ struct KernelGraphics_PRIVATE {
 
     // Metadata
     const struct NVOC_RTTI *__nvoc_rtti;
+    const struct NVOC_VTABLE__KernelGraphics *__nvoc_vtable;
 
     // Parent (i.e. superclass or base class) object pointers
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -268,34 +258,17 @@ struct KernelGraphics_PRIVATE {
     struct IntrService *__nvoc_pbase_IntrService;    // intrserv super
     struct KernelGraphics *__nvoc_pbase_KernelGraphics;    // kgraphics
 
-    // Vtable with 27 per-object function pointers
-    NV_STATUS (*__kgraphicsConstructEngine__)(OBJGPU *, struct KernelGraphics * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__kgraphicsStateInitLocked__)(OBJGPU *, struct KernelGraphics * /*this*/);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__kgraphicsStateLoad__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__kgraphicsStatePreUnload__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__kgraphicsStateUnload__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
-    void (*__kgraphicsStateDestroy__)(OBJGPU *, struct KernelGraphics * /*this*/);  // virtual override (engstate) base (engstate)
-    NvBool (*__kgraphicsIsPresent__)(OBJGPU *, struct KernelGraphics * /*this*/);  // virtual override (engstate) base (engstate)
-    NV_STATUS (*__kgraphicsStatePostLoad__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
-    void (*__kgraphicsRegisterIntrService__)(OBJGPU *, struct KernelGraphics * /*this*/, IntrServiceRecord *);  // virtual override (intrserv) base (intrserv)
-    NV_STATUS (*__kgraphicsServiceNotificationInterrupt__)(OBJGPU *, struct KernelGraphics * /*this*/, IntrServiceServiceNotificationInterruptArguments *);  // virtual override (intrserv) base (intrserv)
+    // Vtable with 10 per-object function pointers
     NV_STATUS (*__kgraphicsCreateBug4208224Channel__)(OBJGPU *, struct KernelGraphics * /*this*/);  // halified (2 hals)
     NV_STATUS (*__kgraphicsInitializeBug4208224WAR__)(OBJGPU *, struct KernelGraphics * /*this*/);  // halified (3 hals)
     NvBool (*__kgraphicsIsBug4208224WARNeeded__)(OBJGPU *, struct KernelGraphics * /*this*/);  // halified (3 hals)
     NV_STATUS (*__kgraphicsLoadStaticInfo__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // halified (2 hals)
-    NvBool (*__kgraphicsClearInterrupt__)(OBJGPU *, struct KernelGraphics * /*this*/, IntrServiceClearInterruptArguments *);  // virtual halified (singleton optimized) override (intrserv) base (intrserv)
-    NvU32 (*__kgraphicsServiceInterrupt__)(OBJGPU *, struct KernelGraphics * /*this*/, IntrServiceServiceInterruptArguments *);  // virtual halified (singleton optimized) override (intrserv) base (intrserv)
     NvBool (*__kgraphicsIsUnrestrictedAccessMapSupported__)(OBJGPU *, struct KernelGraphics * /*this*/);  // halified (2 hals)
     NvU32 (*__kgraphicsGetFecsTraceRdOffset__)(OBJGPU *, struct KernelGraphics * /*this*/);  // halified (2 hals)
     void (*__kgraphicsSetFecsTraceRdOffset__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // halified (3 hals)
     void (*__kgraphicsSetFecsTraceWrOffset__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // halified (3 hals)
     void (*__kgraphicsSetFecsTraceHwEnable__)(OBJGPU *, struct KernelGraphics * /*this*/, NvBool);  // halified (3 hals)
-    void (*__kgraphicsInitMissing__)(struct OBJGPU *, struct KernelGraphics * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgraphicsStatePreInitLocked__)(struct OBJGPU *, struct KernelGraphics * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgraphicsStatePreInitUnlocked__)(struct OBJGPU *, struct KernelGraphics * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgraphicsStateInitUnlocked__)(struct OBJGPU *, struct KernelGraphics * /*this*/);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgraphicsStatePreLoad__)(struct OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
-    NV_STATUS (*__kgraphicsStatePostUnload__)(struct OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NvBool (*__kgraphicsIsCtxswLoggingEnabled__)(OBJGPU *, struct KernelGraphics * /*this*/);  // halified (2 hals) body
 
     // Data members
     NvBool bCtxswLoggingSupported;
@@ -303,6 +276,7 @@ struct KernelGraphics_PRIVATE {
     NvBool bIntrDrivenCtxswLoggingEnabled;
     NvBool bBottomHalfCtxswLoggingEnabled;
     NvBool bOverrideContextBuffersToGpuCached;
+    NvBool bPeFiroBufferEnabled;
     NvBool bDeferContextInit;
     NvBool bPerSubcontextContextHeaderSupported;
     NvBool bSetContextBuffersGPUPrivileged;
@@ -319,6 +293,32 @@ struct KernelGraphics_PRIVATE {
     CTX_BUF_INFO maxCtxBufSize[10];
     GR_BUFFER_ATTR ctxAttr[10];
     struct KGRAPHICS_BUG4208224_CONTEXT_INFO bug4208224Info;
+};
+
+
+// Metadata including vtable with 18 function pointers plus superclass metadata
+struct NVOC_VTABLE__KernelGraphics {
+    const struct NVOC_VTABLE__OBJENGSTATE OBJENGSTATE;    // (engstate) 14 function pointers
+    const struct NVOC_VTABLE__IntrService IntrService;    // (intrserv) 4 function pointers
+
+    NV_STATUS (*__kgraphicsConstructEngine__)(OBJGPU *, struct KernelGraphics * /*this*/, ENGDESCRIPTOR);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__kgraphicsStateInitLocked__)(OBJGPU *, struct KernelGraphics * /*this*/);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__kgraphicsStateLoad__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__kgraphicsStatePreUnload__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__kgraphicsStateUnload__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
+    void (*__kgraphicsStateDestroy__)(OBJGPU *, struct KernelGraphics * /*this*/);  // virtual override (engstate) base (engstate)
+    NvBool (*__kgraphicsIsPresent__)(OBJGPU *, struct KernelGraphics * /*this*/);  // virtual override (engstate) base (engstate)
+    NV_STATUS (*__kgraphicsStatePostLoad__)(OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // virtual override (engstate) base (engstate)
+    void (*__kgraphicsRegisterIntrService__)(OBJGPU *, struct KernelGraphics * /*this*/, IntrServiceRecord *);  // virtual override (intrserv) base (intrserv)
+    NV_STATUS (*__kgraphicsServiceNotificationInterrupt__)(OBJGPU *, struct KernelGraphics * /*this*/, IntrServiceServiceNotificationInterruptArguments *);  // virtual override (intrserv) base (intrserv)
+    NvBool (*__kgraphicsClearInterrupt__)(OBJGPU *, struct KernelGraphics * /*this*/, IntrServiceClearInterruptArguments *);  // virtual halified (singleton optimized) override (intrserv) base (intrserv)
+    NvU32 (*__kgraphicsServiceInterrupt__)(OBJGPU *, struct KernelGraphics * /*this*/, IntrServiceServiceInterruptArguments *);  // virtual halified (singleton optimized) override (intrserv) base (intrserv)
+    void (*__kgraphicsInitMissing__)(struct OBJGPU *, struct KernelGraphics * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgraphicsStatePreInitLocked__)(struct OBJGPU *, struct KernelGraphics * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgraphicsStatePreInitUnlocked__)(struct OBJGPU *, struct KernelGraphics * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgraphicsStateInitUnlocked__)(struct OBJGPU *, struct KernelGraphics * /*this*/);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgraphicsStatePreLoad__)(struct OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
+    NV_STATUS (*__kgraphicsStatePostUnload__)(struct OBJGPU *, struct KernelGraphics * /*this*/, NvU32);  // virtual inherited (engstate) base (engstate)
 };
 
 #ifndef __NVOC_CLASS_KernelGraphics_TYPEDEF__
@@ -355,25 +355,25 @@ NV_STATUS __nvoc_objCreate_KernelGraphics(KernelGraphics**, Dynamic*, NvU32);
 
 
 // Wrapper macros
-#define kgraphicsConstructEngine_FNPTR(arg_this) arg_this->__kgraphicsConstructEngine__
+#define kgraphicsConstructEngine_FNPTR(arg_this) arg_this->__nvoc_vtable->__kgraphicsConstructEngine__
 #define kgraphicsConstructEngine(arg1, arg_this, arg3) kgraphicsConstructEngine_DISPATCH(arg1, arg_this, arg3)
-#define kgraphicsStateInitLocked_FNPTR(arg_this) arg_this->__kgraphicsStateInitLocked__
+#define kgraphicsStateInitLocked_FNPTR(arg_this) arg_this->__nvoc_vtable->__kgraphicsStateInitLocked__
 #define kgraphicsStateInitLocked(arg1, arg_this) kgraphicsStateInitLocked_DISPATCH(arg1, arg_this)
-#define kgraphicsStateLoad_FNPTR(arg_this) arg_this->__kgraphicsStateLoad__
+#define kgraphicsStateLoad_FNPTR(arg_this) arg_this->__nvoc_vtable->__kgraphicsStateLoad__
 #define kgraphicsStateLoad(arg1, arg_this, flags) kgraphicsStateLoad_DISPATCH(arg1, arg_this, flags)
-#define kgraphicsStatePreUnload_FNPTR(arg_this) arg_this->__kgraphicsStatePreUnload__
+#define kgraphicsStatePreUnload_FNPTR(arg_this) arg_this->__nvoc_vtable->__kgraphicsStatePreUnload__
 #define kgraphicsStatePreUnload(pGpu, arg_this, flags) kgraphicsStatePreUnload_DISPATCH(pGpu, arg_this, flags)
-#define kgraphicsStateUnload_FNPTR(arg_this) arg_this->__kgraphicsStateUnload__
+#define kgraphicsStateUnload_FNPTR(arg_this) arg_this->__nvoc_vtable->__kgraphicsStateUnload__
 #define kgraphicsStateUnload(arg1, arg_this, flags) kgraphicsStateUnload_DISPATCH(arg1, arg_this, flags)
-#define kgraphicsStateDestroy_FNPTR(arg_this) arg_this->__kgraphicsStateDestroy__
+#define kgraphicsStateDestroy_FNPTR(arg_this) arg_this->__nvoc_vtable->__kgraphicsStateDestroy__
 #define kgraphicsStateDestroy(arg1, arg_this) kgraphicsStateDestroy_DISPATCH(arg1, arg_this)
-#define kgraphicsIsPresent_FNPTR(arg_this) arg_this->__kgraphicsIsPresent__
+#define kgraphicsIsPresent_FNPTR(arg_this) arg_this->__nvoc_vtable->__kgraphicsIsPresent__
 #define kgraphicsIsPresent(arg1, arg_this) kgraphicsIsPresent_DISPATCH(arg1, arg_this)
-#define kgraphicsStatePostLoad_FNPTR(arg_this) arg_this->__kgraphicsStatePostLoad__
+#define kgraphicsStatePostLoad_FNPTR(arg_this) arg_this->__nvoc_vtable->__kgraphicsStatePostLoad__
 #define kgraphicsStatePostLoad(arg1, arg_this, flags) kgraphicsStatePostLoad_DISPATCH(arg1, arg_this, flags)
-#define kgraphicsRegisterIntrService_FNPTR(arg_this) arg_this->__kgraphicsRegisterIntrService__
+#define kgraphicsRegisterIntrService_FNPTR(arg_this) arg_this->__nvoc_vtable->__kgraphicsRegisterIntrService__
 #define kgraphicsRegisterIntrService(arg1, arg_this, arg3) kgraphicsRegisterIntrService_DISPATCH(arg1, arg_this, arg3)
-#define kgraphicsServiceNotificationInterrupt_FNPTR(arg_this) arg_this->__kgraphicsServiceNotificationInterrupt__
+#define kgraphicsServiceNotificationInterrupt_FNPTR(arg_this) arg_this->__nvoc_vtable->__kgraphicsServiceNotificationInterrupt__
 #define kgraphicsServiceNotificationInterrupt(arg1, arg_this, arg3) kgraphicsServiceNotificationInterrupt_DISPATCH(arg1, arg_this, arg3)
 #define kgraphicsCreateBug4208224Channel_FNPTR(arg_this) arg_this->__kgraphicsCreateBug4208224Channel__
 #define kgraphicsCreateBug4208224Channel(arg1, arg_this) kgraphicsCreateBug4208224Channel_DISPATCH(arg1, arg_this)
@@ -387,10 +387,10 @@ NV_STATUS __nvoc_objCreate_KernelGraphics(KernelGraphics**, Dynamic*, NvU32);
 #define kgraphicsLoadStaticInfo_FNPTR(arg_this) arg_this->__kgraphicsLoadStaticInfo__
 #define kgraphicsLoadStaticInfo(arg1, arg_this, swizzId) kgraphicsLoadStaticInfo_DISPATCH(arg1, arg_this, swizzId)
 #define kgraphicsLoadStaticInfo_HAL(arg1, arg_this, swizzId) kgraphicsLoadStaticInfo_DISPATCH(arg1, arg_this, swizzId)
-#define kgraphicsClearInterrupt_FNPTR(arg_this) arg_this->__kgraphicsClearInterrupt__
+#define kgraphicsClearInterrupt_FNPTR(arg_this) arg_this->__nvoc_vtable->__kgraphicsClearInterrupt__
 #define kgraphicsClearInterrupt(arg1, arg_this, arg3) kgraphicsClearInterrupt_DISPATCH(arg1, arg_this, arg3)
 #define kgraphicsClearInterrupt_HAL(arg1, arg_this, arg3) kgraphicsClearInterrupt_DISPATCH(arg1, arg_this, arg3)
-#define kgraphicsServiceInterrupt_FNPTR(arg_this) arg_this->__kgraphicsServiceInterrupt__
+#define kgraphicsServiceInterrupt_FNPTR(arg_this) arg_this->__nvoc_vtable->__kgraphicsServiceInterrupt__
 #define kgraphicsServiceInterrupt(arg1, arg_this, arg3) kgraphicsServiceInterrupt_DISPATCH(arg1, arg_this, arg3)
 #define kgraphicsServiceInterrupt_HAL(arg1, arg_this, arg3) kgraphicsServiceInterrupt_DISPATCH(arg1, arg_this, arg3)
 #define kgraphicsIsUnrestrictedAccessMapSupported_FNPTR(arg_this) arg_this->__kgraphicsIsUnrestrictedAccessMapSupported__
@@ -408,58 +408,61 @@ NV_STATUS __nvoc_objCreate_KernelGraphics(KernelGraphics**, Dynamic*, NvU32);
 #define kgraphicsSetFecsTraceHwEnable_FNPTR(arg_this) arg_this->__kgraphicsSetFecsTraceHwEnable__
 #define kgraphicsSetFecsTraceHwEnable(arg1, arg_this, bEnable) kgraphicsSetFecsTraceHwEnable_DISPATCH(arg1, arg_this, bEnable)
 #define kgraphicsSetFecsTraceHwEnable_HAL(arg1, arg_this, bEnable) kgraphicsSetFecsTraceHwEnable_DISPATCH(arg1, arg_this, bEnable)
-#define kgraphicsInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateInitMissing__
+#define kgraphicsIsCtxswLoggingEnabled_FNPTR(pKernelGraphics) pKernelGraphics->__kgraphicsIsCtxswLoggingEnabled__
+#define kgraphicsIsCtxswLoggingEnabled(pGpu, pKernelGraphics) kgraphicsIsCtxswLoggingEnabled_DISPATCH(pGpu, pKernelGraphics)
+#define kgraphicsIsCtxswLoggingEnabled_HAL(pGpu, pKernelGraphics) kgraphicsIsCtxswLoggingEnabled_DISPATCH(pGpu, pKernelGraphics)
+#define kgraphicsInitMissing_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateInitMissing__
 #define kgraphicsInitMissing(pGpu, pEngstate) kgraphicsInitMissing_DISPATCH(pGpu, pEngstate)
-#define kgraphicsStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreInitLocked__
+#define kgraphicsStatePreInitLocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreInitLocked__
 #define kgraphicsStatePreInitLocked(pGpu, pEngstate) kgraphicsStatePreInitLocked_DISPATCH(pGpu, pEngstate)
-#define kgraphicsStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreInitUnlocked__
+#define kgraphicsStatePreInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreInitUnlocked__
 #define kgraphicsStatePreInitUnlocked(pGpu, pEngstate) kgraphicsStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define kgraphicsStateInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStateInitUnlocked__
+#define kgraphicsStateInitUnlocked_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStateInitUnlocked__
 #define kgraphicsStateInitUnlocked(pGpu, pEngstate) kgraphicsStateInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define kgraphicsStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePreLoad__
+#define kgraphicsStatePreLoad_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePreLoad__
 #define kgraphicsStatePreLoad(pGpu, pEngstate, arg3) kgraphicsStatePreLoad_DISPATCH(pGpu, pEngstate, arg3)
-#define kgraphicsStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__engstateStatePostUnload__
+#define kgraphicsStatePostUnload_FNPTR(pEngstate) pEngstate->__nvoc_base_OBJENGSTATE.__nvoc_vtable->__engstateStatePostUnload__
 #define kgraphicsStatePostUnload(pGpu, pEngstate, arg3) kgraphicsStatePostUnload_DISPATCH(pGpu, pEngstate, arg3)
 
 // Dispatch functions
 static inline NV_STATUS kgraphicsConstructEngine_DISPATCH(OBJGPU *arg1, struct KernelGraphics *arg_this, ENGDESCRIPTOR arg3) {
-    return arg_this->__kgraphicsConstructEngine__(arg1, arg_this, arg3);
+    return arg_this->__nvoc_vtable->__kgraphicsConstructEngine__(arg1, arg_this, arg3);
 }
 
 static inline NV_STATUS kgraphicsStateInitLocked_DISPATCH(OBJGPU *arg1, struct KernelGraphics *arg_this) {
-    return arg_this->__kgraphicsStateInitLocked__(arg1, arg_this);
+    return arg_this->__nvoc_vtable->__kgraphicsStateInitLocked__(arg1, arg_this);
 }
 
 static inline NV_STATUS kgraphicsStateLoad_DISPATCH(OBJGPU *arg1, struct KernelGraphics *arg_this, NvU32 flags) {
-    return arg_this->__kgraphicsStateLoad__(arg1, arg_this, flags);
+    return arg_this->__nvoc_vtable->__kgraphicsStateLoad__(arg1, arg_this, flags);
 }
 
 static inline NV_STATUS kgraphicsStatePreUnload_DISPATCH(OBJGPU *pGpu, struct KernelGraphics *arg_this, NvU32 flags) {
-    return arg_this->__kgraphicsStatePreUnload__(pGpu, arg_this, flags);
+    return arg_this->__nvoc_vtable->__kgraphicsStatePreUnload__(pGpu, arg_this, flags);
 }
 
 static inline NV_STATUS kgraphicsStateUnload_DISPATCH(OBJGPU *arg1, struct KernelGraphics *arg_this, NvU32 flags) {
-    return arg_this->__kgraphicsStateUnload__(arg1, arg_this, flags);
+    return arg_this->__nvoc_vtable->__kgraphicsStateUnload__(arg1, arg_this, flags);
 }
 
 static inline void kgraphicsStateDestroy_DISPATCH(OBJGPU *arg1, struct KernelGraphics *arg_this) {
-    arg_this->__kgraphicsStateDestroy__(arg1, arg_this);
+    arg_this->__nvoc_vtable->__kgraphicsStateDestroy__(arg1, arg_this);
 }
 
 static inline NvBool kgraphicsIsPresent_DISPATCH(OBJGPU *arg1, struct KernelGraphics *arg_this) {
-    return arg_this->__kgraphicsIsPresent__(arg1, arg_this);
+    return arg_this->__nvoc_vtable->__kgraphicsIsPresent__(arg1, arg_this);
 }
 
 static inline NV_STATUS kgraphicsStatePostLoad_DISPATCH(OBJGPU *arg1, struct KernelGraphics *arg_this, NvU32 flags) {
-    return arg_this->__kgraphicsStatePostLoad__(arg1, arg_this, flags);
+    return arg_this->__nvoc_vtable->__kgraphicsStatePostLoad__(arg1, arg_this, flags);
 }
 
 static inline void kgraphicsRegisterIntrService_DISPATCH(OBJGPU *arg1, struct KernelGraphics *arg_this, IntrServiceRecord arg3[175]) {
-    arg_this->__kgraphicsRegisterIntrService__(arg1, arg_this, arg3);
+    arg_this->__nvoc_vtable->__kgraphicsRegisterIntrService__(arg1, arg_this, arg3);
 }
 
 static inline NV_STATUS kgraphicsServiceNotificationInterrupt_DISPATCH(OBJGPU *arg1, struct KernelGraphics *arg_this, IntrServiceServiceNotificationInterruptArguments *arg3) {
-    return arg_this->__kgraphicsServiceNotificationInterrupt__(arg1, arg_this, arg3);
+    return arg_this->__nvoc_vtable->__kgraphicsServiceNotificationInterrupt__(arg1, arg_this, arg3);
 }
 
 static inline NV_STATUS kgraphicsCreateBug4208224Channel_DISPATCH(OBJGPU *arg1, struct KernelGraphics *arg_this) {
@@ -479,11 +482,11 @@ static inline NV_STATUS kgraphicsLoadStaticInfo_DISPATCH(OBJGPU *arg1, struct Ke
 }
 
 static inline NvBool kgraphicsClearInterrupt_DISPATCH(OBJGPU *arg1, struct KernelGraphics *arg_this, IntrServiceClearInterruptArguments *arg3) {
-    return arg_this->__kgraphicsClearInterrupt__(arg1, arg_this, arg3);
+    return arg_this->__nvoc_vtable->__kgraphicsClearInterrupt__(arg1, arg_this, arg3);
 }
 
 static inline NvU32 kgraphicsServiceInterrupt_DISPATCH(OBJGPU *arg1, struct KernelGraphics *arg_this, IntrServiceServiceInterruptArguments *arg3) {
-    return arg_this->__kgraphicsServiceInterrupt__(arg1, arg_this, arg3);
+    return arg_this->__nvoc_vtable->__kgraphicsServiceInterrupt__(arg1, arg_this, arg3);
 }
 
 static inline NvBool kgraphicsIsUnrestrictedAccessMapSupported_DISPATCH(OBJGPU *arg1, struct KernelGraphics *arg_this) {
@@ -506,32 +509,36 @@ static inline void kgraphicsSetFecsTraceHwEnable_DISPATCH(OBJGPU *arg1, struct K
     arg_this->__kgraphicsSetFecsTraceHwEnable__(arg1, arg_this, bEnable);
 }
 
+static inline NvBool kgraphicsIsCtxswLoggingEnabled_DISPATCH(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics) {
+    return pKernelGraphics->__kgraphicsIsCtxswLoggingEnabled__(pGpu, pKernelGraphics);
+}
+
 static inline void kgraphicsInitMissing_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphics *pEngstate) {
-    pEngstate->__kgraphicsInitMissing__(pGpu, pEngstate);
+    pEngstate->__nvoc_vtable->__kgraphicsInitMissing__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kgraphicsStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphics *pEngstate) {
-    return pEngstate->__kgraphicsStatePreInitLocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_vtable->__kgraphicsStatePreInitLocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kgraphicsStatePreInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphics *pEngstate) {
-    return pEngstate->__kgraphicsStatePreInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_vtable->__kgraphicsStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kgraphicsStateInitUnlocked_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphics *pEngstate) {
-    return pEngstate->__kgraphicsStateInitUnlocked__(pGpu, pEngstate);
+    return pEngstate->__nvoc_vtable->__kgraphicsStateInitUnlocked__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kgraphicsStatePreLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphics *pEngstate, NvU32 arg3) {
-    return pEngstate->__kgraphicsStatePreLoad__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_vtable->__kgraphicsStatePreLoad__(pGpu, pEngstate, arg3);
 }
 
 static inline NV_STATUS kgraphicsStatePostUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelGraphics *pEngstate, NvU32 arg3) {
-    return pEngstate->__kgraphicsStatePostUnload__(pGpu, pEngstate, arg3);
+    return pEngstate->__nvoc_vtable->__kgraphicsStatePostUnload__(pGpu, pEngstate, arg3);
 }
 
-static inline NvBool kgraphicsShouldForceMainCtxContiguity_cbe027(OBJGPU *arg1, struct KernelGraphics *arg2) {
-    return ((NvBool)(0 == 0));
+static inline NvBool kgraphicsShouldForceMainCtxContiguity_88bc07(OBJGPU *arg1, struct KernelGraphics *arg2) {
+    return NV_TRUE;
 }
 
 
@@ -541,7 +548,7 @@ static inline NvBool kgraphicsShouldForceMainCtxContiguity(OBJGPU *arg1, struct 
     return NV_FALSE;
 }
 #else //__nvoc_kernel_graphics_h_disabled
-#define kgraphicsShouldForceMainCtxContiguity(arg1, arg2) kgraphicsShouldForceMainCtxContiguity_cbe027(arg1, arg2)
+#define kgraphicsShouldForceMainCtxContiguity(arg1, arg2) kgraphicsShouldForceMainCtxContiguity_88bc07(arg1, arg2)
 #endif //__nvoc_kernel_graphics_h_disabled
 
 #define kgraphicsShouldForceMainCtxContiguity_HAL(arg1, arg2) kgraphicsShouldForceMainCtxContiguity(arg1, arg2)
@@ -616,6 +623,22 @@ static inline void kgraphicsInitFecsRegistryOverrides(OBJGPU *arg1, struct Kerne
 
 #define kgraphicsInitFecsRegistryOverrides_HAL(arg1, arg2) kgraphicsInitFecsRegistryOverrides(arg1, arg2)
 
+static inline void kgraphicsSetCtxswLoggingEnabled_fdfbe2(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics, NvBool bEnabled) {
+    struct KernelGraphics_PRIVATE *pKernelGraphics_PRIVATE = (struct KernelGraphics_PRIVATE *)pKernelGraphics;
+    pKernelGraphics_PRIVATE->bCtxswLoggingEnabled = bEnabled;
+}
+
+
+#ifdef __nvoc_kernel_graphics_h_disabled
+static inline void kgraphicsSetCtxswLoggingEnabled(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics, NvBool bEnabled) {
+    NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
+}
+#else //__nvoc_kernel_graphics_h_disabled
+#define kgraphicsSetCtxswLoggingEnabled(pGpu, pKernelGraphics, bEnabled) kgraphicsSetCtxswLoggingEnabled_fdfbe2(pGpu, pKernelGraphics, bEnabled)
+#endif //__nvoc_kernel_graphics_h_disabled
+
+#define kgraphicsSetCtxswLoggingEnabled_HAL(pGpu, pKernelGraphics, bEnabled) kgraphicsSetCtxswLoggingEnabled(pGpu, pKernelGraphics, bEnabled)
+
 NV_STATUS kgraphicsConstructEngine_IMPL(OBJGPU *arg1, struct KernelGraphics *arg2, ENGDESCRIPTOR arg3);
 
 NV_STATUS kgraphicsStateInitLocked_IMPL(OBJGPU *arg1, struct KernelGraphics *arg2);
@@ -648,8 +671,8 @@ static inline NV_STATUS kgraphicsInitializeBug4208224WAR_56cd7a(OBJGPU *arg1, st
 
 NV_STATUS kgraphicsInitializeBug4208224WAR_TU102(OBJGPU *arg1, struct KernelGraphics *arg2);
 
-static inline NvBool kgraphicsIsBug4208224WARNeeded_491d52(OBJGPU *arg1, struct KernelGraphics *arg2) {
-    return ((NvBool)(0 != 0));
+static inline NvBool kgraphicsIsBug4208224WARNeeded_3dd2c9(OBJGPU *arg1, struct KernelGraphics *arg2) {
+    return NV_FALSE;
 }
 
 NvBool kgraphicsIsBug4208224WARNeeded_TU102(OBJGPU *arg1, struct KernelGraphics *arg2);
@@ -662,8 +685,8 @@ NvBool kgraphicsClearInterrupt_GP100(OBJGPU *arg1, struct KernelGraphics *arg2, 
 
 NvU32 kgraphicsServiceInterrupt_GP100(OBJGPU *arg1, struct KernelGraphics *arg2, IntrServiceServiceInterruptArguments *arg3);
 
-static inline NvBool kgraphicsIsUnrestrictedAccessMapSupported_491d52(OBJGPU *arg1, struct KernelGraphics *arg2) {
-    return ((NvBool)(0 != 0));
+static inline NvBool kgraphicsIsUnrestrictedAccessMapSupported_3dd2c9(OBJGPU *arg1, struct KernelGraphics *arg2) {
+    return NV_FALSE;
 }
 
 NvBool kgraphicsIsUnrestrictedAccessMapSupported_PF(OBJGPU *arg1, struct KernelGraphics *arg2);
@@ -692,6 +715,13 @@ void kgraphicsSetFecsTraceHwEnable_GA100(OBJGPU *arg1, struct KernelGraphics *ar
 
 void kgraphicsSetFecsTraceHwEnable_GB100(OBJGPU *arg1, struct KernelGraphics *arg2, NvBool bEnable);
 
+NvBool kgraphicsIsCtxswLoggingEnabled_FWCLIENT(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics);
+
+static inline NvBool kgraphicsIsCtxswLoggingEnabled_920139(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics) {
+    struct KernelGraphics_PRIVATE *pKernelGraphics_PRIVATE = (struct KernelGraphics_PRIVATE *)pKernelGraphics;
+    return pKernelGraphics_PRIVATE->bCtxswLoggingEnabled;
+}
+
 static inline KGRAPHICS_FECS_TRACE_INFO *kgraphicsGetFecsTraceInfo(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics) {
     struct KernelGraphics_PRIVATE *pKernelGraphics_PRIVATE = (struct KernelGraphics_PRIVATE *)pKernelGraphics;
     return pKernelGraphics_PRIVATE->pFecsTraceInfo;
@@ -710,16 +740,6 @@ static inline NvBool kgraphicsIsCtxswLoggingSupported(OBJGPU *pGpu, struct Kerne
 static inline void kgraphicsSetCtxswLoggingSupported(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics, NvBool bProp) {
     struct KernelGraphics_PRIVATE *pKernelGraphics_PRIVATE = (struct KernelGraphics_PRIVATE *)pKernelGraphics;
     pKernelGraphics_PRIVATE->bCtxswLoggingSupported = bProp;
-}
-
-static inline NvBool kgraphicsIsCtxswLoggingEnabled(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics) {
-    struct KernelGraphics_PRIVATE *pKernelGraphics_PRIVATE = (struct KernelGraphics_PRIVATE *)pKernelGraphics;
-    return pKernelGraphics_PRIVATE->bCtxswLoggingEnabled;
-}
-
-static inline void kgraphicsSetCtxswLoggingEnabled(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics, NvBool bProp) {
-    struct KernelGraphics_PRIVATE *pKernelGraphics_PRIVATE = (struct KernelGraphics_PRIVATE *)pKernelGraphics;
-    pKernelGraphics_PRIVATE->bCtxswLoggingEnabled = bProp;
 }
 
 static inline NvBool kgraphicsIsIntrDrivenCtxswLoggingEnabled(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics) {
@@ -750,6 +770,16 @@ static inline NvBool kgraphicsIsOverrideContextBuffersToGpuCached(OBJGPU *pGpu, 
 static inline void kgraphicsSetOverrideContextBuffersToGpuCached(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics, NvBool bProp) {
     struct KernelGraphics_PRIVATE *pKernelGraphics_PRIVATE = (struct KernelGraphics_PRIVATE *)pKernelGraphics;
     pKernelGraphics_PRIVATE->bOverrideContextBuffersToGpuCached = bProp;
+}
+
+static inline NvBool kgraphicsGetPeFiroBufferEnabled(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics) {
+    struct KernelGraphics_PRIVATE *pKernelGraphics_PRIVATE = (struct KernelGraphics_PRIVATE *)pKernelGraphics;
+    return pKernelGraphics_PRIVATE->bPeFiroBufferEnabled;
+}
+
+static inline void kgraphicsSetPeFiroBufferEnabled(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics, NvBool bProp) {
+    struct KernelGraphics_PRIVATE *pKernelGraphics_PRIVATE = (struct KernelGraphics_PRIVATE *)pKernelGraphics;
+    pKernelGraphics_PRIVATE->bPeFiroBufferEnabled = bProp;
 }
 
 static inline NvBool kgraphicsShouldDeferContextInit(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics) {

@@ -620,12 +620,7 @@ kchannelGetUserdBar1MapOffset_GM107
 
     NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    //
-    // only supported when bUsePerRunlistChannelRam is disabled.
-    // We don't pre-allocate userd for all channels across all runlists; we expect
-    // clients to have moved to client allocated userd.
-    //
-    NV_ASSERT_OR_RETURN(!kfifoIsPerRunlistChramEnabled(pKernelFifo),
+    NV_ASSERT_OR_RETURN(kfifoIsPreAllocatedUserDEnabled(pKernelFifo),
                         NV_ERR_NOT_SUPPORTED);
 
     if (pUserdInfo->userdBar1MapSize == 0)

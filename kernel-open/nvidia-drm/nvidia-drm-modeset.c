@@ -414,6 +414,31 @@ nv_drm_atomic_apply_modeset_config(struct drm_device *dev,
         return -EINVAL;
     }
 
+#if defined(NV_DRM_FRAMEBUFFER_OBJ_PRESENT)
+    if (commit) {
+        /*
+         * This function does what is necessary to prepare the framebuffers
+         * attached to each new plane in the state for scan out, mostly by
+         * calling back into driver callbacks the NVIDIA driver does not
+         * provide. The end result is that all it does on the NVIDIA driver
+         * is populate the plane state's dma fence pointers with any implicit
+         * sync fences attached to the GEM objects associated with those planes
+         * in the new state, prefering explicit sync fences when appropriate.
+         * This must be done prior to converting the per-plane fences to
+         * semaphore waits below.
+         *
+         * Note this only works when the drm_framebuffer:obj[] field is present
+         * and populated, so skip calling this function on kernels where that
+         * field is not present.
+         */
+        ret = drm_atomic_helper_prepare_planes(dev, state);
+
+        if (ret) {
+            return ret;
+        }
+    }
+#endif /* defined(NV_DRM_FRAMEBUFFER_OBJ_PRESENT) */
+
     memset(requested_config, 0, sizeof(*requested_config));
 
     /* Loop over affected crtcs and construct NvKmsKapiRequestedModeSetConfig */

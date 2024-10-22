@@ -736,7 +736,9 @@ _kgmmuFaultEntryRmServiceable_GV100
         engineId = (faultEntry >> DRF_SHIFT_MW(NVC369_BUF_ENTRY_ENGINE_ID))
                                 & DRF_MASK_MW(NVC369_BUF_ENTRY_ENGINE_ID);
 
-        bEngineCE = ((engineId >= kgmmuGetMinCeEngineId_HAL(pKernelGmmu)) && (engineId <= kgmmuGetMaxCeEngineId_HAL(pGpu, pKernelGmmu)));
+        bEngineCE = ((engineId >= pKernelGmmu->minCeMmuFaultId) &&
+                     (engineId <= pKernelGmmu->maxCeMmuFaultId));
+
         bPbdmaFault = kfifoIsMmuFaultEngineIdPbdma(pGpu, pKernelFifo, engineId);
 
         *bRmServiceable = (!bClientBufEnabled || !bUvmHandledNonFatal || !(bEngineCE || bPbdmaFault));
@@ -1294,39 +1296,23 @@ kgmmuCopyFaultPacketToClientShadowBuffer_GV100
     return NV_OK;
 }
 
-/*!
- * @brief Get the engine ID associated with the min CE
- *
- * @param[in] pKernelGmmu  KernelGmmu object
- *
- * return engine ID of the min CE
- */
-NvU32
-kgmmuGetMinCeEngineId_GV100
-(
-    KernelGmmu *pKernelGmmu
-)
-{
-    return NV_PFAULT_MMU_ENG_ID_CE0;
-}
 
-/*!
- * @brief Get the engine ID associated with the max CE
- *
- * @param[in] pGpu         OBJGPU object
- * @param[in] pKernelGmmu  KernelGmmu object
- *
- * return engine ID of the max CE
- */
-NvU32
-kgmmuGetMaxCeEngineId_GV100
+NV_STATUS
+kgmmuInitCeMmuFaultIdRange_GV100
 (
     OBJGPU     *pGpu,
     KernelGmmu *pKernelGmmu
 )
 {
-    return NV_PFAULT_MMU_ENG_ID_CE8;
+    pKernelGmmu->minCeMmuFaultId = NV_PFAULT_MMU_ENG_ID_CE0;
+    pKernelGmmu->maxCeMmuFaultId = NV_PFAULT_MMU_ENG_ID_CE8;
+
+    NV_PRINTF(LEVEL_INFO, "CE MMU Fault ID range [0x%x - 0x%x]\n",
+                           pKernelGmmu->minCeMmuFaultId, pKernelGmmu->maxCeMmuFaultId);
+
+    return NV_OK;
 }
+
 
 /*!
  * @brief Creates shadow fault buffer for RM fatal fault handling

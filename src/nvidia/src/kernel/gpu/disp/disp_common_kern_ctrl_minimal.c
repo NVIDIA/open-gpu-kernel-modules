@@ -101,7 +101,7 @@ dispcmnCtrlCmdSystemGetHotplugUnplugState_IMPL
 }
 
 /*!
- * @brief Allocate display bandwidth.
+ * @brief Allocate display memory bandwidth.
  */
 NV_STATUS
 dispcmnCtrlCmdSystemAllocateDisplayBandwidth_IMPL
@@ -113,6 +113,9 @@ dispcmnCtrlCmdSystemAllocateDisplayBandwidth_IMPL
     OBJGPU        *pGpu;
     KernelDisplay *pKernelDisplay;
     NV_STATUS      status;
+    RM_API        *pRmApi;
+    NvU32          hClient;
+    NvU32          hSubdevice;
 
     // client gave us a subdevice #: get right pGpu for it
     status = dispapiSetUnicastAndSynchronize_HAL(
@@ -127,11 +130,38 @@ dispcmnCtrlCmdSystemAllocateDisplayBandwidth_IMPL
     }
 
     pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
-    return kdispArbAndAllocDisplayBandwidth_HAL(pGpu,
-                                                pKernelDisplay,
-                                                DISPLAY_ICC_BW_CLIENT_EXT,
-                                                pParams->averageBandwidthKBPS,
-                                                pParams->floorBandwidthKBPS);
+    if (pKernelDisplay->getProperty(pKernelDisplay,
+                                    PDB_PROP_KDISP_IMP_ALLOC_BW_IN_KERNEL_RM_DEF))
+    {
+        // Process the request in Kernel RM.
+        status =
+            kdispArbAndAllocDisplayBandwidth_HAL(pGpu,
+                                                 pKernelDisplay,
+                                                 DISPLAY_ICC_BW_CLIENT_EXT,
+                                                 pParams->averageBandwidthKBPS,
+                                                 pParams->floorBandwidthKBPS);
+    }
+    else
+    {
+        //
+        // In this function, we are processing an
+        // NV0073_CTRL_CMD_SYSTEM_ALLOCATE_DISPLAY_BANDWIDTH RmCtrl call.  But
+        // we are in Kernel RM, and if
+        // PDB_PROP_KDISP_IMP_ALLOC_BW_IN_KERNEL_RM_DEF is false, we want to
+        // process the call in Physical RM.  So invoke the
+        // NV0073_CTRL_CMD_SYSTEM_INTERNAL_ALLOCATE_DISPLAY_BANDWIDTH RmCtrl
+        // call, which is configured to run in Physical RM, with the same
+        // parameters.
+        //
+        pRmApi = GPU_GET_PHYSICAL_RMAPI(DISPAPI_GET_GPU(pDispCommon));
+        hClient = RES_GET_CLIENT_HANDLE(pDispCommon);
+        hSubdevice = RES_GET_HANDLE(pDispCommon);
+        status =
+            pRmApi->Control(pRmApi, hClient, hSubdevice,
+                            NV0073_CTRL_CMD_SYSTEM_INTERNAL_ALLOCATE_DISPLAY_BANDWIDTH,
+                            pParams, sizeof(*pParams));
+    }
+    return status;
 }
 
 NV_STATUS

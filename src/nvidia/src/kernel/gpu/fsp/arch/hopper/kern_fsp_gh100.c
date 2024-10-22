@@ -52,6 +52,29 @@
 
 #include "gpu/conf_compute/conf_compute.h"
 
+// Blocks are 64 DWORDS
+#define DWORDS_PER_EMEM_BLOCK 64U
+
+static void _kfspUpdateQueueHeadTail_GH100(OBJGPU *pGpu, KernelFsp *pKernelFsp,
+    NvU32 queueHead, NvU32 queueTail);
+
+static void _kfspGetQueueHeadTail_GH100(OBJGPU *pGpu, KernelFsp *pKernelFsp,
+    NvU32 *pQueueHead, NvU32 *pQueueTail);
+
+static void _kfspUpdateMsgQueueHeadTail_GH100(OBJGPU *pGpu, KernelFsp *pKernelFsp,
+    NvU32 queueHead, NvU32 queueTail);
+
+static void _kfspGetMsgQueueHeadTail_GH100(OBJGPU *pGpu, KernelFsp *pKernelFsp,
+    NvU32 *pQueueHead, NvU32 *pQueueTail);
+
+static NV_STATUS _kfspConfigEmemc_GH100(OBJGPU *pGpu, KernelFsp *pKernelFsp,
+    NvU32 offset, NvBool bAincw, NvBool bAincr);
+
+static NV_STATUS _kfspWriteToEmem_GH100(OBJGPU *pGpu, KernelFsp *pKernelFsp,
+    NvU8 *pBuffer, NvU32 size);
+
+static NvBool _kfspWaitBootCond_GH100(OBJGPU *pGpu, void *pArg);
+
 /*!
  * @brief Update command queue head and tail pointers
  *
@@ -60,8 +83,8 @@
  * @param[in] queueHead  Offset to write to command queue head
  * @param[in] queueTail  Offset to write to command queue tail
  */
-void
-kfspUpdateQueueHeadTail_GH100
+static void
+_kfspUpdateQueueHeadTail_GH100
 (
     OBJGPU    *pGpu,
     KernelFsp *pKernelFsp,
@@ -82,8 +105,8 @@ kfspUpdateQueueHeadTail_GH100
  * @param[out] pQueueHead Pointer where we write command queue head
  * @param[out] pQueueTail Pointer where we write command queue tail
  */
-void
-kfspGetQueueHeadTail_GH100
+static void
+_kfspGetQueueHeadTail_GH100
 (
     OBJGPU    *pGpu,
     KernelFsp *pKernelFsp,
@@ -103,8 +126,8 @@ kfspGetQueueHeadTail_GH100
  * @param[in] msgqHead   Offset to write to message queue head
  * @param[in] msgqTail   Offset to write to message queue tail
  */
-void
-kfspUpdateMsgQueueHeadTail_GH100
+static void
+_kfspUpdateMsgQueueHeadTail_GH100
 (
     OBJGPU    *pGpu,
     KernelFsp *pKernelFsp,
@@ -124,8 +147,8 @@ kfspUpdateMsgQueueHeadTail_GH100
  * @param[out] pMsgqHead  Pointer where we write message queue head
  * @param[out] pMsgqTail  Pointer where we write message queue tail
  */
-void
-kfspGetMsgQueueHeadTail_GH100
+static void
+_kfspGetMsgQueueHeadTail_GH100
 (
     OBJGPU    *pGpu,
     KernelFsp *pKernelFsp,
@@ -138,15 +161,15 @@ kfspGetMsgQueueHeadTail_GH100
 }
 
 /*!
- * @brief Get size of RM's channel in FSP EMEM
+ * @brief Get maximum size of a packet we can send.
  *
  * @param[in] pGpu       OBJGPU pointer
  * @param[in] pKernelFsp KernelFsp pointer
  *
- * @return RM channel size in bytes
+ * @return Packet size in bytes
  */
 NvU32
-kfspGetRmChannelSize_GH100
+kfspGetMaxSendPacketSize_GH100
 (
     OBJGPU    *pGpu,
     KernelFsp *pKernelFsp
@@ -157,6 +180,76 @@ kfspGetRmChannelSize_GH100
     // properly fetch the lower and higher bounds of the EMEM channel
     //
     return FSP_EMEM_CHANNEL_RM_SIZE;
+}
+
+/*!
+ * @brief Get maximum size of a packet we can receive.
+ *
+ * @param[in] pGpu       OBJGPU pointer
+ * @param[in] pKernelFsp KernelFsp pointer
+ *
+ * @return Packet size in bytes
+ */
+NvU32
+kfspGetMaxRecvPacketSize_GH100
+(
+    OBJGPU    *pGpu,
+    KernelFsp *pKernelFsp
+)
+{
+    //
+    // Channel size is hardcoded to 1K for now. Later we will use EMEMR to
+    // properly fetch the lower and higher bounds of the EMEM channel
+    //
+    return FSP_EMEM_CHANNEL_RM_SIZE;
+}
+
+/*!
+ * @brief Check if RM has a response from FSP available
+ *
+ * @param[in] pGpu       OBJGPU pointer
+ * @param[in] pKernelFsp KernelFsp pointer
+ *
+ * @return NV_TRUE if a response is available, NV_FALSE otherwise
+ */
+NvBool
+kfspIsResponseAvailable_GH100
+(
+    OBJGPU    *pGpu,
+    KernelFsp *pKernelFsp
+)
+{
+    NvU32 msgqHead;
+    NvU32 msgqTail;
+
+    _kfspGetMsgQueueHeadTail_GH100(pGpu, pKernelFsp, &msgqHead, &msgqTail);
+    // FSP updates the head after writing data into the channel
+    return (msgqHead != msgqTail);
+}
+
+
+/*!
+ * @brief Check if RM can send a packet to FSP
+ *
+ * @param[in] pGpu       OBJGPU pointer
+ * @param[in] pKernelFsp KernelFsp pointer
+ *
+ * @return NV_TRUE if send is possible, NV_FALSE otherwise
+ */
+NvBool
+kfspCanSendPacket_GH100
+(
+    OBJGPU    *pGpu,
+    KernelFsp *pKernelFsp
+)
+{
+    NvU32 cmdqHead;
+    NvU32 cmdqTail;
+
+    _kfspGetQueueHeadTail_GH100(pGpu, pKernelFsp, &cmdqHead, &cmdqTail);
+
+    // FSP will set QUEUE_HEAD = TAIL after each packet is received
+    return (cmdqHead == cmdqTail);
 }
 
 /*!
@@ -457,8 +550,8 @@ kfspProcessCommandResponse_GH100
  *
  * @return NV_OK
  */
-NV_STATUS
-kfspConfigEmemc_GH100
+static NV_STATUS
+_kfspConfigEmemc_GH100
 (
     OBJGPU    *pGpu,
     KernelFsp *pKernelFsp,
@@ -467,15 +560,16 @@ kfspConfigEmemc_GH100
     NvBool     bAincr
 )
 {
-    NvU32 offsetBlks, offsetDwords;
+    NvU32 offsetBlks;
+    NvU32 offsetDwords;
     NvU32 reg32 = 0;
 
     //
-    // EMEMC offset is encoded in terms of blocks (64 DWORDS) and DWORD offset
+    // EMEMC offset is encoded in terms of blocks and DWORD offset
     // within a block, so calculate each.
     //
-    offsetBlks = offset / 64;
-    offsetDwords = offset % 64;
+    offsetBlks = offset / DWORDS_PER_EMEM_BLOCK;
+    offsetDwords = offset % DWORDS_PER_EMEM_BLOCK;
 
     reg32 = FLD_SET_DRF_NUM(_PFSP, _EMEMC, _OFFS, offsetDwords, reg32);
     reg32 = FLD_SET_DRF_NUM(_PFSP, _EMEMC, _BLK, offsetBlks, reg32);
@@ -503,8 +597,8 @@ kfspConfigEmemc_GH100
  *
  * @return NV_OK
  */
-NV_STATUS
-kfspWriteToEmem_GH100
+static NV_STATUS
+_kfspWriteToEmem_GH100
 (
     OBJGPU    *pGpu,
     KernelFsp *pKernelFsp,
@@ -512,8 +606,74 @@ kfspWriteToEmem_GH100
     NvU32      size
 )
 {
-    NvU32 i, reg32;
+    NvU32 i;
+    NvU32 reg32;
+    NvU32 leftoverBytes;
+    NvU32 wordsWritten;
+    NvU32 ememOffsetStart;
     NvU32 ememOffsetEnd;
+
+    reg32 = GPU_REG_RD32(pGpu, NV_PFSP_EMEMC(FSP_EMEM_CHANNEL_RM));
+    ememOffsetStart = DRF_VAL(_PFSP, _EMEMC, _OFFS, reg32);
+    ememOffsetStart += DRF_VAL(_PFSP, _EMEMC, _BLK, reg32) * DWORDS_PER_EMEM_BLOCK;
+    NV_PRINTF(LEVEL_INFO, "About to send data to FSP, ememcOff=0x%x, size=0x%x\n", ememOffsetStart, size);
+
+    // Now write to EMEMD, we always have to write a DWORD at a time so write
+    // all the full DWORDs in the buffer and then pad any leftover bytes with 0
+    for (i = 0; i < (size / sizeof(NvU32)); i++)
+    {
+        GPU_REG_WR32(pGpu, NV_PFSP_EMEMD(FSP_EMEM_CHANNEL_RM), ((NvU32 *)(void *)pBuffer)[i]);
+    }
+    wordsWritten = size / sizeof(NvU32);
+
+    leftoverBytes = size % sizeof(NvU32);
+    if (leftoverBytes != 0)
+    {
+        reg32 = 0;
+        portMemCopy(&reg32, sizeof(NvU32), &(pBuffer[size - leftoverBytes]), leftoverBytes);
+        GPU_REG_WR32(pGpu, NV_PFSP_EMEMD(FSP_EMEM_CHANNEL_RM), reg32);
+        wordsWritten++;
+    }
+
+    // Sanity check offset. If this fails, the autoincrement did not work
+    reg32 = GPU_REG_RD32(pGpu, NV_PFSP_EMEMC(FSP_EMEM_CHANNEL_RM));
+    ememOffsetEnd = DRF_VAL(_PFSP, _EMEMC, _OFFS, reg32);
+    ememOffsetEnd += DRF_VAL(_PFSP, _EMEMC, _BLK, reg32) * DWORDS_PER_EMEM_BLOCK;
+    NV_PRINTF(LEVEL_INFO, "After sending data, ememcOff = 0x%x\n", ememOffsetEnd);
+
+    NV_ASSERT_OR_RETURN((ememOffsetEnd - ememOffsetStart) == wordsWritten, NV_ERR_INVALID_STATE);
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Send one packet to FSP via EMEM
+ *
+ * @param[in] pGpu          OBJGPU pointer
+ * @param[in] pKernelFsp    KernelFsp pointer
+ * @param[in] pPacket       Packet buffer
+ * @param[in] packetSize    Packet size in bytes
+ *
+ * @return NV_OK, or NV_ERR_INSUFFICIENT_RESOURCES
+ */
+NV_STATUS
+kfspSendPacket_GH100
+(
+    OBJGPU    *pGpu,
+    KernelFsp *pKernelFsp,
+    NvU8      *pPacket,
+    NvU32      packetSize
+)
+{
+    NvU32 paddedSize;
+    NV_STATUS status = NV_OK;
+
+    // Check that queue is ready to receive data
+    status = kfspPollForCanSend(pGpu, pKernelFsp);
+    if (status != NV_OK)
+    {
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+    }
 
     //
     // First configure EMEMC, RM always writes 0 to the offset, which is OK
@@ -521,84 +681,100 @@ kfspWriteToEmem_GH100
     // beginning for each packet. It should be improved later to use EMEMR to
     // properly fetch the lower and higher bounds of the EMEM channel
     //
-    kfspConfigEmemc_HAL(pGpu, pKernelFsp, 0, NV_TRUE, NV_FALSE);
+    _kfspConfigEmemc_GH100(pGpu, pKernelFsp, 0, NV_TRUE, NV_FALSE);
+    _kfspWriteToEmem_GH100(pGpu, pKernelFsp, pPacket, packetSize);
 
-    NV_PRINTF(LEVEL_INFO, "About to send data to FSP, ememcOff=0, size=0x%x\n", size);
-    if (!NV_IS_ALIGNED(size, sizeof(NvU32)))
-    {
-        NV_PRINTF(LEVEL_WARNING, "Size=0x%x is not DWORD-aligned, data will be truncated!\n", size);
-    }
+    paddedSize = NV_ALIGN_UP(packetSize, sizeof(NvU32));
+    // Update HEAD and TAIL with new EMEM offset; RM always starts at offset 0.
+    // TAIL points to the last DWORD written, so subtract 1 DWORD
+    _kfspUpdateQueueHeadTail_GH100(pGpu, pKernelFsp, 0, paddedSize - sizeof(NvU32));
 
-    // Now write to EMEMD
-    for (i = 0; i < (size / 4); i++)
-    {
-        GPU_REG_WR32(pGpu, NV_PFSP_EMEMD(FSP_EMEM_CHANNEL_RM), ((NvU32*)(void*)pBuffer)[i]);
-    }
-
-    // Sanity check offset. If this fails, the autoincrement did not work
-    reg32 = GPU_REG_RD32(pGpu, NV_PFSP_EMEMC(FSP_EMEM_CHANNEL_RM));
-    ememOffsetEnd = DRF_VAL(_PFSP, _EMEMC, _OFFS, reg32);
-
-    // Blocks are 64 DWORDS
-    ememOffsetEnd += DRF_VAL(_PFSP, _EMEMC, _BLK, reg32) * 64;
-    NV_PRINTF(LEVEL_INFO, "After sending data, ememcOff = 0x%x\n", ememOffsetEnd);
-
-    NV_ASSERT((ememOffsetEnd) == (size / sizeof(NvU32)));
-    return NV_OK;
+    return status;
 }
 
 /*!
  * @brief Read data to buffer from RM channel in FSP's EMEM
  *
- * @param[in]     pGpu       OBJGPU pointer
- * @param[in]     pKernelFsp KernelFsp pointer
- * @param[in/out] pBuffer    Buffer where we copy data from EMEM
- * @param[in]     size       Size to read in bytes, assumed DWORD aligned
+ * @param[in]     pGpu          OBJGPU pointer
+ * @param[in]     pKernelFsp    KernelFsp pointer
+ * @param[in/out] pPacket       Buffer where we copy data from EMEM
+ * @param[in]     maxPacketSize Size in bytes of pPacket buffer
+ * @param[out]    bytesRead     Size in bytes that was read into the packet buffer
  *
  * @return NV_OK
  */
 NV_STATUS
-kfspReadFromEmem_GH100
+kfspReadPacket_GH100
 (
     OBJGPU    *pGpu,
     KernelFsp *pKernelFsp,
-    NvU8      *pBuffer,
-    NvU32      size
+    NvU8      *pPacket,
+    NvU32      maxPacketSize,
+    NvU32     *bytesRead
 )
 {
     NvU32 i, reg32;
     NvU32 ememOffsetEnd;
+    NvU32 msgqHead;
+    NvU32 msgqTail;
+    NvU32 packetSize;
+
+    // First check that the packet buffer has enough space for the
+    // packet and that the size is valid.
+    _kfspGetMsgQueueHeadTail_GH100(pGpu, pKernelFsp, &msgqHead, &msgqTail);
+
+    // Tail points to last DWORD in packet, not DWORD immediately following it
+    packetSize = (msgqTail - msgqHead) + sizeof(NvU32);
+
+    NV_ASSERT_OR_RETURN((packetSize >= sizeof(NvU32)) && (packetSize <= maxPacketSize),
+        NV_ERR_INVALID_DATA);
 
     //
-    // First configure EMEMC, RM always writes 0 to the offset, which is OK
+    // Next configure EMEMC, RM always writes 0 to the offset, which is OK
     // because RM's channel starts at 0 on GH100 and we always start from the
     // beginning for each packet. It should be improved later to use EMEMR to
     // properly fetch the lower and higher bounds of the EMEM channel
     //
-    kfspConfigEmemc_HAL(pGpu, pKernelFsp, 0, NV_FALSE, NV_TRUE);
+    _kfspConfigEmemc_GH100(pGpu, pKernelFsp, 0, NV_FALSE, NV_TRUE);
 
-    NV_PRINTF(LEVEL_INFO, "About to read data from FSP, ememcOff=0, size=0x%x\n", size);
-    if (!NV_IS_ALIGNED(size, sizeof(NvU32)))
+    NV_PRINTF(LEVEL_INFO, "About to read data from FSP, ememcOff=0, size=0x%x\n", packetSize);
+    if (!NV_IS_ALIGNED(packetSize, sizeof(NvU32)))
     {
-        NV_PRINTF(LEVEL_WARNING, "Size=0x%x is not DWORD-aligned, data will be truncated!\n", size);
+        NV_PRINTF(LEVEL_WARNING, "Size=0x%x is not DWORD-aligned, data will be truncated!\n", packetSize);
     }
 
     // Now read from EMEMD
-    for (i = 0; i < (size / 4); i++)
+    for (i = 0; i < (packetSize / sizeof(NvU32)); i++)
     {
-        ((NvU32*)(void*)pBuffer)[i] = GPU_REG_RD32(pGpu, NV_PFSP_EMEMD(FSP_EMEM_CHANNEL_RM));
+        ((NvU32 *)(void *)pPacket)[i] = GPU_REG_RD32(pGpu, NV_PFSP_EMEMD(FSP_EMEM_CHANNEL_RM));
     }
+    *bytesRead = packetSize;
 
     // Sanity check offset. If this fails, the autoincrement did not work
     reg32 = GPU_REG_RD32(pGpu, NV_PFSP_EMEMC(FSP_EMEM_CHANNEL_RM));
     ememOffsetEnd = DRF_VAL(_PFSP, _EMEMC, _OFFS, reg32);
-
-    // Blocks are 64 DWORDS
-    ememOffsetEnd += DRF_VAL(_PFSP, _EMEMC, _BLK, reg32) * 64;
+    ememOffsetEnd += DRF_VAL(_PFSP, _EMEMC, _BLK, reg32) * DWORDS_PER_EMEM_BLOCK;
     NV_PRINTF(LEVEL_INFO, "After reading data, ememcOff = 0x%x\n", ememOffsetEnd);
 
-    NV_ASSERT((ememOffsetEnd) == (size / sizeof(NvU32)));
+    // Set TAIL = HEAD to indicate CPU received packet
+    _kfspUpdateMsgQueueHeadTail_GH100(pGpu, pKernelFsp, msgqHead, msgqHead);
+
+    NV_ASSERT_OR_RETURN((ememOffsetEnd) == (packetSize / sizeof(NvU32)), NV_ERR_INVALID_STATE);
     return NV_OK;
+}
+
+static NvBool
+_kfspWaitBootCond_GH100
+(
+    OBJGPU *pGpu,
+    void   *pArg
+)
+{
+    //
+    // In Hopper, Bootfsm triggers FSP execution out of chip reset.
+    // FSP writes 0xFF value in NV_THERM_I2CS_SCRATCH register after completion of boot
+    //
+    return GPU_FLD_TEST_DRF_DEF(pGpu, _THERM_I2CS_SCRATCH, _FSP_BOOT_COMPLETE, _STATUS, _SUCCESS);
 }
 
 NV_STATUS
@@ -613,33 +789,27 @@ kfspWaitForSecureBoot_GH100
 
     //
     // Polling for FSP boot complete
-    // In Hopper, Bootfsm triggers FSP execution out of chip reset.
-    // FSP writes 0xFF value in NV_THERM_I2CS_SCRATCH register after completion of boot
     // FBFalcon training during devinit alone takes 2 seconds, up to 3 on HBM3,
     // but the default threadstate timeout on windows is 1800 ms. Increase to 4 seconds
     // for this wait to match MODS GetGFWBootTimeoutMs.
-    // For flags, this must not timeout due to aforementioned threadstate timeout,
-    // and we must not use the GPU TMR since it is inaccessible.
+    // For flags, we must not use the GPU TMR since it is inaccessible.
     //
     gpuSetTimeout(pGpu, NV_MAX(gpuScaleTimeout(pGpu, 4000000), pGpu->timeoutData.defaultus),
-                  &timeout, GPU_TIMEOUT_FLAGS_OSTIMER | GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
+                  &timeout, GPU_TIMEOUT_FLAGS_OSTIMER);
 
-    while(!GPU_FLD_TEST_DRF_DEF(pGpu, _THERM_I2CS_SCRATCH, _FSP_BOOT_COMPLETE, _STATUS, _SUCCESS))
+    status = gpuTimeoutCondWait(pGpu, _kfspWaitBootCond_GH100, NULL, &timeout);
+
+    if (status != NV_OK)
     {
-        status = gpuCheckTimeout(pGpu, &timeout);
-        if (status == NV_ERR_TIMEOUT)
-        {
-            NV_ERROR_LOG((void*) pGpu, GPU_INIT_ERROR, "Timeout while polling for FSP boot complete, "
-                         "0x%x, 0x%x, 0x%x, 0x%x, 0x%x",
-                         GPU_REG_RD32(pGpu, NV_THERM_I2CS_SCRATCH_FSP_BOOT_COMPLETE),
-                         GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(0)),
-                         GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(1)),
-                         GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(2)),
-                         GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(3)));
-            break;
-        }
+        NV_ERROR_LOG((void*) pGpu, GPU_INIT_ERROR, "Error status 0x%x while polling for FSP boot complete, "
+                     "0x%x, 0x%x, 0x%x, 0x%x, 0x%x",
+                     status,
+                     GPU_REG_RD32(pGpu, NV_THERM_I2CS_SCRATCH_FSP_BOOT_COMPLETE),
+                     GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(0)),
+                     GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(1)),
+                     GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(2)),
+                     GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(3)));
     }
-
     return status;
 }
 

@@ -558,7 +558,7 @@ memdescDestroy
         {
             NV_ASSERT_OK(kbusUpdateStaticBar1VAMapping_HAL(pMemDesc->pGpu,
                              GPU_GET_KERNEL_BUS(pMemDesc->pGpu), pMemDesc,
-                             0, memdescGetSize(pMemDesc), NV_TRUE));
+                             NV_TRUE));
         }
 
         if (pMemDesc->_flags & MEMDESC_FLAGS_DUMMY_TOPLEVEL)
@@ -1869,15 +1869,11 @@ memdescMap
                 else
                 {
                     KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
-                    NvU64              fbOffset             = pMemDesc->_pteArray[0] +
-                                                              pMemDesc->PteAdjust + Offset;
+                    NvU64              fbOffset             = memdescGetPhysAddr(pMemDesc, AT_CPU, Offset);
                     bar1PhysAddr = pKernelMemorySystem->coherentCpuFbBase + fbOffset;
-                    mode = NV_MEMORY_CACHED;
 
-                    status = osMapPciMemoryUser(pGpu->pOsGpuInfo, bar1PhysAddr,
-                                                Size, Protect, pAddress,
-                                                &pMapping->pPriv,
-                                                mode);
+                    // Until we have proper discontig support for NUMA, this assumes that the unix path is a noop
+                    *pAddress = (NvP64) bar1PhysAddr;
                 }
 
 
@@ -2267,6 +2263,19 @@ void memdescUnmapInternal
 
             case MEMDESC_MAP_INTERNAL_TYPE_COHERENT_FBMEM:
             {
+                //
+                // This flag is set when there is an update in BAR1/FLA PDE/PTE and when mmufill
+                // of BAR1 and FLA read on NINB_VC which doesn't probe the cpu cache.
+                //
+                // TODO: This flag needs to be set when updating PDE/PTE for invisible BAR2 also.
+                //
+                if (flags & TRANSFER_FLAGS_FLUSH_CPU_CACHE_WAR_BUG4686457)
+                {
+                    osFlushGpuCoherentCpuCacheRange(pGpu->pOsGpuInfo,
+                                                    (NvUPtr)pMemDesc->_pInternalMapping,
+                                                    pMemDesc->ActualSize);
+                }
+
                 kbusUnmapCoherentCpuMapping_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), pMemDesc,
                                                 pMemDesc->_pInternalMapping, pMemDesc->_pInternalMappingPriv);
                 break;
@@ -4210,7 +4219,8 @@ PMEMORY_DESCRIPTOR memdescGetRootMemDesc
 void
 memdescSetCustomHeap
 (
-    PMEMORY_DESCRIPTOR  pMemDesc
+    PMEMORY_DESCRIPTOR  pMemDesc,
+    MEMDESC_CUSTOM_HEAP heap
 )
 {
     NV_ASSERT(0);
@@ -4224,13 +4234,14 @@ memdescSetCustomHeap
  *
  *  @returns NV_TRUE if flag MEMDESC_FLAGS_CUSTOM_HEAP_ACR is SET.
  */
-NvBool
+MEMDESC_CUSTOM_HEAP
 memdescGetCustomHeap
 (
     PMEMORY_DESCRIPTOR pMemDesc
 )
 {
-    return NV_FALSE;
+
+    return MEMDESC_CUSTOM_HEAP_NONE;
 }
 
 PIOVAMAPPING memdescGetIommuMap

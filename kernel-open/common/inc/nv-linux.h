@@ -724,6 +724,7 @@ static inline dma_addr_t nv_phys_to_dma(struct device *dev, NvU64 pa)
 #endif
 }
 
+#define NV_GET_OFFSET_IN_PAGE(phys_page) offset_in_page(phys_page)
 #define NV_GET_PAGE_STRUCT(phys_page) virt_to_page(__va(phys_page))
 #define NV_VMA_PGOFF(vma)             ((vma)->vm_pgoff)
 #define NV_VMA_SIZE(vma)              ((vma)->vm_end - (vma)->vm_start)
@@ -951,14 +952,14 @@ static inline int nv_remap_page_range(struct vm_area_struct *vma,
 }
 
 static inline int nv_io_remap_page_range(struct vm_area_struct *vma,
-    NvU64 phys_addr, NvU64 size, NvU32 extra_prot)
+    NvU64 phys_addr, NvU64 size, NvU32 extra_prot, NvU64 start)
 {
     int ret = -1;
 #if !defined(NV_XEN_SUPPORT_FULLY_VIRTUALIZED_KERNEL)
-    ret = nv_remap_page_range(vma, vma->vm_start, phys_addr, size,
+    ret = nv_remap_page_range(vma, start, phys_addr, size,
         nv_adjust_pgprot(vma->vm_page_prot, extra_prot));
 #else
-    ret = io_remap_pfn_range(vma, vma->vm_start, (phys_addr >> PAGE_SHIFT),
+    ret = io_remap_pfn_range(vma, start, (phys_addr >> PAGE_SHIFT),
         size, nv_adjust_pgprot(vma->vm_page_prot, extra_prot));
 #endif
     return ret;
@@ -1207,6 +1208,7 @@ typedef struct nv_alloc_s {
         NvBool physical    : 1;
         NvBool unencrypted : 1;
         NvBool coherent    : 1;
+        NvBool carveout    : 1;
     } flags;
     unsigned int   cache_type;
     unsigned int   num_pages;
@@ -1839,20 +1841,6 @@ static inline int nv_is_control_device(struct inode *inode)
 #include <xen/ioemu.h>
 #endif
 #endif
-
-static inline NvU64 nv_pci_bus_address(struct pci_dev *dev, NvU8 bar_index)
-{
-    NvU64 bus_addr = 0;
-#if defined(NV_PCI_BUS_ADDRESS_PRESENT)
-    bus_addr = pci_bus_address(dev, bar_index);
-#elif defined(CONFIG_PCI)
-    struct pci_bus_region region;
-
-    pcibios_resource_to_bus(dev, &region, &dev->resource[bar_index]);
-    bus_addr = region.start;
-#endif
-    return bus_addr;
-}
 
 /*
  * Decrements the usage count of the allocation, and moves the allocation to

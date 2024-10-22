@@ -263,13 +263,6 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY  *pParamCopy, RmCtrlParams *pRmC
 
 //
 // This flag specifies that the control can be run by an admin privileged
-// client running in a full SRIOV, vGPU-GSP-ENABLED hypervisor environment.
-// Overrides regular privilege level flags.
-//
-#define RMCTRL_FLAGS_CPU_PLUGIN_FOR_VGPU_GSP                  0x000002000
-
-//
-// This flag specifies that the control can be run by an admin privileged
 // client running in a full SRIOV, vGPU-GSP-DISABLED hypervisor environment.
 // Overrides regular privilege level flags.
 //

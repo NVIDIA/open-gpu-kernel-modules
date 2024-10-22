@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,7 +38,7 @@ NV_STATUS
 gpuBuildClassDB_IMPL(OBJGPU *pGpu)
 {
     PGPU_ENGINE_ORDER      pEngineOrder = &pGpu->engineOrder;
-    PCLASSDESCRIPTOR       pClassDynamic;
+    CLASSDESCRIPTOR       *pClassDynamic;
     const CLASSDESCRIPTOR *pClassStatic;
     NvU32                  numClasses;
     NvU32                  i, j;
@@ -118,7 +118,7 @@ gpuDestroyClassDB_IMPL(OBJGPU *pGpu)
 NvBool
 gpuIsClassSupported_IMPL(OBJGPU *pGpu, NvU32 externalClassId)
 {
-    PCLASSDESCRIPTOR pClassDesc;
+    CLASSDESCRIPTOR *pClassDesc;
     NV_STATUS        status;
 
     status = gpuGetClassByClassId(pGpu, externalClassId, &pClassDesc);
@@ -127,7 +127,7 @@ gpuIsClassSupported_IMPL(OBJGPU *pGpu, NvU32 externalClassId)
 }
 
 NV_STATUS
-gpuGetClassByClassId_IMPL(OBJGPU *pGpu, NvU32 externalClassId, PCLASSDESCRIPTOR *ppClassDesc)
+gpuGetClassByClassId_IMPL(OBJGPU *pGpu, NvU32 externalClassId, CLASSDESCRIPTOR **ppClassDesc)
 {
     PGPUCLASSDB pClassDB = &pGpu->classDB;
     NvU32 i;
@@ -148,7 +148,7 @@ gpuGetClassByClassId_IMPL(OBJGPU *pGpu, NvU32 externalClassId, PCLASSDESCRIPTOR 
 }
 
 NV_STATUS
-gpuGetClassByEngineAndClassId_IMPL(OBJGPU *pGpu, NvU32 externalClassId, NvU32 engDesc, PCLASSDESCRIPTOR *ppClassDesc)
+gpuGetClassByEngineAndClassId_IMPL(OBJGPU *pGpu, NvU32 externalClassId, NvU32 engDesc, CLASSDESCRIPTOR **ppClassDesc)
 {
     PGPUCLASSDB pClassDB = &pGpu->classDB;
     NvU32 i;
@@ -266,7 +266,7 @@ gpuGetClassList_IMPL(OBJGPU *pGpu, NvU32 *pNumClasses, NvU32 *pClassList, NvU32 
     NV_STATUS status = NV_OK;
     NvU32 i, k;
     NvBool bCount;
-    PCLASSDESCRIPTOR classDB = pGpu->classDB.pClasses;
+    CLASSDESCRIPTOR *pClassDB = pGpu->classDB.pClasses;
     NvU32 lastClassId = 0;
 
     // Read the registry one time to get the list
@@ -282,7 +282,7 @@ gpuGetClassList_IMPL(OBJGPU *pGpu, NvU32 *pNumClasses, NvU32 *pClassList, NvU32 
 
     for (i = 0; i < pGpu->classDB.numClasses; i++)
     {
-        if ((engDesc != ENG_INVALID) && (classDB[i].engDesc != engDesc))
+        if ((engDesc != ENG_INVALID) && (pClassDB[i].engDesc != engDesc))
             continue;
 
         bCount = NV_TRUE;
@@ -291,7 +291,7 @@ gpuGetClassList_IMPL(OBJGPU *pGpu, NvU32 *pNumClasses, NvU32 *pClassList, NvU32 
         {
             for (k=1; k < pSuppressClasses[0]; k++)
             {
-                if (pSuppressClasses[k] == classDB[i].externalClassId)
+                if (pSuppressClasses[k] == pClassDB[i].externalClassId)
                 {
                     bCount = NV_FALSE;
                     break;
@@ -301,7 +301,7 @@ gpuGetClassList_IMPL(OBJGPU *pGpu, NvU32 *pNumClasses, NvU32 *pClassList, NvU32 
 
         if (bCount)
         {
-            const NvU32 classId = classDB[i].externalClassId;
+            const NvU32 classId = pClassDB[i].externalClassId;
 
             //
             // Skip duplicate classes.  These exist in the classDB for

@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,7 +45,7 @@ void __nvoc_init_halspec_ChipHal(ChipHal*, NvU32, NvU32, NvU32);
  * For Legacy iGPUs, we have two type Tegra chips in Chips.pm
  *   TEGRA_DGPU : The iGPU Core inside the Tegra Soc Chip with PCIE interface.
  *                The behavior is more like a dGPU.  Such chip is generally
- *                added to dGPU (CLASSIC-GPUS) chip family.  E.g. GA10B
+ *                added to dGPU (CLASSIC_GPUS) chip family.  E.g. GA10B
  *                This is generally the test chip used in MODS Arch validation
  *                that shares the test infrastructure with dGPU.
  *

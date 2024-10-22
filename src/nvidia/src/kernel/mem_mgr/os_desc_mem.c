@@ -123,10 +123,16 @@ osdescConstruct_IMPL
         return status;
     }
 
+    if (!memdescGetContiguity(pMemDesc, AT_PA))
+    {
+        os02Flags = FLD_SET_DRF(OS02, _FLAGS, _PHYSICALITY, _NONCONTIGUOUS, os02Flags);
+        pUserParams->attr = FLD_SET_DRF(OS32, _ATTR, _PHYSICALITY, _NONCONTIGUOUS, pUserParams->attr);
+    }
+
     if (pMemoryManager->bAllowSysmemHugePages && pMemDesc->bForceHugePages)
     {
-        pUserParams->attr = DRF_DEF(OS32, _ATTR, _PAGE_SIZE, _HUGE);
-        pUserParams->attr2 = DRF_DEF(OS32, _ATTR2, _PAGE_SIZE_HUGE, _DEFAULT);
+        pUserParams->attr = FLD_SET_DRF(OS32, _ATTR, _PAGE_SIZE, _HUGE, pUserParams->attr);
+        pUserParams->attr2 = FLD_SET_DRF(OS32, _ATTR2, _PAGE_SIZE_HUGE, _DEFAULT, pUserParams->attr2);
     }
 
     status = memConstructCommon(pMemory, NV01_MEMORY_SYSTEM_OS_DESCRIPTOR, pUserParams->flags,

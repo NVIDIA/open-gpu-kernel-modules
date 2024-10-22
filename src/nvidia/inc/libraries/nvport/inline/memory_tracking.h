@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,14 +38,6 @@
 #define portMemExTrackingGetNext_SUPPORTED              \
     (PORT_MEM_TRACK_USE_FENCEPOSTS & PORT_MEM_TRACK_USE_ALLOCLIST)
 #define portMemExTrackingGetHeapSize_SUPPORTED          (NVOS_IS_LIBOS)
-//
-// portMemExTrackingGetAllocUsableSize provides higher-fidelity tracking at the
-// expense of higher runtime overhead, due to additional function calls in the
-// portMemAlloc path. It is only enabled by default in debug ("checked") builds for
-// this reason.
-//
-#define portMemExTrackingGetAllocUsableSize_SUPPORTED   (PORT_IS_CHECKED_BUILD && NVOS_IS_LIBOS)
-
 #define portMemExValidate_SUPPORTED            0
 #define portMemExValidateAllocations_SUPPORTED 0
 #define portMemExFreeAll_SUPPORTED             0
@@ -63,7 +55,15 @@ void _portMemAllocatorFree(PORT_MEM_ALLOCATOR *pAlloc, void *pMem);
 
 #if PORT_MEM_TRACK_USE_LIMIT
 /** @brief Initialize per VF tracking limit **/
-void portMemInitializeAllocatorTrackingLimit(NvU32 pid, NvLength limit, NvBool bLimitEnabled);
+void portMemInitializeAllocatorTrackingLimit(NvU32 gfid, NvLength limit, NvBool bLimitEnabled);
+/** @brief Init per Gfid mem tracking **/
+void portMemGfidTrackingInit(NvU32 gfid);
+/** @brief Free per Gfid mem tracking **/
+void portMemGfidTrackingFree(NvU32 gfid);
+#endif
+
+#if PORT_MEM_TRACK_USE_LIMIT
+#define PORT_MEM_LIMIT_MAX_GFID 64
 #endif
 
 typedef struct PORT_MEM_COUNTER
@@ -170,21 +170,10 @@ PORT_MEM_ALLOCATOR *portMemExAllocatorCreateLockedOnExistingBlock_CallerInfo(voi
 #if PORT_MEM_TRACK_USE_FENCEPOSTS || PORT_MEM_TRACK_USE_ALLOCLIST || PORT_MEM_TRACK_USE_CALLERINFO || PORT_MEM_TRACK_USE_LIMIT
 
 //
-// The blockSize of the allocation can be tracked in 1 of 2 places,
-// depending on build configuration. To reduce per-alloc memory waste in
-// allocating multiple fields for the same data, the following is the
-// order in which they are preferred at compile time:
-//
-//  1. portMemExTrackingGetAllocUsableSize - the underlying malloc
-//     implementation has a function to get the allocation size from allocated
-//     pointer. No memory will be allocated in the PORT_MEM_HEADER to track the
-//     block size.
-//  2. PORT_MEM_HEADER::blockSize - used when fenceposts or per-GFID limit
-//     tracking is enabled and portMemExTrackingGetAllocUsableSize is not
-//     available.
+// The blockSize of the allocation is tracked in PORT_MEM_HEADER::blockSize
+// when fenceposts or per-GFID limit tracking is enabled.
 //
 #define PORT_MEM_HEADER_HAS_BLOCK_SIZE  \
-    !PORT_IS_FUNC_SUPPORTED(portMemExTrackingGetAllocUsableSize) && \
     (PORT_MEM_TRACK_USE_FENCEPOSTS || PORT_MEM_TRACK_USE_LIMIT)
 
 typedef struct PORT_MEM_HEADER
@@ -202,7 +191,7 @@ typedef struct PORT_MEM_HEADER
                                     PORT_MEM_FENCE_HEAD fence;
 #endif
 #if PORT_MEM_TRACK_USE_LIMIT
-                 NV_DECLARE_ALIGNED(NvU32 pid, 8);
+                                    NV_DECLARE_ALIGNED(NvU32 gfid, 8);
 #endif
 } PORT_MEM_HEADER;
 
@@ -225,8 +214,7 @@ typedef struct PORT_MEM_FOOTER
 
 #define PORT_MEM_TRACK_ALLOC_SIZE                                   \
     PORT_MEM_TRACK_USE_COUNTER &&                                   \
-    (PORT_IS_FUNC_SUPPORTED(portMemExTrackingGetAllocUsableSize) || \
-     PORT_MEM_HEADER_HAS_BLOCK_SIZE)
+    PORT_MEM_HEADER_HAS_BLOCK_SIZE
 
 struct PORT_MEM_ALLOCATOR_TRACKING
 {
@@ -243,6 +231,11 @@ struct PORT_MEM_ALLOCATOR_TRACKING
 #endif
 #if PORT_MEM_TRACK_USE_CALLERINFO
     PORT_MEM_CALLERINFO                 callerInfo;
+#endif
+#if PORT_MEM_TRACK_USE_LIMIT
+    NvLength                            limitGfid;
+    NvLength                            counterGfid;
+    NvU32                               gfid;
 #endif
 };
 

@@ -49,6 +49,10 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJHOSTENG =
     /*pExportInfo=*/        &__nvoc_export_info_OBJHOSTENG
 };
 
+// Down-thunk(s) to bridge methods from ancestors (if any)
+
+// Up-thunk(s) to bridge methods to ancestors (if any)
+
 const struct NVOC_EXPORT_INFO __nvoc_export_info_OBJHOSTENG = 
 {
     /*numEntries=*/     0,
@@ -76,16 +80,19 @@ __nvoc_ctor_OBJHOSTENG_exit:
 // Vtable initialization
 static void __nvoc_init_funcTable_OBJHOSTENG_1(OBJHOSTENG *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-
-    // hostengHaltAndReset -- virtual
-    pThis->__hostengHaltAndReset__ = &hostengHaltAndReset_IMPL;
-} // End __nvoc_init_funcTable_OBJHOSTENG_1 with approximately 1 basic block(s).
+} // End __nvoc_init_funcTable_OBJHOSTENG_1
 
 
 // Initialize vtable(s) for 1 virtual method(s).
 void __nvoc_init_funcTable_OBJHOSTENG(OBJHOSTENG *pThis) {
 
-    // Initialize vtable(s) with 1 per-object function pointer(s).
+    // Per-class vtable definition
+    static const struct NVOC_VTABLE__OBJHOSTENG vtable = {
+        .__hostengHaltAndReset__ = &hostengHaltAndReset_IMPL,    // virtual
+    };
+
+    // Pointer(s) to per-class vtable(s)
+    pThis->__nvoc_vtable = &vtable;    // (hosteng) this
     __nvoc_init_funcTable_OBJHOSTENG_1(pThis);
 }
 

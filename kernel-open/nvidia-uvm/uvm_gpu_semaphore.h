@@ -29,6 +29,8 @@
 #include "uvm_rm_mem.h"
 #include "uvm_linux.h"
 
+typedef NvU32 uvm_gpu_semaphore_notifier_t;
+
 // A GPU semaphore is a memory location accessible by the GPUs and the CPU
 // that's used for synchronization among them.
 // The GPU has primitives to acquire (wait for) and release (set) 4-byte memory
@@ -52,8 +54,8 @@ struct uvm_gpu_semaphore_struct
         UvmCslIv *ivs;
         NvU32 cached_payload;
 
-        NvU32 last_pushed_notifier;
-        NvU32 last_observed_notifier;
+        uvm_gpu_semaphore_notifier_t last_pushed_notifier;
+        uvm_gpu_semaphore_notifier_t last_observed_notifier;
     } conf_computing;
 };
 
@@ -154,7 +156,7 @@ NvU32 *uvm_gpu_semaphore_get_cpu_va(uvm_gpu_semaphore_t *semaphore);
 NvU32 *uvm_gpu_semaphore_get_encrypted_payload_cpu_va(uvm_gpu_semaphore_t *semaphore);
 uvm_gpu_address_t uvm_gpu_semaphore_get_encrypted_payload_gpu_va(uvm_gpu_semaphore_t *semaphore);
 
-NvU32 *uvm_gpu_semaphore_get_notifier_cpu_va(uvm_gpu_semaphore_t *semaphore);
+uvm_gpu_semaphore_notifier_t *uvm_gpu_semaphore_get_notifier_cpu_va(uvm_gpu_semaphore_t *semaphore);
 uvm_gpu_address_t uvm_gpu_semaphore_get_notifier_gpu_va(uvm_gpu_semaphore_t *semaphore);
 
 void *uvm_gpu_semaphore_get_auth_tag_cpu_va(uvm_gpu_semaphore_t *semaphore);

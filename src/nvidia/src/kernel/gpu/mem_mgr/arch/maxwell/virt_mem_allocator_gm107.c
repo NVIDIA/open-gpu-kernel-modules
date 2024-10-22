@@ -626,7 +626,7 @@ dmaAllocMapping_GM107
             {
                 pLocals->vaRangeHi = NV_MIN(0xffffffff, pLocals->vaRangeHi);
             }
-            else if (pDma->getProperty(pDma, PDB_PROP_DMA_ENFORCE_32BIT_POINTER) &&
+            else if (pDma->bDmaEnforce32BitPointer &&
                      (pVASpaceHeap->free > NVBIT64(32))) // Pressured address spaces are exempt
             {
                 pLocals->vaRangeLo = NV_MAX(NVBIT64(32), pLocals->vaRangeLo);
@@ -1032,7 +1032,11 @@ dmaAllocMapping_GM107
                 SLI_LOOP_BREAK;
             }
 
-            if (pLocals->cacheSnoop || memdescGetFlag(pAdjustedMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1))
+            if (memdescGetFlag(pAdjustedMemDesc, MEMDESC_FLAGS_ALLOC_SKED_REFLECTED))
+            {
+                pLocals->aperture = NV_MMU_PTE_APERTURE_SYSTEM_NON_COHERENT_MEMORY;
+            }
+            else if (pLocals->cacheSnoop || memdescGetFlag(pAdjustedMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1))
             {
                 pLocals->aperture = NV_MMU_PTE_APERTURE_SYSTEM_COHERENT_MEMORY;
             }
@@ -1659,33 +1663,45 @@ _gmmuWalkCBMapNextEntries_RmAperture
 {
     OBJGPU              *pGpu           = pUserCtx->pGpu;
     MemoryManager       *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    KernelGmmu          *pKernelGmmu    = GPU_GET_KERNEL_GMMU(pGpu);
     MMU_MAP_ITERATOR    *pIter          = pTarget->pIter;
     MEMORY_DESCRIPTOR   *pMemDesc       = (MEMORY_DESCRIPTOR*)pLevelMem;
     const MMU_FMT_LEVEL *pLevelFmt      = pTarget->pLevelFmt;
     TRANSFER_SURFACE     surf           = {0};
     NvU32                sizeOfEntries;
+    NvU32                transferFlags  = TRANSFER_FLAGS_SHADOW_ALLOC | TRANSFER_FLAGS_SHADOW_INIT_MEM;
+
+    // FABRIC_VASPACE object of pGpu.
+    FABRIC_VASPACE *pFabricVAS = (pGpu->pFabricVAS != NULL) ? (dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE)) : NULL;
+
+    // GVASPACE object associated with this fabric vaspace.
+    OBJGVASPACE *pGVAS_FLA = (pFabricVAS != NULL) ? (dynamicCast(pFabricVAS->pGVAS, OBJGVASPACE)) : NULL;
 
     NV_PRINTF(LEVEL_INFO, "[GPU%u]: PA 0x%llX, Entries 0x%X-0x%X\n",
               pUserCtx->pGpu->gpuInstance,
               memdescGetPhysAddr(pMemDesc, AT_GPU, 0), entryIndexLo,
               entryIndexHi);
 
+    // Apply the WAR to flush CPU cache if the VA space is of BAR1/FLA.
+    if (((pUserCtx->pGVAS->flags & VASPACE_FLAGS_BAR_BAR1) ||
+         (pUserCtx->pGVAS == pGVAS_FLA)) &&
+        pKernelGmmu->bBug4686457WAR)
+    {
+        transferFlags |= TRANSFER_FLAGS_FLUSH_CPU_CACHE_WAR_BUG4686457;
+    }
+
     surf.pMemDesc = pMemDesc;
     surf.offset = entryIndexLo * pLevelFmt->entrySize;
 
     sizeOfEntries = (entryIndexHi - entryIndexLo + 1 ) * pLevelFmt->entrySize;
 
-    pIter->pMap = memmgrMemBeginTransfer(pMemoryManager, &surf, sizeOfEntries,
-                                         TRANSFER_FLAGS_SHADOW_ALLOC |
-                                         TRANSFER_FLAGS_SHADOW_INIT_MEM);
+    pIter->pMap = memmgrMemBeginTransfer(pMemoryManager, &surf, sizeOfEntries, transferFlags);
     NV_ASSERT_OR_RETURN_VOID(NULL != pIter->pMap);
 
     _gmmuWalkCBMapNextEntries_Direct(pUserCtx, pTarget, pLevelMem,
                                      entryIndexLo, entryIndexHi, pProgress);
 
-    memmgrMemEndTransfer(pMemoryManager, &surf, sizeOfEntries,
-                         TRANSFER_FLAGS_SHADOW_ALLOC |
-                         TRANSFER_FLAGS_SHADOW_INIT_MEM);
+    memmgrMemEndTransfer(pMemoryManager, &surf, sizeOfEntries, transferFlags);
 }
 
 static NV_STATUS _dmaGetFabricAddress
@@ -1909,7 +1925,7 @@ dmaUpdateVASpace_GF100
     // the big page size. This is because the PA alignement chooses between even/odd pages
     // and SW programs the PA alignment.
     //
-    if (pDma->getProperty(pDma, PDB_PROP_DMA_ENABLE_FULL_COMP_TAG_LINE))
+    if (pDma->bDmaEnableFullCompTagLine)
     {
         alignSize = vaSpaceBigPageSize;
     }
@@ -2417,7 +2433,7 @@ dmaMapBuffer_GM107
     }
 
     // If trying to conserve 32bit address space, map RM buffers at 4GB+
-    if (pDma->getProperty(pDma, PDB_PROP_DMA_ENFORCE_32BIT_POINTER) &&
+    if (pDma->bDmaEnforce32BitPointer &&
         (pVASpaceHeap->free > NVBIT64(32)))
     {
         rangeLo = NV_MAX(NVBIT64(32), rangeLo);

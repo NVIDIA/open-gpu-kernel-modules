@@ -183,6 +183,17 @@ kbusInitRegistryOverrides(OBJGPU *pGpu, KernelBus *pKernelBus)
             break;
     }
 
+    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_FORCE_STATIC_BAR1, &data32) == NV_OK) &&
+        data32 < NV_REG_STR_RM_FORCE_STATIC_BAR1_MAX)
+    {
+        pKernelBus->staticBar1ForceType = data32;
+        NV_PRINTF(LEVEL_WARNING, "Forcing static BAR1 to type %d.\n", data32);
+    }
+    else
+    {
+        pKernelBus->staticBar1ForceType = NV_REG_STR_RM_FORCE_STATIC_BAR1_DEFAULT;
+    }
+
     if (RMCFG_FEATURE_PLATFORM_WINDOWS && !pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_TCC_MODE))
     {
         //
@@ -226,13 +237,17 @@ kbusGetBar1VARangeForDevice_IMPL(OBJGPU *pGpu, KernelBus *pKernelBus, Device *pD
 {
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     OBJVASPACE       *pBar1VAS          = kbusGetBar1VASpace_HAL(pGpu, pKernelBus);
+    RmClient         *pRmClient;
 
     NV_ASSERT_OR_RETURN(pBar1VAS != NULL, NV_ERR_INVALID_STATE);
 
    *pBar1VARange = rangeMake(vaspaceGetVaStart(pBar1VAS), vaspaceGetVaLimit(pBar1VAS));
 
+    pRmClient = dynamicCast(RES_GET_CLIENT(pDevice), RmClient);
+    NV_ASSERT_OR_RETURN(pRmClient != NULL, NV_ERR_INVALID_CLIENT);
+
     if ((pKernelMIGManager != NULL) && kmigmgrIsMIGMemPartitioningEnabled(pGpu, pKernelMIGManager) &&
-        !rmclientIsCapableByHandle(RES_GET_CLIENT_HANDLE(pDevice), NV_RM_CAP_SYS_SMC_MONITOR) &&
+        !rmclientIsCapable(pRmClient, NV_RM_CAP_SYS_SMC_MONITOR) &&
         !kmigmgrIsDeviceUsingDeviceProfiling(pGpu, pKernelMIGManager, pDevice))
     {
         MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
@@ -940,106 +955,67 @@ kbusCheckEngineWithOrderList_KERNEL
                                   rmEngineCaps),
         return NV_FALSE);
 
-    switch (engDesc)
+    switch (ENGDESC_FIELD(engDesc, _CLASS))
     {
-        case ENG_LSFM:
-        case ENG_PMU:
-        case ENG_CLK:
-        case ENG_ACR:
-        case ENG_DISP:
+        case ENG_CLASS_LSFM:
+        case ENG_CLASS_PMU:
+        case ENG_CLASS_CLK:
+        case ENG_CLASS_ACR:
+        case ENG_CLASS_DISP:
             return NV_FALSE;
         //
         // This function is used in two environments:
         // (a) vGPU where display is not yet supported.
         // (b) RM offload (Kernel RM) where display is supported.
         //
-        case ENG_KERNEL_DISPLAY:
+        case ENG_CLASS_KERNEL_DISPLAY:
             return IS_GSP_CLIENT(pGpu);
 
-        case ENG_BIF:
-        case ENG_KERNEL_BIF:
-        case ENG_MC:
-        case ENG_KERNEL_MC:
-        case ENG_PRIV_RING:
-        case ENG_SW_INTR:
-        case ENG_TMR:
-        case ENG_DMA:
-        case ENG_BUS:
-        case ENG_GR(0):
-        case ENG_CIPHER:
-        case ENG_INTR:
-        case ENG_GPULOG:
-        case ENG_GPUMON:
-        case ENG_FIFO:
+        case ENG_CLASS_BIF:
+        case ENG_CLASS_KERNEL_BIF:
+        case ENG_CLASS_MC:
+        case ENG_CLASS_KERNEL_MC:
+        case ENG_CLASS_PRIV_RING:
+        case ENG_CLASS_SW_INTR:
+        case ENG_CLASS_TMR:
+        case ENG_CLASS_DMA:
+        case ENG_CLASS_BUS:
+        case ENG_CLASS_CIPHER:
+        case ENG_CLASS_INTR:
+        case ENG_CLASS_GPULOG:
+        case ENG_CLASS_GPUMON:
+        case ENG_CLASS_FIFO:
             return NV_TRUE;
 
-        case ENG_CE(0):
-        case ENG_CE(1):
-        case ENG_CE(2):
-        case ENG_CE(3):
-        case ENG_CE(4):
-        case ENG_CE(5):
-        case ENG_CE(6):
-        case ENG_CE(7):
-        case ENG_CE(8):
-        case ENG_CE(9):
-            // Bug 3748354
-        case ENG_CE(10):
-        case ENG_CE(11):
-        case ENG_CE(12):
-        case ENG_CE(13):
-        case ENG_CE(14):
-        case ENG_CE(15):
-        case ENG_CE(16):
-        case ENG_CE(17):
-        case ENG_CE(18):
-        case ENG_CE(19):
+        case ENG_CLASS_CE:
             return !!NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps,
                 RM_ENGINE_TYPE_COPY(GET_CE_IDX(engDesc)));
 
-        case ENG_MSENC(0):
-        case ENG_MSENC(1):
-        case ENG_MSENC(2):
+        case ENG_CLASS_MSENC:
             return !!NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps,
                 RM_ENGINE_TYPE_NVENC(GET_MSENC_IDX(engDesc)));
-        case ENG_SEC2:
+        case ENG_CLASS_SEC2:
             return !!NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps,
                                                 RM_ENGINE_TYPE_SEC2);
-        case ENG_NVDEC(0):
-        case ENG_NVDEC(1):
-        case ENG_NVDEC(2):
-        case ENG_NVDEC(3):
-        case ENG_NVDEC(4):
-        case ENG_NVDEC(5):
-        case ENG_NVDEC(6):
-        case ENG_NVDEC(7):
+        case ENG_CLASS_NVDEC:
             return !!NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps,
                 RM_ENGINE_TYPE_NVDEC(GET_NVDEC_IDX(engDesc)));
 
-   case ENG_OFA(0):
-   case ENG_OFA(1):
+        case ENG_CLASS_OFA:
             return !!NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps,
                 RM_ENGINE_TYPE_OFA(GET_OFA_IDX(engDesc)));
 
-        case ENG_NVJPEG(0):
-        case ENG_NVJPEG(1):
-        case ENG_NVJPEG(2):
-        case ENG_NVJPEG(3):
-        case ENG_NVJPEG(4):
-        case ENG_NVJPEG(5):
-        case ENG_NVJPEG(6):
-        case ENG_NVJPEG(7):
+        case ENG_CLASS_NVJPEG:
             return !!NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps,
                 RM_ENGINE_TYPE_NVJPEG(GET_NVJPEG_IDX(engDesc)));
 
-        case ENG_GR(1):
-        case ENG_GR(2):
-        case ENG_GR(3):
-        case ENG_GR(4):
-        case ENG_GR(5):
-        case ENG_GR(6):
-        case ENG_GR(7):
+        case ENG_CLASS_GR:
         {
+            if (engDesc == ENG_GR(0))
+            {
+                return NV_TRUE;
+            }
+
             KernelFifo *pKernelFifo  = GPU_GET_KERNEL_FIFO(pGpu);
 
             NV_ASSERT_OR_RETURN(pKernelFifo != NULL, NV_FALSE);
@@ -1050,7 +1026,7 @@ kbusCheckEngineWithOrderList_KERNEL
                     bSupported);
         }
 
-        case ENG_INVALID:
+        case ENG_CLASS_INVALID:
             NV_PRINTF(LEVEL_ERROR,
                       "Query for ENG_INVALID considered erroneous: %d\n",
                       engDesc);
@@ -1149,7 +1125,16 @@ kbusMapFbApertureSingle_IMPL
     Device *pDevice
 )
 {
-    return kbusMapFbAperture_HAL(pGpu, pKernelBus, pMemDesc, offset, pAperOffset, pLength, flags, pDevice);
+    MemoryArea memArea;
+    MemoryRange memRange;
+    memArea.numRanges = 1;
+    memArea.pRanges = &memRange;
+    memRange.start = *pAperOffset;
+    NV_ASSERT_OK_OR_RETURN(kbusMapFbAperture_HAL(pGpu, pKernelBus, pMemDesc, mrangeMake(offset, *pLength), &memArea,
+        flags | BUS_MAP_FB_FLAGS_UNMANAGED_MEM_AREA, pDevice));
+    *pLength = memRange.size;
+    *pAperOffset = memRange.start;
+    return NV_OK;
 }
     
 NV_STATUS
@@ -1163,129 +1148,13 @@ kbusUnmapFbApertureSingle_IMPL
     NvU32 flags
 )
 {
-    return kbusUnmapFbAperture_HAL(pGpu, pKernelBus, pMemDesc, aperOffset, length, flags);
-}
+    MemoryArea memArea;
+    MemoryRange memRange = mrangeMake(aperOffset, length);
 
-NV_STATUS
-kbusMapFbApertureByHandle_IMPL
-(
-    OBJGPU    *pGpu,
-    KernelBus *pKernelBus,
-    NvHandle   hClient,
-    NvHandle   hMemory,
-    NvU64      offset,
-    NvU64      size,
-    NvU64     *pBar1Va,
-    Device    *pDevice
-)
-{
-    NV_STATUS status;
-    RsClient *pClient = NULL;
-    RsResourceRef *pSrcMemoryRef = NULL;
-    Memory *pSrcMemory = NULL;
-    MEMORY_DESCRIPTOR *pMemDesc = NULL;
-    NvU64 fbApertureOffset = 0;
-    NvU64 fbApertureLength = size;
+    memArea.numRanges = 1;
+    memArea.pRanges = &memRange;
 
-    NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, hClient, &pClient));
-
-    status = clientGetResourceRef(pClient, hMemory, &pSrcMemoryRef);
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    pSrcMemory = dynamicCast(pSrcMemoryRef->pResource, Memory);
-    if (pSrcMemory == NULL)
-    {
-        return NV_ERR_INVALID_OBJECT;
-    }
-
-    pMemDesc = pSrcMemory->pMemDesc;
-
-    if (memdescGetAddressSpace(pMemDesc) != ADDR_FBMEM)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    status = kbusMapFbApertureSingle(pGpu, pKernelBus, pMemDesc, offset,
-                                     &fbApertureOffset, &fbApertureLength,
-                                     BUS_MAP_FB_FLAGS_MAP_UNICAST, pDevice);
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    NV_ASSERT_OR_GOTO(fbApertureLength >= size, failed);
-
-    if ((!NV_IS_ALIGNED64(fbApertureOffset, osGetPageSize())) ||
-        (!NV_IS_ALIGNED64(fbApertureLength, osGetPageSize())))
-    {
-        status = NV_ERR_NOT_SUPPORTED;
-        goto failed;
-    }
-
-    *pBar1Va = gpumgrGetGpuPhysFbAddr(pGpu) + fbApertureOffset;
-
-    if (!NV_IS_ALIGNED64(*pBar1Va, osGetPageSize()))
-    {
-        status = NV_ERR_INVALID_ADDRESS;
-        goto failed;
-    }
-
-    return NV_OK;
-
-failed:
-    // Note: fbApertureLength is not used by kbusUnmapFbApertureSingle(), so it's passed as 0
-    kbusUnmapFbApertureSingle(pGpu, pKernelBus, pMemDesc,
-                              fbApertureOffset, 0,
-                              BUS_MAP_FB_FLAGS_MAP_UNICAST);
-
-    return status;
-}
-
-NV_STATUS
-kbusUnmapFbApertureByHandle_IMPL
-(
-    OBJGPU    *pGpu,
-    KernelBus *pKernelBus,
-    NvHandle   hClient,
-    NvHandle   hMemory,
-    NvU64      bar1Va
-)
-{
-    NV_STATUS status;
-    RsClient *pClient = NULL;
-    RsResourceRef *pSrcMemoryRef = NULL;
-    Memory *pSrcMemory = NULL;
-    MEMORY_DESCRIPTOR *pMemDesc = NULL;
-
-    NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, hClient, &pClient));
-
-    status = clientGetResourceRef(pClient, hMemory, &pSrcMemoryRef);
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    pSrcMemory = dynamicCast(pSrcMemoryRef->pResource, Memory);
-    if (pSrcMemory == NULL)
-    {
-        return NV_ERR_INVALID_OBJECT;
-    }
-
-    pMemDesc = pSrcMemory->pMemDesc;
-
-    // Note: fbApertureLength is not used by kbusUnmapFbApertureSingle(), so it's passed as 0
-    status = kbusUnmapFbApertureSingle(pGpu, pKernelBus, pMemDesc,
-                                       bar1Va - gpumgrGetGpuPhysFbAddr(pGpu),
-                                       0, BUS_MAP_FB_FLAGS_MAP_UNICAST);
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    return NV_OK;
+    return kbusUnmapFbAperture_HAL(pGpu, pKernelBus, pMemDesc, memArea, flags | BUS_MAP_FB_FLAGS_UNMANAGED_MEM_AREA);
 }
 
 /*!
@@ -1450,6 +1319,12 @@ kbusUpdateRusdStatistics_IMPL
     NvU64 bar1AvailSize = 0;
     NV_RANGE bar1VARange = NV_RANGE_EMPTY;
     NvBool bZeroRusd = kbusIsBar1Disabled(pKernelBus);
+    
+    if (kbusIsStaticBar1Enabled(pGpu, pKernelBus))
+    {
+        // PMA owns BAR1 info, so don't  update.
+        return NV_OK;
+    }
 
     bZeroRusd = bZeroRusd || IS_MIG_ENABLED(pGpu);
 
@@ -1473,8 +1348,8 @@ kbusUpdateRusdStatistics_IMPL
 
     // Minimize critical section, write data once we have it.
     pSharedData = gpushareddataWriteStart(pGpu, bar1MemoryInfo);
-    pSharedData->bar1Size = bar1Size;
-    pSharedData->bar1AvailSize = bar1AvailSize;
+    MEM_WR32(&pSharedData->bar1Size, bar1Size);
+    MEM_WR32(&pSharedData->bar1AvailSize, bar1AvailSize);
     gpushareddataWriteFinish(pGpu, bar1MemoryInfo);
 
     return NV_OK;

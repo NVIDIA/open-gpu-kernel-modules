@@ -41,8 +41,10 @@
 struct nv_drm_framebuffer {
     struct NvKmsKapiSurface *pSurface;
 
-    struct nv_drm_gem_object*
-        nv_gem[NVKMS_MAX_PLANES_PER_SURFACE];
+#if !defined(NV_DRM_FRAMEBUFFER_OBJ_PRESENT)
+    struct drm_gem_object*
+        obj[NVKMS_MAX_PLANES_PER_SURFACE];
+#endif
 
     struct drm_framebuffer base;
 };
@@ -54,6 +56,29 @@ static inline struct nv_drm_framebuffer *to_nv_framebuffer(
         return NULL;
     }
     return container_of(fb, struct nv_drm_framebuffer, base);
+}
+
+static inline struct drm_gem_object *nv_fb_get_gem_obj(
+    struct drm_framebuffer *fb,
+    uint32_t plane)
+{
+#if defined(NV_DRM_FRAMEBUFFER_OBJ_PRESENT)
+    return fb->obj[plane];
+#else
+    return to_nv_framebuffer(fb)->obj[plane];
+#endif
+}
+
+static inline void nv_fb_set_gem_obj(
+    struct drm_framebuffer *fb,
+    uint32_t plane,
+    struct drm_gem_object *obj)
+{
+#if defined(NV_DRM_FRAMEBUFFER_OBJ_PRESENT)
+    fb->obj[plane] = obj;
+#else
+    to_nv_framebuffer(fb)->obj[plane] = obj;
+#endif
 }
 
 struct drm_framebuffer *nv_drm_internal_framebuffer_create(

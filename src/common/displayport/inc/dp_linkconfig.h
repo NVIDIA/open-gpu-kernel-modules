@@ -209,7 +209,6 @@ namespace DisplayPort
 #define DP_INVALID_SOR_INDEX 0xFFFFFFFF
 #define DSC_DEPTH_FACTOR     16
 
-
     class LinkConfiguration : virtual public Object
     {
     public:
@@ -236,21 +235,8 @@ namespace DisplayPort
             linkTrainCounter(0) {};
 
         LinkConfiguration(LinkPolicy * p, unsigned lanes, LinkRate peakRate,
-            bool enhancedFraming, bool MST, bool disablePostLTRequest = false,
-            bool bEnableFEC = false, bool bDisableLTTPR = false) :
-                lanes(lanes), peakRatePossible(peakRate), peakRate(peakRate),
-                enhancedFraming(enhancedFraming), multistream(MST),
-                disablePostLTRequest(disablePostLTRequest),
-                bEnableFEC(bEnableFEC), bDisableLTTPR(bDisableLTTPR),
-                linkTrainCounter(0)
-        {
-            // downrate for spread and FEC
-            minRate = linkOverhead(peakRate);
-            if (p)
-            {
-                policy = *p;
-            }
-        }
+                          bool enhancedFraming, bool MST, bool disablePostLTRequest = false,
+                          bool bEnableFEC = false, bool bDisableLTTPR = false);
 
         void setLTCounter(unsigned counter)
         {
@@ -466,52 +452,7 @@ namespace DisplayPort
             return lanes != laneCount_0;
         }
 
-        bool lowerConfig(bool bReduceLaneCnt = false)
-        {
-            //
-            // TODO: bReduceLaneCnt is set to fallback to 4 lanes with lower
-            //       valid link rate. But we should reset to max lane count
-            //       sink supports instead.
-            //
-
-            LinkRate lowerRate = policy.getLinkRates()->getLowerRate(peakRate);
-
-            if(bReduceLaneCnt)
-            {
-                // Reduce laneCount before reducing linkRate
-                if(lanes == laneCount_1)
-                {
-                    if (lowerRate)
-                    {
-                        lanes = laneCount_4;
-                        peakRate = lowerRate;
-                    }
-                    else
-                    {
-                        lanes = laneCount_0;
-                    }
-                }
-                else
-                {
-                    lanes /= 2;
-                }
-            }
-            else
-            {
-                // Reduce the link rate instead of lane count
-                if (lowerRate)
-                {
-                    peakRate = lowerRate;
-                }
-                else
-                {
-                    lanes /= 2;
-                }
-            }
-
-            minRate = linkOverhead(peakRate);
-            return lanes != laneCount_0;
-        }
+        bool lowerConfig(bool bReduceLaneCnt = false);
 
         void setLaneRate(LinkRate newRate, unsigned newLanes)
         {

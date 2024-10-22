@@ -51,7 +51,7 @@ namespace DisplayPort
     {
     public:
         //
-
+        //  IOCTL access to RM class DISPLAY_COMMON and NV50_DISPLAY
         //
         virtual NvU32 rmControl0073(NvU32 command, void * params, NvU32 paramSize) = 0;
         virtual NvU32 rmControl5070(NvU32 command, void * params, NvU32 paramSize) = 0;
@@ -329,7 +329,6 @@ namespace DisplayPort
         virtual bool aquireSema();
         virtual void releaseSema();
         virtual bool physicalLayerSetTestPattern(PatternInfo * patternInfo);
-
         virtual void preLinkTraining(NvU32 head);
         virtual void postLinkTraining(NvU32 head);
         virtual NvU32 getRegkeyValue(const char *key);

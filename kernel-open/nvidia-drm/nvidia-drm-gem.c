@@ -144,6 +144,12 @@ void nv_drm_gem_object_init(struct nv_drm_device *nv_dev,
 #endif
 
     drm_gem_private_object_init(dev, &nv_gem->base, size);
+
+    /* Create mmap offset early for drm_gem_prime_mmap(), if possible. */
+    if (nv_gem->ops->create_mmap_offset) {
+        uint64_t offset;
+        nv_gem->ops->create_mmap_offset(nv_dev, nv_gem, &offset);
+    }
 }
 
 struct drm_gem_object *nv_drm_gem_prime_import(struct drm_device *dev,
@@ -232,6 +238,7 @@ int nv_drm_gem_map_offset_ioctl(struct drm_device *dev,
         return -EINVAL;
     }
 
+    /* mmap offset creation is idempotent, fetch it by creating it again. */
     if (nv_gem->ops->create_mmap_offset) {
         ret = nv_gem->ops->create_mmap_offset(nv_dev, nv_gem, &params->offset);
     } else {

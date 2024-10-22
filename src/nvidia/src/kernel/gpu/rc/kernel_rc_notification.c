@@ -241,6 +241,7 @@ NV_STATUS krcErrorSetNotifier_IMPL
 )
 {
     KernelFifo   *pKernelFifo     = GPU_GET_KERNEL_FIFO(pGpu);
+    OBJSYS       *pSys            = SYS_GET_INSTANCE();
     NvU32         status          = NV_OK;
     NvU32         flushFlags      = 0;
     NvBool        bNewListCreated = NV_FALSE;
@@ -249,6 +250,15 @@ NV_STATUS krcErrorSetNotifier_IMPL
 
     NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);
     NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_CHANNEL);
+
+    //
+    // WAR bug 4503046: mark reboot required when any UVM channels receive an
+    // error.
+    //
+    if (pKernelChannel->bUvmOwned)
+    {
+        sysSetRecoveryRebootRequired(pSys, NV_TRUE);
+    }
 
     //
     // WAR bug 200326278, 200474671
@@ -439,12 +449,14 @@ krcErrorSendEventNotifications_KERNEL
 )
 {
     NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);
-    NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_CHANNEL);
 
-    NV_ASSERT_OK_OR_RETURN(
-        krcErrorSendEventNotificationsCtxDma_HAL(pGpu, pKernelRc,
-                                                 pKernelChannel,
-                                                 scope));
+    if (pKernelChannel != NULL)
+    {
+        NV_ASSERT_OK_OR_RETURN(
+            krcErrorSendEventNotificationsCtxDma_HAL(pGpu, pKernelRc,
+                                                     pKernelChannel,
+                                                     scope));
+    }
 
     gpuNotifySubDeviceEvent(pGpu,
                             NV2080_NOTIFIERS_RC_ERROR,

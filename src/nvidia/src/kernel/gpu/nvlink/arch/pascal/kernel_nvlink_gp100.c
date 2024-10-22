@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -261,8 +261,8 @@ knvlinkSetupPeerMapping_GP100
     NV_STATUS status = NV_OK;
     NvU32     peerLinkMask;
 
-    NV2080_CTRL_NVLINK_PRE_SETUP_NVLINK_PEER_PARAMS  preSetupNvlinkPeerParams;
-    NV2080_CTRL_NVLINK_POST_SETUP_NVLINK_PEER_PARAMS postSetupNvlinkPeerParams;
+    NV2080_CTRL_INTERNAL_NVLINK_PRE_SETUP_NVLINK_PEER_PARAMS  preSetupNvlinkPeerParams;
+    NV2080_CTRL_INTERNAL_NVLINK_POST_SETUP_NVLINK_PEER_PARAMS postSetupNvlinkPeerParams;
 
     // HSHUB registers are updated during driver load if nvlink topology is forced
     if (!knvlinkIsForcedConfig(pGpu, pKernelNvlink))
@@ -288,7 +288,7 @@ knvlinkSetupPeerMapping_GP100
             preSetupNvlinkPeerParams.bNvswitchConn = knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink);
 
             status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
-                                         NV2080_CTRL_CMD_NVLINK_PRE_SETUP_NVLINK_PEER,
+                                         NV2080_CTRL_CMD_INTERNAL_NVLINK_PRE_SETUP_NVLINK_PEER,
                                          (void *)&preSetupNvlinkPeerParams,
                                          sizeof(preSetupNvlinkPeerParams));
             NV_ASSERT(status == NV_OK);
@@ -300,7 +300,7 @@ knvlinkSetupPeerMapping_GP100
             postSetupNvlinkPeerParams.peerMask = NVBIT(peerId);
 
             status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
-                                         NV2080_CTRL_CMD_NVLINK_POST_SETUP_NVLINK_PEER,
+                                         NV2080_CTRL_CMD_INTERNAL_NVLINK_POST_SETUP_NVLINK_PEER,
                                          (void *)&postSetupNvlinkPeerParams,
                                          sizeof(postSetupNvlinkPeerParams));
             NV_ASSERT(status == NV_OK);

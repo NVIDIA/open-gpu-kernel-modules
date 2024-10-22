@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -66,8 +66,7 @@ kgmmuCommitInvalidateTlbTest_GM107
                   GPU_TIMEOUT_FLAGS_DEFAULT | GPU_TIMEOUT_FLAGS_BYPASS_CPU_YIELD);
 
     NV_ASSERT_OK_OR_RETURN(kgmmuCheckPendingInvalidates_HAL(pGpu, pKernelGmmu,
-                                                            &params.timeout,
-                                                            params.gfid));
+                                                            &params.timeout));
 
     // Invalidate all VA and PDB
     regVal = DRF_DEF(_PFB_PRI, _MMU_INVALIDATE, _ALL_VA, _TRUE) |
@@ -174,7 +173,7 @@ kgmmuInvalidateTlb_GM107
         // Set the GFID.
         params.gfid = gfid;
 
-        status = kgmmuCheckPendingInvalidates_HAL(pGpu, pKernelGmmu, &params.timeout, params.gfid);
+        status = kgmmuCheckPendingInvalidates_HAL(pGpu, pKernelGmmu, &params.timeout);
         if (status != NV_OK)
         {
            return;

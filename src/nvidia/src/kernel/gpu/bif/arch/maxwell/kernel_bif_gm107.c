@@ -28,6 +28,7 @@
 #include "gpu/bus/kern_bus.h"
 #include "platform/chipset/chipset.h"
 #include "nvdevid.h"
+#include <rmapi/nv_gpu_ops.h>
 #include "nvmisc.h"
 #include "kernel/gpu/mc/kernel_mc.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
@@ -52,6 +53,9 @@
 #define NV_XVR_VEND_XP1_IGNORE_L0S__PROD                 0x00000000 /* RW--V */
 #define NV_XVR_VEND_XP1_IGNORE_L0S_EN                    0x00000001 /* RW--V */
 #endif
+
+// Factor by which vGPU migration API bandwidth should be derated
+#define VGPU_MIGRATION_API_DERATE_FACTOR   5
 
 // XVE register map for PCIe config space
 static const NvU32 xveRegMapValid[] = NV_PCFG_XVE_REGISTER_VALID_MAP;
@@ -162,6 +166,12 @@ kbifIsMSIEnabledInHW_GM107
 )
 {
     NvU32 data32;
+
+    if (IS_VIRTUAL_WITH_SRIOV(pGpu))
+    {
+        return NV_FALSE;
+    }
+
     if (NV_OK != GPU_BUS_CFG_RD32(pGpu, NV_XVE_MSI_CTRL, &data32))
     {
         NV_PRINTF(LEVEL_ERROR, "unable to read NV_XVE_MSI_CTRL\n");
@@ -1363,6 +1373,70 @@ kbifInit_GM107
     kbifStoreBarRegOffsets_HAL(pGpu, pKernelBif, NV_XVE_BAR0);
 
     return NV_OK;
+}
+
+/*!
+ *  @brief Get the migration bandwidth
+ *
+ *  @param[out]     pBandwidth  Migration bandwidth
+ *
+ *  @returns        NV_STATUS
+ */
+NV_STATUS
+kbifGetMigrationBandwidth_GM107
+(
+    OBJGPU        *pGpu,
+    KernelBif     *pKernelBif,
+    NvU32         *pBandwidth
+)
+{
+    NV_STATUS rmStatus = NV_OK;
+    NV2080_CTRL_BUS_INFO busInfo = {0};
+
+    NvU32 pcieLinkRate    = 0;
+    NvU32 lanes           = 0;
+    NvU32 pciLinkMaxSpeed = 0;
+    NvU32 pciLinkGenInfo  = 0;
+
+    busInfo.index = NV2080_CTRL_BUS_INFO_INDEX_PCIE_GEN_INFO;
+    busInfo.data = 0;
+
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kbusSendBusInfo(pGpu, GPU_GET_KERNEL_BUS(pGpu), &busInfo));
+    }
+    else
+    {
+        if (kbifIsPciBusFamily(pKernelBif))
+        {
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kbifControlGetPCIEInfo(pGpu, pKernelBif, &busInfo));
+        }
+        else
+        {
+            return NV_ERR_NOT_SUPPORTED;
+        }
+    }
+
+    pciLinkGenInfo = DRF_VAL(2080, _CTRL_BUS, _INFO_PCIE_LINK_CAP_GEN, busInfo.data);
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kbifGetPciLinkMaxSpeedByPciGenInfo(pGpu, pKernelBif, pciLinkGenInfo, &pciLinkMaxSpeed));
+
+    busInfo.index = NV2080_CTRL_BUS_INFO_INDEX_PCIE_GPU_LINK_CTRL_STATUS;
+    busInfo.data = 0;
+
+    if (kbifIsPciBusFamily(pKernelBif))
+    {
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kbifControlGetPCIEInfo(pGpu, pKernelBif, &busInfo));
+    }
+    else
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    lanes = DRF_VAL(2080, _CTRL_BUS, _INFO_PCIE_LINK_CTRL_STATUS_LINK_WIDTH, busInfo.data);
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, calculatePCIELinkRateMBps(lanes, pciLinkMaxSpeed, &pcieLinkRate));
+    *pBandwidth = (pcieLinkRate / VGPU_MIGRATION_API_DERATE_FACTOR);
+
+    return rmStatus;
 }
 
 /*!

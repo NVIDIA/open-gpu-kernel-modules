@@ -34,7 +34,7 @@ MODULE_PARM_DESC(
     "Enable atomic kernel modesetting (1 = enable, 0 = disable (default))");
 module_param_named(modeset, nv_drm_modeset_module_param, bool, 0400);
 
-#if defined(NV_DRM_FBDEV_GENERIC_AVAILABLE)
+#if defined(NV_DRM_FBDEV_AVAILABLE)
 MODULE_PARM_DESC(
     fbdev,
     "Create a framebuffer device (1 = enable, 0 = disable (default)) (EXPERIMENTAL)");

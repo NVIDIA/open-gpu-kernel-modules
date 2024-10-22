@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -213,11 +213,6 @@ RmDeprecatedConvertOs32ToOs02Flags
         case NVOS32_ATTR_LOCATION_ANY: // NVOS02 defaults to PCI
         {
             os02Flags = FLD_SET_DRF(OS02, _FLAGS, _LOCATION, _PCI, os02Flags);
-            break;
-        }
-        case NVOS32_ATTR_LOCATION_AGP:
-        {
-            os02Flags = FLD_SET_DRF(OS02, _FLAGS, _LOCATION, _AGP, os02Flags);
             break;
         }
         case NVOS32_ATTR_LOCATION_VIDMEM:

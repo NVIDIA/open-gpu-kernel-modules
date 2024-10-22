@@ -1603,15 +1603,30 @@ typedef struct NV0073_CTRL_CMD_SYSTEM_QUERY_DISPLAY_IDS_WITH_MUX_PARAMS {
  *   NV_ERR_GENERIC
  */
 
-#define NV0073_CTRL_CMD_SYSTEM_ALLOCATE_DISPLAY_BANDWIDTH (0x730143U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_SYSTEM_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS_MESSAGE_ID" */
+/*
+ * NV0073_CTRL_CMD_SYSTEM_INTERNAL_ALLOCATE_DISPLAY_BANDWIDTH
+ *
+ * This command is identical to
+ * NV0073_CTRL_CMD_SYSTEM_ALLOCATE_DISPLAY_BANDWIDTH, except that it routes to
+ * Physical RM, and is for internal RM use.  Clients are advised to use
+ * NV0073_CTRL_CMD_SYSTEM_ALLOCATE_DISPLAY_BANDWIDTH instead.
+ */
 
-#define NV0073_CTRL_SYSTEM_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS_MESSAGE_ID (0x43U)
+#define NV0073_CTRL_CMD_SYSTEM_ALLOCATE_DISPLAY_BANDWIDTH          (0x730143U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_SYSTEM_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS_MESSAGE_ID" */
+#define NV0073_CTRL_CMD_SYSTEM_INTERNAL_ALLOCATE_DISPLAY_BANDWIDTH (0x730157U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_SYSTEM_INTERNAL_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS_MESSAGE_ID" */
 
-typedef struct NV0073_CTRL_SYSTEM_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS {
+typedef struct NV0073_CTRL_SYSTEM_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS_TYPE {
     NvU32 subDeviceInstance;
     NvU32 averageBandwidthKBPS;
     NvU32 floorBandwidthKBPS;
-} NV0073_CTRL_SYSTEM_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS;
+} NV0073_CTRL_SYSTEM_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS_TYPE;
+
+#define NV0073_CTRL_SYSTEM_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS_MESSAGE_ID (0x43U)
+
+typedef NV0073_CTRL_SYSTEM_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS_TYPE NV0073_CTRL_SYSTEM_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS;
+#define NV0073_CTRL_SYSTEM_INTERNAL_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS_MESSAGE_ID (0x57U)
+
+typedef NV0073_CTRL_SYSTEM_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS_TYPE NV0073_CTRL_SYSTEM_INTERNAL_ALLOCATE_DISPLAY_BANDWIDTH_PARAMS;
 
 /*
  * NV0073_CTRL_SYSTEM_HOTPLUG_EVENT_CONFIG_PARAMS
@@ -2012,6 +2027,299 @@ typedef struct NV0073_CTRL_CMD_SYSTEM_MAP_SHARED_DATA_PARAMS {
     NvU32  subDeviceInstance;
     NvBool bMap;
 } NV0073_CTRL_CMD_SYSTEM_MAP_SHARED_DATA_PARAMS;
+
+/*
+ * NV0073_CTRL_CMD_SYSTEM_GET_LOADV_COUNTER_INFO
+ *
+ * Fetches the LoadV Counter information from corresponding registers.
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed.
+ *   displayId
+ *     DisplayId of the panel for which we are going to read loadv info
+ *   Possible status values returned are:
+ *   counterValue
+ *     Counts number of frames that have been procesed or synchronized with display
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+
+#define NV0073_CTRL_CMD_SYSTEM_GET_LOADV_COUNTER_INFO (0x730154U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_CMD_SYSTEM_GET_LOADV_COUNTER_INFO_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_CMD_SYSTEM_GET_LOADV_COUNTER_INFO_PARAMS_MESSAGE_ID (0x54U)
+
+typedef struct NV0073_CTRL_CMD_SYSTEM_GET_LOADV_COUNTER_INFO_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 displayId;
+    NvU32 counterValue;
+} NV0073_CTRL_CMD_SYSTEM_GET_LOADV_COUNTER_INFO_PARAMS;
+
+/*!
+ * @brief Defines Display Low Power feature IDs
+ *
+ * Following defines specifies unique IDs to identify Display Power saving feature.
+ */
+#define NV0073_CTRL_DISP_LPWR_FEATURE_ID_INVALID                0x0000
+#define NV0073_CTRL_DISP_LPWR_FEATURE_ID_ALPM                   0x0001
+#define NV0073_CTRL_DISP_LPWR_FEATURE_ID_CLK_SWITCH_HUBCLK      0x0002
+#define NV0073_CTRL_DISP_LPWR_FEATURE_ID_CLK_SWITCH_RISCV0CLK   0x0003
+#define NV0073_CTRL_DISP_LPWR_FEATURE_ID_CLK_SWITCH_DISPCLK     0x0004
+#define NV0073_CTRL_DISP_LPWR_FEATURE_ID_CLK_SWITCH_POSTRG_CLKS 0x0005
+
+// Parameter/characteristics of Display ALPM
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_ALPM_INVALID         0x0000
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_ALPM_SUPPORTED       0x0001
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_ALPM_ENABLED         0x0002
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_ALPM_TYPE_AUX_LESS   0x0003
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_ALPM_ENGAGE_TIME     0x0004
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_ALPM_ENTRY_COUNT     0x0005
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_ALPM_EXIT_COUNT      0x0006
+
+/*!
+ * @brief Parameter/characteristics of hubclk, dispclk, riscv0clk and Post-RG clock Switching
+ *
+ * Following are the Parameter/characteristics for of hubclk, dispclk, riscv0clk and
+ * Post-RG clock Switching
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_CLK_SWITCH_INVALID               (0x0000)
+
+/*!
+ * Property specifies if Clock Switching is supported
+ * or not. This property is applicable for hubclk, dispclk, riscv0clk and Post-RG clk.
+ * (This property allows Get operation)
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_CLK_SWITCH_SUPPORT               (0x0001)
+
+ /*!
+ * Property specifies if Clock Switching is enabled or not.
+ * This property is applicable for hubclk, dispclk, riscv0clk and Post-RG clk.
+ * (This property allows Get and Set operation)
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_CLK_SWITCH_ENABLED               (0x0002)
+
+ /*!
+ * Property specifies the time(us) for which the specified clock was in Safe mode.
+ * This property is applicable for hubclk, dispclk, riscv0clk and Post-RG clk
+ * (This property allows Get operation)
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_CLK_SWITCH_SAFE_TIME_US          (0x0003)
+
+ /*!
+ * Property specifies the time(us) for which the specified clock was in Alternate mode.
+ * This property is only applicable to riscv0clk.
+ * (This property allows Get operation)
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_CLK_SWITCH_ALTERNATE_TIME_US     (0x0004)
+
+ /*!
+ * Property specifies if the specified clock is forced to Function mode or not.
+ * This property is applicable for hubclk, dispclk, riscv0clk and Post-RG clk.
+ * (This property allows Get and Set operation)
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_CLK_SWITCH_FORCE_FUNCTION        (0x0005)
+
+ /*!
+ * Property specifies if there was an error when the specified clock is being switched
+ * to safe mode but switch didn't happen in programmed time.
+ * This property is applicable for hubclk, dispclk, riscv0clk and Post-RG clk.
+ * (This property allows Get operation)
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_CLK_SWITCH_SAFE_ERROR            (0x0006)
+
+ /*!
+ * Property specifies if there was an error when the specified clock is being switched
+ * to function mode but switch didn't happen in programmed time.
+ * This property is applicable for hubclk, dispclk, riscv0clk and Post-RG clk.
+ * (This property allows Get operation)
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_CLK_SWITCH_UNSAFE_ERROR          (0x0007)
+
+ /*!
+ * Property specifies if there was an error when Riscv0clk clock is being switched
+ * to alternate mode but switch didn't happen in programmed time.
+ * This property is only applicable to riscv0clk.
+ * (This property allows Get operation)
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_CLK_SWITCH_ALTER_ERROR           (0x0008)
+
+ /*!
+ * Property specifies if there was an error when the Riscv0clk clock is being switched to
+ * function mode but switch didn't happen in programmed time.
+ * This property is only applicable to riscv0clk.
+ * (This property allows Get operation)
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_CLK_SWITCH_UNALTER_ERROR         (0x0009)
+
+ /*!
+ * Property specifies current state of the specified clock
+ * i.e. Safe or Function or Alternate
+ * (This property allows Get operation)
+ */
+#define NV0073_CTRL_DISP_LPWR_PARAMETER_ID_CLK_SWITCH_STATUS                (0x0010)
+
+/*!
+ * @brief Structure to identify display low power feature
+ *
+ * Structure to get/set feature Id, It has two fields
+ * FeatureID[In]    :  Feature Identifier
+ * SubFeatureID[In] :  If Any Subfeature associated to Feature
+ * 
+ * In general, Power saving feature is identify by featureId and SubFeature.
+ * Add enum in this structure in case some specific power feature needs
+ * additional fields. "Union" should follow XAPI standards.
+ */
+typedef struct NV0073_CTRL_DISP_LPWR_FEATURE {
+    NvU16 featureId;
+    NvU16 subfeatureId;
+} NV0073_CTRL_DISP_LPWR_FEATURE;
+
+/*!
+ * @brief Parameter structure
+ *
+ * Structure to get/set parameter/characteristic. Each parameter has 3 field
+ * 1) ID    [In]     : Parameter Identifier
+ * 2) Flag  [In/Out] : Flags
+ * 3) Value [In/Out] : Value of parameter
+ *
+ * Add enum in this structure in case we need to additional fields for some
+ * special parameters.
+ */
+typedef struct NV0073_CTRL_DISP_LPWR_PARAMETER {
+    NvU16 paramId;
+    NvU16 flag;
+    NvU32 val;
+} NV0073_CTRL_DISP_LPWR_PARAMETER;
+
+/*!
+ * @brief Flags for PARAMETER
+ *
+ * SUCCEED:
+ * - Get/Set param call is succeed or not.
+ * - Get Param call for given parameter succeed means RMCtrl retrieved valid
+ *   value for this parameter.
+ * - Set Param call for given parameter succeed means RMCtrl set value of this
+ *   parameter.
+ *
+ * BLOCKING:
+ * - Defines whether RM Ctrl call is blocking/non-blocking for given parameter.
+ */
+
+#define NV0073_CTRL_DISP_LPWR_FEATURE_PARAMETER_FLAG_SUCCEED           0:0
+#define NV0073_CTRL_DISP_LPWR_FEATURE_PARAMETER_FLAG_SUCCEED_NO  0x0
+#define NV0073_CTRL_DISP_LPWR_FEATURE_PARAMETER_FLAG_SUCCEED_YES 0x1
+
+/*!
+ * @brief Defines all information required to get/set the parameter for given
+ *        display low power feature.
+ */
+typedef struct NV0073_CTRL_DISP_LPWR_FEATURE_PARAMETER {
+    NV0073_CTRL_DISP_LPWR_FEATURE   feature;
+    NV0073_CTRL_DISP_LPWR_PARAMETER param;
+} NV0073_CTRL_DISP_LPWR_FEATURE_PARAMETER;
+
+// Max size of FEATURE_PARAMETER structure for RMCtrl NV0073_CTRL_DISP_LPWR_GET/SET
+#define NV0073_CTRL_DISP_LPWR_FEATURE_PARAMETER_LIST_MAX_SIZE 64
+
+/*
+ * NV0073_CTRL_CMD_DISP_LPWR_FEATURE_PARAMETER_GET
+ *
+ * This command retrieves parameters/characteristics of power features. It can
+ * query NV0073_CTRL_DISP_LPWR_FEATURE_PARAMETER_LIST_MAX_SIZE number of parameters
+ * in one call. Command provides facility of collecting information on multiple
+ * power saving features in one call.
+ *
+ * Commands returns SUCCESS only when it successfully retrieves value all
+ * parameter in the list.
+ *
+ * listSize
+ *      Number of valid entries in list.
+ *
+ * list
+ *      List of parameters. Refer NV0073_CTRL_DISP_LPWR_FEATURE_PARAMETER to get
+ *      details about each entry in the list.
+ *
+ * Possible status return values are:
+ *  NV_OK
+ *  NV_ERR_NOT_SUPPORTED
+ */
+
+#define NV0073_CTRL_CMD_DISP_LPWR_FEATURE_PARAMETER_GET       (0x730155) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_DISP_LPWR_FEATURE_PARAMETER_GET_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_DISP_LPWR_FEATURE_PARAMETER_GET_PARAMS_MESSAGE_ID (0x55U)
+
+typedef struct NV0073_CTRL_DISP_LPWR_FEATURE_PARAMETER_GET_PARAMS {
+    NvU32                                   subDeviceInstance;
+    NvU32                                   listSize;
+    NV0073_CTRL_DISP_LPWR_FEATURE_PARAMETER list[NV0073_CTRL_DISP_LPWR_FEATURE_PARAMETER_LIST_MAX_SIZE];
+} NV0073_CTRL_DISP_LPWR_FEATURE_PARAMETER_GET_PARAMS;
+
+/*
+ * NV0073_CTRL_CMD_DISP_LPWR_FEATURE_PARAMETER_SET
+ *
+ * This command sets parameters/characteristics of power features. It can
+ * set NV0073_CTRL_DISP_LPWR_FEATURE_PARAMETER_LIST_MAX_SIZE number of parameters
+ * in one call. Command provides facility of setting parameters for multiple
+ * power saving features in one call.
+ *
+ * Commands returns SUCCESS only when it successfully sets value of all
+ * parameter in the list.
+ *
+ * listSize
+ *      Number of valid entries in list.
+ *
+ * list
+ *      List of parameters. Refer NV0073_CTRL_DISP_LPWR_FEATURE_PARAMETER to get
+ *      details about each entry in the list.
+ *
+ * Possible status return values are:
+ *  NV_OK
+ *  NV_ERR_NOT_SUPPORTED
+ */
+
+#define NV0073_CTRL_CMD_DISP_LPWR_FEATURE_PARAMETER_SET (0x730156) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_DISP_LPWR_FEATURE_PARAMETER_SET_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_DISP_LPWR_FEATURE_PARAMETER_SET_PARAMS_MESSAGE_ID (0x56U)
+
+typedef struct NV0073_CTRL_DISP_LPWR_FEATURE_PARAMETER_SET_PARAMS {
+    NvU32                                   subDeviceInstance;
+    NvU32                                   listSize;
+    NV0073_CTRL_DISP_LPWR_FEATURE_PARAMETER list[NV0073_CTRL_DISP_LPWR_FEATURE_PARAMETER_LIST_MAX_SIZE];
+} NV0073_CTRL_DISP_LPWR_FEATURE_PARAMETER_SET_PARAMS;
+
+/*
+ * NV0073_CTRL_CMD_SYSTEM_NOTIFY_DRR_MSCG_WAR
+ *
+ * This command is used to Notify RM about DRR feature. RM uses this
+ * notification to account MSCG WARs for Turing and Ampere HW bugs.
+ *
+ *    subDeviceInstance (in)
+ *        This parameter specifies the subdevice instance within the
+ *        NV04_DISPLAY_COMMON parent device to which the operation
+ *        should be directed.
+ *    presentDurationUs (in)
+ *        This parameter inputs the presentDurationUs of the active display.
+ *    bEnableDrr
+ *        If it is true, it means that DRR is enabled from DD side.
+ *
+ * Possible status values returned are:
+ *    NV_OK
+ *    NV_ERR_INVALID_PARAM_STRUCT
+ *    NV_ERR_INVALID_ARGUMENT
+ *    NV_ERR_NOT_SUPPORTED
+ */
+#define NV0073_CTRL_CMD_SYSTEM_NOTIFY_DRR_MSCG_WAR (0x730158U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_CMD_SYSTEM_NOTIFY_DRR_MSCG_WAR_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_CMD_SYSTEM_NOTIFY_DRR_MSCG_WAR_PARAMS_MESSAGE_ID (0x58U)
+
+typedef struct NV0073_CTRL_CMD_SYSTEM_NOTIFY_DRR_MSCG_WAR_PARAMS {
+    NvU32  subDeviceInstance;
+    NvU32  presentDurationUs;
+    NvBool bEnableDrr;
+} NV0073_CTRL_CMD_SYSTEM_NOTIFY_DRR_MSCG_WAR_PARAMS;
+
 
 /* _ctrl0073system_h_ */
 

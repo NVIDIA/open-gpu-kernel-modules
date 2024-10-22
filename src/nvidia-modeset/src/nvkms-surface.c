@@ -33,9 +33,70 @@
 
 // NV0000_CTRL_CMD_OS_UNIX_IMPORT_OBJECT_FROM_FD
 #include "ctrl/ctrl0000/ctrl0000unix.h"
+// NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_VIDMEM
+#include "ctrl/ctrl0000/ctrl0000client.h"
+
+/* NV0041_CTRL_SURFACE_INFO */
+#include "ctrl/ctrl0041.h"
 
 /* NV01_MEMORY_SYSTEM_OS_DESCRIPTOR */
 #include "class/cl0071.h"
+
+static void CpuUnmapSurface(
+    NVDevEvoPtr pDevEvo,
+    NVSurfaceEvoPtr pSurfaceEvo)
+{
+    const NvU32 planeIndex = 0;
+    NvU32 sd;
+
+    if (pSurfaceEvo->planes[planeIndex].rmHandle == 0) {
+        return;
+    }
+
+    for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
+
+        if (pSurfaceEvo->cpuAddress[sd] != NULL) {
+            nvRmApiUnmapMemory(nvEvoGlobal.clientHandle,
+                               pDevEvo->pSubDevices[sd]->handle,
+                               pSurfaceEvo->planes[planeIndex].rmHandle,
+                               pSurfaceEvo->cpuAddress[sd],
+                               0);
+            pSurfaceEvo->cpuAddress[sd] = NULL;
+        }
+    }
+}
+
+NvBool nvEvoCpuMapSurface(
+    NVDevEvoPtr pDevEvo,
+    NVSurfaceEvoPtr pSurfaceEvo)
+{
+    const NvU32 planeIndex = 0;
+    NvU32 sd;
+
+    /*
+     * We should only be called here with surfaces that contain a single plane.
+     */
+    nvAssert(nvKmsGetSurfaceMemoryFormatInfo(pSurfaceEvo->format)->numPlanes == 1);
+
+    for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
+
+        NvU32 result = nvRmApiMapMemory(
+                        nvEvoGlobal.clientHandle,
+                        pDevEvo->pSubDevices[sd]->handle,
+                        pSurfaceEvo->planes[planeIndex].rmHandle,
+                        0,
+                        pSurfaceEvo->planes[planeIndex].rmObjectSizeInBytes,
+                        (void **) &pSurfaceEvo->cpuAddress[sd],
+                        0);
+
+        if (result != NVOS_STATUS_SUCCESS) {
+            CpuUnmapSurface(pDevEvo, pSurfaceEvo);
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
 
 static void FreeSurfaceEvoStruct(NVSurfaceEvoPtr pSurfaceEvo)
 {
@@ -54,7 +115,6 @@ static void FreeSurfaceEvoStruct(NVSurfaceEvoPtr pSurfaceEvo)
 static void FreeSurfaceEvoRm(NVDevEvoPtr pDevEvo, NVSurfaceEvoPtr pSurfaceEvo)
 {
     NvU64 structRefCnt;
-    NvU32 firstPlaneRmHandle;
     NvU8 planeIndex;
 
     if ((pDevEvo == NULL) || (pSurfaceEvo == NULL)) {
@@ -69,26 +129,11 @@ static void FreeSurfaceEvoRm(NVDevEvoPtr pDevEvo, NVSurfaceEvoPtr pSurfaceEvo)
                                             &pSurfaceEvo->planes[planeIndex].surfaceDesc);
     }
 
-    firstPlaneRmHandle = pSurfaceEvo->planes[0].rmHandle;
+    CpuUnmapSurface(pDevEvo, pSurfaceEvo);
 
-    if (firstPlaneRmHandle != 0) {
-
-        NvU32 sd;
-
-        for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
-
-            if (pSurfaceEvo->cpuAddress[sd] != NULL) {
-                nvRmApiUnmapMemory(nvEvoGlobal.clientHandle,
-                                   pDevEvo->pSubDevices[sd]->handle,
-                                   firstPlaneRmHandle,
-                                   pSurfaceEvo->cpuAddress[sd],
-                                   0);
-                pSurfaceEvo->cpuAddress[sd] = NULL;
-            }
-        }
-
+    if (pSurfaceEvo->planes[0].rmHandle != 0) {
         nvHsUnmapSurfaceFromDevice(pDevEvo,
-                                   firstPlaneRmHandle,
+                                   pSurfaceEvo->planes[0].rmHandle,
                                    pSurfaceEvo->gpuAddress);
     }
 
@@ -329,6 +374,72 @@ static NvBool ValidateRegisterSurfaceRequest(
     return TRUE;
 }
 
+static NvBool ValidateSurfaceAddressSpace(
+    NVDevEvoPtr pDevEvo,
+    const struct NvKmsRegisterSurfaceRequest *pRequest,
+    NvU32 rmHandle)
+{
+    NV0041_CTRL_GET_SURFACE_INFO_PARAMS surfaceInfoParams = {};
+    NV0041_CTRL_SURFACE_INFO surfaceInfo = {};
+    NV_STATUS status;
+
+    /*
+     * Don't do these checks on tegra. Tegra has different capabilities.
+     * Here we always say display is possible so we never fail framebuffer
+     * creation.
+     */
+    if (pDevEvo->isSOCDisplay) {
+        return TRUE;
+    }
+
+    /*
+     * Don't do these checks for surfaces that do not need access to display
+     * hardware.
+     */
+    if (pRequest->noDisplayHardwareAccess) {
+        return TRUE;
+    }
+
+    /*
+     * If the memory is not isochronous, the memory will not be scanned out to a
+     * display. The checks are not needed for such memory types.
+     */
+    if (pRequest->isoType != NVKMS_MEMORY_ISO) {
+        return TRUE;
+    }
+
+    /*
+     * Check if the memory we are registering this surface with is valid. We
+     * cannot scan out sysmem or compressed buffers.
+     *
+     * If we cannot use this memory for display it may be resident in sysmem
+     * or may belong to another GPU.
+     */
+    surfaceInfo.index = NV0041_CTRL_SURFACE_INFO_INDEX_ADDR_SPACE_TYPE;
+
+    surfaceInfoParams.surfaceInfoListSize = 1;
+    surfaceInfoParams.surfaceInfoList = (NvP64)&surfaceInfo;
+
+    status = nvRmApiControl(nvEvoGlobal.clientHandle,
+                            rmHandle,
+                            NV0041_CTRL_CMD_GET_SURFACE_INFO,
+                            &surfaceInfoParams,
+                            sizeof(surfaceInfoParams));
+    if (status != NV_OK) {
+        nvEvoLogDevDebug(pDevEvo, EVO_LOG_ERROR,
+                          "Failed to get memory location of RM memory object 0x%x",
+                          rmHandle);
+        return FALSE;
+    }
+
+    if (surfaceInfo.data != NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_VIDMEM) {
+        nvEvoLogDevDebug(pDevEvo, EVO_LOG_ERROR,
+                         "Memory used for surface not appropriate for scanout");
+        return FALSE;
+    }
+
+    return TRUE;
+}
 
 void nvEvoRegisterSurface(NVDevEvoPtr pDevEvo,
                           struct NvKmsPerOpenDev *pOpenDev,
@@ -484,6 +595,10 @@ void nvEvoRegisterSurface(NVDevEvoPtr pDevEvo,
             goto fail;
         }
 
+        if (!ValidateSurfaceAddressSpace(pDevEvo, pRequest, planeRmHandle)) {
+            goto fail;
+        }
+
         /* XXX Validate sizeInBytes: can we query the surface size from RM? */
 
         if (!pRequest->noDisplayHardwareAccess) {
@@ -536,26 +651,14 @@ void nvEvoRegisterSurface(NVDevEvoPtr pDevEvo,
     /*
      * Map the first plane of the surface only into the CPU's address space.
      * This is the only valid plane since we would have already rejected
-     * multi-planar semaphore requests earlier.
+     * multi-planar NISO surface requests earlier in
+     *
+     * nvEvoRegisterSurface() => ValidateRegisterSurfaceRequest() =>
+     * ValidatePlaneProperties().
      */
     if (needCpuMapping) {
-
-        NvU32 sd;
-
-        for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
-
-            result = nvRmApiMapMemory(
-                    nvEvoGlobal.clientHandle,
-                    pDevEvo->pSubDevices[sd]->handle,
-                    pSurfaceEvo->planes[0].rmHandle,
-                    0,
-                    pRequest->planes[0].rmObjectSizeInBytes,
-                    (void **) &pSurfaceEvo->cpuAddress[sd],
-                    0);
-
-            if (result != NVOS_STATUS_SUCCESS) {
-                goto fail;
-            }
+        if (!nvEvoCpuMapSurface(pDevEvo, pSurfaceEvo)) {
+            goto fail;
         }
     }
 
@@ -1239,134 +1342,4 @@ void nvEvoUnregisterDeferredRequestFifo(
     nvEvoDecrementSurfaceRefCnts(pDevEvo, pDeferredRequestFifo->pSurfaceEvo);
 
     nvFree(pDeferredRequestFifo);
-}
-
-static NvBool AssignVblankSemControlHwHeadMask(
-    NVDispEvoRec *pDispEvo,
-    NvU32 apiHeadMask,
-    NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_ENABLE_PARAMS *pParams)
-{
-    NvU32 apiHead;
-
-    FOR_ALL_HEADS(apiHead, apiHeadMask) {
-
-        NvU32 hwHead = nvGetPrimaryHwHead(pDispEvo, apiHead);
-
-        if (hwHead == NV_INVALID_HEAD) {
-            return FALSE;
-        }
-
-        pParams->headMask |= NVBIT(hwHead);
-        pParams->headIndexMap[hwHead] = apiHead;
-    }
-
-    pParams->bUseHeadIndexMap = TRUE;
-    return TRUE;
-}
-
-NVVblankSemControl *nvEvoEnableVblankSemControl(
-    NVDevEvoRec *pDevEvo,
-    NVDispEvoRec *pDispEvo,
-    NvU32 apiHeadMask,
-    NVSurfaceEvoRec *pSurfaceEvo,
-    NvU64 surfaceOffset)
-{
-    NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_ENABLE_PARAMS params = { };
-    NVVblankSemControl *pVblankSemControl;
-
-    if (!pDevEvo->supportsVblankSemControl) {
-        return NULL;
-    }
-
-    if (!AssignVblankSemControlHwHeadMask(pDispEvo, apiHeadMask, &params)) {
-        return NULL;
-    }
-
-    /*
-     * We cannot enable VblankSemControl if the requested offset within the
-     * surface is too large.
-     */
-    if (A_plus_B_greater_than_C_U64(
-            surfaceOffset,
-            sizeof(NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DATA),
-            pSurfaceEvo->planes[0].rmObjectSizeInBytes)) {
-        return NULL;
-    }
-
-    if (nvEvoSurfaceRefCntsTooLarge(pSurfaceEvo)) {
-        return NULL;
-    }
-
-    pVblankSemControl = nvCalloc(1, sizeof(*pVblankSemControl));
-
-    if (pVblankSemControl == NULL) {
-        return NULL;
-    }
-
-    pVblankSemControl->dispIndex = pDispEvo->displayOwner;
-    pVblankSemControl->surfaceOffset = surfaceOffset;
-    pVblankSemControl->pSurfaceEvo = pSurfaceEvo;
-
-    params.subDeviceInstance = pVblankSemControl->dispIndex;
-    params.hMemory = pVblankSemControl->pSurfaceEvo->planes[0].rmHandle;
-    params.memoryOffset = pVblankSemControl->surfaceOffset;
-
-    if (nvRmApiControl(nvEvoGlobal.clientHandle,
-                       pDevEvo->displayCommonHandle,
-                       NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_ENABLE,
-                       &params, sizeof(params)) == NVOS_STATUS_SUCCESS) {
-
-        nvEvoIncrementSurfaceRefCnts(pSurfaceEvo);
-        return pVblankSemControl;
-    } else {
-        nvFree(pVblankSemControl);
-        return NULL;
-    }
-}
-
-NvBool nvEvoDisableVblankSemControl(
-    NVDevEvoRec *pDevEvo,
-    NVVblankSemControl *pVblankSemControl)
-{
-    NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DISABLE_PARAMS params = { };
-
-    if (!pDevEvo->supportsVblankSemControl) {
-        return FALSE;
-    }
-
-    params.subDeviceInstance = pVblankSemControl->dispIndex;
-    params.hMemory = pVblankSemControl->pSurfaceEvo->planes[0].rmHandle;
-    params.memoryOffset = pVblankSemControl->surfaceOffset;
-
-    if (nvRmApiControl(nvEvoGlobal.clientHandle,
-                       pDevEvo->displayCommonHandle,
-                       NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DISABLE,
-                       &params, sizeof(params)) == NVOS_STATUS_SUCCESS) {
-
-        nvEvoDecrementSurfaceRefCnts(pDevEvo, pVblankSemControl->pSurfaceEvo);
-        nvFree(pVblankSemControl);
-        return TRUE;
-    } else {
-        return FALSE;
-    }
-}
-
-NvBool nvEvoAccelVblankSemControls(
-    NVDevEvoPtr pDevEvo,
-    NvU32 dispIndex,
-    NvU32 hwHeadMask)
-{
-    NV0073_CTRL_CMD_SYSTEM_ACCEL_VBLANK_SEM_CONTROLS_PARAMS params = { };
-
-    if (!pDevEvo->supportsVblankSemControl) {
-        return FALSE;
-    }
-
-    params.subDeviceInstance = dispIndex;
-    params.headMask = hwHeadMask;
-
-    return nvRmApiControl(nvEvoGlobal.clientHandle,
-                          pDevEvo->displayCommonHandle,
-                          NV0073_CTRL_CMD_SYSTEM_ACCEL_VBLANK_SEM_CONTROLS,
-                          &params, sizeof(params)) == NVOS_STATUS_SUCCESS;
 }

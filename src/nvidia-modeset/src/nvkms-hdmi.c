@@ -69,16 +69,10 @@ static inline const NVT_EDID_CEA861_INFO *GetExt861(const NVParsedEdidEvoRec *pP
 static void CalculateVideoInfoFrameColorFormat(
     const NVDpyAttributeColor *pDpyColor,
     const NvU32 hdTimings,
+    const NVT_EDID_INFO *pEdidInfo,
     NVT_VIDEO_INFOFRAME_CTRL *pCtrl)
 {
-    /*
-     * If NVKMS_OUTPUT_COLORIMETRY_BT2100 is enabled, we expect the colorSpace
-     * is RGB. This is enforced when the colorSpace is selected.
-     * XXX HDR TODO: Support YUV
-     */
-    nvAssert((pDpyColor->colorimetry != NVKMS_OUTPUT_COLORIMETRY_BT2100) ||
-             (pDpyColor->format ==
-                NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB));
+    NvBool    sinkSupportsRGBQuantizationOverride = FALSE;
 
     // sets video infoframe colorspace (RGB/YUV).
     switch (pDpyColor->format) {
@@ -102,22 +96,36 @@ static void CalculateVideoInfoFrameColorFormat(
     // sets video infoframe colorimetry.
     switch (pDpyColor->format) {
     case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB:
-        if (pDpyColor->colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100) {
-            pCtrl->colorimetry = NVT_COLORIMETRY_BT2020RGB;
-        } else {
-            pCtrl->colorimetry = NVT_COLORIMETRY_RGB;
+        switch (pDpyColor->colorimetry) {
+        case NVKMS_OUTPUT_COLORIMETRY_BT2100:
+            pCtrl->colorimetry = NVT_VIDEO_INFOFRAME_BYTE2_C1C0_EXT_COLORIMETRY;
+            pCtrl->extended_colorimetry =
+                NVT_VIDEO_INFOFRAME_BYTE3_EC_BT2020RGBYCC;
+            break;
+        case NVKMS_OUTPUT_COLORIMETRY_DEFAULT:
+            pCtrl->colorimetry = NVT_VIDEO_INFOFRAME_BYTE2_C1C0_NO_DATA;
+            break;
         }
         break;
     case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr422:
     case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr444:
-        if (hdTimings) {
-            pCtrl->colorimetry = NVT_COLORIMETRY_YUV_709;
-        } else {
-            pCtrl->colorimetry = NVT_COLORIMETRY_YUV_601;
+        switch (pDpyColor->colorimetry) {
+        case NVKMS_OUTPUT_COLORIMETRY_BT2100:
+            pCtrl->colorimetry = NVT_VIDEO_INFOFRAME_BYTE2_C1C0_EXT_COLORIMETRY;
+            pCtrl->extended_colorimetry =
+                NVT_VIDEO_INFOFRAME_BYTE3_EC_BT2020RGBYCC;
+            break;
+        case NVKMS_OUTPUT_COLORIMETRY_DEFAULT:
+            pCtrl->colorimetry =
+                (hdTimings ? NVT_VIDEO_INFOFRAME_BYTE2_C1C0_ITU709 :
+                             NVT_VIDEO_INFOFRAME_BYTE2_C1C0_SMPTE170M_ITU601);
+            break;
         }
         break;
     case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420:
-        pCtrl->colorimetry = NVT_COLORIMETRY_YUV_709;
+        // XXX HDR TODO: Support YUV420 + HDR
+        nvAssert(pDpyColor->colorimetry != NVKMS_OUTPUT_COLORIMETRY_BT2100);
+        pCtrl->colorimetry = NVT_VIDEO_INFOFRAME_BYTE2_C1C0_ITU709;
         break;
     default:
         nvAssert(!"Invalid colorSpace value");
@@ -139,13 +147,22 @@ static void CalculateVideoInfoFrameColorFormat(
         break;
     }
 
+    if (pEdidInfo != NULL) {
+        sinkSupportsRGBQuantizationOverride = (pEdidInfo->ext861.valid.VCDB &&
+            ((pEdidInfo->ext861.video_capability & NVT_CEA861_VCDB_QS_MASK) >>
+             NVT_CEA861_VCDB_QS_SHIFT) != 0);
+    }
+
+    if ((pDpyColor->format == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB) &&
+            !sinkSupportsRGBQuantizationOverride) {
+        pCtrl->rgb_quantization_range = NVT_VIDEO_INFOFRAME_BYTE3_Q1Q0_DEFAULT;
+    }
+
     /*
-     * Only limited color range is allowed with YUV444, YUV422 color spaces, or
-     * BT2020 colorimetry.
+     * Only limited color range is allowed with YUV444 and YUV422 color spaces.
      */
     nvAssert(!(((pCtrl->color_space == NVT_VIDEO_INFOFRAME_BYTE1_Y1Y0_YCbCr422) ||
-                (pCtrl->color_space == NVT_VIDEO_INFOFRAME_BYTE1_Y1Y0_YCbCr444) ||
-                (pCtrl->colorimetry == NVT_COLORIMETRY_BT2020RGB)) &&
+                (pCtrl->color_space == NVT_VIDEO_INFOFRAME_BYTE1_Y1Y0_YCbCr444)) &&
                (pCtrl->rgb_quantization_range !=
                     NVT_VIDEO_INFOFRAME_BYTE3_Q1Q0_LIMITED_RANGE)));
 }
@@ -532,8 +549,7 @@ static void SendVideoInfoFrame(const NVDispEvoRec *pDispEvo,
     NVT_VIDEO_INFOFRAME VideoInfoFrame;
     NVT_STATUS status;
 
-
-    CalculateVideoInfoFrameColorFormat(pDpyColor, hdTimings, &videoCtrl);
+    CalculateVideoInfoFrameColorFormat(pDpyColor, hdTimings, pEdidInfo, &videoCtrl);
 
     status = NvTiming_ConstructVideoInfoframe(pEdidInfo,
                                               &videoCtrl,

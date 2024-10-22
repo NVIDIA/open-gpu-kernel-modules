@@ -39,6 +39,10 @@
 #include "rmapi/client_resource.h"
 #include "gpu/bus/kern_bus.h"
 #include "os/os.h"
+#include "ctrl/ctrl2080/ctrl2080spdm.h"
+#include "gpu/subdevice/subdevice.h"
+#include "core/locks.h"
+#include "rmapi/rs_utils.h"
 
 //
 // Libspdm only supported on certain builds,
@@ -46,6 +50,8 @@
 //
 #include "gpu/spdm/libspdm_includes.h"
 
+// Once SPDM is moved out from CC object, remove this dependency.
+#include "gpu/conf_compute/conf_compute.h"
 
 /* ------------------------ Static Function Prototypes --------------------- */
 static void _spdmClearContext(Spdm *pSpdm);
@@ -99,17 +105,20 @@ _spdmClearContext
     portMemFree(pSpdm->pAttestationCertChain);
     portMemFree(pSpdm->pDeviceIOContext);
     portMemFree(pSpdm->pMsgLog);
+    portMemFree(pSpdm->pTranscriptLog);
 
     pSpdm->pLibspdmContext          = NULL;
     pSpdm->pLibspdmScratch          = NULL;
     pSpdm->pAttestationCertChain    = NULL;
     pSpdm->pDeviceIOContext         = NULL;
     pSpdm->pMsgLog                  = NULL;
+    pSpdm->pTranscriptLog           = NULL;
 
     pSpdm->libspdmContextSize       = 0;
     pSpdm->libspdmScratchSize       = 0;
     pSpdm->attestationCertChainSize = 0;
     pSpdm->msgLogMaxSize            = 0;
+    pSpdm->transcriptLogSize        = 0;
 
     pSpdm->sessionId                = INVALID_SESSION_ID;
     pSpdm->bSessionEstablished      = NV_FALSE;
@@ -185,11 +194,13 @@ spdmConstruct_IMPL
     pSpdm->pAttestationCertChain    = NULL;
     pSpdm->pDeviceIOContext         = NULL;
     pSpdm->pMsgLog                  = NULL;
+    pSpdm->pTranscriptLog           = NULL;
 
     pSpdm->libspdmContextSize       = 0;
     pSpdm->libspdmScratchSize       = 0;
     pSpdm->attestationCertChainSize = 0;
     pSpdm->msgLogMaxSize            = 0;
+    pSpdm->transcriptLogSize        = 0;
 
     pSpdm->sessionId                = INVALID_SESSION_ID;
     pSpdm->bSessionEstablished      = NV_FALSE;
@@ -438,7 +449,7 @@ spdmContextInit_IMPL
                                        &parameter, &maxRetries, sizeof(maxRetries)));
 
     libspdm_init_msg_log(pSpdm->pLibspdmContext, pSpdm->pMsgLog, pSpdm->msgLogMaxSize);
-
+    libspdm_set_msg_log_mode(pSpdm->pLibspdmContext, LIBSPDM_MSG_LOG_MODE_ENABLE);
 
     // Store SPDM object pointer to libspdm context
     CHECK_SPDM_STATUS(libspdm_set_data(pSpdm->pLibspdmContext, LIBSPDM_DATA_APP_CONTEXT_DATA,
@@ -638,6 +649,30 @@ spdmStart_IMPL
         pSpdm->bUsePolling         = NV_FALSE;
     }
 
+    // Now that the session has been properly established, cache a log of the entire transcript.
+    pSpdm->transcriptLogSize = libspdm_get_msg_log_size(pSpdm->pLibspdmContext);
+    if (pSpdm->transcriptLogSize > pSpdm->msgLogMaxSize ||
+        (size_t)pSpdm->transcriptLogSize < libspdm_get_msg_log_size(pSpdm->pLibspdmContext))
+    {
+        // Something has gone quite wrong
+        pSpdm->transcriptLogSize = 0;
+        status                   = NV_ERR_INVALID_STATE; 
+        goto ErrorExit;
+    }
+
+    pSpdm->pTranscriptLog = (NvU8 *)portMemAllocNonPaged(pSpdm->transcriptLogSize);
+    if (pSpdm->pTranscriptLog == NULL)
+    {
+        pSpdm->transcriptLogSize = 0;
+        status                   = NV_ERR_NO_MEMORY;
+        goto ErrorExit;
+    }
+
+    portMemCopy(pSpdm->pTranscriptLog, pSpdm->transcriptLogSize, pSpdm->pMsgLog, pSpdm->transcriptLogSize);
+
+    // Clear the existing log, as it's no longer needed.
+    libspdm_reset_msg_log(pSpdm->pLibspdmContext);
+
 ErrorExit:
 
     //
@@ -699,6 +734,98 @@ spdmRetrieveExportSecret_IMPL
     // Clear the export master secret from SPDM memory.
     libspdm_secured_message_clear_export_master_secret(pSessionContext);
     pSpdm->bExportSecretCleared = NV_TRUE;
+
+    return NV_OK;
+}
+
+/*!
+ * Forwards an application message to GPU via the encrypted SPDM messaging channel.
+ * Application message must be a RM_SPDM_NV_CMD_TYPE message in proper RM_SPDM_NV_CMD format,
+ * else Responder will reject the message.
+ *
+ * @param[in]      pGpu            GPU object pointer.
+ * @param[in]      pSpdm           SPDM object pointer.
+ * @param[in]      pRequest        Pointer to a buffer which stores application request message.
+ * @param[in]      requestSize     The request buffer size.
+ * @param[out]     pResponse       Pointer to a buffer which stores response message.
+ * @param[in, out] pResponseSize   Pointer which holds size of response buffer on input, and
+ *                                 stores size of received response on output.
+ *
+ * @return NV_OK if success, Error otherwise.
+ */
+NV_STATUS
+spdmSendApplicationMessage_IMPL
+(
+    OBJGPU *pGpu,
+    Spdm   *pSpdm,
+    NvU8   *pRequest,
+    NvU32   requestSize,
+    NvU8   *pResponse,
+    NvU32  *pResponseSize
+)
+{
+    NV_STATUS status        = NV_OK;
+    size_t    responseSizeT = 0;
+
+    if (pRequest == NULL || pResponse == NULL || pResponseSize == NULL ||
+        requestSize < sizeof(RM_SPDM_NV_CMD_HDR) || *pResponseSize < sizeof(RM_SPDM_NV_CMD_HDR))
+    {
+        return NV_ERR_INVALID_PARAMETER;
+    }
+
+    // Use a temporary size_t passed to libspdm to avoid size mismatch issues
+    responseSizeT = *pResponseSize;
+    CHECK_SPDM_STATUS(libspdm_send_receive_data(pSpdm->pLibspdmContext, &(pSpdm->sessionId), NV_TRUE,
+                                                pRequest, requestSize, pResponse, &responseSizeT));
+
+    // Check for truncation on conversion back to NvU32
+    *pResponseSize = responseSizeT;
+    if (*pResponseSize < responseSizeT)
+    {
+        return NV_ERR_OUT_OF_RANGE;
+    }
+
+ErrorExit:
+    return status;
+}
+
+/*!
+ * @brief  Control call function to retrieve the SPDM session establishment transcript.
+ *
+ * @return NV_OK if success, Error otherwise.
+ */
+NV_STATUS
+subdeviceSpdmRetrieveTranscript_IMPL
+(
+    Subdevice                                            *pSubdevice,
+    NV2080_CTRL_INTERNAL_SPDM_RETRIEVE_TRANSCRIPT_PARAMS *pSpdmRetrieveSessionTranscriptParams
+)
+{
+    OBJGPU               *pGpu         = GPU_RES_GET_GPU(pSubdevice);
+    ConfidentialCompute  *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+
+    if (pConfCompute == NULL || pConfCompute->pSpdm == NULL)
+    {
+        return NV_ERR_INVALID_STATE;
+    }
+
+    Spdm *pSpdm = pConfCompute->pSpdm;
+    
+    if (pSpdm->pTranscriptLog == NULL || pSpdm->transcriptLogSize == 0)
+    {
+        return NV_ERR_INVALID_STATE;
+    }
+
+    if (sizeof(pSpdmRetrieveSessionTranscriptParams->transcript) < pSpdm->transcriptLogSize)
+    {
+        return NV_ERR_BUFFER_TOO_SMALL;
+    }
+
+    portMemCopy(pSpdmRetrieveSessionTranscriptParams->transcript,
+                sizeof(pSpdmRetrieveSessionTranscriptParams->transcript),
+                pSpdm->pTranscriptLog, pSpdm->transcriptLogSize);
+
+    pSpdmRetrieveSessionTranscriptParams->transcriptSize = pSpdm->transcriptLogSize;
 
     return NV_OK;
 }

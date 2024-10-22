@@ -103,7 +103,6 @@ namespace DisplayPort
     {
     public:
         virtual bool physicalLayerSetTestPattern(PatternInfo * patternInfo) = 0;
-
         //
         //  Wrappers for existing link training RM control calls
         //

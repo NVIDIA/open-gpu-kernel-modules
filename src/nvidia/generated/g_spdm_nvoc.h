@@ -7,7 +7,7 @@
 #ifdef NVOC_METADATA_VERSION
 #undef NVOC_METADATA_VERSION
 #endif
-#define NVOC_METADATA_VERSION 0
+#define NVOC_METADATA_VERSION 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -123,6 +123,8 @@ struct Spdm {
     void *pDeviceIOContext;
     void *pMsgLog;
     size_t msgLogMaxSize;
+    void *pTranscriptLog;
+    NvU32 transcriptLogSize;
     NvBool bExportSecretCleared;
     NvU32 sessionMsgCount;
     struct TMR_EVENT *pHeartbeatEvent;
@@ -332,6 +334,20 @@ static inline NV_STATUS spdmRetrieveExportSecret(OBJGPU *pGpu, struct Spdm *pSpd
 #endif //__nvoc_spdm_h_disabled
 
 #define spdmRetrieveExportSecret_HAL(pGpu, pSpdm, keySize, pKeyOut) spdmRetrieveExportSecret(pGpu, pSpdm, keySize, pKeyOut)
+
+NV_STATUS spdmSendApplicationMessage_IMPL(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 *pRequest, NvU32 requestSize, NvU8 *pResponse, NvU32 *pResponseSize);
+
+
+#ifdef __nvoc_spdm_h_disabled
+static inline NV_STATUS spdmSendApplicationMessage(OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 *pRequest, NvU32 requestSize, NvU8 *pResponse, NvU32 *pResponseSize) {
+    NV_ASSERT_FAILED_PRECOMP("Spdm was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_spdm_h_disabled
+#define spdmSendApplicationMessage(pGpu, pSpdm, pRequest, requestSize, pResponse, pResponseSize) spdmSendApplicationMessage_IMPL(pGpu, pSpdm, pRequest, requestSize, pResponse, pResponseSize)
+#endif //__nvoc_spdm_h_disabled
+
+#define spdmSendApplicationMessage_HAL(pGpu, pSpdm, pRequest, requestSize, pResponse, pResponseSize) spdmSendApplicationMessage(pGpu, pSpdm, pRequest, requestSize, pResponse, pResponseSize)
 
 NV_STATUS spdmGetCertChains_GH100(OBJGPU *pGpu, struct Spdm *pSpdm, void *pKeyExCertChain, NvU32 *pKeyExCertChainSize, void *pAttestationCertChain, NvU32 *pAttestationCertChainSize);
 

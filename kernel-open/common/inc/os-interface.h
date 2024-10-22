@@ -40,7 +40,10 @@
 #include "nv_stdarg.h"
 #include <nv-kernel-interface-api.h>
 #include <os/nv_memory_type.h>
+#include <os/nv_memory_area.h>
 #include <nv-caps.h>
+
+#include "rs_access.h"
 
 
 
@@ -102,8 +105,10 @@ NvBool      NV_API_CALL  os_pci_remove_supported     (void);
 void        NV_API_CALL  os_pci_remove               (void *);
 void*       NV_API_CALL  os_map_kernel_space         (NvU64, NvU64, NvU32);
 void        NV_API_CALL  os_unmap_kernel_space       (void *, NvU64);
-void*       NV_API_CALL  os_map_user_space           (NvU64, NvU64, NvU32, NvU32, void **);
+#if defined(NV_VMWARE)
+void*       NV_API_CALL  os_map_user_space           (MemoryArea *, NvU32, NvU32, void **);
 void        NV_API_CALL  os_unmap_user_space         (void *, NvU64, void *);
+#endif
 NV_STATUS   NV_API_CALL  os_flush_cpu_cache_all      (void);
 NV_STATUS   NV_API_CALL  os_flush_user_cache         (void);
 void        NV_API_CALL  os_flush_cpu_write_combine_buffer(void);
@@ -114,7 +119,7 @@ void        NV_API_CALL  os_io_write_byte            (NvU32, NvU8);
 void        NV_API_CALL  os_io_write_word            (NvU32, NvU16);
 void        NV_API_CALL  os_io_write_dword           (NvU32, NvU32);
 NvBool      NV_API_CALL  os_is_administrator         (void);
-NvBool      NV_API_CALL  os_allow_priority_override  (void);
+NvBool      NV_API_CALL  os_check_access             (RsAccessRight accessRight);
 void        NV_API_CALL  os_dbg_init                 (void);
 void        NV_API_CALL  os_dbg_breakpoint           (void);
 void        NV_API_CALL  os_dbg_set_level            (NvU32);
@@ -130,7 +135,8 @@ void        NV_API_CALL  os_free_spinlock            (void *);
 NvU64       NV_API_CALL  os_acquire_spinlock         (void *);
 void        NV_API_CALL  os_release_spinlock         (void *, NvU64);
 NV_STATUS   NV_API_CALL  os_queue_work_item          (struct os_work_queue *, void *);
-NV_STATUS   NV_API_CALL  os_flush_work_queue         (struct os_work_queue *);
+NV_STATUS   NV_API_CALL  os_flush_work_queue         (struct os_work_queue *, NvBool);
+NvBool      NV_API_CALL  os_is_queue_flush_ongoing   (struct os_work_queue *);
 NV_STATUS   NV_API_CALL  os_alloc_mutex              (void **);
 void        NV_API_CALL  os_free_mutex               (void *);
 NV_STATUS   NV_API_CALL  os_acquire_mutex            (void *);
@@ -219,6 +225,8 @@ extern NvU32 os_page_size;
 extern NvU64 os_page_mask;
 extern NvU8  os_page_shift;
 extern NvBool os_cc_enabled;
+extern NvBool os_cc_sev_snp_enabled;
+extern NvBool os_cc_snp_vtom_enabled;
 extern NvBool os_cc_tdx_enabled;
 extern NvBool os_dma_buf_enabled;
 extern NvBool os_imex_channel_is_supported;

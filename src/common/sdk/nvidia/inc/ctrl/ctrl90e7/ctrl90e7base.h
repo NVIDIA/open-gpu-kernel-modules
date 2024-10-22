@@ -39,6 +39,7 @@
 #define NV90E7_CTRL_BBX_LEGACY_PRIVILEGED       (0xc1) /* finn: Evaluated from "(NV90E7_CTRL_BBX | NVxxxx_CTRL_LEGACY_PRIVILEGED)" */
 #define NV90E7_CTRL_BBX                         (0x01)
 #define NV90E7_CTRL_RPR                         (0x02)
+#define NV90E7_CTRL_PREDICTIVE                  (0x03)
 
 /*
  * NV90E7_CTRL_CMD_NULL

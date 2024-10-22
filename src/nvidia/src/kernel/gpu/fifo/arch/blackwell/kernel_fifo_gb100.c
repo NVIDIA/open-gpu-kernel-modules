@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -86,7 +86,7 @@ kfifoReservePbdmaFaultIds_GB100
  *
  */
 NV_STATUS
-kfifoGenerateWorkSubmitToken_GB100
+kfifoGenerateWorkSubmitTokenHal_GB100
 (
     OBJGPU        *pGpu,
     KernelFifo    *pKernelFifo,
@@ -147,48 +147,9 @@ kfifoPrintInternalEngine_GB100
     NvU32       engineID
 )
 {
-    static const char *casIdString[NV_LITTER_NUM_SUBCTX] =  {
-                            "GR_HOST0" , "GR_HOST1" , "GR_HOST2" , "GR_HOST3" , "GR_HOST4" , "GR_HOST5" , "GR_HOST6" , "GR_HOST7" ,
-                            "GR_HOST8" , "GR_HOST9" , "GR_HOST10", "GR_HOST11", "GR_HOST12", "GR_HOST13", "GR_HOST14", "GR_HOST15",
-                            "GR_HOST16", "GR_HOST17", "GR_HOST18", "GR_HOST19", "GR_HOST20", "GR_HOST21", "GR_HOST22", "GR_HOST23",
-                            "GR_HOST24", "GR_HOST25", "GR_HOST26", "GR_HOST27", "GR_HOST28", "GR_HOST29", "GR_HOST30", "GR_HOST31",
-                            "GR_HOST32", "GR_HOST33", "GR_HOST34", "GR_HOST35", "GR_HOST36", "GR_HOST37", "GR_HOST38", "GR_HOST39",
-                            "GR_HOST40", "GR_HOST41", "GR_HOST42", "GR_HOST43", "GR_HOST44", "GR_HOST45", "GR_HOST46", "GR_HOST47",
-                            "GR_HOST48", "GR_HOST49", "GR_HOST50", "GR_HOST51", "GR_HOST52", "GR_HOST53", "GR_HOST54", "GR_HOST55",
-                            "GR_HOST56", "GR_HOST57", "GR_HOST58", "GR_HOST59", "GR_HOST60", "GR_HOST61", "GR_HOST62", "GR_HOST63"};
-
     if (kfifoIsMmuFaultEngineIdPbdma(pGpu, pKernelFifo, engineID))
     {
-        RM_ENGINE_TYPE rmEngineType;
-
-        NV_ASSERT_OR_RETURN(kfifoGetEngineTypeFromPbdmaFaultId(pGpu, pKernelFifo, engineID, &rmEngineType) == NV_OK, "UNKNOWN");
-
-        if (RM_ENGINE_TYPE_IS_GR(rmEngineType))
-        {
-            NvU32  casId;
-            NvU32 *pPbdmaFaultIds;
-            NvU32  numPbdma = 0;
-
-            NV_ASSERT_OR_RETURN(kfifoGetEnginePbdmaFaultIds_HAL(pGpu, pKernelFifo,
-                                            ENGINE_INFO_TYPE_RM_ENGINE_TYPE, (NvU32)RM_ENGINE_TYPE_GR0,
-                                            &pPbdmaFaultIds, &numPbdma) == NV_OK, "UNKNOWN");
-
-            casId = engineID - pPbdmaFaultIds[0];
-            NV_ASSERT_OR_RETURN(casId < NV_LITTER_NUM_SUBCTX, "UNKNOWN");
-
-            return casIdString[casId];
-        }
-        else
-        {
-            const ENGINE_INFO *pEngineInfo = kfifoGetEngineInfo(pKernelFifo);
-            NvU32              hostId;
-            NvU32              pbdmaFaultIdStart;
-
-            pbdmaFaultIdStart = bitVectorCountTrailingZeros(&pEngineInfo->validEngineIdsForPbdmas);
-            hostId = engineID - pbdmaFaultIdStart;
-
-            return kfifoPrintPbdmaId_HAL(pGpu, pKernelFifo, hostId);
-        }
+        return kfifoPrintFaultingPbdmaEngineName(pGpu, pKernelFifo, engineID);
     }
 
     switch (engineID)

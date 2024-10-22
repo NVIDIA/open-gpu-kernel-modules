@@ -147,3 +147,59 @@ kgspGetGspRmBootUcodeStorage_GB100
 
     kgspGetGspRmBootUcodeStorage_GA102(pGpu, pKernelGsp, ppBinStorageImage, ppBinStorageDesc);
 }
+
+/*!
+ * Handle GSP Fatal Errors
+ */
+void
+kgspServiceFatalHwError_GB100
+(
+    OBJGPU    *pGpu,
+    KernelGsp *pKernelGsp,
+    NvU32      intrStatus
+)
+{
+    NvU32 errorCode = GPU_REG_RD32(pGpu, NV_PGSP_RISCV_FAULT_CONTAINMENT_SRCSTAT);
+    NvU32 errorType = ROBUST_CHANNEL_CONTAINED_ERROR;
+
+    if (!FLD_TEST_DRF(_PGSP_FALCON, _IRQSTAT, _FATAL_ERROR, _TRUE, intrStatus))
+    {
+        return;
+    }
+
+    NV_PRINTF(LEVEL_ERROR, "NV_PGSP_FALCON_IRQSTAT_FATAL_ERROR PENDING error_code 0x%x\n", errorCode);
+    MODS_ARCH_ERROR_PRINTF("NV_PGSP_FALCON_IRQSTAT_FATAL_ERROR=0x%x\n", errorCode);
+
+    // Poison error
+    if (FLD_TEST_DRF(_PGSP, _RISCV_FAULT_CONTAINMENT_SRCSTAT, _GLOBAL_MEM, _FAULTED, errorCode))
+    {
+        NV_ERROR_CONT_LOCATION loc = { 0 };
+
+        loc.locType = NV_ERROR_CONT_LOCATION_TYPE_NONE;
+
+        //
+        // Assert since this interrupt can't be cleared without a
+        // GPU reset and we shouldn't see this if poison is disabled
+        //
+        if (!gpuIsGlobalPoisonFuseEnabled(pGpu))
+        {
+            NV_ASSERT_FAILED("GSP poison pending when poison is disabled");
+            return;
+        }
+
+        NV_ASSERT_OK(gpuUpdateErrorContainmentState_HAL(pGpu, NV_ERROR_CONT_ERR_ID_E24_GSP_POISON, loc, NULL));
+    }
+    else if (gpuIsFlcnRiscvParityError(pGpu, errorCode))
+    {
+        errorType = ROBUST_CHANNEL_GPU_ECC_DBE;
+    }
+    // Log non-parity errors since parity errors are logged in the ECC handler
+    else
+    {
+        nvErrorLog_va((void *)pGpu, errorType, "GSP-RISCV fatal error");
+    }
+
+    pKernelGsp->bFatalError = NV_TRUE;
+    kgspRcAndNotifyAllChannels(pGpu, pKernelGsp, errorType, NV_TRUE);
+    NV_ASSERT_OK(gpuMarkDeviceForReset(pGpu));
+}

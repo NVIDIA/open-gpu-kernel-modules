@@ -55,7 +55,7 @@ static NV_STATUS  gsyncProgramExtStereoPolarity_P2060 (OBJGPU *, PDACEXTERNALDEV
 
 static NV_STATUS  gsyncProgramSlaves_P2060(OBJGPU *, PDACP2060EXTERNALDEVICE, NvU32);
 static NvU32      gsyncReadSlaves_P2060(OBJGPU *, PDACP2060EXTERNALDEVICE);
-static NV_STATUS  gsyncProgramMaster_P2060(OBJGPU *, PDACP2060EXTERNALDEVICE, NvU32, NvBool, NvBool);
+static NV_STATUS  gsyncProgramMaster_P2060(OBJGPU *, OBJGSYNC *, NvU32, NvBool, NvBool);
 static NvU32      gsyncReadMaster_P2060(OBJGPU *, PDACP2060EXTERNALDEVICE);
 
 static NV_STATUS  gsyncUpdateGsyncStatusSnapshot_P2060(OBJGPU *, PDACEXTERNALDEVICE);
@@ -767,16 +767,10 @@ gsyncAttachExternalDevice_P2060
     return NV_TRUE;
 
 fail_tmr_event_create:
-    if (pThis->FrameCountData.pTimerEvents[gpuInstance] != NULL)
-    {
-        tmrEventDestroy(pTmr, pThis->FrameCountData.pTimerEvents[gpuInstance]);
-        pThis->FrameCountData.pTimerEvents[gpuInstance] = NULL;
-    }
-    if (pExtdev->WatchdogControl.pTimerEvents[gpuInstance])
-    {
-        tmrEventDestroy(pTmr, pExtdev->WatchdogControl.pTimerEvents[gpuInstance]);
-        pExtdev->WatchdogControl.pTimerEvents[gpuInstance] = NULL;
-    }
+    tmrEventDestroy(pTmr, pThis->FrameCountData.pTimerEvents[gpuInstance]);
+    pThis->FrameCountData.pTimerEvents[gpuInstance] = NULL;
+    tmrEventDestroy(pTmr, pExtdev->WatchdogControl.pTimerEvents[gpuInstance]);
+    pExtdev->WatchdogControl.pTimerEvents[gpuInstance] = NULL;
     return NV_FALSE;
 }
 
@@ -2339,23 +2333,26 @@ gsyncReadIsTiming_P2060
 static NV_STATUS
 gsyncProgramMaster_P2060
 (
-    OBJGPU *pGpu,
-    PDACP2060EXTERNALDEVICE pThis,
-    NvU32 Master,
-    NvBool bRetainMaster,
-    NvBool skipSwapBarrierWar
+    OBJGPU   *pGpu,
+    OBJGSYNC *pGsync,
+    NvU32     Master,
+    NvBool    bRetainMaster,
+    NvBool    skipSwapBarrierWar
 )
 {
-    KernelDisplay  *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
-    NvU32       DisplayIds[OBJ_MAX_HEADS];
-    NvU32       iface, head, index;
-    NvU8        ctrl = 0;
-    NvBool      bTestModePresent;
-    NvBool      bHouseSelect, bEnableMaster = (0 != Master);
-    NvBool      bGPUAlreadyMaster;
-    NvBool      bQSyncAlreadyMaster;
-    NV_STATUS   rmStatus = NV_OK;
-    NvU32 numHeads = kdispGetNumHeads(pKernelDisplay);
+    KernelDisplay          *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+    NvU32                   DisplayIds[OBJ_MAX_HEADS];
+    NvU32                   iface, head, index;
+    NvU8                    ctrl = 0;
+    NvBool                  bTestModePresent;
+    NvBool                  bHouseSelect, bEnableMaster = (0 != Master);
+    NvBool                  bGPUAlreadyMaster;
+    NvBool                  bQSyncAlreadyMaster;
+    NV_STATUS               rmStatus = NV_OK;
+    NvU32                   numHeads = kdispGetNumHeads(pKernelDisplay);
+    DACP2060EXTERNALDEVICE *pThis;
+
+    pThis = (DACP2060EXTERNALDEVICE *)pGsync->pExtDev;
 
     if ( Master && bRetainMaster)
     {
@@ -2443,6 +2440,14 @@ gsyncProgramMaster_P2060
                 NV_PRINTF(LEVEL_ERROR,
                           "Failed to drive stereo output pin for bug3362661.\n");
             }
+
+            //
+            // Set the RasterSync Decode Mode
+            // This may return an error if the FW and GPU combination is invalid
+            //
+            NV_CHECK_OK_OR_RETURN(LEVEL_WARNING,
+                pGsync->gsyncHal.gsyncSetRasterSyncDecodeMode(pGpu, pGsync->pExtDev));
+
             //
             // GPU will now be TS - Mark sync source for GPU on derived index.
             // This needs to be done first as only TS can write I_AM_MASTER bit.
@@ -3843,7 +3848,7 @@ NV_STATUS
 gsyncRefMaster_P2060
 (
     OBJGPU *pGpu,
-    PDACEXTERNALDEVICE pExtDev,
+    OBJGSYNC *pGsync,
     REFTYPE rType,
     NvU32 *pDisplayMask,
     NvU32 *pRefresh,
@@ -3851,7 +3856,7 @@ gsyncRefMaster_P2060
     NvBool skipSwapBarrierWar
 )
 {
-    PDACP2060EXTERNALDEVICE pThis = (PDACP2060EXTERNALDEVICE)pExtDev;
+    PDACP2060EXTERNALDEVICE pThis = (PDACP2060EXTERNALDEVICE)pGsync->pExtDev;
     NvU32 Master = pThis->Master;
     NvU32 RefreshRate = pThis->RefreshRate;
     NV_STATUS status = NV_OK;
@@ -3886,7 +3891,7 @@ gsyncRefMaster_P2060
             return NV_ERR_GENERIC;
         }
 
-        status = gsyncProgramMaster_P2060(pGpu, pThis, Master, retainMaster, skipSwapBarrierWar);
+        status = gsyncProgramMaster_P2060(pGpu, pGsync, Master, retainMaster, skipSwapBarrierWar);
         break;
 
     case refFetchGet:

@@ -201,7 +201,7 @@ static struct task_struct *thread_create_on_node(int (*threadfn)(void *data),
 
         // Ran out of attempts - return thread even if its stack may not be
         // allocated on the preferred node
-        if ((i == (attempts - 1)))
+        if (i == (attempts - 1))
             break;
 
         // Get the NUMA node where the first page of the stack is resident. If

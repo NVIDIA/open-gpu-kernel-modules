@@ -161,6 +161,7 @@
 #define RMCFG_CHIP_MAXWELL_CLASSIC_GPUS 0
 #define RMCFG_CHIP_dPASCAL   0
 #define RMCFG_CHIP_DPASCAL   0
+#define RMCFG_CHIP_COMPUTE   1
 #define RMCFG_CHIP_PASCAL    0
 #define RMCFG_CHIP_PASCAL_CLASSIC_GPUS 0
 #define RMCFG_CHIP_dVOLTA    0
@@ -310,6 +311,8 @@
 #define RMCFG_FEATURE_FABRIC_LINEAR_ADDRESSING    1  // Unicast fabric memory management
 #define RMCFG_FEATURE_GSP_RM_TRACE_RATS           1
 #define RMCFG_FEATURE_TEGRA_BPMP                  0  // Tegra BPMP integration
+#define RMCFG_FEATURE_BINDATA_IMAGE               0  // Extract bindata from RM binary during compilation and save it in bindata_image.bin
+#define RMCFG_FEATURE_BINDATA_EXTRACTION          0  // Load bindata from disk.(Needs BINDATA_IMAGE to be enabled)
 
 
 
@@ -450,6 +453,7 @@
 #define RMCFG_CLASS_NV9010_VBLANK_CALLBACK        1
 #define RMCFG_CLASS_GF100_PROFILER                1  // Profiler Client Support
 #define RMCFG_CLASS_MAXWELL_PROFILER              1  // Base Profiler Class
+#define RMCFG_CLASS_MAXWELL_PROFILER_CONTEXT      1  // Context level Profiler Client Support
 #define RMCFG_CLASS_MAXWELL_PROFILER_DEVICE       1  // Device level Profiler Client Support
 #define RMCFG_CLASS_GF100_SUBDEVICE_MASTER        1
 #define RMCFG_CLASS_GF100_SUBDEVICE_INFOROM       1  // Inforom interface
@@ -672,6 +676,7 @@
 #define RMCFG_MODULE_RPPG                         1  // RAM Periphery Power Gating Object Engine.
 #define RMCFG_MODULE_EI                           1  // Engine Idle Framework Object Engine.
 #define RMCFG_MODULE_LPWR_SEQ                     1  // LPWR Unified Sequencer Feature for Power Gating
+#define RMCFG_MODULE_LPWR_MON                     1  // LPWR Mon Feature to get Statistics.
 #define RMCFG_MODULE_DPU                          0  // Display Falcon
 #define RMCFG_MODULE_PMGR                         0  // PCB Manager engine
 #define RMCFG_MODULE_KERNEL_PMGR                  1  // Kernel controls for Pmgr
@@ -726,7 +731,7 @@
 #define RMCFG_MODULE_HSHUB                        0  // High Speed Hub
 #define RMCFG_MODULE_HSHUBMANAGER                 0  // High Speed Hub Manager
 #define RMCFG_MODULE_KERNEL_HSHUB                 1  // High Speed Hub on Kernel(CPU) RM
-#define RMCFG_MODULE_GPUMON                       1  // GPU Monitoring
+#define RMCFG_MODULE_GPUMON                       0  // GPU Monitoring
 #define RMCFG_MODULE_GPUBOOSTMGR                  1  // Sync Gpu Boost Manager
 #define RMCFG_MODULE_GRIDDISPLAYLESS              0  // GRID Displayless
 #define RMCFG_MODULE_WINDOW                       0  // NvDisplay WINDOW channel

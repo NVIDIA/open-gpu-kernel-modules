@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -51,6 +51,11 @@ const RS_ACCESS_INFO g_rsAccessMetadata[RS_ACCESS_COUNT] =
     // RS_ACCESS_DEBUG
     {
         RS_ACCESS_FLAG_ALLOW_OWNER
+    },
+
+    // RS_ACCESS_PERFMON
+    {
+        RS_ACCESS_FLAG_UNCACHED_CHECK
     },
 };
 #endif /* RS_STANDALONE_TEST */

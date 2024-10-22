@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -49,13 +49,15 @@
 static void
 dispchnParseAllocParams
 (
-    DispChannel *pDispChannel,
-    void        *pAllocParams,
-    NvU32       *pChannelInstance,
-    NvHandle    *pHObjectBuffer,
-    NvU32       *pInitialGetPutOffset,
-    NvBool      *pAllowGrabWithinSameClient,
-    NvBool      *pConnectPbAtGrab
+    DispChannel   *pDispChannel,
+    void          *pAllocParams,
+    NvU32         *pChannelInstance,
+    NvHandle      *pHObjectBuffer,
+    NvU32         *pInitialGetPutOffset,
+    NvBool        *pAllowGrabWithinSameClient,
+    NvBool        *pConnectPbAtGrab,
+    ChannelPBSize *channelPBSize,
+    NvU32         *pSubDeviceId
 )
 {
     NV50VAIO_CHANNELDMA_ALLOCATION_PARAMETERS *pDmaChannelAllocParams = NULL;
@@ -66,10 +68,11 @@ dispchnParseAllocParams
 
     if (pDispChannel->bIsDma)
     {
-        pDmaChannelAllocParams = pAllocParams;
-        *pChannelInstance      = pDmaChannelAllocParams->channelInstance;
-        *pHObjectBuffer        = pDmaChannelAllocParams->hObjectBuffer;
-        *pInitialGetPutOffset  = pDmaChannelAllocParams->offset;
+        pDmaChannelAllocParams      = pAllocParams;
+        *pChannelInstance           = pDmaChannelAllocParams->channelInstance;
+        *pHObjectBuffer             = pDmaChannelAllocParams->hObjectBuffer;
+        *pInitialGetPutOffset       = pDmaChannelAllocParams->offset;
+        *channelPBSize              = pDmaChannelAllocParams->channelPBSize;
 
         if (FLD_TEST_DRF(50VAIO_CHANNELDMA_ALLOCATION, _FLAGS,
                          _CONNECT_PB_AT_GRAB, _YES,
@@ -82,13 +85,16 @@ dispchnParseAllocParams
         {
             NV_PRINTF(LEVEL_WARNING, "Error notifier parameter is not used in Display channel allocation.\n");
         }
+
+        *pSubDeviceId = pDmaChannelAllocParams->subDeviceId;
     }
     else
     {
-        pPioChannelAllocParams = pAllocParams;
-        *pChannelInstance      = pPioChannelAllocParams->channelInstance;
-        *pHObjectBuffer        = 0; // No one should look at this. So, 0 should be fine.
-        *pInitialGetPutOffset  = 0; // No one should look at this. So, 0 should be fine.
+        pPioChannelAllocParams      = pAllocParams;
+        *pChannelInstance           = pPioChannelAllocParams->channelInstance;
+        *pHObjectBuffer             = 0; // No one should look at this. So, 0 should be fine.
+        *pInitialGetPutOffset       = 0; // No one should look at this. So, 0 should be fine.
+        *channelPBSize              = 0; // No one should look at this. So, 0 should be fine.
 
         if (pPioChannelAllocParams->hObjectNotify != 0)
         {
@@ -121,6 +127,8 @@ dispchnConstruct_IMPL
     DispObject     *pDispObject = dynamicCast(pParentRef->pResource, DispObject);
     ContextDma     *pBufferContextDma = NULL;
     NvU32           hClass = RES_GET_EXT_CLASS_ID(pDispChannel);
+    ChannelPBSize   channelPBSize;
+    NvU32           subDeviceId = 0U;
 
     NV_ASSERT_OR_RETURN(pDispObject, NV_ERR_INVALID_OBJECT_HANDLE);
 
@@ -159,7 +167,9 @@ dispchnConstruct_IMPL
                             &hObjectBuffer,
                             &initialGetPutOffset,
                             &allowGrabWithinSameClient,
-                            &connectPbAtGrab);
+                            &connectPbAtGrab,
+                            &channelPBSize,
+                            &subDeviceId);
 
     rmStatus = kdispGetIntChnClsForHwCls(pKernelDisplay,
                                          RES_GET_EXT_CLASS_ID(pDispChannel),
@@ -188,7 +198,9 @@ dispchnConstruct_IMPL
                                             pBufferContextDma,
                                             hClass,
                                             channelInstance,
-                                            internalDispChnClass);
+                                            internalDispChnClass,
+                                            channelPBSize,
+                                            subDeviceId);
         if (rmStatus != NV_OK)
            return rmStatus;
     }
@@ -262,6 +274,8 @@ dispchnGrabChannel_IMPL
     NvBool             connectPbAtGrab;
     ContextDma        *pBufferContextDma = NULL;
     DISPCHNCLASS       internalDispChnClass;
+    ChannelPBSize      channelPBSize;
+    NvU32              subDeviceId = 0U;
 
     if (RES_GET_PARENT_HANDLE(pDispChannel) != hParent)
     {
@@ -278,7 +292,9 @@ dispchnGrabChannel_IMPL
                             &hObjectBuffer,
                             &initialGetPutOffset,
                             &allowGrabWithinSameClient,
-                            &connectPbAtGrab);
+                            &connectPbAtGrab,
+                            &channelPBSize,
+                            &subDeviceId);
 
     //
     // The handle already exists in our DB.
@@ -307,7 +323,9 @@ dispchnGrabChannel_IMPL
                                            pBufferContextDma,
                                            hClass,
                                            channelInstance,
-                                           internalDispChnClass);
+                                           internalDispChnClass,
+                                           channelPBSize,
+                                           subDeviceId);
       if (rmStatus != NV_OK)
           return rmStatus;
     }
@@ -735,7 +753,9 @@ kdispSetPushBufferParamsToPhysical_IMPL
     ContextDma      *pBufferContextDma,
     NvU32            hClass,
     NvU32            channelInstance,
-    DISPCHNCLASS    internalDispChnClass
+    DISPCHNCLASS     internalDispChnClass,
+    ChannelPBSize    channelPBSize,
+    NvU32            subDeviceId
 )
 {
     RsClient       *pClient  = RES_GET_CLIENT(pDispChannel);
@@ -752,6 +772,7 @@ kdispSetPushBufferParamsToPhysical_IMPL
 
     pushBufferParams.hclass = hClass;
     pushBufferParams.channelInstance = channelInstance;
+    pushBufferParams.subDeviceId = subDeviceId;
 
     if (pDispChannel->bIsDma)
     {
@@ -778,6 +799,16 @@ kdispSetPushBufferParamsToPhysical_IMPL
                                                                          pKernelDisplay,
                                                                          pushBufferParams.addressSpace,
                                                                          pushBufferParams.cacheSnoop);
+
+        NvU32 size = NVBIT32(channelPBSize + 12) - 1;
+        if (size <= pushBufferParams.limit)
+        {
+            pushBufferParams.channelPBSize = (NvU32)channelPBSize;
+        }
+        else
+        {
+            return NV_ERR_INVALID_ARGUMENT;
+        }
         pushBufferParams.valid = NV_TRUE;
     }
     else

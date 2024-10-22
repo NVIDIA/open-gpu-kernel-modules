@@ -1,6 +1,6 @@
 //*****************************************************************************
 //
-//  SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+//  SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //  SPDX-License-Identifier: MIT
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
@@ -341,12 +341,12 @@ typedef struct _TAG_DISPLAYID_2_0_TIMING_9_DESCRIPTOR
 } DISPLAYID_2_0_TIMING_9_DESCRIPTOR;
 
 // the following fields apply to Timing 9/10 Descriptors
-#define DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_STANDARD            0
+#define DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_STANDARD_CRT_BASED  0
 #define DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_REDUCED_BLANKING_1  1
-#define DISPLAYID_2_0_TIMING_FORMULA_CVT_2_0_REDUCED_BLANKING_2  2
-#define DISPLAYID_2_0_TIMING_FORMULA_CVT_2_0_REDUCED_BLANKING_3  3
+#define DISPLAYID_2_0_TIMING_FORMULA_CVT_2_1_REDUCED_BLANKING_2  2
+#define DISPLAYID_2_0_TIMING_FORMULA_CVT_2_1_REDUCED_BLANKING_3  3
 
-#define DISPLAYID_2_0_TIMING_9_MAX_DESCRIPTORS 18
+#define DISPLAYID_2_0_TIMING_9_MAX_DESCRIPTORS 10
 
 typedef struct _tagDISPLAYID_2_0_TIMING_9_BLOCK
 {
@@ -357,6 +357,7 @@ typedef struct _tagDISPLAYID_2_0_TIMING_9_BLOCK
 
 #define DISPLAYID_2_0_TIMING_10_PAYLOAD_BYTES_6    0
 #define DISPLAYID_2_0_TIMING_10_PAYLOAD_BYTES_7    1
+#define DISPLAYID_2_1_TIMING_10_PAYLOAD_BYTES_8    2
 
 typedef struct _tagDISPLAYID_2_0_TIMING_10_BLOCK_HEADER
 {
@@ -367,6 +368,10 @@ typedef struct _tagDISPLAYID_2_0_TIMING_10_BLOCK_HEADER
     NvU8  reserved1         :1;
     NvU8  payload_bytes;
 } DISPLAYID_2_0_TIMING_10_BLOCK_HEADER;
+
+#define DISPLAYID_2_0_TIMING_10_MAX_6BYTES_DESCRIPTORS 18
+#define DISPLAYID_2_0_TIMING_10_MAX_7BYTES_DESCRIPTORS 16
+#define DISPLAYID_2_1_TIMING_10_MAX_8BYTES_DESCRIPTORS 14
 
 typedef struct _DISPLAYID_2_0_TIMING_10_6BYTES_DESCRIPTOR
 {
@@ -383,6 +388,9 @@ typedef struct _DISPLAYID_2_0_TIMING_10_6BYTES_DESCRIPTOR
     NvU8  refresh_rate;                 // 1 Hz to 256 Hz
 } DISPLAYID_2_0_TIMING_10_6BYTES_DESCRIPTOR;
 
+#define DISPLAYID_2_0_TIMING_10_NOMINAL_MINIMUM_VBLANK   35
+#define DISPLAYID_2_1_TIMING_10_ALTERNATE_MINIMUM_VBLANK 20
+
 typedef struct _DISPLAYID_2_0_TIMING_10_7BYTES_DESCRIPTOR
 {
     DISPLAYID_2_0_TIMING_10_6BYTES_DESCRIPTOR descriptor_6_bytes;
@@ -391,13 +399,17 @@ typedef struct _DISPLAYID_2_0_TIMING_10_7BYTES_DESCRIPTOR
     NvU8                                      additional_vblank_timing :3;
 } DISPLAYID_2_0_TIMING_10_7BYTES_DESCRIPTOR;
 
-#define DISPLAYID_2_0_TIMING_10_MAX_6BYTES_DESCRIPTORS 18
-#define DISPLAYID_2_0_TIMING_10_MAX_7BYTES_DESCRIPTORS 16
+typedef struct _DISPLAYID_2_1_TIMING_10_8BYTES_DESCRIPTOR
+{
+    DISPLAYID_2_0_TIMING_10_7BYTES_DESCRIPTOR descriptor_7_bytes;
+    NvU8                                      additional_mini_vblank   :1;
+    NvU8                                      reserved                 :7;
+} DISPLAYID_2_1_TIMING_10_8BYTES_DESCRIPTOR;
 
 typedef struct _DISPLAYID_2_0_TIMING_10_BLOCK
 {
     DISPLAYID_2_0_TIMING_10_BLOCK_HEADER    header;
-    NvU8                                    descriptors[120];
+    NvU8                                    descriptors[144];
 } DISPLAYID_2_0_TIMING_10_BLOCK;
 
 #define DISPLAYID_2_0_RANGE_LIMITS_BLOCK_PAYLOAD_LENGTH   9

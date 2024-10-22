@@ -2281,7 +2281,8 @@ void nvHsAddVBlankCallback(NVHsChannelEvoPtr pHsChannel)
         nvApiHeadRegisterVBlankCallback(pDispEvo,
                                         pHsChannel->apiHead,
                                         HsVBlankCallback,
-                                        NULL);
+                                        NULL,
+                                        1 /* listIndex */);
 }
 
 /*!

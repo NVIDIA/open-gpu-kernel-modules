@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -42,7 +42,6 @@ typedef struct uvm_gpu_semaphore_struct uvm_gpu_semaphore_t;
 typedef struct uvm_gpu_tracking_semaphore_struct uvm_gpu_tracking_semaphore_t;
 typedef struct uvm_gpu_semaphore_pool_struct uvm_gpu_semaphore_pool_t;
 typedef struct uvm_gpu_semaphore_pool_page_struct uvm_gpu_semaphore_pool_page_t;
-typedef struct uvm_gpu_peer_struct uvm_gpu_peer_t;
 typedef struct uvm_mmu_mode_hal_struct uvm_mmu_mode_hal_t;
 
 typedef struct uvm_channel_manager_struct uvm_channel_manager_t;
@@ -57,6 +56,12 @@ typedef struct uvm_gpfifo_entry_struct uvm_gpfifo_entry_t;
 
 typedef struct uvm_va_policy_struct uvm_va_policy_t;
 typedef struct uvm_va_range_struct uvm_va_range_t;
+typedef struct uvm_va_range_managed_struct uvm_va_range_managed_t;
+typedef struct uvm_va_range_external_struct uvm_va_range_external_t;
+typedef struct uvm_va_range_channel_struct uvm_va_range_channel_t;
+typedef struct uvm_va_range_sked_reflected_struct uvm_va_range_sked_reflected_t;
+typedef struct uvm_va_range_semaphore_pool_struct uvm_va_range_semaphore_pool_t;
+typedef struct uvm_va_range_device_p2p_struct uvm_va_range_device_p2p_t;
 typedef struct uvm_va_block_struct uvm_va_block_t;
 typedef struct uvm_va_block_test_struct uvm_va_block_test_t;
 typedef struct uvm_va_block_wrapper_struct uvm_va_block_wrapper_t;
