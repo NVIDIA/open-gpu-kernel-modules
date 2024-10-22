@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1348,6 +1348,13 @@ _nvswitch_service_route_nonfatal_ls10
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_ROUTE, _ERR_STATUS_0, _NVS_ECC_DBE_ERR, 1))))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _ROUTE, _ERR_NVS_ECC_ERROR_COUNTER);
             _nvswitch_collect_error_info_ls10(device, link,
                 NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_TIME,
@@ -1372,6 +1379,13 @@ _nvswitch_service_route_nonfatal_ls10
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_ROUTE, _ERR_STATUS_0, _GLT_ECC_DBE_ERR, 1))))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _ROUTE, _ERR_GLT_ECC_ERROR_COUNTER);
             _nvswitch_collect_error_info_ls10(device, link,
                 NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_TIME,
@@ -1396,6 +1410,13 @@ _nvswitch_service_route_nonfatal_ls10
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_ROUTE, _ERR_STATUS_0, _MCRID_ECC_DBE_ERR, 1))))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _ROUTE, _ERR_MCRID_ECC_ERROR_COUNTER);
             _nvswitch_collect_error_info_ls10(device, link,
                 NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_TIME,
@@ -1420,6 +1441,13 @@ _nvswitch_service_route_nonfatal_ls10
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_ROUTE, _ERR_STATUS_0, _EXTMCRID_ECC_DBE_ERR, 1))))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _ROUTE, _ERR_EXTMCRID_ECC_ERROR_COUNTER);
             _nvswitch_collect_error_info_ls10(device, link,
                 NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_TIME,
@@ -1444,6 +1472,13 @@ _nvswitch_service_route_nonfatal_ls10
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_ROUTE, _ERR_STATUS_0, _RAM_ECC_DBE_ERR, 1))))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _ROUTE, _ERR_RAM_ECC_ERROR_COUNTER);
             _nvswitch_collect_error_info_ls10(device, link,
                 NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_TIME,
@@ -1584,6 +1619,13 @@ _nvswitch_service_ingress_fatal_ls10
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_INGRESS, _ERR_STATUS_0, _NCISOC_HDR_ECC_LIMIT_ERR, 1))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             NVSWITCH_ENG_WR32(device, NPORT, , link, _INGRESS, _ERR_STATUS_0,
                 DRF_NUM(_INGRESS, _ERR_STATUS_0, _NCISOC_HDR_ECC_LIMIT_ERR, 1));
         }
@@ -1832,6 +1874,13 @@ _nvswitch_service_ingress_nonfatal_ls10
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_INGRESS, _ERR_STATUS_0, _NCISOC_HDR_ECC_DBE_ERR, 1))))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _INGRESS, _ERR_NCISOC_HDR_ECC_ERROR_COUNTER);
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_INGRESS_NCISOC_HDR_ECC_LIMIT_ERR, "ingress header ECC");
             NVSWITCH_REPORT_DATA(_HW_NPORT_INGRESS_NCISOC_HDR_ECC_LIMIT_ERR, data);
@@ -1878,6 +1927,13 @@ _nvswitch_service_ingress_nonfatal_ls10
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_INGRESS, _ERR_STATUS_0, _REMAPTAB_ECC_DBE_ERR, 1))))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _INGRESS, _ERR_REMAPTAB_ECC_ERROR_COUNTER);
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_INGRESS_REMAPTAB_ECC_LIMIT_ERR, "ingress remap ECC");
             NVSWITCH_REPORT_DATA(_HW_NPORT_INGRESS_REMAPTAB_ECC_LIMIT_ERR, data);
@@ -1899,6 +1955,13 @@ _nvswitch_service_ingress_nonfatal_ls10
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_INGRESS, _ERR_STATUS_0, _RIDTAB_ECC_DBE_ERR, 1))))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _INGRESS, _ERR_RIDTAB_ECC_ERROR_COUNTER);
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_INGRESS_RIDTAB_ECC_LIMIT_ERR, "ingress RID ECC");
             NVSWITCH_REPORT_DATA(_HW_NPORT_INGRESS_RIDTAB_ECC_LIMIT_ERR, data);
@@ -1920,6 +1983,13 @@ _nvswitch_service_ingress_nonfatal_ls10
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_INGRESS, _ERR_STATUS_0, _RLANTAB_ECC_DBE_ERR, 1))))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _INGRESS, _ERR_RLANTAB_ECC_ERROR_COUNTER);
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_INGRESS_RLANTAB_ECC_LIMIT_ERR, "ingress RLAN ECC");
             NVSWITCH_REPORT_DATA(_HW_NPORT_INGRESS_RLANTAB_ECC_LIMIT_ERR, data);
@@ -2087,6 +2157,13 @@ _nvswitch_service_ingress_nonfatal_ls10_err_status_1:
         if (!(nvswitch_test_flags(raw_pending_0,
                 DRF_NUM(_INGRESS, _ERR_STATUS_0, _EXTAREMAPTAB_ECC_DBE_ERR, 1))))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _INGRESS, _ERR_EXTAREMAPTAB_ECC_ERROR_COUNTER);
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_INGRESS_EXTAREMAPTAB_ECC_LIMIT_ERR, "ingress ExtA remap ECC");
             NVSWITCH_REPORT_DATA(_HW_NPORT_INGRESS_EXTAREMAPTAB_ECC_LIMIT_ERR, data);
@@ -2108,6 +2185,13 @@ _nvswitch_service_ingress_nonfatal_ls10_err_status_1:
         if (!(nvswitch_test_flags(raw_pending_0,
                 DRF_NUM(_INGRESS, _ERR_STATUS_0, _EXTBREMAPTAB_ECC_DBE_ERR, 1))))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _INGRESS, _ERR_EXTBREMAPTAB_ECC_ERROR_COUNTER);
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_INGRESS_EXTBREMAPTAB_ECC_LIMIT_ERR, "ingress ExtB remap ECC");
             NVSWITCH_REPORT_DATA(_HW_NPORT_INGRESS_EXTBREMAPTAB_ECC_LIMIT_ERR, data);
@@ -2129,6 +2213,13 @@ _nvswitch_service_ingress_nonfatal_ls10_err_status_1:
         if (!(nvswitch_test_flags(raw_pending_0,
                 DRF_NUM(_INGRESS, _ERR_STATUS_0, _MCREMAPTAB_ECC_DBE_ERR, 1))))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _INGRESS, _ERR_MCREMAPTAB_ECC_ERROR_COUNTER);
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_INGRESS_MCREMAPTAB_ECC_LIMIT_ERR, "ingress MC remap ECC");
             NVSWITCH_REPORT_DATA(_HW_NPORT_INGRESS_MCREMAPTAB_ECC_LIMIT_ERR, data);
@@ -2262,8 +2353,6 @@ _nvswitch_service_tstate_nonfatal_ls10
             }
 
             report.data[1] = NVSWITCH_ENG_RD32(device, NPORT, , link, _TSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER);
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _TSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER,
-                DRF_DEF(_TSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER, _ERROR_COUNT, _INIT));
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_TSTATE_TAGPOOL_ECC_LIMIT_ERR, "TS tag store single-bit threshold");
             _nvswitch_collect_error_info_ls10(device, link,
                 NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_TIME |
@@ -2271,6 +2360,15 @@ _nvswitch_service_tstate_nonfatal_ls10
                 NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_HDR,
                 &data);
             NVSWITCH_REPORT_DATA(_HW_NPORT_TSTATE_TAGPOOL_ECC_LIMIT_ERR, data);
+
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            NVSWITCH_ENG_WR32(device, NPORT, , link, _TSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER,
+                DRF_DEF(_TSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER, _ERROR_COUNT, _INIT));
 
             _nvswitch_construct_ecc_error_event_ls10(&err_event,
                 NVSWITCH_ERR_HW_NPORT_TSTATE_TAGPOOL_ECC_LIMIT_ERR, link,
@@ -2303,8 +2401,6 @@ _nvswitch_service_tstate_nonfatal_ls10
             }
 
             report.data[1] = NVSWITCH_ENG_RD32(device, NPORT, , link, _TSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER);
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _TSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER,
-                DRF_DEF(_TSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER, _ERROR_COUNT, _INIT));
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_TSTATE_CRUMBSTORE_ECC_LIMIT_ERR, "TS crumbstore single-bit threshold");
             _nvswitch_collect_error_info_ls10(device, link,
                 NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_TIME |
@@ -2312,6 +2408,15 @@ _nvswitch_service_tstate_nonfatal_ls10
                 NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_HDR,
                 &data);
             NVSWITCH_REPORT_DATA(_HW_NPORT_TSTATE_CRUMBSTORE_ECC_LIMIT_ERR, data);
+
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+            NVSWITCH_ENG_WR32(device, NPORT, , link, _TSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER,
+                DRF_DEF(_TSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER, _ERROR_COUNT, _INIT));
 
             _nvswitch_construct_ecc_error_event_ls10(&err_event,
                 NVSWITCH_ERR_HW_NPORT_TSTATE_CRUMBSTORE_ECC_LIMIT_ERR, link,
@@ -2427,6 +2532,13 @@ _nvswitch_service_tstate_fatal_ls10
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_TSTATE, _ERR_STATUS_0, _TAGPOOL_ECC_LIMIT_ERR, 1))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             NVSWITCH_ENG_WR32(device, NPORT, , link, _TSTATE, _ERR_STATUS_0,
                 DRF_NUM(_TSTATE, _ERR_STATUS_0, _TAGPOOL_ECC_LIMIT_ERR, 1));
         }
@@ -2482,6 +2594,13 @@ _nvswitch_service_tstate_fatal_ls10
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_TSTATE, _ERR_STATUS_0, _CRUMBSTORE_ECC_LIMIT_ERR, 1))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             NVSWITCH_ENG_WR32(device, NPORT, , link, _TSTATE, _ERR_STATUS_0,
                 DRF_NUM(_TSTATE, _ERR_STATUS_0, _CRUMBSTORE_ECC_LIMIT_ERR, 1));
         }
@@ -2590,6 +2709,13 @@ _nvswitch_service_egress_nonfatal_ls10
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_EGRESS, _ERR_STATUS_0, _NXBAR_HDR_ECC_DBE_ERR, 1))))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             report.data[0] = NVSWITCH_ENG_RD32(device, NPORT, , link, _EGRESS, _ERR_NXBAR_ECC_ERROR_COUNTER);
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_EGRESS_NXBAR_HDR_ECC_LIMIT_ERR, "egress input ECC error limit");
             NVSWITCH_REPORT_DATA(_HW_NPORT_EGRESS_NXBAR_HDR_ECC_LIMIT_ERR, data);
@@ -2628,6 +2754,13 @@ _nvswitch_service_egress_nonfatal_ls10
             report.data[1] = NVSWITCH_ENG_RD32(device, NPORT, , link, _EGRESS, _ERR_RAM_OUT_ECC_ERROR_ADDRESS);
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_EGRESS_RAM_OUT_HDR_ECC_LIMIT_ERR, "egress output ECC error limit");
             NVSWITCH_REPORT_DATA(_HW_NPORT_EGRESS_RAM_OUT_HDR_ECC_LIMIT_ERR, data);
+
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
 
             _nvswitch_construct_ecc_error_event_ls10(&err_event,
                 NVSWITCH_ERR_HW_NPORT_EGRESS_RAM_OUT_HDR_ECC_LIMIT_ERR, link, bAddressValid, address,
@@ -2695,6 +2828,16 @@ _nvswitch_service_egress_nonfatal_ls10_err_status_1:
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _NXBAR_REDUCTION_HDR_ECC_DBE_ERR, 1))))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
+
+            NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_NXBAR_REDUCTION_ECC_ERROR_COUNTER, 0);
+
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_EGRESS_NXBAR_REDUCTION_HDR_ECC_LIMIT_ERR, "egress reduction header ECC error limit");
             NVSWITCH_REPORT_DATA(_HW_NPORT_EGRESS_NXBAR_HDR_ECC_LIMIT_ERR, data);
 
@@ -2715,6 +2858,15 @@ _nvswitch_service_egress_nonfatal_ls10_err_status_1:
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCRSPCTRLSTORE_ECC_DBE_ERR, 1))))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
+            NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_MCRSPCTRLSTORE_ECC_ERROR_COUNTER, 0);
+
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_EGRESS_MCRSPCTRLSTORE_ECC_LIMIT_ERR, "egress MC response ECC error limit");
             NVSWITCH_REPORT_DATA(_HW_NPORT_EGRESS_MCRSPCTRLSTORE_ECC_LIMIT_ERR, data);
 
@@ -2735,6 +2887,15 @@ _nvswitch_service_egress_nonfatal_ls10_err_status_1:
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _RBCTRLSTORE_ECC_DBE_ERR, 1))))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
+            NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_RBCTRLSTORE_ECC_ERROR_COUNTER, 0);
+
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_EGRESS_RBCTRLSTORE_ECC_LIMIT_ERR, "egress RB ECC error limit");
             NVSWITCH_REPORT_DATA(_HW_NPORT_EGRESS_RBCTRLSTORE_ECC_LIMIT_ERR, data);
 
@@ -2755,6 +2916,15 @@ _nvswitch_service_egress_nonfatal_ls10_err_status_1:
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCREDSGT_ECC_DBE_ERR, 1))))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
+            NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_MCREDSGT_ECC_ERROR_COUNTER, 0);
+
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_EGRESS_MCREDSGT_ECC_LIMIT_ERR, "egress RSG ECC error limit");
             NVSWITCH_REPORT_DATA(_HW_NPORT_EGRESS_MCREDSGT_ECC_LIMIT_ERR, data);
 
@@ -2775,6 +2945,15 @@ _nvswitch_service_egress_nonfatal_ls10_err_status_1:
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCREDBUF_ECC_DBE_ERR, 1))))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
+            NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_MCREDBUF_ECC_ERROR_COUNTER, 0);
+
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_EGRESS_MCREDBUF_ECC_LIMIT_ERR, "egress MCRB ECC error limit");
             NVSWITCH_REPORT_DATA(_HW_NPORT_EGRESS_MCREDBUF_ECC_LIMIT_ERR, data);
 
@@ -2795,6 +2974,15 @@ _nvswitch_service_egress_nonfatal_ls10_err_status_1:
         if (!(nvswitch_test_flags(report.raw_pending,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCRSP_RAM_HDR_ECC_DBE_ERR, 1))))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
+            NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_MCRSP_RAM_ECC_ERROR_COUNTER, 0);
+
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_EGRESS_MCRSP_RAM_HDR_ECC_LIMIT_ERR, "egress MC header ECC error limit");
             NVSWITCH_REPORT_DATA(_HW_NPORT_EGRESS_MCRSP_RAM_HDR_ECC_LIMIT_ERR, data);
 
@@ -2824,6 +3012,13 @@ _nvswitch_service_egress_nonfatal_ls10_err_status_1:
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_EGRESS, _ERR_STATUS_1, _NXBAR_REDUCTION_HDR_ECC_LIMIT_ERR, 1))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_STATUS_1,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _NXBAR_REDUCTION_HDR_ECC_LIMIT_ERR, 1));
         }
@@ -2861,6 +3056,13 @@ _nvswitch_service_egress_nonfatal_ls10_err_status_1:
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCREDBUF_ECC_LIMIT_ERR, 1))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_STATUS_1,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCREDBUF_ECC_LIMIT_ERR, 1));
         }
@@ -3008,6 +3210,13 @@ _nvswitch_service_egress_fatal_ls10
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_EGRESS, _ERR_STATUS_0, _NXBAR_HDR_ECC_LIMIT_ERR, 1))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_STATUS_0,
                 DRF_NUM(_EGRESS, _ERR_STATUS_0, _NXBAR_HDR_ECC_LIMIT_ERR, 1));
         }
@@ -3042,6 +3251,13 @@ _nvswitch_service_egress_fatal_ls10
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_EGRESS, _ERR_STATUS_0, _RAM_OUT_HDR_ECC_LIMIT_ERR, 1))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_STATUS_0,
                 DRF_NUM(_EGRESS, _ERR_STATUS_0, _RAM_OUT_HDR_ECC_LIMIT_ERR, 1));
         }
@@ -3230,6 +3446,13 @@ _nvswitch_service_egress_fatal_ls10_err_status_1:
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCRSPCTRLSTORE_ECC_LIMIT_ERR, 1))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_STATUS_1,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCRSPCTRLSTORE_ECC_LIMIT_ERR, 1));
         }
@@ -3251,6 +3474,13 @@ _nvswitch_service_egress_fatal_ls10_err_status_1:
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_EGRESS, _ERR_STATUS_1, _RBCTRLSTORE_ECC_LIMIT_ERR, 1))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_STATUS_1,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _RBCTRLSTORE_ECC_LIMIT_ERR, 1));
         }
@@ -3272,6 +3502,13 @@ _nvswitch_service_egress_fatal_ls10_err_status_1:
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCREDSGT_ECC_LIMIT_ERR, 1))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_STATUS_1,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCREDSGT_ECC_LIMIT_ERR, 1));
         }
@@ -3293,6 +3530,13 @@ _nvswitch_service_egress_fatal_ls10_err_status_1:
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCRSP_RAM_HDR_ECC_LIMIT_ERR, 1))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_STATUS_1,
                 DRF_NUM(_EGRESS, _ERR_STATUS_1, _MCRSP_RAM_HDR_ECC_LIMIT_ERR, 1));
         }
@@ -3391,6 +3635,13 @@ _nvswitch_service_sourcetrack_nonfatal_ls10
                                 _ERR_CREQ_TCEN0_CRUMBSTORE_ECC_ERROR_ADDRESS_VALID);
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_SOURCETRACK_CREQ_TCEN0_CRUMBSTORE_ECC_LIMIT_ERR,
                                     "sourcetrack TCEN0 crumbstore ECC limit err");
+
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
 
             _nvswitch_construct_ecc_error_event_ls10(&err_event,
                 NVSWITCH_ERR_HW_NPORT_SOURCETRACK_CREQ_TCEN0_CRUMBSTORE_ECC_LIMIT_ERR, link,
@@ -3491,6 +3742,13 @@ _nvswitch_service_sourcetrack_fatal_ls10
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_SOURCETRACK, _ERR_STATUS_0, _CREQ_TCEN0_CRUMBSTORE_ECC_LIMIT_ERR, 1))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             NVSWITCH_ENG_WR32(device, NPORT, , link, _SOURCETRACK, _ERR_STATUS_0,
                 DRF_NUM(_SOURCETRACK, _ERR_STATUS_0, _CREQ_TCEN0_CRUMBSTORE_ECC_LIMIT_ERR, 1));
         }
@@ -3619,10 +3877,18 @@ _nvswitch_service_multicast_nonfatal_ls10
             }
 
             report.data[1] = NVSWITCH_ENG_RD32(device, NPORT, , link, _MULTICASTTSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER);
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _MULTICASTTSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER,
-                DRF_DEF(_MULTICASTTSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER, _ERROR_COUNT, _INIT));
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_MULTICASTTSTATE_TAGPOOL_ECC_LIMIT_ERR, "MC TS tag store single-bit threshold");
             NVSWITCH_REPORT_DATA(_HW_NPORT_MULTICASTTSTATE_TAGPOOL_ECC_LIMIT_ERR, data);
+
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
+            NVSWITCH_ENG_WR32(device, NPORT, , link, _MULTICASTTSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER,
+                DRF_DEF(_MULTICASTTSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER, _ERROR_COUNT, _INIT));
 
             _nvswitch_construct_ecc_error_event_ls10(&err_event,
                 NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_TAGPOOL_ECC_LIMIT_ERR, link,
@@ -3655,10 +3921,18 @@ _nvswitch_service_multicast_nonfatal_ls10
             }
 
             report.data[1] = NVSWITCH_ENG_RD32(device, NPORT, , link, _MULTICASTTSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER);
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _MULTICASTTSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER,
-                DRF_DEF(_MULTICASTTSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER, _ERROR_COUNT, _INIT));
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_MULTICASTTSTATE_CRUMBSTORE_ECC_LIMIT_ERR, "MC TS crumbstore single-bit threshold");
             NVSWITCH_REPORT_DATA(_HW_NPORT_MULTICASTTSTATE_CRUMBSTORE_ECC_LIMIT_ERR, data);
+
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
+            NVSWITCH_ENG_WR32(device, NPORT, , link, _MULTICASTTSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER,
+                DRF_DEF(_MULTICASTTSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER, _ERROR_COUNT, _INIT));
 
             _nvswitch_construct_ecc_error_event_ls10(&err_event,
                 NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_CRUMBSTORE_ECC_LIMIT_ERR, link,
@@ -3772,6 +4046,13 @@ _nvswitch_service_multicast_fatal_ls10
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_MULTICASTTSTATE, _ERR_STATUS_0, _TAGPOOL_ECC_LIMIT_ERR, 1))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             NVSWITCH_ENG_WR32(device, NPORT, , link, _MULTICASTTSTATE, _ERR_STATUS_0,
                 DRF_NUM(_MULTICASTTSTATE, _ERR_STATUS_0, _TAGPOOL_ECC_LIMIT_ERR, 1));
         }
@@ -3809,6 +4090,13 @@ _nvswitch_service_multicast_fatal_ls10
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_MULTICASTTSTATE, _ERR_STATUS_0, _CRUMBSTORE_ECC_LIMIT_ERR, 1))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             NVSWITCH_ENG_WR32(device, NPORT, , link, _MULTICASTTSTATE, _ERR_STATUS_0,
                 DRF_NUM(_MULTICASTTSTATE, _ERR_STATUS_0, _CRUMBSTORE_ECC_LIMIT_ERR, 1));
         }
@@ -3910,10 +4198,18 @@ _nvswitch_service_reduction_nonfatal_ls10
             }
 
             report.data[1] = NVSWITCH_ENG_RD32(device, NPORT, , link, _REDUCTIONTSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER);
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _REDUCTIONTSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER,
-                DRF_DEF(_REDUCTIONTSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER, _ERROR_COUNT, _INIT));
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_REDUCTIONTSTATE_TAGPOOL_ECC_LIMIT_ERR, "Red TS tag store single-bit threshold");
             NVSWITCH_REPORT_DATA(_HW_NPORT_REDUCTIONTSTATE_TAGPOOL_ECC_LIMIT_ERR, data);
+
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
+            NVSWITCH_ENG_WR32(device, NPORT, , link, _REDUCTIONTSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER,
+                DRF_DEF(_REDUCTIONTSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER, _ERROR_COUNT, _INIT));
 
             _nvswitch_construct_ecc_error_event_ls10(&err_event,
                 NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_TAGPOOL_ECC_LIMIT_ERR, link,
@@ -3946,10 +4242,18 @@ _nvswitch_service_reduction_nonfatal_ls10
             }
 
             report.data[1] = NVSWITCH_ENG_RD32(device, NPORT, , link, _REDUCTIONTSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER);
-            NVSWITCH_ENG_WR32(device, NPORT, , link, _REDUCTIONTSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER,
-                DRF_DEF(_REDUCTIONTSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER, _ERROR_COUNT, _INIT));
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_REDUCTIONTSTATE_CRUMBSTORE_ECC_LIMIT_ERR, "Red TS crumbstore single-bit threshold");
             NVSWITCH_REPORT_DATA(_HW_NPORT_REDUCTIONTSTATE_CRUMBSTORE_ECC_LIMIT_ERR, data);
+
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
+            NVSWITCH_ENG_WR32(device, NPORT, , link, _REDUCTIONTSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER,
+                DRF_DEF(_REDUCTIONTSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER, _ERROR_COUNT, _INIT));
 
             _nvswitch_construct_ecc_error_event_ls10(&err_event,
                 NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_CRUMBSTORE_ECC_LIMIT_ERR, link,
@@ -4063,6 +4367,13 @@ _nvswitch_service_reduction_fatal_ls10
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_REDUCTIONTSTATE, _ERR_STATUS_0, _TAGPOOL_ECC_LIMIT_ERR, 1))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             NVSWITCH_ENG_WR32(device, NPORT, , link, _REDUCTIONTSTATE, _ERR_STATUS_0,
                 DRF_NUM(_REDUCTIONTSTATE, _ERR_STATUS_0, _TAGPOOL_ECC_LIMIT_ERR, 1));
         }
@@ -4105,6 +4416,13 @@ _nvswitch_service_reduction_fatal_ls10
         // Clear associated LIMIT_ERR interrupt
         if (report.raw_pending & DRF_NUM(_REDUCTIONTSTATE, _ERR_STATUS_0, _CRUMBSTORE_ECC_LIMIT_ERR, 1))
         {
+            //
+            // Driver WAR to disable NPG interrupt at GIN to prevent interrupt storm.
+            // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+            //
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF_EN_CLEAR(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX),
+                NVBIT(link / NVSWITCH_LINKS_PER_NPG_LS10));
+
             NVSWITCH_ENG_WR32(device, NPORT, , link, _REDUCTIONTSTATE, _ERR_STATUS_0,
                 DRF_NUM(_REDUCTIONTSTATE, _ERR_STATUS_0, _CRUMBSTORE_ECC_LIMIT_ERR, 1));
         }
@@ -4493,6 +4811,14 @@ _nvswitch_service_nvltlc_tx_sys_fatal_ls10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_TX_SYS_NCISOC_ECC_LIMIT_ERR, "NCISOC ECC Limit Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        //
+        // Driver WAR to disable ECC error and prevent an interrupt storm.
+        // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+        //
+        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_SYS, _ERR_FATAL_REPORT_EN_0,
+            report.raw_enable &
+            ~DRF_NUM(_NVLTLC_TX_SYS, _ERR_FATAL_REPORT_EN_0, _NCISOC_ECC_LIMIT_ERR, 1));
     }
 
     bit = DRF_NUM(_NVLTLC_TX_SYS, _ERR_STATUS_0, _TXPOISONDET, 1);
@@ -4603,6 +4929,14 @@ _nvswitch_service_nvltlc_rx_sys_fatal_ls10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RX_SYS_HDR_RAM_ECC_LIMIT_ERR, "HDR RAM ECC Limit Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        //
+        // Driver WAR to disable ECC error and prevent an interrupt storm.
+        // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+        //
+        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_FATAL_REPORT_EN_0,
+            report.raw_enable &
+            ~DRF_NUM(_NVLTLC_RX_SYS, _ERR_FATAL_REPORT_EN_0, _HDR_RAM_ECC_LIMIT_ERR, 1));
     }
 
     bit = DRF_NUM(_NVLTLC_RX_SYS, _ERR_STATUS_0, _DAT0_RAM_ECC_DBE_ERR, 1);
@@ -4622,6 +4956,14 @@ _nvswitch_service_nvltlc_rx_sys_fatal_ls10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RX_SYS_DAT0_RAM_ECC_LIMIT_ERR, "DAT0 RAM ECC Limit Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        //
+        // Driver WAR to disable ECC error and prevent an interrupt storm.
+        // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+        //
+        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_FATAL_REPORT_EN_0,
+            report.raw_enable &
+            ~DRF_NUM(_NVLTLC_RX_SYS, _ERR_FATAL_REPORT_EN_0, _DAT0_RAM_ECC_LIMIT_ERR, 1));
     }
 
     bit = DRF_NUM(_NVLTLC_RX_SYS, _ERR_STATUS_0, _DAT1_RAM_ECC_DBE_ERR, 1);
@@ -4641,6 +4983,14 @@ _nvswitch_service_nvltlc_rx_sys_fatal_ls10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RX_SYS_DAT1_RAM_ECC_LIMIT_ERR, "DAT1 RAM ECC Limit Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        //
+        // Driver WAR to disable ECC error and prevent an interrupt storm.
+        // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+        //
+        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_FATAL_REPORT_EN_0,
+            report.raw_enable &
+            ~DRF_NUM(_NVLTLC_RX_SYS, _ERR_FATAL_REPORT_EN_0, _DAT1_RAM_ECC_LIMIT_ERR, 1));
     }
 
     if (report.raw_first & report.mask)
@@ -6305,6 +6655,14 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_0_ls10
     {
         NVSWITCH_REPORT_NONFATAL(_HW_NVLTLC_TX_LNK_CREQ_RAM_ECC_LIMIT_ERR, "CREQ RAM DAT ECC Limit Error");
         nvswitch_clear_flags(&unhandled, bit);
+
+        //
+        // Driver WAR to disable ECC error and prevent an interrupt storm.
+        // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+        //
+        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_FATAL_REPORT_EN_0,
+            report.raw_enable &
+            ~DRF_NUM(_NVLTLC_TX_LNK, _ERR_FATAL_REPORT_EN_0, _CREQ_RAM_ECC_LIMIT_ERR, 1));
     }
 
     bit = DRF_NUM(_NVLTLC_TX_LNK, _ERR_STATUS_0, _RSP_RAM_DAT_ECC_DBE_ERR, 1);
@@ -6319,6 +6677,14 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_0_ls10
     {
         NVSWITCH_REPORT_NONFATAL(_HW_NVLTLC_TX_LNK_RSP_RAM_ECC_LIMIT_ERR, "Response RAM ECC Limit Error");
         nvswitch_clear_flags(&unhandled, bit);
+
+        //
+        // Driver WAR to disable ECC error and prevent an interrupt storm.
+        // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+        //
+        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_FATAL_REPORT_EN_0,
+            report.raw_enable &
+            ~DRF_NUM(_NVLTLC_TX_LNK, _ERR_FATAL_REPORT_EN_0, _RSP_RAM_ECC_LIMIT_ERR, 1));
     }
 
     bit = DRF_NUM(_NVLTLC_TX_LNK, _ERR_STATUS_0, _COM_RAM_DAT_ECC_DBE_ERR, 1);
@@ -6338,6 +6704,14 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_0_ls10
     {
         NVSWITCH_REPORT_NONFATAL(_HW_NVLTLC_TX_LNK_COM_RAM_ECC_LIMIT_ERR, "COM RAM ECC Limit Error");
         nvswitch_clear_flags(&unhandled, bit);
+
+        //
+        // Driver WAR to disable ECC error and prevent an interrupt storm.
+        // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+        //
+        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_FATAL_REPORT_EN_0,
+            report.raw_enable &
+            ~DRF_NUM(_NVLTLC_TX_LNK, _ERR_FATAL_REPORT_EN_0, _COM_RAM_ECC_LIMIT_ERR, 1));
     }
 
     bit = DRF_NUM(_NVLTLC_TX_LNK, _ERR_STATUS_0, _RSP1_RAM_ECC_LIMIT_ERR, 1);
@@ -6345,6 +6719,14 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_0_ls10
     {
         NVSWITCH_REPORT_NONFATAL(_HW_NVLTLC_TX_LNK_RSP1_RAM_ECC_LIMIT_ERR, "RSP1 RAM ECC Limit Error");
         nvswitch_clear_flags(&unhandled, bit);
+
+        //
+        // Driver WAR to disable ECC error and prevent an interrupt storm.
+        // TODO: Clear ECC_ERROR_COUNTER by sending command to SOE and remove the WAR.
+        //
+        NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_FATAL_REPORT_EN_0,
+            report.raw_enable &
+            ~DRF_NUM(_NVLTLC_TX_LNK, _ERR_FATAL_REPORT_EN_0, _RSP1_RAM_ECC_LIMIT_ERR, 1));
     }
 
     NVSWITCH_UNHANDLED_CHECK(device, unhandled);
@@ -7417,204 +7799,236 @@ nvswitch_lib_service_interrupts_ls10
     NvlStatus   status = NVL_SUCCESS;
     NvlStatus   return_status = NVL_SUCCESS;
     NvU32 val;
+    NvU32 topEnable;
+    NvU32 topIntr;
     NvU32 i;
 
     //
     // Interrupt handler steps:
+    // 1. Read Top Interrupt
     // 1. Read Leaf interrupt
     // 2. Clear leaf interrupt
     // 3. Run leaf specific interrupt handler
     //
-    val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_NVLW_NON_FATAL);
-    val = DRF_VAL(_CTRL, _CPU_INTR_NVLW_NON_FATAL, _MASK, val);
-    if (val != 0)
+
+    topEnable = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_TOP_EN_SET(0));
+    topIntr   = topEnable & NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_TOP(0));
+
+    if (FLD_TEST_DRF_NUM(_CTRL, _CPU_INTR_TOP_LEAF, _INTR_NVLW_NON_FATAL, 0x1, topIntr))
     {
-        NVSWITCH_PRINT(device, INFO, "%s: NVLW NON_FATAL interrupts pending = 0x%x\n",
-            __FUNCTION__, val);
-        NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF(NV_CTRL_CPU_INTR_NVLW_NON_FATAL_IDX), val);
-        for (i = 0; i < DRF_SIZE(NV_CTRL_CPU_INTR_NVLW_NON_FATAL_MASK); i++)
+        val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_NVLW_NON_FATAL);
+        val = DRF_VAL(_CTRL, _CPU_INTR_NVLW_NON_FATAL, _MASK, val);
+        if (val != 0)
         {
-            if (val & NVBIT(i))
+            NVSWITCH_PRINT(device, INFO, "%s: NVLW NON_FATAL interrupts pending = 0x%x\n",
+                __FUNCTION__, val);
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF(NV_CTRL_CPU_INTR_NVLW_NON_FATAL_IDX), val);
+            for (i = 0; i < DRF_SIZE(NV_CTRL_CPU_INTR_NVLW_NON_FATAL_MASK); i++)
             {
-                status = _nvswitch_service_nvlw_nonfatal_ls10(device, i);
-                if (status != NVL_SUCCESS)
+                if (val & NVBIT(i))
                 {
-                    NVSWITCH_PRINT(device, INFO, "%s: NVLW[%d] NON_FATAL interrupt handling status = %d\n",
-                        __FUNCTION__, i, status);
-                    return_status = status;
+                    status = _nvswitch_service_nvlw_nonfatal_ls10(device, i);
+                    if (status != NVL_SUCCESS)
+                    {
+                        NVSWITCH_PRINT(device, INFO, "%s: NVLW[%d] NON_FATAL interrupt handling status = %d\n",
+                            __FUNCTION__, i, status);
+                        return_status = status;
+                    }
                 }
             }
         }
     }
 
-    val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_NVLW_FATAL);
-    val = DRF_VAL(_CTRL, _CPU_INTR_NVLW_FATAL, _MASK, val);
-    if (val != 0)
+    if (FLD_TEST_DRF_NUM(_CTRL, _CPU_INTR_TOP_LEAF, _INTR_NVLW_FATAL, 0x1, topIntr))
     {
-        NVSWITCH_PRINT(device, INFO, "%s: NVLW FATAL interrupts pending = 0x%x\n",
-            __FUNCTION__, val);
-
-        NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF(NV_CTRL_CPU_INTR_NVLW_FATAL_IDX), val);
-
-        for (i = 0; i < DRF_SIZE(NV_CTRL_CPU_INTR_NVLW_FATAL_MASK); i++)
+        val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_NVLW_FATAL);
+        val = DRF_VAL(_CTRL, _CPU_INTR_NVLW_FATAL, _MASK, val);
+        if (val != 0)
         {
-            if (val & NVBIT(i))
+            NVSWITCH_PRINT(device, INFO, "%s: NVLW FATAL interrupts pending = 0x%x\n",
+                __FUNCTION__, val);
+
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF(NV_CTRL_CPU_INTR_NVLW_FATAL_IDX), val);
+
+            for (i = 0; i < DRF_SIZE(NV_CTRL_CPU_INTR_NVLW_FATAL_MASK); i++)
             {
-                status = _nvswitch_service_nvlw_fatal_ls10(device, i);
-                if (status != NVL_SUCCESS)
+                if (val & NVBIT(i))
                 {
-                    NVSWITCH_PRINT(device, INFO, "%s: NVLW[%d] FATAL interrupt handling status = %d\n",
-                        __FUNCTION__, i, status);
-                    return_status = status;
+                    status = _nvswitch_service_nvlw_fatal_ls10(device, i);
+                    if (status != NVL_SUCCESS)
+                    {
+                        NVSWITCH_PRINT(device, INFO, "%s: NVLW[%d] FATAL interrupt handling status = %d\n",
+                            __FUNCTION__, i, status);
+                        return_status = status;
+                    }
                 }
             }
         }
     }
 
-    val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_NVLW_CORRECTABLE);
-    val = DRF_VAL(_CTRL, _CPU_INTR_NVLW_CORRECTABLE, _MASK, val);
-    if (val != 0)
+    if (FLD_TEST_DRF_NUM(_CTRL, _CPU_INTR_TOP_LEAF, _INTR_NVLW_CORRECTABLE, 0x1, topIntr))
     {
-        NVSWITCH_PRINT(device, ERROR, "%s: NVLW CORRECTABLE interrupts pending = 0x%x\n",
-            __FUNCTION__, val);
-        return_status = -NVL_MORE_PROCESSING_REQUIRED;
+        val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_NVLW_CORRECTABLE);
+        val = DRF_VAL(_CTRL, _CPU_INTR_NVLW_CORRECTABLE, _MASK, val);
+        if (val != 0)
+        {
+            NVSWITCH_PRINT(device, ERROR, "%s: NVLW CORRECTABLE interrupts pending = 0x%x\n",
+                __FUNCTION__, val);
+            return_status = -NVL_MORE_PROCESSING_REQUIRED;
+        }
     }
 
     // Check NPG
-    val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_NPG_FATAL);
-    val = DRF_VAL(_CTRL, _CPU_INTR_NPG_FATAL, _MASK, val);
-    if (val != 0)
+    if (FLD_TEST_DRF_NUM(_CTRL, _CPU_INTR_TOP_LEAF, _INTR_NPG_FATAL, 0x1, topIntr))
     {
-        NVSWITCH_PRINT(device, INFO, "%s: NPG FATAL interrupts pending = 0x%x\n",
-            __FUNCTION__, val);
-        NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF(NV_CTRL_CPU_INTR_NPG_FATAL_IDX), val);
-        for (i = 0; i < DRF_SIZE(NV_CTRL_CPU_INTR_NPG_FATAL_MASK); i++)
+        val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_NPG_FATAL);
+        val = DRF_VAL(_CTRL, _CPU_INTR_NPG_FATAL, _MASK, val);
+        if (val != 0)
         {
-            if (val & NVBIT(i))
+            NVSWITCH_PRINT(device, INFO, "%s: NPG FATAL interrupts pending = 0x%x\n",
+                __FUNCTION__, val);
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF(NV_CTRL_CPU_INTR_NPG_FATAL_IDX), val);
+            for (i = 0; i < DRF_SIZE(NV_CTRL_CPU_INTR_NPG_FATAL_MASK); i++)
             {
-                status = _nvswitch_service_npg_fatal_ls10(device, i);
-                if (status != NVL_SUCCESS)
+                if (val & NVBIT(i))
                 {
-                    NVSWITCH_PRINT(device, INFO, "%s: NPG[%d] FATAL interrupt handling status = %d\n",
-                        __FUNCTION__, i, status);
-                    return_status = status;
+                    status = _nvswitch_service_npg_fatal_ls10(device, i);
+                    if (status != NVL_SUCCESS)
+                    {
+                        NVSWITCH_PRINT(device, INFO, "%s: NPG[%d] FATAL interrupt handling status = %d\n",
+                            __FUNCTION__, i, status);
+                        return_status = status;
+                    }
                 }
             }
         }
     }
 
-    val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_NPG_NON_FATAL);
-    val = DRF_VAL(_CTRL, _CPU_INTR_NPG_NON_FATAL, _MASK, val);
-    if (val != 0)
+    // Check NPG
+    if (FLD_TEST_DRF_NUM(_CTRL, _CPU_INTR_TOP_LEAF, _INTR_NPG_NON_FATAL, 0x1, topIntr))
     {
-        NVSWITCH_PRINT(device, INFO, "%s: NPG NON_FATAL interrupts pending = 0x%x\n",
-            __FUNCTION__, val);
-        NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX), val);
-        for (i = 0; i < DRF_SIZE(NV_CTRL_CPU_INTR_NPG_NON_FATAL_MASK); i++)
+        val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_NPG_NON_FATAL);
+        val = DRF_VAL(_CTRL, _CPU_INTR_NPG_NON_FATAL, _MASK, val);
+        if (val != 0)
         {
-            if (val & NVBIT(i))
+            NVSWITCH_PRINT(device, INFO, "%s: NPG NON_FATAL interrupts pending = 0x%x\n",
+                __FUNCTION__, val);
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF(NV_CTRL_CPU_INTR_NPG_NON_FATAL_IDX), val);
+            for (i = 0; i < DRF_SIZE(NV_CTRL_CPU_INTR_NPG_NON_FATAL_MASK); i++)
             {
-                status = _nvswitch_service_npg_nonfatal_ls10(device, i);
-                if (status != NVL_SUCCESS)
+                if (val & NVBIT(i))
                 {
-                    NVSWITCH_PRINT(device, INFO, "%s: NPG[%d] NON_FATAL interrupt handling status = %d\n",
-                        __FUNCTION__, i, status);
-                    return_status = status;
+                    status = _nvswitch_service_npg_nonfatal_ls10(device, i);
+                    if (status != NVL_SUCCESS)
+                    {
+                        NVSWITCH_PRINT(device, INFO, "%s: NPG[%d] NON_FATAL interrupt handling status = %d\n",
+                            __FUNCTION__, i, status);
+                        return_status = status;
+                    }
                 }
             }
         }
     }
 
-    val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_NPG_CORRECTABLE);
-    val = DRF_VAL(_CTRL, _CPU_INTR_NPG_CORRECTABLE, _MASK, val);
-    if (val != 0)
+    if (FLD_TEST_DRF_NUM(_CTRL, _CPU_INTR_TOP_LEAF, _INTR_NPG_CORRECTABLE, 0x1, topIntr))
     {
-        NVSWITCH_PRINT(device, ERROR, "%s: NPG CORRECTABLE interrupts pending = 0x%x\n",
-            __FUNCTION__, val);
-        return_status = -NVL_MORE_PROCESSING_REQUIRED;
+        val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_NPG_CORRECTABLE);
+        val = DRF_VAL(_CTRL, _CPU_INTR_NPG_CORRECTABLE, _MASK, val);
+        if (val != 0)
+        {
+            NVSWITCH_PRINT(device, ERROR, "%s: NPG CORRECTABLE interrupts pending = 0x%x\n",
+                __FUNCTION__, val);
+            return_status = -NVL_MORE_PROCESSING_REQUIRED;
+        }
     }
 
     // Check NXBAR
-    val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_NXBAR_FATAL);
-    val = DRF_VAL(_CTRL, _CPU_INTR_NXBAR_FATAL, _MASK, val);
-    if (val != 0)
+    if (FLD_TEST_DRF_NUM(_CTRL, _CPU_INTR_TOP_LEAF, _INTR_NXBAR_FATAL, 0x1, topIntr))
     {
-        NVSWITCH_PRINT(device, INFO, "%s: NXBAR FATAL interrupts pending = 0x%x\n",
-            __FUNCTION__, val);
-        NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF(NV_CTRL_CPU_INTR_NXBAR_FATAL_IDX), val);
-        for (i = 0; i < DRF_SIZE(NV_CTRL_CPU_INTR_NXBAR_FATAL_MASK); i++)
+        val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_NXBAR_FATAL);
+        val = DRF_VAL(_CTRL, _CPU_INTR_NXBAR_FATAL, _MASK, val);
+        if (val != 0)
         {
-            if (val & NVBIT(i))
+            NVSWITCH_PRINT(device, INFO, "%s: NXBAR FATAL interrupts pending = 0x%x\n",
+                __FUNCTION__, val);
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF(NV_CTRL_CPU_INTR_NXBAR_FATAL_IDX), val);
+            for (i = 0; i < DRF_SIZE(NV_CTRL_CPU_INTR_NXBAR_FATAL_MASK); i++)
             {
-                status = _nvswitch_service_nxbar_fatal_ls10(device, i);
-                if (status != NVL_SUCCESS)
+                if (val & NVBIT(i))
                 {
-                    NVSWITCH_PRINT(device, INFO, "%s: NXBAR[%d] FATAL interrupt handling status = %d\n",
-                        __FUNCTION__, i, status);
-                    return_status = status;
+                    status = _nvswitch_service_nxbar_fatal_ls10(device, i);
+                    if (status != NVL_SUCCESS)
+                    {
+                        NVSWITCH_PRINT(device, INFO, "%s: NXBAR[%d] FATAL interrupt handling status = %d\n",
+                            __FUNCTION__, i, status);
+                        return_status = status;
+                    }
                 }
             }
         }
     }
 
     // Check UNITS
-    val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_UNITS);
-    if (val != 0)
+    if (FLD_TEST_DRF_NUM(_CTRL, _CPU_INTR_TOP_LEAF, _INTR_UNITS, 0x1, topIntr))
     {
-        NVSWITCH_PRINT(device, MMIO, "%s: UNIT interrupts pending = 0x%x\n",
-            __FUNCTION__, val);
+        val = NVSWITCH_ENG_RD32(device, GIN, , 0, _CTRL, _CPU_INTR_UNITS);
+        if (val != 0)
+        {
+            NVSWITCH_PRINT(device, MMIO, "%s: UNIT interrupts pending = 0x%x\n",
+                __FUNCTION__, val);
 
-        NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF(NV_CTRL_CPU_INTR_UNITS_IDX), val);
-        if (FLD_TEST_DRF_NUM(_CTRL, _CPU_INTR_UNITS, _PMGR_HOST, 1, val))
-        {
-            NVSWITCH_PRINT(device, ERROR, "%s: _PMGR_HOST interrupt pending\n",
-                __FUNCTION__);
-            return_status = -NVL_MORE_PROCESSING_REQUIRED;
-        }
-        if (FLD_TEST_DRF_NUM(_CTRL, _CPU_INTR_UNITS, _PTIMER, 1, val))
-        {
-            NVSWITCH_PRINT(device, ERROR, "%s: _PTIMER interrupt pending\n",
-                __FUNCTION__);
-            return_status = -NVL_MORE_PROCESSING_REQUIRED;
-        }
-        if (FLD_TEST_DRF_NUM(_CTRL, _CPU_INTR_UNITS, _PTIMER_ALARM, 1, val))
-        {
-            NVSWITCH_PRINT(device, ERROR, "%s: _PTIMER_ALARM interrupt pending\n",
-                __FUNCTION__);
-            return_status = -NVL_MORE_PROCESSING_REQUIRED;
-        }
-        if (FLD_TEST_DRF_NUM(_CTRL, _CPU_INTR_UNITS, _XTL_CPU, 1, val))
-        {
-            NVSWITCH_PRINT(device, ERROR, "%s: _XTL_CPU interrupt pending\n",
-                __FUNCTION__);
-            return_status = -NVL_MORE_PROCESSING_REQUIRED;
-        }
-        if (FLD_TEST_DRF_NUM(_CTRL, _CPU_INTR_UNITS, _XAL_EP, 1, val))
-        {
-            NVSWITCH_PRINT(device, ERROR, "%s: _XAL_EP interrupt pending\n",
-                __FUNCTION__);
-            return_status = -NVL_MORE_PROCESSING_REQUIRED;
-        }
-        if (FLD_TEST_DRF_NUM(_CTRL, _CPU_INTR_UNITS, _PRIV_RING, 1, val))
-        {
-            status = _nvswitch_service_priv_ring_ls10(device);
-            if (status != NVL_SUCCESS)
+            NVSWITCH_ENG_WR32(device, GIN, , 0, _CTRL, _CPU_INTR_LEAF(NV_CTRL_CPU_INTR_UNITS_IDX), val);
+            if (FLD_TEST_DRF_NUM(_CTRL, _CPU_INTR_UNITS, _PMGR_HOST, 1, val))
             {
-                NVSWITCH_PRINT(device, ERROR, "%s: Problem handling PRI errors\n",
+                NVSWITCH_PRINT(device, ERROR, "%s: _PMGR_HOST interrupt pending\n",
                     __FUNCTION__);
-                return_status = status;
+                return_status = -NVL_MORE_PROCESSING_REQUIRED;
             }
-        }
-        if (!IS_RTLSIM(device) && !IS_FMODEL(device))
-        {
-            if (FLD_TEST_DRF_NUM(_CTRL, _CPU_INTR_UNITS, _SEC0_INTR0_0, 1, val))
+            if (FLD_TEST_DRF_NUM(_CTRL, _CPU_INTR_UNITS, _PTIMER, 1, val))
             {
-                status = _nvswitch_service_soe_fatal_ls10(device);
+                NVSWITCH_PRINT(device, ERROR, "%s: _PTIMER interrupt pending\n",
+                    __FUNCTION__);
+                return_status = -NVL_MORE_PROCESSING_REQUIRED;
+            }
+            if (FLD_TEST_DRF_NUM(_CTRL, _CPU_INTR_UNITS, _PTIMER_ALARM, 1, val))
+            {
+                NVSWITCH_PRINT(device, ERROR, "%s: _PTIMER_ALARM interrupt pending\n",
+                    __FUNCTION__);
+                return_status = -NVL_MORE_PROCESSING_REQUIRED;
+            }
+            if (FLD_TEST_DRF_NUM(_CTRL, _CPU_INTR_UNITS, _XTL_CPU, 1, val))
+            {
+                NVSWITCH_PRINT(device, ERROR, "%s: _XTL_CPU interrupt pending\n",
+                    __FUNCTION__);
+                return_status = -NVL_MORE_PROCESSING_REQUIRED;
+            }
+            if (FLD_TEST_DRF_NUM(_CTRL, _CPU_INTR_UNITS, _XAL_EP, 1, val))
+            {
+                NVSWITCH_PRINT(device, ERROR, "%s: _XAL_EP interrupt pending\n",
+                    __FUNCTION__);
+                return_status = -NVL_MORE_PROCESSING_REQUIRED;
+            }
+            if (FLD_TEST_DRF_NUM(_CTRL, _CPU_INTR_UNITS, _PRIV_RING, 1, val))
+            {
+                status = _nvswitch_service_priv_ring_ls10(device);
                 if (status != NVL_SUCCESS)
                 {
-                    NVSWITCH_PRINT(device, ERROR, "%s: Problem servicing SOE",
+                    NVSWITCH_PRINT(device, ERROR, "%s: Problem handling PRI errors\n",
                         __FUNCTION__);
                     return_status = status;
+                }
+            }
+            if (!IS_RTLSIM(device) && !IS_FMODEL(device))
+            {
+                if (FLD_TEST_DRF_NUM(_CTRL, _CPU_INTR_UNITS, _SEC0_INTR0_0, 1, val))
+                {
+                    status = _nvswitch_service_soe_fatal_ls10(device);
+                    if (status != NVL_SUCCESS)
+                    {
+                        NVSWITCH_PRINT(device, ERROR, "%s: Problem servicing SOE",
+                            __FUNCTION__);
+                        return_status = status;
+                    }
                 }
             }
         }

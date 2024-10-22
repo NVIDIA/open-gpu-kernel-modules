@@ -2121,8 +2121,8 @@ kvgpumgrCreateRequestVgpu(NvU32 gpuPciId, const NvU8 *pMdevUuid,
 
     if (pGpu == NULL)
     {
-        NV_PRINTF(LEVEL_ERROR, "GPU handle is not valid \n");
-        return NV_ERR_INVALID_STATE;
+        NV_PRINTF(LEVEL_ERROR, "GPU %u is not initialized yet \n", gpuPciBdf);
+        return NV_ERR_TIMEOUT_RETRY;
     }
 
     if ((status = kvgpumgrGetPgpuIndex(pKernelVgpuMgr, gpuPciId, &pgpuIndex)) != NV_OK)

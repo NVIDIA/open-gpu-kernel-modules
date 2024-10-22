@@ -493,9 +493,8 @@ gpuIsProtectedPcieEnabledInHw_GH100
     OBJGPU *pGpu
 )
 {
-    NvU32 val = GPU_REG_RD32(pGpu, NV_PGC6_AON_SECURE_SCRATCH_GROUP_20_CC);
-    return FLD_TEST_DRF(_PGC6, _AON_SECURE_SCRATCH_GROUP_20_CC, _MULTI_GPU_MODE,
-                        _PROTECTED_PCIE, val);
+    // Bug 4870925: Disabled PPCIE
+    return NV_FALSE;
 }
 
 /*!

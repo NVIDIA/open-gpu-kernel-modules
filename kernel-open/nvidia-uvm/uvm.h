@@ -379,6 +379,17 @@ NV_STATUS UvmIsPageableMemoryAccessSupportedOnGpu(const NvProcessorUuid *gpuUuid
 //         OS state required to register the GPU is malformed, or the partition
 //         identified by the user handles or its configuration changed.
 //
+//     NV_ERR_NVSWITCH_FABRIC_NOT_READY:
+//         (On NvSwitch-connected system) Indicates that the fabric has not been
+//         configured yet. Caller must retry GPU registration.
+//
+//     NV_ERR_NVSWITCH_FABRIC_FAILURE:
+//         (On NvSwitch-connected systems) Indicates that the NvLink fabric
+//         failed to be configured.
+//
+//     NV_ERR_GPU_MEMORY_ONLINING_FAULURE:
+//         (On coherent systems) The GPU's memory onlining failed.
+//
 //     NV_ERR_GENERIC:
 //         Unexpected error. We try hard to avoid returning this error code,
 //         because it is not very informative.

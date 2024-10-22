@@ -40,6 +40,9 @@
 #if !defined(NV_BUS_TYPE_HAS_IOMMU_OPS)
 #include <linux/iommu.h>
 #endif
+#if NV_IS_EXPORT_SYMBOL_GPL_pci_ats_supported
+#include <linux/pci-ats.h>
+#endif
 
 static void
 nv_check_and_exclude_gpu(
@@ -781,10 +784,15 @@ next_bar:
     // PPC64LE platform where ATS is currently supported (IBM P9).
     nv_ats_supported &= nv_platform_supports_numa(nvl);
 #else
-#if defined(NV_PCI_DEV_HAS_ATS_ENABLED)
+#if NV_IS_EXPORT_SYMBOL_GPL_pci_ats_supported
+    nv_ats_supported &= pci_ats_supported(pci_dev);
+#elif defined(NV_PCI_DEV_HAS_ATS_ENABLED)
     nv_ats_supported &= pci_dev->ats_enabled;
+#else
+    nv_ats_supported = NV_FALSE;
 #endif
 #endif
+
     if (nv_ats_supported)
     {
         NV_DEV_PRINTF(NV_DBG_INFO, nv, "ATS supported by this GPU!\n");

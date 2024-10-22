@@ -188,11 +188,7 @@ struct semaphore nv_linux_devices_lock;
 
 // True if all the successfully probed devices support ATS
 // Assigned at device probe (module init) time
-NvBool nv_ats_supported = NVCPU_IS_PPC64LE
-#if defined(NV_PCI_DEV_HAS_ATS_ENABLED)
-                          || NV_TRUE
-#endif
-;
+NvBool nv_ats_supported = NV_TRUE;
 
 // allow an easy way to convert all debug printfs related to events
 // back and forth between 'info' and 'errors'

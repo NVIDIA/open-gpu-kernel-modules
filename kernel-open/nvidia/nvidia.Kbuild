@@ -231,6 +231,7 @@ NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_tsec_comms_free_gsc
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_memory_block_size_bytes
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += crypto
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_follow_pte
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_pci_ats_supported
 
 NV_CONFTEST_TYPE_COMPILE_TESTS += dma_ops
 NV_CONFTEST_TYPE_COMPILE_TESTS += swiotlb_dma_ops

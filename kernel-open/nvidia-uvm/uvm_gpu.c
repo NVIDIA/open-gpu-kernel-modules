@@ -138,6 +138,7 @@ static NV_STATUS get_gpu_caps(uvm_gpu_t *gpu)
 
     if (gpu_caps.numaEnabled) {
         UVM_ASSERT(uvm_parent_gpu_is_coherent(gpu->parent));
+
         gpu->mem_info.numa.enabled = true;
         gpu->mem_info.numa.node_id = gpu_caps.numaNodeId;
     }
@@ -1280,7 +1281,8 @@ static NV_STATUS init_gpu(uvm_gpu_t *gpu, const UvmGpuInfo *gpu_info)
 
     status = get_gpu_caps(gpu);
     if (status != NV_OK) {
-        UVM_ERR_PRINT("Failed to get GPU caps: %s, GPU %s\n", nvstatusToString(status), uvm_gpu_name(gpu));
+        if (status != NV_ERR_NVSWITCH_FABRIC_NOT_READY)
+            UVM_ERR_PRINT("Failed to get GPU caps: %s, GPU %s\n", nvstatusToString(status), uvm_gpu_name(gpu));
         return status;
     }
 

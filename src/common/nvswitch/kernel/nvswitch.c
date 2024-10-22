@@ -6138,26 +6138,66 @@ nvswitch_lib_ctrl_tnvl_lock_only
                 _nvswitch_ctrl_get_inforom_bbx_temp_samples,
                 NVSWITCH_GET_TEMP_SAMPLES_PARAMS,
                 osPrivate, flags);
-        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+        NVSWITCH_DEV_CMD_DISPATCH(
                 CTRL_NVSWITCH_GET_ATTESTATION_CERTIFICATE_CHAIN,
                 _nvswitch_ctrl_get_attestation_certificate_chain,
-                NVSWITCH_GET_ATTESTATION_CERTIFICATE_CHAIN_PARAMS,
-                osPrivate, flags);
-        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                NVSWITCH_GET_ATTESTATION_CERTIFICATE_CHAIN_PARAMS);
+        NVSWITCH_DEV_CMD_DISPATCH(
                 CTRL_NVSWITCH_GET_ATTESTATION_REPORT,
                 _nvswitch_ctrl_get_attestation_report,
-                NVSWITCH_GET_ATTESTATION_REPORT_PARAMS,
-                osPrivate, flags);
-        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                NVSWITCH_GET_ATTESTATION_REPORT_PARAMS);
+        NVSWITCH_DEV_CMD_DISPATCH(
                 CTRL_NVSWITCH_GET_TNVL_STATUS,
                 _nvswitch_ctrl_get_tnvl_status,
-                NVSWITCH_GET_TNVL_STATUS_PARAMS,
-                osPrivate, flags);
+                NVSWITCH_GET_TNVL_STATUS_PARAMS);
         NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
                 CTRL_NVSWITCH_SET_FM_DRIVER_STATE,
                 nvswitch_ctrl_set_fm_driver_state,
                 NVSWITCH_SET_FM_DRIVER_STATE_PARAMS,
                 osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_ERRORS,
+                nvswitch_ctrl_get_errors,
+                NVSWITCH_GET_ERRORS_PARAMS);
+        NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_BIOS_INFO,
+                _nvswitch_ctrl_get_bios_info,
+                NVSWITCH_GET_BIOS_INFO_PARAMS);
+        NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_TEMPERATURE,
+                _nvswitch_ctrl_therm_read_temperature,
+                NVSWITCH_CTRL_GET_TEMPERATURE_PARAMS);
+        NVSWITCH_DEV_CMD_DISPATCH(
+                CTRL_NVSWITCH_GET_TEMPERATURE_LIMIT,
+                _nvswitch_ctrl_therm_get_temperature_limit,
+                NVSWITCH_CTRL_GET_TEMPERATURE_LIMIT_PARAMS);
+        NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_FATAL_ERROR_SCOPE,
+                _nvswitch_ctrl_get_fatal_error_scope,
+                NVSWITCH_GET_FATAL_ERROR_SCOPE_PARAMS);
+        NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_INFO,
+                _nvswitch_ctrl_get_info,
+                NVSWITCH_GET_INFO);
+        NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_VOLTAGE,
+                _nvswitch_ctrl_therm_read_voltage,
+                NVSWITCH_CTRL_GET_VOLTAGE_PARAMS);
+        NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_POWER,
+                _nvswitch_ctrl_therm_read_power,
+                NVSWITCH_GET_POWER_PARAMS);
+        NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_NVLINK_STATUS,
+                _nvswitch_ctrl_get_nvlink_status,
+                NVSWITCH_GET_NVLINK_STATUS_PARAMS);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_GET_NVLINK_ECC_ERRORS,
+                _nvswitch_ctrl_get_nvlink_ecc_errors,
+                NVSWITCH_GET_NVLINK_ECC_ERRORS_PARAMS,
+                osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_INTERNAL_LATENCY,
+                _nvswitch_ctrl_get_internal_latency,
+                NVSWITCH_GET_INTERNAL_LATENCY);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(CTRL_NVSWITCH_SET_NVLINK_ERROR_THRESHOLD,
+                _nvswitch_ctrl_set_nvlink_error_threshold,
+                NVSWITCH_SET_NVLINK_ERROR_THRESHOLD_PARAMS,
+                osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_NVLINK_ERROR_THRESHOLD,
+                _nvswitch_ctrl_get_nvlink_error_threshold,
+                NVSWITCH_GET_NVLINK_ERROR_THRESHOLD_PARAMS);
         default:
             nvswitch_os_print(NVSWITCH_DBG_LEVEL_INFO, "ioctl %x is not permitted when TNVL is locked\n", cmd);
             return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
