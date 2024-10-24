@@ -585,7 +585,7 @@ static int nv_p2p_get_pages(
                                           *page_table, nv_p2p_mem_info_free_callback, mem_info);
         if (status != NV_OK)
         {
-            goto failed;
+            goto failed_nofree;
         }
     }
 
@@ -609,6 +609,7 @@ failed:
         os_free_mem(rreqmb_h);
     }
 
+failed_nofree:
     if (bGetPages)
     {
         (void)nv_p2p_put_pages(pt_type, sp, p2p_token, va_space,
