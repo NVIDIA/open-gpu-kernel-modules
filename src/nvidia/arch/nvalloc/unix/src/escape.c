@@ -167,11 +167,25 @@ static void RmCreateOsDescriptor(NVOS32_PARAMETERS *pApi, API_SECURITY_INFO secI
     }
     else if (rmStatus == NV_ERR_INVALID_ADDRESS)
     {
-        rmStatus = os_lookup_user_io_memory(pDescriptor, pageCount, &pPteArray);
+        rmStatus = os_lookup_user_io_memory(pDescriptor, pageCount,
+                &pPteArray, &pPageArray);
         if (rmStatus == NV_OK)
         {
-            pApi->data.AllocOsDesc.descriptor = (NvP64)(NvUPtr)pPteArray;
-            pApi->data.AllocOsDesc.descriptorType = NVOS32_DESCRIPTOR_TYPE_OS_IO_MEMORY;
+            if (pPageArray != NULL)
+            {
+                pApi->data.AllocOsDesc.descriptor = (NvP64)(NvUPtr)pPageArray;
+                pApi->data.AllocOsDesc.descriptorType = NVOS32_DESCRIPTOR_TYPE_OS_PAGE_ARRAY;
+            }
+            else if (pPteArray != NULL)
+            {
+                pApi->data.AllocOsDesc.descriptor = (NvP64)(NvUPtr)pPteArray;
+                pApi->data.AllocOsDesc.descriptorType = NVOS32_DESCRIPTOR_TYPE_OS_IO_MEMORY;
+            }
+            else
+            {
+                NV_ASSERT_FAILED("unknown memory import type");
+                rmStatus = NV_ERR_NOT_SUPPORTED;
+            }
         }
     }
     if (rmStatus != NV_OK)
