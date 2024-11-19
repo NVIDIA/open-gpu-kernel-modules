@@ -901,6 +901,8 @@ static const CHIPS_RELEASED sChipsReleased[] = {
     { 0x2324, 0x17a8, 0x10de, "NVIDIA H800" },
     { 0x2329, 0x198b, 0x10de, "NVIDIA H20" },
     { 0x2329, 0x198c, 0x10de, "NVIDIA H20" },
+    { 0x232C, 0x2063, 0x10de, "NVIDIA H20-3e" },
+    { 0x232C, 0x2064, 0x10de, "NVIDIA H20-3e" },
     { 0x2330, 0x16c0, 0x10de, "NVIDIA H100 80GB HBM3" },
     { 0x2330, 0x16c1, 0x10de, "NVIDIA H100 80GB HBM3" },
     { 0x2331, 0x1626, 0x10de, "NVIDIA H100 PCIe" },
