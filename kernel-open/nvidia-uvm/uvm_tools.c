@@ -2206,7 +2206,7 @@ NV_STATUS uvm_api_tools_init_event_tracker(UVM_TOOLS_INIT_EVENT_TRACKER_PARAMS *
             goto fail;
     }
 
-    if (nv_atomic_long_cmpxchg((atomic_long_t *)&filp->private_data, 0, (long)event_tracker) != 0) {
+    if (atomic_long_cmpxchg((atomic_long_t *)&filp->private_data, 0, (long)event_tracker) != 0) {
         status = NV_ERR_INVALID_ARGUMENT;
         goto fail;
     }
@@ -2577,7 +2577,7 @@ static NV_STATUS tools_access_process_memory(uvm_va_space_t *va_space,
         bool map_stage_mem_on_gpus = true;
 
         if (is_write) {
-            NvU64 remaining = nv_copy_from_user(stage_addr, user_va_start, bytes_now);
+            NvU64 remaining = copy_from_user(stage_addr, user_va_start, bytes_now);
             if (remaining != 0)  {
                 status = NV_ERR_INVALID_ARGUMENT;
                 goto exit;
@@ -2660,7 +2660,7 @@ static NV_STATUS tools_access_process_memory(uvm_va_space_t *va_space,
             // point where the data is copied out.
             nv_speculation_barrier();
 
-            remaining = nv_copy_to_user(user_va_start, stage_addr, bytes_now);
+            remaining = copy_to_user(user_va_start, stage_addr, bytes_now);
             if (remaining > 0) {
                 status = NV_ERR_INVALID_ARGUMENT;
                 goto exit;
@@ -2808,7 +2808,7 @@ NV_STATUS uvm_api_tools_get_processor_uuid_table(UVM_TOOLS_GET_PROCESSOR_UUID_TA
     uvm_va_space_up_read(va_space);
 
     if (params->tablePtr)
-        remaining = nv_copy_to_user((void *)params->tablePtr, uuids, sizeof(NvProcessorUuid) * count);
+        remaining = copy_to_user((void *)params->tablePtr, uuids, sizeof(NvProcessorUuid) * count);
     else
         remaining = 0;
     uvm_kvfree(uuids);

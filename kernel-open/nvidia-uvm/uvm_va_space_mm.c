@@ -588,7 +588,7 @@ NV_STATUS uvm_test_va_space_mm_or_current_retain(UVM_TEST_VA_SPACE_MM_OR_CURRENT
     if (params->retain_done_ptr) {
         NvU64 flag = true;
 
-        if (nv_copy_to_user((void __user *)params->retain_done_ptr, &flag, sizeof(flag)))
+        if (copy_to_user((void __user *)params->retain_done_ptr, &flag, sizeof(flag)))
             status = NV_ERR_INVALID_ARGUMENT;
     }
 

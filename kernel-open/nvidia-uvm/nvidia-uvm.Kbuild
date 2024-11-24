@@ -13,19 +13,6 @@ NVIDIA_UVM_OBJECTS =
 include $(src)/nvidia-uvm/nvidia-uvm-sources.Kbuild
 NVIDIA_UVM_OBJECTS += $(patsubst %.c,%.o,$(NVIDIA_UVM_SOURCES))
 
-# Some linux kernel functions rely on being built with optimizations on and
-# to work around this we put wrappers for them in a separate file that's built
-# with optimizations on in debug builds and skipped in other builds.
-# Notably gcc 4.4 supports per function optimization attributes that would be
-# easier to use, but is too recent to rely on for now.
-NVIDIA_UVM_DEBUG_OPTIMIZED_SOURCE := nvidia-uvm/uvm_debug_optimized.c
-NVIDIA_UVM_DEBUG_OPTIMIZED_OBJECT := $(patsubst %.c,%.o,$(NVIDIA_UVM_DEBUG_OPTIMIZED_SOURCE))
-
-ifneq ($(UVM_BUILD_TYPE),debug)
-  # Only build the wrappers on debug builds
-  NVIDIA_UVM_OBJECTS := $(filter-out $(NVIDIA_UVM_DEBUG_OPTIMIZED_OBJECT), $(NVIDIA_UVM_OBJECTS))
-endif
-
 obj-m += nvidia-uvm.o
 nvidia-uvm-y := $(NVIDIA_UVM_OBJECTS)
 
@@ -36,15 +23,14 @@ NVIDIA_UVM_KO = nvidia-uvm/nvidia-uvm.ko
 #
 
 ifeq ($(UVM_BUILD_TYPE),debug)
-  NVIDIA_UVM_CFLAGS += -DDEBUG -O1 -g
-else
-  ifeq ($(UVM_BUILD_TYPE),develop)
-    # -DDEBUG is required, in order to allow pr_devel() print statements to
-    # work:
-    NVIDIA_UVM_CFLAGS += -DDEBUG
-    NVIDIA_UVM_CFLAGS += -DNVIDIA_UVM_DEVELOP
-  endif
-  NVIDIA_UVM_CFLAGS += -O2
+  NVIDIA_UVM_CFLAGS += -DDEBUG -g
+endif
+
+ifeq ($(UVM_BUILD_TYPE),develop)
+  # -DDEBUG is required, in order to allow pr_devel() print statements to
+  # work:
+  NVIDIA_UVM_CFLAGS += -DDEBUG
+  NVIDIA_UVM_CFLAGS += -DNVIDIA_UVM_DEVELOP
 endif
 
 NVIDIA_UVM_CFLAGS += -DNVIDIA_UVM_ENABLED
@@ -55,11 +41,6 @@ NVIDIA_UVM_CFLAGS += -D__linux__
 NVIDIA_UVM_CFLAGS += -I$(src)/nvidia-uvm
 
 $(call ASSIGN_PER_OBJ_CFLAGS, $(NVIDIA_UVM_OBJECTS), $(NVIDIA_UVM_CFLAGS))
-
-ifeq ($(UVM_BUILD_TYPE),debug)
-  # Force optimizations on for the wrappers
-  $(call ASSIGN_PER_OBJ_CFLAGS, $(NVIDIA_UVM_DEBUG_OPTIMIZED_OBJECT), $(NVIDIA_UVM_CFLAGS) -O2)
-endif
 
 #
 # Register the conftests needed by nvidia-uvm.ko
@@ -88,6 +69,7 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += iommu_sva_bind_device_has_drvdata_arg
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += vm_fault_to_errno
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += find_next_bit_wrap
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += iommu_is_dma_domain
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += folio_test_swapcache
 
 NV_CONFTEST_TYPE_COMPILE_TESTS += backing_dev_info
 NV_CONFTEST_TYPE_COMPILE_TESTS += mm_context_t

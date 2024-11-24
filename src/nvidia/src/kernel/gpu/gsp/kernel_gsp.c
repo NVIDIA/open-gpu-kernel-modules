@@ -531,6 +531,67 @@ _kgspRpcRCTriggered
                            NV_ERR_INVALID_CHANNEL);
     }
 
+    // Add the RcDiag records we received from GSP-RM to our system wide journal
+    {
+        OBJSYS   *pSys = SYS_GET_INSTANCE();
+        Journal  *pRcDB = SYS_GET_RCDB(pSys);
+        RmClient *pClient;
+
+        NvU32 recordSize = rcdbGetOcaRecordSizeWithHeader(pRcDB, RmRcDiagReport);
+        NvU32 rcDiagRecStart = pRcDB->RcErrRptNextIdx;
+        NvU32 rcDiagRecEnd;
+        NvU32 processId = 0;
+        NvU32 owner = RCDB_RCDIAG_DEFAULT_OWNER;
+
+        if (pKernelChannel != NULL)
+        {
+            pClient = dynamicCast(RES_GET_CLIENT(pKernelChannel), RmClient);
+            NV_ASSERT(pClient != NULL);
+            if (pClient != NULL)
+                processId = pClient->ProcID;
+        }
+
+        for (NvU32 i = 0; i < rpc_params->rcJournalBufferSize / recordSize; i++)
+        {
+            RmRCCommonJournal_RECORD *pCommonRecord =
+                (RmRCCommonJournal_RECORD *)((NvU8*)&rpc_params->rcJournalBuffer + i * recordSize);
+            RmRcDiag_RECORD *pRcDiagRecord =
+                (RmRcDiag_RECORD *)&pCommonRecord[1];
+
+#if defined(DEBUG)
+            NV_PRINTF(LEVEL_INFO, "%d: GPUTag=0x%x CPUTag=0x%llx timestamp=0x%llx stateMask=0x%llx\n",
+                      i, pCommonRecord->GPUTag, pCommonRecord->CPUTag, pCommonRecord->timeStamp,
+                      pCommonRecord->stateMask);
+            NV_PRINTF(LEVEL_INFO, "   idx=%d timeStamp=0x%x type=0x%x flags=0x%x count=%d owner=0x%x processId=0x%x\n",
+                      pRcDiagRecord->idx, pRcDiagRecord->timeStamp, pRcDiagRecord->type, pRcDiagRecord->flags,
+                      pRcDiagRecord->count, pRcDiagRecord->owner, processId);
+            for (NvU32 j = 0; j < pRcDiagRecord->count; j++)
+            {
+                NV_PRINTF(LEVEL_INFO, "     %d: offset=0x08%x tag=0x08%x value=0x08%x attribute=0x08%x\n",
+                          j, pRcDiagRecord->data[j].offset, pRcDiagRecord->data[j].tag,
+                          pRcDiagRecord->data[j].value, pRcDiagRecord->data[j].attribute);
+            }
+#endif
+            if (rcdbAddRcDiagRecFromGsp(pGpu, pRcDB, pCommonRecord, pRcDiagRecord) == NULL)
+            {
+                NV_PRINTF(LEVEL_WARNING, "Lost RC diagnostic record coming from GPU%d GSP: type=0x%x stateMask=0x%llx\n",
+                          gpuGetInstance(pGpu), pRcDiagRecord->type, pCommonRecord->stateMask);
+            }
+        }
+
+        rcDiagRecEnd = pRcDB->RcErrRptNextIdx - 1;
+
+        // Update records to have the correct PID associated with the channel
+        if (rcDiagRecStart != rcDiagRecEnd)
+        {
+            rcdbUpdateRcDiagRecContext(pRcDB,
+                                       rcDiagRecStart,
+                                       rcDiagRecEnd,
+                                       processId,
+                                       owner);
+        }
+    }
+
     bIsCcEnabled = gpuIsCCFeatureEnabled(pGpu);
 
     // With CC enabled, CPU-RM needs to write error notifiers

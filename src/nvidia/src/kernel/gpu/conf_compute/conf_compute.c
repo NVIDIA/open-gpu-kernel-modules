@@ -220,18 +220,6 @@ _confComputeInitRegistryOverrides
         }
     }
 
-    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_CC_MULTI_GPU_MODE, &data) == NV_OK) &&
-        (data == NV_REG_STR_RM_CC_MULTI_GPU_MODE_PROTECTED_PCIE))
-    {
-        NV_PRINTF(LEVEL_INFO, "Enabling protected PCIe\n");
-        // Internally, RM must use CC code paths for protected pcie as well
-        pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENABLED, NV_TRUE);
-        pConfCompute->setProperty(pConfCompute,
-             PDB_PROP_CONFCOMPUTE_MULTI_GPU_PROTECTED_PCIE_MODE_ENABLED, NV_TRUE);
-        pConfCompute->gspProxyRegkeys |=
-            DRF_DEF(GSP, _PROXY_REG, _CONF_COMPUTE_MULTI_GPU_MODE, _PROTECTED_PCIE);
-    }
-
     if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENABLED))
     {
         if (confComputeIsSpdmEnabled(pGpu, pConfCompute))

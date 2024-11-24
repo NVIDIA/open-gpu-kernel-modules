@@ -8,7 +8,6 @@ NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_maxwell_sec2.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_hopper_sec2.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_common.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_linux.c
-NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_debug_optimized.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/nvstatus.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/nvCpuUuid.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/nv-kthread-q.c

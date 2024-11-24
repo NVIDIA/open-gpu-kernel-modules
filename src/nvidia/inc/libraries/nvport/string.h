@@ -49,10 +49,8 @@
 /**
  * @brief Compare two strings, character by character.
  *
- * Will only compare lengthBytes bytes. Strings are assumed to be at least that
- * long.
- *
- * Strings are allowed to overlap, but in .
+ * Will compare the first 'length' chars of each string, or until
+ * the nul-terminator is reached in either string, whichever comes first.
  *
  * @returns:
  * - 0 if all bytes are equal

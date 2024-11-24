@@ -1281,9 +1281,9 @@ NV_STATUS uvm_va_range_block_create(uvm_va_range_t *va_range, size_t index, uvm_
             return status;
 
         // Try to insert it
-        old = (uvm_va_block_t *)nv_atomic_long_cmpxchg(&va_range->blocks[index],
-                                                      (long)NULL,
-                                                      (long)block);
+        old = (uvm_va_block_t *)atomic_long_cmpxchg(&va_range->blocks[index],
+                                                    (long)NULL,
+                                                    (long)block);
         if (old) {
             // Someone else beat us on the insert
             uvm_va_block_release(block);

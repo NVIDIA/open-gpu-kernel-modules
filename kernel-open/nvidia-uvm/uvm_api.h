@@ -47,7 +47,7 @@
     {                                                                               \
         params_type params;                                                         \
         BUILD_BUG_ON(sizeof(params) > UVM_MAX_IOCTL_PARAM_STACK_SIZE);              \
-        if (nv_copy_from_user(&params, (void __user*)arg, sizeof(params)))          \
+        if (copy_from_user(&params, (void __user*)arg, sizeof(params)))             \
             return -EFAULT;                                                         \
                                                                                     \
         params.rmStatus = uvm_global_get_status();                                  \
@@ -60,7 +60,7 @@
                 params.rmStatus = function_name(&params, filp);                     \
         }                                                                           \
                                                                                     \
-        if (nv_copy_to_user((void __user*)arg, &params, sizeof(params)))            \
+        if (copy_to_user((void __user*)arg, &params, sizeof(params)))               \
             return -EFAULT;                                                         \
                                                                                     \
         return 0;                                                                   \
@@ -84,7 +84,7 @@
         if (!params)                                                                    \
             return -ENOMEM;                                                             \
         BUILD_BUG_ON(sizeof(*params) <= UVM_MAX_IOCTL_PARAM_STACK_SIZE);                \
-        if (nv_copy_from_user(params, (void __user*)arg, sizeof(*params))) {            \
+        if (copy_from_user(params, (void __user*)arg, sizeof(*params))) {               \
             uvm_kvfree(params);                                                         \
             return -EFAULT;                                                             \
         }                                                                               \
@@ -99,7 +99,7 @@
                 params->rmStatus = function_name(params, filp);                         \
         }                                                                               \
                                                                                         \
-        if (nv_copy_to_user((void __user*)arg, params, sizeof(*params)))                \
+        if (copy_to_user((void __user*)arg, params, sizeof(*params)))                   \
             ret = -EFAULT;                                                              \
                                                                                         \
         uvm_kvfree(params);                                                             \

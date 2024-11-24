@@ -5990,23 +5990,12 @@ static NV_STATUS _convertGpuFabricProbeStateToErrorCode
     switch (fabricProbeParams.state)
     {
         case NV2080_CTRL_GPU_FABRIC_PROBE_STATE_UNSUPPORTED:
+        case NV2080_CTRL_GPU_FABRIC_PROBE_STATE_COMPLETE:
             return NV_OK;
 
         case NV2080_CTRL_GPU_FABRIC_PROBE_STATE_IN_PROGRESS:
         case NV2080_CTRL_GPU_FABRIC_PROBE_STATE_NOT_STARTED:
             return NV_ERR_NVSWITCH_FABRIC_NOT_READY;
-
-        case NV2080_CTRL_GPU_FABRIC_PROBE_STATE_COMPLETE:
-        {
-            //
-            // When state is NV2080_CTRL_GPU_FABRIC_PROBE_STATE_COMPLETE
-            // status has to be checked for probe response success/failure.
-            //
-            if (fabricProbeParams.status != NV_OK)
-                return NV_ERR_NVSWITCH_FABRIC_FAILURE;
-            else
-                return NV_OK;
-        }
 
         default:
             NV_PRINTF(LEVEL_ERROR, "Invalid Fabric Probe State\n");

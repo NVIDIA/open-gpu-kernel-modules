@@ -363,6 +363,15 @@ kgspCalculateFbLayout_GH100
     pWprMeta->revision = GSP_FW_WPR_META_REVISION;
     pWprMeta->magic = GSP_FW_WPR_META_MAGIC;
 
+	if (gpuIsCCMultiGpuProtectedPcieModeEnabled(pGpu))
+	{
+		pWprMeta->flags |= GSP_FW_FLAGS_PPCIE_ENABLED;
+	}
+    else
+    {
+		pWprMeta->flags &= ~GSP_FW_FLAGS_PPCIE_ENABLED;
+    }
+
     return NV_OK;
 }
 

@@ -2284,9 +2284,9 @@
 // 0 - Disable multi gpu mode
 // 1 - Enable protected pcie
 //
-#define NV_REG_STR_RM_CC_MULTI_GPU_MODE                     "RmCCMultiGpuMode"
-#define NV_REG_STR_RM_CC_MULTI_GPU_MODE_NONE                0x00000000
-#define NV_REG_STR_RM_CC_MULTI_GPU_MODE_PROTECTED_PCIE      0x00000001
+#define NV_REG_STR_RM_PPCIE_ENABLED                         "RmEnableProtectedPcie"
+#define NV_REG_STR_RM_PPCIE_ENABLED_NO                      0x00000000
+#define NV_REG_STR_RM_PPCIE_ENABLED_YES                     0x00000001
 
 // This regkey allows RM to access CPR vidmem over BARs when HCC devtools mode is ON
 #define NV_REG_STR_RM_FORCE_BAR_ACCESS_ON_HCC               "RmForceBarAccessOnHcc"

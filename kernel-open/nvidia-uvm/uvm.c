@@ -127,9 +127,9 @@ static NV_STATUS uvm_api_mm_initialize(UVM_MM_INITIALIZE_PARAMS *params, struct 
         goto err;
     }
 
-    old_fd_type = nv_atomic_long_cmpxchg((atomic_long_t *)&filp->private_data,
-                                         UVM_FD_UNINITIALIZED,
-                                         UVM_FD_INITIALIZING);
+    old_fd_type = atomic_long_cmpxchg((atomic_long_t *)&filp->private_data,
+                                      UVM_FD_UNINITIALIZED,
+                                      UVM_FD_INITIALIZING);
     old_fd_type &= UVM_FD_TYPE_MASK;
     if (old_fd_type != UVM_FD_UNINITIALIZED) {
         status = NV_ERR_IN_USE;
@@ -914,8 +914,9 @@ static NV_STATUS uvm_api_initialize(UVM_INITIALIZE_PARAMS *params, struct file *
     // attempt to be made. This is safe because other threads will have only had
     // a chance to observe UVM_FD_INITIALIZING and not UVM_FD_VA_SPACE in this
     // case.
-    old_fd_type = nv_atomic_long_cmpxchg((atomic_long_t *)&filp->private_data,
-                                         UVM_FD_UNINITIALIZED, UVM_FD_INITIALIZING);
+    old_fd_type = atomic_long_cmpxchg((atomic_long_t *)&filp->private_data,
+                                      UVM_FD_UNINITIALIZED,
+                                      UVM_FD_INITIALIZING);
     old_fd_type &= UVM_FD_TYPE_MASK;
     if (old_fd_type == UVM_FD_UNINITIALIZED) {
         status = uvm_va_space_create(filp->f_mapping, &va_space, params->flags);
