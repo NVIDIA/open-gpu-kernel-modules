@@ -253,12 +253,18 @@ _gpuFindPcieRegAddr_GB100
     else if (partitionId == NV_PCIE_PARTITION_ID_CFG_SPACE)
     {
         status = _gpuGetPcieCfgCapBaseAddr_GB100(pGpu, hwDefAddr, &capBaseAddr);
-        offset = _gpuGetPcieCfgRegOffset_GB100(pGpu, hwDefAddr);
+        if (status == NV_OK)
+        {
+            offset = _gpuGetPcieCfgRegOffset_GB100(pGpu, hwDefAddr);
+        }
     }
     else if (partitionId == NV_PCIE_PARTITION_ID_EXT_CFG_SPACE)
     {
         status = _gpuGetPcieExtCfgCapBaseAddr_GB100(pGpu, hwDefAddr, &capBaseAddr);
-        offset = _gpuGetPcieExtCfgRegOffset_GB100(pGpu, hwDefAddr);
+        if (status == NV_OK)
+        {
+            offset = _gpuGetPcieExtCfgRegOffset_GB100(pGpu, hwDefAddr);
+        }
     }
     else
     {
@@ -472,8 +478,9 @@ _gpuGetPcieCfgCapBaseAddr_GB100
     targetCapId = _gpuGetPcieCfgCapId_GB100(pGpu, hwDefAddr);
     if (targetCapId == 0)
     {
-        status = NV_ERR_NOT_SUPPORTED;
-        DBG_BREAKPOINT();
+        status = NV_ERR_INVALID_ADDRESS;
+        *pCapBaseAddr = capBaseAddr;
+        NV_PRINTF(LEVEL_INFO, "capId for register 0x%x not found\n", hwDefAddr);
         return status;
     }
 
@@ -534,7 +541,7 @@ _gpuGetPcieCfgCapBaseAddr_GB100
         // however for the caller to differentiate return invalid_addr status
         //
         status = NV_ERR_INVALID_ADDRESS;
-        NV_PRINTF(LEVEL_ERROR, "Invalid address passed : 0x%x", hwDefAddr);
+        NV_PRINTF(LEVEL_INFO, "Register 0x%x not part of PCIe linked list\n", hwDefAddr);
     }
     else
     {
@@ -607,8 +614,9 @@ _gpuGetPcieExtCfgCapBaseAddr_GB100
     targetCapId = _gpuGetPcieExtCfgCapId_GB100(pGpu, hwDefAddr);
     if (targetCapId == 0)
     {
-        status = NV_ERR_NOT_SUPPORTED;
-        DBG_BREAKPOINT();
+        status = NV_ERR_INVALID_ADDRESS;
+        *pCapBaseAddr = capBaseAddr;
+        NV_PRINTF(LEVEL_INFO, "capId for register 0x%x not found\n", hwDefAddr);
         return status;
     }
 
@@ -680,7 +688,7 @@ _gpuGetPcieExtCfgCapBaseAddr_GB100
         // however for the caller to differentiate return invalid_addr status
         //
         status = NV_ERR_INVALID_ADDRESS;
-        NV_PRINTF(LEVEL_ERROR, "Invalid address passed : 0x%x", hwDefAddr);
+        NV_PRINTF(LEVEL_INFO, "Register 0x%x not part of PCIe linked list\n", hwDefAddr);
     }
     else
     {
@@ -717,8 +725,6 @@ _gpuGetPcieCfgCapId_GB100
         }
     }
 
-    NV_ASSERT_FAILED("Incorrect capability_id\n");
-
     return 0;
 }
 
@@ -748,8 +754,6 @@ _gpuGetPcieExtCfgCapId_GB100
             return pcieExtCfgRegInfo[i].hwDefRegInfo.capId;
         }
     }
-
-    NV_ASSERT_FAILED("Incorrect capability_id\n");
 
     return 0;
 }
@@ -813,7 +817,7 @@ _gpuGetPcieExtCfgDvsecInfo_GB100
         {
             *pVenId    = pcieExtCfgRegInfo[i].vendorId;
             *pDvsecLen = pcieExtCfgRegInfo[i].dvsecLen;
-            break;
+            return;
         }
     }
 

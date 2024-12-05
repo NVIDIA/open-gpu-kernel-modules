@@ -1910,6 +1910,33 @@ _rcdbDumpDclMsgRecord(
             }
             break;
         }
+        case RmRcDiagReport:
+        {
+            RmRcDiag_RECORD* pRecord = (RmRcDiag_RECORD*) &pDclRecord[1];
+            OBJGPU *pGpu = gpumgrGetGpuFromId(pDclRecord->GPUTag);
+
+            // open an RC Diagnostic record in the Proto Bufffer
+            NV_CHECK_OK(nvStatus, LEVEL_ERROR,
+                prbEncNestedStart(pPrbEnc, DCL_DCLMSG_RC_DIAG_RECS));
+            if (nvStatus == NV_OK)
+            {
+                prbEncAddUInt32(pPrbEnc, RC_RCDIAGRECORD_RECORD_ID, pRecord->idx);
+                prbEncAddUInt32(pPrbEnc, RC_RCDIAGRECORD_RECORD_TYPE, pRecord->type);
+                if (NULL != pGpu)
+                {
+                    NvU32 i;
+                    for (i = 0; i < pRecord->count; ++i)
+                    {
+                        if (NV0000_CTRL_CMD_NVD_RCERR_RPT_REG_MAX_PSEDO_REG < pRecord->data[i].tag)
+                        {
+                            prbEncGpuRegImm(pGpu, pRecord->data[i].offset, pRecord->data[i].value, pPrbEnc, RC_RCDIAGRECORD_REGS);
+                        }
+                    }
+                }
+                NV_CHECK_OK(nvStatus, LEVEL_ERROR, prbEncNestedEnd(pPrbEnc));
+            }
+            break;
+        }
         case RmPrbErrorInfo_V2:
         case RmPrbFullDump_V2:
         {

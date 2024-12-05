@@ -3771,8 +3771,15 @@ static NV_STATUS RmNonDPAuxI2CTransfer
             break;
 
         case NV_I2C_CMD_SMBUS_BLOCK_WRITE:
+            if (pData[0] >= len) {
+                return NV_ERR_INVALID_ARGUMENT;
+            }
             params->transData.smbusBlockData.bWrite = NV_TRUE;
-            /* fall through*/
+            params->transType = NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BLOCK_RW;
+            params->transData.smbusBlockData.registerAddress = command;
+            params->transData.smbusBlockData.messageLength = pData[0];
+            params->transData.smbusBlockData.pMessage = pData + 1;
+            break;
 
         case NV_I2C_CMD_SMBUS_BLOCK_READ:
             params->transType = NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BLOCK_RW;

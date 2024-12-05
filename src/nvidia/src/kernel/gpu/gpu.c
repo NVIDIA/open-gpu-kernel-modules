@@ -313,8 +313,8 @@ gpuPostConstruct_IMPL
     GPUATTACHARG *pAttachArg
 )
 {
-    NV_STATUS  rmStatus;
-    NvU32 config = 0;
+    NV_STATUS rmStatus;
+    NvU32     config = 0;
 
     gpumgrAddDeviceInstanceToGpus(NVBIT(pGpu->gpuInstance));
 

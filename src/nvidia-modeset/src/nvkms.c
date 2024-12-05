@@ -4645,6 +4645,11 @@ static NvBool NotifyVblank(
     struct NvKmsPerOpenDisp* pOpenDisp =
         GetPerOpenDisp(pOpen, pParams->request.deviceHandle,
                        pParams->request.dispHandle);
+
+    if (pOpenDisp == NULL) {
+        return NV_FALSE;
+    }
+    
     const NvU32 apiHead = pParams->request.head;
 
     pEventOpenFd = nvkms_get_per_open_data(pParams->request.unicastEvent.fd);
@@ -5219,8 +5224,8 @@ void nvKmsClose(void *pOpenVoid)
 
 
 /*
-Frees all references to a device
-*/
+ *Frees all references to a device
+ */
 void nvRevokeDevice(NVDevEvoPtr pDevEvo)
 {
     if (pDevEvo == NULL) {
@@ -5229,7 +5234,7 @@ void nvRevokeDevice(NVDevEvoPtr pDevEvo)
 
     struct NvKmsPerOpen *pOpen;
 
-    nvListForEachEntry(pOpen, &perOpenIoctlList, perOpenListEntry) {
+    nvListForEachEntry(pOpen, &perOpenIoctlList, perOpenIoctlListEntry) {
         struct NvKmsPerOpenDev *pOpenDev = DevEvoToOpenDev(pOpen, pDevEvo);
         if (pOpenDev == NULL) {
             continue;

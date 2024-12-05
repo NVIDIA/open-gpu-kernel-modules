@@ -157,6 +157,11 @@ interruptEntryIsEmpty(const InterruptEntry *pEntry)
 // Default value for intrStuckThreshold
 #define INTR_STUCK_THRESHOLD 1000
 
+// Minimum length of interrupt to log as long-running
+#define LONG_INTR_LOG_LENGTH_NS (1000000LLU) // 1ms
+// Maximum frequency of long-running interrupt print, per engine
+#define LONG_INTR_LOG_RATELIMIT_NS (10000000000LLU) // 10s
+
 #define INTR_TABLE_INIT_KERNEL (1 << 0)
 #define INTR_TABLE_INIT_PHYSICAL (1 << 1)
 
@@ -274,6 +279,13 @@ typedef struct Device Device;
 // Metadata including vtable
 struct NVOC_VTABLE__Intr;
 
+struct __nvoc_inner_struc_Intr_1__ {
+    NvU32 intrCount;
+    NvU64 intrLength;
+    NvU64 lastPrintTime;
+};
+
+
 
 struct Intr {
 
@@ -347,6 +359,7 @@ struct Intr {
     NvU32 intrEn0Orig;
     NvBool halIntrEnabled;
     NvU32 saveIntrEn0;
+    struct __nvoc_inner_struc_Intr_1__ longIntrStats[175];
 };
 
 

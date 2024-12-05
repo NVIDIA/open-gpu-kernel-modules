@@ -782,7 +782,7 @@ _kbifSavePcieConfigRegisters_GH100
     {
         status = GPU_BUS_CFG_CYCLE_RD32(pGpu, regOffset,
                                         &pRegmapRef->bufBootConfigSpace[bufOffset]);
-        if (status != NV_OK)
+        if (status == NV_ERR_INVALID_STATE)
         {
             NV_PRINTF(LEVEL_ERROR, "Config read failed.\n");
             return status;
@@ -828,7 +828,7 @@ _kbifRestorePcieConfigRegisters_GH100
     {
         status = GPU_BUS_CFG_CYCLE_WR32(pGpu, regOffset,
                      pRegmapRef->bufBootConfigSpace[bufOffset]);
-        if (status != NV_OK)
+        if (status == NV_ERR_INVALID_STATE)
         {
             NV_PRINTF(LEVEL_ERROR, "Config write failed.\n");
             NV_ASSERT(0);

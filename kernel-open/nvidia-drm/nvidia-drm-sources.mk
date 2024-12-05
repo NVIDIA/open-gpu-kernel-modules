@@ -140,3 +140,4 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += drm_color_lut
 NV_CONFTEST_TYPE_COMPILE_TESTS += drm_property_blob_put
 NV_CONFTEST_TYPE_COMPILE_TESTS += drm_driver_has_gem_prime_mmap
 NV_CONFTEST_TYPE_COMPILE_TESTS += drm_output_poll_changed
+NV_CONFTEST_TYPE_COMPILE_TESTS += file_operations_fop_unsigned_offset_present

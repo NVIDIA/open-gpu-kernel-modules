@@ -23,10 +23,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_RmResource;
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_GpuResource;
 
-void __nvoc_init_NvencSession(NvencSession*, RmHalspecOwner* );
-void __nvoc_init_funcTable_NvencSession(NvencSession*, RmHalspecOwner* );
-NV_STATUS __nvoc_ctor_NvencSession(NvencSession*, RmHalspecOwner* , struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
-void __nvoc_init_dataField_NvencSession(NvencSession*, RmHalspecOwner* );
+void __nvoc_init_NvencSession(NvencSession*);
+void __nvoc_init_funcTable_NvencSession(NvencSession*);
+NV_STATUS __nvoc_ctor_NvencSession(NvencSession*, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+void __nvoc_init_dataField_NvencSession(NvencSession*);
 void __nvoc_dtor_NvencSession(NvencSession*);
 extern const struct NVOC_EXPORT_INFO __nvoc_export_info_NvencSession;
 
@@ -103,7 +103,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_NvencSes
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) nvencsessionCtrlCmdNvencSwSessionUpdateInfo_DISPATCH,
+        /*pFunc=*/      (void (*)(void)) nvencsessionCtrlCmdNvencSwSessionUpdateInfo_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -118,7 +118,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_NvencSes
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_DISPATCH,
+        /*pFunc=*/      (void (*)(void)) nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_IMPL,
 #endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
         /*flags=*/      0x8u,
         /*accessRight=*/0x0u,
@@ -341,21 +341,16 @@ void __nvoc_dtor_NvencSession(NvencSession *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-void __nvoc_init_dataField_NvencSession(NvencSession *pThis, RmHalspecOwner *pRmhalspecowner) {
-    RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
-    const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
+void __nvoc_init_dataField_NvencSession(NvencSession *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-    PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
-    PORT_UNREFERENCED_VARIABLE(rmVariantHal);
-    PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 }
 
 NV_STATUS __nvoc_ctor_GpuResource(GpuResource* , struct CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
-NV_STATUS __nvoc_ctor_NvencSession(NvencSession *pThis, RmHalspecOwner *pRmhalspecowner, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_ctor_NvencSession(NvencSession *pThis, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
     NV_STATUS status = NV_OK;
     status = __nvoc_ctor_GpuResource(&pThis->__nvoc_base_GpuResource, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_ctor_NvencSession_fail_GpuResource;
-    __nvoc_init_dataField_NvencSession(pThis, pRmhalspecowner);
+    __nvoc_init_dataField_NvencSession(pThis);
 
     status = __nvoc_nvencsessionConstruct(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_ctor_NvencSession_fail__init;
@@ -370,41 +365,30 @@ __nvoc_ctor_NvencSession_exit:
 }
 
 // Vtable initialization
-static void __nvoc_init_funcTable_NvencSession_1(NvencSession *pThis, RmHalspecOwner *pRmhalspecowner) {
-    RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
-    const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
+static void __nvoc_init_funcTable_NvencSession_1(NvencSession *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
-    PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
-    PORT_UNREFERENCED_VARIABLE(rmVariantHal);
-    PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
-    // nvencsessionCtrlCmdNvencSwSessionUpdateInfo -- halified (2 hals) exported (id=0xa0bc0101) body
-    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
-    {
-        pThis->__nvencsessionCtrlCmdNvencSwSessionUpdateInfo__ = &nvencsessionCtrlCmdNvencSwSessionUpdateInfo_46f6a7;
-    }
-    else
-    {
-        pThis->__nvencsessionCtrlCmdNvencSwSessionUpdateInfo__ = &nvencsessionCtrlCmdNvencSwSessionUpdateInfo_IMPL;
-    }
+    // nvencsessionCtrlCmdNvencSwSessionUpdateInfo -- exported (id=0xa0bc0101)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+    pThis->__nvencsessionCtrlCmdNvencSwSessionUpdateInfo__ = &nvencsessionCtrlCmdNvencSwSessionUpdateInfo_IMPL;
+#endif
 
-    // nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2 -- halified (2 hals) exported (id=0xa0bc0102) body
-    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
-    {
-        pThis->__nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2__ = &nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_46f6a7;
-    }
-    else
-    {
-        pThis->__nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2__ = &nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_IMPL;
-    }
-} // End __nvoc_init_funcTable_NvencSession_1 with approximately 4 basic block(s).
+    // nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2 -- exported (id=0xa0bc0102)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+    pThis->__nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2__ = &nvencsessionCtrlCmdNvencSwSessionUpdateInfoV2_IMPL;
+#endif
+} // End __nvoc_init_funcTable_NvencSession_1 with approximately 2 basic block(s).
 
 
 // Initialize vtable(s) for 27 virtual method(s).
-void __nvoc_init_funcTable_NvencSession(NvencSession *pThis, RmHalspecOwner *pRmhalspecowner) {
+void __nvoc_init_funcTable_NvencSession(NvencSession *pThis) {
 
     // Per-class vtable definition
     static const struct NVOC_VTABLE__NvencSession vtable = {
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8u)
+#endif
         .__nvencsessionControl__ = &__nvoc_up_thunk_GpuResource_nvencsessionControl,    // virtual inherited (gpures) base (gpures)
         .GpuResource.__gpuresControl__ = &gpuresControl_IMPL,    // virtual override (res) base (rmres)
         .GpuResource.RmResource.__rmresControl__ = &__nvoc_up_thunk_RsResource_rmresControl,    // virtual inherited (res) base (res)
@@ -503,11 +487,11 @@ void __nvoc_init_funcTable_NvencSession(NvencSession *pThis, RmHalspecOwner *pRm
     pThis->__nvoc_vtable = &vtable;    // (nvencsession) this
 
     // Initialize vtable(s) with 2 per-object function pointer(s).
-    __nvoc_init_funcTable_NvencSession_1(pThis, pRmhalspecowner);
+    __nvoc_init_funcTable_NvencSession_1(pThis);
 }
 
 void __nvoc_init_GpuResource(GpuResource*);
-void __nvoc_init_NvencSession(NvencSession *pThis, RmHalspecOwner *pRmhalspecowner) {
+void __nvoc_init_NvencSession(NvencSession *pThis) {
     pThis->__nvoc_pbase_NvencSession = pThis;
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object;
     pThis->__nvoc_pbase_RsResource = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource;
@@ -515,7 +499,7 @@ void __nvoc_init_NvencSession(NvencSession *pThis, RmHalspecOwner *pRmhalspecown
     pThis->__nvoc_pbase_RmResource = &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource;
     pThis->__nvoc_pbase_GpuResource = &pThis->__nvoc_base_GpuResource;
     __nvoc_init_GpuResource(&pThis->__nvoc_base_GpuResource);
-    __nvoc_init_funcTable_NvencSession(pThis, pRmhalspecowner);
+    __nvoc_init_funcTable_NvencSession(pThis);
 }
 
 NV_STATUS __nvoc_objCreate_NvencSession(NvencSession **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
@@ -523,7 +507,6 @@ NV_STATUS __nvoc_objCreate_NvencSession(NvencSession **ppThis, Dynamic *pParent,
     NV_STATUS status;
     Object *pParentObj = NULL;
     NvencSession *pThis;
-    RmHalspecOwner *pRmhalspecowner;
 
     // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(NvencSession), (void**)&pThis, (void**)ppThis);
@@ -538,11 +521,8 @@ NV_STATUS __nvoc_objCreate_NvencSession(NvencSession **ppThis, Dynamic *pParent,
 
     pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
-    // pParent must be a valid object that derives from a halspec owner class.
-    NV_ASSERT_OR_RETURN(pParent != NULL, NV_ERR_INVALID_ARGUMENT);
-
-    // Link the child into the parent unless flagged not to do so.
-    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    // Link the child into the parent if there is one unless flagged not to do so.
+    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
         objAddChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
@@ -552,12 +532,8 @@ NV_STATUS __nvoc_objCreate_NvencSession(NvencSession **ppThis, Dynamic *pParent,
         pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.pParent = NULL;
     }
 
-    if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
-        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
-    NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
-
-    __nvoc_init_NvencSession(pThis, pRmhalspecowner);
-    status = __nvoc_ctor_NvencSession(pThis, pRmhalspecowner, arg_pCallContext, arg_pParams);
+    __nvoc_init_NvencSession(pThis);
+    status = __nvoc_ctor_NvencSession(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_NvencSession_cleanup;
 
     // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.

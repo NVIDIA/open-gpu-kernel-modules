@@ -351,26 +351,6 @@ static void __nvoc_init_funcTable_OBJTMR_1(OBJTMR *pThis, RmHalspecOwner *pRmhal
         }
     }
 
-    // tmrGetTimeLo -- halified (2 hals) body
-    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
-    {
-        pThis->__tmrGetTimeLo__ = &tmrGetTimeLo_GM107;
-    }
-    else
-    {
-        pThis->__tmrGetTimeLo__ = &tmrGetTimeLo_cf0499;
-    }
-
-    // tmrGetTime -- halified (2 hals) body
-    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
-    {
-        pThis->__tmrGetTime__ = &tmrGetTime_GM107;
-    }
-    else
-    {
-        pThis->__tmrGetTime__ = &tmrGetTime_fa6bbe;
-    }
-
     // tmrGetTimeEx -- halified (2 hals) body
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0xd0000000UL) )) /* ChipHal: GH100 | GB100 | GB102 */ 
     {
@@ -420,10 +400,10 @@ static void __nvoc_init_funcTable_OBJTMR_1(OBJTMR *pThis, RmHalspecOwner *pRmhal
     {
         pThis->__tmrGetGpuPtimerOffset__ = &tmrGetGpuPtimerOffset_GA100;
     }
-} // End __nvoc_init_funcTable_OBJTMR_1 with approximately 22 basic block(s).
+} // End __nvoc_init_funcTable_OBJTMR_1 with approximately 18 basic block(s).
 
 
-// Initialize vtable(s) for 27 virtual method(s).
+// Initialize vtable(s) for 25 virtual method(s).
 void __nvoc_init_funcTable_OBJTMR(OBJTMR *pThis, RmHalspecOwner *pRmhalspecowner) {
 
     // Per-class vtable definition
@@ -470,7 +450,7 @@ void __nvoc_init_funcTable_OBJTMR(OBJTMR *pThis, RmHalspecOwner *pRmhalspecowner
     pThis->__nvoc_base_IntrService.__nvoc_vtable = &vtable.IntrService;    // (intrserv) super
     pThis->__nvoc_vtable = &vtable;    // (tmr) this
 
-    // Initialize vtable(s) with 10 per-object function pointer(s).
+    // Initialize vtable(s) with 8 per-object function pointer(s).
     __nvoc_init_funcTable_OBJTMR_1(pThis, pRmhalspecowner);
 }
 

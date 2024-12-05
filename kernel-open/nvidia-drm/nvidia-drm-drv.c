@@ -1711,6 +1711,10 @@ static const struct file_operations nv_drm_fops = {
     .read           = drm_read,
 
     .llseek         = noop_llseek,
+
+#if defined(NV_FILE_OPERATIONS_FOP_UNSIGNED_OFFSET_PRESENT)
+    .fop_flags   = FOP_UNSIGNED_OFFSET,
+#endif
 };
 
 static const struct drm_ioctl_desc nv_drm_ioctls[] = {

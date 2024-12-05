@@ -455,7 +455,7 @@ struct KernelGsp {
     NvBool bHasVgpuLogs;
     void *pLogElf;
     NvU64 logElfDataSize;
-    PORT_MUTEX *pNvlogFlushMtx;
+    volatile NvS32 logDumpLock;
     NvBool bLibosLogsPollingEnabled;
     NvU8 bootAttempts;
     NvBool bInInit;

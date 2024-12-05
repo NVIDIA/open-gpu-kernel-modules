@@ -184,7 +184,7 @@ static void hmm_copy_devmem_page(struct page *dst_page, struct page *src_page)
     gpu = uvm_gpu_chunk_get_gpu(gpu_chunk);
     status = uvm_mmu_chunk_map(gpu_chunk);
     if (status != NV_OK)
-        goto out_zero;
+        goto out;
 
     status = uvm_parent_gpu_map_cpu_pages(gpu->parent, dst_page, PAGE_SIZE, &dma_addr);
     if (status != NV_OK)
@@ -215,7 +215,7 @@ out_unmap_cpu:
 out_unmap_gpu:
     uvm_mmu_chunk_unmap(gpu_chunk, NULL);
 
-out_zero:
+out:
     // We can't fail eviction because we need to free the device-private pages
     // so the GPU can be unregistered. So the best we can do is warn on any
     // failures and zero the uninitialised page. This could result in data loss
@@ -245,6 +245,7 @@ static NV_STATUS uvm_hmm_pmm_gpu_evict_pfn(unsigned long pfn)
         }
 
         lock_page(dst_page);
+
         hmm_copy_devmem_page(dst_page, migrate_pfn_to_page(src_pfn));
         dst_pfn = migrate_pfn(page_to_pfn(dst_page));
         migrate_device_pages(&src_pfn, &dst_pfn, 1);

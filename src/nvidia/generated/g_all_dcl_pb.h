@@ -18,8 +18,8 @@ extern const PRB_MSG_DESC prb_messages_dcl[];
 // Message maximum lengths
 // Does not include repeated fields, strings and byte arrays.
 #define DCL_ENGINES_LEN 136
-#define DCL_DCLMSG_LEN 573
-#define DCL_ERRORBLOCK_LEN 577
+#define DCL_DCLMSG_LEN 616
+#define DCL_ERRORBLOCK_LEN 620
 
 extern const PRB_FIELD_DESC prb_fields_dcl_engines[];
 
@@ -41,6 +41,7 @@ extern const PRB_FIELD_DESC prb_fields_dcl_dclmsg[];
 #define DCL_DCLMSG_JOURNAL_BUGCHECK (&prb_fields_dcl_dclmsg[4])
 #define DCL_DCLMSG_RCCOUNTER (&prb_fields_dcl_dclmsg[5])
 #define DCL_DCLMSG_ENGINE (&prb_fields_dcl_dclmsg[6])
+#define DCL_DCLMSG_RC_DIAG_RECS (&prb_fields_dcl_dclmsg[7])
 
 // 'DclMsg' field lengths
 #define DCL_DCLMSG_COMMON_LEN 42
@@ -50,6 +51,7 @@ extern const PRB_FIELD_DESC prb_fields_dcl_dclmsg[];
 #define DCL_DCLMSG_JOURNAL_BUGCHECK_LEN 69
 #define DCL_DCLMSG_RCCOUNTER_LEN 64
 #define DCL_DCLMSG_ENGINE_LEN 139
+#define DCL_DCLMSG_RC_DIAG_RECS_LEN 42
 
 extern const PRB_FIELD_DESC prb_fields_dcl_errorblock[];
 
@@ -57,7 +59,7 @@ extern const PRB_FIELD_DESC prb_fields_dcl_errorblock[];
 #define DCL_ERRORBLOCK_DATA (&prb_fields_dcl_errorblock[0])
 
 // 'ErrorBlock' field lengths
-#define DCL_ERRORBLOCK_DATA_LEN 576
+#define DCL_ERRORBLOCK_DATA_LEN 619
 
 extern const PRB_SERVICE_DESC prb_services_dcl[];
 

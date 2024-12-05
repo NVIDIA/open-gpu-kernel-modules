@@ -2061,6 +2061,7 @@ ValidateProposedModeSetHwStateOneDisp(
 
         nvChooseDitheringEvo(pDpyEvo->pConnectorEvo,
                              pProposedApiHead->attributes.color.bpc,
+                             pProposedApiHead->attributes.color.colorimetry,
                              &pDpyEvo->requestedDithering,
                              &pProposedApiHead->attributes.dithering);
     }

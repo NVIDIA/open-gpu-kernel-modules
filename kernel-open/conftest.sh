@@ -2450,6 +2450,22 @@ compile_test() {
             fi
         ;;
 
+        file_operations_fop_unsigned_offset_present)
+            #
+            # Determine if the FOP_UNSIGNED_OFFSET define is present.
+            #
+            # Added by commit 641bb4394f40 ("fs: move FMODE_UNSIGNED_OFFSET to
+            # fop_flags") in v6.12.
+            #
+            CODE="
+            #include <linux/fs.h>
+            int conftest_file_operations_fop_unsigned_offset_present(void) {
+                return FOP_UNSIGNED_OFFSET;
+            }"
+
+            compile_check_conftest "$CODE" "NV_FILE_OPERATIONS_FOP_UNSIGNED_OFFSET_PRESENT" "" "types"
+        ;;
+
         pci_dev_has_ats_enabled)
             #
             # Determine if the 'pci_dev' data type has a 'ats_enabled' member.

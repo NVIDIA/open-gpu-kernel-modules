@@ -52,6 +52,22 @@ else
     endif
   endif
 
+  # If CC hasn't been set explicitly, check the value of CONFIG_CC_VERSION_TEXT.
+  # Look for the compiler specified there, and use it by default, if found.
+  ifeq ($(origin CC),default)
+    cc_version_text=$(firstword $(shell . $(KERNEL_OUTPUT)/.config; \
+                      echo "$$CONFIG_CC_VERSION_TEXT"))
+
+    ifneq ($(cc_version_text),)
+      ifeq ($(shell command -v $(cc_version_text)),)
+          $(warning WARNING: Unable to locate the compiler $(cc_version_text) \
+            from CONFIG_CC_VERSION_TEXT in the kernel configuration.)
+      else
+          CC=$(cc_version_text)
+      endif
+    endif
+  endif
+
   CC ?= cc
   LD ?= ld
   OBJDUMP ?= objdump
@@ -63,6 +79,16 @@ else
       -e 's/ppc64le/powerpc/' \
       -e 's/riscv64/riscv/' \
     )
+  endif
+
+  KERNEL_ARCH = $(ARCH)
+
+  ifneq ($(filter $(ARCH),i386 x86_64),)
+    KERNEL_ARCH = x86
+  else
+    ifeq ($(filter $(ARCH),arm64 powerpc),)
+        $(error Unsupported architecture $(ARCH))
+    endif
   endif
 
   NV_KERNEL_MODULES ?= $(wildcard nvidia nvidia-uvm nvidia-vgpu-vfio nvidia-modeset nvidia-drm nvidia-peermem)
@@ -106,8 +132,9 @@ else
   # module symbols on which the Linux kernel's module resolution is dependent
   # and hence must be used whenever present.
 
-  LD_SCRIPT ?= $(KERNEL_SOURCES)/scripts/module-common.lds      \
-               $(KERNEL_SOURCES)/arch/$(ARCH)/kernel/module.lds \
+  LD_SCRIPT ?= $(KERNEL_SOURCES)/scripts/module-common.lds             \
+               $(KERNEL_SOURCES)/arch/$(KERNEL_ARCH)/kernel/module.lds \
+               $(KERNEL_OUTPUT)/arch/$(KERNEL_ARCH)/module.lds         \
                $(KERNEL_OUTPUT)/scripts/module.lds
   NV_MODULE_COMMON_SCRIPTS := $(foreach s, $(wildcard $(LD_SCRIPT)), -T $(s))
 

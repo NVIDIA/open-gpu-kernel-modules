@@ -233,6 +233,7 @@ static void SetDitheringCommon(NVDpyEvoPtr pDpyEvo)
 
     nvChooseDitheringEvo(pConnectorEvo,
                          pApiHeadState->attributes.color.bpc,
+                         pApiHeadState->attributes.color.colorimetry,
                          &pDpyEvo->requestedDithering,
                          &pApiHeadState->attributes.dithering);
 

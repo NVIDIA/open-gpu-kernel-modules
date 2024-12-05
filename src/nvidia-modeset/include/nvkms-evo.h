@@ -125,6 +125,7 @@ void nvEvoHeadSetControlOR(NVDispEvoPtr pDispEvo,
 void nvChooseDitheringEvo(
     const NVConnectorEvoRec *pConnectorEvo,
     enum NvKmsDpyAttributeColorBpcValue bpc,
+    enum NvKmsOutputColorimetry colorimetry,
     const NVDpyAttributeRequestedDitheringConfig *pReqDithering,
     NVDpyAttributeCurrentDitheringConfig *pCurrDithering);
 

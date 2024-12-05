@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 565.57.01.
+version 565.77.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-565.57.01 driver release.  This can be achieved by installing
+565.77 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -185,7 +185,7 @@ table below).
 For details on feature support and limitations, see the NVIDIA GPU driver
 end user README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/565.57.01/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/565.77/README/kernel_open.html
 
 For vGPU support, please refer to the README.vgpu packaged in the vGPU Host
 Package for more details.
@@ -754,6 +754,8 @@ Subsystem Device ID.
 | NVIDIA H800                                     | 2324 10DE 17A8 |
 | NVIDIA H20                                      | 2329 10DE 198B |
 | NVIDIA H20                                      | 2329 10DE 198C |
+| NVIDIA H20-3e                                   | 232C 10DE 2063 |
+| NVIDIA H20-3e                                   | 232C 10DE 2064 |
 | NVIDIA H100 80GB HBM3                           | 2330 10DE 16C0 |
 | NVIDIA H100 80GB HBM3                           | 2330 10DE 16C1 |
 | NVIDIA H100 PCIe                                | 2331 10DE 1626 |
@@ -836,10 +838,12 @@ Subsystem Device ID.
 | NVIDIA GeForce RTX 2050                         | 25AD           |
 | NVIDIA RTX A1000                                | 25B0 1028 1878 |
 | NVIDIA RTX A1000                                | 25B0 103C 1878 |
+| NVIDIA RTX A1000                                | 25B0 103C 8D96 |
 | NVIDIA RTX A1000                                | 25B0 10DE 1878 |
 | NVIDIA RTX A1000                                | 25B0 17AA 1878 |
 | NVIDIA RTX A400                                 | 25B2 1028 1879 |
 | NVIDIA RTX A400                                 | 25B2 103C 1879 |
+| NVIDIA RTX A400                                 | 25B2 103C 8D95 |
 | NVIDIA RTX A400                                 | 25B2 10DE 1879 |
 | NVIDIA RTX A400                                 | 25B2 17AA 1879 |
 | NVIDIA A16                                      | 25B6 10DE 14A9 |

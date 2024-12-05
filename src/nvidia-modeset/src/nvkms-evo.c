@@ -2737,10 +2737,10 @@ void nvEnableMidFrameAndDWCFWatermark(NVDevEvoPtr pDevEvo,
 static enum NvKmsDpyAttributeColorBpcValue GetMinRequiredBpc(
     enum NvKmsOutputColorimetry colorimetry)
 {
-    // 10 BPC required for HDR
+    // >= 8 BPC required for HDR
     // XXX HDR TODO: Handle other colorimetries
     return (colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100) ?
-               NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10 :
+               NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8 :
                NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6;
 }
 
@@ -3155,6 +3155,7 @@ static const struct {
 void nvChooseDitheringEvo(
     const NVConnectorEvoRec *pConnectorEvo,
     enum NvKmsDpyAttributeColorBpcValue bpc,
+    enum NvKmsOutputColorimetry colorimetry,
     const NVDpyAttributeRequestedDitheringConfig *pReqDithering,
     NVDpyAttributeCurrentDitheringConfig *pCurrDithering)
 {
@@ -3255,6 +3256,29 @@ void nvChooseDitheringEvo(
                 currDithering.depth =
                     NV_KMS_DPY_ATTRIBUTE_CURRENT_DITHERING_DEPTH_6_BITS;
             } else if (bpc <= 8) {
+                currDithering.depth =
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_DITHERING_DEPTH_8_BITS;
+            }
+        }
+    }
+
+    // XXX HDR TODO: Handle other colorimetries
+    if ((colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100)  &&
+        (pReqDithering->state !=
+            NV_KMS_DPY_ATTRIBUTE_REQUESTED_DITHERING_DISABLED)) {
+
+        // GetMinRequiredBpc() enforces >= 8 BPC for HDR
+        nvAssert(bpc >= 8);
+
+        /*
+         * If output has BT.2100 (HDR10) colorimetry but fewer than 10 bits of
+         * precision, dither to 8 BPC, or as requested.
+         */
+        if (bpc < 10) {
+            currDithering.enabled = TRUE;
+
+            if (pReqDithering->depth ==
+                    NV_KMS_DPY_ATTRIBUTE_REQUESTED_DITHERING_DEPTH_AUTO) {
                 currDithering.depth =
                     NV_KMS_DPY_ATTRIBUTE_CURRENT_DITHERING_DEPTH_8_BITS;
             }
@@ -6828,7 +6852,8 @@ static NvBool GetDfpHdmiProtocol(const NVDpyEvoRec *pDpyEvo,
         nvDpyGetOutputColorFormatInfo(pDpyEvo);
     const NvBool forceHdmiFrlIsSupported = FALSE;
 
-    nvAssert(rmProtocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_A ||
+    nvAssert(rmProtocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_DUAL_TMDS ||
+             rmProtocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_A ||
              rmProtocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_B);
 
     /* Override protocol if this mode requires HDMI FRL. */
@@ -6855,10 +6880,25 @@ static NvBool GetDfpHdmiProtocol(const NVDpyEvoRec *pDpyEvo,
         if (nvHdmiGetEffectivePixelClockKHz(pDpyEvo, pTimings, pDpyColor) <=
                pDpyEvo->maxSingleLinkPixelClockKHz) {
 
-            *pTimingsProtocol = (rmProtocol ==
-                NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_A) ?
-                NVKMS_PROTOCOL_SOR_SINGLE_TMDS_A :
-                NVKMS_PROTOCOL_SOR_SINGLE_TMDS_B;
+            switch (rmProtocol) {
+                case NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_DUAL_TMDS:
+                    /*
+                     * Force single link TMDS protocol. HDMI does not support
+                     * physically support dual link TMDS.
+                     *
+                     * TMDS_A: "use A side of the link"
+                     */
+                    *pTimingsProtocol = NVKMS_PROTOCOL_SOR_SINGLE_TMDS_A;
+                    break;
+                case NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_A:
+                    *pTimingsProtocol = NVKMS_PROTOCOL_SOR_SINGLE_TMDS_A;
+                    break;
+                case NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_B:
+                    *pTimingsProtocol = NVKMS_PROTOCOL_SOR_SINGLE_TMDS_B;
+                    break;
+                default:
+                    return FALSE;
+            }
             return TRUE;
         }
     } while (nvDowngradeColorSpaceAndBpc(pDpyEvo,

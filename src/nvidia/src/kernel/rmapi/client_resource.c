@@ -3671,7 +3671,8 @@ cliresCtrlCmdNvdGetNvlogBufferInfo_IMPL
         }
 
         pBuffer = NvLogLogger.pBuffers[hBuffer];
-        NV_ASSERT_OR_RETURN(pBuffer != NULL, NV_ERR_OBJECT_NOT_FOUND);
+        NV_ASSERT_OR_ELSE(pBuffer != NULL,
+                          status = NV_ERR_OBJECT_NOT_FOUND; goto done);
 
         NvBool bPause = pParams->flags & DRF_DEF(0000, _CTRL_NVD_NVLOG_BUFFER_INFO_FLAGS, _PAUSE, _YES);
         nvlogPauseLoggingToBuffer(hBuffer, bPause);

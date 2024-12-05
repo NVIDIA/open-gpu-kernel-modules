@@ -1662,7 +1662,7 @@ NV_STATUS freeRpcInfrastructure_VGPU(OBJGPU *pGpu)
     NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);
 
     // Return early if RPC is not initialized
-    if (!pVGpu->bRpcInitialized)
+    if ((pVGpu == NULL) || !pVGpu->bRpcInitialized)
     {
         return NV_ERR_INVALID_STATE;
     }

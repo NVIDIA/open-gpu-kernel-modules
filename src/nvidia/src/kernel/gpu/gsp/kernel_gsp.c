@@ -555,6 +555,67 @@ _kgspRpcRCTriggered
                            NV_ERR_INVALID_CHANNEL);
     }
 
+    // Add the RcDiag records we received from GSP-RM to our system wide journal
+    {
+        OBJSYS   *pSys = SYS_GET_INSTANCE();
+        Journal  *pRcDB = SYS_GET_RCDB(pSys);
+        RmClient *pClient;
+
+        NvU32 recordSize = rcdbGetOcaRecordSizeWithHeader(pRcDB, RmRcDiagReport);
+        NvU32 rcDiagRecStart = pRcDB->RcErrRptNextIdx;
+        NvU32 rcDiagRecEnd;
+        NvU32 processId = 0;
+        NvU32 owner = RCDB_RCDIAG_DEFAULT_OWNER;
+
+        if (pKernelChannel != NULL)
+        {
+            pClient = dynamicCast(RES_GET_CLIENT(pKernelChannel), RmClient);
+            NV_ASSERT(pClient != NULL);
+            if (pClient != NULL)
+                processId = pClient->ProcID;
+        }
+
+        for (NvU32 i = 0; i < rpc_params->rcJournalBufferSize / recordSize; i++)
+        {
+            RmRCCommonJournal_RECORD *pCommonRecord =
+                (RmRCCommonJournal_RECORD *)((NvU8*)&rpc_params->rcJournalBuffer + i * recordSize);
+            RmRcDiag_RECORD *pRcDiagRecord =
+                (RmRcDiag_RECORD *)&pCommonRecord[1];
+
+#if defined(DEBUG)
+            NV_PRINTF(LEVEL_INFO, "%d: GPUTag=0x%x CPUTag=0x%llx timestamp=0x%llx stateMask=0x%llx\n",
+                      i, pCommonRecord->GPUTag, pCommonRecord->CPUTag, pCommonRecord->timeStamp,
+                      pCommonRecord->stateMask);
+            NV_PRINTF(LEVEL_INFO, "   idx=%d timeStamp=0x%x type=0x%x flags=0x%x count=%d owner=0x%x processId=0x%x\n",
+                      pRcDiagRecord->idx, pRcDiagRecord->timeStamp, pRcDiagRecord->type, pRcDiagRecord->flags,
+                      pRcDiagRecord->count, pRcDiagRecord->owner, processId);
+            for (NvU32 j = 0; j < pRcDiagRecord->count; j++)
+            {
+                NV_PRINTF(LEVEL_INFO, "     %d: offset=0x08%x tag=0x08%x value=0x08%x attribute=0x08%x\n",
+                          j, pRcDiagRecord->data[j].offset, pRcDiagRecord->data[j].tag,
+                          pRcDiagRecord->data[j].value, pRcDiagRecord->data[j].attribute);
+            }
+#endif
+            if (rcdbAddRcDiagRecFromGsp(pGpu, pRcDB, pCommonRecord, pRcDiagRecord) == NULL)
+            {
+                NV_PRINTF(LEVEL_WARNING, "Lost RC diagnostic record coming from GPU%d GSP: type=0x%x stateMask=0x%llx\n",
+                          gpuGetInstance(pGpu), pRcDiagRecord->type, pCommonRecord->stateMask);
+            }
+        }
+
+        rcDiagRecEnd = pRcDB->RcErrRptNextIdx - 1;
+
+        // Update records to have the correct PID associated with the channel
+        if (rcDiagRecStart != rcDiagRecEnd)
+        {
+            rcdbUpdateRcDiagRecContext(pRcDB,
+                                       rcDiagRecStart,
+                                       rcDiagRecEnd,
+                                       processId,
+                                       owner);
+        }
+    }
+
     bIsCcEnabled = gpuIsCCFeatureEnabled(pGpu);
 
     // With CC enabled, CPU-RM needs to write error notifiers
@@ -2395,16 +2456,12 @@ static NV_STATUS setupLogBufferVgpu(
     {
         NV_PRINTF(LEVEL_ERROR, "Failed to map memory for %s task log buffer for vGPU partition \n", szPrefix);
         nvStatus = NV_ERR_INSUFFICIENT_RESOURCES;
-        if (pKernelGsp->pNvlogFlushMtx != NULL)
-            portSyncMutexRelease(pKernelGsp->pNvlogFlushMtx);
 
         if (nvStatus != NV_OK)
             _kgspFreeLibosVgpuPartitionLoggingStructures(pGpu, pKernelGsp, gfid);
     }
 
 error_cleanup:
-    if (pKernelGsp->pNvlogFlushMtx != NULL)
-        portSyncMutexRelease(pKernelGsp->pNvlogFlushMtx);
 
     if (nvStatus != NV_OK)
         _kgspFreeLibosVgpuPartitionLoggingStructures(pGpu, pKernelGsp, gfid);
@@ -2454,8 +2511,8 @@ kgspInitVgpuPartitionLogging_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    if (pKernelGsp->pNvlogFlushMtx != NULL)
-        portSyncMutexAcquire(pKernelGsp->pNvlogFlushMtx);
+    while (!portAtomicCompareAndSwapS32(&pKernelGsp->logDumpLock, 1, 0))
+        osSpinLoop();
 
     // Source name is used to generate a tag that is a unique identifier for nvlog buffers.
     // As the source name 'GSP' is already in use, we will need a custom source name.
@@ -2483,7 +2540,7 @@ kgspInitVgpuPartitionLogging_IMPL
         );
 
         if (nvStatus != NV_OK)
-            return nvStatus;
+            goto exit;
     }
 
     // Determine which kernel is online, and add the according buffer
@@ -2544,7 +2601,7 @@ kgspInitVgpuPartitionLogging_IMPL
         }
 
         if (nvStatus != NV_OK)
-            return nvStatus;
+            goto exit;
     }
 
     {
@@ -2559,6 +2616,9 @@ kgspInitVgpuPartitionLogging_IMPL
     pKernelGsp->bHasVgpuLogs = NV_TRUE;
 
     *pPreserveLogBufferFull = bPreserveLogBufferFull;
+
+exit:
+    portAtomicCompareAndSwapS32(&pKernelGsp->logDumpLock, 0, 1);
 
     return nvStatus;
 }
@@ -2628,12 +2688,6 @@ _kgspFreeLibosLoggingStructures
 
     if (pKernelGsp->pLogElf == NULL)
         nvlogDeregisterFlushCb(kgspNvlogFlushCb, pKernelGsp);
-
-    if (pKernelGsp->pNvlogFlushMtx != NULL)
-    {
-        portSyncMutexDestroy(pKernelGsp->pNvlogFlushMtx);
-        pKernelGsp->pNvlogFlushMtx = NULL;
-    }
 
     libosLogDestroy(&pKernelGsp->logDecode);
 
@@ -2770,17 +2824,6 @@ _kgspInitLibosLoggingStructures
     NvU8      idx;
     NvU64 flags = MEMDESC_FLAGS_NONE;
 
-    // Needed only on Unix where NV_ESC_RM_LOCKLESS_DIAGNOSTIC is supported
-    if (RMCFG_FEATURE_PLATFORM_UNIX)
-    {
-        pKernelGsp->pNvlogFlushMtx = portSyncMutexCreate(portMemAllocatorGetGlobalNonPaged());
-        if (pKernelGsp->pNvlogFlushMtx == NULL)
-        {
-            nvStatus = NV_ERR_INSUFFICIENT_RESOURCES;
-            goto error_cleanup;
-        }
-    }
-
     libosLogCreate(&pKernelGsp->logDecode);
 
     flags |= MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY;
@@ -2856,9 +2899,6 @@ _kgspInitLibosLoggingStructures
             return nvStatus;
     }
 
-error_cleanup:
-    if (nvStatus != NV_OK)
-        _kgspFreeLibosLoggingStructures(pGpu, pKernelGsp);
 
     return nvStatus;
 }
@@ -3464,9 +3504,8 @@ kgspInitRm_IMPL
     //
     // Do not register nvlog flush callback if:
     // 1. Live decoding is enabled, as logs will be printed to dmesg.
-    // 2. NV_ESC_RM_LOCKLESS_DIAGNOSTIC is not supported on this platform, i.e. pNvlogFlushMtx=NULL.
     //
-    if (pKernelGsp->pLogElf == NULL && pKernelGsp->pNvlogFlushMtx != NULL)
+    if (pKernelGsp->pLogElf == NULL)
         NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, nvlogRegisterFlushCb(kgspNvlogFlushCb, pKernelGsp), done);
 
     // Reset thread state timeout and wait for GFW_BOOT OK status
@@ -3756,13 +3795,20 @@ kgspDumpGspLogs_IMPL
       || pKernelGsp->bHasVgpuLogs
     )
     {
-        if (pKernelGsp->pNvlogFlushMtx != NULL)
-            portSyncMutexAcquire(pKernelGsp->pNvlogFlushMtx);
+        while (!portAtomicCompareAndSwapS32(&pKernelGsp->logDumpLock, 1, 0))
+        {
+            if (osIsRaisedIRQL())
+            {
+                // called at DPC/ISR and there is contention, just bail
+                return;
+            }
+
+            osSpinLoop();
+        }
 
         kgspDumpGspLogsUnlocked(pKernelGsp, bSyncNvLog);
 
-        if (pKernelGsp->pNvlogFlushMtx != NULL)
-            portSyncMutexRelease(pKernelGsp->pNvlogFlushMtx);
+        portAtomicCompareAndSwapS32(&pKernelGsp->logDumpLock, 0, 1);
     }
 }
 

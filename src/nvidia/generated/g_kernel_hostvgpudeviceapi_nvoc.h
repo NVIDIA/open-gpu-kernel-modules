@@ -170,7 +170,7 @@ struct KernelHostVgpuDeviceApi {
 
     // Data members
     struct KernelHostVgpuDeviceShr *pShared;
-    NvU32 notifyActions[7];
+    NvU32 notifyActions[8];
 };
 
 

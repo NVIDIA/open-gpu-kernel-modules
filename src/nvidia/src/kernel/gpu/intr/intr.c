@@ -57,6 +57,7 @@ static struct
 } stuckIntr[MC_ENGINE_IDX_MAX];
 
 static NvBool _intrServiceStallExactList(OBJGPU *pGpu, Intr *pIntr, MC_ENGINE_BITVECTOR *pEngines);
+static void _intrLogLongRunningInterrupts(Intr *pIntr);
 static void _intrInitServiceTable(OBJGPU *pGpu, Intr *pIntr);
 
 
@@ -142,6 +143,8 @@ intrServiceStall_IMPL(OBJGPU *pGpu, Intr *pIntr)
     {
         intrProcessDPCQueue_HAL(pGpu, pIntr);
     }
+
+    _intrLogLongRunningInterrupts(pIntr);
 
 exit:
     return;
@@ -1111,6 +1114,7 @@ NvU32 intrServiceInterruptRecords_IMPL
     IntrService *pIntrService = pIntr->intrServiceTable[engineIdx].pInterruptService;
     NvU32 ret = 0;
     NvBool bShouldService;
+    NvU64 intrTiming, intrTiming2;
     IntrServiceClearInterruptArguments clearParams = {engineIdx};
     IntrServiceServiceInterruptArguments serviceParams = {engineIdx};
 
@@ -1132,9 +1136,20 @@ NvU32 intrServiceInterruptRecords_IMPL
 
     if (bShouldService)
     {
+        osGetPerformanceCounter(&intrTiming);
+
         GSP_TRACE_RATS_ADD_RECORD(NV_RATS_GSP_TRACE_TYPE_INTR_START, pGpu, (NvU32) engineIdx);
         ret = intrservServiceInterrupt(pGpu, pIntrService, &serviceParams);
         GSP_TRACE_RATS_ADD_RECORD(NV_RATS_GSP_TRACE_TYPE_INTR_END, pGpu, (NvU32) engineIdx);
+
+        osGetPerformanceCounter(&intrTiming2);
+        intrTiming = intrTiming2 - intrTiming;
+        if (intrTiming > LONG_INTR_LOG_LENGTH_NS)
+        {
+            pIntr->longIntrStats[engineIdx].intrCount++;
+            if (intrTiming > pIntr->longIntrStats[engineIdx].intrLength)
+                pIntr->longIntrStats[engineIdx].intrLength = intrTiming;
+        }
     }
     return ret;
 }
@@ -1459,6 +1474,29 @@ _intrExitCriticalSection
     }
 }
 
+static void
+_intrLogLongRunningInterrupts(Intr *pIntr)
+{
+    NvU64 now;
+    osGetPerformanceCounter(&now);
+
+    for (NvU32 i = 0; i < MC_ENGINE_IDX_MAX; ++i)
+    {
+        if (pIntr->longIntrStats[i].intrCount > 0)
+        {
+            if (now - pIntr->longIntrStats[i].lastPrintTime > LONG_INTR_LOG_RATELIMIT_NS)
+            {
+                NV_PRINTF(LEVEL_WARNING, "%u long-running interrupts (%llu ns or slower) from engine %u, longest taking %llu ns\n",
+                          pIntr->longIntrStats[i].intrCount, LONG_INTR_LOG_LENGTH_NS, i, pIntr->longIntrStats[i].intrLength);
+
+                pIntr->longIntrStats[i].intrCount = 0;
+                pIntr->longIntrStats[i].intrLength = 0;
+                pIntr->longIntrStats[i].lastPrintTime = now;
+            }
+        }
+    }
+}
+
 static NvBool
 _intrServiceStallExactList
 (
@@ -1640,6 +1678,9 @@ intrServiceStallList_IMPL
 done:
     // allow the isr to come in.
     _intrExitCriticalSection(pGpu, pIntr, &intrMaskCtx);
+
+    // Delay prints until after exiting critical sections to save perf impact
+    _intrLogLongRunningInterrupts(pIntr);
 
     NV_ASSERT_OK(resservRestoreTlsCallContext(pOldContext));
 }

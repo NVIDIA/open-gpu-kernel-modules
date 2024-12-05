@@ -362,6 +362,42 @@ nvswitch_corelib_set_dl_link_mode_ls10
 
     switch (mode)
     {
+        case NVLINK_LINKSTATE_SAFE:
+        {
+            // check if link is in reset
+            if (nvswitch_is_link_in_reset(device, link))
+            {
+                NVSWITCH_PRINT(device, ERROR,
+                    "%s: link #%d is still in reset, cannot change link state\n",
+                    __FUNCTION__, link->linkNumber);
+                return NVL_ERR_INVALID_STATE;
+            }
+
+            NVSWITCH_PRINT(device, INFO,
+                "%s : Link state request to Safe for (%s):(%s) not needed.  Skipping.\n",
+                __FUNCTION__, device->name, link->linkName);
+
+            break;
+        }
+
+        case NVLINK_LINKSTATE_HS:
+        {
+            // check if link is in reset
+            if (nvswitch_is_link_in_reset(device, link))
+            {
+                NVSWITCH_PRINT(device, ERROR,
+                    "%s: link #%d is still in reset, cannot change link state\n",
+                    __FUNCTION__, link->linkNumber);
+                return -NVL_ERR_INVALID_STATE;
+            }
+
+            NVSWITCH_PRINT(device, INFO,
+                "%s : Link state request to Active for (%s):(%s) not needed.  Skipping.\n",
+                __FUNCTION__, device->name, link->linkName);
+
+            break;
+        }
+
         case NVLINK_LINKSTATE_INITPHASE1:
         {
             // Apply appropriate SIMMODE settings

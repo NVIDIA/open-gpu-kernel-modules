@@ -218,12 +218,10 @@ struct OBJTMR {
     struct IntrService *__nvoc_pbase_IntrService;    // intrserv super
     struct OBJTMR *__nvoc_pbase_OBJTMR;    // tmr
 
-    // Vtable with 10 per-object function pointers
+    // Vtable with 8 per-object function pointers
     NV_STATUS (*__tmrDelay__)(struct OBJTMR * /*this*/, NvU32);  // halified (2 hals)
     NvU32 (*__tmrServiceInterrupt__)(OBJGPU *, struct OBJTMR * /*this*/, IntrServiceServiceInterruptArguments *);  // virtual halified (3 hals) override (intrserv) base (intrserv) body
     NV_STATUS (*__tmrSetCurrentTime__)(OBJGPU *, struct OBJTMR * /*this*/);  // halified (3 hals) body
-    NvU32 (*__tmrGetTimeLo__)(OBJGPU *, struct OBJTMR * /*this*/);  // halified (2 hals) body
-    NvU64 (*__tmrGetTime__)(OBJGPU *, struct OBJTMR * /*this*/);  // halified (2 hals) body
     NvU64 (*__tmrGetTimeEx__)(OBJGPU *, struct OBJTMR * /*this*/, struct THREAD_STATE_NODE *);  // halified (2 hals) body
     NV_STATUS (*__tmrSetCountdownIntrDisable__)(OBJGPU *, struct OBJTMR * /*this*/);  // halified (2 hals) body
     NV_STATUS (*__tmrSetCountdown__)(OBJGPU *, struct OBJTMR * /*this*/, NvU32, NvU32, struct THREAD_STATE_NODE *);  // halified (2 hals) body
@@ -359,12 +357,6 @@ NV_STATUS __nvoc_objCreate_OBJTMR(OBJTMR**, Dynamic*, NvU32);
 #define tmrSetCurrentTime_FNPTR(pTmr) pTmr->__tmrSetCurrentTime__
 #define tmrSetCurrentTime(pGpu, pTmr) tmrSetCurrentTime_DISPATCH(pGpu, pTmr)
 #define tmrSetCurrentTime_HAL(pGpu, pTmr) tmrSetCurrentTime_DISPATCH(pGpu, pTmr)
-#define tmrGetTimeLo_FNPTR(pTmr) pTmr->__tmrGetTimeLo__
-#define tmrGetTimeLo(pGpu, pTmr) tmrGetTimeLo_DISPATCH(pGpu, pTmr)
-#define tmrGetTimeLo_HAL(pGpu, pTmr) tmrGetTimeLo_DISPATCH(pGpu, pTmr)
-#define tmrGetTime_FNPTR(pTmr) pTmr->__tmrGetTime__
-#define tmrGetTime(pGpu, pTmr) tmrGetTime_DISPATCH(pGpu, pTmr)
-#define tmrGetTime_HAL(pGpu, pTmr) tmrGetTime_DISPATCH(pGpu, pTmr)
 #define tmrGetTimeEx_FNPTR(pTmr) pTmr->__tmrGetTimeEx__
 #define tmrGetTimeEx(pGpu, pTmr, arg3) tmrGetTimeEx_DISPATCH(pGpu, pTmr, arg3)
 #define tmrGetTimeEx_HAL(pGpu, pTmr, arg3) tmrGetTimeEx_DISPATCH(pGpu, pTmr, arg3)
@@ -444,14 +436,6 @@ static inline void tmrStateDestroy_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr) {
 
 static inline NV_STATUS tmrSetCurrentTime_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr) {
     return pTmr->__tmrSetCurrentTime__(pGpu, pTmr);
-}
-
-static inline NvU32 tmrGetTimeLo_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return pTmr->__tmrGetTimeLo__(pGpu, pTmr);
-}
-
-static inline NvU64 tmrGetTime_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return pTmr->__tmrGetTime__(pGpu, pTmr);
 }
 
 static inline NvU64 tmrGetTimeEx_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3) {
@@ -626,6 +610,34 @@ static inline NV_STATUS tmrGetIntrStatus(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU3
 #endif //__nvoc_objtmr_h_disabled
 
 #define tmrGetIntrStatus_HAL(pGpu, pTmr, pStatus, arg4) tmrGetIntrStatus(pGpu, pTmr, pStatus, arg4)
+
+NvU32 tmrGetTimeLo_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr);
+
+
+#ifdef __nvoc_objtmr_h_disabled
+static inline NvU32 tmrGetTimeLo(OBJGPU *pGpu, struct OBJTMR *pTmr) {
+    NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
+    return 0;
+}
+#else //__nvoc_objtmr_h_disabled
+#define tmrGetTimeLo(pGpu, pTmr) tmrGetTimeLo_GM107(pGpu, pTmr)
+#endif //__nvoc_objtmr_h_disabled
+
+#define tmrGetTimeLo_HAL(pGpu, pTmr) tmrGetTimeLo(pGpu, pTmr)
+
+NvU64 tmrGetTime_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr);
+
+
+#ifdef __nvoc_objtmr_h_disabled
+static inline NvU64 tmrGetTime(OBJGPU *pGpu, struct OBJTMR *pTmr) {
+    NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
+    return 0;
+}
+#else //__nvoc_objtmr_h_disabled
+#define tmrGetTime(pGpu, pTmr) tmrGetTime_GM107(pGpu, pTmr)
+#endif //__nvoc_objtmr_h_disabled
+
+#define tmrGetTime_HAL(pGpu, pTmr) tmrGetTime(pGpu, pTmr)
 
 NvU32 tmrReadTimeLoReg_TU102(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3);
 
@@ -913,18 +925,6 @@ static inline NV_STATUS tmrSetCurrentTime_56cd7a(OBJGPU *pGpu, struct OBJTMR *pT
 NV_STATUS tmrSetCurrentTime_GV100(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
 NV_STATUS tmrSetCurrentTime_GH100(OBJGPU *pGpu, struct OBJTMR *pTmr);
-
-static inline NvU32 tmrGetTimeLo_cf0499(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return ((NvU32)(((NvU64)(osGetTimestamp())) & 4294967295U));
-}
-
-NvU32 tmrGetTimeLo_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr);
-
-static inline NvU64 tmrGetTime_fa6bbe(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    return osGetTimestamp();
-}
-
-NvU64 tmrGetTime_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
 NvU64 tmrGetTimeEx_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg3);
 
