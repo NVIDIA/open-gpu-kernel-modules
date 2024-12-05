@@ -1156,4 +1156,10 @@ shrnotifDestruct_IMPL
     NotifShare *pNotifShare
 )
 {
+    // pNotifier->pNotifierShare should be set to NULL, or inotifyGetNotificationShare() would
+    // return invalid/wild pointer and cause kernel crash.
+    if (pNotifShare->pNotifier != NULL)
+    {
+        inotifySetNotificationShare(pNotifShare->pNotifier, NULL);
+    }
 }
