@@ -169,7 +169,7 @@ NvBool      NV_API_CALL  os_is_grid_supported        (void);
 NvU32       NV_API_CALL  os_get_grid_csp_support     (void);
 void        NV_API_CALL  os_bug_check                (NvU32, const char *);
 NV_STATUS   NV_API_CALL  os_lock_user_pages          (void *, NvU64, void **, NvU32);
-NV_STATUS   NV_API_CALL  os_lookup_user_io_memory    (void *, NvU64, NvU64 **);
+NV_STATUS   NV_API_CALL  os_lookup_user_io_memory    (void *, NvU64, NvU64 **, void **);
 NV_STATUS   NV_API_CALL  os_unlock_user_pages        (NvU64, void *);
 NV_STATUS   NV_API_CALL  os_match_mmap_offset        (void *, NvU64, NvU64 *);
 NV_STATUS   NV_API_CALL  os_get_euid                 (NvU32 *);
