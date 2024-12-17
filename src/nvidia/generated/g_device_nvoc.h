@@ -112,6 +112,7 @@ struct Device {
     NV_STATUS (*__deviceCtrlCmdKGrGetInfoV2__)(struct Device *, NV0080_CTRL_GR_GET_INFO_V2_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdKGrGetTpcPartitionMode__)(struct Device *, NV0080_CTRL_GR_TPC_PARTITION_MODE_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdKGrSetTpcPartitionMode__)(struct Device *, NV0080_CTRL_GR_TPC_PARTITION_MODE_PARAMS *);
+    NV_STATUS (*__deviceCtrlCmdKGrInternalInitBug4208224War__)(struct Device *, NV0080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdFbGetCompbitStoreInfo__)(struct Device *, NV0080_CTRL_FB_GET_COMPBIT_STORE_INFO_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdFbGetCaps__)(struct Device *, NV0080_CTRL_FB_GET_CAPS_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdFbGetCapsV2__)(struct Device *, NV0080_CTRL_FB_GET_CAPS_V2_PARAMS *);
@@ -250,6 +251,7 @@ NV_STATUS __nvoc_objCreate_Device(Device**, Dynamic*, NvU32, struct CALL_CONTEXT
 #define deviceCtrlCmdKGrGetInfoV2(pDevice, pParams) deviceCtrlCmdKGrGetInfoV2_DISPATCH(pDevice, pParams)
 #define deviceCtrlCmdKGrGetTpcPartitionMode(pDevice, pParams) deviceCtrlCmdKGrGetTpcPartitionMode_DISPATCH(pDevice, pParams)
 #define deviceCtrlCmdKGrSetTpcPartitionMode(pDevice, pParams) deviceCtrlCmdKGrSetTpcPartitionMode_DISPATCH(pDevice, pParams)
+#define deviceCtrlCmdKGrInternalInitBug4208224War(pDevice, pParams) deviceCtrlCmdKGrInternalInitBug4208224War_DISPATCH(pDevice, pParams)
 #define deviceCtrlCmdFbGetCompbitStoreInfo(pDevice, pCompbitStoreParams) deviceCtrlCmdFbGetCompbitStoreInfo_DISPATCH(pDevice, pCompbitStoreParams)
 #define deviceCtrlCmdFbGetCaps(pDevice, pFbCapsParams) deviceCtrlCmdFbGetCaps_DISPATCH(pDevice, pFbCapsParams)
 #define deviceCtrlCmdFbGetCapsV2(pDevice, pFbCapsParams) deviceCtrlCmdFbGetCapsV2_DISPATCH(pDevice, pFbCapsParams)
@@ -468,6 +470,12 @@ NV_STATUS deviceCtrlCmdKGrSetTpcPartitionMode_IMPL(struct Device *pDevice, NV008
 
 static inline NV_STATUS deviceCtrlCmdKGrSetTpcPartitionMode_DISPATCH(struct Device *pDevice, NV0080_CTRL_GR_TPC_PARTITION_MODE_PARAMS *pParams) {
     return pDevice->__deviceCtrlCmdKGrSetTpcPartitionMode__(pDevice, pParams);
+}
+
+NV_STATUS deviceCtrlCmdKGrInternalInitBug4208224War_IMPL(struct Device *pDevice, NV0080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS *pParams);
+
+static inline NV_STATUS deviceCtrlCmdKGrInternalInitBug4208224War_DISPATCH(struct Device *pDevice, NV0080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS *pParams) {
+    return pDevice->__deviceCtrlCmdKGrInternalInitBug4208224War__(pDevice, pParams);
 }
 
 NV_STATUS deviceCtrlCmdFbGetCompbitStoreInfo_IMPL(struct Device *pDevice, NV0080_CTRL_FB_GET_COMPBIT_STORE_INFO_PARAMS *pCompbitStoreParams);

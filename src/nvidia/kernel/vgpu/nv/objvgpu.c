@@ -142,6 +142,11 @@ vgpuDestructObject
     OBJVGPU       *pVGpu = GPU_GET_VGPU(pGpu);
     NV_STATUS      rmStatus = NV_OK;
 
+    // TODO This can be called with a NULL OBJVGPU object via _gpumgrCreateGpu
+    // when trying to init on a CC GPU that has previously been unloaded.
+    // Bug 4922744
+    NV_ASSERT_OR_RETURN_VOID(pVGpu != NULL);
+
     NV_RM_RPC_UNLOADING_GUEST_DRIVER(pGpu, rmStatus, NV_FALSE, NV_FALSE, 0);
 
     {

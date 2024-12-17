@@ -193,6 +193,7 @@ struct KernelGraphics {
     NV_STATUS (*__kgraphicsStatePostLoad__)(OBJGPU *, struct KernelGraphics *, NvU32);
     void (*__kgraphicsRegisterIntrService__)(OBJGPU *, struct KernelGraphics *, IntrServiceRecord *);
     NV_STATUS (*__kgraphicsServiceNotificationInterrupt__)(OBJGPU *, struct KernelGraphics *, IntrServiceServiceNotificationInterruptArguments *);
+    void (*__kgraphicsTeardownBug4208224State__)(OBJGPU *, struct KernelGraphics *);
     NV_STATUS (*__kgraphicsCreateBug4208224Channel__)(OBJGPU *, struct KernelGraphics *);
     NV_STATUS (*__kgraphicsInitializeBug4208224WAR__)(OBJGPU *, struct KernelGraphics *);
     NvBool (*__kgraphicsIsBug4208224WARNeeded__)(OBJGPU *, struct KernelGraphics *);
@@ -251,6 +252,7 @@ struct KernelGraphics_PRIVATE {
     NV_STATUS (*__kgraphicsStatePostLoad__)(OBJGPU *, struct KernelGraphics *, NvU32);
     void (*__kgraphicsRegisterIntrService__)(OBJGPU *, struct KernelGraphics *, IntrServiceRecord *);
     NV_STATUS (*__kgraphicsServiceNotificationInterrupt__)(OBJGPU *, struct KernelGraphics *, IntrServiceServiceNotificationInterruptArguments *);
+    void (*__kgraphicsTeardownBug4208224State__)(OBJGPU *, struct KernelGraphics *);
     NV_STATUS (*__kgraphicsCreateBug4208224Channel__)(OBJGPU *, struct KernelGraphics *);
     NV_STATUS (*__kgraphicsInitializeBug4208224WAR__)(OBJGPU *, struct KernelGraphics *);
     NvBool (*__kgraphicsIsBug4208224WARNeeded__)(OBJGPU *, struct KernelGraphics *);
@@ -331,6 +333,8 @@ NV_STATUS __nvoc_objCreate_KernelGraphics(KernelGraphics**, Dynamic*, NvU32);
 #define kgraphicsStatePostLoad(arg0, arg1, flags) kgraphicsStatePostLoad_DISPATCH(arg0, arg1, flags)
 #define kgraphicsRegisterIntrService(arg0, arg1, arg2) kgraphicsRegisterIntrService_DISPATCH(arg0, arg1, arg2)
 #define kgraphicsServiceNotificationInterrupt(arg0, arg1, arg2) kgraphicsServiceNotificationInterrupt_DISPATCH(arg0, arg1, arg2)
+#define kgraphicsTeardownBug4208224State(arg0, arg1) kgraphicsTeardownBug4208224State_DISPATCH(arg0, arg1)
+#define kgraphicsTeardownBug4208224State_HAL(arg0, arg1) kgraphicsTeardownBug4208224State_DISPATCH(arg0, arg1)
 #define kgraphicsCreateBug4208224Channel(arg0, arg1) kgraphicsCreateBug4208224Channel_DISPATCH(arg0, arg1)
 #define kgraphicsCreateBug4208224Channel_HAL(arg0, arg1) kgraphicsCreateBug4208224Channel_DISPATCH(arg0, arg1)
 #define kgraphicsInitializeBug4208224WAR(arg0, arg1) kgraphicsInitializeBug4208224WAR_DISPATCH(arg0, arg1)
@@ -503,6 +507,16 @@ NV_STATUS kgraphicsServiceNotificationInterrupt_IMPL(OBJGPU *arg0, struct Kernel
 
 static inline NV_STATUS kgraphicsServiceNotificationInterrupt_DISPATCH(OBJGPU *arg0, struct KernelGraphics *arg1, IntrServiceServiceNotificationInterruptArguments *arg2) {
     return arg1->__kgraphicsServiceNotificationInterrupt__(arg0, arg1, arg2);
+}
+
+static inline void kgraphicsTeardownBug4208224State_b3696a(OBJGPU *arg0, struct KernelGraphics *arg1) {
+    return;
+}
+
+void kgraphicsTeardownBug4208224State_TU102(OBJGPU *arg0, struct KernelGraphics *arg1);
+
+static inline void kgraphicsTeardownBug4208224State_DISPATCH(OBJGPU *arg0, struct KernelGraphics *arg1) {
+    arg1->__kgraphicsTeardownBug4208224State__(arg0, arg1);
 }
 
 NV_STATUS kgraphicsCreateBug4208224Channel_TU102(OBJGPU *arg0, struct KernelGraphics *arg1);

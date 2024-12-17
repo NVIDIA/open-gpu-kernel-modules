@@ -293,6 +293,36 @@ serverTopLock_Epilogue
     }
 }
 
+static NvU32
+_resGetBackRefGpusMask(RsResourceRef *pResourceRef)
+{
+    NvU32 gpuMask = 0x0;
+    RS_INTER_MAPPING_BACK_REF *pBackRefItem;
+
+    if (pResourceRef == NULL)
+    {
+        return 0x0;
+    }
+
+    pBackRefItem = listHead(&pResourceRef->interBackRefs);
+    while (pBackRefItem != NULL)
+    {
+        RsInterMapping *pMapping = pBackRefItem->pMapping;
+        RsResourceRef *pDeviceRef = pMapping->pContextRef;
+        GpuResource *pGpuResource = dynamicCast(pDeviceRef->pResource, GpuResource);
+
+        if (pGpuResource != NULL)
+        {
+            OBJGPU *pGpu = GPU_RES_GET_GPU(pGpuResource);
+            gpuMask |= gpumgrGetGpuMask(pGpu);
+        }
+
+        pBackRefItem = listNext(&pResourceRef->interBackRefs, pBackRefItem);
+    }
+
+    return gpuMask;
+}
+
 NV_STATUS
 serverResLock_Prologue
 (
@@ -410,8 +440,15 @@ serverResLock_Prologue
         }
         else
         {
-            status = rmGpuGroupLockAcquire(pParentGpu->gpuInstance,
-                                           GPU_LOCK_GRP_DEVICE,
+            //
+            // Lock the parent GPU and if specified any GPUs that resource
+            // may backreference via mappings.
+            //
+            pLockInfo->gpuMask = gpumgrGetGpuMask(pParentGpu) |
+                                 _resGetBackRefGpusMask(pLockInfo->pResRefToBackRef);
+
+            status = rmGpuGroupLockAcquire(0,
+                                           GPU_LOCK_GRP_MASK,
                                            GPUS_LOCK_FLAGS_NONE,
                                            RM_LOCK_MODULES_CLIENT,
                                            &pLockInfo->gpuMask);

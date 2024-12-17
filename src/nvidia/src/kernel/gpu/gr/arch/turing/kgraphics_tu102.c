@@ -180,6 +180,51 @@ kgraphicsAllocGrGlobalCtxBuffers_TU102
 
     return status;
 }
+/*!
+ * @brief Teardown bug 4208224 client and memory
+ */
+void 
+kgraphicsTeardownBug4208224State_TU102
+(
+    OBJGPU *pGpu,
+    KernelGraphics *pKernelGraphics
+)
+{
+    NV_ASSERT_OR_RETURN_VOID(gpumgrIsParentGPU(pGpu));
+    if (pKernelGraphics->bug4208224Info.bConstructed && !IS_VIRTUAL(pGpu) && gpumgrIsParentGPU(pGpu))
+    {
+        RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+        NV0080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS params = {0};
+        NvBool      bBcStatus;
+        NvU32       sliLoopReentrancy;
+
+        //
+        // Forcing BC state to enabled here is most likely superfluous 
+        // as the rmapi control stack should detect a call with a device
+        // handle and automatically enable BC mode. This is force is left
+        // as a code-maintence reminder, that if linked-SLI is being used,
+        // we MUST perform this as a broadcast call.
+        //
+        bBcStatus = gpumgrGetBcEnabledStatus(pGpu);
+        gpumgrSetBcEnabledStatus(pGpu, NV_TRUE);        
+        sliLoopReentrancy = gpumgrSLILoopReentrancyPop(pGpu);
+
+        params.bTeardown = NV_TRUE;
+        NV_ASSERT_OK(pRmApi->Control(pRmApi,
+                     pKernelGraphics->bug4208224Info.hClient,
+                     pKernelGraphics->bug4208224Info.hDeviceId,
+                     NV0080_CTRL_CMD_INTERNAL_KGR_INIT_BUG4208224_WAR,
+                     &params,
+                     sizeof(params)));
+        NV_ASSERT_OK(pRmApi->Free(pRmApi, pKernelGraphics->bug4208224Info.hClient, pKernelGraphics->bug4208224Info.hClient));
+
+        gpumgrSLILoopReentrancyPush(pGpu, sliLoopReentrancy);
+        gpumgrSetBcEnabledStatus(pGpu, bBcStatus);
+
+        pKernelGraphics->bug4208224Info.bConstructed = NV_FALSE;
+    }
+}
+
 /**
  * @brief Initializes Bug 4208224 by performing the following actions
  *        1.) Sets up static handles inside an info struct to be referenced later
@@ -195,9 +240,11 @@ kgraphicsInitializeBug4208224WAR_TU102
 {
     NV_STATUS   status = NV_OK;
     RM_API     *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    NV2080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS params = {0};
+    NV0080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS params = {0};
+    NvBool      bBcStatus;
+    NvU32       sliLoopReentrancy;
 
-    if (pKernelGraphics->bug4208224Info.bConstructed)
+    if ((pKernelGraphics->bug4208224Info.bConstructed) || !gpumgrIsParentGPU(pGpu))
     {
         return NV_OK;
     }
@@ -205,11 +252,23 @@ kgraphicsInitializeBug4208224WAR_TU102
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         kgraphicsCreateBug4208224Channel_HAL(pGpu, pKernelGraphics));
 
+    //
+    // Forcing BC state to enabled here is most likely superfluous 
+    // as the rmapi control stack should detect a call with a device
+    // handle and automatically enable BC mode. This is force is left
+    // as a code-maintence reminder, that if linked-SLI is being used,
+    // we MUST perform this as a broadcast call.
+    //
+    bBcStatus = gpumgrGetBcEnabledStatus(pGpu);
+    gpumgrSetBcEnabledStatus(pGpu, NV_TRUE);
+
+    // As we have forced here SLI broadcast mode, temporarily reset the reentrancy count
+    sliLoopReentrancy = gpumgrSLILoopReentrancyPop(pGpu);
     params.bTeardown = NV_FALSE;
     status =  pRmApi->Control(pRmApi,
                         pKernelGraphics->bug4208224Info.hClient,
-                        pKernelGraphics->bug4208224Info.hSubdeviceId,
-                        NV2080_CTRL_CMD_INTERNAL_KGR_INIT_BUG4208224_WAR,
+                        pKernelGraphics->bug4208224Info.hDeviceId,
+                        NV0080_CTRL_CMD_INTERNAL_KGR_INIT_BUG4208224_WAR,
                         &params,
                         sizeof(params));
 
@@ -219,6 +278,10 @@ kgraphicsInitializeBug4208224WAR_TU102
             pKernelGraphics->bug4208224Info.hClient,
             pKernelGraphics->bug4208224Info.hClient));
     }
+
+    // Restore the reentrancy count
+    gpumgrSLILoopReentrancyPush(pGpu, sliLoopReentrancy);
+    gpumgrSetBcEnabledStatus(pGpu, bBcStatus);
 
     return status;
 }

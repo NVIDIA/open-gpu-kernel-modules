@@ -381,21 +381,7 @@ kgraphicsStatePreUnload_IMPL
     NvU32 flags
 )
 {
-    if (pKernelGraphics->bug4208224Info.bConstructed)
-    {
-        RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-        NV2080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS params = {0};
-
-        params.bTeardown = NV_TRUE;
-        NV_ASSERT_OK(pRmApi->Control(pRmApi,
-                     pKernelGraphics->bug4208224Info.hClient,
-                     pKernelGraphics->bug4208224Info.hSubdeviceId,
-                     NV2080_CTRL_CMD_INTERNAL_KGR_INIT_BUG4208224_WAR,
-                     &params,
-                     sizeof(params)));
-        NV_ASSERT_OK(pRmApi->Free(pRmApi, pKernelGraphics->bug4208224Info.hClient, pKernelGraphics->bug4208224Info.hClient));
-        pKernelGraphics->bug4208224Info.bConstructed = NV_FALSE;
-    }
+    kgraphicsTeardownBug4208224State_HAL(pGpu, pKernelGraphics);
 
     fecsBufferUnmap(pGpu, pKernelGraphics);
 

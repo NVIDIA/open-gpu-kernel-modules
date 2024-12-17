@@ -905,6 +905,17 @@ Intel_5795_setupFunc
     return NV_OK;
 }
 
+static NV_STATUS
+Intel_1B81_setupFunc
+(
+    OBJCL *pCl
+)
+{
+    pCl->setProperty(pCl, PDB_PROP_CL_RELAXED_ORDERING_NOT_CAPABLE, NV_TRUE);
+
+    return NV_OK;
+}
+
 
 static NV_STATUS
 Nvidia_T210_setupFunc

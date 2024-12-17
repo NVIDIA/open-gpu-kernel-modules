@@ -47,6 +47,7 @@
 #include "gpu_mgr/gpu_group.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "kernel/gpu/rc/kernel_rc.h"
+#include "kernel/gpu/gr/kernel_graphics.h"
 
 #include "nvRmReg.h"
 

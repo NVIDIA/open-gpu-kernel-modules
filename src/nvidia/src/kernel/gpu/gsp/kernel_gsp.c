@@ -2948,33 +2948,12 @@ _kgspShouldRelaxGspInitLocking
         relaxGspInitLockingReg = NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_DEFAULT;
     }
 
-    // Due to bug 4399629, restrict which platforms have parallel init enabled by default
-    if (relaxGspInitLockingReg == NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_DEFAULT)
+    if ((relaxGspInitLockingReg == NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_DEFAULT) ||
+        (relaxGspInitLockingReg == NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_ENABLE))
     {
-        NvU16 devId = (NvU16)(((pGpu->idInfo.PCIDeviceID) >> 16) & 0x0000FFFF);
-        NvU32 i;
-
-        static const NvU16 defaultRelaxGspInitLockingGpus[] = {
-            0x1EB8, // T4
-            0x1EB9, // T4
-        };
-
-        if (IsHOPPER(pGpu) || IsADA(pGpu))
-        {
-            return NV_TRUE;
-        }
-
-        for (i = 0; i < NV_ARRAY_ELEMENTS(defaultRelaxGspInitLockingGpus); i++)
-        {
-            if (devId == defaultRelaxGspInitLockingGpus[i])
-            {
-                return NV_TRUE;
-            }
-        }
-        return NV_FALSE;
+        return NV_TRUE;
     }
 
-    return (relaxGspInitLockingReg == NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_ENABLE);
     return NV_FALSE;
 }
 

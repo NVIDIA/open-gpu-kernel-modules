@@ -301,6 +301,24 @@ static void __nvoc_init_funcTable_KernelGraphics_1(KernelGraphics *pThis, RmHals
 
     pThis->__kgraphicsServiceNotificationInterrupt__ = &kgraphicsServiceNotificationInterrupt_IMPL;
 
+    // Hal function -- kgraphicsTeardownBug4208224State
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kgraphicsTeardownBug4208224State__ = &kgraphicsTeardownBug4208224State_b3696a;
+    }
+    else
+    {
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000000e0UL) )) /* ChipHal: TU102 | TU104 | TU106 */ 
+        {
+            pThis->__kgraphicsTeardownBug4208224State__ = &kgraphicsTeardownBug4208224State_TU102;
+        }
+        // default
+        else
+        {
+            pThis->__kgraphicsTeardownBug4208224State__ = &kgraphicsTeardownBug4208224State_b3696a;
+        }
+    }
+
     // Hal function -- kgraphicsCreateBug4208224Channel
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000000e0UL) )) /* ChipHal: TU102 | TU104 | TU106 */ 
     {

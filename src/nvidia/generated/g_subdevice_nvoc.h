@@ -370,7 +370,6 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdGrInternalGetFecsTraceRdOffset__)(struct Subdevice *, NV2080_CTRL_INTERNAL_GR_GET_FECS_TRACE_RD_OFFSET_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGrInternalSetFecsTraceWrOffset__)(struct Subdevice *, NV2080_CTRL_INTERNAL_GR_SET_FECS_TRACE_WR_OFFSET_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGrStaticGetFecsTraceDefines__)(struct Subdevice *, NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_TRACE_DEFINES_PARAMS *);
-    NV_STATUS (*__subdeviceCtrlCmdKGrInternalInitBug4208224War__)(struct Subdevice *, NV2080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuGetCachedInfo__)(struct Subdevice *, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuGetInfoV2__)(struct Subdevice *, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuGetIpVersion__)(struct Subdevice *, NV2080_CTRL_GPU_GET_IP_VERSION_PARAMS *);
@@ -1020,7 +1019,6 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdGrInternalGetFecsTraceRdOffset(pSubdevice, pParams) subdeviceCtrlCmdGrInternalGetFecsTraceRdOffset_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGrInternalSetFecsTraceWrOffset(pSubdevice, pParams) subdeviceCtrlCmdGrInternalSetFecsTraceWrOffset_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGrStaticGetFecsTraceDefines(pSubdevice, pParams) subdeviceCtrlCmdGrStaticGetFecsTraceDefines_DISPATCH(pSubdevice, pParams)
-#define subdeviceCtrlCmdKGrInternalInitBug4208224War(pSubdevice, pParams) subdeviceCtrlCmdKGrInternalInitBug4208224War_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGpuGetCachedInfo(pSubdevice, pGpuInfoParams) subdeviceCtrlCmdGpuGetCachedInfo_DISPATCH(pSubdevice, pGpuInfoParams)
 #define subdeviceCtrlCmdGpuGetInfoV2(pSubdevice, pGpuInfoParams) subdeviceCtrlCmdGpuGetInfoV2_DISPATCH(pSubdevice, pGpuInfoParams)
 #define subdeviceCtrlCmdGpuGetIpVersion(pSubdevice, pGpuIpVersionParams) subdeviceCtrlCmdGpuGetIpVersion_DISPATCH(pSubdevice, pGpuIpVersionParams)
@@ -2926,12 +2924,6 @@ NV_STATUS subdeviceCtrlCmdGrStaticGetFecsTraceDefines_IMPL(struct Subdevice *pSu
 
 static inline NV_STATUS subdeviceCtrlCmdGrStaticGetFecsTraceDefines_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_TRACE_DEFINES_PARAMS *pParams) {
     return pSubdevice->__subdeviceCtrlCmdGrStaticGetFecsTraceDefines__(pSubdevice, pParams);
-}
-
-NV_STATUS subdeviceCtrlCmdKGrInternalInitBug4208224War_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS *pParams);
-
-static inline NV_STATUS subdeviceCtrlCmdKGrInternalInitBug4208224War_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS *pParams) {
-    return pSubdevice->__subdeviceCtrlCmdKGrInternalInitBug4208224War__(pSubdevice, pParams);
 }
 
 NV_STATUS subdeviceCtrlCmdGpuGetCachedInfo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pGpuInfoParams);

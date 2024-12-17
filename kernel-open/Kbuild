@@ -57,6 +57,20 @@ ifeq ($(NV_UNDEF_BEHAVIOR_SANITIZER),1)
  UBSAN_SANITIZE := y
 endif
 
+#
+# Command to create a symbolic link, explicitly resolving the symlink target
+# to an absolute path to abstract away the difference between Linux < 6.13,
+# where the CWD is the Linux kernel source tree for Kbuild extmod builds, and
+# Linux >= 6.13, where the CWD is the external module source tree.
+#
+# This is used to create the nv*-kernel.o -> nv*-kernel.o_binary symlinks for
+# kernel modules which use precompiled binary object files.
+#
+
+quiet_cmd_symlink = SYMLINK $@
+ cmd_symlink = ln -sf $(abspath $<) $@
+
+
 $(foreach _module, $(NV_KERNEL_MODULES), \
  $(eval include $(src)/$(_module)/$(_module).Kbuild))
 
@@ -72,7 +86,7 @@ EXTRA_CFLAGS += -I$(src)/common/inc
 EXTRA_CFLAGS += -I$(src)
 EXTRA_CFLAGS += -Wall $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-format-extra-args
 EXTRA_CFLAGS += -D__KERNEL__ -DMODULE -DNVRM
-EXTRA_CFLAGS += -DNV_VERSION_STRING=\"550.135\"
+EXTRA_CFLAGS += -DNV_VERSION_STRING=\"550.142\"
 
 ifneq ($(SYSSRCHOST1X),)
  EXTRA_CFLAGS += -I$(SYSSRCHOST1X)

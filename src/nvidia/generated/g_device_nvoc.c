@@ -1144,12 +1144,27 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Device[]
         /*func=*/       "deviceCtrlCmdInternalPerfCudaLimitSetControl"
 #endif
     },
+    {               /*  [63] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xe40u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) deviceCtrlCmdKGrInternalInitBug4208224War_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xe40u)
+        /*flags=*/      0xe40u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0x802046u,
+        /*paramSize=*/  sizeof(NV0080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_Device.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "deviceCtrlCmdKGrInternalInitBug4208224War"
+#endif
+    },
 
 };
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_Device = 
 {
-    /*numEntries=*/     63,
+    /*numEntries=*/     64,
     /*pExportEntries=*/ __nvoc_exported_method_def_Device
 };
 
@@ -1296,6 +1311,10 @@ static void __nvoc_init_funcTable_Device_1(Device *pThis, RmHalspecOwner *pRmhal
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
     pThis->__deviceCtrlCmdKGrSetTpcPartitionMode__ = &deviceCtrlCmdKGrSetTpcPartitionMode_IMPL;
+#endif
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xe40u)
+    pThis->__deviceCtrlCmdKGrInternalInitBug4208224War__ = &deviceCtrlCmdKGrInternalInitBug4208224War_IMPL;
 #endif
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)

@@ -26,7 +26,6 @@
 #include "os/os.h"
 #include "nverror.h"
 #include "vgpu/rpc.h"
-#include "nvrm_registry.h"
 
 #include "published/hopper/gh100/hwproject.h"
 #include "published/hopper/gh100/dev_gc6_island.h"
@@ -494,14 +493,6 @@ gpuIsProtectedPcieEnabledInHw_GH100
     OBJGPU *pGpu
 )
 {
-    NvU32 data;
-
-    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_PPCIE_ENABLED, &data) == NV_OK) &&
-        (data == NV_REG_STR_RM_PPCIE_ENABLED_YES))
-    {
-        return NV_TRUE;
-    }
-
     return NV_FALSE;
 }
 
