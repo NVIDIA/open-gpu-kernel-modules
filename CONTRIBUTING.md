@@ -19,3 +19,11 @@ to get a feel for what you should aim for.
 
 Don't worry too much about it! We are happy to guide you through any neccessary style changes through
 code review of your PR.
+
+## Cosmetic Changes Policy
+
+We appreciate your enthusiasm for contributing to the NVIDIA open-gpu-kernel-modules project. However, we have decided not to accept non-functional changes, such as typo fixes, comment and language adjustments, whitespace changes, and other similar non-code changes.
+
+Changes to this codebase incur significant overhead. Therefore, we focus our resources on executable code improvements.
+
+If you have questions or are unsure about the nature of your desired change, please ask us on the [Discussion boards](https://github.com/NVIDIA/open-gpu-kernel-modules/discussions)!
