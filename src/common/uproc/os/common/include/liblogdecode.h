@@ -42,7 +42,7 @@ extern "C" {
 #    define LIBOS_LOG_DECODE_ENABLE 1
 #    define LIBOS_LOG_TO_NVLOG      0
 
-#    define LIBOS_LOG_MAX_LOGS    160   // Max logs for all GPUs for offline decoder
+#    define LIBOS_LOG_MAX_LOGS    3840   // Max logs for all GPUs for offline decoder
 
 #endif // NVRM
 

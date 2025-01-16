@@ -90,10 +90,10 @@ nvswitch_smbpbi_post_init
 
     if (status == NVL_SUCCESS)
     {
-#if defined(DEBUG) || defined(DEVELOP) || defined(NV_MODS)
+#if defined(DEBUG) || defined(DEVELOP)
         nvswitch_lib_smbpbi_log_sxid(device, NVSWITCH_ERR_NO_ERROR,
                                      "NVSWITCH SMBPBI server is online.");
-#endif // defined(DEBUG) || defined(DEVELOP) || defined(NV_MODS)
+#endif // defined(DEBUG) || defined(DEVELOP)
 
         NVSWITCH_PRINT(device, INFO, "%s: SMBPBI POST INIT completed\n", __FUNCTION__);
     }

@@ -221,7 +221,7 @@ struct uvm_pmm_gpu_chunk_suballoc_struct
     // Array of all child subchunks
     // TODO: Bug 1765461: Can the array be inlined? It could save the parent
     //       pointer.
-    uvm_gpu_chunk_t *subchunks[0];
+    uvm_gpu_chunk_t *subchunks[];
 };
 
 typedef enum

@@ -145,6 +145,7 @@ NV_STATUS serverFreeResourceTreeUnderLock(RsServer *pServer, RS_RES_FREE_PARAMS 
         return status;
 
     pLockInfo->flags |= RS_LOCK_FLAGS_FREE_SESSION_LOCK;
+    pLockInfo->pResRefToBackRef = pResourceRef;
     pLockInfo->traceOp = RS_LOCK_TRACE_FREE;
     pLockInfo->traceClassId = pResourceRef->externalClassId;
     status = serverResLock_Prologue(pServer, LOCK_ACCESS_WRITE, pLockInfo, &releaseFlags);

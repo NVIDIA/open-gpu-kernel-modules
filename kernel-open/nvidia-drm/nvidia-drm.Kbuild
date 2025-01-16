@@ -135,3 +135,4 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += vm_area_struct_has_const_vm_flags
 NV_CONFTEST_TYPE_COMPILE_TESTS += drm_driver_has_dumb_destroy
 NV_CONFTEST_TYPE_COMPILE_TESTS += drm_unlocked_ioctl_flag_present
 NV_CONFTEST_TYPE_COMPILE_TESTS += drm_output_poll_changed
+NV_CONFTEST_TYPE_COMPILE_TESTS += file_operations_fop_unsigned_offset_present

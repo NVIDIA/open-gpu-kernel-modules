@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -95,6 +95,11 @@ MAKE_VECTOR(InterruptTable, INTR_TABLE_ENTRY);
 //
 // Default value for intrStuckThreshold
 #define INTR_STUCK_THRESHOLD 1000
+
+// Minimum length of interrupt to log as long-running
+#define LONG_INTR_LOG_LENGTH_NS (1000000LLU) // 1ms
+// Maximum frequency of long-running interrupt print, per engine
+#define LONG_INTR_LOG_RATELIMIT_NS (10000000000LLU) // 10s
 
 #define INTR_TABLE_INIT_KERNEL (1 << 0)
 #define INTR_TABLE_INIT_PHYSICAL (1 << 1)
@@ -194,6 +199,13 @@ typedef struct Device Device;
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+struct __nvoc_inner_struc_Intr_1__ {
+    NvU32 intrCount;
+    NvU64 intrLength;
+    NvU64 lastPrintTime;
+};
+
+
 struct Intr {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -262,6 +274,7 @@ struct Intr {
     NvU32 intrEn0Orig;
     NvBool halIntrEnabled;
     NvU32 saveIntrEn0;
+    struct __nvoc_inner_struc_Intr_1__ longIntrStats[167];
 };
 
 #ifndef __NVOC_CLASS_Intr_TYPEDEF__

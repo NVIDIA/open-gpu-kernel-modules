@@ -122,6 +122,18 @@ const PRB_FIELD_DESC prb_fields_dcl_dclmsg[] = {
         PRB_MAYBE_FIELD_NAME("engine")
         PRB_MAYBE_FIELD_DEFAULT(0)
     },
+    {
+        331,
+        {
+            PRB_OPTIONAL,
+            PRB_MESSAGE,
+            0,
+        },
+        RC_RCDIAGRECORD,
+        0,
+        PRB_MAYBE_FIELD_NAME("rc_diag_recs")
+        PRB_MAYBE_FIELD_DEFAULT(0)
+    },
 };
 
 // 'ErrorBlock' field defaults
@@ -150,7 +162,7 @@ const PRB_MSG_DESC prb_messages_dcl[] = {
         PRB_MAYBE_MESSAGE_NAME("Dcl.Engines")
     },
     {
-        7,
+        8,
         prb_fields_dcl_dclmsg,
         PRB_MAYBE_MESSAGE_NAME("Dcl.DclMsg")
     },

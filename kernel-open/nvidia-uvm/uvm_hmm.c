@@ -71,6 +71,24 @@ module_param(uvm_disable_hmm, bool, 0444);
 #include "uvm_va_policy.h"
 #include "uvm_tools.h"
 
+// The function nv_PageSwapCache() wraps the check for page swap cache flag in
+// order to support a wide variety of kernel versions.
+// The function PageSwapCache() is removed after 32f51ead3d77 ("mm: remove
+// PageSwapCache") in v6.12-rc1.
+// The function folio_test_swapcache() was added in Linux 5.16 (d389a4a811551
+// "mm: Add folio flag manipulation functions")
+// Systems with HMM patches backported to 5.14 are possible, but those systems
+// do not include folio_test_swapcache()
+// TODO: Bug 4050579: Remove this when migration of swap cached pages is updated
+static __always_inline bool nv_PageSwapCache(struct page *page)
+{
+#if defined(NV_FOLIO_TEST_SWAPCACHE_PRESENT)
+    return folio_test_swapcache(page_folio(page));
+#else
+    return PageSwapCache(page);
+#endif
+}
+
 static NV_STATUS gpu_chunk_add(uvm_va_block_t *va_block,
                                uvm_page_index_t page_index,
                                struct page *page);
@@ -2554,7 +2572,7 @@ static NV_STATUS dmamap_src_sysmem_pages(uvm_va_block_t *va_block,
                 continue;
             }
 
-            if (PageSwapCache(src_page)) {
+            if (nv_PageSwapCache(src_page)) {
                 // TODO: Bug 4050579: Remove this when swap cached pages can be
                 // migrated.
                 if (service_context) {

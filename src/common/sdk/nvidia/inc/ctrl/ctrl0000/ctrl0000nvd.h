@@ -256,7 +256,7 @@ typedef struct NV0000_CTRL_NVD_GET_TIMESTAMP_PARAMS {
 #define NV0000_CTRL_NVD_SIGNATURE_SIZE     (4)
 
 /* Maximum number of buffers */
-#define NV0000_CTRL_NVD_MAX_BUFFERS        (256)
+#define NV0000_CTRL_NVD_MAX_BUFFERS        (3840)
 
 #define NV0000_CTRL_NVD_GET_NVLOG_INFO_PARAMS_MESSAGE_ID (0x4U)
 

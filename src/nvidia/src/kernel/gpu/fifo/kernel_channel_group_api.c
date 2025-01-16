@@ -232,7 +232,9 @@ kchangrpapiConstruct_IMPL
 
     // vGpu plugin context flag should only be set on host if context is plugin
     if (gpuIsSriovEnabled(pGpu))
+    {
         pKernelChannelGroup->bIsCallingContextVgpuPlugin = pAllocParams->bIsCallingContextVgpuPlugin;
+    }
 
     if (pKernelChannelGroup->bIsCallingContextVgpuPlugin)
         gfid = GPU_GFID_PF;

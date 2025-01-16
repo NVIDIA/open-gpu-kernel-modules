@@ -36,7 +36,7 @@
 typedef struct
 {
     size_t alloc_size;
-    uint8_t ptr[0];
+    uint8_t ptr[];
 } uvm_vmalloc_hdr_t;
 
 typedef struct

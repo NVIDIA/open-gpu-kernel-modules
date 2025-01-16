@@ -2475,6 +2475,22 @@ compile_test() {
             fi
         ;;
 
+        file_operations_fop_unsigned_offset_present)
+            #
+            # Determine if the FOP_UNSIGNED_OFFSET define is present.
+            #
+            # Added by commit 641bb4394f40 ("fs: move FMODE_UNSIGNED_OFFSET to
+            # fop_flags") in v6.12.
+            #
+            CODE="
+            #include <linux/fs.h>
+            int conftest_file_operations_fop_unsigned_offset_present(void) {
+                return FOP_UNSIGNED_OFFSET;
+            }"
+
+            compile_check_conftest "$CODE" "NV_FILE_OPERATIONS_FOP_UNSIGNED_OFFSET_PRESENT" "" "types"
+        ;;
+
         mm_context_t)
             #
             # Determine if the 'mm_context_t' data type is present
@@ -6512,6 +6528,22 @@ compile_test() {
             int flags = DRM_UNLOCKED;"
 
             compile_check_conftest "$CODE" "NV_DRM_UNLOCKED_IOCTL_FLAG_PRESENT" "" "types"
+        ;;
+
+    folio_test_swapcache)
+            #
+            # Determine if the folio_test_swapcache() function is present.
+            #
+            # folio_test_swapcache() was exported by commit d389a4a811551 ("mm:
+            # Add folio flag manipulation functions") in v5.16.
+            #
+            CODE="
+            #include <linux/page-flags.h>
+            void conftest_folio_test_swapcache(void) {
+                folio_test_swapcache();
+            }"
+
+            compile_check_conftest "$CODE" "NV_FOLIO_TEST_SWAPCACHE_PRESENT" "" "functions"
         ;;
 
         # When adding a new conftest entry, please use the correct format for

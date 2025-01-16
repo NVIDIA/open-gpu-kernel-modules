@@ -62,15 +62,16 @@ class RsSession;
  */
 struct RS_LOCK_INFO
 {
-    RsClient *pClient;              ///< Pointer to client that was locked (if any)
-    RsClient *pSecondClient;        ///< Pointer to second client, for dual-client locking
-    RsResourceRef *pContextRef;     ///< User-defined reference
-    RsSession *pSession;            ///< Session object to be locked, if any
-    NvU32 flags;                    ///< RS_LOCK_FLAGS_*
-    NvU32 state;                    ///< RS_LOCK_STATE_*
+    RsClient *pClient;                  ///< Pointer to client that was locked (if any)
+    RsClient *pSecondClient;            ///< Pointer to second client, for dual-client locking
+    RsResourceRef *pContextRef;         ///< User-defined reference
+    RsResourceRef *pResRefToBackRef;    ///< Resource from which to infer indirect GPU dependencies
+    RsSession *pSession;                ///< Session object to be locked, if any
+    NvU32 flags;                        ///< RS_LOCK_FLAGS_*
+    NvU32 state;                        ///< RS_LOCK_STATE_*
     NvU32 gpuMask;
-    NvU8  traceOp;                  ///< RS_LOCK_TRACE_* operation for lock-metering
-    NvU32 traceClassId;             ///< Class of initial resource that was locked for lock metering
+    NvU8  traceOp;                      ///< RS_LOCK_TRACE_* operation for lock-metering
+    NvU32 traceClassId;                 ///< Class of initial resource that was locked for lock metering
 };
 
 struct RS_RES_ALLOC_PARAMS_INTERNAL

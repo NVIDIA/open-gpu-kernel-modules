@@ -106,4 +106,33 @@ typedef struct NV208F_CTRL_GR_ECC_INJECTION_SUPPORTED_PARAMS {
     NV_DECLARE_ALIGNED(NV2080_CTRL_GR_ROUTE_INFO grRouteInfo, 8);
 } NV208F_CTRL_GR_ECC_INJECTION_SUPPORTED_PARAMS;
 
+/*
+ * NV208F_CTRL_CMD_GR_ECC_SET_TRANSIENT_CLEARING_POLICY
+ *
+ * Control command to determine whether or not the actions to clear potential transient
+ * errors in the SM should be taken
+ *
+ * Parameters:
+ *
+ * policy
+ *   NV208F_CTRL_GR_ECC_TRANSIENT_CLEARING_DISABLED
+ *      Don't attempt to clear a transient error in the SM
+ *   NV208F_CTRL_GR_ECC_TRANSIENT_CLEARING_ENABLED
+ *      Attempt to clear a transient error in the SM
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+#define NV208F_CTRL_GR_ECC_TRANSIENT_CLEARING_DISABLED       (0x00000000)
+#define NV208F_CTRL_GR_ECC_TRANSIENT_CLEARING_ENABLED        (0x00000001)
+
+#define NV208F_CTRL_CMD_GR_ECC_SET_TRANSIENT_CLEARING_POLICY (0x208f1205) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_GR_INTERFACE_ID << 8) | NV208F_CTRL_GR_ECC_SET_TRANSIENT_CLEARING_POLICY_PARAMS_MESSAGE_ID" */
+
+#define NV208F_CTRL_GR_ECC_SET_TRANSIENT_CLEARING_POLICY_PARAMS_MESSAGE_ID (0x5U)
+
+typedef struct NV208F_CTRL_GR_ECC_SET_TRANSIENT_CLEARING_POLICY_PARAMS {
+    NvU32 policy;
+} NV208F_CTRL_GR_ECC_SET_TRANSIENT_CLEARING_POLICY_PARAMS;
+
 /* _ctrl208fgr_h_ */
