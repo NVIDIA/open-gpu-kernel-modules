@@ -195,6 +195,7 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += get_task_ioprio
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += mdev_set_iommu_device
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += offline_and_remove_memory
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += crypto_tfm_ctx_aligned
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += module_import_ns_takes_string_literal
 
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_of_node_to_nid
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_sme_active
@@ -227,8 +228,10 @@ NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_tsec_comms_alloc_me
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_tsec_comms_free_gscco_mem
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_memory_block_size_bytes
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += crypto
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += crypto_akcipher_verify
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_follow_pte
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_pci_ats_supported
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += ecc_digits_from_bytes
 
 NV_CONFTEST_TYPE_COMPILE_TESTS += dma_ops
 NV_CONFTEST_TYPE_COMPILE_TESTS += swiotlb_dma_ops

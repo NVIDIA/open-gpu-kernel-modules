@@ -127,7 +127,11 @@ MODULE_ALIAS_CHARDEV_MAJOR(NV_MAJOR_DEVICE_NUMBER);
  * DMA_BUF namespace is added by commit id 16b0314aa746
  * ("dma-buf: move dma-buf symbols into the DMA_BUF module namespace") in 5.16
  */
+#if defined(NV_MODULE_IMPORT_NS_TAKES_STRING_LITERAL)
+MODULE_IMPORT_NS("DMA_BUF");
+#else
 MODULE_IMPORT_NS(DMA_BUF);
+#endif
 #endif  // defined(MODULE_IMPORT_NS)
 
 const NvBool nv_is_rm_firmware_supported_os = NV_TRUE;

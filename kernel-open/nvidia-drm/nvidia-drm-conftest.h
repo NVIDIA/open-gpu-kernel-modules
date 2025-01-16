@@ -62,6 +62,13 @@
 #undef NV_DRM_FENCE_AVAILABLE
 #endif
 
+#if defined(NV_DRM_CLIENT_SETUP_PRESENT) &&                                    \
+    (defined(NV_DRM_APERTURE_REMOVE_CONFLICTING_PCI_FRAMEBUFFERS_PRESENT) ||   \
+     defined(NV_APERTURE_REMOVE_CONFLICTING_PCI_DEVICES_PRESENT))
+#define NV_DRM_FBDEV_AVAILABLE
+#define NV_DRM_CLIENT_AVAILABLE
+#endif
+
 /*
  * We can support color management if either drm_helper_crtc_enable_color_mgmt()
  * or drm_crtc_enable_color_mgmt() exist.

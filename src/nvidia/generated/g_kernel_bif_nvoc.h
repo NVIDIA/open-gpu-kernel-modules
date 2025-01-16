@@ -790,6 +790,8 @@ static inline NV_STATUS kbifDoFunctionLevelReset_DISPATCH(struct OBJGPU *pGpu, s
 
 NV_STATUS kbifInitXveRegMap_TU102(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU8 arg0);
 
+NV_STATUS kbifInitXveRegMap_GA100(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU8 arg0);
+
 NV_STATUS kbifInitXveRegMap_GA102(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU8 arg0);
 
 static inline NV_STATUS kbifInitXveRegMap_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvU8 arg0) {

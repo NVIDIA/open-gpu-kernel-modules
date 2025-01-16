@@ -64,9 +64,20 @@
 #include <drm/drm_ioctl.h>
 #endif
 
-#if defined(NV_DRM_FBDEV_AVAILABLE)
+#if defined(NV_LINUX_APERTURE_H_PRESENT)
+#include <linux/aperture.h>
+#endif
+
+#if defined(NV_DRM_DRM_APERTURE_H_PRESENT)
 #include <drm/drm_aperture.h>
+#endif
+
+#if defined(NV_DRM_FBDEV_AVAILABLE)
 #include <drm/drm_fb_helper.h>
+#endif
+
+#if defined(NV_DRM_DRM_CLIENT_SETUP_H_PRESENT)
+#include <drm/drm_client_setup.h>
 #endif
 
 #if defined(NV_DRM_DRM_FBDEV_TTM_H_PRESENT)
@@ -1726,6 +1737,9 @@ static struct drm_driver nv_drm_driver = {
 #elif defined(NV_DRM_DRIVER_HAS_LEGACY_DEV_LIST)
     .legacy_dev_list        = LIST_HEAD_INIT(nv_drm_driver.legacy_dev_list),
 #endif
+#if defined(DRM_FBDEV_TTM_DRIVER_OPS)
+    DRM_FBDEV_TTM_DRIVER_OPS,
+#endif
 };
 
 
@@ -1827,13 +1841,21 @@ void nv_drm_register_drm_device(const nv_gpu_info_t *gpu_info)
         if (bus_is_pci) {
             struct pci_dev *pdev = to_pci_dev(device);
 
+#if defined(NV_DRM_APERTURE_REMOVE_CONFLICTING_PCI_FRAMEBUFFERS_PRESENT)
+
 #if defined(NV_DRM_APERTURE_REMOVE_CONFLICTING_PCI_FRAMEBUFFERS_HAS_DRIVER_ARG)
             drm_aperture_remove_conflicting_pci_framebuffers(pdev, &nv_drm_driver);
 #else
             drm_aperture_remove_conflicting_pci_framebuffers(pdev, nv_drm_driver.name);
 #endif
+
+#elif defined(NV_APERTURE_REMOVE_CONFLICTING_PCI_DEVICES_PRESENT)
+            aperture_remove_conflicting_pci_devices(pdev, nv_drm_driver.name);
+#endif
         }
-        #if defined(NV_DRM_FBDEV_TTM_AVAILABLE)
+        #if defined(NV_DRM_CLIENT_AVAILABLE)
+	    drm_client_setup(dev, NULL);
+        #elif defined(NV_DRM_FBDEV_TTM_AVAILABLE)
         drm_fbdev_ttm_setup(dev, 32);
         #elif defined(NV_DRM_FBDEV_GENERIC_AVAILABLE)
         drm_fbdev_generic_setup(dev, 32);

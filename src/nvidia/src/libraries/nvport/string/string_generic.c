@@ -76,18 +76,34 @@ portStringCompare
     NvLength maxLength
 )
 {
-    NvLength length;
+    NvLength i;
 
     PORT_ASSERT_CHECKED(str1 != NULL);
     PORT_ASSERT_CHECKED(str2 != NULL);
 
-    length = portStringLengthSafe(str1, maxLength);
+    for (i = 0; i < maxLength; i++)
+    {
+        if (str1[i] != str2[i])
+        {
+            //
+            // Cast to unsigned before assigning to NvS32, to avoid sign
+            // extension.  E.g., if str1[i] is 0xff, we want s1 to contain
+            // 0xff, not -1.  In practice, this shouldn't matter for printable
+            // characters, but still...
+            //
+            NvS32 s1 = (unsigned char)str1[i];
+            NvS32 s2 = (unsigned char)str2[i];
+            return s1 - s2;
+        }
 
-    // Add 1 for the null terminator.
-    if (length < maxLength)
-        length++;
+        if ((str1[i] == '\0') &&
+            (str2[i] == '\0'))
+        {
+            break;
+        }
+    }
 
-    return  portMemCmp(str1, str2, length);
+    return 0;
 }
 #endif
 

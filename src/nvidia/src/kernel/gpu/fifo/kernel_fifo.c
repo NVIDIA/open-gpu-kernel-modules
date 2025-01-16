@@ -941,13 +941,26 @@ kfifoChidMgrReleaseChid_IMPL
 
     if (IS_GFID_VF(gfid))
     {
-        NV_ASSERT_OR_RETURN(pChidMgr->ppVirtualChIDHeap[gfid] != NULL, NV_ERR_INVALID_STATE);
-        NV_ASSERT_OK(pChidMgr->ppVirtualChIDHeap[gfid]->eheapFree(pChidMgr->ppVirtualChIDHeap[gfid], ChID));
+        //
+        // ppVirtualChIDHeap is freed during hostvgpudeviceapiDestruct in GSP-RM.
+        // In the case of a GSP-Plugin crash after running the VF doorbell fuzzer, only the hostvgpudeviceapi object is freed in GSP-RM.
+        // Other resources are cleaned up when shutting down the VM.
+        //
+        if (pChidMgr->ppVirtualChIDHeap[gfid] != NULL)
+        {
+            NV_ASSERT_OK(pChidMgr->ppVirtualChIDHeap[gfid]->eheapFree(pChidMgr->ppVirtualChIDHeap[gfid], ChID));
+        }
     }
     else
     {
-        NV_ASSERT_OR_RETURN(pChidMgr->pGlobalChIDHeap != NULL, NV_ERR_INVALID_STATE);
-        NV_ASSERT_OK(pChidMgr->pGlobalChIDHeap->eheapFree(pChidMgr->pGlobalChIDHeap, ChID));
+        if (pChidMgr->pGlobalChIDHeap != NULL)
+        {
+            NV_ASSERT_OK(pChidMgr->pGlobalChIDHeap->eheapFree(pChidMgr->pGlobalChIDHeap, ChID));
+        }
+        else
+        {
+            NV_ASSERT(pChidMgr->pGlobalChIDHeap != NULL);
+        }
     }
 
     NV_ASSERT_OR_RETURN(pChidMgr->pFifoDataHeap != NULL, NV_ERR_INVALID_STATE);
@@ -2691,7 +2704,7 @@ kfifoRunlistAllocBuffers_IMPL
             }
         }
 
-        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_101, 
+        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_101,
                         ppMemDesc[counter]);
         if (status != NV_OK)
         {

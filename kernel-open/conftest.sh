@@ -5583,6 +5583,23 @@ compile_test() {
             else
                 echo "#undef NV_OF_PROPERTY_READ_VARIABLE_U32_ARRAY_PRESENT" | append_conftest "functions"
             fi
+            ;;
+
+        module_import_ns_takes_string_literal)
+            #
+            # Determine if the MODULE_IMPORT_NS macro takes a string literal
+            # or constant.
+            #
+            # Commit cdd30ebb1b9f ("module: Convert symbol namespace to
+            # string literal") changed MODULE_IMPORT_NS to take a string
+            # literal in Linux kernel v6.13.
+            #
+            CODE="
+            #include <linux/module.h>
+
+            MODULE_IMPORT_NS(DMA_BUF);"
+
+            compile_check_conftest "$CODE" "NV_MODULE_IMPORT_NS_TAKES_STRING_LITERAL" "" "functions"
         ;;
 
         devm_of_platform_populate)
@@ -6616,7 +6633,8 @@ compile_test() {
             # Determine whether drm_fbdev_ttm_setup is present.
             #
             # Added by commit aae4682e5d66 ("drm/fbdev-generic:
-            # Convert to fbdev-ttm") in v6.11.
+            # Convert to fbdev-ttm") in v6.11. Removed by commit
+            # 1000634477d8 ("drm/fbdev-ttm:Convert to client-setup") in v6.13.
             #
             CODE="
             #include <drm/drm_fb_helper.h>
@@ -6628,6 +6646,25 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_DRM_FBDEV_TTM_SETUP_PRESENT" "" "functions"
+        ;;
+
+        drm_client_setup)
+            #
+            # Determine whether drm_client_setup is present.
+            #
+            # Added by commit d07fdf922592 ("drm/fbdev-ttm:
+            # Convert to client-setup") in v6.13.
+            #
+            CODE="
+            #include <drm/drm_fb_helper.h>
+            #if defined(NV_DRM_DRM_CLIENT_SETUP_H_PRESENT)
+            #include <drm/drm_client_setup.h>
+            #endif
+            void conftest_drm_client_setup(void) {
+                drm_client_setup();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_CLIENT_SETUP_PRESENT" "" "functions"
         ;;
 
         drm_output_poll_changed)
@@ -6651,6 +6688,38 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_DRM_OUTPUT_POLL_CHANGED_PRESENT" "" "types"
+        ;;
+
+        aperture_remove_conflicting_devices)
+            #
+            # Determine whether aperture_remove_conflicting_devices is present.
+            # 
+            # Added by commit 7283f862bd991 ("drm: Implement DRM aperture
+            # helpers under video/") in v6.0
+            CODE="
+            #if defined(NV_LINUX_APERTURE_H_PRESENT)
+            #include <linux/aperture.h>
+            #endif
+            void conftest_aperture_remove_conflicting_devices(void) {
+                aperture_remove_conflicting_devices();
+            }"
+            compile_check_conftest "$CODE" "NV_APERTURE_REMOVE_CONFLICTING_DEVICES_PRESENT" "" "functions"
+        ;;
+
+        aperture_remove_conflicting_pci_devices)
+            #
+            # Determine whether aperture_remove_conflicting_pci_devices is present.
+            #
+            # Added by commit 7283f862bd991 ("drm: Implement DRM aperture
+            # helpers under video/") in v6.0
+            CODE="
+            #if defined(NV_LINUX_APERTURE_H_PRESENT)
+            #include <linux/aperture.h>
+            #endif
+            void conftest_aperture_remove_conflicting_pci_devices(void) {
+                aperture_remove_conflicting_pci_devices();
+            }"
+            compile_check_conftest "$CODE" "NV_APERTURE_REMOVE_CONFLICTING_PCI_DEVICES_PRESENT" "" "functions"
         ;;
 
         drm_aperture_remove_conflicting_pci_framebuffers)
@@ -6746,17 +6815,17 @@ compile_test() {
             # This test is not complete and may return false positive.
             #
             CODE="
-	    #include <crypto/akcipher.h>
-	    #include <crypto/algapi.h>
-	    #include <crypto/ecc_curve.h>
-	    #include <crypto/ecdh.h>
-	    #include <crypto/hash.h>
-	    #include <crypto/internal/ecc.h>
-	    #include <crypto/kpp.h>
-	    #include <crypto/public_key.h>
-	    #include <crypto/sm3.h>
-	    #include <keys/asymmetric-type.h>
-	    #include <linux/crypto.h>
+            #include <crypto/akcipher.h>
+            #include <crypto/algapi.h>
+            #include <crypto/ecc_curve.h>
+            #include <crypto/ecdh.h>
+            #include <crypto/hash.h>
+            #include <crypto/internal/ecc.h>
+            #include <crypto/kpp.h>
+            #include <crypto/public_key.h>
+            #include <crypto/sm3.h>
+            #include <keys/asymmetric-type.h>
+            #include <linux/crypto.h>
             void conftest_crypto(void) {
                 struct shash_desc sd;
                 struct crypto_shash cs;
@@ -6764,6 +6833,47 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_CRYPTO_PRESENT" "" "symbols"
+        ;;
+
+        crypto_akcipher_verify)
+            #
+            # Determine whether the crypto_akcipher_verify API is still present.
+            # It was removed by commit 6b34562 ('crypto: akcipher - Drop sign/verify operations')
+            # in v6.13-rc1 (2024-10-04).
+            #
+            # This test is dependent on the crypto conftest to determine whether crypto should be
+            # enabled at all. That means that if the kernel is old enough such that crypto_akcipher_verify
+            #
+            # The test merely checks for the presence of the API, as it assumes that if the API
+            # is no longer present, the new API to replace it (crypto_sig_verify) must be present.
+            # If the kernel version is too old to have crypto_akcipher_verify, it will fail the crypto
+            # conftest above and all crypto code will be compiled out.
+            #
+            CODE="
+            #include <crypto/akcipher.h>
+            #include <linux/crypto.h>
+            void conftest_crypto_akcipher_verify(void) {
+                (void)crypto_akcipher_verify;
+            }"
+
+            compile_check_conftest "$CODE" "NV_CRYPTO_AKCIPHER_VERIFY_PRESENT" "" "symbols"
+            ;;
+
+        ecc_digits_from_bytes)
+            #
+            # Determine whether ecc_digits_from_bytes is present.
+            # It was added in commit c6ab5c915da4 ('crypto: ecc - Prevent ecc_digits_from_bytes from
+            # reading too many bytes') in v6.10.
+            #
+            # This functionality is needed when crypto_akcipher_verify is not present.
+            #
+            CODE="
+            #include <crypto/internal/ecc.h>
+            void conftest_ecc_digits_from_bytes(void) {
+                (void)ecc_digits_from_bytes;
+            }"
+
+            compile_check_conftest "$CODE" "NV_ECC_DIGITS_FROM_BYTES_PRESENT" "" "symbols"
         ;;
 
         mempolicy_has_unified_nodes)
